@@ -737,7 +737,7 @@ def _model_flow_custom(config):
     else:
         print(
             f"Warning: could not verify this endpoint via {probe.get('probed_url')}. "
-            f"Hermes will still save it."
+            f"Moor will still save it."
         )
         if probe.get("suggested_base_url"):
             suggested = probe["suggested_base_url"]
@@ -932,7 +932,7 @@ def _model_flow_azure_foundry(config, current_model=""):
     print("=" * 50)
     print()
     print("Azure Foundry can host models with either OpenAI-style or")
-    print("Anthropic-style API endpoints.  Hermes will probe your")
+    print("Anthropic-style API endpoints.  Moor will probe your")
     print("endpoint to auto-detect the transport and the deployed")
     print("models when possible.")
     print()
@@ -1020,7 +1020,7 @@ def _model_flow_azure_foundry(config, current_model=""):
         if not has_azure_identity_installed():
             print("◐ The 'azure-identity' package is not installed yet.")
             print(
-                "  Hermes will install it now (the preflight below "
+                "  Moor will install it now (the preflight below "
                 "triggers the lazy-install). To skip lazy installs, "
                 "run:  pip install azure-identity"
             )
@@ -1651,9 +1651,9 @@ def _model_flow_copilot_acp(config, current_model=""):
     )
     effective_base = status.get("base_url") or pconfig.inference_base_url
 
-    print("  GitHub Copilot ACP delegates Hermes turns to `copilot --acp`.")
-    print("  Hermes currently starts its own ACP subprocess for each request.")
-    print("  Hermes uses your selected model as a hint for the Copilot ACP session.")
+    print("  GitHub Copilot ACP delegates Moor turns to `copilot --acp`.")
+    print("  Moor currently starts its own ACP subprocess for each request.")
+    print("  Moor uses your selected model as a hint for the Copilot ACP session.")
     print(f"  Command: {resolved_command}")
     print(f"  Backend marker: {effective_base}")
     print()
@@ -2273,7 +2273,7 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
                     "(<= 250 requests/day for gemini-2.5-flash)."
                 )
                 print(
-                    "   Hermes typically makes 3-10 API calls per user turn "
+                    "   Moor typically makes 3-10 API calls per user turn "
                     "(tool iterations + auxiliary tasks),"
                 )
                 print(
@@ -2283,7 +2283,7 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
                 print("   an agent session.")
                 print()
                 print(
-                    "   To use Gemini with Hermes, enable billing on your "
+                    "   To use Gemini with Moor, enable billing on your "
                     "Google Cloud project and regenerate"
                 )
                 print(

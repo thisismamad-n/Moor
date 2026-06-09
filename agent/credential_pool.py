@@ -642,7 +642,7 @@ class CredentialPool:
     def _sync_xai_oauth_entry_from_auth_store(self, entry: PooledCredential) -> PooledCredential:
         """Sync an xAI OAuth pool entry from auth.json if tokens differ.
 
-        xAI OAuth refresh tokens are single-use.  When another Hermes process
+        xAI OAuth refresh tokens are single-use.  When another Moor process
         (or another profile sharing the same auth.json) refreshes the token,
         it writes the new pair to ``providers["xai-oauth"]["tokens"]`` under
         ``_auth_store_lock``.  Without this resync, our in-memory pool entry
@@ -892,7 +892,7 @@ class CredentialPool:
                         logger.debug("Failed to write refreshed token to credentials file: %s", wexc)
             elif self.provider == "openai-codex":
                 # Adopt fresher tokens from auth.json before spending the
-                # refresh_token — single-use tokens consumed by another Hermes
+                # refresh_token — single-use tokens consumed by another Moor
                 # process sharing the same auth.json singleton would otherwise
                 # trigger ``refresh_token_reused`` on the next POST.
                 synced = self._sync_codex_entry_from_auth_store(entry)
@@ -1047,7 +1047,7 @@ class CredentialPool:
                         self._current_id = None
                     self._persist()
                     return None
-            # For openai-codex: same race as xAI/nous — another Hermes process
+            # For openai-codex: same race as xAI/nous — another Moor process
             # may have consumed the refresh token between our proactive sync
             # and the HTTP call.  Re-check auth.json and adopt the fresh tokens
             # if they have rotated since.
@@ -1238,7 +1238,7 @@ class CredentialPool:
         for entry in self._entries:
             # For anthropic claude_code entries, sync from the credentials file
             # before any status/refresh checks. This picks up tokens refreshed
-            # by other processes (Claude Code CLI, other Hermes profiles).
+            # by other processes (Claude Code CLI, other Moor profiles).
             if (self.provider == "anthropic" and entry.source == "claude_code"
                     and entry.last_status in {STATUS_EXHAUSTED, STATUS_DEAD}):
                 synced = self._sync_anthropic_entry_from_credentials_file(entry)
@@ -1636,7 +1636,7 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
             return False
 
     if provider == "anthropic":
-        # Only auto-discover external credentials (Claude Code, Hermes PKCE)
+        # Only auto-discover external credentials (Claude Code, Moor PKCE)
         # when the user has explicitly configured anthropic as their provider.
         # Without this gate, auxiliary client fallback chains silently read
         # ~/.claude/.credentials.json without user consent.  See PR #4210.
@@ -1805,7 +1805,7 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
     elif provider == "qwen-oauth":
         # Qwen OAuth tokens live in ~/.qwen/oauth_creds.json, written by
         # the Qwen CLI (`qwen auth qwen-oauth`).  They aren't in the
-        # Hermes auth store or env vars, so resolve them here.
+        # Moor auth store or env vars, so resolve them here.
         # Use refresh_if_expiring=False to avoid network calls during
         # pool loading / provider discovery.
         try:
@@ -1877,14 +1877,14 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
     elif provider == "openai-codex":
         # Respect user suppression — `hermes auth remove openai-codex` marks
         # the device_code source as suppressed so it won't be re-seeded from
-        # the Hermes auth store.  Without this gate the removal is instantly
+        # the Moor auth store.  Without this gate the removal is instantly
         # undone on the next load_pool() call.
         if _is_suppressed(provider, "device_code"):
             return changed, active_sources
 
         state = _load_provider_state(auth_store, "openai-codex")
         tokens = state.get("tokens") if isinstance(state, dict) else None
-        # Hermes owns its own Codex auth state — we do NOT auto-import from
+        # Moor owns its own Codex auth state — we do NOT auto-import from
         # ~/.codex/auth.json at pool-load time.  OAuth refresh tokens are
         # single-use, so sharing them with Codex CLI / VS Code causes
         # refresh_token_reused race failures.  Users who want to adopt
@@ -1947,7 +1947,7 @@ def _seed_from_env(provider: str, entries: List[PooledCredential]) -> Tuple[bool
     active_sources: Set[str] = set()
 
     # Prefer ~/.hermes/.env over os.environ — the user's config file is the
-    # authoritative source for Hermes credentials. Stale env vars from parent
+    # authoritative source for Moor credentials. Stale env vars from parent
     # processes (Codex CLI, test scripts, etc.) should not override deliberate
     # changes to the .env file.
     def _get_env_prefer_dotenv(key: str) -> str:
@@ -2069,7 +2069,7 @@ def _prune_stale_seeded_entries(entries: List[PooledCredential], active_sources:
         or entry.source in active_sources
         or not (
             is_borrowed_credential_source(entry.source, entry.provider)
-            # Hermes PKCE is Hermes-owned/persistable while present, but it is
+            # Moor PKCE is Moor-owned/persistable while present, but it is
             # still a file-backed singleton and should disappear from the pool
             # when the backing OAuth file is gone.
             or entry.source == "hermes_pkce"

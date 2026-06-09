@@ -1,7 +1,7 @@
 """Honcho client initialization and configuration.
 
 Resolution order for config file:
-  1. $HERMES_HOME/honcho.json  (instance-local, enables isolated Hermes instances)
+  1. $HERMES_HOME/honcho.json  (instance-local, enables isolated Moor instances)
   2. ~/.honcho/config.json     (global, shared across all Honcho-enabled apps)
   3. Environment variables     (HONCHO_API_KEY, HONCHO_ENVIRONMENT)
 
@@ -34,7 +34,7 @@ HOST = "hermes"
 
 
 def profile_host_key(profile: str | None) -> str:
-    """Return the safe Honcho host key for a Hermes profile."""
+    """Return the safe Honcho host key for a Moor profile."""
     if not profile or profile in {"default", "custom"}:
         return HOST
     sanitized = "".join(c if c.isalnum() or c in "_-" else "_" for c in profile).strip("_")
@@ -52,7 +52,7 @@ def _host_block(raw: dict, host: str) -> dict:
 
 
 def resolve_active_host() -> str:
-    """Derive the Honcho host key from the active Hermes profile.
+    """Derive the Honcho host key from the active Moor profile.
 
     Resolution order:
       1. HERMES_HONCHO_HOST env var (explicit override)
@@ -331,7 +331,7 @@ class HonchoClientConfig:
     # honcho_reasoning tool param (agentic). When false, always uses
     # dialecticReasoningLevel and ignores model-provided overrides.
     dialectic_dynamic: bool = True
-    # Max chars of dialectic result to inject into Hermes system prompt
+    # Max chars of dialectic result to inject into Moor system prompt
     dialectic_max_chars: int = 600
     # Dialectic depth: how many .chat() calls per dialectic cycle (1-3).
     # Depth 1: single call. Depth 2: self-audit + targeted synthesis.
@@ -410,7 +410,7 @@ class HonchoClientConfig:
         """Create config from the resolved Honcho config path.
 
         Resolution: $HERMES_HOME/honcho.json -> ~/.honcho/config.json -> env vars.
-        When host is None, derives it from the active Hermes profile.
+        When host is None, derives it from the active Moor profile.
         """
         resolved_host = host or resolve_active_host()
         path = config_path or resolve_config_path()
@@ -680,9 +680,9 @@ class HonchoClientConfig:
 
         Resolution order:
           1. Manual directory override from sessions map
-          2. Hermes session title (from /title command)
+          2. Moor session title (from /title command)
           3. Gateway session key (stable per-chat identifier from gateway platforms)
-          4. per-session strategy — Hermes session_id ({timestamp}_{hex})
+          4. per-session strategy — Moor session_id ({timestamp}_{hex})
           5. per-repo strategy — git repo root directory name
           6. per-directory strategy — directory basename
           7. global strategy — workspace name
@@ -715,7 +715,7 @@ class HonchoClientConfig:
             if sanitized:
                 return self._enforce_session_id_limit(sanitized, gateway_session_key)
 
-        # per-session: inherit Hermes session_id (new Honcho session each run)
+        # per-session: inherit Moor session_id (new Honcho session each run)
         if self.session_strategy == "per-session" and session_id:
             if self.session_peer_prefix and self.peer_name:
                 return f"{self.peer_name}-{session_id}"

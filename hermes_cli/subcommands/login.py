@@ -17,7 +17,7 @@ def build_login_parser(subparsers, *, cmd_login: Callable) -> None:
     login_parser = subparsers.add_parser(
         "login",
         help="Authenticate with an inference provider",
-        description="Run OAuth device authorization flow for Hermes CLI",
+        description="Run OAuth device authorization flow for Moor CLI",
     )
     login_parser.add_argument(
         "--provider",

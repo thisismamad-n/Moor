@@ -1,5 +1,5 @@
 """
-Hermes Agent — Web UI server.
+Moor Agent — Web UI server.
 
 Provides a FastAPI backend serving the Vite/React frontend and REST API
 endpoints for managing configuration, environment variables, and sessions.
@@ -170,7 +170,7 @@ def _get_event_state(app: "FastAPI"):
         return app.state.event_channels, app.state.event_lock
 
 
-app = FastAPI(title="Hermes Agent", version=__version__, lifespan=_lifespan)
+app = FastAPI(title="Moor Agent", version=__version__, lifespan=_lifespan)
 
 # ---------------------------------------------------------------------------
 # Session token for protecting sensitive endpoints (reveal).
@@ -181,7 +181,7 @@ app = FastAPI(title="Hermes Agent", version=__version__, lifespan=_lifespan)
 # injected into the SPA HTML so only the legitimate web UI can use it.
 # ---------------------------------------------------------------------------
 _SESSION_TOKEN = os.environ.get("HERMES_DASHBOARD_SESSION_TOKEN") or secrets.token_urlsafe(32)
-_SESSION_HEADER_NAME = "X-Hermes-Session-Token"
+_SESSION_HEADER_NAME = "X-Moor-Session-Token"
 
 # In-browser Chat tab (/chat, /api/pty, /api/ws, …).  Always enabled: the
 # desktop app and the dashboard's own Chat tab both drive the agent over the
@@ -486,7 +486,7 @@ _SCHEMA_OVERRIDES: Dict[str, Dict[str, Any]] = {
     "updates.non_interactive_local_changes": {
         "type": "select",
         "description": (
-            "When the chat app / gateway updates Hermes (no terminal prompt), "
+            "When the chat app / gateway updates Moor (no terminal prompt), "
             "what to do with uncommitted local source edits. 'stash' keeps them "
             "and re-applies them after the update; 'discard' throws them away. "
             "Terminal updates always ask, regardless of this setting."
@@ -1455,7 +1455,7 @@ def _recent_upstream_commits(n: int = 20) -> List[Dict[str, Any]]:
 
 @app.get("/api/hermes/update/check")
 async def check_hermes_update(force: bool = False):
-    """Report whether a Hermes update is available, without applying it.
+    """Report whether a Moor update is available, without applying it.
 
     Powers the dashboard's "check before you update" flow: the System page
     shows the commit-behind count and asks the user to confirm before
@@ -1463,7 +1463,7 @@ async def check_hermes_update(force: bool = False):
 
     Returns:
         install_method: 'git' | 'pip' | 'docker' | 'nixos' | 'homebrew' | ...
-        current_version: installed Hermes version string
+        current_version: installed Moor version string
         behind: commits behind upstream (>=1), 0 if up to date,
                 -1 if behind by an unknown count (nix/pypi), or null if the
                 check could not run (offline, no remote, etc.)
@@ -2071,7 +2071,7 @@ async def search_sessions(q: str = "", limit: int = 20):
                 seen[root] = payload
 
             # Direct ID matches first: users often paste a session id from CLI,
-            # logs, or another Hermes surface. FTS can't find those unless the
+            # logs, or another Moor surface. FTS can't find those unless the
             # id happens to appear in message text. search_sessions_by_id is
             # SQL-bounded, so this stays cheap even with thousands of sessions.
             for row in db.search_sessions_by_id(q, limit=safe_limit, include_archived=True):
@@ -2129,7 +2129,7 @@ async def search_sessions(q: str = "", limit: int = 20):
 def _normalize_config_for_web(config: Dict[str, Any]) -> Dict[str, Any]:
     """Normalize config for the web UI.
 
-    Hermes supports ``model`` as either a bare string (``"anthropic/claude-sonnet-4"``)
+    Moor supports ``model`` as either a bare string (``"anthropic/claude-sonnet-4"``)
     or a dict (``{default: ..., provider: ..., base_url: ...}``).  The schema is built
     from DEFAULT_CONFIG where ``model`` is a string, but user configs often have the
     dict form.  Normalize to the string form so the frontend schema matches.
@@ -2828,14 +2828,14 @@ async def reveal_env_var(body: EnvVarReveal, request: Request):
 _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     "telegram": {
         "name": "Telegram",
-        "description": "Run Hermes from Telegram DMs, groups, and topics.",
+        "description": "Run Moor from Telegram DMs, groups, and topics.",
         "docs_url": "https://core.telegram.org/bots/features#botfather",
         "env_vars": ("TELEGRAM_BOT_TOKEN", "TELEGRAM_ALLOWED_USERS", "TELEGRAM_PROXY"),
         "required_env": ("TELEGRAM_BOT_TOKEN",),
     },
     "discord": {
         "name": "Discord",
-        "description": "Connect Hermes to Discord DMs, channels, and threads.",
+        "description": "Connect Moor to Discord DMs, channels, and threads.",
         "docs_url": "https://discord.com/developers/applications",
         "env_vars": (
             "DISCORD_BOT_TOKEN",
@@ -2846,21 +2846,21 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     },
     "slack": {
         "name": "Slack",
-        "description": "Use Hermes from Slack via Socket Mode.",
+        "description": "Use Moor from Slack via Socket Mode.",
         "docs_url": "https://api.slack.com/apps",
         "env_vars": ("SLACK_BOT_TOKEN", "SLACK_APP_TOKEN"),
         "required_env": ("SLACK_BOT_TOKEN", "SLACK_APP_TOKEN"),
     },
     "mattermost": {
         "name": "Mattermost",
-        "description": "Connect Hermes to Mattermost channels and direct messages.",
+        "description": "Connect Moor to Mattermost channels and direct messages.",
         "docs_url": "https://mattermost.com/deploy/",
         "env_vars": ("MATTERMOST_URL", "MATTERMOST_TOKEN", "MATTERMOST_ALLOWED_USERS"),
         "required_env": ("MATTERMOST_URL", "MATTERMOST_TOKEN"),
     },
     "matrix": {
         "name": "Matrix",
-        "description": "Use Hermes in Matrix rooms and direct messages.",
+        "description": "Use Moor in Matrix rooms and direct messages.",
         "docs_url": "https://matrix.org/ecosystem/servers/",
         "env_vars": (
             "MATRIX_HOMESERVER",
@@ -2879,21 +2879,21 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     },
     "whatsapp": {
         "name": "WhatsApp",
-        "description": "Use Hermes through the bundled WhatsApp bridge with QR-based auth.",
+        "description": "Use Moor through the bundled WhatsApp bridge with QR-based auth.",
         "docs_url": "https://github.com/tulir/whatsmeow",
         "env_vars": ("WHATSAPP_ENABLED", "WHATSAPP_MODE", "WHATSAPP_ALLOWED_USERS"),
         "required_env": (),
     },
     "homeassistant": {
         "name": "Home Assistant",
-        "description": "Control your smart home from Hermes via Home Assistant.",
+        "description": "Control your smart home from Moor via Home Assistant.",
         "docs_url": "https://www.home-assistant.io/docs/authentication/",
         "env_vars": ("HASS_URL", "HASS_TOKEN"),
         "required_env": ("HASS_URL", "HASS_TOKEN"),
     },
     "email": {
         "name": "Email",
-        "description": "Talk to Hermes through an IMAP/SMTP mailbox.",
+        "description": "Talk to Moor through an IMAP/SMTP mailbox.",
         "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/",
         "env_vars": (
             "EMAIL_ADDRESS",
@@ -2917,14 +2917,14 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     },
     "dingtalk": {
         "name": "DingTalk",
-        "description": "Connect Hermes to DingTalk groups (钉钉).",
+        "description": "Connect Moor to DingTalk groups (钉钉).",
         "docs_url": "https://open.dingtalk.com/document/orgapp/the-robot-development-process",
         "env_vars": ("DINGTALK_CLIENT_ID", "DINGTALK_CLIENT_SECRET"),
         "required_env": ("DINGTALK_CLIENT_ID", "DINGTALK_CLIENT_SECRET"),
     },
     "feishu": {
         "name": "Feishu / Lark",
-        "description": "Use Hermes inside Feishu / Lark.",
+        "description": "Use Moor inside Feishu / Lark.",
         "docs_url": "https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/im-v1/intro",
         "env_vars": (
             "FEISHU_APP_ID",
@@ -2967,7 +2967,7 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     },
     "bluebubbles": {
         "name": "BlueBubbles (iMessage)",
-        "description": "Use Hermes through iMessage via a BlueBubbles server.",
+        "description": "Use Moor through iMessage via a BlueBubbles server.",
         "docs_url": "https://bluebubbles.app/",
         "env_vars": (
             "BLUEBUBBLES_SERVER_URL",
@@ -2978,20 +2978,20 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     },
     "qqbot": {
         "name": "QQ Bot",
-        "description": "Connect Hermes to a QQ Bot from the QQ Open Platform.",
+        "description": "Connect Moor to a QQ Bot from the QQ Open Platform.",
         "docs_url": "https://q.qq.com",
         "env_vars": ("QQ_APP_ID", "QQ_CLIENT_SECRET", "QQ_ALLOWED_USERS"),
         "required_env": ("QQ_APP_ID", "QQ_CLIENT_SECRET"),
     },
     "yuanbao": {
         "name": "Yuanbao (元宝)",
-        "description": "Connect Hermes to Tencent Yuanbao.",
+        "description": "Connect Moor to Tencent Yuanbao.",
         "docs_url": "",
         "required_env": (),
     },
     "api_server": {
         "name": "API server",
-        "description": "Expose Hermes as an OpenAI-compatible HTTP API for tools like Open WebUI.",
+        "description": "Expose Moor as an OpenAI-compatible HTTP API for tools like Open WebUI.",
         "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/",
         "env_vars": (
             "API_SERVER_ENABLED",
@@ -3604,7 +3604,7 @@ async def _telegram_onboarding_request(
 
 @app.post("/api/messaging/telegram/onboarding/start")
 async def start_telegram_onboarding(body: TelegramOnboardingStart):
-    bot_name = (body.bot_name or "Hermes Agent").strip() or "Hermes Agent"
+    bot_name = (body.bot_name or "Moor Agent").strip() or "Moor Agent"
     payload = await _telegram_onboarding_request(
         "POST",
         "/v1/telegram/pairings",
@@ -3924,8 +3924,8 @@ def _truncate_token(value: Optional[str], visible: int = 6) -> str:
 def _anthropic_oauth_status() -> Dict[str, Any]:
     """Combined status across the three Anthropic credential sources we read.
 
-    Hermes resolves Anthropic creds in this order at runtime:
-    1. ``~/.hermes/.anthropic_oauth.json`` — Hermes-managed PKCE flow
+    Moor resolves Anthropic creds in this order at runtime:
+    1. ``~/.hermes/.anthropic_oauth.json`` — Moor-managed PKCE flow
     2. ``~/.claude/.credentials.json`` — Claude Code CLI credentials (auto)
     3. ``ANTHROPIC_TOKEN`` / ``ANTHROPIC_API_KEY`` env vars
     The dashboard reports the highest-priority source that's actually present.
@@ -3951,7 +3951,7 @@ def _anthropic_oauth_status() -> Dict[str, Any]:
         return {
             "logged_in": True,
             "source": "hermes_pkce",
-            "source_label": f"Hermes PKCE ({_HERMES_OAUTH_FILE})",
+            "source_label": f"Moor PKCE ({_HERMES_OAUTH_FILE})",
             "token_preview": _truncate_token(hermes_creds.get("accessToken")),
             "expires_at": hermes_creds.get("expiresAt"),
             "has_refresh_token": bool(hermes_creds.get("refreshToken")),
@@ -3990,8 +3990,8 @@ def _claude_code_only_status() -> Dict[str, Any]:
     """Surface Claude Code CLI credentials as their own provider entry.
 
     Independent of the Anthropic entry above so users can see whether their
-    Claude Code subscription tokens are actively flowing into Hermes even
-    when they also have a separate Hermes-managed PKCE login.
+    Claude Code subscription tokens are actively flowing into Moor even
+    when they also have a separate Moor-managed PKCE login.
     """
     try:
         from agent.anthropic_adapter import read_claude_code_credentials
@@ -4202,7 +4202,7 @@ async def disconnect_oauth_provider(provider_id: str, request: Request):
                    f"Available: {', '.join(sorted(valid_ids))}",
         )
 
-    # Anthropic and claude-code clear the same Hermes-managed PKCE file
+    # Anthropic and claude-code clear the same Moor-managed PKCE file
     # AND forget the Claude Code import. We don't touch ~/.claude/* directly
     # — that's owned by the Claude Code CLI; users can re-auth there if they
     # want to undo a disconnect.
@@ -4328,7 +4328,7 @@ def _new_oauth_session(provider_id: str, flow: str) -> tuple[str, Dict[str, Any]
 
 
 def _save_anthropic_oauth_creds(access_token: str, refresh_token: str, expires_at_ms: int) -> None:
-    """Persist Anthropic PKCE creds to both Hermes file AND credential pool.
+    """Persist Anthropic PKCE creds to both Moor file AND credential pool.
 
     Mirrors what auth_commands.add_command does so the dashboard flow leaves
     the system in the same state as ``hermes auth add anthropic``.
@@ -7019,7 +7019,7 @@ async def update_skills_hub():
 # provenance).  Keep in sync with create_source_router()'s source list.
 _SKILL_HUB_SOURCE_LABELS = {
     "official": "Official (Nous)",
-    "hermes-index": "Hermes Index",
+    "hermes-index": "Moor Index",
     "skills-sh": "skills.sh",
     "well-known": "Well-Known",
     "url": "Direct URL",
@@ -8753,7 +8753,7 @@ async def pty_ws(ws: WebSocket) -> None:
         await ws.send_text(
             "\r\n\x1b[31mChat unavailable: the embedded terminal requires a "
             "POSIX PTY, which native Windows Python doesn't provide.\x1b[0m\r\n"
-            "\x1b[33mInstall Hermes inside WSL2 to use the dashboard's /chat "
+            "\x1b[33mInstall Moor inside WSL2 to use the dashboard's /chat "
             "tab — the rest of the dashboard works here.\x1b[0m\r\n"
         )
         await ws.close(code=1011)
@@ -9040,7 +9040,7 @@ def mount_spa(application: FastAPI):
     # absolute ``url(/fonts/...)`` and ``url(/ds-assets/...)`` references.
     # Browsers resolve those against the document origin, which means
     # under ``/hermes`` they'd hit ``mission-control.tilos.com/fonts/...``
-    # (the MC Pages app), not the Hermes backend. Intercept CSS asset
+    # (the MC Pages app), not the Moor backend. Intercept CSS asset
     # requests BEFORE the StaticFiles mount and rewrite the absolute paths
     # when a prefix is in play.
     @application.get("/assets/{filename}.css")
@@ -9094,8 +9094,8 @@ def mount_spa(application: FastAPI):
 # Built-in dashboard themes — label + description only.  The actual color
 # definitions live in the frontend (web/src/themes/presets.ts).
 _BUILTIN_DASHBOARD_THEMES = [
-    {"name": "default",       "label": "Hermes Teal",         "description": "Classic dark teal — the canonical Hermes look"},
-    {"name": "default-large", "label": "Hermes Teal (Large)", "description": "Hermes Teal with bigger fonts and roomier spacing"},
+    {"name": "default",       "label": "Moor Teal",         "description": "Classic dark teal — the canonical Moor look"},
+    {"name": "default-large", "label": "Moor Teal (Large)", "description": "Moor Teal with bigger fonts and roomier spacing"},
     {"name": "nous-blue",     "label": "Nous Blue",           "description": "Light mode — vivid Nous-blue accents on cream canvas"},
     {"name": "midnight",      "label": "Midnight",            "description": "Deep blue-violet with cool accents"},
     {"name": "ember",     "label": "Ember",          "description": "Warm crimson and bronze — forge vibes"},
@@ -10061,7 +10061,7 @@ def start_server(
         if not list_providers():
             # Surface the *specific* reason any bundled provider declined
             # to register (e.g. missing HERMES_DASHBOARD_OAUTH_CLIENT_ID).
-            # Each provider plugin that ships with Hermes Agent exposes a
+            # Each provider plugin that ships with Moor Agent exposes a
             # module-level ``LAST_SKIP_REASON`` string for this purpose;
             # without it the operator would only see "no providers" which
             # is misleading when the provider IS installed but unconfigured.
@@ -10149,7 +10149,7 @@ def start_server(
                 "(headless Linux). Pass --no-open to suppress this detection."
             )
 
-    print(f"  Hermes Web UI → http://{host}:{port}")
+    print(f"  Moor Web UI → http://{host}:{port}")
     # proxy_headers defaults to False so _ws_client_is_allowed sees the real
     # connection peer rather than X-Forwarded-For's rewritten value (which
     # would defeat the loopback gate when behind a reverse proxy).  When the

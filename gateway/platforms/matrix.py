@@ -114,10 +114,10 @@ _MATRIX_BANG_COMMAND_RE = re.compile(
 
 
 def _resolve_matrix_bang_command(name: str) -> str | None:
-    """Resolve a ``!command`` token to a dispatchable Hermes command token.
+    """Resolve a ``!command`` token to a dispatchable Moor command token.
 
     Matrix clients often reserve leading ``/`` for local client commands.
-    Hermes accepts ``!command`` as a Matrix-friendly alias, but only for
+    Moor accepts ``!command`` as a Matrix-friendly alias, but only for
     commands that the gateway can actually dispatch so ordinary exclamations
     remain normal chat text.
 
@@ -165,7 +165,7 @@ def _resolve_matrix_bang_command(name: str) -> str | None:
 
 
 def _normalize_matrix_bang_command(text: str) -> str:
-    """Convert Matrix ``!command`` aliases to normal Hermes ``/command`` text."""
+    """Convert Matrix ``!command`` aliases to normal Moor ``/command`` text."""
     if not text or not text.startswith("!"):
         return text
     match = _MATRIX_BANG_COMMAND_RE.match(text)
@@ -779,7 +779,7 @@ class MatrixAdapter(BasePlatformAdapter):
                 resp = await client.login(
                     identifier=self._user_id,
                     password=self._password,
-                    device_name="Hermes Agent",
+                    device_name="Moor Agent",
                     device_id=self._device_id or None,
                 )
                 if resp and hasattr(resp, "device_id"):
@@ -2749,7 +2749,7 @@ class MatrixAdapter(BasePlatformAdapter):
 
         Important: only strip explicit mention tokens (``@user:server`` or
         ``@localpart``). Do NOT strip bare words matching the bot localpart,
-        otherwise normal phrases like "Hermes Agent" become "Agent".
+        otherwise normal phrases like "Moor Agent" become "Agent".
         """
         if not body:
             return ""

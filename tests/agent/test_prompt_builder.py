@@ -500,7 +500,7 @@ class TestBuildContextFilesPrompt:
         with patch("pathlib.Path.home", return_value=fake_home):
             result = build_context_files_prompt(cwd=str(tmp_path))
         assert "Project Context" in result
-        assert "Hermes Agent" in result
+        assert "Moor Agent" in result
 
     def test_loads_agents_md(self, tmp_path):
         (tmp_path / "AGENTS.md").write_text("Use Ruff for linting.")
@@ -565,7 +565,7 @@ class TestBuildContextFilesPrompt:
         assert "Top level" in result
         assert "Src-specific" not in result
 
-    # --- .hermes.md / HERMES.md discovery ---
+    # --- .hermes.md / MOOR.md discovery ---
 
     def test_loads_hermes_md(self, tmp_path):
         (tmp_path / ".hermes.md").write_text("Use pytest for testing.")
@@ -574,13 +574,13 @@ class TestBuildContextFilesPrompt:
         assert "Project Context" in result
 
     def test_loads_hermes_md_uppercase(self, tmp_path):
-        (tmp_path / "HERMES.md").write_text("Always use type hints.")
+        (tmp_path / "MOOR.md").write_text("Always use type hints.")
         result = build_context_files_prompt(cwd=str(tmp_path))
         assert "type hints" in result
 
     def test_hermes_md_lowercase_takes_priority(self, tmp_path):
         (tmp_path / ".hermes.md").write_text("From dotfile.")
-        (tmp_path / "HERMES.md").write_text("From uppercase.")
+        (tmp_path / "MOOR.md").write_text("From uppercase.")
         result = build_context_files_prompt(cwd=str(tmp_path))
         assert "From dotfile" in result
         assert "From uppercase" not in result
@@ -621,9 +621,9 @@ class TestBuildContextFilesPrompt:
     def test_hermes_md_beats_agents_md(self, tmp_path):
         """When both exist, .hermes.md wins and AGENTS.md is not loaded."""
         (tmp_path / "AGENTS.md").write_text("Agent guidelines here.")
-        (tmp_path / ".hermes.md").write_text("Hermes project rules.")
+        (tmp_path / ".hermes.md").write_text("Moor project rules.")
         result = build_context_files_prompt(cwd=str(tmp_path))
-        assert "Hermes project rules" in result
+        assert "Moor project rules" in result
         assert "Agent guidelines" not in result
 
     def test_agents_md_beats_claude_md(self, tmp_path):
@@ -674,12 +674,12 @@ class TestBuildContextFilesPrompt:
 
     def test_hermes_md_beats_all_others(self, tmp_path):
         """When all four types exist, only .hermes.md is loaded."""
-        (tmp_path / ".hermes.md").write_text("Hermes wins.")
+        (tmp_path / ".hermes.md").write_text("Moor wins.")
         (tmp_path / "AGENTS.md").write_text("Agents lose.")
         (tmp_path / "CLAUDE.md").write_text("Claude loses.")
         (tmp_path / ".cursorrules").write_text("Cursor loses.")
         result = build_context_files_prompt(cwd=str(tmp_path))
-        assert "Hermes wins" in result
+        assert "Moor wins" in result
         assert "Agents lose" not in result
         assert "Claude loses" not in result
         assert "Cursor loses" not in result
@@ -702,12 +702,12 @@ class TestFindHermesMd:
         assert _find_hermes_md(tmp_path) == tmp_path / ".hermes.md"
 
     def test_finds_uppercase(self, tmp_path):
-        (tmp_path / "HERMES.md").write_text("rules")
-        assert _find_hermes_md(tmp_path) == tmp_path / "HERMES.md"
+        (tmp_path / "MOOR.md").write_text("rules")
+        assert _find_hermes_md(tmp_path) == tmp_path / "MOOR.md"
 
     def test_prefers_lowercase(self, tmp_path):
         (tmp_path / ".hermes.md").write_text("lower")
-        (tmp_path / "HERMES.md").write_text("upper")
+        (tmp_path / "MOOR.md").write_text("upper")
         assert _find_hermes_md(tmp_path) == tmp_path / ".hermes.md"
 
     def test_walks_to_git_root(self, tmp_path):

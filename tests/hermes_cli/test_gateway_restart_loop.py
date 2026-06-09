@@ -30,7 +30,7 @@ class TestGatewayLifecyclePattern:
         "hermes gateway start",
         "hermes  gateway  restart",         # double spaces
         "Hermez Gateway Restart".lower().replace("z", "s"),  # case handled
-        "HERMES GATEWAY RESTART",           # uppercase
+        "MOOR GATEWAY RESTART",           # uppercase
     ])
     def test_hermes_gateway_commands(self, text):
         assert _contains_gateway_lifecycle_command(text), f"Should match: {text!r}"

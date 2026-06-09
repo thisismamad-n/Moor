@@ -785,7 +785,7 @@ class GatewaySlashCommandsMixin:
         return EphemeralReply(t("gateway.restart.restarting"))
 
     async def _handle_version_command(self, event: MessageEvent) -> str:
-        """Handle /version — show the running Hermes Agent version."""
+        """Handle /version — show the running Moor Agent version."""
         from hermes_cli.banner import format_banner_version_label
 
         return format_banner_version_label()
@@ -1295,7 +1295,7 @@ class GatewaySlashCommandsMixin:
 
         Same surface as the CLI handler in cli.py:
             /codex-runtime                  — show current state
-            /codex-runtime auto             — Hermes default runtime
+            /codex-runtime auto             — Moor default runtime
             /codex-runtime codex_app_server — codex subprocess runtime
             /codex-runtime on / off         — synonyms
 
@@ -3239,7 +3239,7 @@ class GatewaySlashCommandsMixin:
         return await loop.run_in_executor(None, _collect_and_upload)
 
     async def _handle_update_command(self, event: MessageEvent) -> str:
-        """Handle /update command — update Hermes Agent to the latest version.
+        """Handle /update command — update Moor Agent to the latest version.
 
         Spawns ``hermes update`` in a detached session (via ``setsid``) so it
         survives the gateway restart that ``hermes update`` may trigger. Marker
@@ -3267,7 +3267,7 @@ class GatewaySlashCommandsMixin:
                 return t("gateway.update.platform_not_messaging")
 
         if is_managed():
-            return f"✗ {format_managed_message('update Hermes Agent')}"
+            return f"✗ {format_managed_message('update Moor Agent')}"
 
         project_root = Path(__file__).parent.parent.resolve()
         git_dir = project_root / '.git'

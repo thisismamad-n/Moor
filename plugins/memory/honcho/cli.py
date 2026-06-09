@@ -163,7 +163,7 @@ def cmd_disable(args) -> None:
 def cmd_sync(args) -> None:
     """Sync Honcho config to all existing profiles.
 
-    Scans all Hermes profiles and creates host blocks for any that don't
+    Scans all Moor profiles and creates host blocks for any that don't
     have one yet. Inherits settings from the default host block.
     """
     try:
@@ -239,7 +239,7 @@ _profile_override: str | None = None
 
 
 def _host_key() -> str:
-    """Return the active Honcho host key, derived from the current Hermes profile."""
+    """Return the active Honcho host key, derived from the current Moor profile."""
     if _profile_override:
         if _profile_override in {"default", "custom"}:
             return HOST
@@ -434,7 +434,7 @@ def cmd_setup(args) -> None:
     write_path = _local_config_path()
     read_path = _config_path()
     print("\nHoncho memory setup\n" + "─" * 40)
-    print("  Honcho gives Hermes persistent cross-session memory.")
+    print("  Honcho gives Moor persistent cross-session memory.")
     print(f"  Config: {write_path}")
     if read_path != write_path and read_path.exists():
         print(f"  (seeding from existing config at {read_path})")
@@ -821,7 +821,7 @@ def cmd_setup(args) -> None:
 
 
 def _active_profile_name() -> str:
-    """Return the active Hermes profile name (respects --target-profile override)."""
+    """Return the active Moor profile name (respects --target-profile override)."""
     if _profile_override:
         return _profile_override
     try:
@@ -1103,7 +1103,7 @@ def cmd_peer(args) -> None:
         print(f"  User peer:   {user}")
         print("    Your identity in Honcho. Messages you send build this peer's card.")
         print(f"  AI peer:     {ai}")
-        print("    Hermes' identity in Honcho. Seed with 'hermes honcho identity <file>'.")
+        print("    Moor' identity in Honcho. Seed with 'hermes honcho identity <file>'.")
         print("    Dialectic calls ask this peer questions to warm session context.")
         print()
         print(f"  Dialectic reasoning:  {lvl}  ({', '.join(REASONING_LEVELS)})")
@@ -1225,7 +1225,7 @@ def cmd_tokens(args) -> None:
         print("    the user and session, injected directly into the system prompt.")
         print()
         print(f"  Dialectic   {d_chars} chars, reasoning: {d_level}")
-        print("    AI-to-AI inference. Hermes asks Honcho's AI peer a question")
+        print("    AI-to-AI inference. Moor asks Honcho's AI peer a question")
         print("    (e.g. \"what were we working on?\") and Honcho runs its own model")
         print("    to synthesize an answer. Used for first-turn session continuity.")
         print("    Level controls how much reasoning Honcho spends on the answer.")
@@ -1324,7 +1324,7 @@ def cmd_identity(args) -> None:
 
 
 def cmd_migrate(args) -> None:
-    """Step-by-step migration guide: OpenClaw native memory → Hermes + Honcho."""
+    """Step-by-step migration guide: OpenClaw native memory → Moor + Honcho."""
     from pathlib import Path
 
     # ── Detect OpenClaw native memory files ──────────────────────────────────
@@ -1352,7 +1352,7 @@ def cmd_migrate(args) -> None:
     cfg = _read_config()
     has_key = bool(_resolve_api_key(cfg))
 
-    print("\nHoncho migration: OpenClaw native memory → Hermes\n" + "─" * 50)
+    print("\nHoncho migration: OpenClaw native memory → Moor\n" + "─" * 50)
     print()
     print("  OpenClaw's native memory stores context in local markdown files")
     print("  (USER.md, MEMORY.md, SOUL.md, ...) and injects them via QMD search.")
@@ -1369,7 +1369,7 @@ def cmd_migrate(args) -> None:
         print(f"  Honcho API key already configured: {masked}")
         print("  Skip to Step 2.")
     else:
-        print("  Honcho is a cloud memory service that gives Hermes persistent memory")
+        print("  Honcho is a cloud memory service that gives Moor persistent memory")
         print("  across sessions. You need an API key to use it.")
         print()
         print("  1. Get your API key at https://app.honcho.dev")
@@ -1416,7 +1416,7 @@ def cmd_migrate(args) -> None:
         print()
         print("  These are picked up automatically the first time you run 'hermes'")
         print("  with Honcho configured and no prior session history.")
-        print("  (Hermes calls migrate_memory_files() on first session init.)")
+        print("  (Moor calls migrate_memory_files() on first session init.)")
         print()
         print("  If you want to migrate them now without starting a session:")
         for f in user_files:
@@ -1463,7 +1463,7 @@ def cmd_migrate(args) -> None:
     print("  agent's character, capabilities, and behavioral rules. In OpenClaw")
     print("  these are injected via file search at prompt-build time.")
     print()
-    print("  In Hermes, they are seeded once into Honcho's AI peer through the")
+    print("  In Moor, they are seeded once into Honcho's AI peer through the")
     print("  observation pipeline. Honcho builds a representation from them and")
     print("  from every subsequent assistant message (observe_me=True). Over time")
     print("  the representation reflects actual behavior, not just declaration.")
@@ -1510,17 +1510,17 @@ def cmd_migrate(args) -> None:
     print()
     print("  Storage")
     print("    OpenClaw: markdown files on disk, searched via QMD at prompt-build time.")
-    print("    Hermes:   cloud-backed Honcho peers. Files can stay on disk as source")
+    print("    Moor:   cloud-backed Honcho peers. Files can stay on disk as source")
     print("              of truth; Honcho holds the live representation.")
     print()
     print("  Context injection")
     print("    OpenClaw: file excerpts injected synchronously before each LLM call.")
-    print("    Hermes:   Honcho context fetched async at turn end, injected next turn.")
+    print("    Moor:   Honcho context fetched async at turn end, injected next turn.")
     print("              First turn has no Honcho context; subsequent turns are loaded.")
     print()
     print("  Memory growth")
     print("    OpenClaw: you edit files manually to update memory.")
-    print("    Hermes:   Honcho observes every message and updates representations")
+    print("    Moor:   Honcho observes every message and updates representations")
     print("              automatically. Files become the seed, not the live store.")
     print()
     print("  Honcho tools (available to the agent during conversation)")
@@ -1532,7 +1532,7 @@ def cmd_migrate(args) -> None:
     print()
     print("  Session naming")
     print("    OpenClaw: no persistent session concept — files are global.")
-    print("    Hermes:   per-session by default — each run gets its own session")
+    print("    Moor:   per-session by default — each run gets its own session")
     print("              Map a custom name:  hermes honcho map <session-name>")
 
     # ── Step 6: Next steps ────────────────────────────────────────────────────
@@ -1689,7 +1689,7 @@ def register_cli(subparser) -> None:
 
     subs.add_parser(
         "migrate",
-        help="Step-by-step migration guide from openclaw-honcho to Hermes Honcho",
+        help="Step-by-step migration guide from openclaw-honcho to Moor Honcho",
     )
     subs.add_parser("enable", help="Enable Honcho for the active profile")
     subs.add_parser("disable", help="Disable Honcho for the active profile")

@@ -188,7 +188,7 @@ def build_gateway_parser(subparsers, *, cmd_gateway: Callable, cmd_proxy: Callab
         "migrate-legacy",
         help="Remove legacy hermes.service units from pre-rename installs",
         description=(
-            "Stop, disable, and remove legacy Hermes gateway unit files "
+            "Stop, disable, and remove legacy Moor gateway unit files "
             "(e.g. hermes.service) left over from older installs. Profile "
             "units (hermes-gateway-<profile>.service) and unrelated "
             "third-party services are never touched."

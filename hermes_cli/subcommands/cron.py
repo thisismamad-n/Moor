@@ -72,7 +72,7 @@ def build_cron_parser(subparsers, *, cmd_cron: Callable) -> None:
     )
     cron_create.add_argument(
         "--profile",
-        help="Hermes profile name to run the job under. Use 'default' for the root profile. Named profiles must already exist. Omit to preserve the scheduler's existing profile.",
+        help="Moor profile name to run the job under. Use 'default' for the root profile. Named profiles must already exist. Omit to preserve the scheduler's existing profile.",
     )
 
     # cron edit
@@ -140,7 +140,7 @@ def build_cron_parser(subparsers, *, cmd_cron: Callable) -> None:
     )
     cron_edit.add_argument(
         "--profile",
-        help="Hermes profile name to run the job under. Use 'default' for the root profile. Pass empty string to clear.",
+        help="Moor profile name to run the job under. Use 'default' for the root profile. Pass empty string to clear.",
     )
 
     # lifecycle actions

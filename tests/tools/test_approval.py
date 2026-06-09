@@ -517,7 +517,7 @@ class TestHermesConfigWriteProtection:
         assert dangerous is False
 
     def test_normal_yaml_write_safe(self):
-        # A non-Hermes config.yaml in a project dir is handled by the project
+        # A non-Moor config.yaml in a project dir is handled by the project
         # patterns, but a plain temp write must not false-positive.
         dangerous, key, desc = detect_dangerous_command("echo data > /tmp/scratch.txt")
         assert dangerous is False

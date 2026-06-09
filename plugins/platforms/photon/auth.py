@@ -22,7 +22,7 @@ as ``PHOTON_PROJECT_ID`` for the runtime is the **spectrumProjectId**, not
 the Dashboard ``id``.  The Dashboard ``id`` is kept only for management
 calls.
 
-Credential storage mirrors every other Hermes channel:
+Credential storage mirrors every other Moor channel:
 
     * runtime SDK creds  -> ``~/.hermes/.env``  (``PHOTON_PROJECT_ID`` =
       spectrumProjectId, ``PHOTON_PROJECT_SECRET``) via ``save_env_value``
@@ -64,15 +64,15 @@ class PhotonDashboardAuthError(RuntimeError):
 # endpoint — an unregistered client_id is rejected with
 # `400 {"error":"invalid_client"}`.  Use Photon's published CLI device
 # client (matches `CLI_CLIENT_ID` in photon-hq/cli) until the dashboard API
-# registers Hermes as its own client_id.
+# registers Moor as its own client_id.
 DEFAULT_CLIENT_ID = "photon-cli"
 DEFAULT_SCOPE = "openid profile email"
 
 DEFAULT_DASHBOARD_HOST = "https://app.photon.codes"
 DEFAULT_SPECTRUM_HOST = "https://spectrum.photon.codes"
 
-# Default name of the project Hermes provisions for the operator.
-DEFAULT_PROJECT_NAME = "Hermes Agent"
+# Default name of the project Moor provisions for the operator.
+DEFAULT_PROJECT_NAME = "Moor Agent"
 
 # Polling defaults per RFC 8628.  Photon overrides via `interval` /
 # `expires_in` in the device-code response — those win.
@@ -86,7 +86,7 @@ E164_RE = re.compile(r"^\+[1-9]\d{6,14}$")
 # auth.json helpers — share the file with the rest of hermes-agent.
 
 def _auth_json_path() -> Path:
-    """Resolve ``~/.hermes/auth.json`` honouring the active Hermes profile."""
+    """Resolve ``~/.hermes/auth.json`` honouring the active Moor profile."""
     try:
         from hermes_constants import get_hermes_home
         return Path(get_hermes_home()) / "auth.json"

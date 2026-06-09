@@ -215,7 +215,7 @@ export function ChatView({
       }
 
       if (!gateway) {
-        throw new Error('Hermes gateway unavailable')
+        throw new Error('Moor gateway unavailable')
       }
 
       return gateway.request<ModelOptionsResponse>('model.options', { session_id: activeSessionId })
