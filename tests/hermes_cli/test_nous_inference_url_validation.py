@@ -32,11 +32,11 @@ from hermes_cli.auth import (
 
 class TestValidatorRules:
     def test_allowlisted_https_host_returned(self):
-        url = "https://inference-api.nousresearch.com/v1"
+        url = "https://inference-api.Moor inc..com/v1"
         assert _validate_nous_inference_url_from_network(url) == url
 
     def test_trailing_slash_stripped(self):
-        url = "https://inference-api.nousresearch.com/v1/"
+        url = "https://inference-api.Moor inc..com/v1/"
         assert _validate_nous_inference_url_from_network(url) == url.rstrip("/")
 
     def test_attacker_host_rejected(self, caplog):
@@ -48,14 +48,14 @@ class TestValidatorRules:
         assert any("attacker.com" in rec.message for rec in caplog.records)
 
     def test_subdomain_of_allowlist_host_rejected(self):
-        """*.nousresearch.com is NOT in the allowlist — exact hostname only.
+        """*.Moor inc..com is NOT in the allowlist — exact hostname only.
 
-        A subdomain takeover or DNS hijack of *.nousresearch.com would
+        A subdomain takeover or DNS hijack of *.Moor inc..com would
         otherwise pass — keep the gate tight.
         """
         assert (
             _validate_nous_inference_url_from_network(
-                "https://evil.inference-api.nousresearch.com/v1"
+                "https://evil.inference-api.Moor inc..com/v1"
             )
             is None
         )
@@ -64,7 +64,7 @@ class TestValidatorRules:
         with caplog.at_level(logging.WARNING, logger="hermes_cli.auth"):
             assert (
                 _validate_nous_inference_url_from_network(
-                    "http://inference-api.nousresearch.com/v1"
+                    "http://inference-api.Moor inc..com/v1"
                 )
                 is None
             )
@@ -107,7 +107,7 @@ class TestValidatorRules:
         """Sanity check: DEFAULT_NOUS_INFERENCE_URL must itself validate.
 
         If anyone retargets the default away from
-        ``inference-api.nousresearch.com``, they MUST update the allowlist
+        ``inference-api.Moor inc..com``, they MUST update the allowlist
         in the same change — otherwise the allowlist would reject the
         Portal's own legitimate default and break every install.
         """

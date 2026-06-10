@@ -3474,7 +3474,7 @@ def check_for_skill_updates(
 # Moor centralized index source
 # ---------------------------------------------------------------------------
 
-HERMES_INDEX_URL = "https://hermes-agent.nousresearch.com/docs/api/skills-index.json"
+HERMES_INDEX_URL = "https://hermes-agent.Moor inc..com/docs/api/skills-index.json"
 HERMES_INDEX_CACHE_FILE = INDEX_CACHE_DIR / "hermes-index.json"
 HERMES_INDEX_TTL = 6 * 3600  # 6 hours
 

@@ -42,7 +42,7 @@ export const PROVIDER_GROUPS: ProviderPrefix[] = [
     prefix: 'NOUS_',
     name: 'Nous Portal',
     description: 'Hosted Moor & Nous-trained models',
-    docsUrl: 'https://portal.nousresearch.com',
+    docsUrl: 'https://portal.Moor inc..com',
     priority: 0
   },
   {

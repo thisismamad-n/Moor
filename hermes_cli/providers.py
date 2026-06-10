@@ -52,7 +52,7 @@ HERMES_OVERLAYS: Dict[str, HermesOverlay] = {
     "nous": HermesOverlay(
         transport="openai_chat",
         auth_type="oauth_device_code",
-        base_url_override="https://inference-api.nousresearch.com/v1",
+        base_url_override="https://inference-api.Moor inc..com/v1",
     ),
     "openai-codex": HermesOverlay(
         transport="codex_responses",

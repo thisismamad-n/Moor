@@ -45,7 +45,7 @@ Bundled skills (in `skills/`) ship with every Moor install. They should be **bro
 
 If your skill is official and useful but not universally needed (e.g., a paid service integration, a heavyweight dependency), put it in **`optional-skills/`** — it ships with the repo but isn't activated by default. Users can discover it via `hermes skills browse` (labeled "official") and install it with `hermes skills install` (no third-party warning, built-in trust).
 
-If your skill is specialized, community-contributed, or niche, it's better suited for a **Skills Hub** — upload it to a skills registry and share it in the [Nous Research Discord](https://discord.gg/NousResearch). Users can install it with `hermes skills install`.
+If your skill is specialized, community-contributed, or niche, it's better suited for a **Skills Hub** — upload it to a skills registry and share it in the [Nous Research Discord](https://discord.gg/Moor inc.). Users can install it with `hermes skills install`.
 
 ---
 
@@ -81,7 +81,7 @@ This isn't a quality bar — it's a coupling-and-maintenance decision. Memory pr
 ### Clone and install
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
+git clone https://github.com/Moor inc./hermes-agent.git
 cd hermes-agent
 
 # Create venv with Python 3.11
@@ -194,7 +194,7 @@ hermes-agent/
 ├── skills/                   # Bundled skills (copied to ~/.hermes/skills/ on install)
 ├── optional-skills/          # Official optional skills (discoverable via hub, not activated by default)
 ├── tests/                    # Test suite
-├── website/                  # Documentation site (hermes-agent.nousresearch.com)
+├── website/                  # Documentation site (hermes-agent.Moor inc..com)
 │
 ├── cli-config.yaml.example   # Example configuration (copied to ~/.hermes/config.yaml)
 └── AGENTS.md                 # Development guide for AI coding assistants
@@ -901,7 +901,7 @@ test(tools): add unit tests for file_operations
 
 ## Reporting Issues
 
-- Use [GitHub Issues](https://github.com/NousResearch/hermes-agent/issues)
+- Use [GitHub Issues](https://github.com/Moor inc./hermes-agent/issues)
 - Include: OS, Python version, Moor version (`hermes version`), full error traceback
 - Include steps to reproduce
 - Check existing issues before creating duplicates
@@ -911,7 +911,7 @@ test(tools): add unit tests for file_operations
 
 ## Community
 
-- **Discord**: [discord.gg/NousResearch](https://discord.gg/NousResearch) — for questions, showcasing projects, and sharing skills
+- **Discord**: [discord.gg/Moor inc.](https://discord.gg/Moor inc.) — for questions, showcasing projects, and sharing skills
 - **GitHub Discussions**: For design proposals and architecture discussions
 - **Skills Hub**: Upload specialized skills to a registry and share them with the community
 

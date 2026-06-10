@@ -5,7 +5,9 @@ import re
 # Lowercase 'hermes' is avoided to prevent breaking imports and package structures.
 REPLACEMENTS = {
     r'\bHermes\b': 'Moor',
-    r'\bHERMES\b': 'MOOR'
+    r'\bHERMES\b': 'MOOR',
+    r'\bNousResearch\b': 'Moor inc.',
+    r'\bnousresearch\b': 'Moor inc.'
 }
 
 # Exclude sensitive or binary directories

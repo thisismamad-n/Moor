@@ -48,21 +48,21 @@ Pick the row that matches your goal:
 
 ## 1. Install Moor Agent
 ### With the Moor Desktop installer on macOS or Windows (recommended)
-To easily install the command-line and desktop applications, [download the Moor Desktop installer](https://hermes-agent.nousresearch.com/desktop) from our website and run it.
+To easily install the command-line and desktop applications, [download the Moor Desktop installer](https://hermes-agent.Moor inc..com/desktop) from our website and run it.
 
 ### Without Moor Desktop:
 For a command-line only install without Moor Desktop, run:
 
 #### Linux / macOS / WSL2 / Android (Termux)
 ```bash
-curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+curl -fsSL https://hermes-agent.Moor inc..com/install.sh | bash
 ```
 
 #### Windows (native)
 
 Run in powershell:
 ```powershell
-iex (irm https://hermes-agent.nousresearch.com/install.ps1) 
+iex (irm https://hermes-agent.Moor inc..com/install.ps1) 
 ```
 
 :::tip Android / Termux

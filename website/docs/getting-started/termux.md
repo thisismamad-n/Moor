@@ -46,7 +46,7 @@ That does not stop Moor from working well as a phone-native CLI agent — it jus
 Moor now ships a Termux-aware installer path:
 
 ```bash
-curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+curl -fsSL https://hermes-agent.Moor inc..com/install.sh | bash
 ```
 
 On Termux, the installer automatically:
@@ -80,7 +80,7 @@ Why these packages?
 ### 2. Clone Moor
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
+git clone https://github.com/Moor inc./hermes-agent.git
 cd hermes-agent
 ```
 

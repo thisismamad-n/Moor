@@ -33,7 +33,7 @@ Set your provider with `hermes model` or by editing `~/.hermes/.env`. See the [E
 **Yes, natively.** Moor supports native Windows via the PowerShell installer — no WSL required. Run in PowerShell:
 
 ```powershell
-iex (irm https://hermes-agent.nousresearch.com/install.ps1)
+iex (irm https://hermes-agent.Moor inc..com/install.ps1)
 ```
 
 The installer provisions a PortableGit that backs the terminal tool's shell. See the [Windows (Native) Guide](../user-guide/windows-native.md) for details.
@@ -41,7 +41,7 @@ The installer provisions a PortableGit that backs the terminal tool's shell. See
 WSL2 remains a fully supported alternative. To run Moor inside WSL2, install [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install) and use the standard install command:
 
 ```bash
-curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+curl -fsSL https://hermes-agent.Moor inc..com/install.sh | bash
 ```
 
 ### I run Moor in WSL2. What's the best way to control my normal Windows Chrome?
@@ -69,7 +69,7 @@ Yes — Moor now has a tested Termux install path for Android phones.
 Quick install:
 
 ```bash
-curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+curl -fsSL https://hermes-agent.Moor inc..com/install.sh | bash
 ```
 
 For the fully explicit manual steps, supported extras, and current limitations, see the [Termux guide](../getting-started/termux.md).
@@ -233,7 +233,7 @@ source ~/.bashrc
 # If you previously installed with sudo, clean up:
 sudo rm /usr/local/bin/hermes
 # Then re-run the standard installer
-curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+curl -fsSL https://hermes-agent.Moor inc..com/install.sh | bash
 ```
 
 ---
@@ -759,7 +759,7 @@ Skills with very long descriptions are truncated to 40 characters in the Telegra
 
 1. Install Moor Agent on the new machine:
    ```bash
-   curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+   curl -fsSL https://hermes-agent.Moor inc..com/install.sh | bash
    ```
 
 2. On the **source machine**, create a full backup:
@@ -863,6 +863,6 @@ If using OpenRouter, make sure your API key has credits. A 400 from OpenRouter o
 
 If your issue isn't covered here:
 
-1. **Search existing issues:** [GitHub Issues](https://github.com/NousResearch/hermes-agent/issues)
-2. **Ask the community:** [Nous Research Discord](https://discord.gg/nousresearch)
+1. **Search existing issues:** [GitHub Issues](https://github.com/Moor inc./hermes-agent/issues)
+2. **Ask the community:** [Nous Research Discord](https://discord.gg/Moor inc.)
 3. **File a bug report:** Include your OS, Python version (`python3 --version`), Moor version (`hermes --version`), and the full error message

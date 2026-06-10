@@ -360,7 +360,7 @@ def detect_install_method(project_root: Optional[Path] = None) -> str:
     container detection here:
       - the curl installer (scripts/install.sh, the README/website install
         command) git-clones the repo and stamps ``git``;
-      - the published ``nousresearch/hermes-agent`` image stamps ``docker``
+      - the published ``Moor inc./hermes-agent`` image stamps ``docker``
         at boot via ``docker/stage2-hook.sh``.
     An unsupported manual install dropped into a container (no stamp) was
     wrongly classified as the published image by bare container detection,
@@ -430,7 +430,7 @@ def recommended_update_command_for_method(method: str) -> str:
     if method == "homebrew":
         return "brew upgrade hermes-agent"
     if method == "docker":
-        return "docker pull nousresearch/hermes-agent:latest"
+        return "docker pull Moor inc./hermes-agent:latest"
     if method == "pip":
         if is_uv_tool_install():
             return "uv tool upgrade hermes-agent"
@@ -468,23 +468,23 @@ def recommended_update_command() -> str:
 _DOCKER_UPDATE_MESSAGE = """\
 ✗ ``hermes update`` doesn't apply inside the Docker container.
 
-Moor Agent runs as a published image (nousresearch/hermes-agent), not a
+Moor Agent runs as a published image (Moor inc./hermes-agent), not a
 git checkout — the container has no working tree to pull into.  Update by
 pulling a fresh image and restarting your container instead:
 
-  docker pull nousresearch/hermes-agent:latest
+  docker pull Moor inc./hermes-agent:latest
   # then restart whatever started the container, e.g.:
   docker compose up -d --force-recreate hermes-agent
   # or, for ad-hoc runs, exit the current container and `docker run` again
 
 Verify the new version after restart:
-  docker run --rm nousresearch/hermes-agent:latest --version
+  docker run --rm Moor inc./hermes-agent:latest --version
 
 Notes:
   • If you pinned a specific tag (e.g. ``:v0.14.0``) the ``:latest`` tag
     won't move your container — pull the newer tag you actually want, or
     switch to ``:latest`` / ``:main`` for rolling updates.  See available
-    tags at https://hub.docker.com/r/nousresearch/hermes-agent/tags
+    tags at https://hub.docker.com/r/Moor inc./hermes-agent/tags
   • Your config and session history live under ``$HERMES_HOME`` (``/opt/data``
     in the container, typically bind-mounted from the host) and persist
     across image upgrades — re-pulling doesn't lose any state.
@@ -1491,7 +1491,7 @@ DEFAULT_CONFIG = {
         # touch config.yaml. Local dev / non-Fly deploys can set either
         # surface; missing values fall through to the plugin's defaults
         # (no provider registered when ``client_id`` is empty;
-        # ``portal_url`` defaults to https://portal.nousresearch.com).
+        # ``portal_url`` defaults to https://portal.Moor inc..com).
         "oauth": {
             "client_id": "",  # agent:{instance_id} — Portal provisions this
             "portal_url": "",  # blank → use plugin default (production Portal)
@@ -2127,7 +2127,7 @@ DEFAULT_CONFIG = {
     # The default URL is served by the docs site GitHub Pages deploy.
     "model_catalog": {
         "enabled": True,
-        "url": "https://hermes-agent.nousresearch.com/docs/api/model-catalog.json",
+        "url": "https://hermes-agent.Moor inc..com/docs/api/model-catalog.json",
         # Disk cache TTL in hours.  Beyond this, the CLI refetches on the
         # next /model or `hermes model` invocation; network failures
         # silently fall back to the stale cache.
@@ -2905,7 +2905,7 @@ OPTIONAL_ENV_VARS = {
         "advanced": True,
     },
     "TOOL_GATEWAY_DOMAIN": {
-        "description": "Shared tool-gateway domain suffix for Nous Subscribers only, used to derive vendor hosts, e.g. nousresearch.com -> firecrawl-gateway.nousresearch.com",
+        "description": "Shared tool-gateway domain suffix for Nous Subscribers only, used to derive vendor hosts, e.g. Moor inc..com -> firecrawl-gateway.Moor inc..com",
         "prompt": "Tool-gateway domain suffix",
         "url": None,
         "password": False,

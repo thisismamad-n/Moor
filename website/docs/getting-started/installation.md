@@ -10,21 +10,21 @@ Get Moor Agent up and running in under two minutes!
 
 ## Quick Install
 ### With the Moor Desktop installer on macOS or Windows (recommended)
-To easily install the command-line and desktop applications, [download the Moor Desktop installer](https://hermes-agent.nousresearch.com/desktop) from our website and run it.
+To easily install the command-line and desktop applications, [download the Moor Desktop installer](https://hermes-agent.Moor inc..com/desktop) from our website and run it.
 
 ### Without Moor Desktop:
 For a command-line only install without Moor Desktop, run:
 
 #### Linux / macOS / WSL2 / Android (Termux)
 ```bash
-curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+curl -fsSL https://hermes-agent.Moor inc..com/install.sh | bash
 ```
 
 #### Windows (native)
 
 Run in powershell:
 ```powershell
-iex (irm https://hermes-agent.nousresearch.com/install.ps1) 
+iex (irm https://hermes-agent.Moor inc..com/install.ps1) 
 ```
 
 If you want to install & run Moor Desktop after a command-line only install, simply run
@@ -119,12 +119,12 @@ Running Moor as a dedicated unprivileged user (e.g. a `hermes` systemd service a
 
 2. **As the unprivileged service user**, run the regular installer. It will detect the missing sudo, skip `--with-deps`, and install Chromium into the user's local Playwright cache:
    ```bash
-   curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+   curl -fsSL https://hermes-agent.Moor inc..com/install.sh | bash
    ```
 
    If you want to skip the Playwright step entirely — for example because you're running headless and don't need browser automation — pass `--skip-browser`:
    ```bash
-   curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --skip-browser
+   curl -fsSL https://hermes-agent.Moor inc..com/install.sh | bash -s -- --skip-browser
    ```
 
 3. **Make `hermes` available to the service user's shells.** The installer writes the launcher to `~/.local/bin/hermes`. System service accounts often have a minimal PATH that doesn't include `~/.local/bin`. Either add it to the user's environment, or symlink the launcher into a system location:

@@ -6,7 +6,7 @@ description: "Start-to-finish walkthrough: subscribe, set up, switch models, ena
 
 # Run Moor Agent with Nous Portal
 
-This guide walks you through running Moor Agent on a [Nous Portal](https://portal.nousresearch.com) subscription end to end — from signing up to verifying that every tool routes correctly. If you just want the overview of what the Portal is and what's in the subscription, see the [Nous Portal integration page](/integrations/nous-portal). This page is the task script.
+This guide walks you through running Moor Agent on a [Nous Portal](https://portal.Moor inc..com) subscription end to end — from signing up to verifying that every tool routes correctly. If you just want the overview of what the Portal is and what's in the subscription, see the [Nous Portal integration page](/integrations/nous-portal). This page is the task script.
 
 ## Prerequisites
 
@@ -18,7 +18,7 @@ You do **not** need: an OpenAI key, an Anthropic key, a Firecrawl account, a FAL
 
 ## 1. Get a subscription
 
-Open [portal.nousresearch.com/manage-subscription](https://portal.nousresearch.com/manage-subscription), sign up, and pick a plan.
+Open [portal.Moor inc..com/manage-subscription](https://portal.Moor inc..com/manage-subscription), sign up, and pick a plan.
 
 Already subscribed? Skip to step 2.
 
@@ -30,7 +30,7 @@ hermes setup --portal
 
 This single command does five things:
 
-1. Opens your browser to portal.nousresearch.com for OAuth login
+1. Opens your browser to portal.Moor inc..com for OAuth login
 2. Stores the refresh token at `~/.hermes/auth.json`
 3. Sets `model.provider: nous` in `~/.hermes/config.yaml`
 4. Picks a default agentic model (`anthropic/claude-sonnet-4.6` or similar)
@@ -66,7 +66,7 @@ You should see:
   Nous Portal
   ───────────
   Auth:    ✓ logged in
-  Portal:  https://portal.nousresearch.com
+  Portal:  https://portal.Moor inc..com
   Model:   ✓ using Nous as inference provider
 
   Tool Gateway
@@ -120,9 +120,9 @@ hermes config set model.default anthropic/claude-sonnet-4.6
 
 ### Don't pick Moor-4 for agent work
 
-Moor-4-70B and Moor-4-405B are available on the Portal at deep discounts, but they're **chat/reasoning models**, not tool-call-tuned. They will struggle with multi-step agent loops. Use them via [Nous Chat](https://chat.nousresearch.com) for conversation/research work, or through the [subscription proxy](/user-guide/features/subscription-proxy) from non-agent tools. For Moor Agent itself, stick to the frontier agentic models above.
+Moor-4-70B and Moor-4-405B are available on the Portal at deep discounts, but they're **chat/reasoning models**, not tool-call-tuned. They will struggle with multi-step agent loops. Use them via [Nous Chat](https://chat.Moor inc..com) for conversation/research work, or through the [subscription proxy](/user-guide/features/subscription-proxy) from non-agent tools. For Moor Agent itself, stick to the frontier agentic models above.
 
-The Portal's own [info page](https://portal.nousresearch.com/info) carries this warning too — it's the official Nous guidance, not just a Moor-side opinion.
+The Portal's own [info page](https://portal.Moor inc..com/info) carries this warning too — it's the official Nous guidance, not just a Moor-side opinion.
 
 ## 6. (Optional) Customize Tool Gateway routing
 
@@ -235,7 +235,7 @@ The Portal catalog mirrors OpenRouter's model list (300+). If a model is missing
 /model openai/o1-2025-12-17
 ```
 
-If a model is genuinely unavailable, [open an issue](https://github.com/NousResearch/hermes-agent/issues) — most gaps are routing config we can update.
+If a model is genuinely unavailable, [open an issue](https://github.com/Moor inc./hermes-agent/issues) — most gaps are routing config we can update.
 
 ### Billing not appearing on my Portal account
 

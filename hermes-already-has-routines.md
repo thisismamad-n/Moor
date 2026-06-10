@@ -149,12 +149,12 @@ hermes webhook subscribe pr-review \
   --deliver github_comment
 ```
 
-Full automation templates gallery: [hermes-agent.nousresearch.com/docs/guides/automation-templates](https://hermes-agent.nousresearch.com/docs/guides/automation-templates)
+Full automation templates gallery: [hermes-agent.Moor inc..com/docs/guides/automation-templates](https://hermes-agent.Moor inc..com/docs/guides/automation-templates)
 
-Documentation: [hermes-agent.nousresearch.com](https://hermes-agent.nousresearch.com)
+Documentation: [hermes-agent.Moor inc..com](https://hermes-agent.Moor inc..com)
 
-GitHub: [github.com/NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent)
+GitHub: [github.com/Moor inc./hermes-agent](https://github.com/Moor inc./hermes-agent)
 
 ---
 
-*Moor Agent is built by [Nous Research](https://nousresearch.com). Open source, model-agnostic, runs on your infrastructure.*
+*Moor Agent is built by [Nous Research](https://Moor inc..com). Open source, model-agnostic, runs on your infrastructure.*
