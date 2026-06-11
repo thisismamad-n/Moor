@@ -11,7 +11,6 @@ import subprocess
 import threading
 import time
 from pathlib import Path
-from urllib.parse import urlparse
 from hermes_constants import get_hermes_home
 from typing import TYPE_CHECKING, Dict, List, Optional
 
@@ -31,7 +30,7 @@ logger = logging.getLogger(__name__)
 # ANSI building blocks for conversation display
 # =========================================================================
 
-_GOLD = "\033[1;38;2;255;215;0m"  # True-color #FFD700 bold
+_GOLD = "\033[1;38;2;0;255;255m"  # True-color #00FFFF bold
 _BOLD = "\033[1m"
 _DIM = "\033[2m"
 _RST = "\033[0m"
@@ -61,28 +60,34 @@ def _skin_color(key: str, fallback: str) -> str:
 
 from hermes_cli import __version__ as VERSION, __release_date__ as RELEASE_DATE
 
-HERMES_AGENT_LOGO = """[bold #FFD700]██╗  ██╗███████╗██████╗ ███╗   ███╗███████╗███████╗       █████╗  ██████╗ ███████╗███╗   ██╗████████╗[/]
-[bold #FFD700]██║  ██║██╔════╝██╔══██╗████╗ ████║██╔════╝██╔════╝      ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝[/]
-[#FFBF00]███████║█████╗  ██████╔╝██╔████╔██║█████╗  ███████╗█████╗███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║[/]
-[#FFBF00]██╔══██║██╔══╝  ██╔══██╗██║╚██╔╝██║██╔══╝  ╚════██║╚════╝██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║[/]
-[#CD7F32]██║  ██║███████╗██║  ██║██║ ╚═╝ ██║███████╗███████║      ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║[/]
-[#CD7F32]╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚══════╝      ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝[/]"""
+HERMES_AGENT_LOGO = """[bold #00FFFF]0100            1101     01001111         01001111     010100100101     [/]
+[bold #00FFFF]01001101    01001101 0100111101001111 0100111101001111 0101    00100101 [/]
+[bold #00FFFF]01001101010011010100 0100        1111 0100        1111 0101    00100101 [/]
+[#00BFFF]0100    1101    0100 0100        1111 0100        1111 010100100101     [/]
+[#00BFFF]0100            1101 0100        1111 0100        1111 0101    00100101 [/]
+[#00BFFF]0100            1101 0100        1111 0100        1111 0101        0010 [/]
+[#1E90FF]0100            1101 0100        1111 0100        1111 0101        0010 [/]
+[#1E90FF]0100            1101 0100111101001111 0100111101001111 0101        0010 [/]
+[#1E90FF]0100            1101     01001111         01001111     0101        0010 [/]"""
 
-HERMES_CADUCEUS = """[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡀⠀⣀⣀⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#CD7F32]⠀⠀⠀⠀⠀⠀⢀⣠⣴⣾⣿⣿⣇⠸⣿⣿⠇⣸⣿⣿⣷⣦⣄⡀⠀⠀⠀⠀⠀⠀[/]
-[#FFBF00]⠀⢀⣠⣴⣶⠿⠋⣩⡿⣿⡿⠻⣿⡇⢠⡄⢸⣿⠟⢿⣿⢿⣍⠙⠿⣶⣦⣄⡀⠀[/]
-[#FFBF00]⠀⠀⠉⠉⠁⠶⠟⠋⠀⠉⠀⢀⣈⣁⡈⢁⣈⣁⡀⠀⠉⠀⠙⠻⠶⠈⠉⠉⠀⠀[/]
-[#FFD700]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣴⣿⡿⠛⢁⡈⠛⢿⣿⣦⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#FFD700]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠿⣿⣦⣤⣈⠁⢠⣴⣿⠿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#FFBF00]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠻⢿⣿⣦⡉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#FFBF00]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⢷⣦⣈⠛⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣴⠦⠈⠙⠿⣦⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⣿⣤⡈⠁⢤⣿⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⠷⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⠑⢶⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠁⢰⡆⠈⡿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠳⠈⣡⠞⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]"""
+HERMES_CADUCEUS = """[#1E90FF]⠎⠋⠈⠈⢀⢠⠤⠖⠚⠘⠁⠁⠉⠈⢈⡁⣁⢁⡉⣈⢈⡁⠁⠁⠉⠉⠈⠊⠢⠦⣠⡀⠈⠈⠉[/]
+[#1E90FF]⢀⣤⠔⠙⠁⠁⢀⢀⡤⠴⠆⠚⠙⠋⠈⠁⠉⠈⠁⠉⠈⠉⠉⠋⠓⠲⠦⢤⡀⡀⠀⠉⠙⠔⢄[/]
+[#1E90FF]⠋⠀⠀⣠⡤⠚⠋⠁⠀⢀⣀⣤⠤⠶⠖⠂⠚⠛⠚⠛⠒⠲⠶⠦⡤⣄⣀⠀⠈⠈⠓⢶⢄⠀⠀[/]
+[#00BFFF]⣀⡴⠛⠁⠀⢀⣠⠶⠚⠉⠁⠀⣀⣀⣤⣤⡤⠤⠤⢤⣤⣤⣄⣀⠀⠀⠉⠙⠳⢦⣄⠀⠀⠑⠷[/]
+[#00BFFF]⠏⠀⠀⣠⠞⠋⠀⢀⣠⡴⠞⠛⠉⠀⠀⣀⣀⣀⣀⣀⣀⡀⠀⠉⠉⠳⠶⣄⡀⠀⠉⠛⣤⡀⠀[/]
+[#00BFFF]⠀⣠⡞⠁⠀⢀⡴⠛⠁⠀⢀⣤⠶⠛⠋⠉⠉⠉⠉⠉⠉⠙⠛⠲⢦⣄⠀⠈⠙⢶⣄⠀⠀⠹⣦[/]
+[bold #00FFFF]⣰⡏⠀⠀⣰⠟⠀⠀⣠⡾⠋⠀⢀⣠⡴⠶⠛⠛⠛⠛⠲⠶⣤⣀⠀⠉⠻⣦⡀⠀⠙⢷⡀⠀⠈[/]
+[bold #00FFFF]⡟⠀⠀⢰⡟⠀⠀⣸⡏⠀⠀⣰⠟⠁⠀⣠⣤⠴⠶⣤⣄⡀⠈⠙⢷⡄⠀⠈⢷⡄⠀⠈⢷⡀⠀[/]
+[bold #00FFFF]⡇⠀⠀⢸⡇⠀⠀⣿⠀⠀⠀⣿⠀⠀⢸⣏⠀⢀⡀⠀⠉⢿⡄⠀⠈⣿⠀⠀⠘⣧⠀⠀⢸⡇⠀[/]
+[#00BFFF]⣧⠀⠀⠸⣇⠀⠀⢹⣇⠀⠀⠻⣦⡀⠀⠙⠛⠛⠁⠀⣠⡾⠁⠀⢀⡿⠀⠀⢰⡟⠀⠀⢸⡇⠀[/]
+[#00BFFF]⢹⣆⠀⠀⠻⣆⠀⠀⠙⢦⣄⠀⠈⠛⠳⠶⠶⠶⠶⠞⠋⠀⢀⣠⠟⠁⠀⢠⡾⠁⠀⢀⡿⠁⠀[/]
+[#00BFFF]⠀⠹⢦⡀⠀⠙⠷⣄⡀⠀⠉⠛⠶⢤⣤⣀⣀⣀⣠⣤⡴⠶⠛⠁⠀⣀⡴⠟⠁⠀⣠⡟⠁⠀⢠[/]
+[#1E90FF]⣆⠀⠈⠹⢦⣄⠀⠀⠙⠳⢦⣤⣀⣀⠀⠀⠀⠀⠀⠀⣀⣀⣤⡴⠞⠋⠀⢀⣠⠾⠋⠀⠀⣤⠏[/]
+[#1E90FF]⠙⠳⣤⡀⠀⠈⠛⠶⣤⣀⡀⠀⠈⠉⠉⠛⠛⠛⠛⠉⠉⠉⠀⣀⣠⡤⠞⠋⠁⠀⣀⡴⠟⠁⠀[/]
+[#1E90FF]⣆⠀⠀⠙⠳⠦⣄⢀⠀⠉⠉⠋⠓⠲⠶⠶⠦⠶⠶⠶⠖⠛⠋⠉⠀⠀⣀⣤⡲⠛⠉⠀⢀⣠⠾[/]
+[#4682B4]⠉⠑⠶⢤⣀⠀⠀⠉⠙⠲⠔⠦⡠⣤⣠⣄⢀⣀⢠⣤⢠⡤⠢⠶⠚⠊⠉⠀⢀⢀⡤⠖⠋⠀⠀[/]
+[#4682B4]⠦⡄⡀⠀⠁⠙⠑⠆⢤⢠⡀⣀⣀⠀⠀⠀⠀⠀⠀⠀⢀⢀⡀⣠⢠⠄⠖⠑⠉⠁⠀⢀⢠⠤⠊[/]
+[#4682B4]⠀⠈⠈⠐⠐⠀⠀⠀⠀⠀⠀⠉⠈⠈⠁⠙⠘⠘⠁⠉⠈⠈⠁⠀⠀⠀⠀⠀⠐⠒⠃⠁⠁⠀⠀[/]"""
 
 
 
@@ -121,54 +126,7 @@ _UPDATE_CHECK_CACHE_SECONDS = 6 * 3600
 # (e.g. nix-built hermes — no local git history to count against).
 UPDATE_AVAILABLE_NO_COUNT = -1
 
-_UPSTREAM_REPO_URL = "https://github.com/NousResearch/hermes-agent.git"
-_OFFICIAL_REPO_CANONICAL = "github.com/nousresearch/hermes-agent"
-
-
-def _canonical_github_remote(url: str | None) -> str:
-    """Return ``host/owner/repo`` for common GitHub remote URL forms."""
-    if not url:
-        return ""
-    value = url.strip()
-    if value.startswith("git@github.com:"):
-        value = "github.com/" + value[len("git@github.com:"):]
-    elif value.startswith("ssh://git@github.com/"):
-        value = "github.com/" + value[len("ssh://git@github.com/"):]
-    else:
-        parsed = urlparse(value)
-        if parsed.netloc and parsed.path:
-            value = f"{parsed.netloc}{parsed.path}"
-    value = value.strip().rstrip("/")
-    if value.endswith(".git"):
-        value = value[:-4]
-    return value.lower()
-
-
-def _is_ssh_remote(url: str | None) -> bool:
-    if not url:
-        return False
-    value = url.strip().lower()
-    return value.startswith("git@") or value.startswith("ssh://")
-
-
-def _is_official_ssh_remote(url: str | None) -> bool:
-    return _is_ssh_remote(url) and _canonical_github_remote(url) == _OFFICIAL_REPO_CANONICAL
-
-
-def _git_stdout(args: list[str], *, cwd: Path, timeout: int = 5) -> Optional[str]:
-    try:
-        result = subprocess.run(
-            ["git", *args],
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-            cwd=str(cwd),
-        )
-    except Exception:
-        return None
-    if result.returncode != 0:
-        return None
-    return (result.stdout or "").strip()
+_UPSTREAM_REPO_URL = "https://github.com/Moor inc./hermes-agent.git"
 
 
 def _check_via_rev(local_rev: str) -> Optional[int]:
@@ -194,11 +152,6 @@ def _check_via_rev(local_rev: str) -> Optional[int]:
 
 def _check_via_local_git(repo_dir: Path) -> Optional[int]:
     """Count commits behind origin/main in a local checkout."""
-    origin_url = _git_stdout(["remote", "get-url", "origin"], cwd=repo_dir)
-    if _is_official_ssh_remote(origin_url):
-        head_rev = _git_stdout(["rev-parse", "HEAD"], cwd=repo_dir)
-        return _check_via_rev(head_rev) if head_rev else None
-
     try:
         subprocess.run(
             ["git", "fetch", "origin", "--quiet"],
@@ -264,7 +217,7 @@ def check_via_pypi() -> Optional[int]:
 
 
 def check_for_updates() -> Optional[int]:
-    """Check whether a Hermes update is available.
+    """Check whether a Moor update is available.
 
     Two paths: if ``HERMES_REVISION`` is set (nix builds embed it), compare
     it to upstream main via ``git ls-remote``. Otherwise look for a local
@@ -340,7 +293,7 @@ def check_for_updates() -> Optional[int]:
 
 
 def _resolve_repo_dir() -> Optional[Path]:
-    """Return the active Hermes git checkout, or None if this isn't a git install.
+    """Return the active Moor git checkout, or None if this isn't a git install.
 
     Prefers the running code's location over the profile-scoped path
     because ``$HERMES_HOME/hermes-agent/`` may be a stale copy carried
@@ -427,7 +380,7 @@ def get_git_banner_state(repo_dir: Optional[Path] = None) -> Optional[dict]:
     return {"upstream": upstream, "local": local, "ahead": max(ahead, 0)}
 
 
-_RELEASE_URL_BASE = "https://github.com/NousResearch/hermes-agent/releases/tag"
+_RELEASE_URL_BASE = "https://github.com/Moor inc./hermes-agent/releases/tag"
 _latest_release_cache: Optional[tuple] = None  # (tag, url) once resolved
 
 
@@ -435,8 +388,8 @@ def get_latest_release_tag(repo_dir: Optional[Path] = None) -> Optional[tuple]:
     """Return ``(tag, release_url)`` for the latest git tag, or None.
 
     Local-only — runs ``git describe --tags --abbrev=0`` against the
-    Hermes checkout. Cached per-process. Release URL always points at the
-    canonical NousResearch/hermes-agent repo (forks don't get a link).
+    Moor checkout. Cached per-process. Release URL always points at the
+    canonical Moor inc./hermes-agent repo (forks don't get a link).
     """
     global _latest_release_cache
     if _latest_release_cache is not None:
@@ -475,7 +428,7 @@ def get_latest_release_tag(repo_dir: Optional[Path] = None) -> Optional[tuple]:
 
 def format_banner_version_label() -> str:
     """Return the version label shown in the startup banner title."""
-    base = f"Hermes Agent v{VERSION} ({RELEASE_DATE})"
+    base = f"Moor Agent v{VERSION} ({RELEASE_DATE})"
     state = get_git_banner_state()
     if not state:
         return base
@@ -594,10 +547,10 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
     layout_table.add_column("right", justify="left")
 
     # Resolve skin colors once for the entire banner
-    accent = _skin_color("banner_accent", "#FFBF00")
-    dim = _skin_color("banner_dim", "#B8860B")
-    text = _skin_color("banner_text", "#FFF8DC")
-    session_color = _skin_color("session_border", "#8B8682")
+    accent = _skin_color("banner_accent", "#00BFFF")
+    dim = _skin_color("banner_dim", "#4682B4")
+    text = _skin_color("banner_text", "#E0FFFF")
+    session_color = _skin_color("session_border", "#4682B4")
 
     # Use skin's custom caduceus art if provided
     try:
@@ -693,26 +646,15 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
         right_lines.append("")
         right_lines.append(f"[bold {accent}]MCP Servers[/]")
         for srv in mcp_status:
-            status = srv.get("status")
             if srv["connected"]:
                 right_lines.append(
                     f"[dim {dim}]{srv['name']}[/] [{text}]({srv['transport']})[/] "
                     f"[dim {dim}]—[/] [{text}]{srv['tools']} tool(s)[/]"
                 )
-            elif srv.get("disabled") or status == "disabled":
+            elif srv.get("disabled"):
                 right_lines.append(
                     f"[dim {dim}]{srv['name']}[/] [dim]({srv['transport']})[/] "
                     f"[dim {dim}]— disabled[/]"
-                )
-            elif status == "connecting":
-                right_lines.append(
-                    f"[dim {dim}]{srv['name']}[/] [dim]({srv['transport']})[/] "
-                    f"[yellow]— connecting[/]"
-                )
-            elif status == "configured":
-                right_lines.append(
-                    f"[dim {dim}]{srv['name']}[/] [dim]({srv['transport']})[/] "
-                    f"[dim {dim}]— configured[/]"
                 )
             else:
                 right_lines.append(
@@ -810,8 +752,8 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
     right_content = "\n".join(right_lines)
     layout_table.add_row(left_content, right_content)
 
-    title_color = _skin_color("banner_title", "#FFD700")
-    border_color = _skin_color("banner_border", "#CD7F32")
+    title_color = _skin_color("banner_title", "#00FFFF")
+    border_color = _skin_color("banner_border", "#1E90FF")
     version_label = format_banner_version_label()
     release_info = get_latest_release_tag()
     if release_info:
