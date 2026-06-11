@@ -256,11 +256,11 @@ const cleanPromptSymbol = (s: string | undefined, fallback: string) => {
 
 export const DARK_THEME: Theme = {
   color: {
-    primary: '#00FFFF',
-    accent: '#00BFFF',
-    border: '#1E90FF',
+    primary: '#1f58f2',
+    accent: '#ff4105',
+    border: '#1f58f2',
     text: '#E0FFFF',
-    muted: '#4682B4',
+    muted: '#1f58f2',
     // Bumped from the old `#B8860B` darkgoldenrod (~53% luminance) which
     // read as barely-visible on dark terminals for long body text.  The
     // new value sits ~60% luminance — readable without losing the "muted /
@@ -271,22 +271,22 @@ export const DARK_THEME: Theme = {
     completionMetaBg: '#0f172a',
     completionMetaCurrentBg: '#1e293b',
 
-    label: '#00BFFF',
+    label: '#ff4105',
     ok: '#4caf50',
     error: '#ef5350',
     warn: '#ffa726',
 
-    prompt: '#E0FFFF',
+    prompt: '#1f58f2',
     // sessionLabel/sessionBorder intentionally track the `dim` value — they
     // are "same role, same colour" by design.  fromSkin's banner_dim fallback
     // relies on this pairing (#11300).
-    sessionLabel: '#4682B4',
-    sessionBorder: '#4682B4',
+    sessionLabel: '#ff4105',
+    sessionBorder: '#1f58f2',
 
     statusBg: '#0f172a',
     statusFg: '#C0C0C0',
     statusGood: '#8FBC8F',
-    statusWarn: '#00BFFF',
+    statusWarn: '#ff4105',
     statusBad: '#FF8C00',
     statusCritical: '#FF6B6B',
     selectionBg: '#1e293b',
@@ -295,7 +295,7 @@ export const DARK_THEME: Theme = {
     diffRemoved: 'rgb(255,220,220)',
     diffAddedWord: 'rgb(36,138,61)',
     diffRemovedWord: 'rgb(207,34,46)',
-    shellDollar: '#00BFFF'
+    shellDollar: '#ff4105'
   },
 
   brand: BRAND,
@@ -309,29 +309,29 @@ export const DARK_THEME: Theme = {
 // cleanly (#11300).
 export const LIGHT_THEME: Theme = {
   color: {
-    primary: '#8B6914',
-    accent: '#A0651C',
-    border: '#7A4F1F',
+    primary: '#1f58f2',
+    accent: '#ff4105',
+    border: '#1f58f2',
     text: '#3D2F13',
-    muted: '#7A5A0F',
+    muted: '#1f58f2',
     completionBg: '#F5F5F5',
-    completionCurrentBg: mix('#F5F5F5', '#A0651C', 0.25),
+    completionCurrentBg: mix('#F5F5F5', '#ff4105', 0.25),
     completionMetaBg: '#F5F5F5',
-    completionMetaCurrentBg: mix('#F5F5F5', '#A0651C', 0.25),
+    completionMetaCurrentBg: mix('#F5F5F5', '#ff4105', 0.25),
 
-    label: '#7A5A0F',
+    label: '#ff4105',
     ok: '#2E7D32',
     error: '#C62828',
     warn: '#E65100',
 
-    prompt: '#2B2014',
-    sessionLabel: '#7A5A0F',
-    sessionBorder: '#7A5A0F',
+    prompt: '#1f58f2',
+    sessionLabel: '#ff4105',
+    sessionBorder: '#1f58f2',
 
     statusBg: '#F5F5F5',
     statusFg: '#333333',
     statusGood: '#2E7D32',
-    statusWarn: '#8B6914',
+    statusWarn: '#ff4105',
     statusBad: '#D84315',
     statusCritical: '#B71C1C',
     selectionBg: '#D4E4F7',
@@ -340,7 +340,7 @@ export const LIGHT_THEME: Theme = {
     diffRemoved: 'rgb(240,200,200)',
     diffAddedWord: 'rgb(27,94,32)',
     diffRemovedWord: 'rgb(183,28,28)',
-    shellDollar: '#1565C0'
+    shellDollar: '#1f58f2'
   },
 
   brand: BRAND,
