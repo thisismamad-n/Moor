@@ -9,13 +9,13 @@ description: "Browser-based administration panel for managing configuration, API
 The web dashboard is a browser-based UI for managing your Moor Agent installation. Instead of editing YAML files or running CLI commands, you can configure settings, manage API keys, and monitor sessions from a clean web interface.
 
 :::tip
-Hosted-mode auth uses Nous Portal OAuth; if you also want the dashboard to talk to a real backend, `hermes setup --portal` wires up the model and tool gateway too. See [Nous Portal](/integrations/nous-portal).
+Hosted-mode auth uses Nous Portal OAuth; if you also want the dashboard to talk to a real backend, `moor setup --portal` wires up the model and tool gateway too. See [Nous Portal](/integrations/nous-portal).
 :::
 
 ## Quick Start
 
 ```bash
-hermes dashboard
+moor dashboard
 ```
 
 This starts a local web server and opens `http://127.0.0.1:9119` in your browser. The dashboard runs entirely on your machine — no data leaves localhost.
@@ -31,13 +31,13 @@ This starts a local web server and opens `http://127.0.0.1:9119` in your browser
 
 ```bash
 # Custom port
-hermes dashboard --port 8080
+moor dashboard --port 8080
 
 # Bind to all interfaces (use with caution on shared networks)
-hermes dashboard --host 0.0.0.0
+moor dashboard --host 0.0.0.0
 
 # Start without opening browser
-hermes dashboard --no-open
+moor dashboard --no-open
 ```
 
 ## Prerequisites
@@ -50,9 +50,9 @@ pip install 'hermes-agent[web,pty]'
 
 The `web` extra pulls in FastAPI/Uvicorn; `pty` pulls in `ptyprocess` (POSIX) or `pywinpty` (native Windows — note that the embedded TUI itself still requires WSL). `pip install hermes-agent[all]` includes both extras and is the easiest path if you also want messaging/voice/etc.
 
-When you run `hermes dashboard` without the dependencies, it will tell you what to install. If the frontend hasn't been built yet and `npm` is available, it builds automatically on first launch.
+When you run `moor dashboard` without the dependencies, it will tell you what to install. If the frontend hasn't been built yet and `npm` is available, it builds automatically on first launch.
 
-The Chat tab is part of every `hermes dashboard` launch — the embedded browser chat pane (running the TUI over PTY/WebSocket) is always available, with no extra flag required.
+The Chat tab is part of every `moor dashboard` launch — the embedded browser chat pane (running the TUI over PTY/WebSocket) is always available, with no extra flag required.
 
 ## Pages
 
@@ -95,8 +95,8 @@ To point [Moor Desktop](#connecting-hermes-desktop-to-a-remote-backend) at a das
 
 Moor Desktop normally launches its own local backend, but it can also attach to a dashboard running on a remote machine (a VM, a homelab box, etc.) via **Settings → Gateway → Remote gateway**. This is the most common source of "Desktop says the backend is ready but chat never works" reports, because Desktop's readiness check verifies less than the live chat connection actually needs.
 
-:::info Prerequisite: a `hermes dashboard` must be running on the remote host
-The "remote backend" Desktop connects to **is** a `hermes dashboard` process running on the remote machine — the same server this page documents. It has to be up and reachable before any of the steps below matter; Desktop attaches to it, it doesn't start it for you. Keep it running under `systemd`/`tmux`/etc. so it survives logout and reboots. The **gateway** (Telegram/Discord/Slack/etc.) is a *separate* long-running process — start it independently if you rely on messaging channels; it is not the thing the desktop app connects to.
+:::info Prerequisite: a `moor dashboard` must be running on the remote host
+The "remote backend" Desktop connects to **is** a `moor dashboard` process running on the remote machine — the same server this page documents. It has to be up and reachable before any of the steps below matter; Desktop attaches to it, it doesn't start it for you. Keep it running under `systemd`/`tmux`/etc. so it survives logout and reboots. The **gateway** (Telegram/Discord/Slack/etc.) is a *separate* long-running process — start it independently if you rely on messaging channels; it is not the thing the desktop app connects to.
 :::
 
 Desktop's "remote backend is ready" probe only hits `GET /api/status`, which is a public endpoint — it answers as soon as *any* dashboard is running on the host. The live chat connection is a **separate** WebSocket to `/api/ws` (and `/api/pty`), and that socket is gated by two more checks the status probe never touches:
@@ -167,7 +167,7 @@ Fields with known valid values (terminal backend, skin, approval mode, etc.) ren
 - **Import** — uploads a JSON config file to replace the current values
 
 :::tip
-Config changes take effect on the next agent session or gateway restart. The web dashboard edits the same `config.yaml` file that `hermes config set` and the gateway read from.
+Config changes take effect on the next agent session or gateway restart. The web dashboard edits the same `config.yaml` file that `moor config set` and the gateway read from.
 :::
 
 ### API Keys
@@ -242,14 +242,14 @@ Browse, search, and toggle installed skills and toolsets, and install new ones f
 - **Category filter** — click category pills to narrow the list (e.g. MLOps, MCP, Red Teaming, AI)
 - **Toggle** — enable or disable individual skills with a switch. Changes take effect on the next session.
 - **Toolsets** — a separate view shows built-in toolsets (file operations, web browsing, etc.) with their active/inactive status, setup requirements, and list of included tools
-- **Browse hub** — a third view searches the skill hub across all sources (the same as `hermes skills search`), installs any result by identifier with a live install log, and offers an "Update all" button to refresh installed skills.
+- **Browse hub** — a third view searches the skill hub across all sources (the same as `moor skills search`), installs any result by identifier with a live install log, and offers an "Update all" button to refresh installed skills.
 
 ![Skills admin page — the Browse hub view: search, install, and update](/img/dashboard/admin-skills-hub.png)
 
 ### MCP
 
 Manage [MCP](/integrations/mcp) servers without the CLI. The same `mcp_servers`
-block in `config.yaml` that `hermes mcp` reads from.
+block in `config.yaml` that `moor mcp` reads from.
 
 **Your MCP servers:**
 
@@ -262,7 +262,7 @@ block in `config.yaml` that `hermes mcp` reads from.
 **Catalog:** browse the Nous-approved MCP servers (the bundled `optional-mcps/`
 catalog) and install any of them with one click. Entries that need API keys
 prompt for them inline; the values go to `.env`. This is the same catalog
-`hermes mcp catalog` / `hermes mcp install` use.
+`moor mcp catalog` / `moor mcp install` use.
 
 ![MCP admin page — your servers with enable/disable toggles, plus the install catalog](/img/dashboard/admin-mcp.png)
 
@@ -294,7 +294,7 @@ onboards Telegram/Discord/etc. users to a paired gateway. Full parity with
 ### Channels
 
 Connect Moor to any messaging platform from the browser — full parity with
-`hermes setup gateway`. The page lists every supported channel (Telegram,
+`moor setup gateway`. The page lists every supported channel (Telegram,
 Discord, Slack, Matrix, Mattermost, WhatsApp, Signal, BlueBubbles/iMessage,
 Email, SMS/Twilio, DingTalk, Feishu/Lark, WeCom, WeChat, QQ Bot, Yuanbao, plus
 the API server and webhook endpoints) with its live connection status.
@@ -310,8 +310,8 @@ the API server and webhook endpoints) with its live connection status.
 
 A consolidated administration panel for installation-wide operations:
 
-- **Host** — live system stats: OS / kernel, architecture, hostname, Python and Moor versions, CPU core count + utilization, memory, disk usage of the Moor home, uptime, and load average. (CPU/memory/disk come from `psutil` when installed; identity fields are always shown.) The Moor version shows an **update-status badge** (up to date / N commits behind) and a **Check for updates** button. When an update is available on a git or pip install, an **Update now** button opens a confirmation dialog — showing how many commits you'll pull — before running `hermes update` in the background. On Docker/Nix/Homebrew installs the dashboard can't apply the update in place, so it shows the correct out-of-band command instead.
-- **Nous Portal** — login status, the active inference provider, and the Tool Gateway routing table (which tools run via the Portal vs. locally), with a link to manage your subscription. Read-only mirror of `hermes portal`.
+- **Host** — live system stats: OS / kernel, architecture, hostname, Python and Moor versions, CPU core count + utilization, memory, disk usage of the Moor home, uptime, and load average. (CPU/memory/disk come from `psutil` when installed; identity fields are always shown.) The Moor version shows an **update-status badge** (up to date / N commits behind) and a **Check for updates** button. When an update is available on a git or pip install, an **Update now** button opens a confirmation dialog — showing how many commits you'll pull — before running `moor update` in the background. On Docker/Nix/Homebrew installs the dashboard can't apply the update in place, so it shows the correct out-of-band command instead.
+- **Nous Portal** — login status, the active inference provider, and the Tool Gateway routing table (which tools run via the Portal vs. locally), with a link to manage your subscription. Read-only mirror of `moor portal`.
 - **Skill curator** — the background skill-maintenance status (active / paused, interval, last run) with pause/resume and a run-now button. Mirrors `hermes curator`.
 - **Gateway** — start, stop, and restart the messaging gateway, with live status (running/stopped, PID, state)
 - **Memory** — pick the external memory provider (or built-in only), and reset the built-in `MEMORY.md` / `USER.md` stores
@@ -508,8 +508,8 @@ Operator-owned dashboards bound to loopback are unaffected — no auth, no login
 
 | Flags | Auth gate | Use case |
 |-------|-----------|----------|
-| `hermes dashboard` (default — binds to `127.0.0.1`) | OFF | Local development |
-| `hermes dashboard --host 0.0.0.0` | **ON** | Remote / production — protect with the username/password provider or OAuth |
+| `moor dashboard` (default — binds to `127.0.0.1`) | OFF | Local development |
+| `moor dashboard --host 0.0.0.0` | **ON** | Remote / production — protect with the username/password provider or OAuth |
 
 The gate is on if and only if:
 
@@ -522,7 +522,7 @@ The gate is on if and only if:
 
 ### Fail-closed semantics
 
-If the gate would engage but **no** `DashboardAuthProvider` is registered (no Nous plugin, no custom plugin), `hermes dashboard` refuses to bind with an explicit error message. There is no "default-deny but accept everything" fallback — a misconfigured gated dashboard never starts.
+If the gate would engage but **no** `DashboardAuthProvider` is registered (no Nous plugin, no custom plugin), `moor dashboard` refuses to bind with an explicit error message. There is no "default-deny but accept everything" fallback — a misconfigured gated dashboard never starts.
 
 ### Default provider: Nous Research
 
@@ -534,10 +534,10 @@ Because every login is verified against Nous Portal and protected by your Nous a
 
 To use the Nous provider you need an OAuth client ID (shape `agent:{id}`). There are two ways to get one:
 
-- **CLI — `hermes dashboard register`.** Run it on the host where the dashboard lives. It resolves your existing Nous login (run `hermes setup` first if you're not logged in), registers a self-hosted OAuth client with the Portal, and writes `HERMES_DASHBOARD_OAUTH_CLIENT_ID` into `~/.hermes/.env` for you. Optional flags: `--name` (a human-readable label, otherwise auto-generated) and `--redirect-uri` (a public HTTPS callback URL for an internet-facing host).
+- **CLI — `moor dashboard register`.** Run it on the host where the dashboard lives. It resolves your existing Nous login (run `moor setup` first if you're not logged in), registers a self-hosted OAuth client with the Portal, and writes `HERMES_DASHBOARD_OAUTH_CLIENT_ID` into `~/.hermes/.env` for you. Optional flags: `--name` (a human-readable label, otherwise auto-generated) and `--redirect-uri` (a public HTTPS callback URL for an internet-facing host).
 
   ```bash
-  hermes dashboard register
+  moor dashboard register
   # ✓ Registered dashboard "swift_falcon"
   # …writes HERMES_DASHBOARD_OAUTH_CLIENT_ID to ~/.hermes/.env
   ```
@@ -560,7 +560,7 @@ dashboard:
 
 | Env var | Overrides | Format | Provisioned by |
 |---------|-----------|--------|----------------|
-| `HERMES_DASHBOARD_OAUTH_CLIENT_ID` | `dashboard.oauth.client_id` | `agent:{instance_id}` | `hermes dashboard register` |
+| `HERMES_DASHBOARD_OAUTH_CLIENT_ID` | `dashboard.oauth.client_id` | `agent:{instance_id}` | `moor dashboard register` |
 
 Per the Moor Agent convention (`~/.hermes/.env` is for API keys / secrets only), **`config.yaml` is the recommended place to set these values** for local dev, on-prem, and any deployment you control directly. The environment-variable path exists so a hosting platform's secret injection can push per-deploy `client_id`s without anyone having to edit `config.yaml` inside the image — that's its primary purpose.
 
@@ -588,11 +588,11 @@ networks).
 
 From a logged-in Moor install to a Nous-gated dashboard in three steps.
 
-**1. Log in and register the dashboard.** `hermes dashboard register` uses your existing Nous login to provision an OAuth client and writes `HERMES_DASHBOARD_OAUTH_CLIENT_ID` into `~/.hermes/.env` for you:
+**1. Log in and register the dashboard.** `moor dashboard register` uses your existing Nous login to provision an OAuth client and writes `HERMES_DASHBOARD_OAUTH_CLIENT_ID` into `~/.hermes/.env` for you:
 
 ```bash
-hermes setup            # if you're not already logged into Nous Portal
-hermes dashboard register
+moor setup            # if you're not already logged into Nous Portal
+moor dashboard register
 # ✓ Registered dashboard "swift_falcon"
 # …writes HERMES_DASHBOARD_OAUTH_CLIENT_ID to ~/.hermes/.env
 ```
@@ -600,7 +600,7 @@ hermes dashboard register
 **2. Run the dashboard on a reachable address.** A non-loopback bind without `--insecure` engages the OAuth gate, and the `client_id` just written activates the `nous` provider:
 
 ```bash
-hermes dashboard --host 0.0.0.0 --port 9119 --no-open
+moor dashboard --host 0.0.0.0 --port 9119 --no-open
 ```
 
 **3. Log in.** Open `http://<host>:9119/`, you'll be bounced to `/login`. Click **Sign in with Nous Research** → authenticate at the Portal → land back on the authenticated dashboard. Verify the gate from any machine:
@@ -679,7 +679,7 @@ chmod 600 ~/.hermes/.env
 **2. Run the dashboard on a reachable address.** A non-loopback bind without `--insecure` engages the gate, and the username + hash activate the `basic` provider:
 
 ```bash
-hermes dashboard --host 0.0.0.0 --port 9119 --no-open
+moor dashboard --host 0.0.0.0 --port 9119 --no-open
 ```
 
 **3. Log in.** Open `http://<host>:9119/`, you'll be bounced to `/login` — a **credential form** (not a "Sign in with X" button). Enter `admin` / your password → land on the authenticated dashboard. Verify the gate from any machine:
@@ -806,7 +806,7 @@ Once it's up, the realm advertises standard OIDC discovery at
 export HERMES_DASHBOARD_OIDC_ISSUER="http://localhost:8080/realms/hermes"
 export HERMES_DASHBOARD_OIDC_CLIENT_ID="hermes-dashboard"
 export HERMES_DASHBOARD_PUBLIC_URL="http://localhost:9119"
-hermes dashboard --host 0.0.0.0 --port 9119 --no-open
+moor dashboard --host 0.0.0.0 --port 9119 --no-open
 ```
 
 `HERMES_DASHBOARD_PUBLIC_URL` tells the dashboard its OAuth callback is
@@ -907,7 +907,7 @@ The login page lists all registered providers; multiple providers can be stacked
 ```bash
 # Quick env-var path.
 HERMES_DASHBOARD_OAUTH_CLIENT_ID=agent:test \
-  hermes dashboard --host 0.0.0.0
+  moor dashboard --host 0.0.0.0
 
 # Or the equivalent via config.yaml (recommended for local dev / on-prem):
 #
@@ -916,7 +916,7 @@ HERMES_DASHBOARD_OAUTH_CLIENT_ID=agent:test \
 #       client_id: agent:test
 #
 # then just:
-hermes dashboard --host 0.0.0.0
+moor dashboard --host 0.0.0.0
 
 # Hit /api/status to see the gate state:
 curl -s http://127.0.0.1:9119/api/status | jq '.auth_required, .auth_providers'
@@ -930,7 +930,7 @@ The dashboard's React StatusPage shows the same fields under "Web server". A sid
 
 Moor Desktop can drive a Moor backend running on another machine (a VPS, a home server, a Mini behind Tailscale). In the app this lives under **Settings → Gateway → Remote gateway**, which asks for a **Remote URL** and a way to **Sign in**. (For the desktop app itself — install, settings, chat — see the [Moor Desktop](/user-guide/desktop) page.)
 
-You protect the remote dashboard with one of the bundled auth providers, and the desktop app signs in against whichever one the backend advertises. For a backend reachable beyond your own machine — a VPS, a public host, anything internet-facing — the recommended provider is **OAuth (Nous Portal)** (register it with [`hermes dashboard register`](#registering-a-dashboard) and sign in with *Sign in with Nous Research*). The bundled [username/password provider](#usernamepassword-provider-no-oauth-idp) is the quickest option when the backend is on a trusted LAN or reachable only over a VPN, but is **not suitable for direct public-internet exposure**. Binding the dashboard to a non-loopback address engages its auth gate; once signed in, Desktop reuses the session for the chat WebSocket automatically — there is no token to copy or paste.
+You protect the remote dashboard with one of the bundled auth providers, and the desktop app signs in against whichever one the backend advertises. For a backend reachable beyond your own machine — a VPS, a public host, anything internet-facing — the recommended provider is **OAuth (Nous Portal)** (register it with [`moor dashboard register`](#registering-a-dashboard) and sign in with *Sign in with Nous Research*). The bundled [username/password provider](#usernamepassword-provider-no-oauth-idp) is the quickest option when the backend is on a trusted LAN or reachable only over a VPN, but is **not suitable for direct public-internet exposure**. Binding the dashboard to a non-loopback address engages its auth gate; once signed in, Desktop reuses the session for the chat WebSocket automatically — there is no token to copy or paste.
 
 The recipe below uses the username/password path because it's the quickest to stand up on a trusted network; for the OAuth path see [Default provider: Nous Research](#default-provider-nous-research).
 
@@ -948,7 +948,7 @@ chmod 600 ~/.hermes/.env
 
 # 2. Run the dashboard bound to a reachable address. The non-loopback bind
 #    engages the auth gate; the username/password provider handles login.
-hermes dashboard --no-open --host 0.0.0.0 --port 9119
+moor dashboard --no-open --host 0.0.0.0 --port 9119
 ```
 
 Prefer no plaintext at rest? Use `HERMES_DASHBOARD_BASIC_AUTH_PASSWORD_HASH` with a scrypt hash instead — see [Username/password provider](#usernamepassword-provider-no-oauth-idp) for the full surface.
@@ -963,7 +963,7 @@ The dashboard reads and writes your `.env` (API keys, secrets) and can run agent
 
 **Settings → Gateway → Remote gateway:**
 
-- **Remote URL** — `http://<backend-host>:9119` (path prefixes like `/hermes` are supported if you front it with a reverse proxy)
+- **Remote URL** — `http://<backend-host>:9119` (path prefixes like `/moor` are supported if you front it with a reverse proxy)
 - **Sign in** — the app detects the username/password gateway and shows a **Sign in** button; click it and enter the credentials from step 1
 - **Save and reconnect** — switches the desktop shell onto the remote backend
 
@@ -1001,7 +1001,7 @@ If you're contributing to the web dashboard frontend:
 
 ```bash
 # Terminal 1: start the backend API
-hermes dashboard --no-open
+moor dashboard --no-open
 
 # Terminal 2: start the Vite dev server with HMR
 cd web/
@@ -1015,7 +1015,7 @@ The frontend is built with React 19, TypeScript, Tailwind CSS v4, and shadcn/ui-
 
 ## Automatic Build on Update
 
-When you run `hermes update`, the web frontend is automatically rebuilt if `npm` is available. This keeps the dashboard in sync with code updates. If `npm` isn't installed, the update skips the frontend build and `hermes dashboard` will build it on first launch.
+When you run `moor update`, the web frontend is automatically rebuilt if `npm` is available. This keeps the dashboard in sync with code updates. If `npm` isn't installed, the update skips the frontend build and `moor dashboard` will build it on first launch.
 
 ## Themes & plugins
 

@@ -11,9 +11,9 @@ Moor Agent ships with 8 external memory provider plugins that give the agent per
 ## Quick Start
 
 ```bash
-hermes memory setup      # interactive picker + configuration
-hermes memory status     # check what's active
-hermes memory off        # disable external provider
+moor memory setup      # interactive picker + configuration
+moor memory status     # check what's active
+moor memory off        # disable external provider
 ```
 
 You can also select the active memory provider via `hermes plugins` → Provider Plugins → Memory Provider.
@@ -63,10 +63,10 @@ AI-native cross-session user modeling with dialectic reasoning, session-scoped c
 
 **Setup Wizard:**
 ```bash
-hermes memory setup        # select "honcho" — runs the Honcho-specific post-setup
+moor memory setup        # select "honcho" — runs the Honcho-specific post-setup
 ```
 
-The legacy `hermes honcho setup` command still works (it now redirects to `hermes memory setup`), but is only registered after Honcho is selected as the active memory provider.
+The legacy `hermes honcho setup` command still works (it now redirects to `moor memory setup`), but is only registered after Honcho is selected as the active memory provider.
 
 **Config:** `$HERMES_HOME/honcho.json` (profile-local) or `~/.honcho/config.json` (global). Resolution order: `$HERMES_HOME/honcho.json` > `~/.hermes/honcho.json` > `~/.honcho/config.json`. See the [config reference](https://github.com/Moor inc./hermes-agent/blob/main/plugins/memory/honcho/README.md) and the [Honcho integration guide](https://docs.honcho.dev/v3/guides/integrations/hermes).
 
@@ -156,7 +156,7 @@ The mapping:
 ### New profile, fresh Honcho peer
 
 ```bash
-hermes profile create coder --clone
+moor profile create coder --clone
 ```
 
 `--clone` creates a `hermes.coder` host block in `honcho.json` with `aiPeer: "coder"`, shared `workspace`, inherited `peerName`, `recallMode`, `writeFrequency`, `observation`, etc. The AI peer is eagerly created in Honcho so it exists before the first message.
@@ -280,9 +280,9 @@ pip install openviking
 openviking-server
 
 # Then configure Moor
-hermes memory setup    # select "openviking"
+moor memory setup    # select "openviking"
 # Or manually:
-hermes config set memory.provider openviking
+moor config set memory.provider openviking
 echo "OPENVIKING_ENDPOINT=http://localhost:1933" >> ~/.hermes/.env
 ```
 
@@ -308,9 +308,9 @@ Server-side LLM fact extraction with semantic search, reranking, and automatic d
 
 **Setup:**
 ```bash
-hermes memory setup    # select "mem0"
+moor memory setup    # select "mem0"
 # Or manually:
-hermes config set memory.provider mem0
+moor config set memory.provider mem0
 echo "MEM0_API_KEY=your-key" >> ~/.hermes/.env
 ```
 
@@ -338,9 +338,9 @@ Long-term memory with knowledge graph, entity resolution, and multi-strategy ret
 
 **Setup:**
 ```bash
-hermes memory setup    # select "hindsight"
+moor memory setup    # select "hindsight"
 # Or manually:
-hermes config set memory.provider hindsight
+moor config set memory.provider hindsight
 echo "HINDSIGHT_API_KEY=your-key" >> ~/.hermes/.env
 ```
 
@@ -385,9 +385,9 @@ Local SQLite fact store with FTS5 full-text search, trust scoring, and HRR (Holo
 
 **Setup:**
 ```bash
-hermes memory setup    # select "holographic"
+moor memory setup    # select "holographic"
 # Or manually:
-hermes config set memory.provider holographic
+moor config set memory.provider holographic
 ```
 
 **Config:** `config.yaml` under `plugins.hermes-memory-store`
@@ -421,9 +421,9 @@ Cloud memory API with hybrid search (Vector + BM25 + Reranking), 7 memory types,
 
 **Setup:**
 ```bash
-hermes memory setup    # select "retaindb"
+moor memory setup    # select "retaindb"
 # Or manually:
-hermes config set memory.provider retaindb
+moor config set memory.provider retaindb
 echo "RETAINDB_API_KEY=your-key" >> ~/.hermes/.env
 ```
 
@@ -448,9 +448,9 @@ Persistent memory via the `brv` CLI — hierarchical knowledge tree with tiered 
 curl -fsSL https://byterover.dev/install.sh | sh
 
 # Then configure Moor
-hermes memory setup    # select "byterover"
+moor memory setup    # select "byterover"
 # Or manually:
-hermes config set memory.provider byterover
+moor config set memory.provider byterover
 ```
 
 **Key features:**
@@ -475,9 +475,9 @@ Semantic long-term memory with profile recall, semantic search, explicit memory 
 
 **Setup:**
 ```bash
-hermes memory setup    # select "supermemory"
+moor memory setup    # select "supermemory"
 # Or manually:
-hermes config set memory.provider supermemory
+moor config set memory.provider supermemory
 echo 'SUPERMEMORY_API_KEY=***' >> ~/.hermes/.env
 ```
 
@@ -537,8 +537,8 @@ Structured long-term memory using Memori Cloud, with background completed-turn c
 ```bash
 pip install hermes-memori
 hermes-memori install
-hermes config set memory.provider memori
-hermes memory setup
+moor config set memory.provider memori
+moor memory setup
 ```
 
 ---

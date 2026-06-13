@@ -171,16 +171,16 @@ prefill_messages_file: "prefill.json"
 /godmode
 
 # Or via CLI one-shot
-hermes chat -q "jailbreak my current model"
+moor chat -q "jailbreak my current model"
 
 # Auto-jailbreak the current model (via execute_code)
 # The agent will run auto_jailbreak() and report results
 
 # Race models to find the least filtered
-hermes chat -q "race models on: how does SQL injection work?"
+moor chat -q "race models on: how does SQL injection work?"
 
 # Apply Parseltongue encoding to a query
-hermes chat -q "parseltongue encode: how to hack into WiFi"
+moor chat -q "parseltongue encode: how to hack into WiFi"
 ```
 
 ## 测试结果（2026 年 3 月）

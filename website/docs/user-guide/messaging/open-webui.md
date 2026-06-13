@@ -71,20 +71,20 @@ OPEN_WEBUI_ENABLE_SERVICE=false bash scripts/setup_open_webui.sh
 ### 1. Enable the API server
 
 ```bash
-hermes config set API_SERVER_ENABLED true
-hermes config set API_SERVER_KEY your-secret-key
+moor config set API_SERVER_ENABLED true
+moor config set API_SERVER_KEY your-secret-key
 ```
 
-`hermes config set` auto-routes the flag to `config.yaml` and the secret to `~/.hermes/.env`. If the gateway is already running, restart it so the change takes effect:
+`moor config set` auto-routes the flag to `config.yaml` and the secret to `~/.hermes/.env`. If the gateway is already running, restart it so the change takes effect:
 
 ```bash
-hermes gateway stop && hermes gateway
+moor gateway stop && moor gateway
 ```
 
 ### 2. Start Moor Agent gateway
 
 ```bash
-hermes gateway
+moor gateway
 ```
 
 You should see:
@@ -278,14 +278,14 @@ To run separate Moor instances per user — each with their own config, memory, 
 `API_SERVER_*` are env vars, not YAML config keys, so write them to each profile's `.env`. Pick ports outside the default-platform range (`8644` is the webhook adapter, `8645` is wecom-callback, `8646` is msgraph-webhook), e.g. `8650+`:
 
 ```bash
-hermes profile create alice
+moor profile create alice
 cat >> ~/.hermes/profiles/alice/.env <<EOF
 API_SERVER_ENABLED=true
 API_SERVER_PORT=8650
 API_SERVER_KEY=alice-secret
 EOF
 
-hermes profile create bob
+moor profile create bob
 cat >> ~/.hermes/profiles/bob/.env <<EOF
 API_SERVER_ENABLED=true
 API_SERVER_PORT=8651

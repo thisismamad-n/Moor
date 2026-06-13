@@ -561,7 +561,7 @@ class GatewayKanbanWatchersMixin:
 
         Gated by `kanban.dispatch_in_gateway` in config.yaml (default True).
         When true, the gateway hosts the single dispatcher for this profile:
-        no separate `hermes kanban daemon` process needed. When false, the
+        no separate `moor kanban daemon` process needed. When false, the
         loop exits immediately and an external daemon is expected.
 
         Each tick calls :func:`kanban_db.dispatch_once` inside
@@ -821,7 +821,7 @@ class GatewayKanbanWatchersMixin:
                         "SQLite database; pausing dispatch for this board until "
                         "the file changes, the gateway restarts, or the "
                         "quarantine timer expires. Move or restore the file, "
-                        "then run `hermes kanban init` if you need a fresh board.",
+                        "then run `moor kanban init` if you need a fresh board.",
                         slug,
                         fingerprint[0],
                     )
@@ -836,7 +836,7 @@ class GatewayKanbanWatchersMixin:
                         "SQLite database; pausing dispatch for this board until "
                         "the file changes, the gateway restarts, or the "
                         "quarantine timer expires. Move or restore the file, "
-                        "then run `hermes kanban init` if you need a fresh board.",
+                        "then run `moor kanban init` if you need a fresh board.",
                         slug,
                         fingerprint[0],
                     )
@@ -1046,7 +1046,7 @@ class GatewayKanbanWatchersMixin:
                             "kanban dispatcher stuck: ready queue non-empty for "
                             "%d consecutive ticks but 0 workers spawned. Check "
                             "profile health (venv, PATH, credentials) and "
-                            "`hermes kanban list --status ready`.",
+                            "`moor kanban list --status ready`.",
                             bad_ticks,
                         )
                         last_warn_at = now

@@ -628,7 +628,7 @@ class TestUpdateCheckEndpoint:
 
     Powers the dashboard's check-before-you-update flow: the System page
     shows the commit-behind count and asks the user to confirm before
-    ``POST /api/hermes/update`` runs ``hermes update``.
+    ``POST /api/hermes/update`` runs ``moor update``.
     """
 
     @pytest.fixture(autouse=True)
@@ -828,7 +828,7 @@ class TestDebugShareEndpoint:
 
 class TestToolsConfigEndpoints:
     """Provider selection, API-key save, and post-setup spawn for toolsets —
-    the dashboard surface that replicates the `hermes tools` configurator."""
+    the dashboard surface that replicates the `moor tools` configurator."""
 
     @pytest.fixture(autouse=True)
     def _setup(self, _isolate_hermes_home):

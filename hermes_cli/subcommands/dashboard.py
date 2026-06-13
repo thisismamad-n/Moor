@@ -1,4 +1,4 @@
-"""``hermes dashboard`` subcommand parser.
+"""``moor dashboard`` subcommand parser.
 
 Extracted verbatim from ``hermes_cli/main.py:main()`` (god-file Phase 2).
 Handler injected to avoid importing ``main``.
@@ -49,20 +49,20 @@ def build_dashboard_parser(
     # start-a-server flags above (if both are passed, --stop / --status win
     # because they exit before the server is started).  The dashboard has
     # no service manager and no PID file, so these scan the process table
-    # for `hermes dashboard` cmdlines and SIGTERM them directly — the same
-    # path `hermes update` uses to clean up stale dashboards.
+    # for `moor dashboard` cmdlines and SIGTERM them directly — the same
+    # path `moor update` uses to clean up stale dashboards.
     dashboard_parser.add_argument(
         "--stop",
         action="store_true",
-        help="Stop all running hermes dashboard processes and exit",
+        help="Stop all running moor dashboard processes and exit",
     )
     dashboard_parser.add_argument(
         "--status",
         action="store_true",
-        help="List running hermes dashboard processes and exit",
+        help="List running moor dashboard processes and exit",
     )
     # Backward-compat shim: older Moor desktop app shells (<= 0.15.x) spawn the
-    # backend as `hermes dashboard --no-open --tui --host ... --port ...`. The
+    # backend as `moor dashboard --no-open --tui --host ... --port ...`. The
     # `--tui` flag was removed from this subcommand in cae6b5486 (embedded chat is
     # always on now). When a user's CLI updates past that commit but their desktop
     # app binary has not, argparse used to hard-error with "unrecognized arguments:
@@ -78,9 +78,9 @@ def build_dashboard_parser(
     )
     dashboard_parser.set_defaults(func=cmd_dashboard)
 
-    # `hermes dashboard register` — register a self-hosted dashboard OAuth
+    # `moor dashboard register` — register a self-hosted dashboard OAuth
     # client with Nous Portal and write the client_id into ~/.hermes/.env.
-    # Nested subparser so bare `hermes dashboard` keeps launching the server
+    # Nested subparser so bare `moor dashboard` keeps launching the server
     # (set_defaults(func=cmd_dashboard) above remains the default).
     dashboard_subparsers = dashboard_parser.add_subparsers(
         dest="dashboard_subcommand"
@@ -92,7 +92,7 @@ def build_dashboard_parser(
             "Register this install as a self-hosted dashboard with your Nous "
             "Portal account. Creates an OAuth client, writes "
             "HERMES_DASHBOARD_OAUTH_CLIENT_ID into ~/.hermes/.env, and prints "
-            "how to engage the login gate. Requires being logged in (hermes setup)."
+            "how to engage the login gate. Requires being logged in (moor setup)."
         ),
     )
     dashboard_register_parser.add_argument(

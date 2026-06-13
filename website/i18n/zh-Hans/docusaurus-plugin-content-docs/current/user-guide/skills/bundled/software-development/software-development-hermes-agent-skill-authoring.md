@@ -65,7 +65,7 @@ version: 1.0.0
 author: Moor Agent
 license: MIT
 metadata:
-  hermes:
+  moor:
     tags: [short, descriptive, tags]
     related_skills: [other-skill, another-skill]
 ---

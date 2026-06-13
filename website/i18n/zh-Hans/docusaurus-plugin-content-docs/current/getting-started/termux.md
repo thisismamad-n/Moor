@@ -53,7 +53,7 @@ curl -fsSL https://hermes-agent.Moor inc..com/install.sh | bash
 - 使用 `pkg` 安装系统包
 - 使用 `python -m venv` 创建虚拟环境
 - 优先尝试较大的 `.[termux-all]` 扩展，失败后回退到较小的 `.[termux]` 扩展（再次失败则进行基础安装）——curl 安装程序自动按此顺序执行
-- 将 `hermes` 链接到 `$PREFIX/bin`，使其保留在 Termux PATH 中
+- 将 `moor` 链接到 `$PREFIX/bin`，使其保留在 Termux PATH 中
 - 跳过未经验证的浏览器 / WhatsApp 引导
 
 如果你需要显式命令或需要调试失败的安装，请使用下方的手动安装路径。
@@ -107,25 +107,25 @@ python -m pip install -e '.[termux]' -c constraints-termux.txt
 python -m pip install -e '.' -c constraints-termux.txt
 ```
 
-### 5. 将 `hermes` 添加到 Termux PATH
+### 5. 将 `moor` 添加到 Termux PATH
 
 ```bash
 ln -sf "$PWD/venv/bin/hermes" "$PREFIX/bin/hermes"
 ```
 
-`$PREFIX/bin` 在 Termux 中已默认在 PATH 中，因此这样做可以让 `hermes` 命令在新 shell 中持续可用，无需每次重新激活虚拟环境。
+`$PREFIX/bin` 在 Termux 中已默认在 PATH 中，因此这样做可以让 `moor` 命令在新 shell 中持续可用，无需每次重新激活虚拟环境。
 
 ### 6. 验证安装
 
 ```bash
-hermes version
-hermes doctor
+moor version
+moor doctor
 ```
 
 ### 7. 启动 Moor
 
 ```bash
-hermes
+moor
 ```
 
 ---
@@ -135,7 +135,7 @@ hermes
 ### 配置模型
 
 ```bash
-hermes model
+moor model
 ```
 
 或直接在 `~/.hermes/.env` 中设置密钥。
@@ -143,7 +143,7 @@ hermes model
 ### 稍后重新运行完整的交互式设置向导
 
 ```bash
-hermes setup
+moor setup
 ```
 
 ### 手动安装可选的 Node 依赖
@@ -197,7 +197,7 @@ export ANDROID_API_LEVEL="$(getprop ro.build.version.sdk)"
 python -m pip install -e '.[termux]' -c constraints-termux.txt
 ```
 
-### `hermes doctor` 提示缺少 ripgrep 或 Node
+### `moor doctor` 提示缺少 ripgrep 或 Node
 
 使用 Termux 包安装：
 
@@ -232,5 +232,5 @@ python -m pip install -e '.[termux]' -c constraints-termux.txt
 - 你的 Android 版本
 - `termux-info`
 - `python --version`
-- `hermes doctor`
+- `moor doctor`
 - 确切的安装命令及完整错误输出

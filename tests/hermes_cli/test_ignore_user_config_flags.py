@@ -1,4 +1,4 @@
-"""Tests for --ignore-user-config and --ignore-rules flags on `hermes chat`.
+"""Tests for --ignore-user-config and --ignore-rules flags on `moor chat`.
 
 Ported from openai/codex#18646 (`feat: add --ignore-user-config and --ignore-rules`).
 Codex's flags fully isolate a run from user-level config and exec-policy .rules
@@ -213,7 +213,7 @@ class TestArgparseFlagsRegistered:
         # two flags under test. If someone removes the flag from main.py, this
         # test keeps passing in isolation — but the E2E test below catches it.
         import argparse
-        parser = argparse.ArgumentParser(prog="hermes")
+        parser = argparse.ArgumentParser(prog="moor")
         subs = parser.add_subparsers(dest="command")
         chat = subs.add_parser("chat")
         chat.add_argument("--ignore-user-config", action="store_true", default=False)

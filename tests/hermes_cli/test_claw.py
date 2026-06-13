@@ -1,4 +1,4 @@
-"""Tests for hermes claw commands."""
+"""Tests for moor claw commands."""
 
 from argparse import Namespace
 import subprocess

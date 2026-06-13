@@ -598,7 +598,7 @@ def test_unknown_pkce_provider_rejected_cleanly():
         "id": "hypothetical-pkce-provider",
         "name": "Hypothetical PKCE Provider",
         "flow": "pkce",
-        "cli_command": "hermes auth add hypothetical-pkce-provider",
+        "cli_command": "moor auth add hypothetical-pkce-provider",
         "docs_url": "https://example.com",
         "status_fn": None,
     }

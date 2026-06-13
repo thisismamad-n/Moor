@@ -33,9 +33,9 @@ them collectively.
 
 ```bash
 # Create profiles (once)
-hermes profile create coder
-hermes profile create personal-bot
-hermes profile create research
+moor profile create coder
+moor profile create personal-bot
+moor profile create research
 
 # Configure each
 coder setup
@@ -77,7 +77,7 @@ run_for_profile() {
   profile="$1"
   action="$2"
   if [ "$profile" = "default" ]; then
-    hermes gateway "$action"
+    moor gateway "$action"
   else
     hermes -p "$profile" gateway "$action"
   fi
@@ -92,7 +92,7 @@ case "$action" in
     done
     ;;
   list)
-    hermes gateway list
+    moor gateway list
     ;;
   *)
     usage
@@ -108,11 +108,11 @@ hermes-gateways start      # start every configured profile
 hermes-gateways stop       # stop every configured profile
 hermes-gateways restart    # restart all
 hermes-gateways status     # status across all
-hermes-gateways list       # delegates to `hermes gateway list`
+hermes-gateways list       # delegates to `moor gateway list`
 ```
 
 :::tip
-The `default` profile is targeted with `hermes gateway <action>` (no `-p`),
+The `default` profile is targeted with `moor gateway <action>` (no `-p`),
 not `hermes -p default gateway <action>`. The wrapper above handles both forms.
 :::
 
@@ -170,15 +170,15 @@ tail -f ~/.hermes/logs/gateway.log ~/.hermes/profiles/*/logs/gateway.log
 The CLI also has a structured log viewer:
 
 ```bash
-hermes logs -f                  # follow default profile
+moor logs -f                  # follow default profile
 hermes -p coder logs -f         # follow one profile
-hermes logs --help              # filters, levels, JSON output
+moor logs --help              # filters, levels, JSON output
 ```
 
 ## Identify what's actually running
 
 ```bash
-hermes profile list             # profiles + model + gateway state
+moor profile list             # profiles + model + gateway state
 hermes-gateways status          # full status across every profile
 launchctl list | grep hermes    # macOS — PIDs and labels
 systemctl --user list-units 'hermes-gateway-*'   # Linux — units
@@ -200,7 +200,7 @@ The default profile uses `~/.hermes/` directly with the same three files.
 Edit them with any editor or via the CLI:
 
 ```bash
-hermes config set model.model anthropic/claude-sonnet-4    # default profile
+moor config set model.model anthropic/claude-sonnet-4    # default profile
 coder config set model.model openai/gpt-5                  # named profile
 ```
 
@@ -281,11 +281,11 @@ grep -H 'TELEGRAM_BOT_TOKEN\|DISCORD_BOT_TOKEN' \
 
 ## Updating the code
 
-`hermes update` pulls the latest code once and syncs new bundled skills into
+`moor update` pulls the latest code once and syncs new bundled skills into
 every profile:
 
 ```bash
-hermes update
+moor update
 hermes-gateways restart
 ```
 
@@ -295,7 +295,7 @@ User-modified skills are never overwritten.
 
 ### "Could not find service in domain for user gui: 501"
 
-You ran `hermes gateway start` after a previous `hermes gateway stop`. The
+You ran `moor gateway start` after a previous `moor gateway stop`. The
 CLI's `stop` does a full `launchctl unload`, which removes the service from
 launchd's registry. The CLI catches this specific error on `start` and
 automatically re-loads the plist (`↻ launchd job was unloaded; reloading
@@ -327,6 +327,6 @@ systemctl --user restart hermes-gateway-<profile>.service
 ### Health check
 
 ```bash
-hermes doctor                  # default profile
+moor doctor                  # default profile
 hermes -p <profile> doctor     # one profile
 ```

@@ -52,7 +52,7 @@ That's it — there is no public URL or tunnel to set up.
 Either run the unified gateway wizard and pick **Photon iMessage**:
 
 ```bash
-hermes gateway setup
+moor gateway setup
 ```
 
 …or run the Photon setup directly (the wizard calls the same flow):
@@ -145,7 +145,7 @@ BlueBubbles iMessage channel uses.
 ## Start the gateway
 
 ```bash
-hermes gateway start --platform photon
+moor gateway start --platform photon
 ```
 
 You'll see something like:

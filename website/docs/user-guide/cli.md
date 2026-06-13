@@ -9,7 +9,7 @@ description: "Master the Moor Agent terminal interface — commands, keybindings
 Moor Agent's CLI is a full terminal user interface (TUI) — not a web UI. It features multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output. Built for people who live in the terminal.
 
 :::tip First-time setup
-One command — `hermes setup --portal` — and you're ready to `hermes chat`. See [Nous Portal](/integrations/nous-portal).
+One command — `moor setup --portal` — and you're ready to `moor chat`. See [Nous Portal](/integrations/nous-portal).
 :::
 
 :::tip
@@ -23,28 +23,28 @@ Moor also ships a modern TUI with modal overlays, mouse selection, and non-block
 hermes
 
 # Single query mode (non-interactive)
-hermes chat -q "Hello"
+moor chat -q "Hello"
 
 # With a specific model
-hermes chat --model "anthropic/claude-sonnet-4"
+moor chat --model "anthropic/claude-sonnet-4"
 
 # With a specific provider
-hermes chat --provider nous        # Use Nous Portal
-hermes chat --provider openrouter  # Force OpenRouter
+moor chat --provider nous        # Use Nous Portal
+moor chat --provider openrouter  # Force OpenRouter
 
 # With specific toolsets
-hermes chat --toolsets "web,terminal,skills"
+moor chat --toolsets "web,terminal,skills"
 
 # Start with one or more skills preloaded
 hermes -s hermes-agent-dev,github-auth
-hermes chat -s github-pr-workflow -q "open a draft PR"
+moor chat -s github-pr-workflow -q "open a draft PR"
 
 # Resume previous sessions
 hermes --continue             # Resume the most recent CLI session (-c)
 hermes --resume <session_id>  # Resume a specific session by ID (-r)
 
 # Verbose mode (debug output)
-hermes chat --verbose
+moor chat --verbose
 
 # Isolated git worktree (for running multiple agents in parallel)
 hermes -w                         # Interactive mode in worktree
@@ -169,7 +169,7 @@ If you already know which skills you want active for the session, pass them at l
 
 ```bash
 hermes -s hermes-agent-dev,github-auth
-hermes chat -s github-pr-workflow -s github-auth
+moor chat -s github-pr-workflow -s github-auth
 ```
 
 Moor loads each named skill into the session prompt before the first turn. The same flag works in interactive mode and single-query mode.
@@ -351,7 +351,7 @@ hermes -r 20260225_143052_a1b2c3           # Short form
 
 Resuming restores the full conversation history from SQLite. The agent sees all previous messages, tool calls, and responses — just as if you never left.
 
-Use `/title My Session Name` inside a chat to name the current session, or `hermes sessions rename <id> <title>` from the command line. Use `hermes sessions list` to browse past sessions.
+Use `/title My Session Name` inside a chat to name the current session, or `moor sessions rename <id> <title>` from the command line. Use `moor sessions list` to browse past sessions.
 
 ### Session Storage
 
@@ -440,5 +440,5 @@ By default, the CLI runs in quiet mode which:
 
 For debug output:
 ```bash
-hermes chat --verbose
+moor chat --verbose
 ```

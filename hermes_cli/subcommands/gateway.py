@@ -1,4 +1,4 @@
-"""``hermes gateway`` and ``hermes proxy`` subcommand parsers.
+"""``moor gateway`` and ``hermes proxy`` subcommand parsers.
 
 Extracted verbatim from ``hermes_cli/main.py:main()`` (god-file Phase 2).
 Both parsers are built together because they shared one inline block (the

@@ -4,8 +4,8 @@
 //! `AppMode` in lib.rs). The desktop app hands off to us — it exits, then we:
 //!
 //!   1. wait for the old Moor desktop process to fully exit (so the venv
-//!      shim is free; otherwise `hermes update` aborts with exit code 2),
-//!   2. run `hermes update --yes --gateway` (Python/repo update; this does NOT
+//!      shim is free; otherwise `moor update` aborts with exit code 2),
+//!   2. run `moor update --yes --gateway` (Python/repo update; this does NOT
 //!      rebuild apps/desktop by design — see cmd_update in hermes_cli/main.py),
 //!   3. run `hermes desktop --build-only` (the rebuild step update skips),
 //!   4. launch the freshly-built desktop (reuses bootstrap::launch logic).
@@ -14,7 +14,7 @@
 //! emitting a synthetic two-stage manifest ("update", "rebuild"). To the
 //! frontend an update looks like a short bootstrap.
 //!
-//! Cross-platform note: `hermes update` already handles macOS/Linux (git/pip).
+//! Cross-platform note: `moor update` already handles macOS/Linux (git/pip).
 //! The only OS-specific bits here are the venv shim path (resolve_hermes) and
 //! the no-window creation flag — both already cfg-gated. Keep new logic
 //! OS-agnostic so the mac/linux port stays "fill in the paths".
@@ -33,13 +33,13 @@ use tokio::process::Command;
 
 use crate::events::{BootstrapEvent, LogStream, StageInfo, StageState};
 
-/// `hermes update` exit code meaning "another hermes process is holding the
+/// `moor update` exit code meaning "another hermes process is holding the
 /// venv shim open / dirty precondition" — see _cmd_update_impl in
 /// hermes_cli/main.py (sys.exit(2)). We surface a targeted message for this.
 const UPDATE_EXIT_CONCURRENT: i32 = 2;
 
 /// How long to wait for the old desktop process to release the venv shim
-/// before giving up and letting `hermes update`'s own guard decide.
+/// before giving up and letting `moor update`'s own guard decide.
 const DESKTOP_EXIT_WAIT: Duration = Duration::from_secs(20);
 const DESKTOP_EXIT_POLL: Duration = Duration::from_millis(500);
 
@@ -149,15 +149,15 @@ async fn run_update(app: AppHandle) -> Result<()> {
 
     // ---- pre-step: wait for the old desktop to die -----------------------
     // The desktop exec'd us then called app.exit(), but process teardown is
-    // async on Windows. If it still holds the venv shim, `hermes update`
+    // async on Windows. If it still holds the venv shim, `moor update`
     // aborts with exit 2. Give it a bounded window to clear.
     wait_for_venv_free(&install_root, &app).await;
 
-    // ---- stage 1: hermes update -----------------------------------------
-    // Pass --branch so `hermes update` targets the branch this installer was
+    // ---- stage 1: moor update -----------------------------------------
+    // Pass --branch so `moor update` targets the branch this installer was
     // built/pinned against (BUILD_PIN_BRANCH), NOT its built-in default of
     // `main`. The install was a detached-HEAD checkout of a specific commit;
-    // without --branch, `hermes update` switches the checkout to `main` (a
+    // without --branch, `moor update` switches the checkout to `main` (a
     // divergent branch that may not even have the desktop CLI command), then
     // reports "already up to date" against the wrong branch. The desktop
     // detected the update against this same branch, so we must update against
@@ -171,11 +171,11 @@ async fn run_update(app: AppHandle) -> Result<()> {
     let child_env = update_child_env(&install_root);
     let mut update_args: Vec<String> =
         vec!["update".into(), "--yes".into(), "--gateway".into()];
-    // --force skips `hermes update`'s Windows running-exe guard (which would
+    // --force skips `moor update`'s Windows running-exe guard (which would
     // `sys.exit(2)` and dead-end the handoff). By contract the desktop has
     // already exited and waited for the venv shim to unlock before launching
     // us, and wait_for_venv_free below force-kills any straggler — so by the
-    // time `hermes update` runs there is no legitimate hermes.exe to protect,
+    // time `moor update` runs there is no legitimate hermes.exe to protect,
     // and the guard would only produce a false "Moor is still running" stop.
     update_args.push("--force".into());
     update_args.push("--branch".into());
@@ -193,7 +193,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
     )
     .await?;
 
-    // Retry-once for the update-boundary crash. `hermes update` lazily imports
+    // Retry-once for the update-boundary crash. `moor update` lazily imports
     // the FRESHLY PULLED modules, but the dependency-install step still runs the
     // already-in-memory pre-pull code for one invocation. A release that changed
     // an updater-path contract across that boundary (e.g. #39780's `_UvResult`,
@@ -201,7 +201,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
     // `list2cmdline` with `TypeError: sequence item 1: expected str instance,
     // bool found`, fixed in #39820) therefore kills the FIRST update on the
     // parked population — even though the fix is already on disk by then. A
-    // second `hermes update` runs clean because the now-current module is loaded
+    // second `moor update` runs clean because the now-current module is loaded
     // from the start. Rather than make the parked user click Update twice (and
     // stare at a scary crash first), retry once automatically. Skip the retry
     // for the concurrent-instance guard (exit 2) — that's a "close Moor" state
@@ -252,7 +252,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
         }
         other => {
             let msg = format!(
-                "hermes update failed (exit {:?}). See {} for details.",
+                "moor update failed (exit {:?}). See {} for details.",
                 other,
                 crate::paths::hermes_home()
                     .join("logs")
@@ -278,7 +278,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
     }
 
     // ---- stage 2: hermes desktop --build-only ----------------------------
-    // `hermes update` deliberately does NOT build apps/desktop (it installs
+    // `moor update` deliberately does NOT build apps/desktop (it installs
     // repo-root deps with --workspaces=false). This is the rebuild it skips.
     emit_stage(&app, "rebuild", StageState::Running, None, None);
     let started = Instant::now();

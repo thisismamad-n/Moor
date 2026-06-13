@@ -312,7 +312,7 @@ class SlackAdapter(BasePlatformAdapter):
       - DMs and channel messages (mention-gated in channels)
       - Thread support
       - File/image/audio attachments
-      - Slash commands (/hermes)
+      - Slash commands (/moor)
       - Typing indicators (not natively supported by Slack bots)
     """
 
@@ -897,12 +897,12 @@ class SlackAdapter(BasePlatformAdapter):
             #
             # Every gateway command from COMMAND_REGISTRY is a native Slack
             # slash, matching Discord and Telegram's model (e.g. /btw, /stop,
-            # /model work directly without /hermes prefix). A single regex
+            # /model work directly without /moor prefix). A single regex
             # matcher dispatches all of them to one handler so we don't need
             # N identical @app.command() decorators.
             #
             # The slash commands must ALSO be declared in the Slack app
-            # manifest (see `hermes slack manifest`). In Socket Mode, Slack
+            # manifest (see `moor slack manifest`). In Socket Mode, Slack
             # routes the command event through the socket regardless of the
             # manifest's request URL, but it will not deliver an event for
             # a slash command the manifest doesn't declare.
@@ -3301,9 +3301,9 @@ class SlackAdapter(BasePlatformAdapter):
         Discord and Telegram model. The slash name itself is the command;
         any text after it is the argument list.
 
-        The legacy ``/hermes <subcommand> [args]`` form is preserved for
+        The legacy ``/moor <subcommand> [args]`` form is preserved for
         backward compatibility with older workspace manifests and for users
-        who want a single entry point for free-form questions (``/hermes
+        who want a single entry point for free-form questions (``/moor
         what's the weather`` — non-slash text is treated as a regular
         message).
         """
@@ -3318,7 +3318,7 @@ class SlackAdapter(BasePlatformAdapter):
             self._channel_team[channel_id] = team_id
 
         if slash_name in {"hermes", ""}:
-            # Legacy /hermes <subcommand> [args] routing + free-form questions.
+            # Legacy /moor <subcommand> [args] routing + free-form questions.
             # Empty slash_name falls into this branch for backward compat
             # with any caller that didn't populate command["command"].
             from hermes_cli.commands import slack_subcommand_map
@@ -3326,7 +3326,7 @@ class SlackAdapter(BasePlatformAdapter):
             subcommand_map = slack_subcommand_map()
             subcommand_map["compact"] = "/compress"
             # Guard against whitespace-only text where ``text`` is truthy but
-            # ``text.split()`` returns ``[]`` (e.g. user sends ``/hermes   ``).
+            # ``text.split()`` returns ``[]`` (e.g. user sends ``/moor   ``).
             parts = text.split() if text else []
             first_word = parts[0] if parts else ""
             if first_word in subcommand_map:
@@ -3369,7 +3369,7 @@ class SlackAdapter(BasePlatformAdapter):
         # channel+user can be routed ephemerally (replaces the initial
         # "Running /cmd…" ack shown by handle_hermes_command).
         # Only stash for COMMAND events (text starts with "/") — free-form
-        # questions via "/hermes <question>" must produce public replies so
+        # questions via "/moor <question>" must produce public replies so
         # the whole channel can see the agent's answer.
         response_url = command.get("response_url", "")
         if response_url and user_id and channel_id and text.startswith("/"):

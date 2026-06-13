@@ -201,7 +201,7 @@ Create `~/.hermes/BOOT.md`. Write it as if you were giving instructions to a hum
 ```markdown
 # Startup Checklist
 
-1. Run `hermes cron list` and check if any scheduled jobs failed overnight.
+1. Run `moor cron list` and check if any scheduled jobs failed overnight.
 2. If any failed, send a summary to Discord #ops using the `send_message` tool.
 3. Check if `/opt/app/deploy.log` has any ERROR lines from the last 24 hours. If yes, summarize them and include in the same Discord message.
 4. If nothing went wrong, reply with only `[SILENT]` so no message is sent.
@@ -314,13 +314,13 @@ Without these, a bare `AIAgent()` falls back to built-in defaults and will 401 a
 Restart the gateway:
 
 ```bash
-hermes gateway restart
+moor gateway restart
 ```
 
 Watch the logs:
 
 ```bash
-hermes logs --follow --level INFO | grep boot-md
+moor logs --follow --level INFO | grep boot-md
 ```
 
 You should see `Running BOOT.md (N chars)` followed by either `boot-md completed: ...` (summary of what the agent did) or `boot-md completed (nothing to report)` when the agent replied `[SILENT]`.

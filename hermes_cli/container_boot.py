@@ -65,8 +65,8 @@ def reconcile_profile_gateways(
     (the implicit profile that lives at the top of ``$HERMES_HOME``,
     not under ``profiles/``). The dispatcher in ``hermes_cli.gateway``
     maps an empty profile suffix to ``gateway-default``, so this slot
-    is what ``hermes gateway start`` (no ``-p``) targets. Without it,
-    bare ``hermes gateway start`` inside the container would land on
+    is what ``moor gateway start`` (no ``-p``) targets. Without it,
+    bare ``moor gateway start`` inside the container would land on
     ``s6-svc -u /run/service/gateway-default`` → uncaught
     ``CalledProcessError`` → traceback to the user (PR #30136 review).
 
@@ -94,7 +94,7 @@ def reconcile_profile_gateways(
 
     # Default profile — always register, even if nothing has ever
     # populated the root profile dir. The slot exists so
-    # ``hermes gateway start`` (no ``-p``) has somewhere to land;
+    # ``moor gateway start`` (no ``-p``) has somewhere to land;
     # auto-up only when the prior state was "running" (same rule as
     # named profiles). If the container was launched with the legacy
     # `gateway run` command and no state exists yet, seed that intent
@@ -120,8 +120,8 @@ def reconcile_profile_gateways(
         for entry in sorted(profiles_root.iterdir()):
             if not entry.is_dir():
                 continue
-            # SOUL.md is always seeded by `hermes profile create` (config.yaml
-            # is not — that comes later via `hermes setup`). Use it as the
+            # SOUL.md is always seeded by `moor profile create` (config.yaml
+            # is not — that comes later via `moor setup`). Use it as the
             # "real profile" marker so stray dirs (backups, manual mkdir)
             # aren't picked up.
             if not (entry / "SOUL.md").exists():

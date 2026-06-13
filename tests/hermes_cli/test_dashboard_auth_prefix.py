@@ -2,21 +2,21 @@
 
 Mission-control style deployments reverse-proxy the dashboard at a path
 prefix (e.g. ``mission-control.tilos.com/hermes/*`` -> local Caddy ->
-:9119), injecting ``X-Forwarded-Prefix: /hermes`` on every request.
+:9119), injecting ``X-Forwarded-Prefix: /moor`` on every request.
 
 The dashboard already honours this for the SPA bundle (rewriting asset
 URLs and the bootstrap ``__HERMES_BASE_PATH__``). The OAuth gate must
 honour it too:
 
   1. The gate's ``Location:`` redirect to /login (in
-     ``_unauth_response``) needs to be ``/hermes/login`` so the browser
+     ``_unauth_response``) needs to be ``/moor/login`` so the browser
      follows it through the proxy.
   2. The 401 JSON envelope's ``login_url`` needs the same prefix so the
      SPA's full-page navigation lands at the proxied login page.
   3. ``_redirect_uri`` (the OAuth callback URL handed to the IDP) must
      reconstruct the public URL including the prefix, otherwise the IDP
      redirects back to ``/auth/callback`` instead of
-     ``/hermes/auth/callback`` and the user gets 404.
+     ``/moor/auth/callback`` and the user gets 404.
   4. Cookies must use ``Path=/hermes`` when behind a prefix so they
      don't leak to other apps on the same origin AND so they get sent
      back to the dashboard on subsequent requests under the prefix.
@@ -105,28 +105,28 @@ class TestGateRedirectsCarryPrefix:
     def test_html_redirect_to_login_carries_prefix(self, gated_app_proxied):
         r = gated_app_proxied.get(
             "/sessions",
-            headers={"x-forwarded-prefix": "/hermes"},
+            headers={"x-forwarded-prefix": "/moor"},
             follow_redirects=False,
         )
         assert r.status_code == 302
         # /login redirect must include the prefix or the browser will
         # follow it to mission-control.tilos.com/login (which the proxy
         # doesn't route to the dashboard).
-        assert r.headers["location"].startswith("/hermes/login"), (
+        assert r.headers["location"].startswith("/moor/login"), (
             f"Location header lost prefix: {r.headers['location']!r}"
         )
 
     def test_api_401_envelope_login_url_carries_prefix(self, gated_app_proxied):
         r = gated_app_proxied.get(
             "/api/sessions",
-            headers={"x-forwarded-prefix": "/hermes"},
+            headers={"x-forwarded-prefix": "/moor"},
             follow_redirects=False,
         )
         assert r.status_code == 401
         body = r.json()
         # SPA does window.location.assign(body.login_url); this MUST
         # include the prefix.
-        assert body["login_url"].startswith("/hermes/login"), (
+        assert body["login_url"].startswith("/moor/login"), (
             f"401 envelope login_url lost prefix: {body['login_url']!r}"
         )
 
@@ -169,7 +169,7 @@ class TestOAuthRedirectUriRespectsPrefix:
         user gets 404."""
         r = gated_app_proxied.get(
             "/auth/login?provider=stub",
-            headers={"x-forwarded-prefix": "/hermes"},
+            headers={"x-forwarded-prefix": "/moor"},
             follow_redirects=False,
         )
         assert r.status_code == 302
@@ -185,7 +185,7 @@ class TestOAuthRedirectUriRespectsPrefix:
         parsed = urlparse(redirect_uri)
         assert parsed.scheme == "https"
         assert parsed.netloc == "mission-control.tilos.com"
-        assert parsed.path == "/hermes/auth/callback", (
+        assert parsed.path == "/moor/auth/callback", (
             f"redirect_uri dropped prefix: {redirect_uri!r}"
         )
 
@@ -410,13 +410,13 @@ class TestCookiePathRespectsPrefix:
     def test_pkce_cookie_uses_prefix_path(self, gated_app_proxied):
         r = gated_app_proxied.get(
             "/auth/login?provider=stub",
-            headers={"x-forwarded-prefix": "/hermes"},
+            headers={"x-forwarded-prefix": "/moor"},
             follow_redirects=False,
         )
         cookies = r.headers.get_list("set-cookie")
         pkce = next(c for c in cookies if "hermes_session_pkce" in c)
         # Browser only sends cookie back if the request path is under
-        # the cookie's Path attribute, so we need /hermes here. Bare
+        # the cookie's Path attribute, so we need /moor here. Bare
         # /-rooted cookies would still be sent but would also be sent
         # to /billing/... etc.
         assert "Path=/hermes" in pkce, (
@@ -432,7 +432,7 @@ class TestCookiePathRespectsPrefix:
         """
         r = gated_app_proxied.get(
             "/auth/login?provider=stub",
-            headers={"x-forwarded-prefix": "/hermes"},
+            headers={"x-forwarded-prefix": "/moor"},
             follow_redirects=False,
         )
         cookies = r.headers.get_list("set-cookie")
@@ -510,10 +510,10 @@ class TestCookiePathRespectsPrefix:
         Note on TestClient semantics: starlette's TestClient sees the
         literal request path (``/auth/login``, ``/auth/callback``) —
         not the public path the proxy displays to the browser
-        (``/hermes/auth/login``, ``/hermes/auth/callback``). A cookie
+        (``/moor/auth/login``, ``/moor/auth/callback``). A cookie
         set with ``Path=/hermes`` would therefore NOT be sent back on
         the second request through TestClient even though it WOULD be
-        sent by a real browser hitting ``/hermes/auth/callback``. To
+        sent by a real browser hitting ``/moor/auth/callback``. To
         avoid baking that mismatch into the test, we inspect the
         ``Set-Cookie`` header on the callback's response WITHOUT
         depending on the PKCE cookie round-tripping through
@@ -523,7 +523,7 @@ class TestCookiePathRespectsPrefix:
         # /auth/login sets the PKCE cookie. Capture it from Set-Cookie.
         r1 = gated_app_proxied.get(
             "/auth/login?provider=stub",
-            headers={"x-forwarded-prefix": "/hermes"},
+            headers={"x-forwarded-prefix": "/moor"},
             follow_redirects=False,
         )
         pkce_set = next(
@@ -540,7 +540,7 @@ class TestCookiePathRespectsPrefix:
         r2 = gated_app_proxied.get(
             f"/auth/callback?code=stub_code&state={state}",
             headers={
-                "x-forwarded-prefix": "/hermes",
+                "x-forwarded-prefix": "/moor",
                 "cookie": pkce_kv,
             },
             follow_redirects=False,

@@ -14,7 +14,7 @@ Configure and use Honcho memory with Moor -- cross-session user modeling, multi-
 
 | | |
 |---|---|
-| Source | Optional — install with `hermes skills install official/autonomous-ai-agents/honcho` |
+| Source | Optional — install with `moor skills install official/autonomous-ai-agents/honcho` |
 | Path | `optional-skills/autonomous-ai-agents/honcho` |
 | Version | `2.0.0` |
 | Author | Moor Agent |
@@ -220,7 +220,7 @@ Each Moor profile gets its own Honcho AI peer while sharing the same workspace (
 ### Create a profile with Honcho peer
 
 ```bash
-hermes profile create coder --clone
+moor profile create coder --clone
 # creates host block hermes.coder, AI peer "coder", inherits config from default
 ```
 
@@ -410,7 +410,7 @@ Run `hermes honcho setup`. Ensure `memory.provider: honcho` is in `~/.hermes/con
 Check `hermes honcho status` -- verify `saveMessages: true` and `writeFrequency` isn't `session` (which only writes on exit).
 
 ### Profile not getting its own peer
-Use `--clone` when creating: `hermes profile create <name> --clone`. For existing profiles: `hermes honcho sync`.
+Use `--clone` when creating: `moor profile create <name> --clone`. For existing profiles: `hermes honcho sync`.
 
 ### Observation changes in dashboard not reflected
 Observation config is synced from the server on each session init. Start a new session after changing settings in the Honcho UI.
@@ -441,6 +441,6 @@ Session summary requires at least one prior turn in the current Honcho session. 
 | `hermes honcho identity` | Seed AI peer identity or show both peer representations |
 | `hermes honcho sync` | Create host blocks for all Moor profiles that don't have one yet |
 | `hermes honcho migrate` | Step-by-step migration guide from OpenClaw native memory to Moor + Honcho |
-| `hermes memory setup` | Generic memory provider picker (selecting "honcho" runs the same wizard) |
-| `hermes memory status` | Show active memory provider and config |
-| `hermes memory off` | Disable external memory provider |
+| `moor memory setup` | Generic memory provider picker (selecting "honcho" runs the same wizard) |
+| `moor memory status` | Show active memory provider and config |
+| `moor memory off` | Disable external memory provider |

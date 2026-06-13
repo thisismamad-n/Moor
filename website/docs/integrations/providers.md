@@ -10,15 +10,15 @@ This page covers setting up inference providers for Moor Agent — from cloud AP
 
 ## Inference Providers
 
-You need at least one way to connect to an LLM. Use `hermes model` to switch providers and models interactively, or configure directly:
+You need at least one way to connect to an LLM. Use `moor model` to switch providers and models interactively, or configure directly:
 
 | Provider | Setup |
 |----------|-------|
-| **Nous Portal** | `hermes model` (OAuth, subscription-based) |
-| **OpenAI Codex** | `hermes model` (ChatGPT OAuth, uses Codex models) |
-| **GitHub Copilot** | `hermes model` (OAuth device code flow, `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `gh auth token`) |
-| **GitHub Copilot ACP** | `hermes model` (spawns local `copilot --acp --stdio`) |
-| **Anthropic** | `hermes model` (Claude Max + extra usage credits via OAuth; also supports Anthropic API key or manual setup-token — see note below) |
+| **Nous Portal** | `moor model` (OAuth, subscription-based) |
+| **OpenAI Codex** | `moor model` (ChatGPT OAuth, uses Codex models) |
+| **GitHub Copilot** | `moor model` (OAuth device code flow, `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `gh auth token`) |
+| **GitHub Copilot ACP** | `moor model` (spawns local `copilot --acp --stdio`) |
+| **Anthropic** | `moor model` (Claude Max + extra usage credits via OAuth; also supports Anthropic API key or manual setup-token — see note below) |
 | **OpenRouter** | `OPENROUTER_API_KEY` in `~/.hermes/.env` |
 | **NovitaAI** | `NOVITA_API_KEY` in `~/.hermes/.env` (provider: `novita`, 200+ models, Model API, Agent Sandbox, GPU Cloud) |
 | **z.ai / GLM** | `GLM_API_KEY` in `~/.hermes/.env` (provider: `zai`) |
@@ -29,7 +29,7 @@ You need at least one way to connect to an LLM. Use `hermes model` to switch pro
 | **MiniMax** | `MINIMAX_API_KEY` in `~/.hermes/.env` (provider: `minimax`) |
 | **MiniMax China** | `MINIMAX_CN_API_KEY` in `~/.hermes/.env` (provider: `minimax-cn`) |
 | **xAI (Grok) — Responses API** | `XAI_API_KEY` in `~/.hermes/.env` (provider: `xai`) |
-| **xAI Grok OAuth (SuperGrok)** | `hermes model` → "xAI Grok OAuth (SuperGrok / Premium+)" — browser login, no API key. See [guide](../guides/xai-grok-oauth.md) |
+| **xAI Grok OAuth (SuperGrok)** | `moor model` → "xAI Grok OAuth (SuperGrok / Premium+)" — browser login, no API key. See [guide](../guides/xai-grok-oauth.md) |
 | **Qwen Cloud (Alibaba DashScope)** | `DASHSCOPE_API_KEY` in `~/.hermes/.env` (provider: `alibaba`) |
 | **Alibaba Cloud (Coding Plan)** | `DASHSCOPE_API_KEY` (provider: `alibaba-coding-plan`, alias: `alibaba_coding`) — separate billing SKU, different endpoint |
 | **Kilo Code** | `KILOCODE_API_KEY` in `~/.hermes/.env` (provider: `kilocode`) |
@@ -40,17 +40,17 @@ You need at least one way to connect to an LLM. Use `hermes model` to switch pro
 | **DeepSeek** | `DEEPSEEK_API_KEY` in `~/.hermes/.env` (provider: `deepseek`) |
 | **Hugging Face** | `HF_TOKEN` in `~/.hermes/.env` (provider: `huggingface`, aliases: `hf`) |
 | **Google / Gemini** | `GOOGLE_API_KEY` (or `GEMINI_API_KEY`) in `~/.hermes/.env` (provider: `gemini`) |
-| **Google Gemini (OAuth)** | `hermes model` → "Google Gemini (OAuth)" (provider: `google-gemini-cli`, free tier supported, browser PKCE login) |
+| **Google Gemini (OAuth)** | `moor model` → "Google Gemini (OAuth)" (provider: `google-gemini-cli`, free tier supported, browser PKCE login) |
 | **OpenAI API (direct)** | `OPENAI_API_KEY` in `~/.hermes/.env` (provider: `openai-api`, optional `OPENAI_BASE_URL`) |
-| **Azure AI Foundry** | `hermes model` → "Azure AI Foundry" (provider: `azure-foundry`; uses Azure OpenAI / Foundry endpoint and key) |
-| **AWS Bedrock** | `hermes model` → "AWS Bedrock" (provider: `bedrock`; standard AWS credentials chain via boto3) |
+| **Azure AI Foundry** | `moor model` → "Azure AI Foundry" (provider: `azure-foundry`; uses Azure OpenAI / Foundry endpoint and key) |
+| **AWS Bedrock** | `moor model` → "AWS Bedrock" (provider: `bedrock`; standard AWS credentials chain via boto3) |
 | **NVIDIA Build** | `NVIDIA_API_KEY` in `~/.hermes/.env` (provider: `nvidia`; NIM-hosted models on build.nvidia.com) |
-| **Ollama Cloud** | `hermes model` → "Ollama Cloud" (provider: `ollama-cloud`; cloud-hosted Ollama API) |
-| **Qwen OAuth** | `hermes model` → "Qwen OAuth" (provider: `qwen-oauth`; browser PKCE login) |
-| **MiniMax OAuth** | `hermes model` → "MiniMax (OAuth)" (provider: `minimax-oauth`; browser PKCE login) |
+| **Ollama Cloud** | `moor model` → "Ollama Cloud" (provider: `ollama-cloud`; cloud-hosted Ollama API) |
+| **Qwen OAuth** | `moor model` → "Qwen OAuth" (provider: `qwen-oauth`; browser PKCE login) |
+| **MiniMax OAuth** | `moor model` → "MiniMax (OAuth)" (provider: `minimax-oauth`; browser PKCE login) |
 | **StepFun** | `STEPFUN_API_KEY` in `~/.hermes/.env` (provider: `stepfun`) |
-| **LM Studio** | `hermes model` → "LM Studio" (provider: `lmstudio`, optional `LM_API_KEY`) |
-| **Custom Endpoint** | `hermes model` → choose "Custom endpoint" (saved in `config.yaml`) |
+| **LM Studio** | `moor model` → "LM Studio" (provider: `lmstudio`, optional `LM_API_KEY`) |
+| **Custom Endpoint** | `moor model` → choose "Custom endpoint" (saved in `config.yaml`) |
 
 For the official API-key path, see the dedicated [Google Gemini guide](/guides/google-gemini).
 
@@ -64,16 +64,16 @@ In the `model:` config section, you can use either `default:` or `model:` as the
 [Nous Portal](https://portal.Moor inc..com) is Nous Research's unified subscription gateway and **the recommended way to run Moor Agent**. One OAuth login covers 300+ frontier agentic models (Claude, GPT, Gemini, DeepSeek, Qwen, Kimi, GLM, MiniMax, Grok, ...) plus the [Tool Gateway](/user-guide/features/tool-gateway) (web search, image generation, TTS, browser automation) plus [Nous Chat](https://chat.Moor inc..com) — billed against your Nous subscription instead of separate per-provider accounts.
 
 ```bash
-hermes setup --portal     # fresh install — OAuth + provider + gateway in one command
-hermes model              # existing install — pick "Nous Portal" from the list
-hermes portal info        # inspect login + routing at any time
+moor setup --portal     # fresh install — OAuth + provider + gateway in one command
+moor model              # existing install — pick "Nous Portal" from the list
+moor portal info        # inspect login + routing at any time
 ```
 
 Don't have a subscription yet? Get one at [portal.Moor inc..com/manage-subscription](https://portal.Moor inc..com/manage-subscription).
 
 **For full details:** see the dedicated [Nous Portal integration page](/integrations/nous-portal) (what's in the subscription, model catalog, troubleshooting) and the step-by-step [Run Moor Agent with Nous Portal guide](/guides/run-hermes-with-nous-portal).
 
-**Client identification.** Every Portal request from Moor Agent carries a `client=hermes-client-v<version>` tag (e.g. `client=hermes-client-v0.13.0`) auto-aligned to your installed release. This is sent on all Portal pathways — main chat loop, auxiliary calls, compression summarizer, web extraction — and lets Portal-side telemetry distinguish Moor traffic from other clients. No config required; the tag updates automatically when you `hermes update`.
+**Client identification.** Every Portal request from Moor Agent carries a `client=hermes-client-v<version>` tag (e.g. `client=hermes-client-v0.13.0`) auto-aligned to your installed release. This is sent on all Portal pathways — main chat loop, auxiliary calls, compression summarizer, web extraction — and lets Portal-side telemetry distinguish Moor traffic from other clients. No config required; the tag updates automatically when you `moor update`.
 
 **JWT auth (automatic).** Moor prefers scoped `inference:invoke` JWTs for Portal requests with the legacy opaque session-key path as a fallback. No configuration is required — credentials are managed by the OAuth flow and rotate transparently. Revoked refresh tokens are quarantined to avoid replay loops.
 
@@ -81,15 +81,15 @@ Don't have a subscription yet? Get one at [portal.Moor inc..com/manage-subscript
 :::info Codex Note
 The OpenAI Codex provider authenticates via device code (open a URL, enter a code). Moor stores the resulting credentials in its own auth store under `~/.hermes/auth.json` and can import existing Codex CLI credentials from `~/.codex/auth.json` when present. No Codex CLI installation is required.
 
-If a token refresh fails with a terminal error (HTTP 4xx, `invalid_grant`, revoked grant, etc.), Moor marks the refresh token as dead and stops replaying it so you don't see a flood of identical auth failures. The next request surfaces a typed re-auth message instead. Run `hermes auth add codex-oauth` (or `hermes model` → OpenAI Codex) to start a fresh device-code login; the quarantine clears on the next successful exchange.
+If a token refresh fails with a terminal error (HTTP 4xx, `invalid_grant`, revoked grant, etc.), Moor marks the refresh token as dead and stops replaying it so you don't see a flood of identical auth failures. The next request surfaces a typed re-auth message instead. Run `moor auth add codex-oauth` (or `moor model` → OpenAI Codex) to start a fresh device-code login; the quarantine clears on the next successful exchange.
 :::
 
 :::warning
-Even when using Nous Portal, Codex, or a custom endpoint, some tools (vision, web summarization, MoA) use a separate "auxiliary" model. By default (`auxiliary.*.provider: "auto"`), Moor routes these tasks to your **main chat model** — the same model you picked in `hermes model`. You can override each task individually to route it to a cheaper/faster model (e.g. Gemini Flash on OpenRouter) — see [Auxiliary Models](/user-guide/configuration#auxiliary-models).
+Even when using Nous Portal, Codex, or a custom endpoint, some tools (vision, web summarization, MoA) use a separate "auxiliary" model. By default (`auxiliary.*.provider: "auto"`), Moor routes these tasks to your **main chat model** — the same model you picked in `moor model`. You can override each task individually to route it to a cheaper/faster model (e.g. Gemini Flash on OpenRouter) — see [Auxiliary Models](/user-guide/configuration#auxiliary-models).
 :::
 
 :::tip Nous Tool Gateway
-Paid Nous Portal subscribers also get access to the **[Tool Gateway](/user-guide/features/tool-gateway)** — web search, image generation, TTS, and browser automation routed through your subscription. No extra API keys needed. On a fresh install, `hermes setup --portal` logs you in, sets Nous as your provider, and turns the gateway on in one command. Existing users can enable it from `hermes model` or per-tool from `hermes tools`. Inspect routing at any time with `hermes portal info`.
+Paid Nous Portal subscribers also get access to the **[Tool Gateway](/user-guide/features/tool-gateway)** — web search, image generation, TTS, and browser automation routed through your subscription. No extra API keys needed. On a fresh install, `moor setup --portal` logs you in, sets Nous as your provider, and turns the gateway on in one command. Existing users can enable it from `moor model` or per-tool from `moor tools`. Inspect routing at any time with `moor portal info`.
 :::
 
 ### Two Commands for Model Management
@@ -98,10 +98,10 @@ Moor has **two** model commands that serve different purposes:
 
 | Command | Where to run | What it does |
 |---------|-------------|--------------|
-| **`hermes model`** | Your terminal (outside any session) | Full setup wizard — add providers, run OAuth, enter API keys, configure endpoints |
+| **`moor model`** | Your terminal (outside any session) | Full setup wizard — add providers, run OAuth, enter API keys, configure endpoints |
 | **`/model`** | Inside a Moor chat session | Quick switch between **already-configured** providers and models |
 
-If you're trying to switch to a provider you haven't set up yet (e.g. you only have OpenRouter configured and want to use Anthropic), you need `hermes model`, not `/model`. Exit your session first (`Ctrl+C` or `/quit`), run `hermes model`, complete the provider setup, then start a new session.
+If you're trying to switch to a provider you haven't set up yet (e.g. you only have OpenRouter configured and want to use Anthropic), you need `moor model`, not `/model`. Exit your session first (`Ctrl+C` or `/quit`), run `moor model`, complete the provider setup, then start a new session.
 
 
 ### Anthropic (Native)
@@ -109,7 +109,7 @@ If you're trying to switch to a provider you haven't set up yet (e.g. you only h
 Use Claude models directly through the Anthropic API — no OpenRouter proxy needed. Supports three auth methods:
 
 :::caution Requires Claude Max "extra usage" credits
-When you authenticate via `hermes model` → Anthropic OAuth (or via `hermes auth add anthropic --type oauth`), Moor routes as Claude Code against your Anthropic account. **It only works if you're on a Claude Max plan and have purchased extra usage credits.** The base Max plan allowance (the usage included in Claude Code by default) is not consumed by Moor — only the extra/overage credits you've added on top are. Claude Pro subscribers cannot use this path.
+When you authenticate via `moor model` → Anthropic OAuth (or via `moor auth add anthropic --type oauth`), Moor routes as Claude Code against your Anthropic account. **It only works if you're on a Claude Max plan and have purchased extra usage credits.** The base Max plan allowance (the usage included in Claude Code by default) is not consumed by Moor — only the extra/overage credits you've added on top are. Claude Pro subscribers cannot use this path.
 
 If you don't have Max + extra credits, use an `ANTHROPIC_API_KEY` instead — requests are billed pay-per-token against that key's organization (standard API pricing, independent of any Claude subscription).
 :::
@@ -117,21 +117,21 @@ If you don't have Max + extra credits, use an `ANTHROPIC_API_KEY` instead — re
 ```bash
 # With an API key (pay-per-token)
 export ANTHROPIC_API_KEY=***
-hermes chat --provider anthropic --model claude-sonnet-4-6
+moor chat --provider anthropic --model claude-sonnet-4-6
 
-# Preferred: authenticate through `hermes model`
+# Preferred: authenticate through `moor model`
 # Moor will use Claude Code's credential store directly when available
-hermes model
+moor model
 
 # Manual override with a setup-token (fallback / legacy)
 export ANTHROPIC_TOKEN=***  # setup-token or manual OAuth token
-hermes chat --provider anthropic
+moor chat --provider anthropic
 
 # Auto-detect Claude Code credentials (if you already use Claude Code)
-hermes chat --provider anthropic  # reads Claude Code credential files automatically
+moor chat --provider anthropic  # reads Claude Code credential files automatically
 ```
 
-When you choose Anthropic OAuth through `hermes model`, Moor prefers Claude Code's own credential store over copying the token into `~/.hermes/.env`. That keeps refreshable Claude credentials refreshable.
+When you choose Anthropic OAuth through `moor model`, Moor prefers Claude Code's own credential store over copying the token into `~/.hermes/.env`. That keeps refreshable Claude credentials refreshable.
 
 Or set it permanently:
 ```yaml
@@ -151,7 +151,7 @@ Moor supports GitHub Copilot as a first-class provider with two modes:
 **`copilot` — Direct Copilot API** (recommended). Uses your GitHub Copilot subscription to access GPT-5.x, Claude, Gemini, and other models through the Copilot API.
 
 ```bash
-hermes chat --provider copilot --model gpt-5.4
+moor chat --provider copilot --model gpt-5.4
 ```
 
 **Authentication options** (checked in this order):
@@ -161,18 +161,18 @@ hermes chat --provider copilot --model gpt-5.4
 3. `GITHUB_TOKEN` environment variable
 4. `gh auth token` CLI fallback
 
-If no token is found, `hermes model` offers an **OAuth device code login** — the same flow used by the Copilot CLI and opencode.
+If no token is found, `moor model` offers an **OAuth device code login** — the same flow used by the Copilot CLI and opencode.
 
 :::warning Token types
 The Copilot API does **not** support classic Personal Access Tokens (`ghp_*`). Supported token types:
 
 | Type | Prefix | How to get |
 |------|--------|------------|
-| OAuth token | `gho_` | `hermes model` → GitHub Copilot → Login with GitHub |
+| OAuth token | `gho_` | `moor model` → GitHub Copilot → Login with GitHub |
 | Fine-grained PAT | `github_pat_` | GitHub Settings → Developer settings → Fine-grained tokens (needs **Copilot Requests** permission) |
 | GitHub App token | `ghu_` | Via GitHub App installation |
 
-If your `gh auth token` returns a `ghp_*` token, use `hermes model` to authenticate via OAuth instead.
+If your `gh auth token` returns a `ghp_*` token, use `moor model` to authenticate via OAuth instead.
 :::
 
 :::info Copilot auth behavior in Moor
@@ -192,7 +192,7 @@ Some older community proxies use `api.github.com/copilot_internal/v2/token` exch
 **`copilot-acp` — Copilot ACP agent backend**. Spawns the local Copilot CLI as a subprocess:
 
 ```bash
-hermes chat --provider copilot-acp --model copilot-acp
+moor chat --provider copilot-acp --model copilot-acp
 # Requires the GitHub Copilot CLI in PATH and an existing `copilot login` session
 ```
 
@@ -215,48 +215,48 @@ These providers have built-in support with dedicated provider IDs. Set the API k
 
 ```bash
 # NovitaAI Model API
-hermes chat --provider novita --model moonshotai/kimi-k2.5
+moor chat --provider novita --model moonshotai/kimi-k2.5
 # Requires: NOVITA_API_KEY in ~/.hermes/.env
 
 # z.ai / ZhipuAI GLM
-hermes chat --provider zai --model glm-5
+moor chat --provider zai --model glm-5
 # Requires: GLM_API_KEY in ~/.hermes/.env
 
 # Kimi / Moonshot AI (international: api.moonshot.ai)
-hermes chat --provider kimi-coding --model kimi-for-coding
+moor chat --provider kimi-coding --model kimi-for-coding
 # Requires: KIMI_API_KEY in ~/.hermes/.env
 
 # Kimi / Moonshot AI (China: api.moonshot.cn)
-hermes chat --provider kimi-coding-cn --model kimi-k2.5
+moor chat --provider kimi-coding-cn --model kimi-k2.5
 # Requires: KIMI_CN_API_KEY in ~/.hermes/.env
 
 # MiniMax (global endpoint)
-hermes chat --provider minimax --model MiniMax-M2.7
+moor chat --provider minimax --model MiniMax-M2.7
 # Requires: MINIMAX_API_KEY in ~/.hermes/.env
 
 # MiniMax (China endpoint)
-hermes chat --provider minimax-cn --model MiniMax-M2.7
+moor chat --provider minimax-cn --model MiniMax-M2.7
 # Requires: MINIMAX_CN_API_KEY in ~/.hermes/.env
 
 # Qwen Cloud / DashScope (Qwen models)
-hermes chat --provider alibaba --model qwen3.5-plus
+moor chat --provider alibaba --model qwen3.5-plus
 # Requires: DASHSCOPE_API_KEY in ~/.hermes/.env
 
 # Xiaomi MiMo
-hermes chat --provider xiaomi --model mimo-v2-pro
+moor chat --provider xiaomi --model mimo-v2-pro
 # Requires: XIAOMI_API_KEY in ~/.hermes/.env
 
 # Tencent TokenHub (Hy3 Preview)
-hermes chat --provider tencent-tokenhub --model hy3-preview
+moor chat --provider tencent-tokenhub --model hy3-preview
 # Requires: TOKENHUB_API_KEY in ~/.hermes/.env
 
 # Arcee AI (Trinity models)
-hermes chat --provider arcee --model trinity-large-thinking
+moor chat --provider arcee --model trinity-large-thinking
 # Requires: ARCEEAI_API_KEY in ~/.hermes/.env
 
 # GMI Cloud
 # Use the exact model ID returned by GMI's /v1/models endpoint.
-hermes chat --provider gmi --model zai-org/GLM-5.1-FP8
+moor chat --provider gmi --model zai-org/GLM-5.1-FP8
 # Requires: GMI_API_KEY in ~/.hermes/.env
 ```
 
@@ -275,17 +275,17 @@ When using the Z.AI / GLM provider, Moor automatically probes multiple endpoints
 
 ### xAI (Grok) — Responses API + Prompt Caching
 
-xAI is wired through the Responses API (`codex_responses` transport) for automatic reasoning support on Grok 4 models — no `reasoning_effort` parameter needed, the server reasons by default. Set `XAI_API_KEY` in `~/.hermes/.env` and pick xAI in `hermes model`, or drop `grok` as a shortcut into `/model grok-4-fast-reasoning`.
+xAI is wired through the Responses API (`codex_responses` transport) for automatic reasoning support on Grok 4 models — no `reasoning_effort` parameter needed, the server reasons by default. Set `XAI_API_KEY` in `~/.hermes/.env` and pick xAI in `moor model`, or drop `grok` as a shortcut into `/model grok-4-fast-reasoning`.
 
-SuperGrok and X Premium+ subscribers can sign in with browser OAuth instead of using an API key — pick **xAI Grok OAuth (SuperGrok / Premium+)** in `hermes model`, or run `hermes auth add xai-oauth`. The same OAuth bearer token is automatically reused by direct-to-xAI tools (TTS, image gen, video gen, transcription). See the [xAI Grok OAuth guide](../guides/xai-grok-oauth.md) for the full flow — and if Moor runs on a remote host, also see [OAuth over SSH / Remote Hosts](../guides/oauth-over-ssh.md) for the required `ssh -L` tunnel.
+SuperGrok and X Premium+ subscribers can sign in with browser OAuth instead of using an API key — pick **xAI Grok OAuth (SuperGrok / Premium+)** in `moor model`, or run `moor auth add xai-oauth`. The same OAuth bearer token is automatically reused by direct-to-xAI tools (TTS, image gen, video gen, transcription). See the [xAI Grok OAuth guide](../guides/xai-grok-oauth.md) for the full flow — and if Moor runs on a remote host, also see [OAuth over SSH / Remote Hosts](../guides/oauth-over-ssh.md) for the required `ssh -L` tunnel.
 
 When using xAI as a provider (any base URL containing `x.ai`), Moor automatically enables prompt caching by sending the `x-grok-conv-id` header with every API request. This routes requests to the same server within a conversation session, allowing xAI's infrastructure to reuse cached system prompts and conversation history.
 
 No configuration is needed — caching activates automatically when an xAI endpoint is detected and a session ID is available. This reduces latency and cost for multi-turn conversations.
 
-xAI also ships a dedicated TTS endpoint (`/v1/tts`). Select **xAI TTS** in `hermes tools` → Voice & TTS, or see the [Voice & TTS](../user-guide/features/tts.md#text-to-speech) page for config.
+xAI also ships a dedicated TTS endpoint (`/v1/tts`). Select **xAI TTS** in `moor tools` → Voice & TTS, or see the [Voice & TTS](../user-guide/features/tts.md#text-to-speech) page for config.
 
-**Retired xAI model migration (May 15, 2026):** xAI is retiring `grok-4*`, `grok-3`, `grok-code-fast-1`, and `grok-imagine-image-pro` on 2026-05-15. `hermes doctor` and `hermes chat` startup both detect any config still pointing at a retired ref and print the recommended replacement. Use `hermes migrate xai` for a one-shot config rewrite — dry-run by default, add `--apply` to write changes (a timestamped `config.yaml.bak-pre-migrate-xai-*` backup is created automatically).
+**Retired xAI model migration (May 15, 2026):** xAI is retiring `grok-4*`, `grok-3`, `grok-code-fast-1`, and `grok-imagine-image-pro` on 2026-05-15. `moor doctor` and `moor chat` startup both detect any config still pointing at a retired ref and print the recommended replacement. Use `hermes migrate xai` for a one-shot config rewrite — dry-run by default, add `--apply` to write changes (a timestamped `config.yaml.bak-pre-migrate-xai-*` backup is created automatically).
 
 ```bash
 hermes migrate xai          # preview replacements
@@ -300,11 +300,11 @@ hermes migrate xai --apply  # rewrite ~/.hermes/config.yaml in place
 
 ```bash
 # Use any available model
-hermes chat --provider novita --model moonshotai/kimi-k2.5
+moor chat --provider novita --model moonshotai/kimi-k2.5
 # Requires: NOVITA_API_KEY in ~/.hermes/.env
 
 # Short alias
-hermes chat --provider novita-ai --model deepseek/deepseek-v3-0324
+moor chat --provider novita-ai --model deepseek/deepseek-v3-0324
 ```
 
 Or set it permanently in `config.yaml`:
@@ -319,10 +319,10 @@ Get your API key at [novita.ai/settings/key-management](https://novita.ai/settin
 
 ### Ollama Cloud — Managed Ollama Models, OAuth + API Key
 
-[Ollama Cloud](https://ollama.com/cloud) hosts the same open-weight catalog as local Ollama but without the GPU requirement. Pick it in `hermes model` as **Ollama Cloud**, paste your API key from [ollama.com/settings/keys](https://ollama.com/settings/keys), and Moor auto-discovers the available models.
+[Ollama Cloud](https://ollama.com/cloud) hosts the same open-weight catalog as local Ollama but without the GPU requirement. Pick it in `moor model` as **Ollama Cloud**, paste your API key from [ollama.com/settings/keys](https://ollama.com/settings/keys), and Moor auto-discovers the available models.
 
 ```bash
-hermes model
+moor model
 # → pick "Ollama Cloud"
 # → paste your OLLAMA_API_KEY
 # → select from discovered models (gpt-oss:120b, glm-4.6:cloud, qwen3-coder:480b-cloud, etc.)
@@ -347,10 +347,10 @@ Anthropic Claude, Amazon Nova, DeepSeek v3.2, Meta Llama 4, and other models via
 
 ```bash
 # Simplest — named profile in ~/.aws/credentials
-hermes chat --provider bedrock --model us.anthropic.claude-sonnet-4-6
+moor chat --provider bedrock --model us.anthropic.claude-sonnet-4-6
 
 # Or with explicit env vars
-AWS_PROFILE=myprofile AWS_REGION=us-east-1 hermes chat --provider bedrock --model us.anthropic.claude-sonnet-4-6
+AWS_PROFILE=myprofile AWS_REGION=us-east-1 moor chat --provider bedrock --model us.anthropic.claude-sonnet-4-6
 ```
 
 Or permanently in `config.yaml`:
@@ -375,15 +375,15 @@ See the [AWS Bedrock guide](/guides/aws-bedrock) for a walkthrough of IAM setup,
 
 ### Qwen Portal (OAuth)
 
-Alibaba's Qwen Portal with browser-based OAuth login. Pick **Qwen OAuth (Portal)** in `hermes model`, sign in through the browser, and Moor persists the refresh token.
+Alibaba's Qwen Portal with browser-based OAuth login. Pick **Qwen OAuth (Portal)** in `moor model`, sign in through the browser, and Moor persists the refresh token.
 
 ```bash
-hermes model
+moor model
 # → pick "Qwen OAuth (Portal)"
 # → browser opens; sign in with your Alibaba account
 # → confirm — credentials are saved to ~/.hermes/auth.json
 
-hermes chat   # uses portal.qwen.ai/v1 endpoint
+moor chat   # uses portal.qwen.ai/v1 endpoint
 ```
 
 Or configure `config.yaml`:
@@ -412,22 +412,22 @@ model:
 Or from the CLI:
 
 ```bash
-hermes chat --provider alibaba_coding --model qwen3-coder-plus
+moor chat --provider alibaba_coding --model qwen3-coder-plus
 ```
 
 `alibaba_coding` uses the same `DASHSCOPE_API_KEY` your `alibaba` entry already uses — no separate key needed, just a different routing target. Before this provider was registered, users who set `provider: alibaba_coding` in `config.yaml` silently fell through to OpenRouter routing.
 
 ### MiniMax (OAuth)
 
-MiniMax-M2.7 via browser OAuth login — no API key needed. Pick **MiniMax (OAuth)** in `hermes model`, sign in through the browser, and Moor persists the access + refresh tokens. Uses the Anthropic Messages-compatible endpoint (`/anthropic`) under the hood.
+MiniMax-M2.7 via browser OAuth login — no API key needed. Pick **MiniMax (OAuth)** in `moor model`, sign in through the browser, and Moor persists the access + refresh tokens. Uses the Anthropic Messages-compatible endpoint (`/anthropic`) under the hood.
 
 ```bash
-hermes model
+moor model
 # → pick "MiniMax (OAuth)"
 # → browser opens; sign in with your MiniMax account (global or CN region)
 # → confirm — credentials are saved to ~/.hermes/auth.json
 
-hermes chat   # uses api.minimax.io/anthropic endpoint
+moor chat   # uses api.minimax.io/anthropic endpoint
 ```
 
 Or configure `config.yaml`:
@@ -449,11 +449,11 @@ Nemotron and other open source models via [build.nvidia.com](https://build.nvidi
 
 ```bash
 # Cloud (build.nvidia.com)
-hermes chat --provider nvidia --model nvidia/nemotron-3-super-120b-a12b
+moor chat --provider nvidia --model nvidia/nemotron-3-super-120b-a12b
 # Requires: NVIDIA_API_KEY in ~/.hermes/.env
 
 # Local NIM endpoint — override base URL
-NVIDIA_BASE_URL=http://localhost:8000/v1 hermes chat --provider nvidia --model nvidia/nemotron-3-super-120b-a12b
+NVIDIA_BASE_URL=http://localhost:8000/v1 moor chat --provider nvidia --model nvidia/nemotron-3-super-120b-a12b
 ```
 
 Or set it permanently in `config.yaml`:
@@ -475,7 +475,7 @@ Open and reasoning models via [GMI Cloud](https://www.gmicloud.ai/) — OpenAI-c
 
 ```bash
 # GMI Cloud
-hermes chat --provider gmi --model deepseek-ai/DeepSeek-V3.2
+moor chat --provider gmi --model deepseek-ai/DeepSeek-V3.2
 # Requires: GMI_API_KEY in ~/.hermes/.env
 ```
 
@@ -494,7 +494,7 @@ Step-series models via [StepFun](https://platform.stepfun.com) — OpenAI-compat
 
 ```bash
 # StepFun
-hermes chat --provider stepfun --model step-3.5-flash
+moor chat --provider stepfun --model step-3.5-flash
 # Requires: STEPFUN_API_KEY in ~/.hermes/.env
 ```
 
@@ -513,11 +513,11 @@ The base URL can be overridden with `STEPFUN_BASE_URL` (default: `https://api.st
 
 ```bash
 # Use any available model
-hermes chat --provider huggingface --model Qwen/Qwen3.5-397B-A17B
+moor chat --provider huggingface --model Qwen/Qwen3.5-397B-A17B
 # Requires: HF_TOKEN in ~/.hermes/.env
 
 # Short alias
-hermes chat --provider hf --model deepseek-ai/DeepSeek-V3.2
+moor chat --provider hf --model deepseek-ai/DeepSeek-V3.2
 ```
 
 Or set it permanently in `config.yaml`:
@@ -543,7 +543,7 @@ same API that Google's own `gemini-cli` tool uses. This supports both the
 **Quick start:**
 
 ```bash
-hermes model
+moor model
 # → pick "Google Gemini (OAuth)"
 # → see policy warning, confirm
 # → browser opens to accounts.google.com, sign in
@@ -628,7 +628,7 @@ Three ways to configure a custom endpoint:
 
 **Interactive setup (recommended):**
 ```bash
-hermes model
+moor model
 # Select "Custom endpoint (self-hosted / VLLM / etc.)"
 # Enter: API base URL, API key, Model name
 ```
@@ -644,19 +644,19 @@ model:
 ```
 
 :::warning Legacy env vars
-`LLM_MODEL` in `.env` is **removed** — `config.yaml` is the single source of truth for model and endpoint configuration. `OPENAI_BASE_URL` is still honored, but **only** for the `openai-api` provider (it overrides the OpenAI endpoint for direct API-key access). For other providers and custom endpoints, use `hermes model` or set `model.base_url` in `config.yaml` directly. If you have stale entries in your `.env`, they are automatically cleared on the next `hermes setup` or config migration.
+`LLM_MODEL` in `.env` is **removed** — `config.yaml` is the single source of truth for model and endpoint configuration. `OPENAI_BASE_URL` is still honored, but **only** for the `openai-api` provider (it overrides the OpenAI endpoint for direct API-key access). For other providers and custom endpoints, use `moor model` or set `model.base_url` in `config.yaml` directly. If you have stale entries in your `.env`, they are automatically cleared on the next `moor setup` or config migration.
 :::
 
 Both approaches persist to `config.yaml`, which is the source of truth for model, provider, and base URL.
 
 ### Switching Models with `/model`
 
-:::warning hermes model vs /model
-**`hermes model`** (run from your terminal, outside any chat session) is the **full provider setup wizard**. Use it to add new providers, run OAuth flows, enter API keys, and configure custom endpoints.
+:::warning moor model vs /model
+**`moor model`** (run from your terminal, outside any chat session) is the **full provider setup wizard**. Use it to add new providers, run OAuth flows, enter API keys, and configure custom endpoints.
 
 **`/model`** (typed inside an active Moor chat session) can only **switch between providers and models you've already set up**. It cannot add new providers, run OAuth, or prompt for API keys. If you've only configured one provider (e.g. OpenRouter), `/model` will only show models for that provider.
 
-**To add a new provider:** Exit your session (`Ctrl+C` or `/quit`), run `hermes model`, set up the new provider, then start a new session.
+**To add a new provider:** Exit your session (`Ctrl+C` or `/quit`), run `moor model`, set up the new provider, then start a new session.
 :::
 
 Once you have at least one custom endpoint configured, you can switch models mid-session:
@@ -697,7 +697,7 @@ ollama serve   # Starts on port 11434
 Then configure Moor:
 
 ```bash
-hermes model
+moor model
 # Select "Custom endpoint (self-hosted / VLLM / etc.)"
 # Enter URL: http://localhost:11434/v1
 # Skip API key (Ollama doesn't need one)
@@ -774,7 +774,7 @@ vllm serve meta-llama/Llama-3.1-70B-Instruct \
 Then configure Moor:
 
 ```bash
-hermes model
+moor model
 # Select "Custom endpoint (self-hosted / VLLM / etc.)"
 # Enter URL: http://localhost:8000/v1
 # Skip API key (or enter one if you configured vLLM with --api-key)
@@ -815,7 +815,7 @@ python -m sglang.launch_server \
 Then configure Moor:
 
 ```bash
-hermes model
+moor model
 # Select "Custom endpoint (self-hosted / VLLM / etc.)"
 # Enter URL: http://localhost:30000/v1
 # Enter model name: meta-llama/Llama-3.1-70B-Instruct
@@ -851,7 +851,7 @@ cmake -B build && cmake --build build --config Release
 Then configure Moor to point at it:
 
 ```bash
-hermes model
+moor model
 # Select "Custom endpoint (self-hosted / VLLM / etc.)"
 # Enter URL: http://localhost:8080/v1
 # Skip API key (local servers don't need one)
@@ -888,7 +888,7 @@ lms load qwen2.5-coder --context-length 64000
 Then configure Moor:
 
 ```bash
-hermes model
+moor model
 # Select "LM Studio"
 # Press Enter to use http://localhost:1234/v1
 # Pick one of the discovered models
@@ -1101,7 +1101,7 @@ litellm --model anthropic/claude-sonnet-4 --port 4000
 litellm --config litellm_config.yaml --port 4000
 ```
 
-Then configure Moor with `hermes model` → Custom endpoint → `http://localhost:4000/v1`.
+Then configure Moor with `moor model` → Custom endpoint → `http://localhost:4000/v1`.
 
 Example `litellm_config.yaml` with fallback:
 ```yaml
@@ -1129,7 +1129,7 @@ router_settings:
 npx @blockrun/clawrouter    # Starts on port 8402
 ```
 
-Then configure Moor with `hermes model` → Custom endpoint → `http://localhost:8402/v1` → model name `blockrun/auto`.
+Then configure Moor with `moor model` → Custom endpoint → `http://localhost:8402/v1` → model name `blockrun/auto`.
 
 Routing profiles:
 | Profile | Strategy | Savings |
@@ -1164,7 +1164,7 @@ Any service with an OpenAI-compatible API works. Some popular options:
 | [LocalAI](https://localai.io) | `http://localhost:8080/v1` | Self-hosted, multi-model |
 | [Jan](https://jan.ai) | `http://localhost:1337/v1` | Desktop app with local models |
 
-Configure any of these with `hermes model` → Custom endpoint, or in `config.yaml`:
+Configure any of these with `moor model` → Custom endpoint, or in `config.yaml`:
 
 ```yaml
 model:
@@ -1223,7 +1223,7 @@ custom_providers:
         context_length: 65536
 ```
 
-`hermes model` will prompt for context length when configuring a custom endpoint. Leave it blank for auto-detection.
+`moor model` will prompt for context length when configuring a custom endpoint. Leave it blank for auto-detection.
 
 :::tip When to set this manually
 - You're using Ollama with a custom `num_ctx` that's lower than the model's maximum
@@ -1245,7 +1245,7 @@ custom_providers:
   - name: work
     base_url: https://gpu-server.internal.corp/v1
     key_env: CORP_API_KEY
-    api_mode: chat_completions   # set explicitly by `hermes model` → Custom Endpoint wizard; auto-detection still happens as a fallback
+    api_mode: chat_completions   # set explicitly by `moor model` → Custom Endpoint wizard; auto-detection still happens as a fallback
   - name: anthropic-proxy
     base_url: https://proxy.example.com/anthropic
     key_env: ANTHROPIC_PROXY_KEY
@@ -1272,7 +1272,7 @@ extra_body:
     enable_thinking: true
 ```
 
-The `hermes model` → Custom Endpoint wizard now prompts for `api_mode` explicitly and persists your answer to `config.yaml`. URL-based auto-detection (e.g. `/anthropic` paths → `anthropic_messages`) still happens as a fallback when the field is left blank.
+The `moor model` → Custom Endpoint wizard now prompts for `api_mode` explicitly and persists your answer to `config.yaml`. URL-based auto-detection (e.g. `/anthropic` paths → `anthropic_messages`) still happens as a fallback when the field is left blank.
 
 **Native vision for custom-provider models.** If your custom endpoint serves a vision-capable model that isn't in models.dev, set `model.supports_vision: true` so Moor routes attached images natively (as `image_url` parts) instead of pre-processing them through `vision_analyze`. Single knob — no need to also set `agent.image_input_mode: native`.
 
@@ -1294,7 +1294,7 @@ Switch between them mid-session with the triple syntax:
 /model custom:anthropic-proxy:claude-sonnet-4  # Use the proxy
 ```
 
-You can also select named custom providers from the interactive `hermes model` menu.
+You can also select named custom providers from the interactive `moor model` menu.
 
 ---
 
@@ -1332,7 +1332,7 @@ Switch models mid-session:
 /model custom:together:deepseek-ai/DeepSeek-V3
 ```
 
-Together's `/v1/models` endpoint works, so `hermes model` can auto-discover available models.
+Together's `/v1/models` endpoint works, so `moor model` can auto-discover available models.
 
 #### Groq
 
@@ -1398,8 +1398,8 @@ model:
 ```
 
 :::tip Troubleshooting
-- `hermes doctor` should print no `Unknown provider` warnings for any of these names after the CLI validator fixes in #15083.
-- If a provider's `/v1/models` endpoint is unreachable (Perplexity is the common one), `hermes model` will persist the model with a warning rather than hard-reject — see #15136.
+- `moor doctor` should print no `Unknown provider` warnings for any of these names after the CLI validator fixes in #15083.
+- If a provider's `/v1/models` endpoint is unreachable (Perplexity is the common one), `moor model` will persist the model with a warning rather than hard-reject — see #15136.
 - To skip `custom_providers:` entirely and use bare `provider: custom` with `CUSTOM_BASE_URL` env var, see #15103.
 :::
 
@@ -1420,7 +1420,7 @@ model:
 | **Chinese AI models** | z.ai (GLM), Kimi/Moonshot (`kimi-coding` or `kimi-coding-cn`), MiniMax, Xiaomi MiMo, or Tencent TokenHub (first-class providers) |
 
 :::tip
-You can switch between providers at any time with `hermes model` — no restart required. Your conversation history, memory, and skills carry over regardless of which provider you use.
+You can switch between providers at any time with `moor model` — no restart required. Your conversation history, memory, and skills carry over regardless of which provider you use.
 :::
 
 ## Optional API Keys
@@ -1456,7 +1456,7 @@ By default, Moor uses the [Firecrawl cloud API](https://firecrawl.dev/) for web 
 
 2. Point Moor at your instance (no API key needed):
    ```bash
-   hermes config set FIRECRAWL_API_URL http://localhost:3002
+   moor config set FIRECRAWL_API_URL http://localhost:3002
    ```
 
 You can also set both `FIRECRAWL_API_KEY` and `FIRECRAWL_API_URL` if your self-hosted instance has authentication enabled.
@@ -1525,7 +1525,7 @@ When activated, the fallback swaps the model and provider mid-session without lo
 Supported providers: `openrouter`, `nous`, `novita`, `openai-codex`, `copilot`, `copilot-acp`, `anthropic`, `gemini`, `google-gemini-cli`, `qwen-oauth`, `huggingface`, `zai`, `kimi-coding`, `kimi-coding-cn`, `minimax`, `minimax-cn`, `minimax-oauth`, `deepseek`, `nvidia`, `xai`, `xai-oauth`, `ollama-cloud`, `bedrock`, `azure-foundry`, `opencode-zen`, `opencode-go`, `kilocode`, `xiaomi`, `arcee`, `gmi`, `stepfun`, `lmstudio`, `alibaba`, `alibaba-coding-plan`, `tencent-tokenhub`, `custom`.
 
 :::tip
-Fallback is configured exclusively through `config.yaml` — or interactively via `hermes fallback`. For full details on when it triggers, how the chain advances, and how it interacts with auxiliary tasks and delegation, see [Fallback Providers](/user-guide/features/fallback-providers).
+Fallback is configured exclusively through `config.yaml` — or interactively via `moor fallback`. For full details on when it triggers, how the chain advances, and how it interacts with auxiliary tasks and delegation, see [Fallback Providers](/user-guide/features/fallback-providers).
 :::
 
 ---

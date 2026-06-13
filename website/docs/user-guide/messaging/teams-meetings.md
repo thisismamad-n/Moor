@@ -10,7 +10,7 @@ Use the Teams meeting pipeline when you want Moor to ingest Microsoft Graph meet
 
 Prerequisites: see [Microsoft Teams](./teams.md) for the underlying bot/credential setup.
 
-> Run `hermes gateway setup` and pick **Teams Meetings** for a guided walk-through.
+> Run `moor gateway setup` and pick **Teams Meetings** for a guided walk-through.
 
 This page focuses on setup and enablement:
 - Graph credentials
@@ -173,7 +173,7 @@ platforms:
 Start Moor normally after updating config:
 
 ```bash
-hermes gateway run
+moor gateway run
 ```
 
 Or, if you run Moor in Docker, start the gateway the same way you already do for your deployment.

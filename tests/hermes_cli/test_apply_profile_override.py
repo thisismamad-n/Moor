@@ -64,7 +64,7 @@ class TestApplyProfileOverrideHermesHomeGuard:
         HERMES_HOME to .../profiles/coder.
 
         Bug scenario from #22502: systemd sets HERMES_HOME to the hermes root
-        and the user switches to a profile via `hermes profile use`.
+        and the user switches to a profile via `moor profile use`.
         Before the fix, the guard returned early and active_profile was ignored.
         """
         hermes_root = tmp_path / ".hermes"

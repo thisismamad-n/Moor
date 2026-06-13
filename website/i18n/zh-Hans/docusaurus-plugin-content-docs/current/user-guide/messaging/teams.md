@@ -101,7 +101,7 @@ HERMES_UID=$(id -u) HERMES_GID=$(id -g) docker compose up -d gateway
 
 ```bash
 curl http://localhost:3978/health   # 应返回：ok
-docker logs -f hermes
+docker logs -f moor
 ```
 
 查找以下日志：
@@ -229,7 +229,7 @@ teams app update --id <teamsAppId> --endpoint "https://your-domain.com/api/messa
 | `No inference provider configured` | 检查 `~/.hermes/.env` 中是否设置了 `ANTHROPIC_API_KEY`（或其他提供商密钥） |
 | 机器人收到消息但忽略它们 | 你的 AAD 对象 ID 可能不在 `TEAMS_ALLOWED_USERS` 中。运行 `teams status --verbose` 查找 |
 | 隧道 URL 在重启后变更 | 使用命名隧道（`devtunnel create hermes-bot`）时，devtunnel URL 是持久的。ngrok 和 cloudflared 每次运行都会生成新 URL（除非你有付费计划）——URL 变更时请用 `teams app update` 更新机器人端点 |
-| Teams 显示"此机器人未响应" | Webhook 返回了错误。检查 `docker logs hermes` 中的错误堆栈 |
+| Teams 显示"此机器人未响应" | Webhook 返回了错误。检查 `docker logs moor` 中的错误堆栈 |
 | 日志中出现 `[teams] Failed to connect` | SDK 认证失败。仔细检查凭据，并确认租户 ID 与 `teams login` 时使用的账户匹配 |
 
 ---

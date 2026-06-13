@@ -96,7 +96,7 @@ You should see a JSON response with the model's reply.
 Run the Moor setup wizard:
 
 ```bash
-hermes setup
+moor setup
 ```
 
 When prompted for a provider, select **Custom Endpoint** and enter:
@@ -222,7 +222,7 @@ platforms:
 3. Start the gateway:
 
 ```bash
-hermes gateway
+moor gateway
 ```
 
 Now message your bot on Telegram — it responds using your local model.
@@ -239,7 +239,7 @@ platforms:
     token: "YOUR_DISCORD_BOT_TOKEN"
 ```
 
-3. Start: `hermes gateway`
+3. Start: `moor gateway`
 
 ## Step 8: Set Up Fallbacks (Optional)
 

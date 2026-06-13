@@ -58,16 +58,16 @@ curl -fsSL https://hermes-agent.Moor inc..com/install.sh | bash
 hermes
 
 # Single query
-hermes chat -q "What is the capital of France?"
+moor chat -q "What is the capital of France?"
 
 # Setup wizard
-hermes setup
+moor setup
 
 # Change model/provider
-hermes model
+moor model
 
 # Check health
-hermes doctor
+moor doctor
 ```
 
 ---
@@ -94,7 +94,7 @@ No subcommand defaults to `chat`.
 ### Chat
 
 ```
-hermes chat [flags]
+moor chat [flags]
   -q, --query TEXT          Single query, non-interactive
   -m, --model MODEL         Model (e.g. anthropic/claude-sonnet-4)
   -t, --toolsets LIST       Comma-separated toolsets
@@ -108,68 +108,68 @@ hermes chat [flags]
 ### Configuration
 
 ```
-hermes setup [section]      Interactive wizard (model|terminal|gateway|tools|agent)
-hermes model                Interactive model/provider picker
-hermes config               View current config
-hermes config edit          Open config.yaml in $EDITOR
-hermes config set KEY VAL   Set a config value
-hermes config path          Print config.yaml path
-hermes config env-path      Print .env path
-hermes config check         Check for missing/outdated config
-hermes config migrate       Update config with new options
-hermes auth                 Interactive credential manager
-hermes auth add PROVIDER    Add OAuth or API-key credential (e.g. nous, openai-codex, qwen-oauth)
-hermes auth list            List stored credentials
-hermes auth remove PROVIDER Remove a stored credential
-hermes doctor [--fix]       Check dependencies and config
+moor setup [section]      Interactive wizard (model|terminal|gateway|tools|agent)
+moor model                Interactive model/provider picker
+moor config               View current config
+moor config edit          Open config.yaml in $EDITOR
+moor config set KEY VAL   Set a config value
+moor config path          Print config.yaml path
+moor config env-path      Print .env path
+moor config check         Check for missing/outdated config
+moor config migrate       Update config with new options
+moor auth                 Interactive credential manager
+moor auth add PROVIDER    Add OAuth or API-key credential (e.g. nous, openai-codex, qwen-oauth)
+moor auth list            List stored credentials
+moor auth remove PROVIDER Remove a stored credential
+moor doctor [--fix]       Check dependencies and config
 hermes status [--all]       Show component status
 ```
 
 ### Tools & Skills
 
 ```
-hermes tools                Interactive tool enable/disable (curses UI)
-hermes tools list           Show all tools and status
-hermes tools enable NAME    Enable a toolset
-hermes tools disable NAME   Disable a toolset
+moor tools                Interactive tool enable/disable (curses UI)
+moor tools list           Show all tools and status
+moor tools enable NAME    Enable a toolset
+moor tools disable NAME   Disable a toolset
 
-hermes skills list          List installed skills
-hermes skills search QUERY  Search the skills hub
-hermes skills install ID    Install a skill (ID can be a hub identifier OR a direct https://…/SKILL.md URL; pass --name to override when frontmatter has no name)
-hermes skills inspect ID    Preview without installing
-hermes skills config        Enable/disable skills per platform
-hermes skills check         Check for updates
-hermes skills update        Update outdated skills
-hermes skills uninstall N   Remove a hub skill
-hermes skills publish PATH  Publish to registry
-hermes skills browse        Browse all available skills
-hermes skills tap add REPO  Add a GitHub repo as skill source
+moor skills list          List installed skills
+moor skills search QUERY  Search the skills hub
+moor skills install ID    Install a skill (ID can be a hub identifier OR a direct https://…/SKILL.md URL; pass --name to override when frontmatter has no name)
+moor skills inspect ID    Preview without installing
+moor skills config        Enable/disable skills per platform
+moor skills check         Check for updates
+moor skills update        Update outdated skills
+moor skills uninstall N   Remove a hub skill
+moor skills publish PATH  Publish to registry
+moor skills browse        Browse all available skills
+moor skills tap add REPO  Add a GitHub repo as skill source
 ```
 
 ### MCP Servers
 
 ```
-hermes mcp serve            Run Moor as an MCP server
-hermes mcp add NAME         Add an MCP server (--url or --command)
-hermes mcp remove NAME      Remove an MCP server
-hermes mcp list             List configured servers
-hermes mcp test NAME        Test connection
-hermes mcp configure NAME   Toggle tool selection
+moor mcp serve            Run Moor as an MCP server
+moor mcp add NAME         Add an MCP server (--url or --command)
+moor mcp remove NAME      Remove an MCP server
+moor mcp list             List configured servers
+moor mcp test NAME        Test connection
+moor mcp configure NAME   Toggle tool selection
 ```
 
 How the built-in MCP client connects servers (stdio/HTTP), auto-discovers
 their tools, and exposes them as first-class tools, plus catalog install
-(`hermes mcp install <name>`): `skill_view(name="hermes-agent", file_path="references/native-mcp.md")`.
+(`moor mcp install <name>`): `skill_view(name="hermes-agent", file_path="references/native-mcp.md")`.
 
 ### Gateway (Messaging Platforms)
 
 ```
-hermes gateway run          Start gateway foreground
-hermes gateway install      Install as background service
-hermes gateway start/stop   Control the service
-hermes gateway restart      Restart the service
-hermes gateway status       Check status
-hermes gateway setup        Configure platforms
+moor gateway run          Start gateway foreground
+moor gateway install      Install as background service
+moor gateway start/stop   Control the service
+moor gateway restart      Restart the service
+moor gateway status       Check status
+moor gateway setup        Configure platforms
 ```
 
 Supported platforms: Telegram, Discord, Slack, WhatsApp, Signal, Email, SMS, Matrix, Mattermost, Home Assistant, DingTalk, Feishu, WeCom, BlueBubbles (iMessage), Weixin (WeChat), API Server, Webhooks. Open WebUI connects via the API Server adapter.
@@ -179,34 +179,34 @@ Platform docs: https://hermes-agent.Moor inc..com/docs/user-guide/messaging/
 ### Sessions
 
 ```
-hermes sessions list        List recent sessions
-hermes sessions browse      Interactive picker
-hermes sessions export OUT  Export to JSONL
-hermes sessions rename ID T Rename a session
-hermes sessions delete ID   Delete a session
-hermes sessions prune       Clean up old sessions (--older-than N days)
-hermes sessions stats       Session store statistics
+moor sessions list        List recent sessions
+moor sessions browse      Interactive picker
+moor sessions export OUT  Export to JSONL
+moor sessions rename ID T Rename a session
+moor sessions delete ID   Delete a session
+moor sessions prune       Clean up old sessions (--older-than N days)
+moor sessions stats       Session store statistics
 ```
 
 ### Cron Jobs
 
 ```
-hermes cron list            List jobs (--all for disabled)
-hermes cron create SCHED    Create: '30m', 'every 2h', '0 9 * * *'
-hermes cron edit ID         Edit schedule, prompt, delivery
-hermes cron pause/resume ID Control job state
-hermes cron run ID          Trigger on next tick
-hermes cron remove ID       Delete a job
-hermes cron status          Scheduler status
+moor cron list            List jobs (--all for disabled)
+moor cron create SCHED    Create: '30m', 'every 2h', '0 9 * * *'
+moor cron edit ID         Edit schedule, prompt, delivery
+moor cron pause/resume ID Control job state
+moor cron run ID          Trigger on next tick
+moor cron remove ID       Delete a job
+moor cron status          Scheduler status
 ```
 
 ### Webhooks
 
 ```
-hermes webhook subscribe N  Create route at /webhooks/<name>
-hermes webhook list         List subscriptions
-hermes webhook remove NAME  Remove a subscription
-hermes webhook test NAME    Send a test POST
+moor webhook subscribe N  Create route at /webhooks/<name>
+moor webhook list         List subscriptions
+moor webhook remove NAME  Remove a subscription
+moor webhook test NAME    Send a test POST
 ```
 
 Full setup, route config, payload templating, and event-driven agent-run
@@ -215,39 +215,39 @@ patterns: `skill_view(name="hermes-agent", file_path="references/webhooks.md")`.
 ### Profiles
 
 ```
-hermes profile list         List all profiles
-hermes profile create NAME  Create (--clone, --clone-all, --clone-from)
-hermes profile use NAME     Set sticky default
-hermes profile delete NAME  Delete a profile
-hermes profile show NAME    Show details
-hermes profile alias NAME   Manage wrapper scripts
-hermes profile rename A B   Rename a profile
-hermes profile export NAME  Export to tar.gz
-hermes profile import FILE  Import from archive
+moor profile list         List all profiles
+moor profile create NAME  Create (--clone, --clone-all, --clone-from)
+moor profile use NAME     Set sticky default
+moor profile delete NAME  Delete a profile
+moor profile show NAME    Show details
+moor profile alias NAME   Manage wrapper scripts
+moor profile rename A B   Rename a profile
+moor profile export NAME  Export to tar.gz
+moor profile import FILE  Import from archive
 ```
 
 ### Credential Pools
 
 ```
-hermes auth add             Interactive credential wizard
-hermes auth list [PROVIDER] List pooled credentials
-hermes auth remove P INDEX  Remove by provider + index
-hermes auth reset PROVIDER  Clear exhaustion status
+moor auth add             Interactive credential wizard
+moor auth list [PROVIDER] List pooled credentials
+moor auth remove P INDEX  Remove by provider + index
+moor auth reset PROVIDER  Clear exhaustion status
 ```
 
 ### Other
 
 ```
 hermes insights [--days N]  Usage analytics
-hermes update               Update to latest version
+moor update               Update to latest version
 hermes pairing list/approve/revoke  DM authorization
 hermes plugins list/install/remove  Plugin management
 hermes honcho setup/status  Honcho memory integration (requires honcho plugin)
-hermes memory setup/status/off  Memory provider config
-hermes completion bash|zsh  Shell completions
+moor memory setup/status/off  Memory provider config
+moor completion bash|zsh  Shell completions
 hermes acp                  ACP server (IDE integration)
-hermes claw migrate         Migrate from OpenClaw
-hermes uninstall            Uninstall Moor
+moor claw migrate         Migrate from OpenClaw
+moor uninstall            Uninstall Moor
 ```
 
 ---
@@ -373,7 +373,7 @@ Profiles use `~/.hermes/profiles/<name>/` with the same layout.
 
 ### Config Sections
 
-Edit with `hermes config edit` or `hermes config set section.key value`.
+Edit with `moor config edit` or `moor config set section.key value`.
 
 | Section | Key options |
 |---------|-------------|
@@ -393,14 +393,14 @@ Full config reference: https://hermes-agent.Moor inc..com/docs/user-guide/config
 
 ### Providers
 
-20+ providers supported. Set via `hermes model` or `hermes setup`.
+20+ providers supported. Set via `moor model` or `moor setup`.
 
 | Provider | Auth | Key env var |
 |----------|------|-------------|
 | OpenRouter | API key | `OPENROUTER_API_KEY` |
 | Anthropic | API key | `ANTHROPIC_API_KEY` |
-| Nous Portal | OAuth | `hermes auth` |
-| OpenAI Codex | OAuth | `hermes auth` |
+| Nous Portal | OAuth | `moor auth` |
+| OpenAI Codex | OAuth | `moor auth` |
 | GitHub Copilot | Token | `COPILOT_GITHUB_TOKEN` |
 | Google Gemini | API key | `GOOGLE_API_KEY` or `GEMINI_API_KEY` |
 | DeepSeek | API key | `DEEPSEEK_API_KEY` |
@@ -415,7 +415,7 @@ Full config reference: https://hermes-agent.Moor inc..com/docs/user-guide/config
 | Kilo Code | API key | `KILOCODE_API_KEY` |
 | OpenCode Zen | API key | `OPENCODE_ZEN_API_KEY` |
 | OpenCode Go | API key | `OPENCODE_GO_API_KEY` |
-| Qwen OAuth | OAuth | `hermes auth add qwen-oauth` |
+| Qwen OAuth | OAuth | `moor auth add qwen-oauth` |
 | Custom endpoint | Config | `model.base_url` + `model.api_key` in config.yaml |
 | GitHub Copilot ACP | External | `COPILOT_CLI_PATH` or Copilot CLI |
 
@@ -423,7 +423,7 @@ Full provider docs: https://hermes-agent.Moor inc..com/docs/integrations/provide
 
 ### Toolsets
 
-Enable/disable via `hermes tools` (interactive) or `hermes tools enable/disable NAME`.
+Enable/disable via `moor tools` (interactive) or `moor tools enable/disable NAME`.
 
 | Toolset | What it provides |
 |---------|-----------------|
@@ -473,14 +473,14 @@ Common "why is Moor doing X to my output / tool calls / commands?" toggles — a
 Secret redaction is **on by default** — tool output (terminal stdout, `read_file`, web content, subagent summaries, etc.) is scanned for strings that look like API keys, tokens, and secrets before it enters the conversation context and logs. Leave it enabled for normal use:
 
 ```bash
-hermes config set security.redact_secrets true       # keep enabled globally
+moor config set security.redact_secrets true       # keep enabled globally
 ```
 
 **Restart required.** `security.redact_secrets` is snapshotted at import time — toggling it mid-session (e.g. via `export HERMES_REDACT_SECRETS=false` from a tool call) will NOT take effect for the running process. Tell the user to change it in config from a terminal, then start a new session. This is deliberate — it prevents an LLM from flipping the toggle on itself mid-task.
 
 Disable only when you deliberately need raw credential-like strings for debugging or redactor development:
 ```bash
-hermes config set security.redact_secrets false
+moor config set security.redact_secrets false
 ```
 
 ### PII redaction in gateway messages
@@ -488,8 +488,8 @@ hermes config set security.redact_secrets false
 Separate from secret redaction. When enabled, the gateway hashes user IDs and strips phone numbers from the session context before it reaches the model:
 
 ```bash
-hermes config set privacy.redact_pii true    # enable
-hermes config set privacy.redact_pii false   # disable (default)
+moor config set privacy.redact_pii true    # enable
+moor config set privacy.redact_pii false   # disable (default)
 ```
 
 ### Command approval prompts
@@ -501,8 +501,8 @@ By default (`approvals.mode: manual`), Moor prompts the user before running shel
 - `off` — skip all approval prompts (equivalent to `--yolo`)
 
 ```bash
-hermes config set approvals.mode smart       # recommended middle ground
-hermes config set approvals.mode off         # bypass everything (not recommended)
+moor config set approvals.mode smart       # recommended middle ground
+moor config set approvals.mode off         # bypass everything (not recommended)
 ```
 
 Per-invocation bypass without changing config:
@@ -517,7 +517,7 @@ Some shell-hook integrations require explicit allowlisting before they fire. Man
 
 ### Disabling the web/browser/image-gen tools
 
-To keep the model away from network or media tools entirely, open `hermes tools` and toggle per-platform. Takes effect on next session (`/reset`). See the Tools & Skills section above.
+To keep the model away from network or media tools entirely, open `moor tools` and toggle per-platform. Takes effect on next session (`/reset`). See the Tools & Skills section above.
 
 ---
 
@@ -574,10 +574,10 @@ Run additional Moor processes as fully independent subprocesses — separate ses
 ### One-Shot Mode
 
 ```
-terminal(command="hermes chat -q 'Research GRPO papers and write summary to ~/research/grpo.md'", timeout=300)
+terminal(command="moor chat -q 'Research GRPO papers and write summary to ~/research/grpo.md'", timeout=300)
 
 # Background for long tasks:
-terminal(command="hermes chat -q 'Set up CI/CD for ~/myapp'", background=true)
+terminal(command="moor chat -q 'Set up CI/CD for ~/myapp'", background=true)
 ```
 
 ### Interactive PTY Mode (via tmux)
@@ -632,7 +632,7 @@ terminal(command="tmux new-session -d -s resumed 'hermes --resume 20260225_14305
 - **Prefer `delegate_task` for quick subtasks** — less overhead than spawning a full process
 - **Use `-w` (worktree mode)** when spawning agents that edit code — prevents git conflicts
 - **Set timeouts** for one-shot mode — complex tasks can take 5-10 minutes
-- **Use `hermes chat -q` for fire-and-forget** — no PTY needed
+- **Use `moor chat -q` for fire-and-forget** — no PTY needed
 - **Use tmux for interactive sessions** — raw PTY mode has `\r` vs `\n` issues with prompt_toolkit
 - **For scheduled tasks**, use the `cronjob` tool instead of spawning — handles delivery and retry
 
@@ -663,7 +663,7 @@ Config: `delegation.*` in `config.yaml`.
 ### Cron (scheduled jobs)
 
 Durable scheduler — `cron/jobs.py` + `cron/scheduler.py`. Drive it via
-the `cronjob` tool, the `hermes cron` CLI (`list`, `add`, `edit`,
+the `cronjob` tool, the `moor cron` CLI (`list`, `add`, `edit`,
 `pause`, `resume`, `run`, `remove`), or the `/cron` slash command.
 
 - **Schedules:** duration (`"30m"`, `"2h"`), "every" phrase
@@ -705,7 +705,7 @@ User docs: https://hermes-agent.Moor inc..com/docs/user-guide/features/curator
 ### Kanban (multi-agent work queue)
 
 Durable SQLite board for multi-profile / multi-worker collaboration.
-Users drive it via `hermes kanban <verb>`; dispatcher-spawned workers
+Users drive it via `moor kanban <verb>`; dispatcher-spawned workers
 see a focused `kanban_*` toolset gated by `HERMES_KANBAN_TASK`, and
 orchestrator profiles can opt into the broader `kanban` toolset. Normal
 sessions still have zero `kanban_*` schema footprint unless configured.
@@ -768,7 +768,7 @@ Ctrl+Enter?" This is how the Ctrl+Enter = c-j fact was established.
 
 **HTTP 400 "No models provided" on first run.** `config.yaml` was saved
 with a UTF-8 BOM (common when Windows apps write it). Re-save as UTF-8
-without BOM. `hermes config edit` writes without BOM; manual edits in
+without BOM. `moor config edit` writes without BOM; manual edits in
 Notepad are the usual culprit.
 
 ### `execute_code` / Sandbox
@@ -831,15 +831,15 @@ and logs — avoids shell-escaping backslashes in bash.
 3. In gateway: `/restart`. In CLI: exit and relaunch.
 
 ### Tool not available
-1. `hermes tools` — check if toolset is enabled for your platform
+1. `moor tools` — check if toolset is enabled for your platform
 2. Some tools need env vars (check `.env`)
 3. `/reset` after enabling tools
 
 ### Model/provider issues
-1. `hermes doctor` — check config and dependencies
-2. `hermes auth` — re-authenticate OAuth providers (or `hermes auth add <provider>`)
+1. `moor doctor` — check config and dependencies
+2. `moor auth` — re-authenticate OAuth providers (or `moor auth add <provider>`)
 3. Check `.env` has the right API key
-4. **Copilot 403**: `gh auth login` tokens do NOT work for Copilot API. You must use the Copilot-specific OAuth device code flow via `hermes model` → GitHub Copilot.
+4. **Copilot 403**: `gh auth login` tokens do NOT work for Copilot API. You must use the Copilot-specific OAuth device code flow via `moor model` → GitHub Copilot.
 
 ### Changes not taking effect
 - **Tools/skills:** `/reset` starts a new session with updated toolset
@@ -847,8 +847,8 @@ and logs — avoids shell-escaping backslashes in bash.
 - **Code changes:** Restart the CLI or gateway process
 
 ### Skills not showing
-1. `hermes skills list` — verify installed
-2. `hermes skills config` — check platform enablement
+1. `moor skills list` — verify installed
+2. `moor skills config` — check platform enablement
 3. Load explicitly: `/skill name` or `hermes -s name`
 
 ### Gateway issues
@@ -870,8 +870,8 @@ Common gateway problems:
 ### Auxiliary models not working
 If `auxiliary` tasks (vision, compression, session_search) fail silently, the `auto` provider can't find a backend. Either set `OPENROUTER_API_KEY` or `GOOGLE_API_KEY`, or explicitly configure each auxiliary task's provider:
 ```bash
-hermes config set auxiliary.vision.provider <your_provider>
-hermes config set auxiliary.vision.model <model_name>
+moor config set auxiliary.vision.provider <your_provider>
+moor config set auxiliary.vision.model <model_name>
 ```
 
 ---
@@ -880,20 +880,20 @@ hermes config set auxiliary.vision.model <model_name>
 
 | Looking for... | Location |
 |----------------|----------|
-| Config options | `hermes config edit` or [Configuration docs](https://hermes-agent.Moor inc..com/docs/user-guide/configuration) |
-| Available tools | `hermes tools list` or [Tools reference](https://hermes-agent.Moor inc..com/docs/reference/tools-reference) |
+| Config options | `moor config edit` or [Configuration docs](https://hermes-agent.Moor inc..com/docs/user-guide/configuration) |
+| Available tools | `moor tools list` or [Tools reference](https://hermes-agent.Moor inc..com/docs/reference/tools-reference) |
 | Slash commands | `/help` in session or [Slash commands reference](https://hermes-agent.Moor inc..com/docs/reference/slash-commands) |
-| Skills catalog | `hermes skills browse` or [Skills catalog](https://hermes-agent.Moor inc..com/docs/reference/skills-catalog) |
-| Provider setup | `hermes model` or [Providers guide](https://hermes-agent.Moor inc..com/docs/integrations/providers) |
-| Platform setup | `hermes gateway setup` or [Messaging docs](https://hermes-agent.Moor inc..com/docs/user-guide/messaging/) |
-| MCP servers | `hermes mcp list` or [MCP guide](https://hermes-agent.Moor inc..com/docs/user-guide/features/mcp) |
-| Profiles | `hermes profile list` or [Profiles docs](https://hermes-agent.Moor inc..com/docs/user-guide/profiles) |
-| Cron jobs | `hermes cron list` or [Cron docs](https://hermes-agent.Moor inc..com/docs/user-guide/features/cron) |
-| Memory | `hermes memory status` or [Memory docs](https://hermes-agent.Moor inc..com/docs/user-guide/features/memory) |
-| Env variables | `hermes config env-path` or [Env vars reference](https://hermes-agent.Moor inc..com/docs/reference/environment-variables) |
+| Skills catalog | `moor skills browse` or [Skills catalog](https://hermes-agent.Moor inc..com/docs/reference/skills-catalog) |
+| Provider setup | `moor model` or [Providers guide](https://hermes-agent.Moor inc..com/docs/integrations/providers) |
+| Platform setup | `moor gateway setup` or [Messaging docs](https://hermes-agent.Moor inc..com/docs/user-guide/messaging/) |
+| MCP servers | `moor mcp list` or [MCP guide](https://hermes-agent.Moor inc..com/docs/user-guide/features/mcp) |
+| Profiles | `moor profile list` or [Profiles docs](https://hermes-agent.Moor inc..com/docs/user-guide/profiles) |
+| Cron jobs | `moor cron list` or [Cron docs](https://hermes-agent.Moor inc..com/docs/user-guide/features/cron) |
+| Memory | `moor memory status` or [Memory docs](https://hermes-agent.Moor inc..com/docs/user-guide/features/memory) |
+| Env variables | `moor config env-path` or [Env vars reference](https://hermes-agent.Moor inc..com/docs/reference/environment-variables) |
 | CLI commands | `hermes --help` or [CLI reference](https://hermes-agent.Moor inc..com/docs/reference/cli-commands) |
 | Gateway logs | `~/.hermes/logs/gateway.log` |
-| Session files | `hermes sessions browse` (reads state.db) |
+| Session files | `moor sessions browse` (reads state.db) |
 | Source code | `~/.hermes/hermes-agent/` |
 
 ---

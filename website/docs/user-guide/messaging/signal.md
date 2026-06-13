@@ -83,7 +83,7 @@ curl http://127.0.0.1:8080/api/v1/check
 The easiest way:
 
 ```bash
-hermes gateway setup
+moor gateway setup
 ```
 
 Select **Signal** from the platform menu. The wizard will:
@@ -114,9 +114,9 @@ SIGNAL_HOME_CHANNEL=+1234567890                  # Default delivery target for c
 Then start the gateway:
 
 ```bash
-hermes gateway              # Foreground
-hermes gateway install      # Install as a user service
-sudo hermes gateway install --system   # Linux only: boot-time system service
+moor gateway              # Foreground
+moor gateway install      # Install as a user service
+sudo moor gateway install --system   # Linux only: boot-time system service
 ```
 
 ---

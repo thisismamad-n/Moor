@@ -572,7 +572,7 @@ def test_uninstall_access_denied_declined_keeps_task_and_cleans_files(monkeypatc
 #
 # Background: on Windows, asyncio.add_signal_handler raises NotImplementedError,
 # so the gateway's SIGTERM handler (which drains in-flight agents and writes
-# resume_pending=True) never fires when `hermes gateway stop` kills the
+# resume_pending=True) never fires when `moor gateway stop` kills the
 # process. The fix: stop() writes the planned_stop_marker first, waits for
 # the gateway's marker-watcher thread to drain + exit cleanly, then escalates
 # to taskkill if drain times out.
@@ -669,7 +669,7 @@ def test_stop_escalates_to_force_kill_when_drain_times_out(monkeypatch):
 
     Drain timeout = gateway is stuck or unresponsive. Without the
     taskkill /T /F escalation, the gateway stays alive and the next
-    `hermes gateway start` fails with "another instance is running".
+    `moor gateway start` fails with "another instance is running".
     """
     pid = 77777
     events = []

@@ -20,9 +20,9 @@ Moor scans for image-gen backends in three places:
 2. **User** — `~/.hermes/plugins/image_gen/<name>/` (opt-in via `plugins.enabled`)
 3. **Pip** — packages declaring a `hermes_agent.plugins` entry point
 
-Each plugin's `register(ctx)` function calls `ctx.register_image_gen_provider(...)` — that puts it into the registry in `agent/image_gen_registry.py`. The active provider is picked by `image_gen.provider` in `config.yaml`; `hermes tools` walks users through selection.
+Each plugin's `register(ctx)` function calls `ctx.register_image_gen_provider(...)` — that puts it into the registry in `agent/image_gen_registry.py`. The active provider is picked by `image_gen.provider` in `config.yaml`; `moor tools` walks users through selection.
 
-The `image_generate` tool wrapper asks the registry for the active provider and dispatches there. If no provider is registered, the tool surfaces a helpful error pointing at `hermes tools`.
+The `image_generate` tool wrapper asks the registry for the active provider and dispatches there. If no provider is registered, the tool surfaces a helpful error pointing at `moor tools`.
 
 ## Directory structure
 
@@ -61,7 +61,7 @@ class MyBackendImageGenProvider(ImageGenProvider):
 
     @property
     def display_name(self) -> str:
-        # Human label shown in `hermes tools`. Defaults to name.title() if omitted.
+        # Human label shown in `moor tools`. Defaults to name.title() if omitted.
         return "My Backend"
 
     def is_available(self) -> bool:
@@ -76,7 +76,7 @@ class MyBackendImageGenProvider(ImageGenProvider):
         return True
 
     def list_models(self) -> List[Dict[str, Any]]:
-        # Catalog shown in `hermes tools` model picker.
+        # Catalog shown in `moor tools` model picker.
         return [
             {
                 "id": "my-model-fast",
@@ -98,7 +98,7 @@ class MyBackendImageGenProvider(ImageGenProvider):
         return "my-model-fast"
 
     def get_setup_schema(self) -> Dict[str, Any]:
-        # Metadata for the `hermes tools` picker — keys to prompt for at setup.
+        # Metadata for the `moor tools` picker — keys to prompt for at setup.
         return {
             "name": "My Backend",
             "badge": "paid",        # optional; shown as a short tag in the picker
@@ -200,9 +200,9 @@ Full contract in `agent/image_gen_provider.py`. The methods you'll typically ove
 | Member | Required | Default | Purpose |
 |---|---|---|---|
 | `name` | ✅ | — | Stable id used in `image_gen.provider` config |
-| `display_name` | — | `name.title()` | Label shown in `hermes tools` |
+| `display_name` | — | `name.title()` | Label shown in `moor tools` |
 | `is_available()` | — | `True` | Gate for missing creds/deps |
-| `list_models()` | — | `[]` | Catalog for `hermes tools` model picker |
+| `list_models()` | — | `[]` | Catalog for `moor tools` model picker |
 | `default_model()` | — | first from `list_models()` | Fallback when no model is configured |
 | `get_setup_schema()` | — | minimal | Picker metadata + env-var prompts |
 | `generate(prompt, aspect_ratio, **kwargs)` | ✅ | — | The call |
@@ -263,7 +263,7 @@ echo "  provider: my-backend" >> $HERMES_HOME/config.yaml
 hermes -z "Generate an image of a corgi in a spacesuit"
 ```
 
-Or interactively: `hermes tools` → "Image Generation" → select `my-backend` → enter API key if prompted.
+Or interactively: `moor tools` → "Image Generation" → select `my-backend` → enter API key if prompted.
 
 ## Reference implementations
 

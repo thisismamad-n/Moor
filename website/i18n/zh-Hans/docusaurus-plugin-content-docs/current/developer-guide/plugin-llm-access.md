@@ -281,7 +281,7 @@ plugins:
       llm:
         # 允许此 plugin 选择不同的 Moor provider
         # （必须是 Moor 已知的 provider——与
-        # `hermes model` 和 config.yaml model.provider 中的名称相同）
+        # `moor model` 和 config.yaml model.provider 中的名称相同）
         allow_provider_override: true
 
         # 可选：限制允许的 provider。使用 ["*"] 表示任意。

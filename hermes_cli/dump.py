@@ -61,7 +61,7 @@ def _redact(value: str) -> str:
 
     Thin wrapper over :func:`agent.redact.mask_secret`. Returns ``""`` for
     an empty value (matches the historical behavior of this helper —
-    ``hermes dump`` formats empty values as blank, not as ``"(not set)"``).
+    ``moor dump`` formats empty values as blank, not as ``"(not set)"``).
     """
     from agent.redact import mask_secret
     return mask_secret(value)
@@ -267,7 +267,7 @@ def run_dump(args):
     os_info = f"{platform.system()} {platform.release()} {platform.machine()}"
 
     lines = []
-    lines.append("--- hermes dump ---")
+    lines.append("--- moor dump ---")
     ver_str = f"{__version__}"
     if __release_date__:
         ver_str += f" ({__release_date__})"
@@ -318,9 +318,9 @@ def run_dump(args):
             display = _redact(val)
         else:
             display = "set" if val else "not set"
-        # A credential added via `hermes auth add openrouter` lives in the
+        # A credential added via `moor auth add openrouter` lives in the
         # credential pool, not as an env var — surface it so the dump doesn't
-        # misleadingly read "not set" while `hermes auth list` shows it (#42130).
+        # misleadingly read "not set" while `moor auth list` shows it (#42130).
         if not val and label == "openrouter":
             try:
                 from agent.credential_pool import load_pool as _load_pool

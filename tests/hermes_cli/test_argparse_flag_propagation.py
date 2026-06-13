@@ -25,7 +25,7 @@ def _build_parser():
     Since main() is a large function that does much more than parse args,
     we replicate just the parser structure here to avoid side effects.
     """
-    parser = argparse.ArgumentParser(prog="hermes")
+    parser = argparse.ArgumentParser(prog="moor")
     parser.add_argument("--resume", "-r", metavar="SESSION", default=None)
     parser.add_argument(
         "--continue", "-c", dest="continue_last", nargs="?",
@@ -150,7 +150,7 @@ class TestAcceptHooksOnAgentSubparsers:
     position (before the subcommand, between group/subcommand, and
     after the leaf subcommand) for gateway/cron/mcp/acp.  Regression
     against prior behaviour where the flag only worked on the root
-    parser and `chat`, so `hermes gateway run --accept-hooks` failed
+    parser and `chat`, so `moor gateway run --accept-hooks` failed
     with `unrecognized arguments`."""
 
     @pytest.mark.parametrize("argv", [

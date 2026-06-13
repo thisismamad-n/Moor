@@ -78,7 +78,7 @@ SINGLE_HANDLER_CASES = [
 
 @pytest.mark.parametrize("name,builder,kw,argv", SINGLE_HANDLER_CASES, ids=[c[0] for c in SINGLE_HANDLER_CASES])
 def test_single_handler_builders(name, builder, kw, argv):
-    parser = argparse.ArgumentParser(prog="hermes")
+    parser = argparse.ArgumentParser(prog="moor")
     sub = parser.add_subparsers(dest="command")
     handler = _h(name)
     builder(sub, **{kw: handler})
@@ -87,7 +87,7 @@ def test_single_handler_builders(name, builder, kw, argv):
 
 
 def test_dashboard_builder_two_handlers():
-    parser = argparse.ArgumentParser(prog="hermes")
+    parser = argparse.ArgumentParser(prog="moor")
     sub = parser.add_subparsers(dest="command")
     dash, reg = _h("dashboard"), _h("dashboard_register")
     build_dashboard_parser(sub, cmd_dashboard=dash, cmd_dashboard_register=reg)

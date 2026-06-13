@@ -2170,7 +2170,7 @@ def run_conversation(
                     if not _print_nous_entitlement_guidance(agent, "Nous model access"):
                         print(f"{agent.log_prefix}   Most likely: Portal OAuth expired, account out of credits, or agent key revoked.")
                     print(f"{agent.log_prefix}   Troubleshooting:")
-                    print(f"{agent.log_prefix}     • Re-authenticate: hermes auth add nous")
+                    print(f"{agent.log_prefix}     • Re-authenticate: moor auth add nous")
                     print(f"{agent.log_prefix}     • Check credits / billing: https://portal.Moor inc..com")
                     print(f"{agent.log_prefix}     • Verify stored credentials: {_dhh}/auth.json")
                     print(f"{agent.log_prefix}     • Switch providers temporarily: /model <model> --provider openrouter")
@@ -2205,7 +2205,7 @@ def run_conversation(
                         # means Azure rejected the JWT (RBAC role missing,
                         # az login expired, IMDS unreachable, etc.).
                         print(f"{agent.log_prefix}   Auth method: Microsoft Entra ID (httpx event hook)")
-                        print(f"{agent.log_prefix}   Run `hermes doctor` for credential-chain diagnostics, or")
+                        print(f"{agent.log_prefix}   Run `moor doctor` for credential-chain diagnostics, or")
                         print(f"{agent.log_prefix}   `az login` if your developer session expired.")
                     else:
                         auth_method = "Bearer (OAuth/setup-token)" if _is_oauth_token(key) else "x-api-key (API key)"
@@ -2218,8 +2218,8 @@ def run_conversation(
                     print(f"{agent.log_prefix}     • Check ANTHROPIC_API_KEY in {_dhh}/.env for API keys or legacy token values")
                     print(f"{agent.log_prefix}     • For API keys: verify at https://platform.claude.com/settings/keys")
                     print(f"{agent.log_prefix}     • For Claude Code: run 'claude /login' to refresh, then retry")
-                    print(f"{agent.log_prefix}     • Legacy cleanup: hermes config set ANTHROPIC_TOKEN \"\"")
-                    print(f"{agent.log_prefix}     • Clear stale keys: hermes config set ANTHROPIC_API_KEY \"\"")
+                    print(f"{agent.log_prefix}     • Legacy cleanup: moor config set ANTHROPIC_TOKEN \"\"")
+                    print(f"{agent.log_prefix}     • Clear stale keys: moor config set ANTHROPIC_API_KEY \"\"")
 
                 # ── Thinking block signature recovery ─────────────────
                 # Anthropic signs thinking blocks against the full turn
@@ -2990,14 +2990,14 @@ def run_conversation(
                                 agent._vprint(f"{agent.log_prefix}   💡 Codex OAuth token was rejected (HTTP 401). Your token may have been", force=True)
                                 agent._vprint(f"{agent.log_prefix}      refreshed by another client (Codex CLI, VS Code). To fix:", force=True)
                                 agent._vprint(f"{agent.log_prefix}      1. Run `codex` in your terminal to generate fresh tokens.", force=True)
-                                agent._vprint(f"{agent.log_prefix}      2. Then run `hermes auth` to re-authenticate.", force=True)
+                                agent._vprint(f"{agent.log_prefix}      2. Then run `moor auth` to re-authenticate.", force=True)
                             elif _provider == "xai-oauth":
                                 agent._vprint(f"{agent.log_prefix}   💡 xAI OAuth token was rejected (HTTP 401). To fix:", force=True)
-                                agent._vprint(f"{agent.log_prefix}      re-authenticate with xAI Grok OAuth (SuperGrok / Premium+) from `hermes model`.", force=True)
+                                agent._vprint(f"{agent.log_prefix}      re-authenticate with xAI Grok OAuth (SuperGrok / Premium+) from `moor model`.", force=True)
                             else:  # nous
                                 agent._vprint(f"{agent.log_prefix}   💡 Nous Portal OAuth token was rejected (HTTP 401). Your token may be", force=True)
                                 agent._vprint(f"{agent.log_prefix}      expired, revoked, or your account may be out of credits. To fix:", force=True)
-                                agent._vprint(f"{agent.log_prefix}      1. Re-authenticate: hermes portal", force=True)
+                                agent._vprint(f"{agent.log_prefix}      1. Re-authenticate: moor portal", force=True)
                                 agent._vprint(f"{agent.log_prefix}      2. Check your portal account: https://portal.Moor inc..com", force=True)
                                 # ``:free`` is OpenRouter slug syntax; Nous Portal will reject
                                 # the model name even after a successful re-auth.
@@ -3007,7 +3007,7 @@ def run_conversation(
                                     agent._vprint(f"{agent.log_prefix}         Nous catalog model, or run `/model openrouter:{_model}` to use OpenRouter.", force=True)
                         else:
                             agent._vprint(f"{agent.log_prefix}   💡 Your API key was rejected by the provider. Check:", force=True)
-                            agent._vprint(f"{agent.log_prefix}      • Is the key valid? Run: hermes setup", force=True)
+                            agent._vprint(f"{agent.log_prefix}      • Is the key valid? Run: moor setup", force=True)
                             agent._vprint(f"{agent.log_prefix}      • Does your account have access to {_model}?", force=True)
                             if base_url_host_matches(str(_base), "openrouter.ai"):
                                 agent._vprint(f"{agent.log_prefix}      • Check credits: https://openrouter.ai/settings/credits", force=True)
@@ -3032,7 +3032,7 @@ def run_conversation(
                             force=True,
                         )
                         agent._vprint(
-                            f"{agent.log_prefix}        hermes fallback add   (interactive picker — same as `hermes model`)",
+                            f"{agent.log_prefix}        moor fallback add   (interactive picker — same as `moor model`)",
                             force=True,
                         )
                     logger.error(f"{agent.log_prefix}Non-retryable client error: {api_error}")
@@ -3056,7 +3056,7 @@ def run_conversation(
                             f"(not a Moor/gateway failure).\n\n"
                             f"Provider message: {_summary}\n\n"
                             f"Try rephrasing the request, narrowing the context, or "
-                            f"adding a fallback provider with `hermes fallback add`."
+                            f"adding a fallback provider with `moor fallback add`."
                         )
                         return {
                             "final_response": _policy_response,

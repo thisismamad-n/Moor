@@ -707,7 +707,7 @@ def test_lifecycle_raises_gateway_not_registered_for_missing_slot(
     assert excinfo.value.service == "gateway-typo"
     msg = str(excinfo.value)
     assert "'typo'" in msg
-    assert "hermes profile create typo" in msg
+    assert "moor profile create typo" in msg
     # And critically: s6-svc was NOT invoked.
     assert not any(c[0] == "s6-svc" for c in fake_subprocess_run)
 

@@ -268,7 +268,7 @@ def read_suppressed_names() -> Set[str]:
     """Built-in skills the curator pruned — the re-seeder must leave archived.
 
     One skill name per line in ``~/.hermes/skills/.curator_suppressed``. This is
-    what makes pruning a built-in durable: without it, ``hermes update`` would
+    what makes pruning a built-in durable: without it, ``moor update`` would
     re-copy the bundled skill on the next sync.
     """
     path = _suppressed_file()

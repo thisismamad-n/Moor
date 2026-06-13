@@ -12,13 +12,13 @@ Moor uses two kinds of model slots:
 This page covers configuring both from the dashboard. If you prefer config files or the CLI, jump to [Alternative methods](#alternative-methods) at the bottom.
 
 :::tip Fastest path: Nous Portal
-[Nous Portal](/user-guide/features/tool-gateway) provides 300+ models under one subscription. On a fresh install, run `hermes setup --portal` to log in and set Nous as your provider in one command. Inspect what's wired up with `hermes portal info`.
+[Nous Portal](/user-guide/features/tool-gateway) provides 300+ models under one subscription. On a fresh install, run `moor setup --portal` to log in and set Nous as your provider in one command. Inspect what's wired up with `moor portal info`.
 
 - Portal subscribers also get **10% off token-billed providers**.
 :::
 
 :::note `model:` schema — empty string vs. mapping
-On a brand-new install the bundled default config has `model: ""` (an empty string sentinel meaning "not configured yet"). The first time you run `hermes setup` or `hermes model`, that key is upgraded in-place to a mapping with `provider`, `default`, `base_url`, and `api_mode` sub-keys — the shape shown throughout this page and in [`profiles.md`](./profiles.md) / [`configuration.md`](./configuration.md). If you ever see an empty string in `config.yaml`, run `hermes model` (or click **Change** in the dashboard) and Moor will write the dict form for you.
+On a brand-new install the bundled default config has `model: ""` (an empty string sentinel meaning "not configured yet"). The first time you run `moor setup` or `moor model`, that key is upgraded in-place to a mapping with `provider`, `default`, `base_url`, and `api_mode` sub-keys — the shape shown throughout this page and in [`profiles.md`](./profiles.md) / [`configuration.md`](./configuration.md). If you ever see an empty string in `config.yaml`, run `moor model` (or click **Change** in the dashboard) and Moor will write the dict form for you.
 :::
 
 ## The Models page
@@ -64,11 +64,11 @@ Every auxiliary task defaults to `auto` — meaning Moor uses your main model fo
 | **Compression** | When you're burning reasoning tokens on Opus/M2.7 just to summarize context. A fast chat model does the job at 1/50th the cost. |
 | **Approval** | For `approval_mode: smart` — a fast/cheap model (haiku, flash, gpt-5-mini) decides whether to auto-approve low-risk commands. Expensive models here are waste. |
 | **Web Extract** | When you use `web_extract` heavily. Same logic as compression — summarization doesn't need reasoning. |
-| **Skills Hub** | `hermes skills search` uses this. Usually fine at `auto`. |
+| **Skills Hub** | `moor skills search` uses this. Usually fine at `auto`. |
 | **MCP** | MCP tool routing. Usually fine at `auto`. |
-| **Triage Specifier** | Routes the Kanban triage specifier (`hermes kanban specify`) that expands a rough one-liner into a concrete spec. A cheap, capable model works well. |
+| **Triage Specifier** | Routes the Kanban triage specifier (`moor kanban specify`) that expands a rough one-liner into a concrete spec. A cheap, capable model works well. |
 | **Kanban Decomposer** | Routes Kanban task decomposition — splits a triage task into a graph of child tasks for specialist profiles. |
-| **Profile Describer** | Routes profile-description generation (`hermes profile describe --auto` / the dashboard auto-generate button). Short, cheap call. |
+| **Profile Describer** | Routes profile-description generation (`moor profile describe --auto` / the dashboard auto-generate button). Short, cheap call. |
 | **Curator** | Routes the curator skill-usage review pass. Can run for minutes on reasoning models, so a cheaper aux model is often worthwhile. |
 
 ### Per-task override
@@ -133,8 +133,8 @@ auxiliary:
 
 ## When does it take effect?
 
-- **CLI** (`hermes chat`): next `hermes chat` invocation.
-- **Gateway** (Telegram, Discord, Slack, etc.): next *new* session. Existing sessions keep their model. Restart the gateway (`hermes gateway restart`) if you want to force all sessions to pick up the change.
+- **CLI** (`moor chat`): next `moor chat` invocation.
+- **Gateway** (Telegram, Discord, Slack, etc.): next *new* session. Existing sessions keep their model. Restart the gateway (`moor gateway restart`) if you want to force all sessions to pick up the change.
 - **Dashboard chat tab** (`/chat`): next new PTY. The currently-open chat keeps its model — use `/model` inside it to hot-swap.
 
 Changes never invalidate prompt caches on running sessions. That's deliberate: swapping the main model inside a session requires a cache reset (the system prompt contains model-specific content), and we reserve that for the explicit `/model` slash command inside chat.
@@ -143,7 +143,7 @@ Changes never invalidate prompt caches on running sessions. That's deliberate: s
 
 ### "No authenticated providers" in the picker
 
-Moor lists a provider only if it has a working credential. Check **Keys** in the sidebar — you should see one of: an API key, a successful OAuth, or a custom endpoint URL. If the provider you want isn't there, run `hermes setup` to wire it up, or go to **Keys** and add the env var.
+Moor lists a provider only if it has a working credential. Check **Keys** in the sidebar — you should see one of: an API key, a successful OAuth, or a custom endpoint URL. If the provider you want isn't there, run `moor setup` to wire it up, or go to **Keys** and add the env var.
 
 ### Main model didn't change in my running chat
 
@@ -165,7 +165,7 @@ On OpenRouter (or any aggregator), bare model names resolve *within* the aggrega
 
 ### CLI slash command
 
-Inside any `hermes chat` session:
+Inside any `moor chat` session:
 
 ```
 /model gpt-5.4 --provider openrouter             # session-only
@@ -191,26 +191,26 @@ model_aliases:
     provider: x-ai
 ```
 
-**Short string form (`model.aliases.<name>: provider/model`)** — convenient from the shell because `hermes config set` only writes scalar values, but it can't carry a custom `base_url`:
+**Short string form (`model.aliases.<name>: provider/model`)** — convenient from the shell because `moor config set` only writes scalar values, but it can't carry a custom `base_url`:
 
 ```bash
-hermes config set model.aliases.fav anthropic/claude-opus-4.6
-hermes config set model.aliases.grok x-ai/grok-4
+moor config set model.aliases.fav anthropic/claude-opus-4.6
+moor config set model.aliases.grok x-ai/grok-4
 ```
 
 Both paths feed the same loader (`hermes_cli/model_switch.py`). Entries declared in `model_aliases:` take precedence over `model.aliases:` entries with the same name.
 
 Then `/model fav` or `/model grok` in chat. User aliases shadow built-in short names (`sonnet`, `kimi`, `opus`, etc.). See [Custom model aliases](/reference/slash-commands#custom-model-aliases) for the full reference.
 
-### `hermes model` subcommand
+### `moor model` subcommand
 
 ```bash
-hermes model            # Interactive provider + model picker (the canonical way to switch defaults)
+moor model            # Interactive provider + model picker (the canonical way to switch defaults)
 ```
 
-`hermes model` walks you through picking a provider, authenticating (OAuth flows open a browser; API-key providers prompt for the key), and then choosing a specific model from that provider's curated catalog. The choice is written to `model.provider` and `model.model` in `~/.hermes/config.yaml`.
+`moor model` walks you through picking a provider, authenticating (OAuth flows open a browser; API-key providers prompt for the key), and then choosing a specific model from that provider's curated catalog. The choice is written to `model.provider` and `model.model` in `~/.hermes/config.yaml`.
 
-To list providers/models without launching the picker, use the dashboard or the REST endpoints below. To inspect what the CLI will actually use right now: `hermes config show | grep '^model\.'` and `hermes status`.
+To list providers/models without launching the picker, use the dashboard or the REST endpoints below. To inspect what the CLI will actually use right now: `moor config show | grep '^model\.'` and `hermes status`.
 
 ### Direct config edit
 

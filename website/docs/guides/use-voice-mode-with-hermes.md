@@ -151,7 +151,7 @@ ELEVENLABS_API_KEY=***
 - `openai` → good middle ground
 - `mistral` → multilingual, native Opus
 
-### If you use `hermes setup`
+### If you use `moor setup`
 
 If you choose NeuTTS in the setup wizard, Moor checks whether `neutts` is already installed. If it is missing, the wizard tells you NeuTTS needs the Python package `neutts` and the system package `espeak-ng`, offers to install them for you, installs `espeak-ng` with your platform package manager, and then runs:
 
@@ -302,7 +302,7 @@ Moor stays a normal chat bot, but can speak replies.
 ### Start the gateway
 
 ```bash
-hermes gateway
+moor gateway
 ```
 
 ### Turn on voice replies

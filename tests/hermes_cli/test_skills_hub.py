@@ -204,7 +204,7 @@ def test_do_list_enabled_only_hides_disabled(three_source_env, monkeypatch):
 
 
 def test_do_list_platform_env_is_ignored(three_source_env, monkeypatch):
-    """`hermes skills list` reads the active profile's config via
+    """`moor skills list` reads the active profile's config via
     HERMES_HOME (swapped by -p), so it must NOT pass a platform arg to
     ``get_disabled_skill_names`` — otherwise per-platform overrides
     would silently leak in from HERMES_PLATFORM env."""
@@ -654,7 +654,7 @@ def test_browse_skills_dedup_uses_identifier_not_name(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# Regression: full identifier must be recoverable from `hermes skills search`
+# Regression: full identifier must be recoverable from `moor skills search`
 # even when the slug is too long to fit the terminal width (issue #33674).
 # ---------------------------------------------------------------------------
 

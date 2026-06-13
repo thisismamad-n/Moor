@@ -2,7 +2,7 @@
 
 Mission-control style deploys reverse-proxy the dashboard at a path
 prefix (e.g. ``mission-control.tilos.com/hermes/*`` -> dashboard on
-:9119), injecting ``X-Forwarded-Prefix: /hermes`` so the backend can
+:9119), injecting ``X-Forwarded-Prefix: /moor`` so the backend can
 reconstruct prefixed URLs (Location: headers, OAuth redirect_uri,
 cookie Path attributes, SPA asset URLs).
 
@@ -35,7 +35,7 @@ _REJECT_CHARS = frozenset(('"', "'", "<", ">", " ", "\n", "\r", "\t"))
 def normalise_prefix(raw: Optional[str]) -> str:
     """Normalise an X-Forwarded-Prefix header value.
 
-    Returns a string like ``"/hermes"`` (no trailing slash) or ``""``
+    Returns a string like ``"/moor"`` (no trailing slash) or ``""``
     when no prefix is set / the header is malformed. We deliberately
     reject anything containing ``..`` or non-printable bytes so a
     hostile proxy can't inject HTML or path-traversal sequences via the

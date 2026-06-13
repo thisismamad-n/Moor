@@ -17,7 +17,7 @@ Moor Agent ships a Nix flake with three levels of integration:
 :::info What's different from the standard install
 The `curl | bash` installer manages Python, Node, and dependencies itself. The Nix flake replaces all of that — every Python dependency is a Nix derivation built by [uv2nix](https://github.com/pyproject-nix/uv2nix), and runtime tools (Node.js, git, ripgrep, ffmpeg) are wrapped into the binary's PATH. There is no runtime pip, no venv activation, no `npm install`.
 
-**For non-NixOS users**, this only changes the install step. Everything after (`hermes setup`, `hermes gateway install`, config editing) works identically to the standard install.
+**For non-NixOS users**, this only changes the install step. Everything after (`moor setup`, `moor gateway install`, config editing) works identically to the standard install.
 
 **For NixOS module users**, the entire lifecycle is different: configuration lives in `configuration.nix`, secrets go through sops-nix/agenix, the service is a systemd unit, and CLI config commands are blocked. You manage hermes the same way you manage any other NixOS service.
 :::
@@ -40,11 +40,11 @@ nix run github:Moor inc./hermes-agent -- chat
 
 # Or install persistently
 nix profile install github:Moor inc./hermes-agent
-hermes setup
-hermes chat
+moor setup
+moor chat
 ```
 
-After `nix profile install`, `hermes`, `hermes-agent`, and `hermes-acp` are on your PATH. From here, the workflow is identical to the [standard installation](./installation.md) — `hermes setup` walks you through provider selection, `hermes gateway install` sets up a launchd (macOS) or systemd user service, and config lives in `~/.hermes/`.
+After `nix profile install`, `hermes`, `hermes-agent`, and `hermes-acp` are on your PATH. From here, the workflow is identical to the [standard installation](./installation.md) — `moor setup` walks you through provider selection, `moor gateway install` sets up a launchd (macOS) or systemd user service, and config lives in `~/.hermes/`.
 
 :::warning Messaging platforms (Discord, Telegram, Slack)
 The default package doesn't include messaging platform libraries — they were moved to on-demand installation, which can't work in Nix's read-only environment. If you plan to connect the agent to Discord, Telegram, or Slack, install the `messaging` variant:
@@ -143,7 +143,7 @@ Setting `addToSystemPackages = true` does two things: puts the `hermes` CLI on y
 :::info
 When `container.enable = true` and `addToSystemPackages = true`, **every** `hermes` command on the host automatically routes into the managed container. This means your interactive CLI session runs inside the same environment as the gateway service — with access to all container-installed packages and tools.
 
-- The routing is transparent: `hermes chat`, `hermes sessions list`, `hermes version`, etc. all exec into the container under the hood
+- The routing is transparent: `moor chat`, `moor sessions list`, `hermes version`, etc. all exec into the container under the hood
 - All CLI flags are forwarded as-is
 - If the container isn't running, the CLI retries briefly (5s with a spinner for interactive use, 10s silently for scripts) then fails with a clear error — no silent fallback
 - For developers working on the hermes codebase, set `HERMES_DEV=1` to bypass container routing and run the local checkout directly
@@ -172,7 +172,7 @@ security.sudo.extraRules = [{
 }];
 ```
 
-The CLI auto-detects when sudo is needed and uses it transparently. Without this, you'll need to run `sudo hermes chat` manually.
+The CLI auto-detects when sudo is needed and uses it transparently. Without this, you'll need to run `sudo moor chat` manually.
 :::
 
 ### Verify It Works
@@ -188,7 +188,7 @@ journalctl -u hermes-agent -f
 
 # If addToSystemPackages is true, test the CLI
 hermes version
-hermes config       # shows the generated config
+moor config       # shows the generated config
 ```
 
 ### Choosing a Deployment Mode
@@ -495,11 +495,11 @@ The first OAuth authorization requires a browser-based consent flow. In a headle
 ```bash
 # Container mode
 docker exec -it hermes-agent \
-  hermes mcp add my-oauth-server --url https://mcp.example.com/mcp --auth oauth
+  moor mcp add my-oauth-server --url https://mcp.example.com/mcp --auth oauth
 
 # Native mode
 sudo -u hermes HERMES_HOME=/var/lib/hermes/.hermes \
-  hermes mcp add my-oauth-server --url https://mcp.example.com/mcp --auth oauth
+  moor mcp add my-oauth-server --url https://mcp.example.com/mcp --auth oauth
 ```
 
 The container uses `--network=host`, so the OAuth callback listener on `127.0.0.1` is reachable from the host browser.
@@ -507,7 +507,7 @@ The container uses `--network=host`, so the OAuth callback listener on `127.0.0.
 **Option B: Pre-seed tokens** — complete the flow on a workstation, then copy tokens:
 
 ```bash
-hermes mcp add my-oauth-server --url https://mcp.example.com/mcp --auth oauth
+moor mcp add my-oauth-server --url https://mcp.example.com/mcp --auth oauth
 scp ~/.hermes/mcp-tokens/my-oauth-server{,.client}.json \
     server:/var/lib/hermes/.hermes/mcp-tokens/
 # Ensure: chown hermes:hermes, chmod 0600
@@ -543,16 +543,16 @@ When hermes runs via the NixOS module, the following CLI commands are **blocked*
 
 | Blocked command | Why |
 |---|---|
-| `hermes setup` | Config is declarative — edit `settings` in your Nix config |
-| `hermes config edit` | Config is generated from `settings` |
-| `hermes config set <key> <value>` | Config is generated from `settings` |
-| `hermes gateway install` | The systemd service is managed by NixOS |
-| `hermes gateway uninstall` | The systemd service is managed by NixOS |
+| `moor setup` | Config is declarative — edit `settings` in your Nix config |
+| `moor config edit` | Config is generated from `settings` |
+| `moor config set <key> <value>` | Config is generated from `settings` |
+| `moor gateway install` | The systemd service is managed by NixOS |
+| `moor gateway uninstall` | The systemd service is managed by NixOS |
 
 This prevents drift between what Nix declares and what's on disk. Detection uses two signals:
 
 1. **`HERMES_MANAGED=true`** environment variable — set by the systemd service, visible to the gateway process
-2. **`.managed` marker file** in `HERMES_HOME` — set by the activation script, visible to interactive shells (e.g., `docker exec -it hermes-agent hermes config set ...` is also blocked)
+2. **`.managed` marker file** in `HERMES_HOME` — set by the activation script, visible to interactive shells (e.g., `docker exec -it hermes-agent moor config set ...` is also blocked)
 
 To change configuration, edit your Nix config and run `sudo nixos-rebuild switch`.
 
@@ -772,8 +772,8 @@ nix develop
 #   - Node.js 22, ripgrep, git, openssh, ffmpeg on PATH
 #   - Stamp-file optimization: re-entry is near-instant if deps haven't changed
 
-hermes setup
-hermes chat
+moor setup
+moor chat
 ```
 
 ### direnv (Recommended)
@@ -811,7 +811,7 @@ nix build .#checks.x86_64-linux.config-roundtrip    # merge script preserves use
 | `package-contents` | `hermes` and `hermes-agent` binaries exist and `hermes version` runs |
 | `entry-points-sync` | Every `[project.scripts]` entry in `pyproject.toml` has a wrapped binary in the Nix package |
 | `cli-commands` | `hermes --help` exposes `gateway` and `config` subcommands |
-| `managed-guard` | `HERMES_MANAGED=true hermes config set ...` prints the NixOS error |
+| `managed-guard` | `HERMES_MANAGED=true moor config set ...` prints the NixOS error |
 | `bundled-skills` | Skills directory exists, contains SKILL.md files, `HERMES_BUNDLED_SKILLS` is set in wrapper |
 | `config-roundtrip` | 7 merge scenarios: fresh install, Nix override, user key preservation, mixed merge, MCP additive merge, nested deep merge, idempotency |
 
@@ -877,7 +877,7 @@ nix build .#checks.x86_64-linux.config-roundtrip    # merge script preserves use
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `extraArgs` | `listOf str` | `[]` | Extra args for `hermes gateway` |
+| `extraArgs` | `listOf str` | `[]` | Extra args for `moor gateway` |
 | `extraPackages` | `listOf package` | `[]` | Extra packages available to the agent. Added to the hermes user's per-user profile so terminal commands, skills, and cron jobs all see them |
 | `extraPlugins` | `listOf package` | `[]` | Directory plugin packages to symlink into `$HERMES_HOME/plugins/`. Each must contain `plugin.yaml` |
 | `extraPythonPackages` | `listOf package` | `[]` | Python packages added to PYTHONPATH for entry-point plugin discovery. Build with `python312Packages` |

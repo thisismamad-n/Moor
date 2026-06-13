@@ -86,7 +86,7 @@ You have two options: the interactive setup wizard (recommended) or manual confi
 ### Option A: Interactive Setup (Recommended)
 
 ```bash
-hermes gateway setup
+moor gateway setup
 ```
 
 This walks you through everything with arrow-key selection. Pick **Telegram**, paste your bot token, and enter your user ID when prompted.
@@ -124,7 +124,7 @@ Telegram user IDs are permanent numbers like `123456789`. They're different from
 Run the gateway in the foreground first to make sure everything works:
 
 ```bash
-hermes gateway
+moor gateway
 ```
 
 You should see output like:
@@ -142,17 +142,17 @@ Open Telegram, find your bot, and send it a message. If it replies, you're in bu
 For a persistent deployment that survives reboots:
 
 ```bash
-hermes gateway install
-sudo hermes gateway install --system   # Linux only: boot-time system service
+moor gateway install
+sudo moor gateway install --system   # Linux only: boot-time system service
 ```
 
 This creates a background service: a user-level **systemd** service on Linux by default, a **launchd** service on macOS, or a boot-time Linux system service if you pass `--system`.
 
 ```bash
 # Linux — manage the default user service
-hermes gateway start
-hermes gateway stop
-hermes gateway status
+moor gateway start
+moor gateway stop
+moor gateway status
 
 # View live logs
 journalctl --user -u hermes-gateway -f
@@ -161,26 +161,26 @@ journalctl --user -u hermes-gateway -f
 sudo loginctl enable-linger $USER
 
 # Linux servers — explicit system-service commands
-sudo hermes gateway start --system
-sudo hermes gateway status --system
+sudo moor gateway start --system
+sudo moor gateway status --system
 journalctl -u hermes-gateway -f
 ```
 
 ```bash
 # macOS — manage the service
-hermes gateway start
-hermes gateway stop
+moor gateway start
+moor gateway stop
 tail -f ~/.hermes/logs/gateway.log
 ```
 
 :::tip macOS PATH
-The launchd plist captures your shell PATH at install time so gateway subprocesses can find tools like Node.js and ffmpeg. If you install new tools later, re-run `hermes gateway install` to update the plist.
+The launchd plist captures your shell PATH at install time so gateway subprocesses can find tools like Node.js and ffmpeg. If you install new tools later, re-run `moor gateway install` to update the plist.
 :::
 
 ### Verify It's Running
 
 ```bash
-hermes gateway status
+moor gateway status
 ```
 
 Then send a test message to your bot on Telegram. You should get a response within a few seconds.
@@ -203,7 +203,7 @@ TELEGRAM_ALLOWED_USERS=123456789,987654321,555555555
 Restart the gateway after changes:
 
 ```bash
-hermes gateway stop && hermes gateway start
+moor gateway stop && moor gateway start
 ```
 
 ### Approach B: DM Pairing (Recommended for Teams)
@@ -352,8 +352,8 @@ partitions above 80%, containers that have restarted, or high memory usage.
 
 ```bash
 # From the CLI
-hermes cron list          # View all scheduled jobs
-hermes cron status        # Check if scheduler is running
+moor cron list          # View all scheduled jobs
+moor cron status        # Check if scheduler is running
 
 # From Telegram chat
 /cron list                # View jobs
@@ -394,7 +394,7 @@ This way, even if someone asks the bot to run something destructive, your host s
 
 ```bash
 # Check if the gateway is running
-hermes gateway status
+moor gateway status
 
 # Watch live logs (Linux)
 journalctl --user -u hermes-gateway -f
@@ -408,8 +408,8 @@ tail -f ~/.hermes/logs/gateway.log
 From Telegram, send `/update` to the bot — it will pull the latest version and restart. Or from the server:
 
 ```bash
-hermes update
-hermes gateway stop && hermes gateway start
+moor update
+moor gateway stop && moor gateway start
 ```
 
 ### Log Locations

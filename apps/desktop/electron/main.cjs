@@ -452,7 +452,7 @@ function previewFileMetadata(filePath, mimeType) {
 app.setName(APP_NAME)
 // Seed the native About panel with the live Moor version. This is refreshed
 // on every open via the explicit "About" menu handler (refreshAboutPanel), so
-// an in-place `hermes update` mid-session is reflected without an app restart;
+// an in-place `moor update` mid-session is reflected without an app restart;
 // the seed here just covers the first open and any non-menu invocation path.
 app.setAboutPanelOptions({
   applicationName: APP_NAME,
@@ -1406,7 +1406,7 @@ let updateInFlight = false
 // Resolve the staged updater binary. The Tauri installer copies itself to
 // HERMES_HOME/hermes-setup.exe on a successful install (see
 // apps/bootstrap-installer paths::copy_self_to_hermes_home). That binary owns
-// ALL repo mutation — running `hermes update` + rebuilding the desktop — so
+// ALL repo mutation — running `moor update` + rebuilding the desktop — so
 // the desktop never touches its own bits while running. Returns null when the
 // updater isn't staged (e.g. a dev/source run that never went through the
 // installer); callers degrade gracefully.
@@ -1441,7 +1441,7 @@ function repairMacUpdaterHelper(updater) {
   }
 }
 
-// Path to the venv shim whose lock decides whether `hermes update` can write
+// Path to the venv shim whose lock decides whether `moor update` can write
 // fresh entry points. On Windows this is the file the running backend
 // `hermes.exe` holds open; on POSIX it's never mandatory-locked.
 function venvHermesShimPath(updateRoot) {
@@ -1562,8 +1562,8 @@ async function releaseBackendLock(updateRoot, tag) {
 //
 // The desktop is a pure consumer: it does NOT git pull / pip install / rebuild
 // itself (the old open-coded git dance lived here and drifted from
-// `hermes update`). Instead we spawn the staged Moor-Setup binary with
-// --update and quit, so it can run `hermes update` (which refuses while we
+// `moor update`). Instead we spawn the staged Moor-Setup binary with
+// --update and quit, so it can run `moor update` (which refuses while we
 // hold the venv shim) and rebuild the desktop with our exe already gone.
 //
 // Detection (checkUpdates / commit changelog / "N behind") stays in the UI;
@@ -1580,7 +1580,7 @@ async function applyUpdates(opts = {}) {
       // macOS/Linux drag-install: no staged Tauri hermes-setup. Unlike Windows
       // (where a venv-shim file lock forces the quit→hand-off→rebuild dance),
       // there's no mandatory file locking here, so the desktop can drive the
-      // whole update itself: `hermes update` (backend) + `hermes desktop
+      // whole update itself: `moor update` (backend) + `hermes desktop
       // --build-only` (OS-aware GUI rebuild), then swap the running .app bundle
       // with the freshly built one and relaunch.
       return await applyUpdatesPosixInApp(opts)
@@ -1591,21 +1591,21 @@ async function applyUpdates(opts = {}) {
       // hermes-setup.exe into HERMES_HOME). They DO have a working `hermes`
       // on PATH / in the venv, so the correct path is the one-liner in their
       // native medium. We show the EXACT command, branch-pinned to the
-      // checkout they're on — bare `hermes update` defaults to main and would
+      // checkout they're on — bare `moor update` defaults to main and would
       // silently switch a bb/gui (or any non-main) install off-branch. Mirror
       // the GUI button's contract: append --branch <current> for non-main
       // checkouts, keep it bare for main so the card stays clean.
       const updateRoot = resolveUpdateRoot()
-      let command = 'hermes update'
+      let command = 'moor update'
       try {
         const head = await runGit(['rev-parse', '--abbrev-ref', 'HEAD'], { cwd: updateRoot })
         const current = (head.stdout || '').trim()
         if (head.code === 0 && current && current !== 'HEAD') {
           const branch = await resolveHealedBranch(updateRoot, current)
-          if (branch !== 'main') command = `hermes update --branch ${branch}`
+          if (branch !== 'main') command = `moor update --branch ${branch}`
         }
       } catch {
-        // Best-effort: fall back to bare `hermes update` if branch detection fails.
+        // Best-effort: fall back to bare `moor update` if branch detection fails.
       }
       rememberLog(`[updates] no staged updater; surfacing manual \`${command}\` for CLI install at ${updateRoot}`)
       emitUpdateProgress({ stage: 'manual', message: command, percent: null })
@@ -1632,7 +1632,7 @@ async function applyUpdates(opts = {}) {
     await releaseBackendLockForUpdate(updateRoot)
 
     // Detached so the updater outlives this process — it needs us GONE before
-    // `hermes update` will run (the venv shim is locked while we live).
+    // `moor update` will run (the venv shim is locked while we live).
     const child = spawn(updater, updaterArgs, {
       cwd: HERMES_HOME,
       env: {
@@ -1708,7 +1708,7 @@ function shellQuote(value) {
   return `'${String(value).replace(/'/g, `'\\''`)}'`
 }
 
-// macOS/Linux in-app update: backend (`hermes update`) + OS-aware GUI rebuild
+// macOS/Linux in-app update: backend (`moor update`) + OS-aware GUI rebuild
 // (`hermes desktop --build-only`), then atomically swap the running .app bundle
 // with the freshly built one and relaunch. Degrades to "backend updated,
 // restart to load the new GUI" if the swap can't be performed.
@@ -1716,8 +1716,8 @@ async function applyUpdatesPosixInApp() {
   const updateRoot = resolveUpdateRoot()
   const hermes = resolveHermesCliBinary(updateRoot)
   if (!hermes) {
-    emitUpdateProgress({ stage: 'manual', message: 'hermes update', percent: null })
-    return { ok: true, manual: true, command: 'hermes update', hermesRoot: updateRoot }
+    emitUpdateProgress({ stage: 'manual', message: 'moor update', percent: null })
+    return { ok: true, manual: true, command: 'moor update', hermesRoot: updateRoot }
   }
 
   // Put the Moor-managed Node and the venv on PATH so `hermes desktop`'s
@@ -1730,7 +1730,7 @@ async function applyUpdatesPosixInApp() {
     PATH: [extraPath, process.env.PATH].filter(Boolean).join(path.delimiter)
   }
 
-  // `hermes update` reaps stale `hermes dashboard` backends (a code update
+  // `moor update` reaps stale `moor dashboard` backends (a code update
   // leaves the running process serving old Python against the freshly-updated
   // JS bundle). But OUR backend is one of those processes, and killing it
   // mid-update produces the boot→kill→crash loop in #37532 — the desktop
@@ -1774,8 +1774,8 @@ async function applyUpdatesPosixInApp() {
     stage: 'update'
   })
   if (updated.code !== 0) {
-    emitUpdateProgress({ stage: 'error', message: 'hermes update failed.', error: updated.error || 'update-failed' })
-    return { ok: false, error: 'hermes update failed' }
+    emitUpdateProgress({ stage: 'error', message: 'moor update failed.', error: updated.error || 'update-failed' })
+    return { ok: false, error: 'moor update failed' }
   }
 
   emitUpdateProgress({ stage: 'rebuild', message: 'Rebuilding the desktop app…', percent: 60 })
@@ -2078,7 +2078,7 @@ function resolveHermesBackend(dashboardArgs) {
   //    The bootstrap marker means install.ps1 stages finished and the user
   //    completed initial configuration; we trust the install and go straight
   //    to spawning hermes. Updates flow through the in-app update path
-  //    (applyUpdates -> git pull) or `hermes update` from the CLI.
+  //    (applyUpdates -> git pull) or `moor update` from the CLI.
   if (isBootstrapComplete()) {
     return createActiveBackend(dashboardArgs)
   }
@@ -5597,7 +5597,7 @@ function resolveHermesVersion() {
 }
 
 // Re-resolve the live Moor version and push it into the native About panel
-// just before showing it, so an in-place `hermes update` is reflected without
+// just before showing it, so an in-place `moor update` is reflected without
 // an app restart. macOS only — `showAboutPanel()` is a no-op elsewhere, and the
 // other platforms don't use this menu item.
 function showAboutPanelFresh() {
@@ -5623,7 +5623,7 @@ ipcMain.handle('hermes:version', async () => ({
 //
 // The renderer's About → Danger Zone surfaces three options that mirror the
 // CLI exactly: GUI only, Lite (keep user data), Full. We ask the agent to do
-// the actual removal via `hermes uninstall …` so the cross-platform PATH /
+// the actual removal via `moor uninstall …` so the cross-platform PATH /
 // registry / service / node-symlink cleanup all lives in one place
 // (hermes_cli/uninstall.py + hermes_cli/gui_uninstall.py).
 //

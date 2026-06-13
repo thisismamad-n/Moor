@@ -98,7 +98,7 @@ gateway:
 ## 第五步：运行 gateway
 
 ```bash
-hermes gateway
+moor gateway
 ```
 
 Agent 日志显示：

@@ -41,7 +41,7 @@ pip install -e '.[acp]'
 
 这将安装 `agent-client-protocol` 依赖并启用：
 
-- `hermes acp`
+- `moor acp`
 - `hermes-acp`
 - `python -m acp_adapter`
 
@@ -58,7 +58,7 @@ uvx --from 'hermes-agent[acp]==<version>' hermes-acp
 以下任意命令均可以 ACP 模式启动 Moor：
 
 ```bash
-hermes acp
+moor acp
 ```
 
 ```bash
@@ -74,8 +74,8 @@ Moor 将日志输出到 stderr，以保留 stdout 用于 ACP JSON-RPC 流量。
 非交互式检查：
 
 ```bash
-hermes acp --version
-hermes acp --check
+moor acp --version
+moor acp --check
 ```
 
 ### 浏览器工具（可选）
@@ -83,11 +83,11 @@ hermes acp --check
 浏览器工具（`browser_navigate`、`browser_click` 等）依赖 `agent-browser` npm 包和 Chromium，这些不包含在 Python wheel 中。通过以下命令安装：
 
 ```bash
-hermes acp --setup-browser           # 交互式（下载约 400 MB 前会提示确认）
-hermes acp --setup-browser --yes     # 非交互式接受下载
+moor acp --setup-browser           # 交互式（下载约 400 MB 前会提示确认）
+moor acp --setup-browser --yes     # 非交互式接受下载
 ```
 
-这是独立命令。Zed registry 的终端认证流程（`hermes acp --setup`）在模型选择后也会将浏览器引导作为后续问题提供，因此大多数用户无需直接运行 `--setup-browser`。
+这是独立命令。Zed registry 的终端认证流程（`moor acp --setup`）在模型选择后也会将浏览器引导作为后续问题提供，因此大多数用户无需直接运行 `--setup-browser`。
 
 具体操作：
 
@@ -115,7 +115,7 @@ hermes acp --setup-browser --yes     # 非交互式接受下载
 {
   "acp.agents": {
     "Moor Agent": {
-      "command": "hermes",
+      "command": "moor",
       "args": ["acp"]
     }
   }
@@ -133,7 +133,7 @@ Zed v0.221.x 及更新版本通过官方 ACP Registry 安装外部 agent。
 
 前提条件：
 
-- 先通过 `hermes model` 配置 Moor provider 凭据，或在 `~/.hermes/.env` / `~/.hermes/config.yaml` 中设置。
+- 先通过 `moor model` 配置 Moor provider 凭据，或在 `~/.hermes/.env` / `~/.hermes/config.yaml` 中设置。
 - 安装 `uv`，以便 registry 启动器可以运行 `uvx --from 'hermes-agent[acp]==<version>' hermes-acp`。
 
 在 registry 条目可用之前进行本地开发时，在 Zed 设置中使用自定义 agent 服务器：
@@ -143,7 +143,7 @@ Zed v0.221.x 及更新版本通过官方 ACP Registry 安装外部 agent。
   "agent_servers": {
     "hermes-agent": {
       "type": "custom",
-      "command": "hermes",
+      "command": "moor",
       "args": ["acp"]
     }
   }
@@ -238,7 +238,7 @@ ACP 桥接将这些选项映射到 Moor 的内部审批语义——`allow_always
 检查：
 
 - 在 Zed 中，使用 `zed: acp registry` 打开 ACP Registry 并搜索 **Moor Agent**。
-- 对于手动/本地开发，验证自定义 `agent_servers` 命令是否指向 `hermes acp`。
+- 对于手动/本地开发，验证自定义 `agent_servers` 命令是否指向 `moor acp`。
 - Moor 已安装且在 PATH 中。
 - ACP 扩展已安装（`pip install -e '.[acp]'`）。
 - 如果从官方 Zed registry 条目启动，`uv` 已安装。
@@ -248,10 +248,10 @@ ACP 桥接将这些选项映射到 Moor 的内部审批语义——`allow_always
 尝试以下检查：
 
 ```bash
-hermes acp --version
-hermes acp --check
-hermes doctor
-hermes status
+moor acp --version
+moor acp --check
+moor doctor
+moor status
 ```
 
 ### 缺少凭据
@@ -259,7 +259,7 @@ hermes status
 ACP 模式使用 Moor 现有的 provider 设置。通过以下方式配置凭据：
 
 ```bash
-hermes model
+moor model
 ```
 
 或编辑 `~/.hermes/.env`。Registry 客户端也可以触发 Moor 的终端认证流程，该流程运行相同的交互式 provider/模型设置。

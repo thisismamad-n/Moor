@@ -14,7 +14,7 @@ Create HTML-based video compositions, animated title cards, social overlays, cap
 
 | | |
 |---|---|
-| Source | Optional — install with `hermes skills install official/creative/hyperframes` |
+| Source | Optional — install with `moor skills install official/creative/hyperframes` |
 | Path | `optional-skills/creative/hyperframes` |
 | Version | `1.0.0` |
 | Author | heygen-com |

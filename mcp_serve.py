@@ -13,8 +13,8 @@ Matches OpenClaw's 9-tool MCP channel bridge surface:
 Plus: channels_list (Moor-specific extra)
 
 Usage:
-    hermes mcp serve
-    hermes mcp serve --verbose
+    moor mcp serve
+    moor mcp serve --verbose
 
 MCP client config (e.g. claude_desktop_config.json):
     {

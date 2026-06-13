@@ -110,7 +110,7 @@ docs/superpowers/*
 
 # Desktop/bootstrap install marker written into the managed checkout root by the
 # bootstrap installer. It is Moor-managed runtime state, never a code change —
-# ignore it so `hermes update`'s `git stash push --include-untracked` does not
+# ignore it so `moor update`'s `git stash push --include-untracked` does not
 # treat it as a local edit and autostash it on every run (#38529).
 .hermes-bootstrap-complete
 

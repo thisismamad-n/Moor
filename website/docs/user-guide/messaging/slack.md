@@ -38,7 +38,7 @@ Mode — all at once.
 
 1. Generate the manifest:
    ```bash
-   hermes slack manifest --write
+   moor slack manifest --write
    ```
    This writes `~/.hermes/slack-manifest.json` and prints paste-in
    instructions.
@@ -202,15 +202,15 @@ SLACK_HOME_CHANNEL_NAME=general              # Human-readable name for the home 
 Or run the interactive setup:
 
 ```bash
-hermes gateway setup    # Select Slack when prompted
+moor gateway setup    # Select Slack when prompted
 ```
 
 Then start the gateway:
 
 ```bash
-hermes gateway              # Foreground
-hermes gateway install      # Install as a user service
-sudo hermes gateway install --system   # Linux only: boot-time system service
+moor gateway              # Foreground
+moor gateway install      # Install as a user service
+sudo moor gateway install --system   # Linux only: boot-time system service
 ```
 
 ---
@@ -242,11 +242,11 @@ through the WebSocket regardless of the manifest's `url` field.
 
 ### Refreshing slash commands after updates
 
-When Moor adds new commands (e.g. after `hermes update`), regenerate
+When Moor adds new commands (e.g. after `moor update`), regenerate
 the manifest and update your Slack app:
 
 ```bash
-hermes slack manifest --write
+moor slack manifest --write
 ```
 
 Then in Slack:
@@ -257,11 +257,11 @@ Then in Slack:
 4. **Save**. Slack will prompt to reinstall the app if scopes or slash
    commands changed.
 
-### Legacy `/hermes <subcommand>` still works
+### Legacy `/moor <subcommand>` still works
 
 For backward compatibility with older manifests, you can still type
-`/hermes btw run the tests` — Moor routes it the same way as `/btw
-run the tests`. Free-form questions also work: `/hermes what's the
+`/moor btw run the tests` — Moor routes it the same way as `/btw
+run the tests`. Free-form questions also work: `/moor what's the
 weather?` is treated as a regular message.
 
 ### Using commands inside threads (the `!cmd` prefix)
@@ -286,7 +286,7 @@ If you maintain your Slack manifest by hand and just want the slash
 command list:
 
 ```bash
-hermes slack manifest --slashes-only > /tmp/slashes.json
+moor slack manifest --slashes-only > /tmp/slashes.json
 ```
 
 Paste that array into the `features.slash_commands` key of your

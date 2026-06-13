@@ -2,7 +2,7 @@
 
 [SimpleX Chat](https://simplex.chat/) is a private, decentralised messaging platform where users own their contacts and groups. Unlike other platforms, SimpleX assigns no persistent user IDs — every contact is identified by an opaque internal ID generated at connection time, which makes it one of the most private messengers available.
 
-> Run `hermes gateway setup` and pick **SimpleX** for a guided walk-through.
+> Run `moor gateway setup` and pick **SimpleX** for a guided walk-through.
 
 ## Prerequisites
 
@@ -34,7 +34,7 @@ The daemon listens on WebSocket at `ws://127.0.0.1:5225` by default.
 ### Via setup wizard
 
 ```bash
-hermes gateway setup
+moor gateway setup
 ```
 
 Select **SimpleX Chat** and follow the prompts.

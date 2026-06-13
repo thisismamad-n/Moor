@@ -46,7 +46,7 @@ Use `hermes computer-use status` to verify the install.
 
 **Option 2: enable the toolset interactively.**
 
-1. Run `hermes tools`, pick `🖱️ Computer Use (macOS)` → `cua-driver (background)`.
+1. Run `moor tools`, pick `🖱️ Computer Use (macOS)` → `cua-driver (background)`.
 2. The setup runs the upstream installer (same as Option 1).
 
 After installing, regardless of which path you took:
@@ -68,7 +68,7 @@ The cua-driver project ships fixes regularly (e.g. v0.1.6 fixed a Safari
 window-focus bug for UTM workflows). Moor refreshes the binary in two
 places so you don't get stuck on a stale release:
 
-- **`hermes update`** — when you update Moor itself, if `cua-driver` is
+- **`moor update`** — when you update Moor itself, if `cua-driver` is
   on PATH the upstream installer re-runs at the end of the update.
   No-op for non-macOS users and for users without cua-driver installed.
 - **`hermes computer-use install --upgrade`** — manual force-refresh.
@@ -181,7 +181,7 @@ HERMES_COMPUTER_USE_BACKEND=noop   # records calls, no side effects
 
 **`computer_use backend unavailable: cua-driver is not installed`** — Run
 `hermes computer-use install` to fetch the cua-driver binary, or run
-`hermes tools` and enable the Computer Use toolset.
+`moor tools` and enable the Computer Use toolset.
 
 **Clicks seem to have no effect** — Capture and verify. A modal you
 didn't see may be blocking input. Dismiss it with `escape` or the close

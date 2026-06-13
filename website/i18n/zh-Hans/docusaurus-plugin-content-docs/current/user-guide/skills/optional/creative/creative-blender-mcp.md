@@ -14,7 +14,7 @@ description: "通过 socket 连接 blender-mcp 插件，直接从 Moor 控制 Bl
 
 | | |
 |---|---|
-| 来源 | 可选 — 通过 `hermes skills install official/creative/blender-mcp` 安装 |
+| 来源 | 可选 — 通过 `moor skills install official/creative/blender-mcp` 安装 |
 | 路径 | `optional-skills/creative/blender-mcp` |
 | 版本 | `1.0.0` |
 | 作者 | alireza78a |

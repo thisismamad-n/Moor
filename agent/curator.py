@@ -188,7 +188,7 @@ def get_prune_builtins() -> bool:
 
     ON by default. When on, built-ins become curation candidates and are
     archived after the same inactivity period as agent-created skills, with a
-    suppression list keeping them archived across `hermes update` re-seeds.
+    suppression list keeping them archived across `moor update` re-seeds.
     Hub-installed skills are never pruned regardless of this flag.
     """
     cfg = _load_config()
@@ -220,7 +220,7 @@ def should_run_now(now: Optional[datetime] = None) -> bool:
     install that predates the curator), we DO NOT run immediately. The
     curator is designed to run after at least ``interval_hours`` (7 days by
     default) of skill activity, not on the first background tick after
-    ``hermes update``. On first observation we seed ``last_run_at`` to "now"
+    ``moor update``. On first observation we seed ``last_run_at`` to "now"
     and defer the first real pass by one full interval. Users who want to
     run it sooner can always invoke ``hermes curator run`` (with or without
     ``--dry-run``) explicitly — that path bypasses this gate.
@@ -1529,7 +1529,7 @@ def run_curator_review(
                         "rule #1 for bundled skills ONLY. Hub-installed skills "
                         "remain strictly off-limits. Treat a stale built-in the "
                         "same as a stale agent-created skill: archive it (never "
-                        "delete). It will be restored on `hermes update` only if "
+                        "delete). It will be restored on `moor update` only if "
                         "the user explicitly restores it."
                     )
                 if dry_run:
@@ -1671,7 +1671,7 @@ def _resolve_review_model(cfg: Dict[str, Any]) -> tuple[str, str]:
     """Pick (provider, model) for the curator review fork.
 
     Curator is a regular auxiliary task slot — ``auxiliary.curator.{provider,model}``
-    — so it participates in the canonical aux-model plumbing (``hermes model`` →
+    — so it participates in the canonical aux-model plumbing (``moor model`` →
     auxiliary picker, the dashboard Models tab, ``auxiliary.curator.{timeout,
     base_url,api_key,extra_body}``). ``provider: "auto"`` with an empty model
     means "use the main chat model" — same default as every other aux task.
@@ -1723,7 +1723,7 @@ def _run_llm_review(prompt: str) -> Dict[str, Any]:
     # providers and for pool-backed credentials.
     #
     # `_resolve_review_runtime()` honors `auxiliary.curator.{provider,model,...}`
-    # (canonical aux-task slot, wired through `hermes model` → auxiliary
+    # (canonical aux-task slot, wired through `moor model` → auxiliary
     # picker and the dashboard Models tab), with a legacy fallback to
     # `curator.auxiliary.{provider,model,...}`. See docs/user-guide/features/curator.md.
     _api_key = None

@@ -4,7 +4,7 @@ import { isProviderSetupErrorMessage } from './provider-setup-errors'
 
 describe('isProviderSetupErrorMessage', () => {
   it('matches generic missing-provider copy', () => {
-    expect(isProviderSetupErrorMessage('No inference provider configured. Run `hermes model` to choose one.')).toBe(
+    expect(isProviderSetupErrorMessage('No inference provider configured. Run `moor model` to choose one.')).toBe(
       true
     )
     expect(isProviderSetupErrorMessage('No inference provider is configured.')).toBe(true)

@@ -113,7 +113,7 @@ def check_requirements() -> bool:
     if not (_SIDECAR_DIR / "node_modules").exists():
         # spectrum-ts not installed yet — `hermes photon setup` will
         # install it.  check_fn still returns False so the gateway
-        # surfaces the missing-deps state in `hermes setup` / status.
+        # surfaces the missing-deps state in `moor setup` / status.
         return False
     return True
 
@@ -1124,7 +1124,7 @@ def register(ctx) -> None:
             "Spectrum project, links your phone number, installs the "
             "spectrum-ts sidecar)."
         ),
-        # Surfaces Photon in `hermes gateway setup` alongside every other
+        # Surfaces Photon in `moor gateway setup` alongside every other
         # channel — same unified onboarding wizard, no Photon-only detour.
         setup_fn=_cli.gateway_setup,
         env_enablement_fn=_env_enablement,

@@ -6,7 +6,7 @@ description: "Build themes and plugins for the Moor web dashboard — palettes, 
 
 # Extending the Dashboard
 
-The Moor web dashboard (`hermes dashboard`) is built to be reskinned and extended without forking the codebase. Three layers are exposed:
+The Moor web dashboard (`moor dashboard`) is built to be reskinned and extended without forking the codebase. Three layers are exposed:
 
 1. **Themes** — YAML files that repaint the dashboard's palette, typography, layout, and per-component chrome. Drop a file in `~/.hermes/dashboard-themes/`; it appears in the theme switcher.
 2. **UI plugins** — a directory with `manifest.json` + a JavaScript bundle that registers a tab, replaces a built-in page, augments one via page-scoped slots, or injects components into named shell slots.
@@ -816,7 +816,7 @@ Discovery results are cached per dashboard process. After adding a new plugin, e
 curl http://127.0.0.1:9119/api/dashboard/plugins/rescan
 ```
 
-…or restart `hermes dashboard`.
+…or restart `moor dashboard`.
 
 #### Plugin load lifecycle
 
@@ -909,7 +909,7 @@ The `sidebar` slot only renders when the active theme has `layoutVariant: cockpi
 
 **Plugin backend routes return 404.**
 1. Confirm the manifest has `"api": "plugin_api.py"` pointing to an existing file inside `dashboard/`.
-2. Restart `hermes dashboard` — plugin API routes are mounted once at startup, **not** on rescan.
+2. Restart `moor dashboard` — plugin API routes are mounted once at startup, **not** on rescan.
 3. Check that `plugin_api.py` exports a module-level `router = APIRouter()`. Other export names are not picked up.
 4. Tail `~/.hermes/logs/errors.log` for `Failed to load plugin <name> API routes` — import errors are logged there.
 

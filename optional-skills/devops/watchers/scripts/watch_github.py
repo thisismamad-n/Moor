@@ -3,7 +3,7 @@
 
 Usage (via cron with --no-agent):
 
-    hermes cron create hermes-issues \\
+    moor cron create hermes-issues \\
       --schedule "*/5 * * * *" --no-agent \\
       --script "$HERMES_HOME/skills/devops/watchers/scripts/watch_github.py" \\
       --script-args "--name hermes-issues --repo Moor inc./hermes-agent --scope issues"

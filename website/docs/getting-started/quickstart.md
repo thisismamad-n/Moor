@@ -36,11 +36,11 @@ Pick the row that matches your goal:
 
 | Goal | Do this first | Then do this |
 |---|---|---|
-| I just want Moor working on my machine | `hermes setup` | Run a real chat and verify it responds |
-| I already know my provider | `hermes model` | Save the config, then start chatting |
-| I want a bot or always-on setup | `hermes gateway setup` after CLI works | Connect Telegram, Discord, Slack, or another platform |
-| I want a local or self-hosted model | `hermes model` → custom endpoint | Verify the endpoint, model name, and context length |
-| I want multi-provider fallback | `hermes model` first | Add routing and fallback only after the base chat works |
+| I just want Moor working on my machine | `moor setup` | Run a real chat and verify it responds |
+| I already know my provider | `moor model` | Save the config, then start chatting |
+| I want a bot or always-on setup | `moor gateway setup` after CLI works | Connect Telegram, Discord, Slack, or another platform |
+| I want a local or self-hosted model | `moor model` → custom endpoint | Verify the endpoint, model name, and context length |
+| I want multi-provider fallback | `moor model` first | Add routing and fallback only after the base chat works |
 
 **Rule of thumb:** if Moor cannot complete a normal chat, do not add more features yet. Get one clean conversation working first, then layer on gateway, cron, skills, voice, or routing.
 
@@ -79,17 +79,17 @@ For detailed installation options, prerequisites, and troubleshooting, see the [
 
 ## 2. Choose a Provider
 
-The single most important setup step. Use `hermes model` to walk through the choice interactively:
+The single most important setup step. Use `moor model` to walk through the choice interactively:
 
 ```bash
-hermes model
+moor model
 ```
 
 :::tip Easiest path: Nous Portal
 One subscription covers 300+ models plus the [Tool Gateway](../user-guide/features/tool-gateway.md) (web search, image generation, TTS, cloud browser). On a fresh install:
 
 ```bash
-hermes setup --portal
+moor setup --portal
 ```
 
 That logs you in, sets Nous as your provider, and turns on the Tool Gateway in one command.
@@ -99,16 +99,16 @@ Good defaults:
 
 | Provider | What it is | How to set up |
 |----------|-----------|---------------|
-| **Nous Portal** | Subscription-based, zero-config | OAuth login via `hermes model` |
-| **OpenAI Codex** | ChatGPT OAuth, uses Codex models | Device code auth via `hermes model` |
-| **Anthropic** | Claude models directly — Max plan + extra usage credits (OAuth), or API key for pay-per-token | `hermes model` → OAuth login (requires Max + extra credits), or an Anthropic API key |
+| **Nous Portal** | Subscription-based, zero-config | OAuth login via `moor model` |
+| **OpenAI Codex** | ChatGPT OAuth, uses Codex models | Device code auth via `moor model` |
+| **Anthropic** | Claude models directly — Max plan + extra usage credits (OAuth), or API key for pay-per-token | `moor model` → OAuth login (requires Max + extra credits), or an Anthropic API key |
 | **OpenRouter** | Multi-provider routing across many models | Enter your API key |
 | **Z.AI** | GLM / Zhipu-hosted models | Set `GLM_API_KEY` / `ZAI_API_KEY` (also accepts `Z_AI_API_KEY`) |
 | **Kimi / Moonshot** | Moonshot-hosted coding and chat models | Set `KIMI_API_KEY` (or the Kimi-Coding-specific `KIMI_CODING_API_KEY`) |
 | **Kimi / Moonshot China** | China-region Moonshot endpoint | Set `KIMI_CN_API_KEY` |
 | **Arcee AI** | Trinity models | Set `ARCEEAI_API_KEY` |
 | **GMI Cloud** | Multi-model direct API | Set `GMI_API_KEY` |
-| **MiniMax (OAuth)** | MiniMax frontier model via browser OAuth — no API key needed (model name in `hermes_cli/models.py` may change between releases) | `hermes model` → MiniMax (OAuth) |
+| **MiniMax (OAuth)** | MiniMax frontier model via browser OAuth — no API key needed (model name in `hermes_cli/models.py` may change between releases) | `moor model` → MiniMax (OAuth) |
 | **MiniMax** | International MiniMax endpoint | Set `MINIMAX_API_KEY` |
 | **MiniMax China** | China-region MiniMax endpoint | Set `MINIMAX_CN_API_KEY` |
 | **Alibaba Cloud** | Qwen models via DashScope | Set `DASHSCOPE_API_KEY` (Qwen Coding Plan also accepts `ALIBABA_CODING_PLAN_API_KEY`) |
@@ -116,23 +116,23 @@ Good defaults:
 | **AWS Bedrock** | Claude, Nova, Llama, DeepSeek via native Converse API | IAM role or `aws configure` ([guide](../guides/aws-bedrock.md)) |
 | **Azure Foundry** | Azure AI Foundry-hosted models | Set `AZURE_FOUNDRY_API_KEY` + `AZURE_FOUNDRY_BASE_URL` |
 | **Google AI Studio** | Gemini models via direct API | Set `GOOGLE_API_KEY` / `GEMINI_API_KEY` |
-| **Google Gemini (OAuth)** | Gemini via the `google-gemini-cli` OAuth flow — no key needed | `hermes model` → Google Gemini (OAuth) |
+| **Google Gemini (OAuth)** | Gemini via the `google-gemini-cli` OAuth flow — no key needed | `moor model` → Google Gemini (OAuth) |
 | **xAI** | Grok models via direct API | Set `XAI_API_KEY` |
-| **xAI Grok OAuth** | SuperGrok / Premium+ subscription, no API key needed | `hermes model` → xAI Grok OAuth |
+| **xAI Grok OAuth** | SuperGrok / Premium+ subscription, no API key needed | `moor model` → xAI Grok OAuth |
 | **NovitaAI** | Multi-model API gateway | Set `NOVITA_API_KEY` |
 | **StepFun** | Step Plan models | Set `STEPFUN_API_KEY` |
 | **Xiaomi MiMo** | Xiaomi-hosted models | Set `XIAOMI_API_KEY` |
 | **Tencent TokenHub** | Tencent-hosted models | Set `TOKENHUB_API_KEY` |
 | **Ollama Cloud** | Managed Ollama-hosted models | Set `OLLAMA_API_KEY` |
 | **LM Studio** | Local desktop app exposing an OpenAI-compatible API | Set `LM_API_KEY` (and `LM_BASE_URL` if non-default) |
-| **Qwen OAuth** | Qwen Portal browser OAuth — no API key needed | `hermes model` → Qwen OAuth |
+| **Qwen OAuth** | Qwen Portal browser OAuth — no API key needed | `moor model` → Qwen OAuth |
 | **Kilo Code** | KiloCode-hosted models | Set `KILOCODE_API_KEY` |
 | **OpenCode Zen** | Pay-as-you-go access to curated models | Set `OPENCODE_ZEN_API_KEY` |
 | **OpenCode Go** | $10/month subscription for open models | Set `OPENCODE_GO_API_KEY` |
 | **DeepSeek** | Direct DeepSeek API access | Set `DEEPSEEK_API_KEY` |
 | **NVIDIA NIM** | Nemotron models via build.nvidia.com or local NIM | Set `NVIDIA_API_KEY` (optional: `NVIDIA_BASE_URL`) |
-| **GitHub Copilot** | GitHub Copilot subscription (GPT-5.x, Claude, Gemini, etc.) | OAuth via `hermes model`, or `COPILOT_GITHUB_TOKEN` / `GH_TOKEN` |
-| **GitHub Copilot ACP** | Copilot ACP agent backend (spawns local `copilot` CLI) | `hermes model` (requires `copilot` CLI + `copilot login`) |
+| **GitHub Copilot** | GitHub Copilot subscription (GPT-5.x, Claude, Gemini, etc.) | OAuth via `moor model`, or `COPILOT_GITHUB_TOKEN` / `GH_TOKEN` |
+| **GitHub Copilot ACP** | Copilot ACP agent backend (spawns local `copilot` CLI) | `moor model` (requires `copilot` CLI + `copilot login`) |
 | **Custom Endpoint** | VLLM, SGLang, Ollama, or any OpenAI-compatible API | Set base URL + API key |
 
 For most first-time users: choose a provider, accept the defaults unless you know why you're changing them. The full provider catalog with env vars and setup steps lives on the [Providers](../integrations/providers.md) page.
@@ -142,7 +142,7 @@ Moor Agent requires a model with at least **64,000 tokens** of context. Models w
 :::
 
 :::tip
-You can switch providers at any time with `hermes model` — no lock-in. For a full list of all supported providers and setup details, see [AI Providers](../integrations/providers.md).
+You can switch providers at any time with `moor model` — no lock-in. For a full list of all supported providers and setup details, see [AI Providers](../integrations/providers.md).
 :::
 
 ### How settings are stored
@@ -155,9 +155,9 @@ Moor separates secrets from normal config:
 The easiest way to set values correctly is through the CLI:
 
 ```bash
-hermes config set model anthropic/claude-opus-4.6
-hermes config set terminal.backend docker
-hermes config set OPENROUTER_API_KEY sk-or-...
+moor config set model anthropic/claude-opus-4.6
+moor config set terminal.backend docker
+moor config set OPENROUTER_API_KEY sk-or-...
 ```
 
 The right value goes to the right file automatically.
@@ -244,15 +244,15 @@ Only after the base chat works. Pick what you need:
 ### Bot or shared assistant
 
 ```bash
-hermes gateway setup    # Interactive platform configuration
+moor gateway setup    # Interactive platform configuration
 ```
 
 Connect [Telegram](/user-guide/messaging/telegram), [Discord](/user-guide/messaging/discord), [Slack](/user-guide/messaging/slack), [WhatsApp](/user-guide/messaging/whatsapp), [Signal](/user-guide/messaging/signal), [Email](/user-guide/messaging/email), or [Home Assistant](/user-guide/messaging/homeassistant), or [Microsoft Teams](/user-guide/messaging/teams).
 
 ### Automation and tools
 
-- `hermes tools` — tune tool access per platform
-- `hermes skills` — browse and install reusable workflows
+- `moor tools` — tune tool access per platform
+- `moor skills` — browse and install reusable workflows
 - Cron — only after your bot or CLI setup is stable
 
 ### Sandboxed terminal
@@ -260,8 +260,8 @@ Connect [Telegram](/user-guide/messaging/telegram), [Discord](/user-guide/messag
 For safety, run the agent in a Docker container or on a remote server:
 
 ```bash
-hermes config set terminal.backend docker    # Docker isolation
-hermes config set terminal.backend ssh       # Remote server
+moor config set terminal.backend docker    # Docker isolation
+moor config set terminal.backend ssh       # Remote server
 ```
 
 ### Voice mode
@@ -285,12 +285,12 @@ Moor ships with a catalog of bundled skills already installed in `~/.hermes/skil
 **Browse and install from the hub:**
 
 ```bash
-hermes skills browse                      # list everything available
-hermes skills search kubernetes           # find skills by keyword
-hermes skills install openai/skills/k8s   # install one (runs a security scan first)
+moor skills browse                      # list everything available
+moor skills search kubernetes           # find skills by keyword
+moor skills install openai/skills/k8s   # install one (runs a security scan first)
 ```
 
-The install argument is a `source/path` slug from the hub — `openai/skills/k8s` means the `k8s` skill from OpenAI's catalog. `hermes skills browse` shows the exact slugs to use.
+The install argument is a `source/path` slug from the hub — `openai/skills/k8s` means the `k8s` skill from OpenAI's catalog. `moor skills browse` shows the exact slugs to use.
 
 **Use a skill** — every installed skill becomes a slash command automatically:
 
@@ -335,23 +335,23 @@ These are the problems that waste the most time:
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| Moor opens but gives empty or broken replies | Provider auth or model selection is wrong | Run `hermes model` again and confirm provider, model, and auth |
+| Moor opens but gives empty or broken replies | Provider auth or model selection is wrong | Run `moor model` again and confirm provider, model, and auth |
 | Custom endpoint "works" but returns garbage | Wrong base URL, model name, or not actually OpenAI-compatible | Verify the endpoint in a separate client first |
-| Gateway starts but nobody can message it | Bot token, allowlist, or platform setup is incomplete | Re-run `hermes gateway setup` and check `hermes gateway status` |
-| `hermes --continue` can't find old session | Switched profiles or session never saved | Check `hermes sessions list` and confirm you're in the right profile |
+| Gateway starts but nobody can message it | Bot token, allowlist, or platform setup is incomplete | Re-run `moor gateway setup` and check `moor gateway status` |
+| `hermes --continue` can't find old session | Switched profiles or session never saved | Check `moor sessions list` and confirm you're in the right profile |
 | Model unavailable or odd fallback behavior | Provider routing or fallback settings are too aggressive | Keep routing off until the base provider is stable |
-| `hermes doctor` flags config problems | Config values are missing or stale | Fix the config, retest a plain chat before adding features |
+| `moor doctor` flags config problems | Config values are missing or stale | Fix the config, retest a plain chat before adding features |
 
 ## Recovery Toolkit
 
 When something feels off, use this order:
 
-1. `hermes doctor`
-2. `hermes model`
-3. `hermes setup`
-4. `hermes sessions list`
+1. `moor doctor`
+2. `moor model`
+3. `moor setup`
+4. `moor sessions list`
 5. `hermes --continue`
-6. `hermes gateway status`
+6. `moor gateway status`
 
 That sequence gets you from "broken vibes" back to a known state fast.
 
@@ -362,12 +362,12 @@ That sequence gets you from "broken vibes" back to a known state fast.
 | Command | Description |
 |---------|-------------|
 | `hermes` | Start chatting |
-| `hermes model` | Choose your LLM provider and model |
-| `hermes tools` | Configure which tools are enabled per platform |
-| `hermes setup` | Full setup wizard (configures everything at once) |
-| `hermes doctor` | Diagnose issues |
-| `hermes update` | Update to latest version |
-| `hermes gateway` | Start the messaging gateway |
+| `moor model` | Choose your LLM provider and model |
+| `moor tools` | Configure which tools are enabled per platform |
+| `moor setup` | Full setup wizard (configures everything at once) |
+| `moor doctor` | Diagnose issues |
+| `moor update` | Update to latest version |
+| `moor gateway` | Start the messaging gateway |
 | `hermes --continue` | Resume last session |
 
 ## Next Steps

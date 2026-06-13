@@ -153,7 +153,7 @@ END;
 
 ## 写入竞争处理
 
-多个 hermes 进程（gateway + CLI 会话 + worktree agent）共享同一个 `state.db`。`SessionDB` 类通过以下方式处理写入竞争：
+多个 moor 进程（gateway + CLI 会话 + worktree agent）共享同一个 `state.db`。`SessionDB` 类通过以下方式处理写入竞争：
 
 - **短 SQLite 超时**（1 秒），而非默认的 30 秒
 - **应用层重试**，带随机抖动（20–150ms，最多 15 次重试）

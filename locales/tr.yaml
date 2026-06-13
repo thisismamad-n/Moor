@@ -98,7 +98,7 @@ gateway:
     upload_failed:         "✗ Hata ayıklama raporu yüklenemedi: {error}"
     header:                "**Hata ayıklama raporu yüklendi:**"
     auto_delete:           "⏱ Paste'ler 6 saat içinde otomatik olarak silinecek."
-    full_logs_hint:        "Tam günlük yüklemeleri için CLI'dan `hermes debug share` kullanın."
+    full_logs_hint:        "Tam günlük yüklemeleri için CLI'dan `moor debug share` kullanın."
     share_hint:            "Destek için bu bağlantıları Moor ekibiyle paylaşın."
 
   deny:
@@ -147,7 +147,7 @@ gateway:
   kanban:
     error_prefix:          "⚠ kanban hatası: {error}"
     subscribed_suffix:     "(abone olundu — {task_id} tamamlandığında veya engellendiğinde bildirim alacaksınız)"
-    truncated_suffix:      "… (kısaltıldı; tam çıktı için terminalinizde `hermes kanban …` komutunu kullanın)"
+    truncated_suffix:      "… (kısaltıldı; tam çıktı için terminalinizde `moor kanban …` komutunu kullanın)"
     no_output:             "(çıktı yok)"
 
   personality:
@@ -215,7 +215,7 @@ gateway:
 
   restart:
     in_progress:           "⏳ Gateway yeniden başlatma zaten sürüyor..."
-    restarting:            "♻ Gateway yeniden başlatılıyor. 60 saniye içinde bildirim almazsanız konsoldan `hermes gateway restart` ile yeniden başlatın."
+    restarting:            "♻ Gateway yeniden başlatılıyor. 60 saniye içinde bildirim almazsanız konsoldan `moor gateway restart` ile yeniden başlatın."
 
   resume:
     db_unavailable:        "Oturum veritabanı kullanılamıyor."
@@ -294,9 +294,9 @@ gateway:
     invalid_count:         "Geçersiz sayı \"{arg}\" — /undo veya /undo N kullanın."
 
   update:
-    platform_not_messaging:  "✗ /update yalnızca mesajlaşma platformlarında kullanılabilir. Terminalden `hermes update` komutunu çalıştırın."
+    platform_not_messaging:  "✗ /update yalnızca mesajlaşma platformlarında kullanılabilir. Terminalden `moor update` komutunu çalıştırın."
     not_git_repo:            "✗ Git deposu değil — güncellenemiyor."
-    hermes_cmd_not_found:    "✗ `hermes` komutu bulunamadı. Moor çalışıyor, ancak güncelleme komutu yürütülebilir dosyayı PATH'te veya mevcut Python yorumlayıcısı aracılığıyla bulamadı. Terminalde `hermes update` komutunu manuel olarak çalıştırmayı deneyin."
+    hermes_cmd_not_found:    "✗ `moor` komutu bulunamadı. Moor çalışıyor, ancak güncelleme komutu yürütülebilir dosyayı PATH'te veya mevcut Python yorumlayıcısı aracılığıyla bulamadı. Terminalde `moor update` komutunu manuel olarak çalıştırmayı deneyin."
     start_failed:            "✗ Güncelleme başlatılamadı: {error}"
     starting:                "⚕ Moor güncellemesi başlatılıyor… İlerlemeyi buraya akıtacağım."
 

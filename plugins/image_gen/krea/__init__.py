@@ -227,7 +227,7 @@ class KreaImageGenProvider(ImageGenProvider):
         if not api_key:
             return error_response(
                 error=(
-                    "KREA_API_KEY not set. Run `hermes tools` → Image "
+                    "KREA_API_KEY not set. Run `moor tools` → Image "
                     "Generation → Krea to configure, or get a key at "
                     "https://www.krea.ai/settings/api-tokens."
                 ),

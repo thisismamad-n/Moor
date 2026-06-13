@@ -96,7 +96,7 @@ curl http://localhost:11434/v1/chat/completions \
 运行 Moor 设置向导：
 
 ```bash
-hermes setup
+moor setup
 ```
 
 当提示选择提供商时，选择 **Custom Endpoint**，并输入：
@@ -117,7 +117,7 @@ model:
 ## 第四步：开始使用 Moor
 
 ```bash
-hermes
+moor
 ```
 
 就这样。你现在运行的是一个完全本地化的 agent。试试看：
@@ -222,7 +222,7 @@ platforms:
 3. 启动 gateway：
 
 ```bash
-hermes gateway
+moor gateway
 ```
 
 现在在 Telegram 上给你的机器人发消息——它将使用你的本地模型进行响应。
@@ -239,7 +239,7 @@ platforms:
     token: "YOUR_DISCORD_BOT_TOKEN"
 ```
 
-3. 启动：`hermes gateway`
+3. 启动：`moor gateway`
 
 ## 第八步：设置回退方案（可选）
 

@@ -2,7 +2,7 @@
 
 Exposes OpenAI's ``gpt-image-2`` model at three quality tiers as an
 :class:`ImageGenProvider` implementation. The tiers are implemented as
-three virtual model IDs so the ``hermes tools`` model picker and the
+three virtual model IDs so the ``moor tools`` model picker and the
 ``image_gen.model`` config key behave like any other multi-model backend:
 
     gpt-image-2-low     ~15s   fastest, good for iteration
@@ -191,8 +191,8 @@ class OpenAIImageGenProvider(ImageGenProvider):
         if not os.environ.get("OPENAI_API_KEY"):
             return error_response(
                 error=(
-                    "OPENAI_API_KEY not set. Run `hermes tools` → Image "
-                    "Generation → OpenAI to configure, or `hermes setup` "
+                    "OPENAI_API_KEY not set. Run `moor tools` → Image "
+                    "Generation → OpenAI to configure, or `moor setup` "
                     "to add the key."
                 ),
                 error_type="auth_required",

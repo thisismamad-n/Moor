@@ -12,19 +12,19 @@ AI-native cross-session user modeling with multi-pass dialectic reasoning, sessi
 ## Setup
 
 ```bash
-hermes memory setup honcho   # configure Honcho directly (works on a fresh install)
-hermes memory setup          # generic picker, choose Honcho from the list
+moor memory setup honcho   # configure Honcho directly (works on a fresh install)
+moor memory setup          # generic picker, choose Honcho from the list
 ```
 
 Or manually:
 ```bash
-hermes config set memory.provider honcho
+moor config set memory.provider honcho
 echo "HONCHO_API_KEY=***" >> ~/.hermes/.env
 ```
 
 > `hermes honcho setup` also works, but only **after** Honcho is the active
 > memory provider — the `honcho` subcommand is registered for the active
-> provider only. On a fresh install, use `hermes memory setup honcho`.
+> provider only. On a fresh install, use `moor memory setup honcho`.
 
 ## Architecture Overview
 
@@ -158,7 +158,7 @@ In gateway deployments (Telegram, Discord, Slack, etc.) each user arrives with a
 
 **Host vs root semantics.** All three keys are accepted at both root and `hosts.<host>` levels. Host-level wins. For maps and prefixes, host-level *replaces* the root value as a whole (not merge), so a host can intentionally own its identity universe or wipe it with `userPeerAliases: {}` / `runtimePeerPrefix: ""`.
 
-**Deployment shapes** (`hermes memory setup honcho` asks one prompt to set these):
+**Deployment shapes** (`moor memory setup honcho` asks one prompt to set these):
 
 - **Single-operator** — `pinUserPeer: true`. All gateway users → `peerName`. Recommended for personal use where you connect Moor to your own Telegram/Discord/etc.
 - **Multi-user gateway** — `pinUserPeer: false`, optional `runtimePeerPrefix`. Each runtime user → own peer. Recommended for bots serving many humans.
@@ -311,8 +311,8 @@ Presets:
 
 | Command | Description |
 |---------|-------------|
-| `hermes memory setup honcho` | Configure Honcho directly — works on a fresh install |
-| `hermes honcho setup` | Interactive setup wizard (only registered once Honcho is the active provider; redirects to `hermes memory setup`) |
+| `moor memory setup honcho` | Configure Honcho directly — works on a fresh install |
+| `hermes honcho setup` | Interactive setup wizard (only registered once Honcho is the active provider; redirects to `moor memory setup`) |
 | `hermes honcho status` | Show resolved config for active profile |
 | `hermes honcho enable` / `disable` | Toggle Honcho for active profile |
 | `hermes honcho mode <mode>` | Change recall or observation mode |

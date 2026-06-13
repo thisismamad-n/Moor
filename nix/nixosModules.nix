@@ -461,7 +461,7 @@
       extraArgs = mkOption {
         type = types.listOf types.str;
         default = [ ];
-        description = "Extra command-line arguments for `hermes gateway`.";
+        description = "Extra command-line arguments for `moor gateway`.";
       };
 
       extraPackages = mkOption {

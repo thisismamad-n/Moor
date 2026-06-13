@@ -151,7 +151,7 @@ class TestCronjobToolProfile:
         assert "profile" in CRONJOB_SCHEMA["parameters"]["properties"]
         desc = CRONJOB_SCHEMA["parameters"]["properties"]["profile"]["description"]
         desc_lower = desc.lower()
-        assert "hermes profile" in desc_lower
+        assert "moor profile" in desc_lower
         assert "context-local" in desc_lower
         assert "subprocess" in desc_lower
         assert "temporarily sets hermes_home" not in desc_lower

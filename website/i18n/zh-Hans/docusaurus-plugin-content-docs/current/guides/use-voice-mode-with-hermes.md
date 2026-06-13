@@ -41,7 +41,7 @@ Moor 中实际上有三种不同的语音体验。
 - Agent 能正常回答文本 prompt（提示词）
 
 ```bash
-hermes
+moor
 ```
 
 问一个简单的问题：
@@ -147,7 +147,7 @@ ELEVENLABS_API_KEY=***
 - `openai` → 良好的中间选项
 - `mistral` → 多语言，原生 Opus
 
-### 如果使用 `hermes setup`
+### 如果使用 `moor setup`
 
 如果你在设置向导中选择了 NeuTTS，Moor 会检查 `neutts` 是否已安装。如果缺失，向导会告知你 NeuTTS 需要 Python 包 `neutts` 和系统包 `espeak-ng`，并提供自动安装，使用平台包管理器安装 `espeak-ng`，然后运行：
 
@@ -200,7 +200,7 @@ tts:
 启动 Moor：
 
 ```bash
-hermes
+moor
 ```
 
 在 CLI 内执行：
@@ -298,7 +298,7 @@ Moor 仍作为普通聊天机器人运行，但可以朗读回复。
 ### 启动 gateway
 
 ```bash
-hermes gateway
+moor gateway
 ```
 
 ### 开启语音回复

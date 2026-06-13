@@ -237,7 +237,7 @@ class TestAppMentionHandler:
         assert "assistant_thread_started" in registered_events
         assert "assistant_thread_context_changed" in registered_events
         # Slack slash commands are registered via a single regex matcher
-        # covering every COMMAND_REGISTRY entry (e.g. /hermes, /btw, /stop,
+        # covering every COMMAND_REGISTRY entry (e.g. /moor, /btw, /stop,
         # /model, ...) so users get native-slash parity with Discord and
         # Telegram. Verify the regex matches the key expected slashes.
         assert (
@@ -247,7 +247,7 @@ class TestAppMentionHandler:
         import re as _re
 
         assert isinstance(slash_matcher, _re.Pattern)
-        for expected in ("/hermes", "/btw", "/stop", "/model", "/help"):
+        for expected in ("/moor", "/btw", "/stop", "/model", "/help"):
             assert slash_matcher.match(
                 expected
             ), f"Slack slash regex does not match {expected}"
@@ -2870,13 +2870,13 @@ class TestSlashCommands:
 
     # ------------------------------------------------------------------
     # Native slash commands — /btw, /stop, /model, ... dispatched directly
-    # instead of as /hermes subcommands. This is the Discord/Telegram parity
+    # instead of as /moor subcommands. This is the Discord/Telegram parity
     # fix: the slash name itself becomes the command.
     # ------------------------------------------------------------------
 
     @pytest.mark.asyncio
     async def test_native_btw_slash(self, adapter):
-        """/btw with args must dispatch to /background, not /hermes btw."""
+        """/btw with args must dispatch to /background, not /moor btw."""
         command = {
             "command": "/btw",
             "text": "fix the failing test",
@@ -2916,14 +2916,14 @@ class TestSlashCommands:
 
     @pytest.mark.asyncio
     async def test_legacy_hermes_prefix_still_works(self, adapter):
-        """Backward compat: /hermes btw foo must still route to /btw foo.
+        """Backward compat: /moor btw foo must still route to /btw foo.
 
-        Old workspace manifests only declared /hermes as the single slash.
+        Old workspace manifests only declared /moor as the single slash.
         After users refresh their manifest they get /btw natively, but the
         legacy form must keep working during the transition.
         """
         command = {
-            "command": "/hermes",
+            "command": "/moor",
             "text": "btw run the tests",
             "user_id": "U1",
             "channel_id": "C1",
@@ -2934,9 +2934,9 @@ class TestSlashCommands:
 
     @pytest.mark.asyncio
     async def test_legacy_hermes_freeform_question(self, adapter):
-        """/hermes <free-form text> must stay as the raw text (non-command)."""
+        """/moor <free-form text> must stay as the raw text (non-command)."""
         command = {
-            "command": "/hermes",
+            "command": "/moor",
             "text": "what's the weather today?",
             "user_id": "U1",
             "channel_id": "C1",
@@ -3645,9 +3645,9 @@ class TestSlashEphemeralAck:
 
     @pytest.mark.asyncio
     async def test_legacy_hermes_slash_stashes_context(self, adapter):
-        """Legacy /hermes <subcommand> also stashes context."""
+        """Legacy /moor <subcommand> also stashes context."""
         command = {
-            "command": "/hermes",
+            "command": "/moor",
             "text": "help",
             "user_id": "U_H",
             "channel_id": "C_H",
@@ -3660,9 +3660,9 @@ class TestSlashEphemeralAck:
 
     @pytest.mark.asyncio
     async def test_freeform_hermes_question_does_not_stash_context(self, adapter):
-        """Free-form /hermes <question> must NOT route agent reply ephemeral."""
+        """Free-form /moor <question> must NOT route agent reply ephemeral."""
         command = {
-            "command": "/hermes",
+            "command": "/moor",
             "text": "what's the weather",
             "user_id": "U_FREE",
             "channel_id": "C_FREE",

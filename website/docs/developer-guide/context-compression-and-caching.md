@@ -116,7 +116,7 @@ command. Only this exact route is affected; gpt-5.5 on any other provider keeps
 your global `threshold`. To opt back down to the global value:
 
 ```bash
-hermes config set compression.codex_gpt55_autoraise false
+moor config set compression.codex_gpt55_autoraise false
 ```
 
 ### Computed Values (for a 200K context model at defaults)

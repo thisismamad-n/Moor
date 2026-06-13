@@ -16,7 +16,7 @@ The cron subsystem provides scheduled task execution — from simple one-shot de
 | `cron/scheduler.py` | Scheduler loop — due-job detection, execution, repeat tracking |
 | `tools/cronjob_tools.py` | Model-facing `cronjob` tool registration and handler |
 | `gateway/run.py` | Gateway integration — cron ticking in the long-running loop |
-| `hermes_cli/cron.py` | CLI `hermes cron` subcommands |
+| `hermes_cli/cron.py` | CLI `moor cron` subcommands |
 
 ## Scheduling Model
 
@@ -104,7 +104,7 @@ tick()
 
 In gateway mode, the scheduler runs in a dedicated background thread (`_start_cron_ticker` in `gateway/run.py`) that calls `scheduler.tick()` every 60 seconds alongside message handling.
 
-In CLI mode, cron jobs only fire when `hermes cron` commands are run or during active CLI sessions.
+In CLI mode, cron jobs only fire when `moor cron` commands are run or during active CLI sessions.
 
 ### Fresh Session Isolation
 
@@ -205,20 +205,20 @@ Cron-run sessions have the `cronjob` toolset disabled. This prevents:
 
 ## Locking
 
-The scheduler uses cross-process file-based locking (`fcntl.flock` on Unix, `msvcrt.locking` on Windows) to prevent overlapping ticks from executing the same due-job batch twice — even between the gateway's in-process ticker and a standalone `hermes cron` / manual `tick()` call. If the lock cannot be acquired, `tick()` returns 0 immediately.
+The scheduler uses cross-process file-based locking (`fcntl.flock` on Unix, `msvcrt.locking` on Windows) to prevent overlapping ticks from executing the same due-job batch twice — even between the gateway's in-process ticker and a standalone `moor cron` / manual `tick()` call. If the lock cannot be acquired, `tick()` returns 0 immediately.
 
 ## CLI Interface
 
-The `hermes cron` CLI provides direct job management:
+The `moor cron` CLI provides direct job management:
 
 ```bash
-hermes cron list                    # Show all jobs
-hermes cron create                  # Interactive job creation (alias: add)
-hermes cron edit <job_id>           # Edit job configuration
-hermes cron pause <job_id>          # Pause a running job
-hermes cron resume <job_id>         # Resume a paused job
-hermes cron run <job_id>            # Trigger immediate execution
-hermes cron remove <job_id>         # Delete a job
+moor cron list                    # Show all jobs
+moor cron create                  # Interactive job creation (alias: add)
+moor cron edit <job_id>           # Edit job configuration
+moor cron pause <job_id>          # Pause a running job
+moor cron resume <job_id>         # Resume a paused job
+moor cron run <job_id>            # Trigger immediate execution
+moor cron remove <job_id>         # Delete a job
 ```
 
 ## Related Docs

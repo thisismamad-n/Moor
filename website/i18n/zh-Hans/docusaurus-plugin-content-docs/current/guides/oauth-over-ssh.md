@@ -6,7 +6,7 @@ description: "当 Moor 运行在远程机器、容器或跳板机后面时，如
 
 # SSH / 远程主机上的 OAuth
 
-部分 Moor 提供商——目前是 **xAI Grok OAuth** 和 **Spotify**——使用*回环重定向（loopback redirect）* OAuth 流程。认证服务器（xAI、Spotify）将浏览器重定向到 `http://127.0.0.1:<port>/callback`，由 `hermes auth ...` 命令启动的一个小型 HTTP 监听器来获取授权码。
+部分 Moor 提供商——目前是 **xAI Grok OAuth** 和 **Spotify**——使用*回环重定向（loopback redirect）* OAuth 流程。认证服务器（xAI、Spotify）将浏览器重定向到 `http://127.0.0.1:<port>/callback`，由 `moor auth ...` 命令启动的一个小型 HTTP 监听器来获取授权码。
 
 当 Moor 和浏览器在同一台机器上时，这一切运行正常。一旦两者不在同一台机器上就会出问题：你笔记本上的浏览器试图访问**你笔记本**上的 `127.0.0.1`，但监听器绑定的是**远程服务器**上的 `127.0.0.1`。
 
@@ -19,7 +19,7 @@ description: "当 Moor 运行在远程机器、容器或跳板机后面时，如
 ssh -N -L 56121:127.0.0.1:56121 user@remote-host
 
 # 在远程机器的现有 SSH 会话中：
-hermes auth add xai-oauth --no-browser
+moor auth add xai-oauth --no-browser
 # → Moor 打印一个授权 URL，在笔记本的浏览器中打开它。
 # → 浏览器重定向到 127.0.0.1:56121/callback，隧道将请求转发
 #   到远程监听器，登录完成。
@@ -32,7 +32,7 @@ hermes auth add xai-oauth --no-browser
 如果你没有常规的 SSH 客户端——例如你在 GCP Cloud Shell、GitHub Codespaces、AWS EC2 Instance Connect、Gitpod 或其他基于浏览器的控制台中运行 Moor——上述 SSH 隧道不可用。请改用 `--manual-paste`：
 
 ```bash
-hermes auth add xai-oauth --manual-paste
+moor auth add xai-oauth --manual-paste
 # → Moor 打印一个授权 URL，在笔记本的浏览器中打开它。
 # → 在浏览器中批准。重定向到 127.0.0.1:56121/callback 会加载失败
 #   ——这是预期行为。
@@ -40,7 +40,7 @@ hermes auth add xai-oauth --manual-paste
 # → 在终端的 "Callback URL:" 提示处粘贴。
 ```
 
-同样的标志也适用于集成模型选择器的 `hermes model --manual-paste`。如果不想粘贴完整 URL，也可以只接受裸的 `?code=...&state=...` 查询片段。
+同样的标志也适用于集成模型选择器的 `moor model --manual-paste`。如果不想粘贴完整 URL，也可以只接受裸的 `?code=...&state=...` 查询片段。
 
 Moor 对两种路径使用**相同的 PKCE verifier、state 和 nonce**，因此上游 OAuth 流程在字节层面完全一致——`--manual-paste` 纯粹是回调跳转的传输方式变更，不会降低安全性。
 
@@ -78,9 +78,9 @@ ssh -N -L 43827:127.0.0.1:43827 user@remote-host
 
 ```bash
 ssh user@remote-host
-hermes auth add xai-oauth --no-browser
+moor auth add xai-oauth --no-browser
 # 或 Spotify：
-# hermes auth add spotify --no-browser
+# moor auth add spotify --no-browser
 ```
 
 Moor 检测到 SSH 会话后，跳过自动打开浏览器，打印授权 URL 以及 `Waiting for callback on http://127.0.0.1:<port>/callback` 这一行。
@@ -141,11 +141,11 @@ kill <PID>
 
 ### `xAI authorization timed out waiting for the local callback`
 
-与上述原因相同——重定向从未返回。检查隧道是否仍然存活（`ssh -N` 不显示输出，查看启动它的终端），必要时重启，然后重新运行 `hermes auth add xai-oauth --no-browser`。
+与上述原因相同——重定向从未返回。检查隧道是否仍然存活（`ssh -N` 不显示输出，查看启动它的终端），必要时重启，然后重新运行 `moor auth add xai-oauth --no-browser`。
 
 ### Token 写入了错误的 `~/.hermes`
 
-Token 写入运行 `hermes auth add ...` 的 Linux 用户目录下。如果你的网关 / systemd 服务以不同用户（如 `root` 或专用的 `hermes` 用户）运行，请以**该**用户身份进行认证，使 token 写入其 `~/.hermes/auth.json`。使用 `sudo -u hermes -i` 或等效命令。
+Token 写入运行 `moor auth add ...` 的 Linux 用户目录下。如果你的网关 / systemd 服务以不同用户（如 `root` 或专用的 `moor` 用户）运行，请以**该**用户身份进行认证，使 token 写入其 `~/.hermes/auth.json`。使用 `sudo -u moor -i` 或等效命令。
 
 ## 另请参阅
 

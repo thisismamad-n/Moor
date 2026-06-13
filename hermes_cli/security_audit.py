@@ -526,7 +526,7 @@ def _count_components(
 
 
 def cmd_security_audit(args: argparse.Namespace) -> int:
-    """Implementation of `hermes security audit`."""
+    """Implementation of `moor security audit`."""
     home = Path(get_hermes_home())
     skip_venv = bool(getattr(args, "skip_venv", False))
     skip_plugins = bool(getattr(args, "skip_plugins", False))

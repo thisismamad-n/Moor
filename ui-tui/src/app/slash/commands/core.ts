@@ -111,7 +111,7 @@ export const coreCommands: SlashCommand[] = [
 
   {
     aliases: ['exit'],
-    help: 'exit hermes',
+    help: 'exit moor',
     name: 'quit',
     run: (_arg, ctx) => ctx.session.die()
   },
@@ -121,7 +121,7 @@ export const coreCommands: SlashCommand[] = [
     name: 'update',
     run: (_arg, ctx) => {
       ctx.transcript.sys('exiting TUI to run update...')
-      // Exit code 42 signals the Python wrapper to exec `hermes update`.
+      // Exit code 42 signals the Python wrapper to exec `moor update`.
       // Use dieWithCode for proper cleanup (gateway kill + Ink unmount).
       setTimeout(() => ctx.session.dieWithCode(42), 100)
     }

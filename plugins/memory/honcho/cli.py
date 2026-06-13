@@ -209,7 +209,7 @@ def cmd_sync(args) -> None:
 def sync_honcho_profiles_quiet() -> int:
     """Sync Honcho host blocks for all profiles. Returns count of newly created blocks.
 
-    Called from `hermes update` -- no output, no exceptions.
+    Called from `moor update` -- no output, no exceptions.
     """
     try:
         from hermes_cli.profiles import list_profiles
@@ -783,7 +783,7 @@ def cmd_setup(args) -> None:
         print("  Memory provider set to 'honcho' in config.yaml")
     except Exception as e:
         print(f"  Could not auto-enable in config.yaml: {e}")
-        print("  Run: hermes config set memory.provider honcho")
+        print("  Run: moor config set memory.provider honcho")
 
     # --- Test connection ---
     print("  Testing connection... ", end="", flush=True)
@@ -1561,7 +1561,7 @@ def honcho_command(args) -> None:
     if sub == "setup":
         # Redirect to memory setup — honcho setup goes through the unified path
         print("\n  Honcho is configured via the memory provider system.")
-        print("  Running 'hermes memory setup'...\n")
+        print("  Running 'moor memory setup'...\n")
         from hermes_cli.memory_setup import cmd_setup_provider
         cmd_setup_provider("honcho")
         return
@@ -1613,7 +1613,7 @@ def register_cli(subparser) -> None:
 
     subs.add_parser(
         "setup",
-        help="Initial Honcho setup (redirects to hermes memory setup)",
+        help="Initial Honcho setup (redirects to moor memory setup)",
     )
 
     status_parser = subs.add_parser(

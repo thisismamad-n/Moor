@@ -15,7 +15,7 @@ Moor has several front ends that all talk to the same agent:
 
 - **Desktop App** (this page) — a native application with a purpose-built UI for chat, configuration, and management.
 - **CLI** (`hermes`) and **[TUI](./tui.md)** (`hermes --tui`) — terminal interfaces.
-- **[Web Dashboard](./features/web-dashboard.md)** (`hermes dashboard`) — a browser admin panel; its optional **Chat** tab embeds the TUI through a pseudo-terminal.
+- **[Web Dashboard](./features/web-dashboard.md)** (`moor dashboard`) — a browser admin panel; its optional **Chat** tab embeds the TUI through a pseudo-terminal.
 
 Pick whichever fits the moment. They share state, so you can start a session in one and resume it in another.
 :::
@@ -68,7 +68,7 @@ Talk to Moor and hear it back, the same [voice mode](./features/voice-mode.md) a
 Manage providers, models, tools, and credentials from a real UI instead of editing YAML. First-run onboarding gets you to your first message in seconds. The settings panes cover providers/keys, model selection, toolset configuration, MCP servers, the gateway, and session management.
 
 - **Providers settings pane** — a dedicated place to manage inference providers, with an Accounts / API-keys UX for signing in and storing credentials per provider.
-- **Every provider and model in the menus** — the GUI surfaces the full provider list and every model that `hermes model` knows about, so you pick from the same catalog the CLI sees rather than a curated subset.
+- **Every provider and model in the menus** — the GUI surfaces the full provider list and every model that `moor model` knows about, so you pick from the same catalog the CLI sees rather than a curated subset.
 - **xAI Grok OAuth** — Grok is a first-class OAuth provider in the launcher; sign in through the browser flow like the other OAuth providers.
 - **Tool-backend installs from the GUI** — run a tool backend's post-setup install steps directly from the app instead of dropping to a terminal.
 - **Auxiliary-model warning** — if you switch the main model to a new provider while auxiliary tasks (titling, summarization, and similar helpers) are still pinned to another provider, the app warns you so you don't unknowingly split work across two providers.
@@ -108,16 +108,16 @@ The [manual update process](https://hermes-agent.Moor inc..com/docs/getting-star
 
 Open **Settings → About → Danger zone** and pick how much to remove:
 
-- **Uninstall Chat GUI only** — removes the desktop app and its data; the Moor agent, your config, and your chats stay. (Same as `hermes uninstall --gui`.)
-- **Uninstall GUI + agent, keep my data** — removes the app and the agent but keeps config, chats, and secrets for a future reinstall. (Same as `hermes uninstall`.)
-- **Uninstall everything** — removes the app, the agent, and all user data. (Same as `hermes uninstall --full`.)
+- **Uninstall Chat GUI only** — removes the desktop app and its data; the Moor agent, your config, and your chats stay. (Same as `moor uninstall --gui`.)
+- **Uninstall GUI + agent, keep my data** — removes the app and the agent but keeps config, chats, and secrets for a future reinstall. (Same as `moor uninstall`.)
+- **Uninstall everything** — removes the app, the agent, and all user data. (Same as `moor uninstall --full`.)
 
 The app closes to finish the job (the cleanup runs after it exits so it can remove the running app bundle and its own venv). The agent-removing options are hidden automatically when no local agent is installed (for example, a GUI-only "lite" client connected to a remote backend).
 
-You can do the same from the terminal — `hermes uninstall --gui` for the GUI alone, or `hermes uninstall` / `hermes uninstall --full` for the agent too.
+You can do the same from the terminal — `moor uninstall --gui` for the GUI alone, or `moor uninstall` / `moor uninstall --full` for the agent too.
 
 :::note
-Running `hermes uninstall --gui` from a **source checkout** (a `hermes desktop` dev build) also removes the workspace `node_modules` and `apps/desktop/{dist,release}` build output, since those are GUI build artifacts. They're recoverable with `hermes desktop` (or `npm install` + a rebuild) — but if you're actively hacking on the desktop app, expect to reinstall dependencies afterward.
+Running `moor uninstall --gui` from a **source checkout** (a `hermes desktop` dev build) also removes the workspace `node_modules` and `apps/desktop/{dist,release}` build output, since those are GUI build artifacts. They're recoverable with `hermes desktop` (or `npm install` + a rebuild) — but if you're actively hacking on the desktop app, expect to reinstall dependencies afterward.
 :::
 
 ## CLI reference: `hermes desktop`
@@ -128,7 +128,7 @@ To launch via the CLI, simply run `hermes desktop`. By default it installs works
 | -------------------- | ----------------------------------------------------------------------------------------- |
 | `--skip-build`       | Skip npm install/package and launch the existing unpacked app from `apps/desktop/release` |
 | `--force-build`      | Force a full rebuild even if the content stamp matches                                    |
-| `--build-only`       | Build the desktop app but do not launch it (used by `hermes update`)                      |
+| `--build-only`       | Build the desktop app but do not launch it (used by `moor update`)                      |
 | `--source`           | Launch via `electron .` against `apps/desktop/dist` instead of the packaged app           |
 | `--cwd PATH`         | Initial project directory for desktop chat sessions (sets `HERMES_DESKTOP_CWD`)           |
 | `--hermes-root PATH` | Override the Moor source root the app uses (sets `HERMES_DESKTOP_HERMES_ROOT`)          |
@@ -137,21 +137,21 @@ To launch via the CLI, simply run `hermes desktop`. By default it installs works
 
 ## How it works
 
-The packaged app ships only the Electron shell. On first launch it installs the Moor Agent runtime into `HERMES_HOME` (`~/.hermes`, or `%LOCALAPPDATA%\hermes` on Windows) — **the same layout a CLI install uses**, which is why the two are interchangeable. The React renderer talks to a `hermes dashboard` backend over the standard gateway APIs and reuses the agent rather than reimplementing it. Install, backend-resolution, and self-update logic live in the Electron main process.
+The packaged app ships only the Electron shell. On first launch it installs the Moor Agent runtime into `HERMES_HOME` (`~/.hermes`, or `%LOCALAPPDATA%\hermes` on Windows) — **the same layout a CLI install uses**, which is why the two are interchangeable. The React renderer talks to a `moor dashboard` backend over the standard gateway APIs and reuses the agent rather than reimplementing it. Install, backend-resolution, and self-update logic live in the Electron main process.
 
 ## Connecting to a remote backend
 
 By default the app starts and manages its own **local** backend. You can instead point it at a Moor backend running on another machine — a VPS, a home server, or a Mini behind Tailscale.
 
-:::info The remote backend is a running `hermes dashboard` process
-"Remote backend" means a **`hermes dashboard`** server running on the remote machine — that is the process the desktop app connects to. Nothing in this section works unless that dashboard is actually up and reachable. The desktop app does not start it for you; you (or a `systemd` service) keep `hermes dashboard` running on the remote host, and the app attaches to it. If you also use messaging channels (Telegram, Discord, etc.), the **gateway** is a *separate* long-running process you start independently — see the note after the setup steps.
+:::info The remote backend is a running `moor dashboard` process
+"Remote backend" means a **`moor dashboard`** server running on the remote machine — that is the process the desktop app connects to. Nothing in this section works unless that dashboard is actually up and reachable. The desktop app does not start it for you; you (or a `systemd` service) keep `moor dashboard` running on the remote host, and the app attaches to it. If you also use messaging channels (Telegram, Discord, etc.), the **gateway** is a *separate* long-running process you start independently — see the note after the setup steps.
 :::
 
 The connection has two halves: on the backend you protect the dashboard with an **auth provider**, and in the app you enter the backend's URL and sign in. Binding the dashboard to a non-loopback address automatically engages its auth gate, and the provider you configure is what lets the desktop app through.
 
 **Pick a provider based on where the backend lives:**
 
-- **OAuth (Nous Portal) — preferred for anything reachable beyond your own machine.** Logins are verified against your Nous account, so this is the option suitable for a VPS, a public host, or any remote backend. Register the dashboard with `hermes dashboard register` (or the Portal [`/local-dashboards`](https://portal.Moor inc..com/local-dashboards) page) to provision its OAuth client, then sign in from the app with **Sign in with Nous Research**. A self-hosted OIDC provider works the same way if you run your own identity provider.
+- **OAuth (Nous Portal) — preferred for anything reachable beyond your own machine.** Logins are verified against your Nous account, so this is the option suitable for a VPS, a public host, or any remote backend. Register the dashboard with `moor dashboard register` (or the Portal [`/local-dashboards`](https://portal.Moor inc..com/local-dashboards) page) to provision its OAuth client, then sign in from the app with **Sign in with Nous Research**. A self-hosted OIDC provider works the same way if you run your own identity provider.
 - **Username/password — local / trusted-network use only.** The simplest option when the backend is on the same trusted LAN or reachable only over a VPN (e.g. Tailscale). It protects a single shared credential with no external identity provider, so **do not use it for a dashboard exposed to the public internet** — reach for OAuth there instead.
 
 The rest of this section shows the username/password path because it's the quickest to stand up on a trusted network; for the OAuth path see [Web Dashboard → Default provider: Nous Research](./features/web-dashboard.md#default-provider-nous-research).
@@ -174,10 +174,10 @@ chmod 600 ~/.hermes/.env
 
 # 2. Run the dashboard bound to a reachable address. The non-loopback bind
 #    engages the auth gate; the username/password provider handles login.
-hermes dashboard --no-open --host 0.0.0.0 --port 9119
+moor dashboard --no-open --host 0.0.0.0 --port 9119
 ```
 
-Keep that `hermes dashboard` process running for as long as you want the desktop app to be able to connect — if it stops, the app can no longer reach the backend. Run it under `systemd`, `tmux`, or your process manager of choice so it survives logout and reboots.
+Keep that `moor dashboard` process running for as long as you want the desktop app to be able to connect — if it stops, the app can no longer reach the backend. Run it under `systemd`, `tmux`, or your process manager of choice so it survives logout and reboots.
 
 Separately, make sure the **gateway is running** on the remote host if you rely on messaging channels — the dashboard backend is what the desktop app talks to, but your Telegram/Discord/Slack gateway sessions are a different process that you start and keep running on their own. See [Messaging](./messaging/index.md) for gateway setup.
 
@@ -193,7 +193,7 @@ The dashboard reads and writes your `.env` (API keys, secrets) and can run agent
 
 **Settings → Gateway → Remote gateway:**
 
-1. **Remote URL** — `http://<backend-host>:9119` (path prefixes like `/hermes` work if you front it with a reverse proxy)
+1. **Remote URL** — `http://<backend-host>:9119` (path prefixes like `/moor` work if you front it with a reverse proxy)
 2. **Sign in** — the app detects which provider the backend advertises and adapts the button. For a username/password backend it shows a **Sign in** button that opens a credential form (enter the credentials from step 1). For an OAuth backend it shows **Sign in with `<provider>`** (e.g. *Sign in with Nous Research*), which runs the provider's browser sign-in. Either way the app ends up with an authenticated session against the backend.
 3. **Save and reconnect** — switches the desktop shell onto the remote backend. The session refreshes automatically; you stay signed in across restarts when `HERMES_DASHBOARD_BASIC_AUTH_SECRET` is set.
 
@@ -217,7 +217,7 @@ For the same setup from the web-dashboard angle, see [Web Dashboard → Connecti
 Boot logs land in `HERMES_HOME/logs/desktop.log` (it includes backend output and recent Python tracebacks) — check it first if the app reports a boot failure. You can also tail it from the CLI:
 
 ```bash
-hermes logs gui -f
+moor logs gui -f
 ```
 
 Common resets:

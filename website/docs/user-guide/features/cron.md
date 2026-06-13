@@ -22,7 +22,7 @@ Cron jobs can:
 All of this is available to Moor itself through the `cronjob` tool, so you can create, pause, edit, and remove jobs by asking in plain language — no CLI required.
 
 :::tip
-Cron jobs use whatever provider `hermes model` selected. `hermes setup --portal` is the lowest-friction option for unattended runs since OAuth refresh is automatic. See [Nous Portal](/integrations/nous-portal).
+Cron jobs use whatever provider `moor model` selected. `moor setup --portal` is the lowest-friction option for unattended runs since OAuth refresh is automatic. See [Nous Portal](/integrations/nous-portal).
 :::
 
 :::warning
@@ -43,9 +43,9 @@ Cron-run sessions cannot recursively create more cron jobs. Moor disables cron m
 ### From the standalone CLI
 
 ```bash
-hermes cron create "every 2h" "Check server status"
-hermes cron create "every 1h" "Summarize new feed items" --skill blogwatcher
-hermes cron create "every 1h" "Use both skills and combine the result" \
+moor cron create "every 2h" "Check server status"
+moor cron create "every 1h" "Summarize new feed items" --skill blogwatcher
+moor cron create "every 1h" "Use both skills and combine the result" \
   --skill blogwatcher \
   --skill maps \
   --name "Skill combo"
@@ -99,7 +99,7 @@ Cron jobs default to running detached from any repo — no `AGENTS.md`, `CLAUDE.
 
 ```bash
 # Standalone CLI (schedule and prompt are positional)
-hermes cron create "every 1d at 09:00" \
+moor cron create "every 1d at 09:00" \
   "Audit open PRs, summarize CI health, and post to #eng" \
   --workdir /home/me/projects/acme
 ```
@@ -131,7 +131,7 @@ By default a cron job inherits whichever Moor profile owned the gateway / CLI th
 
 ```bash
 # Pin a job to the `night-ops` profile regardless of where it was scheduled
-hermes cron create "every 1d at 03:00" \
+moor cron create "every 1d at 03:00" \
   "Tail the security log and flag anomalies" \
   --profile night-ops
 ```
@@ -175,12 +175,12 @@ The `<job_id>` placeholder below (and in [Lifecycle actions](#lifecycle-actions)
 ### Standalone CLI
 
 ```bash
-hermes cron edit <job_id> --schedule "every 4h"
-hermes cron edit <job_id> --prompt "Use the revised task"
-hermes cron edit <job_id> --skill blogwatcher --skill maps
-hermes cron edit <job_id> --add-skill maps
-hermes cron edit <job_id> --remove-skill blogwatcher
-hermes cron edit <job_id> --clear-skills
+moor cron edit <job_id> --schedule "every 4h"
+moor cron edit <job_id> --prompt "Use the revised task"
+moor cron edit <job_id> --skill blogwatcher --skill maps
+moor cron edit <job_id> --add-skill maps
+moor cron edit <job_id> --remove-skill blogwatcher
+moor cron edit <job_id> --clear-skills
 ```
 
 Notes:
@@ -207,14 +207,14 @@ Cron jobs now have a fuller lifecycle than just create/remove.
 ### Standalone CLI
 
 ```bash
-hermes cron list
-hermes cron pause <job_id_or_name>
-hermes cron resume <job_id_or_name>
-hermes cron run <job_id_or_name>
-hermes cron remove <job_id_or_name>
-hermes cron edit <job_id_or_name> [...flags]
-hermes cron status
-hermes cron tick
+moor cron list
+moor cron pause <job_id_or_name>
+moor cron resume <job_id_or_name>
+moor cron run <job_id_or_name>
+moor cron remove <job_id_or_name>
+moor cron edit <job_id_or_name> [...flags]
+moor cron status
+moor cron tick
 ```
 
 What they do:
@@ -232,12 +232,12 @@ What they do:
 **Cron execution is handled by the gateway daemon.** The gateway ticks the scheduler every 60 seconds, running any due jobs in isolated agent sessions.
 
 ```bash
-hermes gateway install     # Install as a user service
-sudo hermes gateway install --system   # Linux: boot-time system service for servers
-hermes gateway             # Or run in foreground
+moor gateway install     # Install as a user service
+sudo moor gateway install --system   # Linux: boot-time system service for servers
+moor gateway             # Or run in foreground
 
-hermes cron list
-hermes cron status
+moor cron list
+moor cron status
 ```
 
 ### Gateway scheduler behavior
@@ -357,7 +357,7 @@ Or set the `HERMES_CRON_SCRIPT_TIMEOUT` environment variable. The resolution ord
 For recurring jobs that don't need LLM reasoning — classic watchdogs, disk/memory alerts, heartbeats, CI pings — pass `no_agent=True` at creation time. The scheduler runs your script on schedule and delivers its stdout directly, skipping the agent entirely:
 
 ```bash
-hermes cron create "every 5m" \
+moor cron create "every 5m" \
   --no-agent \
   --script memory-watchdog.sh \
   --deliver telegram \
@@ -531,10 +531,10 @@ For `update`, pass `skills=[]` to remove all attached skills.
 
 ## Toolsets available to cron jobs
 
-Cron runs each job in a fresh agent session with no chat platform attached. By default the cron agent gets **the toolset you configured for the `cron` platform in `hermes tools`** — not the CLI default, not everything under the sun.
+Cron runs each job in a fresh agent session with no chat platform attached. By default the cron agent gets **the toolset you configured for the `cron` platform in `moor tools`** — not the CLI default, not everything under the sun.
 
 ```bash
-hermes tools
+moor tools
 # → pick the "cron" platform in the curses UI
 # → toggle toolsets on/off just like you would for Telegram/Discord/etc.
 ```
@@ -548,7 +548,7 @@ cronjob(action="create", name="weekly-news-summary",
         prompt="Summarize this week's AI news: ...")
 ```
 
-When `enabled_toolsets` is set on a job it wins; otherwise the `hermes tools` cron-platform config wins; otherwise Moor falls back to the built-in defaults. This matters for cost control: carrying `moa`, `browser`, `delegation` into every tiny "fetch news" job bloats the tool-schema prompt on every LLM call.
+When `enabled_toolsets` is set on a job it wins; otherwise the `moor tools` cron-platform config wins; otherwise Moor falls back to the built-in defaults. This matters for cost control: carrying `moa`, `browser`, `delegation` into every tiny "fetch news" job bloats the tool-schema prompt on every LLM call.
 
 ### Skipping the agent entirely: `wakeAgent`
 

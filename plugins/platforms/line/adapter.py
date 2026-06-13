@@ -1576,7 +1576,7 @@ async def _standalone_send(
 
 
 def interactive_setup() -> None:
-    """Minimal stdin wizard for ``hermes setup line``.
+    """Minimal stdin wizard for ``moor setup line``.
 
     Mirrors the irc/teams style: prompts for the two required vars, plus
     one optional public URL. Writes to ``~/.hermes/.env`` via ``hermes_cli.config``.

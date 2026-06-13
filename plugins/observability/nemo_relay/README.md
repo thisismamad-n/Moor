@@ -57,7 +57,7 @@ Runs started with `--ignore_user_config` skip the enabled-plugin state from
 loads `observability/nemo_relay` explicitly another way.
 
 `HERMES_HOME` is the Moor profile/config home used by both
-`hermes plugins enable ...` and the later `hermes chat ...` run. If unset,
+`hermes plugins enable ...` and the later `moor chat ...` run. If unset,
 Moor uses the user's default home, usually `~/.hermes`. For isolated smoke
 tests, choose any writable temporary directory and use the same value for every
 command in that test:
@@ -65,7 +65,7 @@ command in that test:
 ```bash
 export HERMES_HOME=/tmp/hermes-nemo-relay-test
 hermes plugins enable observability/nemo_relay
-hermes chat --query 'Reply exactly ok' --provider custom --model qwen3.6:35b
+moor chat --query 'Reply exactly ok' --provider custom --model qwen3.6:35b
 ```
 
 For source checkouts, make sure the `hermes` command you run is built from the
@@ -75,7 +75,7 @@ new bundled plugins from your working tree.
 ```bash
 uv sync --extra nemo-relay
 uv run hermes plugins enable observability/nemo_relay
-uv run hermes chat --query 'Reply exactly ok' --provider custom --model qwen3.6:35b
+uv run moor chat --query 'Reply exactly ok' --provider custom --model qwen3.6:35b
 ```
 
 To ship the updated CLI into another environment, build and install a fresh
@@ -240,7 +240,7 @@ export HERMES_NEMO_RELAY_ATIF_AGENT_NAME='Moor Agent E2E'
 export HERMES_NEMO_RELAY_ATIF_AGENT_VERSION=docs-example
 export HERMES_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE=all
 
-hermes chat \
+moor chat \
   --query 'Use delegate_task exactly once. Ask the child subagent to use the terminal tool exactly once to run printf docs_nested_leaf_function. After the child returns, reply with exactly: parent received nested subagent result.' \
   --provider custom \
   --model qwen3.6:35b \
@@ -325,7 +325,7 @@ export HERMES_NEMO_RELAY_ATIF_FILENAME_TEMPLATE='parallel-tools-atif-{session_id
 export HERMES_NEMO_RELAY_ATIF_AGENT_NAME='Moor Agent E2E'
 export HERMES_NEMO_RELAY_ATIF_AGENT_VERSION=docs-example
 
-hermes chat \
+moor chat \
   --query 'Use exactly two read_file tool calls in the same assistant message. Read alpha.txt and beta.txt. Do not call terminal. After both tool results are available, reply with exactly: parallel tools complete.' \
   --provider custom \
   --model qwen3.6:35b \
@@ -496,7 +496,7 @@ TOML
 
 export HERMES_NEMO_RELAY_PLUGINS_TOML=/tmp/hermes-middleware-test/nemo-relay/plugins.toml
 
-hermes chat \
+moor chat \
   --query 'Use the terminal tool exactly once to run printf middleware_execution_ok. Then reply with exactly the command output.' \
   --provider custom \
   --model qwen3.6:35b \

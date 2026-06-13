@@ -135,7 +135,7 @@ Zed v0.221.x and newer installs external agents through the official ACP Registr
 
 Prerequisites:
 
-- Configure Moor provider credentials first with `hermes model`, or set them in `~/.hermes/.env` / `~/.hermes/config.yaml`.
+- Configure Moor provider credentials first with `moor model`, or set them in `~/.hermes/.env` / `~/.hermes/config.yaml`.
 - Install `uv` so the registry launcher can run `uvx --from 'hermes-agent[acp]==<version>' hermes-acp`.
 
 For local development before the registry entry is available, use a custom agent server in Zed settings:
@@ -252,7 +252,7 @@ Try these checks:
 ```bash
 hermes acp --version
 hermes acp --check
-hermes doctor
+moor doctor
 hermes status
 ```
 
@@ -261,7 +261,7 @@ hermes status
 ACP mode uses Moor' existing provider setup. Configure credentials with:
 
 ```bash
-hermes model
+moor model
 ```
 
 or by editing `~/.hermes/.env`. Registry clients can also trigger Moor' terminal auth flow, which runs the same interactive provider/model setup.

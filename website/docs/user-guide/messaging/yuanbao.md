@@ -38,7 +38,7 @@ pip install websockets httpx aiofiles
 The easiest way to configure Yuanbao is through the interactive setup:
 
 ```bash
-hermes gateway setup
+moor gateway setup
 ```
 
 Select **Yuanbao** when prompted. The wizard will:
@@ -79,7 +79,7 @@ YUANBAO_ALLOWED_USERS=user_account_1,user_account_2
 ### 4. Start the Gateway
 
 ```bash
-hermes gateway
+moor gateway
 ```
 
 The adapter will connect to the Yuanbao WebSocket gateway, authenticate using HMAC signatures, and begin processing messages.
@@ -302,7 +302,7 @@ These values are currently not configurable via environment variables. They are 
 Enable debug logging to troubleshoot connection issues:
 
 ```bash
-HERMES_LOG_LEVEL=debug hermes gateway
+HERMES_LOG_LEVEL=debug moor gateway
 ```
 
 ## Integration with Other Features
@@ -330,7 +330,7 @@ Run long operations without blocking the conversation:
 Send a message from CLI to Yuanbao:
 
 ```bash
-hermes chat -q "Send 'Hello from CLI' to yuanbao:group:group_code"
+moor chat -q "Send 'Hello from CLI' to yuanbao:group:group_code"
 ```
 
 ## Related Documentation

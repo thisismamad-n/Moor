@@ -337,7 +337,7 @@ plugins:
       llm:
         # Allow this plugin to choose a different Moor provider
         # (must be one Moor already knows about — same names as
-        # `hermes model` and config.yaml model.provider).
+        # `moor model` and config.yaml model.provider).
         allow_provider_override: true
 
         # Optionally restrict which providers. Use ["*"] for any.

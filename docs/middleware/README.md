@@ -125,7 +125,7 @@ agent run:
 export HERMES_HOME=/tmp/hermes-middleware-test
 mkdir -p "$HERMES_HOME"
 hermes plugins enable <plugin-name>
-hermes chat --query 'Reply exactly ok'
+moor chat --query 'Reply exactly ok'
 ```
 
 For source checkouts, prefer the source command so the runtime sees plugins and
@@ -134,7 +134,7 @@ middleware from the working tree:
 ```bash
 uv sync
 uv run hermes plugins enable <plugin-name>
-uv run hermes chat --query 'Reply exactly ok'
+uv run moor chat --query 'Reply exactly ok'
 ```
 
 ## Generic Plugin Examples

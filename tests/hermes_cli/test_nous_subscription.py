@@ -567,7 +567,7 @@ def test_apply_nous_managed_defaults_preserves_existing_video_gen_section(monkey
 
 
 # ---------------------------------------------------------------------------
-# ensure_nous_portal_access — inline login gate for `hermes tools`
+# ensure_nous_portal_access — inline login gate for `moor tools`
 # ---------------------------------------------------------------------------
 
 

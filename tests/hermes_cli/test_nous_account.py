@@ -455,7 +455,7 @@ def test_entitlement_message_for_inference_key_without_portal_login():
     assert message is not None
     assert "Nous inference credentials are configured" in message
     assert "cannot verify your Nous Portal paid access" in message
-    assert "Log in with `hermes model`" in message
+    assert "Log in with `moor model`" in message
 
 
 def test_entitlement_message_for_active_paid_subscription_with_no_credits():
@@ -526,7 +526,7 @@ def test_entitlement_message_for_unknown_entitlement_is_explicit():
     assert message is not None
     assert "could not verify" in message
     assert "account_api_timeout" in message
-    assert "Run `hermes model`" in message
+    assert "Run `moor model`" in message
 
 
 def test_entitlement_message_for_account_missing():

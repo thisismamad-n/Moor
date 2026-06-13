@@ -1,8 +1,8 @@
-"""Tests for `hermes portal` dispatch.
+"""Tests for `moor portal` dispatch.
 
-`hermes portal` (no subcommand) is the human-readable alias for the Nous Portal
-one-shot onboarding (`hermes auth add nous --type oauth` / `hermes setup
---portal`). The prior status default moved to `hermes portal info`, with
+`moor portal` (no subcommand) is the human-readable alias for the Nous Portal
+one-shot onboarding (`moor auth add nous --type oauth` / `moor setup
+--portal`). The prior status default moved to `moor portal info`, with
 `status` retained as a back-compat alias.
 """
 from __future__ import annotations
@@ -21,7 +21,7 @@ def _args(portal_command):
 
 @pytest.mark.parametrize("sub", [None, "", "login"])
 def test_bare_portal_and_login_run_one_shot(monkeypatch, sub):
-    """`hermes portal`, `hermes portal login` -> one-shot onboarding."""
+    """`moor portal`, `moor portal login` -> one-shot onboarding."""
     calls = {"login": 0, "status": 0}
 
     def fake_one_shot(config):
@@ -46,7 +46,7 @@ def test_bare_portal_and_login_run_one_shot(monkeypatch, sub):
 
 @pytest.mark.parametrize("sub", ["info", "status"])
 def test_info_and_status_alias_run_status(monkeypatch, sub):
-    """`hermes portal info` and the `status` back-compat alias -> status."""
+    """`moor portal info` and the `status` back-compat alias -> status."""
     calls = {"login": 0, "status": 0}
 
     monkeypatch.setattr(
@@ -112,7 +112,7 @@ def test_parser_registers_subcommands():
 
 
 def test_one_shot_delegates_to_model_flow_nous(monkeypatch):
-    """`hermes portal` must run the quick-setup Nous flow (login + MODEL PICK +
+    """`moor portal` must run the quick-setup Nous flow (login + MODEL PICK +
     provider + Tool Gateway), i.e. delegate to `_model_flow_nous` — not the
     lighter auth-only path that skipped model selection.
     """
@@ -132,7 +132,7 @@ def test_one_shot_delegates_to_model_flow_nous(monkeypatch):
     setup_mod._run_portal_one_shot({})
 
     assert calls["model_flow"] == 1, (
-        "`hermes portal` must route through _model_flow_nous so the model "
+        "`moor portal` must route through _model_flow_nous so the model "
         "picker runs every time (matching quick setup)."
     )
 
