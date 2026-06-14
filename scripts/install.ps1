@@ -5,7 +5,7 @@
 # Uses uv for fast Python provisioning and package management.
 #
 # Usage:
-#   iex (irm https://hermes-agent.Moor inc..com/install.ps1)
+#   iex (irm https://hermes-agent.moorai.com/install.ps1)
 #
 # Or download and run with options:
 #   .\install.ps1 -NoVenv -SkipSetup
@@ -92,8 +92,8 @@ try {
 # Configuration
 # ============================================================================
 
-$RepoUrlSsh = "git@github.com:Moor inc./hermes-agent.git"
-$RepoUrlHttps = "https://github.com/Moor inc./hermes-agent.git"
+$RepoUrlSsh = "git@github.com:thisismamad-n/Moor.git"
+$RepoUrlHttps = "https://github.com/thisismamad-n/Moor.git"
 $PythonVersion = "3.11"
 $NodeVersion = "22"
 
@@ -341,7 +341,7 @@ function Install-Uv {
     try {
         $ErrorActionPreference = "Continue"
         $env:UV_INSTALL_DIR = Join-Path $HermesHome "bin"
-        powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex" 2>&1 | Out-Null
+        $uvInstallOutput = powershell -NoProfile -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex" 2>&1
         $ErrorActionPreference = $prevEAP
 
         if (Test-Path $managedUv) {
@@ -352,6 +352,8 @@ function Install-Uv {
         }
 
         Write-Err "uv installed but not found at $managedUv"
+        Write-Info "Output from uv installer:"
+        Write-Info $uvInstallOutput
         Write-Info "Install manually: https://docs.astral.sh/uv/getting-started/installation/"
         return $false
     } catch {
@@ -1269,13 +1271,13 @@ function Install-Repository {
                 # for.  GitHub supports archive URLs for commits, tags, and
                 # branches; we honour Commit > Tag > Branch.
                 if ($Commit) {
-                    $zipUrl = "https://github.com/Moor inc./hermes-agent/archive/$Commit.zip"
+                    $zipUrl = "https://github.com/thisismamad-n/Moor/archive/$Commit.zip"
                     $zipLabel = $Commit
                 } elseif ($Tag) {
-                    $zipUrl = "https://github.com/Moor inc./hermes-agent/archive/refs/tags/$Tag.zip"
+                    $zipUrl = "https://github.com/thisismamad-n/Moor/archive/refs/tags/$Tag.zip"
                     $zipLabel = $Tag
                 } else {
-                    $zipUrl = "https://github.com/Moor inc./hermes-agent/archive/refs/heads/$Branch.zip"
+                    $zipUrl = "https://github.com/thisismamad-n/Moor/archive/refs/heads/$Branch.zip"
                     $zipLabel = $Branch
                 }
                 $zipPath = "$env:TEMP\hermes-agent-$zipLabel.zip"
@@ -3025,7 +3027,7 @@ try {
     Write-Err "Installation failed: $_"
     Write-Host ""
     Write-Info "If the error is unclear, try downloading and running the script directly:"
-    Write-Host "  Invoke-WebRequest -Uri 'https://hermes-agent.Moor inc..com/install.ps1' -OutFile install.ps1" -ForegroundColor Yellow
+    Write-Host "  Invoke-WebRequest -Uri 'https://hermes-agent.moorai.com/install.ps1' -OutFile install.ps1" -ForegroundColor Yellow
     Write-Host "  .\install.ps1" -ForegroundColor Yellow
     Write-Host ""
 }

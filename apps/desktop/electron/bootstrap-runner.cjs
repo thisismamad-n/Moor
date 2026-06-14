@@ -72,6 +72,19 @@ function resolveLocalInstallScript(sourceRepoRoot) {
   }
 }
 
+function resolveBundledInstallScript() {
+  if (typeof process !== 'undefined' && process.resourcesPath) {
+    const candidate = path.join(process.resourcesPath, 'scripts', installScriptName())
+    try {
+      fs.accessSync(candidate, fs.constants.R_OK)
+      return candidate
+    } catch {
+      return null
+    }
+  }
+  return null
+}
+
 function bootstrapCacheDir(hermesHome) {
   return path.join(hermesHome, 'bootstrap-cache')
 }
@@ -100,7 +113,7 @@ function downloadInstallScript(commit, destPath) {
   // is immutable (unlike a branch ref), so we don't need integrity
   // verification beyond "did the file we wrote pass a syntax probe."
   const scriptName = installScriptName()
-  const url = `https://raw.githubusercontent.com/Moor inc./hermes-agent/${commit}/scripts/${scriptName}`
+  const url = `https://raw.githubusercontent.com/thisismamad-n/Moor/${commit}/scripts/${scriptName}`
   return new Promise((resolve, reject) => {
     fs.mkdirSync(path.dirname(destPath), { recursive: true })
     const tmpPath = destPath + '.tmp'
@@ -178,6 +191,13 @@ async function resolveInstallScript({ installStamp, sourceRepoRoot, hermesHome, 
   if (localScript) {
     emit({ type: 'log', line: `[bootstrap] using local ${installScriptName()} at ${localScript}` })
     return { path: localScript, source: 'local', kind: installScriptKind() }
+  }
+
+  // 1.5. Bundled script fallback for private repos or offline bootstraps.
+  const bundledScript = resolveBundledInstallScript()
+  if (bundledScript) {
+    emit({ type: 'log', line: `[bootstrap] using bundled ${installScriptName()} at ${bundledScript}` })
+    return { path: bundledScript, source: 'bundled', commit: installStamp ? installStamp.commit : null, kind: installScriptKind() }
   }
 
   // 2. Packaged path: download from GitHub at the pinned commit (1B's stamp).

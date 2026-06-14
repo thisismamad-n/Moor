@@ -130,7 +130,7 @@
   },
   "build": {
     "electronVersion": "40.9.3",
-    "appId": "com.Moor inc..hermes",
+    "appId": "com.moor.hermes",
     "productName": "Moor",
     "executableName": "Moor",
     "artifactName": "Moor-${version}-${os}-${arch}.${ext}",
@@ -160,6 +160,14 @@
       {
         "from": "assets/icon.ico",
         "to": "icon.ico"
+      },
+      {
+        "from": "../../scripts/install.ps1",
+        "to": "scripts/install.ps1"
+      },
+      {
+        "from": "../../scripts/install.sh",
+        "to": "scripts/install.sh"
       }
     ],
     "asar": true,
@@ -219,7 +227,7 @@
     },
     "linux": {
       "category": "Development",
-      "maintainer": "Nous Research <support@Moor inc..com>",
+      "maintainer": "Nous Research <support@moor.com>",
       "synopsis": "Native desktop shell for Moor Agent.",
       "target": [
         "AppImage",
