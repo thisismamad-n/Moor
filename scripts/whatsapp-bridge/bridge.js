@@ -144,6 +144,23 @@ function normalizeWhatsAppId(value) {
   return String(value).replace(':', '@');
 }
 
+function normalizeSendChatId(value) {
+  if (!value) return '';
+  const chatId = String(value).trim();
+  if (!chatId) return chatId;
+
+  if (chatId.endsWith('@s.whatsapp.net') || chatId.endsWith('@lid') || chatId.endsWith('@g.us')) {
+    if (chatId.startsWith('+') && chatId.endsWith('@s.whatsapp.net')) return chatId.slice(1);
+    return chatId;
+  }
+
+  if (chatId.includes('@')) return chatId;
+
+  const digits = chatId.replace(/\D/g, '');
+  if (digits.length >= 7 && digits.length <= 15) return `${digits}@s.whatsapp.net`;
+  return chatId;
+}
+
 function getMessageContent(msg) {
   const content = msg?.message || {};
   if (content.ephemeralMessage?.message) return content.ephemeralMessage.message;
@@ -516,7 +533,8 @@ app.post('/send', async (req, res) => {
   }
 
   const { chatId, message, replyTo } = req.body;
-  if (!chatId || !message) {
+  const normalizedChatId = normalizeSendChatId(chatId);
+  if (!normalizedChatId || !message) {
     return res.status(400).json({ error: 'chatId and message are required' });
   }
 
@@ -524,7 +542,7 @@ app.post('/send', async (req, res) => {
     const chunks = splitLongMessage(formatOutgoingMessage(message));
     const messageIds = [];
     for (let i = 0; i < chunks.length; i += 1) {
-      const sent = await sendWithTimeout(chatId, { text: chunks[i] });
+      const sent = await sendWithTimeout(normalizedChatId, { text: chunks[i] });
       trackSentMessageId(sent);
       if (sent?.key?.id) messageIds.push(sent.key.id);
       if (chunks.length > 1 && i < chunks.length - 1) {
@@ -549,19 +567,20 @@ app.post('/edit', async (req, res) => {
   }
 
   const { chatId, messageId, message } = req.body;
-  if (!chatId || !messageId || !message) {
+  const normalizedChatId = normalizeSendChatId(chatId);
+  if (!normalizedChatId || !messageId || !message) {
     return res.status(400).json({ error: 'chatId, messageId, and message are required' });
   }
 
   try {
-    const key = { id: messageId, fromMe: true, remoteJid: chatId };
+    const key = { id: messageId, fromMe: true, remoteJid: normalizedChatId };
     const chunks = splitLongMessage(formatOutgoingMessage(message));
     const messageIds = [];
 
-    await sendWithTimeout(chatId, { text: chunks[0], edit: key });
+    await sendWithTimeout(normalizedChatId, { text: chunks[0], edit: key });
     if (chunks.length > 1) {
       for (let i = 1; i < chunks.length; i += 1) {
-        const sent = await sendWithTimeout(chatId, { text: chunks[i] });
+        const sent = await sendWithTimeout(normalizedChatId, { text: chunks[i] });
         trackSentMessageId(sent);
         if (sent?.key?.id) messageIds.push(sent.key.id);
         if (i < chunks.length - 1) {
@@ -602,7 +621,8 @@ app.post('/send-media', async (req, res) => {
   }
 
   const { chatId, filePath, mediaType, caption, fileName } = req.body;
-  if (!chatId || !filePath) {
+  const normalizedChatId = normalizeSendChatId(chatId);
+  if (!normalizedChatId || !filePath) {
     return res.status(400).json({ error: 'chatId and filePath are required' });
   }
 
@@ -662,7 +682,7 @@ app.post('/send-media', async (req, res) => {
         break;
     }
 
-    const sent = await sendWithTimeout(chatId, msgPayload);
+    const sent = await sendWithTimeout(normalizedChatId, msgPayload);
 
     trackSentMessageId(sent);
 
@@ -679,10 +699,11 @@ app.post('/typing', async (req, res) => {
   }
 
   const { chatId } = req.body;
-  if (!chatId) return res.status(400).json({ error: 'chatId required' });
+  const normalizedChatId = normalizeSendChatId(chatId);
+  if (!normalizedChatId) return res.status(400).json({ error: 'chatId required' });
 
   try {
-    await sock.sendPresenceUpdate('composing', chatId);
+    await sock.sendPresenceUpdate('composing', normalizedChatId);
     res.json({ success: true });
   } catch (err) {
     res.json({ success: false });
@@ -691,7 +712,7 @@ app.post('/typing', async (req, res) => {
 
 // Chat info
 app.get('/chat/:id', async (req, res) => {
-  const chatId = req.params.id;
+  const chatId = normalizeSendChatId(req.params.id);
   const isGroup = chatId.endsWith('@g.us');
 
   if (isGroup && sock) {
