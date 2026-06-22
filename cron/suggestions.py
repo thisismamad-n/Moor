@@ -1,6 +1,6 @@
 """Suggested cron jobs — proposed automations the user accepts with one tap.
 
-A *suggestion* is a ready-to-run cron job spec that Moor surfaces to the
+A *suggestion* is a ready-to-run cron job spec that Hermes surfaces to the
 user, who accepts it (creates the real cron job) or dismisses it (latched so
 it is never re-offered). This is the single surface every automation proposal
 flows through, regardless of where it came from:
@@ -36,13 +36,13 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from hermes_constants import get_hermes_home
+from hermes_constants import get_default_hermes_root
 from hermes_time import now as _hermes_now
 from utils import atomic_replace
 
 logger = logging.getLogger(__name__)
 
-CRON_DIR = get_hermes_home().resolve() / "cron"
+CRON_DIR = get_default_hermes_root().resolve() / "cron"
 SUGGESTIONS_FILE = CRON_DIR / "suggestions.json"
 
 # In-process lock protecting load->modify->save cycles (the background review

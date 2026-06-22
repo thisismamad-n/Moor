@@ -11,6 +11,7 @@ import subprocess
 import threading
 import time
 from pathlib import Path
+from urllib.parse import urlparse
 from hermes_constants import get_hermes_home
 from typing import TYPE_CHECKING, Dict, List, Optional
 
@@ -60,34 +61,28 @@ def _skin_color(key: str, fallback: str) -> str:
 
 from hermes_cli import __version__ as VERSION, __release_date__ as RELEASE_DATE
 
-HERMES_AGENT_LOGO = """[bold #FFD700]0100            1101     01001111         01001111     010100100101     [/]
-[bold #FFD700]01001101    01001101 0100111101001111 0100111101001111 0101    00100101 [/]
-[bold #FFD700]01001101010011010100 0100        1111 0100        1111 0101    00100101 [/]
-[#FFBF00]0100    1101    0100 0100        1111 0100        1111 010100100101     [/]
-[#FFBF00]0100            1101 0100        1111 0100        1111 0101    00100101 [/]
-[#FFBF00]0100            1101 0100        1111 0100        1111 0101        0010 [/]
-[#CD7F32]0100            1101 0100        1111 0100        1111 0101        0010 [/]
-[#CD7F32]0100            1101 0100111101001111 0100111101001111 0101        0010 [/]
-[#CD7F32]0100            1101     01001111         01001111     0101        0010 [/]"""
+HERMES_AGENT_LOGO = """[bold #FFD700]██╗  ██╗███████╗██████╗ ███╗   ███╗███████╗███████╗       █████╗  ██████╗ ███████╗███╗   ██╗████████╗[/]
+[bold #FFD700]██║  ██║██╔════╝██╔══██╗████╗ ████║██╔════╝██╔════╝      ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝[/]
+[#FFBF00]███████║█████╗  ██████╔╝██╔████╔██║█████╗  ███████╗█████╗███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║[/]
+[#FFBF00]██╔══██║██╔══╝  ██╔══██╗██║╚██╔╝██║██╔══╝  ╚════██║╚════╝██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║[/]
+[#CD7F32]██║  ██║███████╗██║  ██║██║ ╚═╝ ██║███████╗███████║      ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║[/]
+[#CD7F32]╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚══════╝      ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝[/]"""
 
-HERMES_CADUCEUS = """[#CD7F32]⠎⠋⠈⠈⢀⢠⠤⠖⠚⠘⠁⠁⠉⠈⢈⡁⣁⢁⡉⣈⢈⡁⠁⠁⠉⠉⠈⠊⠢⠦⣠⡀⠈⠈⠉[/]
-[#CD7F32]⢀⣤⠔⠙⠁⠁⢀⢀⡤⠴⠆⠚⠙⠋⠈⠁⠉⠈⠁⠉⠈⠉⠉⠋⠓⠲⠦⢤⡀⡀⠀⠉⠙⠔⢄[/]
-[#CD7F32]⠋⠀⠀⣠⡤⠚⠋⠁⠀⢀⣀⣤⠤⠶⠖⠂⠚⠛⠚⠛⠒⠲⠶⠦⡤⣄⣀⠀⠈⠈⠓⢶⢄⠀⠀[/]
-[#FFBF00]⣀⡴⠛⠁⠀⢀⣠⠶⠚⠉⠁⠀⣀⣀⣤⣤⡤⠤⠤⢤⣤⣤⣄⣀⠀⠀⠉⠙⠳⢦⣄⠀⠀⠑⠷[/]
-[#FFBF00]⠏⠀⠀⣠⠞⠋⠀⢀⣠⡴⠞⠛⠉⠀⠀⣀⣀⣀⣀⣀⣀⡀⠀⠉⠉⠳⠶⣄⡀⠀⠉⠛⣤⡀⠀[/]
-[#FFBF00]⠀⣠⡞⠁⠀⢀⡴⠛⠁⠀⢀⣤⠶⠛⠋⠉⠉⠉⠉⠉⠉⠙⠛⠲⢦⣄⠀⠈⠙⢶⣄⠀⠀⠹⣦[/]
-[bold #FFD700]⣰⡏⠀⠀⣰⠟⠀⠀⣠⡾⠋⠀⢀⣠⡴⠶⠛⠛⠛⠛⠲⠶⣤⣀⠀⠉⠻⣦⡀⠀⠙⢷⡀⠀⠈[/]
-[bold #FFD700]⡟⠀⠀⢰⡟⠀⠀⣸⡏⠀⠀⣰⠟⠁⠀⣠⣤⠴⠶⣤⣄⡀⠈⠙⢷⡄⠀⠈⢷⡄⠀⠈⢷⡀⠀[/]
-[bold #FFD700]⡇⠀⠀⢸⡇⠀⠀⣿⠀⠀⠀⣿⠀⠀⢸⣏⠀⢀⡀⠀⠉⢿⡄⠀⠈⣿⠀⠀⠘⣧⠀⠀⢸⡇⠀[/]
-[#FFBF00]⣧⠀⠀⠸⣇⠀⠀⢹⣇⠀⠀⠻⣦⡀⠀⠙⠛⠛⠁⠀⣠⡾⠁⠀⢀⡿⠀⠀⢰⡟⠀⠀⢸⡇⠀[/]
-[#FFBF00]⢹⣆⠀⠀⠻⣆⠀⠀⠙⢦⣄⠀⠈⠛⠳⠶⠶⠶⠶⠞⠋⠀⢀⣠⠟⠁⠀⢠⡾⠁⠀⢀⡿⠁⠀[/]
-[#FFBF00]⠀⠹⢦⡀⠀⠙⠷⣄⡀⠀⠉⠛⠶⢤⣤⣀⣀⣀⣠⣤⡴⠶⠛⠁⠀⣀⡴⠟⠁⠀⣠⡟⠁⠀⢠[/]
-[#CD7F32]⣆⠀⠈⠹⢦⣄⠀⠀⠙⠳⢦⣤⣀⣀⠀⠀⠀⠀⠀⠀⣀⣀⣤⡴⠞⠋⠀⢀⣠⠾⠋⠀⠀⣤⠏[/]
-[#CD7F32]⠙⠳⣤⡀⠀⠈⠛⠶⣤⣀⡀⠀⠈⠉⠉⠛⠛⠛⠛⠉⠉⠉⠀⣀⣠⡤⠞⠋⠁⠀⣀⡴⠟⠁⠀[/]
-[#CD7F32]⣆⠀⠀⠙⠳⠦⣄⢀⠀⠉⠉⠋⠓⠲⠶⠶⠦⠶⠶⠶⠖⠛⠋⠉⠀⠀⣀⣤⡲⠛⠉⠀⢀⣠⠾[/]
-[#B8860B]⠉⠑⠶⢤⣀⠀⠀⠉⠙⠲⠔⠦⡠⣤⣠⣄⢀⣀⢠⣤⢠⡤⠢⠶⠚⠊⠉⠀⢀⢀⡤⠖⠋⠀⠀[/]
-[#B8860B]⠦⡄⡀⠀⠁⠙⠑⠆⢤⢠⡀⣀⣀⠀⠀⠀⠀⠀⠀⠀⢀⢀⡀⣠⢠⠄⠖⠑⠉⠁⠀⢀⢠⠤⠊[/]
-[#B8860B]⠀⠈⠈⠐⠐⠀⠀⠀⠀⠀⠀⠉⠈⠈⠁⠙⠘⠘⠁⠉⠈⠈⠁⠀⠀⠀⠀⠀⠐⠒⠃⠁⠁⠀⠀[/]"""
+HERMES_CADUCEUS = """[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡀⠀⣀⣀⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#CD7F32]⠀⠀⠀⠀⠀⠀⢀⣠⣴⣾⣿⣿⣇⠸⣿⣿⠇⣸⣿⣿⣷⣦⣄⡀⠀⠀⠀⠀⠀⠀[/]
+[#FFBF00]⠀⢀⣠⣴⣶⠿⠋⣩⡿⣿⡿⠻⣿⡇⢠⡄⢸⣿⠟⢿⣿⢿⣍⠙⠿⣶⣦⣄⡀⠀[/]
+[#FFBF00]⠀⠀⠉⠉⠁⠶⠟⠋⠀⠉⠀⢀⣈⣁⡈⢁⣈⣁⡀⠀⠉⠀⠙⠻⠶⠈⠉⠉⠀⠀[/]
+[#FFD700]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣴⣿⡿⠛⢁⡈⠛⢿⣿⣦⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#FFD700]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠿⣿⣦⣤⣈⠁⢠⣴⣿⠿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#FFBF00]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠻⢿⣿⣦⡉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#FFBF00]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⢷⣦⣈⠛⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣴⠦⠈⠙⠿⣦⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⣿⣤⡈⠁⢤⣿⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⠷⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⠑⢶⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠁⢰⡆⠈⡿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠳⠈⣡⠞⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]"""
 
 
 
@@ -126,7 +121,54 @@ _UPDATE_CHECK_CACHE_SECONDS = 6 * 3600
 # (e.g. nix-built hermes — no local git history to count against).
 UPDATE_AVAILABLE_NO_COUNT = -1
 
-_UPSTREAM_REPO_URL = "https://github.com/Moor inc./hermes-agent.git"
+_UPSTREAM_REPO_URL = "https://github.com/NousResearch/hermes-agent.git"
+_OFFICIAL_REPO_CANONICAL = "github.com/nousresearch/hermes-agent"
+
+
+def _canonical_github_remote(url: str | None) -> str:
+    """Return ``host/owner/repo`` for common GitHub remote URL forms."""
+    if not url:
+        return ""
+    value = url.strip()
+    if value.startswith("git@github.com:"):
+        value = "github.com/" + value[len("git@github.com:"):]
+    elif value.startswith("ssh://git@github.com/"):
+        value = "github.com/" + value[len("ssh://git@github.com/"):]
+    else:
+        parsed = urlparse(value)
+        if parsed.netloc and parsed.path:
+            value = f"{parsed.netloc}{parsed.path}"
+    value = value.strip().rstrip("/")
+    if value.endswith(".git"):
+        value = value[:-4]
+    return value.lower()
+
+
+def _is_ssh_remote(url: str | None) -> bool:
+    if not url:
+        return False
+    value = url.strip().lower()
+    return value.startswith("git@") or value.startswith("ssh://")
+
+
+def _is_official_ssh_remote(url: str | None) -> bool:
+    return _is_ssh_remote(url) and _canonical_github_remote(url) == _OFFICIAL_REPO_CANONICAL
+
+
+def _git_stdout(args: list[str], *, cwd: Path, timeout: int = 5) -> Optional[str]:
+    try:
+        result = subprocess.run(
+            ["git", *args],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            cwd=str(cwd),
+        )
+    except Exception:
+        return None
+    if result.returncode != 0:
+        return None
+    return (result.stdout or "").strip()
 
 
 def _check_via_rev(local_rev: str) -> Optional[int]:
@@ -152,14 +194,47 @@ def _check_via_rev(local_rev: str) -> Optional[int]:
 
 def _check_via_local_git(repo_dir: Path) -> Optional[int]:
     """Count commits behind origin/main in a local checkout."""
+    origin_url = _git_stdout(["remote", "get-url", "origin"], cwd=repo_dir)
+    if _is_official_ssh_remote(origin_url):
+        head_rev = _git_stdout(["rev-parse", "HEAD"], cwd=repo_dir)
+        return _check_via_rev(head_rev) if head_rev else None
+
+    # Installer checkouts are shallow (`git clone --depth 1`). On a shallow
+    # clone the history stops at a single commit, so a plain `git fetch` would
+    # unshallow the repo (dragging in the whole history) and
+    # `rev-list --count HEAD..origin/main` would report a huge bogus "behind"
+    # number (e.g. "12492 commits behind"). Detect shallow up front: fetch with
+    # --depth 1 to preserve the boundary and compare tip SHAs instead of
+    # counting. Full clones (developers, Docker dev images) keep the exact
+    # count path unchanged. Mirrors the desktop fix in apps/desktop/electron/main.cjs.
+    shallow = _git_stdout(["rev-parse", "--is-shallow-repository"], cwd=repo_dir)
+    is_shallow = shallow == "true"
+
     try:
+        fetch_args = ["git", "fetch", "origin"]
+        if is_shallow:
+            fetch_args += ["--depth", "1"]
+        fetch_args.append("--quiet")
         subprocess.run(
-            ["git", "fetch", "origin", "--quiet"],
+            fetch_args,
             capture_output=True, timeout=10,
             cwd=str(repo_dir),
         )
     except Exception:
         pass  # Offline or timeout — use stale refs, that's fine
+
+    if is_shallow:
+        # No history to count across the shallow boundary. `origin/main` may not
+        # be a tracking ref in a `clone --depth 1`, so prefer FETCH_HEAD (just
+        # updated by the fetch above) and fall back to origin/main.
+        head_rev = _git_stdout(["rev-parse", "HEAD"], cwd=repo_dir)
+        target_rev = (
+            _git_stdout(["rev-parse", "FETCH_HEAD"], cwd=repo_dir)
+            or _git_stdout(["rev-parse", "origin/main"], cwd=repo_dir)
+        )
+        if not head_rev or not target_rev:
+            return None
+        return 0 if head_rev == target_rev else UPDATE_AVAILABLE_NO_COUNT
 
     try:
         result = subprocess.run(
@@ -217,7 +292,7 @@ def check_via_pypi() -> Optional[int]:
 
 
 def check_for_updates() -> Optional[int]:
-    """Check whether a Moor update is available.
+    """Check whether a Hermes update is available.
 
     Two paths: if ``HERMES_REVISION`` is set (nix builds embed it), compare
     it to upstream main via ``git ls-remote``. Otherwise look for a local
@@ -293,7 +368,7 @@ def check_for_updates() -> Optional[int]:
 
 
 def _resolve_repo_dir() -> Optional[Path]:
-    """Return the active Moor git checkout, or None if this isn't a git install.
+    """Return the active Hermes git checkout, or None if this isn't a git install.
 
     Prefers the running code's location over the profile-scoped path
     because ``$HERMES_HOME/hermes-agent/`` may be a stale copy carried
@@ -380,7 +455,7 @@ def get_git_banner_state(repo_dir: Optional[Path] = None) -> Optional[dict]:
     return {"upstream": upstream, "local": local, "ahead": max(ahead, 0)}
 
 
-_RELEASE_URL_BASE = "https://github.com/Moor inc./hermes-agent/releases/tag"
+_RELEASE_URL_BASE = "https://github.com/NousResearch/hermes-agent/releases/tag"
 _latest_release_cache: Optional[tuple] = None  # (tag, url) once resolved
 
 
@@ -388,8 +463,8 @@ def get_latest_release_tag(repo_dir: Optional[Path] = None) -> Optional[tuple]:
     """Return ``(tag, release_url)`` for the latest git tag, or None.
 
     Local-only — runs ``git describe --tags --abbrev=0`` against the
-    Moor checkout. Cached per-process. Release URL always points at the
-    canonical Moor inc./hermes-agent repo (forks don't get a link).
+    Hermes checkout. Cached per-process. Release URL always points at the
+    canonical NousResearch/hermes-agent repo (forks don't get a link).
     """
     global _latest_release_cache
     if _latest_release_cache is not None:
@@ -428,7 +503,7 @@ def get_latest_release_tag(repo_dir: Optional[Path] = None) -> Optional[tuple]:
 
 def format_banner_version_label() -> str:
     """Return the version label shown in the startup banner title."""
-    base = f"Moor Agent v{VERSION} ({RELEASE_DATE})"
+    base = f"Hermes Agent v{VERSION} ({RELEASE_DATE})"
     state = get_git_banner_state()
     if not state:
         return base
@@ -658,15 +733,26 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
         right_lines.append("")
         right_lines.append(f"[bold {accent}]MCP Servers[/]")
         for srv in mcp_status:
+            status = srv.get("status")
             if srv["connected"]:
                 right_lines.append(
                     f"[dim {dim}]{srv['name']}[/] [{text}]({srv['transport']})[/] "
                     f"[dim {dim}]—[/] [{text}]{srv['tools']} tool(s)[/]"
                 )
-            elif srv.get("disabled"):
+            elif srv.get("disabled") or status == "disabled":
                 right_lines.append(
                     f"[dim {dim}]{srv['name']}[/] [dim]({srv['transport']})[/] "
                     f"[dim {dim}]— disabled[/]"
+                )
+            elif status == "connecting":
+                right_lines.append(
+                    f"[dim {dim}]{srv['name']}[/] [dim]({srv['transport']})[/] "
+                    f"[yellow]— connecting[/]"
+                )
+            elif status == "configured":
+                right_lines.append(
+                    f"[dim {dim}]{srv['name']}[/] [dim]({srv['transport']})[/] "
+                    f"[dim {dim}]— configured[/]"
                 )
             else:
                 right_lines.append(

@@ -417,6 +417,7 @@ class TelegramAdapter(BasePlatformAdapter):
     # Telegram message limits
     MAX_MESSAGE_LENGTH = 4096
     supports_code_blocks = True  # Telegram MarkdownV2 renders fenced code blocks
+    splits_long_messages = True  # send() chunks via truncate_message(MAX_MESSAGE_LENGTH)
     # Bot API 10.1 Rich Messages cap the raw markdown/html text at 32,768
     # UTF-8 characters. Content above this is sent via the legacy chunking path.
     RICH_MESSAGE_MAX_CHARS = 32768
@@ -754,7 +755,7 @@ class TelegramAdapter(BasePlatformAdapter):
 
         Supergroup/forum topics use ``message_thread_id``. True Bot API Direct
         Messages topics can opt in with explicit ``direct_messages_topic_id``
-        metadata. Moor-created private-chat topic lanes are marked with
+        metadata. Hermes-created private-chat topic lanes are marked with
         ``telegram_dm_topic_reply_fallback``. Live replies send the private
         topic thread id together with a reply anchor; synthetic/resumed sends
         without an anchor use ``direct_messages_topic_id`` when metadata has it.
@@ -1018,7 +1019,7 @@ class TelegramAdapter(BasePlatformAdapter):
     # the RAW agent markdown so richer constructs (tables, task lists,
     # collapsible details, math, ...) render natively. The legacy MarkdownV2
     # send() path stays as the fallback for unsupported/oversized content and
-    # older PTB/clients. Streaming edits stay on Moor' existing MarkdownV2
+    # older PTB/clients. Streaming edits stay on Hermes' existing MarkdownV2
     # edit path for now; finalization can re-send as rich and delete the stale
     # preview until rich_message edit support is wired directly.
     # ------------------------------------------------------------------
@@ -1071,7 +1072,7 @@ class TelegramAdapter(BasePlatformAdapter):
         Telegram Desktop 6.9.1 can crash while rendering Bot API 10.1 rich
         messages containing math inside a collapsible details block
         (telegramdesktop/tdesktop#30808). The Bot API accepts the payload, so
-        Moor must skip rich delivery up front and use the legacy MarkdownV2
+        Hermes must skip rich delivery up front and use the legacy MarkdownV2
         path until affected Desktop clients age out.
         """
         if not content:
@@ -1758,7 +1759,7 @@ class TelegramAdapter(BasePlatformAdapter):
             "Telegram polling could not recover after %d retries (%ds total wait). "
             "The previous gateway session is still held open on Telegram's servers, "
             "or another process is using the same bot token. "
-            "To recover: ensure no other Moor or OpenClaw instance is running "
+            "To recover: ensure no other Hermes or OpenClaw instance is running "
             "with this token, then restart the gateway with 'hermes gateway restart'."
             % (MAX_CONFLICT_RETRIES, sum(10 + i * 10 for i in range(1, MAX_CONFLICT_RETRIES + 1)))
         )
@@ -2134,7 +2135,7 @@ class TelegramAdapter(BasePlatformAdapter):
             # server's filesystem rather than a relative HTTP path. PTB needs
             # local_mode=True so download_*() reads from disk instead of issuing
             # an HTTP GET that would 404. Requires that the same path is
-            # readable by the Moor process (shared mount, same machine, etc.).
+            # readable by the Hermes process (shared mount, same machine, etc.).
             if self.config.extra.get("local_mode"):
                 builder = builder.local_mode(True)
                 logger.info("[%s] Using Telegram local_mode (read files from disk)", self.name)
@@ -2269,7 +2270,7 @@ class TelegramAdapter(BasePlatformAdapter):
                         "TELEGRAM_WEBHOOK_URL is set. Without it, the "
                         "webhook endpoint accepts forged updates from "
                         "anyone who can reach it — see "
-                        "https://github.com/Moor inc./hermes-agent/"
+                        "https://github.com/NousResearch/hermes-agent/"
                         "security/advisories/GHSA-3vpc-7q5r-276h.\n\n"
                         "Generate a secret and set it in your .env:\n"
                         "  export TELEGRAM_WEBHOOK_SECRET=\"$(openssl rand -hex 32)\"\n\n"
@@ -5664,7 +5665,7 @@ class TelegramAdapter(BasePlatformAdapter):
     def _explicit_bot_mentions_exclude_self(self, message: Message) -> bool:
         """Return True when explicit bot handles target other bots, not this one.
 
-        Telegram groups can contain several Moor bot profiles. A message like
+        Telegram groups can contain several Hermes bot profiles. A message like
         ``@bot3 hi @bot4`` must not wake ``@bot1`` through reply/wake-word
         fallbacks. Treat explicit bot-handle mentions as an exclusive routing
         hint: if at least one @...bot username is present and none matches this
@@ -7298,7 +7299,7 @@ def _apply_yaml_config(yaml_cfg: dict, telegram_cfg: dict) -> dict | None:
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Moor plugin system."""
+    """Plugin entry point — called by the Hermes plugin system."""
     ctx.register_platform(
         name="telegram",
         label="Telegram",

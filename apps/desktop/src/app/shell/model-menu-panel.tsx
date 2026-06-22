@@ -145,7 +145,7 @@ export function ModelMenuPanel({ gateway, onSelectModel, requestGateway }: Model
   }
 
   // Selecting a model row restores that model's remembered preset onto the
-  // session (effort/fast), gated by capability. Unset → Moor defaults.
+  // session (effort/fast), gated by capability. Unset → Hermes defaults.
   const selectFamily = async (family: ModelFamily, provider: ModelOptionProvider) => {
     const caps = provider.capabilities?.[family.id]
     const preset = modelPresets[modelPresetKey(provider.slug, family.id)] ?? {}
@@ -227,7 +227,7 @@ export function ModelMenuPanel({ gateway, onSelectModel, requestGateway }: Model
                 const caps = group.provider.capabilities?.[family.id]
 
                 // Effective settings for this row: live session state when it's
-                // the active model, otherwise its remembered preset (Moor
+                // the active model, otherwise its remembered preset (Hermes
                 // defaults when unset). Row label AND submenu read from these so
                 // they never disagree.
                 const preset = modelPresets[modelPresetKey(group.provider.slug, family.id)] ?? {}
@@ -326,8 +326,10 @@ export function ModelMenuPanel({ gateway, onSelectModel, requestGateway }: Model
 }
 
 // Collapsed we show the user's chosen models (or the curated default); typing
-// spans every available model so anything is reachable past the cut.
-const PER_PROVIDER_SEARCH = 12
+// spans every available model so anything is reachable past the cut. A search
+// is itself a narrowing action, so we do NOT cap per-provider matches — a
+// provider serving 19 models (e.g. opencode-go) must show all 19 when the user
+// searches for it, not a truncated subset. (#47077 follow-up)
 
 function groupModels(
   providers: ModelOptionProvider[],
@@ -374,11 +376,7 @@ function groupModels(
         ? allFamilies.find(family => family.id === current.model || family.fastId === current.model)?.id
         : undefined
 
-    let families = allFamilies.filter(family => shown.has(family.id) || family.id === activeId)
-
-    if (q) {
-      families = families.slice(0, PER_PROVIDER_SEARCH)
-    }
+    const families = allFamilies.filter(family => shown.has(family.id) || family.id === activeId)
 
     if (families.length > 0) {
       groups.push({ families, provider })

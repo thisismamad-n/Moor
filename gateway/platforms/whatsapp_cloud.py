@@ -187,6 +187,8 @@ class WhatsAppCloudAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
     syntax). The Baileys adapter does the same.
     """
 
+    splits_long_messages = True  # send() chunks via truncate_message()
+
     def __init__(self, config: PlatformConfig):
         super().__init__(config, Platform.WHATSAPP_CLOUD)
         extra = config.extra or {}
@@ -1099,7 +1101,7 @@ class WhatsAppCloudAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
 
         WhatsApp renders ``audio/ogg; codecs=opus`` as the green
         voice-note bubble; other audio types (MP3, AAC, etc.) appear as
-        a generic audio attachment. Moor TTS produces MP3, so we try
+        a generic audio attachment. Hermes TTS produces MP3, so we try
         ffmpeg conversion to opus first and fall back to sending the
         MP3 as-is when ffmpeg is unavailable.
         """
@@ -1759,7 +1761,7 @@ class WhatsAppCloudAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
         contacts_by_waid: Dict[str, str],
         metadata: Dict[str, Any],
     ) -> Optional[MessageEvent]:
-        """Convert a Cloud-API message object into a Moor MessageEvent.
+        """Convert a Cloud-API message object into a Hermes MessageEvent.
 
         Phase 4 expands beyond text to download inbound media (image,
         video, audio/voice, document, sticker) by ``media_id`` via the

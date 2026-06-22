@@ -49,7 +49,7 @@ class GatewaySlashCommandsMixin:
     """In-session slash-command handlers for GatewayRunner."""
 
     def _typed_command_prefix_for(self, platform) -> str:
-        """Return the prefix users can always type to reach Moor commands.
+        """Return the prefix users can always type to reach Hermes commands.
 
         Reads the adapter's ``typed_command_prefix`` capability flag
         (default "/"). Slack and Matrix return "!" because typed "/"
@@ -942,7 +942,7 @@ class GatewaySlashCommandsMixin:
         return EphemeralReply(t("gateway.restart.restarting"))
 
     async def _handle_version_command(self, event: MessageEvent) -> str:
-        """Handle /version — show the running Moor Agent version."""
+        """Handle /version — show the running Hermes Agent version."""
         from hermes_cli.banner import format_banner_version_label
 
         return format_banner_version_label()
@@ -1610,7 +1610,7 @@ class GatewaySlashCommandsMixin:
 
         Same surface as the CLI handler in cli.py:
             /codex-runtime                  — show current state
-            /codex-runtime auto             — Moor default runtime
+            /codex-runtime auto             — Hermes default runtime
             /codex-runtime codex_app_server — codex subprocess runtime
             /codex-runtime on / off         — synonyms
 
@@ -1807,6 +1807,30 @@ class GatewaySlashCommandsMixin:
             except Exception as exc:
                 logger.debug("goal clear: pending continuation cleanup failed: %s", exc)
             return t("gateway.goal_cleared") if had else t("gateway.no_active_goal")
+
+        # /goal wait <pid> [reason] — park the loop on a background process.
+        if lower == "wait" or lower.startswith("wait "):
+            wait_arg = args[len("wait"):].strip()
+            if not wait_arg:
+                return "Usage: /goal wait <pid> [reason]"
+            wtokens = wait_arg.split(None, 1)
+            try:
+                pid = int(wtokens[0])
+            except ValueError:
+                return "/goal wait: <pid> must be an integer process id."
+            reason = wtokens[1].strip() if len(wtokens) > 1 else ""
+            try:
+                mgr.wait_on(pid, reason=reason)
+            except (RuntimeError, ValueError) as exc:
+                return f"/goal wait: {exc}"
+            rtxt = f" ({reason})" if reason else ""
+            return f"⏳ Goal parked on pid {pid}{rtxt}. Loop pauses until it exits."
+
+        # /goal unwait — clear the wait barrier.
+        if lower == "unwait":
+            if mgr.stop_waiting():
+                return "▶ Wait barrier cleared — goal loop resumes."
+            return "No wait barrier set."
 
         # Otherwise — treat the remaining text as the new goal.
         try:
@@ -3825,7 +3849,7 @@ class GatewaySlashCommandsMixin:
         return await loop.run_in_executor(None, _collect_and_upload)
 
     async def _handle_update_command(self, event: MessageEvent) -> str:
-        """Handle /update command — update Moor Agent to the latest version.
+        """Handle /update command — update Hermes Agent to the latest version.
 
         Spawns ``hermes update`` in a detached session (via ``setsid``) so it
         survives the gateway restart that ``hermes update`` may trigger. Marker
@@ -3853,7 +3877,7 @@ class GatewaySlashCommandsMixin:
                 return t("gateway.update.platform_not_messaging")
 
         if is_managed():
-            return f"✗ {format_managed_message('update Moor Agent')}"
+            return f"✗ {format_managed_message('update Hermes Agent')}"
 
         project_root = Path(__file__).parent.parent.resolve()
         git_dir = project_root / '.git'

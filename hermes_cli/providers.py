@@ -1,5 +1,5 @@
 """
-Single source of truth for provider identity in Moor Agent.
+Single source of truth for provider identity in Hermes Agent.
 
 Two data sources, merged at runtime:
 
@@ -7,7 +7,7 @@ Two data sources, merged at runtime:
    names, and full model metadata (context, cost, capabilities).  This is
    the primary database.
 
-2. **Moor overlays** — transport type, auth patterns, aggregator flags,
+2. **Hermes overlays** — transport type, auth patterns, aggregator flags,
    and additional env vars that models.dev doesn't track.  Small dict,
    maintained here.
 
@@ -28,12 +28,12 @@ from utils import base_url_host_matches, base_url_hostname
 logger = logging.getLogger(__name__)
 
 
-# -- Moor overlay ----------------------------------------------------------
-# Moor-specific metadata that models.dev doesn't provide.
+# -- Hermes overlay ----------------------------------------------------------
+# Hermes-specific metadata that models.dev doesn't provide.
 
 @dataclass(frozen=True)
 class HermesOverlay:
-    """Moor-specific provider metadata layered on top of models.dev."""
+    """Hermes-specific provider metadata layered on top of models.dev."""
 
     transport: str = "openai_chat"        # openai_chat | anthropic_messages | codex_responses
     is_aggregator: bool = False
@@ -52,7 +52,7 @@ HERMES_OVERLAYS: Dict[str, HermesOverlay] = {
     "nous": HermesOverlay(
         transport="openai_chat",
         auth_type="oauth_device_code",
-        base_url_override="https://inference-api.Moor inc..com/v1",
+        base_url_override="https://inference-api.nousresearch.com/v1",
     ),
     "openai-codex": HermesOverlay(
         transport="codex_responses",
@@ -396,8 +396,8 @@ def get_provider(name: str) -> Optional[ProviderDef]:
     """Look up a built-in provider by id or alias.
 
     Resolution order:
-      1. Moor overlays (for providers not in models.dev: nous, openai-codex, etc.)
-      2. models.dev catalog + Moor overlay
+      1. Hermes overlays (for providers not in models.dev: nous, openai-codex, etc.)
+      2. models.dev catalog + Hermes overlay
 
     User-defined providers from config.yaml (``providers:`` / ``custom_providers:``)
     are resolved by :func:`resolve_provider_full`, which layers ``resolve_user_provider``
@@ -446,7 +446,7 @@ def get_provider(name: str) -> Optional[ProviderDef]:
         )
 
     if overlay is not None:
-        # Moor-only provider (not in models.dev)
+        # Hermes-only provider (not in models.dev)
         return ProviderDef(
             id=canonical,
             name=_LABEL_OVERRIDES.get(canonical, canonical),
@@ -487,6 +487,41 @@ def is_aggregator(provider: str) -> bool:
         return True
     pdef = get_provider(provider_norm)
     return pdef.is_aggregator if pdef else False
+
+
+# Flat-namespace resellers (e.g. opencode-go, opencode-zen) are flagged
+# ``is_aggregator=True`` because their live ``/v1/models`` returns bare model
+# IDs ("deepseek-v4-flash") rather than ``vendor/model`` routing slugs — the
+# model-switch resolver relies on that flag to search their flat catalog
+# (see model_switch.py step d). But they are NOT routing aggregators: every
+# model they list is a first-party model served under their own subscription,
+# not a passthrough route to another provider's endpoint. The picker dedup
+# (build_models_payload) must treat them differently from true routers like
+# OpenRouter — a reseller's first-party "minimax-m3" must never be stripped
+# just because a user's custom proxy also happens to serve a same-named model.
+_FLAT_NAMESPACE_RESELLERS: frozenset[str] = frozenset({
+    # Use normalized provider IDs: normalize_provider("opencode-zen") -> "opencode".
+    "opencode-go",
+    "opencode",
+})
+
+
+def is_routing_aggregator(provider: str) -> bool:
+    """Return True only for TRUE routing aggregators (e.g. OpenRouter, named
+    ``custom:*`` proxies) — those that route bare/vendor-slugged model names
+    to *other* providers' endpoints.
+
+    Distinct from :func:`is_aggregator`, which also reports True for
+    flat-namespace resellers (opencode-go/zen) whose catalog is entirely
+    first-party. Use this gate when the question is "would selecting this
+    model silently re-route the call away from the user's intended provider?"
+    — i.e. the picker dedup. Resellers answer no: their listed models are
+    their own, so their rows must not be deduped against user proxies.
+    """
+    provider_norm = normalize_provider(provider or "")
+    if provider_norm in _FLAT_NAMESPACE_RESELLERS:
+        return False
+    return is_aggregator(provider_norm)
 
 
 def determine_api_mode(provider: str, base_url: str = "") -> str:

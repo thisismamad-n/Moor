@@ -46,7 +46,7 @@ MAX_TEXT_LENGTH = 4000
 
 # BlueBubbles/iMessage does not expose a stable bot mention identity like
 # Slack (<@U...>), Telegram (@botname), or Matrix (MXID). When users opt into
-# group mention gating without custom aliases, use conservative Moor wake
+# group mention gating without custom aliases, use conservative Hermes wake
 # words so `require_mention: true` is a one-line enablement path.
 DEFAULT_MENTION_PATTERNS = [
     r"(?<![\w@])@?hermes\s+agent\b[,:\-]?",
@@ -113,6 +113,7 @@ class BlueBubblesAdapter(BasePlatformAdapter):
     platform = Platform.BLUEBUBBLES
     SUPPORTS_MESSAGE_EDITING = False
     MAX_MESSAGE_LENGTH = MAX_TEXT_LENGTH
+    splits_long_messages = True  # send() chunks via truncate_message(MAX_MESSAGE_LENGTH)
 
     def __init__(self, config: PlatformConfig):
         super().__init__(config, Platform.BLUEBUBBLES)
@@ -164,7 +165,7 @@ class BlueBubblesAdapter(BasePlatformAdapter):
         """Compile group-mention wake words from config/env.
 
         ``raw`` is a list (from config or env JSON), a string (raw env var:
-        JSON list, or comma/newline-separated), or None (use Moor defaults).
+        JSON list, or comma/newline-separated), or None (use Hermes defaults).
         """
         if raw is None:
             patterns = list(DEFAULT_MENTION_PATTERNS)
