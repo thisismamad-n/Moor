@@ -13,7 +13,7 @@ or a linked OpenViking CLI config:
   OPENVIKING_API_KEY   — API key (required for authenticated servers)
   OPENVIKING_ACCOUNT   — Tenant account for local/trusted mode (default: default)
   OPENVIKING_USER      — Tenant user for local/trusted mode (default: default)
-  OPENVIKING_AGENT     — Moor peer ID in OpenViking (default: hermes)
+  OPENVIKING_AGENT     — Hermes peer ID in OpenViking (default: hermes)
 
 Capabilities:
   - Automatic memory extraction on session commit (6 categories)
@@ -56,7 +56,7 @@ logger = logging.getLogger(__name__)
 _DEFAULT_ENDPOINT = "http://127.0.0.1:1933"
 _OPENVIKING_SERVICE_ENDPOINT = "https://api.vikingdb.cn-beijing.volces.com/openviking"
 _DEFAULT_AGENT = "hermes"
-_AGENT_PROMPT_LABEL = "Moor peer ID in OpenViking"
+_AGENT_PROMPT_LABEL = "Hermes peer ID in OpenViking"
 _OVCLI_CONFIG_ENV = "OPENVIKING_CLI_CONFIG_FILE"
 _OVCLI_DEFAULT_RELATIVE_PATH = ".openviking/ovcli.conf"
 _OVCLI_SAVED_PREFIX = "ovcli.conf."
@@ -90,6 +90,12 @@ _DEFAULT_MEMORY_SUBDIR = "preferences"
 _MEMORY_WRITE_TARGET_SUBDIR_MAP = {
     "user": "preferences",
     "memory": "patterns",
+}
+# OpenViking-generated markdown summaries. Non-.md sidecars such as
+# .relations.json are rejected earlier by the exact memory-file check.
+_GENERATED_MEMORY_SUMMARY_FILENAMES = {
+    ".abstract.md",
+    ".overview.md",
 }
 _LOCAL_OPENVIKING_HOSTS = {"localhost", "127.0.0.1", "::1"}
 _LOCAL_OPENVIKING_AUTOSTART_TIMEOUT = 60.0
@@ -146,7 +152,7 @@ def _format_openviking_exception(error: Exception) -> str:
 
 
 def _derive_openviking_user_text(content: Any) -> str:
-    """Strip Moor slash-skill scaffolding before sending content to OpenViking.
+    """Strip Hermes slash-skill scaffolding before sending content to OpenViking.
 
     Defense-in-depth: MemoryManager already strips skill scaffolding for the
     whole provider fan-out (see ``MemoryManager._strip_skill_scaffolding``), so
@@ -320,6 +326,13 @@ class _VikingClient:
             )
         )
 
+    def delete(self, path: str, **kwargs) -> dict:
+        return self._send_with_trusted_identity_retry(
+            lambda headers: self._httpx.delete(
+                self._url(path), headers=headers, timeout=_TIMEOUT, **kwargs
+            )
+        )
+
     def upload_temp_file(self, file_path: Path) -> str:
         mime_type = mimetypes.guess_type(file_path.name)[0] or "application/octet-stream"
 
@@ -460,6 +473,26 @@ REMEMBER_SCHEMA = {
     },
 }
 
+FORGET_SCHEMA = {
+    "name": "viking_forget",
+    "description": (
+        "Delete one OpenViking memory file by exact viking:// URI. "
+        "Use only when the user explicitly asks to forget or delete a specific "
+        "memory and you have the exact memory file URI. Resources, skills, "
+        "sessions, directories, generated summaries, and broad deletes are rejected."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "uri": {
+                "type": "string",
+                "description": "Exact viking:// memory file URI ending in .md.",
+            },
+        },
+        "required": ["uri"],
+    },
+}
+
 ADD_RESOURCE_SCHEMA = {
     "name": "viking_add_resource",
     "description": (
@@ -550,6 +583,46 @@ def _is_windows_absolute_path(value: str) -> bool:
 
 def _is_remote_resource_source(value: str) -> bool:
     return value.startswith(_REMOTE_RESOURCE_PREFIXES)
+
+
+def _memory_segment_index(parts: List[str]) -> Optional[int]:
+    if len(parts) >= 2 and parts[0] == "user" and parts[1] == "memories":
+        return 1
+    if len(parts) >= 3 and parts[0] == "user" and parts[2] == "memories":
+        return 2
+    if len(parts) >= 4 and parts[0] == "user" and parts[1] == "peers" and parts[3] == "memories":
+        return 3
+    if len(parts) >= 5 and parts[0] == "user" and parts[2] == "peers" and parts[4] == "memories":
+        return 4
+    return None
+
+
+def _validate_forget_memory_uri(raw_uri: Any) -> tuple[Optional[str], Optional[str]]:
+    if not isinstance(raw_uri, str):
+        return None, "uri is required"
+
+    uri = raw_uri.strip()
+    if not uri:
+        return None, "uri is required"
+
+    parsed = urlparse(uri)
+    if parsed.scheme != "viking" or not uri.startswith("viking://"):
+        return None, "viking_forget only accepts viking:// memory file URIs"
+    if parsed.query or parsed.fragment:
+        return None, "viking_forget requires an exact URI without query or fragment"
+    if uri.endswith("/") or not uri.endswith(".md"):
+        return None, "viking_forget only deletes concrete .md memory files"
+
+    parts = [part for part in uri[len("viking://") :].split("/") if part]
+    memories_idx = _memory_segment_index(parts)
+    if memories_idx is None or len(parts) < memories_idx + 2:
+        return None, "viking_forget only deletes user memory file URIs"
+
+    filename = uri.rsplit("/", 1)[-1]
+    if filename in _GENERATED_MEMORY_SUMMARY_FILENAMES:
+        return None, "viking_forget cannot delete generated memory summary files"
+
+    return uri, None
 
 
 def _is_local_path_reference(value: str) -> bool:
@@ -1162,7 +1235,7 @@ def _runtime_openviking_timeout_message(endpoint: str) -> str:
         f"Local OpenViking server at {endpoint} is not reachable. "
         "Tried to start openviking-server, but it did not become reachable "
         f"within {_LOCAL_OPENVIKING_AUTOSTART_TIMEOUT:.0f} seconds. "
-        "OpenViking memory disabled for this Moor run."
+        "OpenViking memory disabled for this Hermes run."
     )
 
 
@@ -1516,7 +1589,7 @@ def _print_openviking_ready(message: str, path: Optional[Path] = None) -> None:
     print(f"  {message}")
     if path is not None:
         print(f"  Config file: {path}")
-    print("  Start a new Moor session to activate.\n")
+    print("  Start a new Hermes session to activate.\n")
 
 
 def _run_existing_profile_setup(
@@ -1634,7 +1707,7 @@ def _run_create_profile_setup(
     save_choice = select(
         "  Save OpenViking config",
         [
-            ("Keep in Moor only", "write values only to Moor .env"),
+            ("Keep in Hermes only", "write values only to Hermes .env"),
             ("Mirror to OpenViking store", "write ~/.openviking/ovcli.conf.<name> and link it"),
         ],
         default=1,
@@ -1667,7 +1740,7 @@ def _run_create_profile_setup(
         env_path=env_path,
         values=values,
     )
-    _print_openviking_ready("Connection saved to Moor .env.")
+    _print_openviking_ready("Connection saved to Hermes .env.")
     return True
 
 
@@ -1719,6 +1792,8 @@ class OpenVikingMemoryProvider(MemoryProvider):
         self._prefetch_thread: Optional[threading.Thread] = None
         self._runtime_start_lock = threading.Lock()
         self._runtime_start_thread: Optional[threading.Thread] = None
+        self._memory_write_lock = threading.Lock()
+        self._memory_write_threads: Set[threading.Thread] = set()
         # All prefetch threads ever spawned (daemon, short-lived). Tracked so
         # shutdown() can drain them and rapid re-queues don't orphan a still-
         # running thread by overwriting the single _prefetch_thread slot.
@@ -1774,7 +1849,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
             {
                 "key": "agent",
                 "description": (
-                    "Moor peer ID in OpenViking, sent as the actor peer and "
+                    "Hermes peer ID in OpenViking, sent as the actor peer and "
                     "used for peer-scoped memories"
                 ),
                 "default": "hermes",
@@ -1928,7 +2003,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
             if not client.health():
                 _emit_runtime_warning(
                     f"OpenViking server at {endpoint} is still not reachable after auto-start; "
-                    "OpenViking memory disabled for this Moor run.",
+                    "OpenViking memory disabled for this Hermes run.",
                     warning_callback,
                 )
                 return
@@ -1938,7 +2013,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
         except Exception as e:
             _emit_runtime_warning(
                 f"OpenViking server at {endpoint} could not be attached after auto-start: {e}. "
-                "OpenViking memory disabled for this Moor run.",
+                "OpenViking memory disabled for this Hermes run.",
                 warning_callback,
             )
             return
@@ -1959,7 +2034,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
         if not _is_local_openviking_url(endpoint):
             _emit_runtime_warning(
                 f"Remote OpenViking server at {endpoint} is not reachable; "
-                "OpenViking memory disabled for this Moor run. "
+                "OpenViking memory disabled for this Hermes run. "
                 "Check the configured endpoint and network connectivity.",
                 warning_callback,
             )
@@ -1970,7 +2045,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
         if not started:
             _emit_runtime_warning(
                 f"Local OpenViking server at {endpoint} is not reachable. {start_message} "
-                "OpenViking memory disabled for this Moor run.",
+                "OpenViking memory disabled for this Hermes run.",
                 warning_callback,
             )
             self._client = None
@@ -2019,7 +2094,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
                 )
             elif health_state != "healthy":
                 _emit_runtime_warning(
-                    f"{health_message} OpenViking memory disabled for this Moor run.",
+                    f"{health_message} OpenViking memory disabled for this Hermes run.",
                     warning_callback,
                 )
                 self._client = None
@@ -2047,7 +2122,8 @@ class OpenVikingMemoryProvider(MemoryProvider):
                 f"Active. Endpoint: {self._endpoint}\n"
                 "Use viking_search to find information, viking_read for details "
                 "(abstract/overview/full), viking_browse to explore.\n"
-                "Use viking_remember to store facts, viking_add_resource to index URLs/docs."
+                "Use viking_remember to store facts, viking_forget to delete exact memory "
+                "file URIs, and viking_add_resource to index URLs/docs."
             )
         except Exception as e:
             logger.warning("OpenViking system_prompt_block failed: %s", e)
@@ -2055,7 +2131,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
                 "# OpenViking Knowledge Base\n"
                 f"Active. Endpoint: {self._endpoint}\n"
                 "Use viking_search, viking_read, viking_browse, "
-                "viking_remember, viking_add_resource."
+                "viking_remember, viking_forget, viking_add_resource."
             )
 
     def prefetch(self, query: str, *, session_id: str = "") -> str:
@@ -2362,7 +2438,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
         user_content: str,
         assistant_content: str,
     ) -> List[Dict[str, Any]]:
-        """Slice the completed turn out of Moor' full canonical transcript."""
+        """Slice the completed turn out of Hermes' full canonical transcript."""
         if not messages:
             return []
 
@@ -2481,7 +2557,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
         *,
         assistant_peer_id: str = "",
     ) -> List[Dict[str, Any]]:
-        """Convert Moor canonical messages into OpenViking batch payloads."""
+        """Convert Hermes canonical messages into OpenViking batch payloads."""
         assistant_peer_id = str(assistant_peer_id or "").strip()
         tool_calls_by_id: Dict[str, Dict[str, Any]] = {}
         completed_tool_ids: set[str] = set()
@@ -2806,7 +2882,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
         content: str,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """Mirror built-in memory writes to OpenViking via content/write."""
+        """Mirror successful built-in memory additions to OpenViking."""
         if not self._client or action != "add" or not content:
             return
 
@@ -2826,12 +2902,30 @@ class OpenVikingMemoryProvider(MemoryProvider):
                 })
             except Exception as e:
                 logger.debug("OpenViking memory mirror failed: %s", e)
+            finally:
+                with self._memory_write_lock:
+                    self._memory_write_threads.discard(threading.current_thread())
 
         t = threading.Thread(target=_write, daemon=True, name="openviking-memwrite")
-        t.start()
+        with self._memory_write_lock:
+            if self._shutting_down:
+                return
+            self._memory_write_threads.add(t)
+            try:
+                t.start()
+            except Exception as e:
+                self._memory_write_threads.discard(t)
+                logger.debug("OpenViking memory mirror worker failed to start: %s", e)
 
     def get_tool_schemas(self) -> List[Dict[str, Any]]:
-        return [SEARCH_SCHEMA, READ_SCHEMA, BROWSE_SCHEMA, REMEMBER_SCHEMA, ADD_RESOURCE_SCHEMA]
+        return [
+            SEARCH_SCHEMA,
+            READ_SCHEMA,
+            BROWSE_SCHEMA,
+            REMEMBER_SCHEMA,
+            FORGET_SCHEMA,
+            ADD_RESOURCE_SCHEMA,
+        ]
 
     def handle_tool_call(self, tool_name: str, args: dict, **kwargs) -> str:
         if not self._client:
@@ -2846,6 +2940,8 @@ class OpenVikingMemoryProvider(MemoryProvider):
                 return self._tool_browse(args)
             elif tool_name == "viking_remember":
                 return self._tool_remember(args)
+            elif tool_name == "viking_forget":
+                return self._tool_forget(args)
             elif tool_name == "viking_add_resource":
                 return self._tool_add_resource(args)
             return tool_error(f"Unknown tool: {tool_name}")
@@ -2865,6 +2961,8 @@ class OpenVikingMemoryProvider(MemoryProvider):
             deferred_workers = list(self._deferred_commit_threads)
         with self._prefetch_lock:
             prefetch_workers = list(self._prefetch_threads)
+        with self._memory_write_lock:
+            memory_write_workers = list(self._memory_write_threads)
         for t in all_workers:
             if t.is_alive():
                 t.join(timeout=5.0)
@@ -2872,6 +2970,9 @@ class OpenVikingMemoryProvider(MemoryProvider):
             if t.is_alive():
                 t.join(timeout=5.0)
         for t in prefetch_workers:
+            if t.is_alive():
+                t.join(timeout=5.0)
+        for t in memory_write_workers:
             if t.is_alive():
                 t.join(timeout=5.0)
         # Clear atexit reference so it doesn't double-commit.
@@ -3096,6 +3197,31 @@ class OpenVikingMemoryProvider(MemoryProvider):
         except Exception as e:
             logger.error("OpenViking content/write failed: %s", e)
             return tool_error(f"Failed to store memory: {e}")
+
+    def _tool_forget(self, args: dict) -> str:
+        uri, error = _validate_forget_memory_uri(args.get("uri"))
+        if error:
+            return tool_error(error)
+
+        resp = self._client.delete(
+            "/api/v1/fs",
+            params={"uri": uri, "recursive": False},
+        )
+        result = self._unwrap_result(resp)
+        payload: Dict[str, Any] = {"status": "deleted", "uri": uri}
+        if isinstance(result, dict):
+            payload["uri"] = result.get("uri") or uri
+            for key in (
+                "estimated_deleted_count",
+                "memory_cleanup",
+                "semantic_root_uri",
+                "semantic_status",
+                "queue_status",
+            ):
+                if key in result:
+                    payload[key] = result[key]
+
+        return json.dumps(payload, ensure_ascii=False)
 
     def _tool_add_resource(self, args: dict) -> str:
         url = args.get("url", "")

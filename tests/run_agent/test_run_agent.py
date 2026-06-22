@@ -23,6 +23,7 @@ from agent.codex_responses_adapter import _normalize_codex_response
 import run_agent
 from run_agent import AIAgent
 from agent.error_classifier import FailoverReason
+from agent.memory_manager import MemoryManager
 from agent.prompt_builder import DEFAULT_AGENT_IDENTITY
 
 
@@ -1712,7 +1713,7 @@ class TestBuildApiKwargs:
 
     def test_reasoning_sent_for_nous_route(self, agent):
         agent.provider = "nous"
-        agent.base_url = "https://inference-api.Moor inc..com/v1"
+        agent.base_url = "https://inference-api.nousresearch.com/v1"
         agent.model = "minimax/minimax-m2.5"
         messages = [{"role": "user", "content": "hi"}]
         kwargs = agent._build_api_kwargs(messages)
@@ -2081,6 +2082,41 @@ class TestExecuteToolCalls:
         assert len(messages) == 1
         assert messages[0]["role"] == "tool"
         assert "search result" in messages[0]["content"]
+
+    def test_sequential_memory_remove_notifies_provider_with_tool_result(self, agent):
+        old_text = "stale preference entry"
+        tc = _mock_tool_call(
+            name="memory",
+            arguments=json.dumps({
+                "action": "remove",
+                "target": "memory",
+                "old_text": old_text,
+            }),
+            call_id="mem-1",
+        )
+        mock_msg = _mock_assistant_msg(content="", tool_calls=[tc])
+        messages = []
+        calls = []
+
+        class FakeMemoryManager(MemoryManager):
+            def has_tool(self, tool_name):
+                return False
+
+            def on_memory_write(self, action, target, content, metadata=None):
+                calls.append((action, target, content, metadata or {}))
+
+        agent._memory_manager = FakeMemoryManager()
+        agent._memory_store = object()
+
+        with patch("tools.memory_tool.memory_tool", return_value=json.dumps({"success": True})):
+            agent._execute_tool_calls_sequential(mock_msg, messages, "task-1")
+
+        assert len(calls) == 1
+        action, target, content, metadata = calls[0]
+        assert (action, target, content) == ("remove", "memory", "")
+        assert metadata["old_text"] == old_text
+        assert metadata["tool_call_id"] == "mem-1"
+        assert messages[-1]["tool_call_id"] == "mem-1"
 
     def test_keyboard_interrupt_emits_cancelled_post_tool_hook(self, agent, monkeypatch):
         tc = _mock_tool_call(name="web_search", arguments='{"q":"test"}', call_id="c1")
@@ -2797,6 +2833,68 @@ class TestConcurrentToolExecution:
         assert json.loads(result) == {"error": "Blocked"}
         assert agent._turns_since_memory == 5
 
+    def test_invoke_tool_memory_remove_notifies_provider_with_old_text(self, agent, monkeypatch):
+        monkeypatch.setattr(
+            "hermes_cli.plugins.get_pre_tool_call_block_message",
+            lambda *args, **kwargs: None,
+        )
+        calls = []
+
+        class FakeMemoryManager(MemoryManager):
+            def has_tool(self, tool_name):
+                return False
+
+            def on_memory_write(self, action, target, content, metadata=None):
+                calls.append((action, target, content, metadata or {}))
+
+        old_text = "stale preference entry"
+        agent._memory_manager = FakeMemoryManager()
+        agent._memory_store = object()
+
+        with patch("tools.memory_tool.memory_tool", return_value=json.dumps({"success": True})):
+            agent._invoke_tool(
+                "memory",
+                {"action": "remove", "target": "memory", "old_text": old_text},
+                "task-1",
+                tool_call_id="mem-1",
+            )
+
+        assert len(calls) == 1
+        action, target, content, metadata = calls[0]
+        assert (action, target, content) == ("remove", "memory", "")
+        assert metadata["old_text"] == old_text
+        assert metadata["tool_call_id"] == "mem-1"
+
+    def test_invoke_tool_memory_failed_remove_skips_provider_notification(self, agent, monkeypatch):
+        monkeypatch.setattr(
+            "hermes_cli.plugins.get_pre_tool_call_block_message",
+            lambda *args, **kwargs: None,
+        )
+        notify = MagicMock(side_effect=AssertionError("should not notify"))
+
+        class FakeMemoryManager(MemoryManager):
+            def has_tool(self, tool_name):
+                return False
+
+            on_memory_write = notify
+
+        manager = FakeMemoryManager()
+        agent._memory_manager = manager
+        agent._memory_store = object()
+
+        with patch(
+            "tools.memory_tool.memory_tool",
+            return_value=json.dumps({"success": False, "error": "No entry matched"}),
+        ):
+            agent._invoke_tool(
+                "memory",
+                {"action": "remove", "target": "memory", "old_text": "missing"},
+                "task-1",
+                tool_call_id="mem-1",
+            )
+
+        notify.assert_not_called()
+
     def test_concurrent_blocked_write_skips_checkpoint(self, agent, monkeypatch):
         """Concurrent path: blocked write_file should not trigger checkpoint."""
         tc1 = _mock_tool_call(name="write_file",
@@ -3435,7 +3533,7 @@ class TestRunConversation:
         assert "Ollama loaded `qwen3.5:9b` with only 4,096 tokens" in result["final_response"]
         assert "model.ollama_num_ctx: 65536" in result["final_response"]
         assert not agent.client.chat.completions.create.called
-        assert "Ollama runtime context too small for Moor tool use" in caplog.text
+        assert "Ollama runtime context too small for Hermes tool use" in caplog.text
         assert "runtime_context=4096" in caplog.text
 
     def test_tool_calls_then_stop(self, agent):
@@ -4835,7 +4933,7 @@ class TestNousCredentialRefresh:
             captured.update(kwargs)
             return {
                 "api_key": "new-nous-key",
-                "base_url": "https://inference-api.Moor inc..com/v1",
+                "base_url": "https://inference-api.nousresearch.com/v1",
             }
 
         def _fake_openai(**kwargs):
@@ -4855,7 +4953,7 @@ class TestNousCredentialRefresh:
         assert captured["force_refresh"] is True
         assert rebuilt["kwargs"]["api_key"] == "new-nous-key"
         assert (
-            rebuilt["kwargs"]["base_url"] == "https://inference-api.Moor inc..com/v1"
+            rebuilt["kwargs"]["base_url"] == "https://inference-api.nousresearch.com/v1"
         )
         assert "default_headers" not in rebuilt["kwargs"]
         assert isinstance(agent.client, _RebuiltClient)
@@ -5210,7 +5308,7 @@ class TestGpt5ApiModeRouting:
     def test_nous_gpt5_stays_on_chat_completions(self, agent):
         """Nous serves gpt-5.x on /chat/completions — must not upgrade to codex_responses."""
         agent.provider = "nous"
-        agent.base_url = "https://inference-api.Moor inc..com/v1"
+        agent.base_url = "https://inference-api.nousresearch.com/v1"
         agent.api_mode = "chat_completions"
         agent.model = "openai/gpt-5.5"
         if (
@@ -5305,7 +5403,7 @@ class TestSystemPromptStability:
         # Should have built fresh, not queried the DB
         mock_db.get_session.assert_not_called()
         assert agent._cached_system_prompt is not None
-        assert "Moor Agent" in agent._cached_system_prompt
+        assert "Hermes Agent" in agent._cached_system_prompt
 
     def test_fresh_build_when_db_has_no_prompt(self, agent):
         """If the session DB has no stored prompt, build fresh even with history."""
@@ -5332,7 +5430,7 @@ class TestSystemPromptStability:
                 agent._cached_system_prompt = agent._build_system_prompt()
 
         # Empty string is falsy, so should fall through to fresh build
-        assert "Moor Agent" in agent._cached_system_prompt
+        assert "Hermes Agent" in agent._cached_system_prompt
 
 class TestBudgetPressure:
     """Budget exhaustion grace call system."""
