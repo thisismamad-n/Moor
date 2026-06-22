@@ -1,6 +1,6 @@
 """Regression tests for #32091 — profile-scoped cron jobs orphaned.
 
-Cron storage (CRON_DIR/JOBS_FILE) must anchor at the *default root* Hermes
+Cron storage (CRON_DIR/JOBS_FILE) must anchor at the *default root* Moor
 home, not the active profile's home. Otherwise a job created from a
 profile-scoped agent session writes to ~/.hermes/profiles/<p>/cron/jobs.json,
 while the profile-less gateway reads only ~/.hermes/cron/jobs.json — the job

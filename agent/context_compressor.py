@@ -72,7 +72,7 @@ LEGACY_SUMMARY_PREFIX = "[CONTEXT SUMMARY]:"
 # Metadata key added to context compression summary messages so that frontends
 # (CLI, Desktop, gateway, TUI) can distinguish them from real assistant/user
 # messages and filter or render them appropriately without content-prefix
-# heuristics. See https://github.com/NousResearch/hermes-agent/issues/38389
+# heuristics. See https://github.com/Moor inc./hermes-agent/issues/38389
 #
 # Underscore-prefixed ON PURPOSE: the wire sanitizers
 # (agent/transports/chat_completions.py convert_messages and the summary-path
@@ -915,7 +915,7 @@ class ContextCompressor(ContextEngine):
         """Return True when a high rough preflight estimate is known-noisy.
 
         ``estimate_request_tokens_rough(..., tools=...)`` intentionally
-        overestimates schema-heavy requests so Hermes compresses before a
+        overestimates schema-heavy requests so Moor compresses before a
         provider rejects the payload. After a successful compressed API call,
         though, provider ``prompt_tokens`` are a better signal than repeating
         compaction from the same rough schema overhead. Defer only while the

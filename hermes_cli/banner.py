@@ -61,28 +61,34 @@ def _skin_color(key: str, fallback: str) -> str:
 
 from hermes_cli import __version__ as VERSION, __release_date__ as RELEASE_DATE
 
-HERMES_AGENT_LOGO = """[bold #FFD700]██╗  ██╗███████╗██████╗ ███╗   ███╗███████╗███████╗       █████╗  ██████╗ ███████╗███╗   ██╗████████╗[/]
-[bold #FFD700]██║  ██║██╔════╝██╔══██╗████╗ ████║██╔════╝██╔════╝      ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝[/]
-[#FFBF00]███████║█████╗  ██████╔╝██╔████╔██║█████╗  ███████╗█████╗███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║[/]
-[#FFBF00]██╔══██║██╔══╝  ██╔══██╗██║╚██╔╝██║██╔══╝  ╚════██║╚════╝██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║[/]
-[#CD7F32]██║  ██║███████╗██║  ██║██║ ╚═╝ ██║███████╗███████║      ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║[/]
-[#CD7F32]╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚══════╝      ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝[/]"""
+HERMES_AGENT_LOGO = """[bold #FFD700]0100            1101     01001111         01001111     010100100101     [/]
+[bold #FFD700]01001101    01001101 0100111101001111 0100111101001111 0101    00100101 [/]
+[bold #FFD700]01001101010011010100 0100        1111 0100        1111 0101    00100101 [/]
+[#FFBF00]0100    1101    0100 0100        1111 0100        1111 010100100101     [/]
+[#FFBF00]0100            1101 0100        1111 0100        1111 0101    00100101 [/]
+[#FFBF00]0100            1101 0100        1111 0100        1111 0101        0010 [/]
+[#CD7F32]0100            1101 0100        1111 0100        1111 0101        0010 [/]
+[#CD7F32]0100            1101 0100111101001111 0100111101001111 0101        0010 [/]
+[#CD7F32]0100            1101     01001111         01001111     0101        0010 [/]"""
 
-HERMES_CADUCEUS = """[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡀⠀⣀⣀⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#CD7F32]⠀⠀⠀⠀⠀⠀⢀⣠⣴⣾⣿⣿⣇⠸⣿⣿⠇⣸⣿⣿⣷⣦⣄⡀⠀⠀⠀⠀⠀⠀[/]
-[#FFBF00]⠀⢀⣠⣴⣶⠿⠋⣩⡿⣿⡿⠻⣿⡇⢠⡄⢸⣿⠟⢿⣿⢿⣍⠙⠿⣶⣦⣄⡀⠀[/]
-[#FFBF00]⠀⠀⠉⠉⠁⠶⠟⠋⠀⠉⠀⢀⣈⣁⡈⢁⣈⣁⡀⠀⠉⠀⠙⠻⠶⠈⠉⠉⠀⠀[/]
-[#FFD700]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣴⣿⡿⠛⢁⡈⠛⢿⣿⣦⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#FFD700]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠿⣿⣦⣤⣈⠁⢠⣴⣿⠿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#FFBF00]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠻⢿⣿⣦⡉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#FFBF00]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⢷⣦⣈⠛⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣴⠦⠈⠙⠿⣦⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⣿⣤⡈⠁⢤⣿⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⠷⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⠑⢶⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠁⢰⡆⠈⡿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠳⠈⣡⠞⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]"""
+HERMES_CADUCEUS = """[#CD7F32]⠎⠋⠈⠈⢀⢠⠤⠖⠚⠘⠁⠁⠉⠈⢈⡁⣁⢁⡉⣈⢈⡁⠁⠁⠉⠉⠈⠊⠢⠦⣠⡀⠈⠈⠉[/]
+[#CD7F32]⢀⣤⠔⠙⠁⠁⢀⢀⡤⠴⠆⠚⠙⠋⠈⠁⠉⠈⠁⠉⠈⠉⠉⠋⠓⠲⠦⢤⡀⡀⠀⠉⠙⠔⢄[/]
+[#CD7F32]⠋⠀⠀⣠⡤⠚⠋⠁⠀⢀⣀⣤⠤⠶⠖⠂⠚⠛⠚⠛⠒⠲⠶⠦⡤⣄⣀⠀⠈⠈⠓⢶⢄⠀⠀[/]
+[#FFBF00]⣀⡴⠛⠁⠀⢀⣠⠶⠚⠉⠁⠀⣀⣀⣤⣤⡤⠤⠤⢤⣤⣤⣄⣀⠀⠀⠉⠙⠳⢦⣄⠀⠀⠑⠷[/]
+[#FFBF00]⠏⠀⠀⣠⠞⠋⠀⢀⣠⡴⠞⠛⠉⠀⠀⣀⣀⣀⣀⣀⣀⡀⠀⠉⠉⠳⠶⣄⡀⠀⠉⠛⣤⡀⠀[/]
+[#FFBF00]⠀⣠⡞⠁⠀⢀⡴⠛⠁⠀⢀⣤⠶⠛⠋⠉⠉⠉⠉⠉⠉⠙⠛⠲⢦⣄⠀⠈⠙⢶⣄⠀⠀⠹⣦[/]
+[bold #FFD700]⣰⡏⠀⠀⣰⠟⠀⠀⣠⡾⠋⠀⢀⣠⡴⠶⠛⠛⠛⠛⠲⠶⣤⣀⠀⠉⠻⣦⡀⠀⠙⢷⡀⠀⠈[/]
+[bold #FFD700]⡟⠀⠀⢰⡟⠀⠀⣸⡏⠀⠀⣰⠟⠁⠀⣠⣤⠴⠶⣤⣄⡀⠈⠙⢷⡄⠀⠈⢷⡄⠀⠈⢷⡀⠀[/]
+[bold #FFD700]⡇⠀⠀⢸⡇⠀⠀⣿⠀⠀⠀⣿⠀⠀⢸⣏⠀⢀⡀⠀⠉⢿⡄⠀⠈⣿⠀⠀⠘⣧⠀⠀⢸⡇⠀[/]
+[#FFBF00]⣧⠀⠀⠸⣇⠀⠀⢹⣇⠀⠀⠻⣦⡀⠀⠙⠛⠛⠁⠀⣠⡾⠁⠀⢀⡿⠀⠀⢰⡟⠀⠀⢸⡇⠀[/]
+[#FFBF00]⢹⣆⠀⠀⠻⣆⠀⠀⠙⢦⣄⠀⠈⠛⠳⠶⠶⠶⠶⠞⠋⠀⢀⣠⠟⠁⠀⢠⡾⠁⠀⢀⡿⠁⠀[/]
+[#FFBF00]⠀⠹⢦⡀⠀⠙⠷⣄⡀⠀⠉⠛⠶⢤⣤⣀⣀⣀⣠⣤⡴⠶⠛⠁⠀⣀⡴⠟⠁⠀⣠⡟⠁⠀⢠[/]
+[#CD7F32]⣆⠀⠈⠹⢦⣄⠀⠀⠙⠳⢦⣤⣀⣀⠀⠀⠀⠀⠀⠀⣀⣀⣤⡴⠞⠋⠀⢀⣠⠾⠋⠀⠀⣤⠏[/]
+[#CD7F32]⠙⠳⣤⡀⠀⠈⠛⠶⣤⣀⡀⠀⠈⠉⠉⠛⠛⠛⠛⠉⠉⠉⠀⣀⣠⡤⠞⠋⠁⠀⣀⡴⠟⠁⠀[/]
+[#CD7F32]⣆⠀⠀⠙⠳⠦⣄⢀⠀⠉⠉⠋⠓⠲⠶⠦⠶⠶⠶⠖⠛⠋⠉⠀⠀⣀⣤⡲⠛⠉⠀⢀⣠⠾[/]
+[#B8860B]⠉⠑⠶⢤⣀⠀⠀⠉⠙⠲⠔⠦⡠⣤⣠⣄⢀⣀⢠⣤⢠⡤⠢⠶⠚⠊⠉⠀⢀⢀⡤⠖⠋⠀⠀[/]
+[#B8860B]⠦⡄⡀⠀⠁⠙⠑⠆⢤⢠⡀⣀⣀⠀⠀⠀⠀⠀⠀⠀⢀⢀⡀⣠⢠⠄⠖⠑⠉⠁⠀⢀⢠⠤⠊[/]
+[#B8860B]⠀⠈⠈⠐⠐⠀⠀⠀⠀⠀⠀⠉⠈⠈⠁⠙⠘⠘⠁⠉⠈⠈⠁⠀⠀⠀⠀⠀⠐⠒⠃⠁⠁⠀⠀[/]"""
 
 
 
@@ -121,8 +127,8 @@ _UPDATE_CHECK_CACHE_SECONDS = 6 * 3600
 # (e.g. nix-built hermes — no local git history to count against).
 UPDATE_AVAILABLE_NO_COUNT = -1
 
-_UPSTREAM_REPO_URL = "https://github.com/NousResearch/hermes-agent.git"
-_OFFICIAL_REPO_CANONICAL = "github.com/nousresearch/hermes-agent"
+_UPSTREAM_REPO_URL = "https://github.com/Moor inc./hermes-agent.git"
+_OFFICIAL_REPO_CANONICAL = "github.com/Moor inc./hermes-agent"
 
 
 def _canonical_github_remote(url: str | None) -> str:
@@ -152,7 +158,7 @@ def _is_ssh_remote(url: str | None) -> bool:
 
 
 def _is_official_ssh_remote(url: str | None) -> bool:
-    return _is_ssh_remote(url) and _canonical_github_remote(url) == _OFFICIAL_REPO_CANONICAL
+    return _is_ssh_remote(url) and _canonical_github_remote(url) == _OFFICIAL_REPO_CANONICAL.lower()
 
 
 def _git_stdout(args: list[str], *, cwd: Path, timeout: int = 5) -> Optional[str]:
@@ -292,7 +298,7 @@ def check_via_pypi() -> Optional[int]:
 
 
 def check_for_updates() -> Optional[int]:
-    """Check whether a Hermes update is available.
+    """Check whether a Moor update is available.
 
     Two paths: if ``HERMES_REVISION`` is set (nix builds embed it), compare
     it to upstream main via ``git ls-remote``. Otherwise look for a local
@@ -368,7 +374,7 @@ def check_for_updates() -> Optional[int]:
 
 
 def _resolve_repo_dir() -> Optional[Path]:
-    """Return the active Hermes git checkout, or None if this isn't a git install.
+    """Return the active Moor git checkout, or None if this isn't a git install.
 
     Prefers the running code's location over the profile-scoped path
     because ``$HERMES_HOME/hermes-agent/`` may be a stale copy carried
@@ -455,7 +461,7 @@ def get_git_banner_state(repo_dir: Optional[Path] = None) -> Optional[dict]:
     return {"upstream": upstream, "local": local, "ahead": max(ahead, 0)}
 
 
-_RELEASE_URL_BASE = "https://github.com/NousResearch/hermes-agent/releases/tag"
+_RELEASE_URL_BASE = "https://github.com/Moor inc./hermes-agent/releases/tag"
 _latest_release_cache: Optional[tuple] = None  # (tag, url) once resolved
 
 
@@ -463,8 +469,8 @@ def get_latest_release_tag(repo_dir: Optional[Path] = None) -> Optional[tuple]:
     """Return ``(tag, release_url)`` for the latest git tag, or None.
 
     Local-only — runs ``git describe --tags --abbrev=0`` against the
-    Hermes checkout. Cached per-process. Release URL always points at the
-    canonical NousResearch/hermes-agent repo (forks don't get a link).
+    Moor checkout. Cached per-process. Release URL always points at the
+    canonical Moor inc./hermes-agent repo (forks don't get a link).
     """
     global _latest_release_cache
     if _latest_release_cache is not None:
@@ -503,7 +509,7 @@ def get_latest_release_tag(repo_dir: Optional[Path] = None) -> Optional[tuple]:
 
 def format_banner_version_label() -> str:
     """Return the version label shown in the startup banner title."""
-    base = f"Hermes Agent v{VERSION} ({RELEASE_DATE})"
+    base = f"Moor Agent v{VERSION} ({RELEASE_DATE})"
     state = get_git_banner_state()
     if not state:
         return base

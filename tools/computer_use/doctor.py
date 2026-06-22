@@ -4,7 +4,7 @@
 cua-driver owns the health model (#1908 / be761fac on `main`). This module
 just drives the stdio JSON-RPC handshake, calls `health_report`, and
 renders the structured response. When the driver gets new checks, they
-flow through here without code changes on the Hermes side — the only
+flow through here without code changes on the Moor side — the only
 contract is the stable `schema_version="1"` payload shape.
 
 Exit code conventions:
