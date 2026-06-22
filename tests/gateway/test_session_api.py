@@ -225,13 +225,13 @@ async def test_session_chat_loads_history_and_preserves_session_headers(auth_ada
             resp = await cli.post(
                 f"/api/sessions/{session_id}/chat",
                 json={"message": "next", "system_message": "stay focused"},
-                headers={"Authorization": "Bearer sk-test", "X-Hermes-Session-Key": "client-42"},
+                headers={"Authorization": "Bearer sk-test", "X-Moor-Session-Key": "client-42"},
             )
             assert resp.status == 200
             payload = await resp.json()
 
-    assert resp.headers["X-Hermes-Session-Id"] == session_id
-    assert resp.headers["X-Hermes-Session-Key"] == "client-42"
+    assert resp.headers["X-Moor-Session-Id"] == session_id
+    assert resp.headers["X-Moor-Session-Key"] == "client-42"
     assert payload["object"] == "hermes.session.chat.completion"
     assert payload["session_id"] == session_id
     assert payload["message"]["role"] == "assistant"
@@ -241,7 +241,11 @@ async def test_session_chat_loads_history_and_preserves_session_headers(auth_ada
     assert kwargs["session_id"] == session_id
     assert kwargs["gateway_session_key"] == "client-42"
     assert kwargs["ephemeral_system_prompt"] == "stay focused"
-    assert kwargs["conversation_history"] == [
+    history = kwargs["conversation_history"]
+    assert len(history) == 2
+    assert isinstance(history[0].pop("timestamp"), (int, float))
+    assert isinstance(history[1].pop("timestamp"), (int, float))
+    assert history == [
         {"role": "user", "content": "earlier"},
         {"role": "assistant", "content": "prior answer"},
     ]
@@ -429,8 +433,8 @@ async def test_session_header_rejected_without_api_key(adapter, session_db):
         resp = await cli.post(
             f"/api/sessions/{session_id}/chat",
             json={"message": "hello"},
-            headers={"X-Hermes-Session-Key": "client-42"},
+            headers={"X-Moor-Session-Key": "client-42"},
         )
         assert resp.status == 403
         data = await resp.json()
-        assert "X-Hermes-Session-Key requires API key" in data["error"]["message"]
+        assert "X-Moor-Session-Key requires API key" in data["error"]["message"]

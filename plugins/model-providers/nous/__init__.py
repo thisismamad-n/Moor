@@ -38,16 +38,16 @@ class NousProfile(ProviderProfile):
 
 nous = NousProfile(
     name="nous",
-    aliases=("nous-portal", "nousresearch"),
+    aliases=("nous-portal", "Moor inc."),
     env_vars=("NOUS_API_KEY",),
     display_name="Nous Research",
-    description="Nous Research — Hermes model family",
-    signup_url="https://nousresearch.com/",
+    description="Nous Research — Moor model family",
+    signup_url="https://Moor inc..com/",
     fallback_models=(
         "hermes-3-405b",
         "hermes-3-70b",
     ),
-    base_url="https://inference.nousresearch.com/v1",
+    base_url="https://inference.Moor inc..com/v1",
     auth_type="oauth_device_code",
 )
 

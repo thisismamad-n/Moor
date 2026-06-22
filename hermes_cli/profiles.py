@@ -1,5 +1,5 @@
 """
-Profile management for multiple isolated Hermes instances.
+Profile management for multiple isolated Moor instances.
 
 Each profile is a fully independent HERMES_HOME directory with its own
 config.yaml, .env, memory, sessions, skills, gateway, cron, and logs.
@@ -29,7 +29,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath, PureWindowsPath
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from agent.skill_utils import is_excluded_skill_path
 
@@ -149,7 +149,7 @@ def _clone_all_copytree_ignore(source_dir: Path):
          history, backups, and snapshots that belong to the SOURCE profile
          and should never carry into a fresh clone.  Applies to any source.
       2. Root-level entries in ``_CLONE_ALL_DEFAULT_EXCLUDE_ROOT`` — known
-         Hermes infrastructure directories that only the default profile
+         Moor infrastructure directories that only the default profile
          (``~/.hermes``) ever contains.  Gated on ``source_dir`` actually
          being the default profile so a named-profile source never has its
          own data silently dropped.
@@ -228,7 +228,7 @@ _RESERVED_NAMES = frozenset({
     "hermes", "default", "test", "tmp", "root", "sudo",
 })
 
-# Hermes subcommands that cannot be used as profile names/aliases
+# Moor subcommands that cannot be used as profile names/aliases
 _HERMES_SUBCOMMANDS = frozenset({
     "chat", "model", "gateway", "setup", "whatsapp", "login", "logout",
     "status", "cron", "doctor", "dump", "config", "pairing", "skills", "tools",
@@ -323,7 +323,7 @@ def validate_profile_name(name: str) -> None:
     if name in _RESERVED_NAMES:
         raise ValueError(
             f"Profile name {name!r} is reserved — it collides with either "
-            f"the Hermes installation itself or a common system binary.  "
+            f"the Moor installation itself or a common system binary.  "
             f"Pick a different name."
         )
 
@@ -459,7 +459,7 @@ def _migrate_profile_config_if_outdated(profile_dir: Path) -> None:
     """Bring a copied profile config.yaml up to the current schema.
 
     Profile creation can clone a config file that predates schema tracking (no
-    ``_config_version``) or that is simply older than the running Hermes. If we
+    ``_config_version``) or that is simply older than the running Moor. If we
     leave it untouched, the first desktop/doctor view of the new profile shows a
     scary ``v0 → latest`` warning even though we just created the profile. Scope
     the normal migration pipeline to the new profile and keep it non-interactive.
@@ -638,7 +638,7 @@ def _count_skills(profile_dir: Path) -> int:
 # ---------------------------------------------------------------------------
 #
 # We keep this file deliberately tiny and separate from the profile's
-# ``config.yaml``. ``config.yaml`` is the user-facing Hermes config
+# ``config.yaml``. ``config.yaml`` is the user-facing Moor config
 # (~5000 lines of defaults); ``profile.yaml`` is metadata ABOUT the
 # profile itself (its role, who described it). Mixing them makes both
 # harder to read.
@@ -781,6 +781,47 @@ def list_profiles() -> List[ProfileInfo]:
     return profiles
 
 
+def profiles_to_serve(multiplex: bool) -> List[Tuple[str, Path]]:
+    """Return the ``(profile_name, hermes_home)`` pairs a gateway should serve.
+
+    This is the single chokepoint for "which profiles does the inbound gateway
+    handle" so later multiplexing phases never re-derive the set.
+
+    - ``multiplex=False`` (default): returns exactly one entry for the *active*
+      profile — byte-for-byte the single-profile behavior the gateway has
+      always had. The name is ``"default"`` for the default profile or the
+      active named profile's id.
+    - ``multiplex=True``: returns the default profile plus every valid named
+      profile under ``profiles/``, each paired with its own HERMES_HOME.
+
+    Intentionally lightweight (a directory scan + name validation only): no
+    per-profile config reads, gateway-running probes, or skill counts like
+    :func:`list_profiles`. It runs on gateway startup and must stay cheap.
+
+    The returned ``hermes_home`` is the path to pass to
+    ``set_hermes_home_override`` when scoping a turn to that profile.
+    """
+    active = get_active_profile_name() or "default"
+    if not multiplex:
+        return [(active, get_profile_dir(active))]
+
+    serve: List[Tuple[str, Path]] = [("default", _get_default_hermes_home())]
+
+    profiles_root = _get_profiles_root()
+    if profiles_root.is_dir():
+        for entry in sorted(profiles_root.iterdir()):
+            if not entry.is_dir():
+                continue
+            name = entry.name
+            if name == "default":
+                continue  # default is the built-in entry already added above
+            if not _PROFILE_ID_RE.match(name):
+                continue
+            serve.append((name, entry))
+
+    return serve
+
+
 def create_profile(
     name: str,
     clone_from: Optional[str] = None,
@@ -909,7 +950,7 @@ def create_profile(
     if not env_path.exists():
         try:
             env_path.write_text(
-                "# Per-profile secrets for this Hermes profile.\n"
+                "# Per-profile secrets for this Moor profile.\n"
                 "# API keys and tokens set here override the shell environment.\n"
                 "# Behavioral settings belong in config.yaml, not here.\n",
                 encoding="utf-8",
@@ -941,7 +982,7 @@ def create_profile(
         except OSError:
             pass  # best-effort — the feature still works via the empty skills/ dir
 
-    # Cloned configs can be older than the running Hermes (or predate schema
+    # Cloned configs can be older than the running Moor (or predate schema
     # tracking entirely). Migrate config-only clones immediately so
     # desktop/status surfaces don't warn that a just-created profile is
     # v0/outdated. Leave --clone-all snapshots byte-for-byte apart from the
@@ -1056,7 +1097,7 @@ def backfill_profile_envs(quiet: bool = False) -> List[str]:
                 shutil.copy2(default_env, env_path)
             else:
                 env_path.write_text(
-                    "# Per-profile secrets for this Hermes profile.\n"
+                    "# Per-profile secrets for this Moor profile.\n"
                     "# API keys and tokens set here override the shell environment.\n"
                     "# Behavioral settings belong in config.yaml, not here.\n",
                     encoding="utf-8",

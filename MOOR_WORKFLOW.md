@@ -1,13 +1,13 @@
 # Moor Development Workflow
 
-This document explains the workflow for maintaining **Moor**, including how to keep the project up to date with the original upstream project (`NousResearch/hermes-agent`), manage your own features, and ensure the Moor rebranding is preserved.
+This document explains the workflow for maintaining **Moor**, including how to keep the project up to date with the original upstream project (`Moor inc./hermes-agent`), manage your own features, and ensure the Moor rebranding is preserved.
 
 ## 1. Project Setup (Already Completed)
 You have already:
 - Initialized the Git repository.
 - Linked your own GitHub as the `origin` remote.
-- Linked the original project as the `upstream` remote (`https://github.com/NousResearch/hermes-agent.git`).
-- Ran the `rebrand.py` script to change user-facing text from Hermes to Moor.
+- Linked the original project as the `upstream` remote (`https://github.com/Moor inc./hermes-agent.git`).
+- Ran the `rebrand.py` script to change user-facing text from Moor to Moor.
 
 ---
 
@@ -33,7 +33,7 @@ git add .
 ```
 
 ### Step C: Run the Rebrand Script
-Because the new code you just downloaded will contain the word "Hermes", you must run your rebrand script again to enforce the Moor branding on the new files:
+Because the new code you just downloaded will contain the word "Moor", you must run your rebrand script again to enforce the Moor branding on the new files:
 ```powershell
 python rebrand.py
 ```
@@ -65,7 +65,7 @@ git push origin master
 ---
 
 ## 4. Summary Checklist for Updates
-Whenever you hear there's a cool new update from NousResearch, just run this sequence:
+Whenever you hear there's a cool new update from Moor inc., just run this sequence:
 
 1. `git fetch upstream`
 2. `git merge upstream/main`

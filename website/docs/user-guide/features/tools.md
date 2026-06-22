@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 title: "Tools & Toolsets"
-description: "Overview of Hermes Agent's tools — what's available, how toolsets work, and terminal backends"
+description: "Overview of Moor Agent's tools — what's available, how toolsets work, and terminal backends"
 ---
 
 # Tools & Toolsets
@@ -10,7 +10,7 @@ Tools are functions that extend the agent's capabilities. They're organized into
 
 ## Available Tools
 
-Hermes ships with a broad built-in tool registry covering web search, browser automation, terminal execution, file editing, memory, delegation, RL training, messaging delivery, Home Assistant, and more.
+Moor ships with a broad built-in tool registry covering web search, browser automation, terminal execution, file editing, memory, delegation, RL training, messaging delivery, Home Assistant, and more.
 
 :::note
 **Honcho cross-session memory** is available as a memory provider plugin (`plugins/memory/honcho/`), not as a built-in toolset. See [Plugins](./plugins.md) for installation.
@@ -33,7 +33,7 @@ High-level categories:
 For the authoritative code-derived registry, see [Built-in Tools Reference](/reference/tools-reference) and [Toolsets Reference](/reference/toolsets-reference).
 
 :::tip Nous Tool Gateway
-Paid [Nous Portal](https://portal.nousresearch.com) subscribers can use web search, image generation, TTS, and browser automation through the **[Tool Gateway](tool-gateway.md)** — no separate API keys needed. Run `hermes model` to enable it, or configure individual tools with `hermes tools`.
+Paid [Nous Portal](https://portal.Moor inc..com) subscribers can use web search, image generation, TTS, and browser automation through the **[Tool Gateway](tool-gateway.md)** — no separate API keys needed. Run `hermes model` to enable it, or configure individual tools with `hermes tools`.
 :::
 
 ## Using Toolsets
@@ -84,9 +84,9 @@ terminal:
   docker_image: python:3.11-slim
 ```
 
-**One persistent container, shared across the whole process.** Hermes starts a single long-lived container on first use (`docker run -d ... sleep 2h`) and routes every terminal, file, and `execute_code` call through `docker exec` into that same container. Working-directory changes, installed packages, environment tweaks, and files written to `/workspace` all carry over from one tool call to the next, across `/new`, `/reset`, and `delegate_task` subagents, for the lifetime of the Hermes process. The container is stopped and removed on shutdown.
+**One persistent container, shared across the whole process.** Moor starts a single long-lived container on first use (`docker run -d ... sleep 2h`) and routes every terminal, file, and `execute_code` call through `docker exec` into that same container. Working-directory changes, installed packages, environment tweaks, and files written to `/workspace` all carry over from one tool call to the next, across `/new`, `/reset`, and `delegate_task` subagents, for the lifetime of the Moor process. The container is stopped and removed on shutdown.
 
-This means the Docker backend behaves like a persistent sandbox VM, not a fresh container per command. If you `pip install foo` once, it's there for the rest of the session. If you `cd /workspace/project`, subsequent `ls` calls see that directory. See [Configuration → Docker Backend](../configuration.md#docker-backend) for the full lifecycle details and the `container_persistent` flag that controls whether `/workspace` and `/root` survive across Hermes restarts.
+This means the Docker backend behaves like a persistent sandbox VM, not a fresh container per command. If you `pip install foo` once, it's there for the rest of the session. If you `cd /workspace/project`, subsequent `ls` calls see that directory. See [Configuration → Docker Backend](../configuration.md#docker-backend) for the full lifecycle details and the `container_persistent` flag that controls whether `/workspace` and `/root` survive across Moor restarts.
 
 ### SSH Backend
 

@@ -12,11 +12,11 @@ It exists so that skills created via the [self-improvement loop](/user-guide/fea
 
 By default (`prune_builtins: true`) the curator can archive **unused bundled built-in skills** (shipped with the repo) after `archive_after_days` of non-use, alongside the agent-created skills it primarily manages. Hub-installed skills (from [agentskills.io](https://agentskills.io)) are always off-limits. Set `curator.prune_builtins: false` to restore the old agent-created-only behavior, where bundled skills are never touched. The curator also **never auto-deletes** — the worst outcome is archival into `~/.hermes/skills/.archive/`, which is recoverable.
 
-Tracks [issue #7816](https://github.com/NousResearch/hermes-agent/issues/7816).
+Tracks [issue #7816](https://github.com/Moor inc./hermes-agent/issues/7816).
 
 ## How it runs
 
-The curator is triggered by an inactivity check, not a cron daemon. On CLI session start, and on a recurring tick inside the gateway's cron-ticker thread, Hermes checks whether:
+The curator is triggered by an inactivity check, not a cron daemon. On CLI session start, and on a recurring tick inside the gateway's cron-ticker thread, Moor checks whether:
 
 1. Enough time has passed since the last curator run (`interval_hours`, default **7 days**), and
 2. The agent has been idle long enough (`min_idle_hours`, default **2 hours**).
@@ -31,8 +31,12 @@ If you want to see what the curator *would* do before it runs for real, run `her
 
 A run has two phases:
 
-1. **Automatic transitions** (deterministic, no LLM). Skills unused for `stale_after_days` (30) become `stale`; skills unused for `archive_after_days` (90) are moved to `~/.hermes/skills/.archive/`.
-2. **LLM review** (single aux-model pass, `max_iterations=8`). The forked agent surveys the agent-created skills, can read any of them with `skill_view`, and decides per-skill whether to keep, patch (via `skill_manage`), consolidate overlapping ones, or archive via the terminal tool. Consolidation treats a skill as a full package: if a skill has `references/`, `templates/`, `scripts/`, `assets/`, or relative links to those paths, the curator must either keep it standalone, re-home the needed support files and rewrite paths, or archive the entire package unchanged — not flatten only `SKILL.md` into another skill's `references/` file.
+1. **Automatic transitions** (deterministic, no LLM). Skills unused for `stale_after_days` (30) become `stale`; skills unused for `archive_after_days` (90) are moved to `~/.hermes/skills/.archive/`. This is the always-on pruning behavior — it runs whenever the curator is enabled, with no aux-model cost.
+2. **LLM consolidation** (single aux-model pass, `max_iterations=8`) — **OFF by default**. When `curator.consolidate: true`, the forked agent surveys the agent-created skills, can read any of them with `skill_view`, and decides per-skill whether to keep, patch (via `skill_manage`), consolidate overlapping ones into class-level umbrellas, or archive via the terminal tool. Consolidation treats a skill as a full package: if a skill has `references/`, `templates/`, `scripts/`, `assets/`, or relative links to those paths, the curator must either keep it standalone, re-home the needed support files and rewrite paths, or archive the entire package unchanged — not flatten only `SKILL.md` into another skill's `references/` file.
+
+:::info Consolidation is opt-in
+By default the curator only **prunes** — the deterministic inactivity pass marks skills stale and archives long-unused ones. The opinionated LLM **consolidation** pass (umbrella-building, merging overlapping skills) is off by default because it costs aux-model tokens on every run and makes broad structural changes to your library. Turn it on with `curator.consolidate: true`, or run it once on demand with `hermes curator run --consolidate`.
+:::
 
 Pinned skills are off-limits to both the curator's auto-transitions and the agent's own `skill_manage` tool. See [Pinning a skill](#pinning-a-skill) below.
 
@@ -47,10 +51,11 @@ curator:
   min_idle_hours: 2
   stale_after_days: 30
   archive_after_days: 90
+  consolidate: false           # LLM umbrella-building pass — opt-in (prune-only by default)
   prune_builtins: true         # archive unused bundled built-in skills too (hub skills always exempt)
 ```
 
-To disable entirely, set `curator.enabled: false`.
+To disable entirely, set `curator.enabled: false`. To keep the always-on pruning but opt into LLM consolidation, set `curator.consolidate: true`.
 
 ### Running the review on a cheaper aux model
 
@@ -85,8 +90,9 @@ Earlier releases used a one-off `curator.auxiliary.{provider,model}` block. That
 
 ```bash
 hermes curator status         # last run, counts, pinned list, LRU top 5
-hermes curator run            # trigger a review now (blocks until the LLM pass finishes)
-hermes curator run --background  # fire-and-forget: start the LLM pass in a background thread
+hermes curator run            # trigger a run now (blocks until done). Prune-only unless curator.consolidate: true
+hermes curator run --consolidate # force the LLM consolidation pass on for this run, overriding the config default
+hermes curator run --background  # fire-and-forget: start the run in a background thread
 hermes curator run --dry-run  # preview only — report without any mutations
 hermes curator backup         # take a manual snapshot of ~/.hermes/skills/
 hermes curator rollback       # restore from the newest snapshot
@@ -105,7 +111,7 @@ hermes curator prune [--days N] # bulk-archive agent-created skills idle >= N da
 
 ## Backups and rollback
 
-Before every real curator pass, Hermes takes a tar.gz snapshot of `~/.hermes/skills/` at `~/.hermes/skills/.curator_backups/<utc-iso>/skills.tar.gz`. If a pass archives or consolidates something you didn't want touched, you can undo the whole run with one command:
+Before every real curator pass, Moor takes a tar.gz snapshot of `~/.hermes/skills/` at `~/.hermes/skills/.curator_backups/<utc-iso>/skills.tar.gz`. If a pass archives or consolidates something you didn't want touched, you can undo the whole run with one command:
 
 ```bash
 hermes curator rollback        # restore newest snapshot (with confirmation)
@@ -113,7 +119,7 @@ hermes curator rollback -y     # skip the prompt
 hermes curator rollback --list # see all snapshots with reason + size
 ```
 
-The rollback itself is reversible: before replacing the skills tree, Hermes takes another snapshot tagged `pre-rollback to <target-id>`, so a mistaken rollback can be undone by rolling forward to that one with `--id`.
+The rollback itself is reversible: before replacing the skills tree, Moor takes another snapshot tagged `pre-rollback to <target-id>`, so a mistaken rollback can be undone by rolling forward to that one with `--id`.
 
 You can also take manual snapshots at any time with `hermes curator backup --reason "before-refactor"`. The `--reason` string lands in the snapshot's `manifest.json` and is shown in `--list`.
 
@@ -153,7 +159,7 @@ conversation are **not** marked as agent-created — they are considered
 user-directed and the curator intentionally leaves them alone.
 
 :::warning Your hand-written skills are NOT curated
-If you manually created a `SKILL.md` or pointed Hermes at an external skill
+If you manually created a `SKILL.md` or pointed Moor at an external skill
 directory, that skill will have a `.usage.json` entry with `created_by: null`
 (or the field absent). The curator will not touch it. The same applies to
 skills the foreground agent created at your request.
@@ -275,4 +281,4 @@ The curator also refuses to run if `min_idle_hours` hasn't elapsed, so on an act
 - [Skills System](/user-guide/features/skills) — how skills work in general and the self-improvement loop that creates them
 - [Memory](/user-guide/features/memory) — a parallel background review that maintains long-term memory
 - [Bundled Skills Catalog](/reference/skills-catalog)
-- [Issue #7816](https://github.com/NousResearch/hermes-agent/issues/7816) — original proposal and design discussion
+- [Issue #7816](https://github.com/Moor inc./hermes-agent/issues/7816) — original proposal and design discussion

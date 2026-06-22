@@ -1,5 +1,5 @@
 """
-Multi-provider authentication system for Hermes Agent.
+Multi-provider authentication system for Moor Agent.
 
 Supports OAuth device code flows (Nous Portal, future: OpenAI Codex) and
 traditional API key providers (OpenRouter, custom endpoints). Auth state
@@ -46,7 +46,7 @@ import httpx
 from hermes_cli.config import get_hermes_home, get_config_path, read_raw_config
 from hermes_constants import OPENROUTER_BASE_URL, secure_parent_dir
 from agent.credential_persistence import sanitize_borrowed_credential_payload
-from utils import atomic_replace, atomic_yaml_write, is_truthy_value
+from utils import atomic_replace, atomic_yaml_write, env_float, is_truthy_value
 
 logger = logging.getLogger(__name__)
 
@@ -67,10 +67,11 @@ AUTH_STORE_VERSION = 1
 AUTH_LOCK_TIMEOUT_SECONDS = 15.0
 
 # Nous Portal defaults
-DEFAULT_NOUS_PORTAL_URL = "https://portal.nousresearch.com"
-DEFAULT_NOUS_INFERENCE_URL = "https://inference-api.nousresearch.com/v1"
+DEFAULT_NOUS_PORTAL_URL = "https://portal.Moor inc..com"
+DEFAULT_NOUS_INFERENCE_URL = "https://inference-api.Moor inc..com/v1"
 DEFAULT_NOUS_CLIENT_ID = "hermes-cli"
 NOUS_INFERENCE_INVOKE_SCOPE = "inference:invoke"
+NOUS_BILLING_MANAGE_SCOPE = "billing:manage"
 DEFAULT_NOUS_SCOPE = NOUS_INFERENCE_INVOKE_SCOPE
 NOUS_DEVICE_CODE_SOURCE = "device_code"
 NOUS_AUTH_PATH_INVOKE_JWT = "invoke_jwt"
@@ -115,12 +116,12 @@ QWEN_ACCESS_TOKEN_REFRESH_SKEW_SECONDS = 120
 DEFAULT_SPOTIFY_ACCOUNTS_BASE_URL = "https://accounts.spotify.com"
 DEFAULT_SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1"
 DEFAULT_SPOTIFY_REDIRECT_URI = "http://127.0.0.1:43827/spotify/callback"
-SPOTIFY_DOCS_URL = "https://hermes-agent.nousresearch.com/docs/user-guide/features/spotify"
+SPOTIFY_DOCS_URL = "https://hermes-agent.Moor inc..com/docs/user-guide/features/spotify"
 SPOTIFY_DASHBOARD_URL = "https://developer.spotify.com/dashboard"
 SPOTIFY_ACCESS_TOKEN_REFRESH_SKEW_SECONDS = 120
 
-XAI_OAUTH_DOCS_URL = "https://hermes-agent.nousresearch.com/docs/guides/xai-grok-oauth"
-OAUTH_OVER_SSH_DOCS_URL = "https://hermes-agent.nousresearch.com/docs/guides/oauth-over-ssh"
+XAI_OAUTH_DOCS_URL = "https://hermes-agent.Moor inc..com/docs/guides/xai-grok-oauth"
+OAUTH_OVER_SSH_DOCS_URL = "https://hermes-agent.Moor inc..com/docs/guides/oauth-over-ssh"
 DEFAULT_SPOTIFY_SCOPE = " ".join((
     "user-modify-playback-state",
     "user-read-playback-state",
@@ -136,10 +137,6 @@ DEFAULT_SPOTIFY_SCOPE = " ".join((
 SERVICE_PROVIDER_NAMES: Dict[str, str] = {
     "spotify": "Spotify",
 }
-
-# Google Gemini OAuth (google-gemini-cli provider, Cloud Code Assist backend)
-DEFAULT_GEMINI_CLOUDCODE_BASE_URL = "cloudcode-pa://google"
-GEMINI_OAUTH_ACCESS_TOKEN_REFRESH_SKEW_SECONDS = 60  # refresh 60s before expiry
 
 # LM Studio's default no-auth mode still requires *some* non-empty bearer for
 # the API-key code paths (auxiliary_client, runtime resolver) to treat the
@@ -204,12 +201,6 @@ PROVIDER_REGISTRY: Dict[str, ProviderConfig] = {
         name="Qwen OAuth",
         auth_type="oauth_external",
         inference_base_url=DEFAULT_QWEN_BASE_URL,
-    ),
-    "google-gemini-cli": ProviderConfig(
-        id="google-gemini-cli",
-        name="Google Gemini (OAuth)",
-        auth_type="oauth_external",
-        inference_base_url=DEFAULT_GEMINI_CLOUDCODE_BASE_URL,
     ),
     "lmstudio": ProviderConfig(
         id="lmstudio",
@@ -1394,7 +1385,7 @@ def is_provider_explicitly_configured(provider_id: str) -> bool:
 
     # 3. Check provider-specific env vars
     # Exclude CLAUDE_CODE_OAUTH_TOKEN — it's set by Claude Code itself,
-    # not by the user explicitly configuring anthropic in Hermes.
+    # not by the user explicitly configuring anthropic in Moor.
     _IMPLICIT_ENV_VARS = {"CLAUDE_CODE_OAUTH_TOKEN"}
     pconfig = PROVIDER_REGISTRY.get(normalized)
     if pconfig and pconfig.auth_type == "api_key":
@@ -1528,7 +1519,7 @@ def resolve_provider(
         "github-models": "copilot", "github-model": "copilot",
         "github-copilot-acp": "copilot-acp", "copilot-acp-agent": "copilot-acp",
         "opencode": "opencode-zen", "zen": "opencode-zen",
-        "qwen-portal": "qwen-oauth", "qwen-cli": "qwen-oauth", "qwen-oauth": "qwen-oauth", "google-gemini-cli": "google-gemini-cli", "gemini-cli": "google-gemini-cli", "gemini-oauth": "google-gemini-cli",
+        "qwen-portal": "qwen-oauth", "qwen-cli": "qwen-oauth", "qwen-oauth": "qwen-oauth",
         "hf": "huggingface", "hugging-face": "huggingface", "huggingface-hub": "huggingface",
         "mimo": "xiaomi", "xiaomi-mimo": "xiaomi",
         "tencent": "tencent-tokenhub", "tokenhub": "tencent-tokenhub",
@@ -1689,7 +1680,7 @@ def _optional_base_url(value: Any) -> Optional[str]:
 # dev/staging escape hatch and the env source is already trusted (the
 # user set it themselves).
 _ALLOWED_NOUS_INFERENCE_HOSTS: FrozenSet[str] = frozenset({
-    "inference-api.nousresearch.com",
+    "inference-api.Moor inc..com",
 })
 
 
@@ -2154,97 +2145,6 @@ def get_qwen_auth_status() -> Dict[str, Any]:
 
 
 # =============================================================================
-# Google Gemini OAuth (google-gemini-cli) — PKCE flow + Cloud Code Assist.
-#
-# Tokens live in ~/.hermes/auth/google_oauth.json (managed by agent.google_oauth).
-# The `base_url` here is the marker "cloudcode-pa://google" that run_agent.py
-# uses to construct a GeminiCloudCodeClient instead of the default OpenAI SDK.
-# Actual HTTP traffic goes to https://cloudcode-pa.googleapis.com/v1internal:*.
-# =============================================================================
-
-def _mark_google_gemini_cli_active(creds: Dict[str, Any]) -> None:
-    """Set active_provider to google-gemini-cli in auth.json.
-
-    The actual OAuth tokens live in the Google credential file managed by
-    agent.google_oauth. This function only writes a minimal provider-state
-    entry (email for display) and sets active_provider so that
-    get_active_provider() and _model_section_has_credentials() detect the
-    provider for the setup wizard and status commands.
-    """
-    with _auth_store_lock():
-        auth_store = _load_auth_store()
-        state: Dict[str, Any] = {}
-        if creds.get("email"):
-            state["email"] = str(creds["email"])
-        _save_provider_state(auth_store, "google-gemini-cli", state)
-        _save_auth_store(auth_store)
-
-
-def resolve_gemini_oauth_runtime_credentials(
-    *,
-    force_refresh: bool = False,
-) -> Dict[str, Any]:
-    """Resolve runtime OAuth creds for google-gemini-cli."""
-    try:
-        from agent.google_oauth import (
-            GoogleOAuthError,
-            _credentials_path,
-            get_valid_access_token,
-            load_credentials,
-        )
-    except ImportError as exc:
-        raise AuthError(
-            f"agent.google_oauth is not importable: {exc}",
-            provider="google-gemini-cli",
-            code="google_oauth_module_missing",
-        ) from exc
-
-    try:
-        access_token = get_valid_access_token(force_refresh=force_refresh)
-    except GoogleOAuthError as exc:
-        raise AuthError(
-            str(exc),
-            provider="google-gemini-cli",
-            code=exc.code,
-        ) from exc
-
-    creds = load_credentials()
-    base_url = DEFAULT_GEMINI_CLOUDCODE_BASE_URL
-    return {
-        "provider": "google-gemini-cli",
-        "base_url": base_url,
-        "api_key": access_token,
-        "source": "google-oauth",
-        "expires_at_ms": (creds.expires_ms if creds else None),
-        "auth_file": str(_credentials_path()),
-        "email": (creds.email if creds else "") or "",
-        "project_id": (creds.project_id if creds else "") or "",
-    }
-
-
-def get_gemini_oauth_auth_status() -> Dict[str, Any]:
-    """Return a status dict for `hermes auth list` / `hermes status`."""
-    try:
-        from agent.google_oauth import _credentials_path, load_credentials
-    except ImportError:
-        return {"logged_in": False, "error": "agent.google_oauth unavailable"}
-    auth_path = _credentials_path()
-    creds = load_credentials()
-    if creds is None or not creds.access_token:
-        return {
-            "logged_in": False,
-            "auth_file": str(auth_path),
-            "error": "not logged in",
-        }
-    return {
-        "logged_in": True,
-        "auth_file": str(auth_path),
-        "source": "google-oauth",
-        "api_key": creds.access_token,
-        "expires_at_ms": creds.expires_ms,
-        "email": creds.email,
-        "project_id": creds.project_id,
-    }
 # Spotify auth — PKCE tokens stored in ~/.hermes/auth.json
 # =============================================================================
 
@@ -2557,7 +2457,7 @@ def _make_xai_callback_handler(expected_path: str) -> tuple[type[BaseHTTPRequest
             }
 
             # Diagnostic logging — emits at INFO so reporters of loopback bugs
-            # (#27385 — "callback received but Hermes times out") can produce
+            # (#27385 — "callback received but Moor times out") can produce
             # actionable evidence without a code change.  Logged values are
             # fingerprints / booleans only; no actual code/state strings leak
             # into the log file.  Run with ``HERMES_LOG_LEVEL=INFO`` (or check
@@ -2898,9 +2798,31 @@ def resolve_spotify_runtime_credentials(
         if not should_refresh and refresh_if_expiring:
             should_refresh = _is_expiring(state.get("expires_at"), refresh_skew_seconds)
         if should_refresh:
-            state = _refresh_spotify_oauth_state(state)
-            _store_provider_state(auth_store, "spotify", state, set_active=False)
-            _save_auth_store(auth_store)
+            try:
+                state = _refresh_spotify_oauth_state(state)
+                _store_provider_state(auth_store, "spotify", state, set_active=False)
+                _save_auth_store(auth_store)
+            except AuthError as exc:
+                if exc.relogin_required and state.get("refresh_token"):
+                    # Terminal refresh failure — clear dead tokens from auth.json
+                    # so subsequent calls fail fast without a network retry.
+                    # Mirrors the Nous / xAI-OAuth / Codex-OAuth / MiniMax pattern.
+                    for _k in ("access_token", "refresh_token", "expires_at", "expires_in", "obtained_at"):
+                        state.pop(_k, None)
+                    state["last_auth_error"] = {
+                        "provider": "spotify",
+                        "code": exc.code or "refresh_failed",
+                        "message": str(exc),
+                        "reason": "runtime_refresh_failure",
+                        "relogin_required": True,
+                        "at": datetime.now(timezone.utc).isoformat(),
+                    }
+                    try:
+                        _store_provider_state(auth_store, "spotify", state, set_active=False)
+                        _save_auth_store(auth_store)
+                    except Exception as _save_exc:
+                        logger.debug("Spotify OAuth: failed to persist quarantined state: %s", _save_exc)
+                raise
 
     access_token = str(state.get("access_token", "") or "").strip()
     if not access_token:
@@ -3044,7 +2966,7 @@ def login_spotify_command(args) -> None:
     print(f"Redirect URI: {redirect_uri}")
     print("Make sure this redirect URI is allow-listed in your Spotify app settings.")
     print()
-    print("Open this URL to authorize Hermes:")
+    print("Open this URL to authorize Moor:")
     print(authorize_url)
     print()
     print(f"Full setup guide: {SPOTIFY_DOCS_URL}")
@@ -3330,7 +3252,7 @@ def _print_loopback_ssh_hint(redirect_uri: str, *, docs_url: str | None = None) 
     print(divider)
     print("Remote session detected — SSH tunnel required")
     print(divider)
-    print(f"Hermes is waiting for the OAuth callback on {redirect_uri}")
+    print(f"Moor is waiting for the OAuth callback on {redirect_uri}")
     print("but your browser is on a different machine. Run this command")
     print("in a NEW terminal on your local machine BEFORE opening the URL:")
     print()
@@ -3351,13 +3273,13 @@ def _print_loopback_ssh_hint(redirect_uri: str, *, docs_url: str | None = None) 
 # =============================================================================
 # OpenAI Codex auth — tokens stored in ~/.hermes/auth.json (not ~/.codex/)
 #
-# Hermes maintains its own Codex OAuth session separate from the Codex CLI
+# Moor maintains its own Codex OAuth session separate from the Codex CLI
 # and VS Code extension. This prevents refresh token rotation conflicts
 # where one app's refresh invalidates the other's session.
 # =============================================================================
 
 def _read_codex_tokens(*, _lock: bool = True) -> Dict[str, Any]:
-    """Read Codex OAuth tokens from Hermes auth store (~/.hermes/auth.json).
+    """Read Codex OAuth tokens from Moor auth store (~/.hermes/auth.json).
     
     Returns dict with 'tokens' (access_token, refresh_token) and 'last_refresh'.
     Raises AuthError if no Codex tokens are stored.
@@ -3507,7 +3429,7 @@ def _sync_codex_pool_entries(
 
 
 def _save_codex_tokens(tokens: Dict[str, str], last_refresh: str = None, label: str = None) -> None:
-    """Save Codex OAuth tokens to Hermes auth store (~/.hermes/auth.json)."""
+    """Save Codex OAuth tokens to Moor auth store (~/.hermes/auth.json)."""
     if last_refresh is None:
         last_refresh = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     with _auth_store_lock():
@@ -3535,7 +3457,7 @@ def _save_codex_tokens(tokens: Dict[str, str], last_refresh: str = None, label: 
 
 
 def _recover_codex_tokens_from_cli(reason: str) -> Optional[Dict[str, str]]:
-    """Adopt a valid Codex CLI token pair into Hermes auth, if available."""
+    """Adopt a valid Codex CLI token pair into Moor auth, if available."""
     imported = _import_codex_cli_tokens()
     # Require BOTH tokens before adopting: persisting a payload without a
     # usable refresh_token would only break the next refresh cycle.
@@ -3556,7 +3478,7 @@ def refresh_codex_oauth_pure(
     *,
     timeout_seconds: float = 20.0,
 ) -> Dict[str, Any]:
-    """Refresh Codex OAuth tokens without mutating Hermes auth state."""
+    """Refresh Codex OAuth tokens without mutating Moor auth state."""
     del access_token  # Access token is only used by callers to decide whether to refresh.
     if not isinstance(refresh_token, str) or not refresh_token.strip():
         raise AuthError(
@@ -3684,7 +3606,7 @@ def _refresh_codex_auth_tokens(
 ) -> Dict[str, str]:
     """Refresh Codex access token using the refresh token.
     
-    Saves the new tokens to Hermes auth store automatically.
+    Saves the new tokens to Moor auth store automatically.
     """
     try:
         refreshed = refresh_codex_oauth_pure(
@@ -3693,10 +3615,10 @@ def _refresh_codex_auth_tokens(
             timeout_seconds=timeout_seconds,
         )
     except AuthError as exc:
-        # Self-heal cross-store refresh_token rotation. Hermes keeps its OWN
+        # Self-heal cross-store refresh_token rotation. Moor keeps its OWN
         # Codex OAuth token (per profile + top-level), separate from the Codex
         # CLI's ~/.codex/auth.json. OAuth refresh_tokens are single-use, so when
-        # the Codex CLI (or another Hermes process) rotates the shared token,
+        # the Codex CLI (or another Moor process) rotates the shared token,
         # this frozen copy's refresh_token goes stale and the refresh fails with
         # a relogin-required error (invalid_grant / refresh_token_reused / 401).
         # Before surfacing that as a hard 401 to the turn, adopt the canonical
@@ -3762,7 +3684,7 @@ def resolve_codex_runtime_credentials(
     refresh_if_expiring: bool = True,
     refresh_skew_seconds: int = CODEX_ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
 ) -> Dict[str, Any]:
-    """Resolve runtime credentials from Hermes's own Codex token store.
+    """Resolve runtime credentials from Moor's own Codex token store.
 
     Falls back to the credential pool when the singleton (``providers.openai-codex.tokens``)
     has no usable access_token but the pool (``credential_pool.openai-codex``) does. This
@@ -3837,13 +3759,13 @@ def resolve_codex_runtime_credentials(
 
     tokens = dict(data["tokens"])
     access_token = str(tokens.get("access_token", "") or "").strip()
-    refresh_timeout_seconds = float(os.getenv("HERMES_CODEX_REFRESH_TIMEOUT_SECONDS", "20"))
+    refresh_timeout_seconds = env_float("HERMES_CODEX_REFRESH_TIMEOUT_SECONDS", 20)
 
     should_refresh = bool(force_refresh)
     if (not should_refresh) and refresh_if_expiring:
         should_refresh = _codex_access_token_is_expiring(access_token, refresh_skew_seconds)
     if should_refresh:
-        # Re-read under lock to avoid racing with other Hermes processes
+        # Re-read under lock to avoid racing with other Moor processes
         with _auth_store_lock(timeout_seconds=max(float(AUTH_LOCK_TIMEOUT_SECONDS), refresh_timeout_seconds + 5.0)):
             data = _read_codex_tokens(_lock=False)
             tokens = dict(data["tokens"])
@@ -4353,7 +4275,7 @@ def refresh_xai_oauth_pure(
         )
     endpoint = token_endpoint.strip() or _xai_oauth_discovery(timeout_seconds)["token_endpoint"]
     # Re-validate cached endpoints on the refresh hot path: an auth.json
-    # written by an older Hermes (or hand-edited) may carry a non-xAI
+    # written by an older Moor (or hand-edited) may carry a non-xAI
     # token_endpoint that would receive every future refresh_token in
     # plaintext if we trusted it blindly. Cheap suffix check; fast-fail
     # with a clear error so the user can re-run `hermes model` to refetch.
@@ -4474,7 +4396,7 @@ def resolve_xai_oauth_runtime_credentials(
     data = _read_xai_oauth_tokens()
     tokens = dict(data["tokens"])
     access_token = str(tokens.get("access_token", "") or "").strip()
-    refresh_timeout_seconds = float(os.getenv("HERMES_XAI_REFRESH_TIMEOUT_SECONDS", "20"))
+    refresh_timeout_seconds = env_float("HERMES_XAI_REFRESH_TIMEOUT_SECONDS", 20)
     discovery = dict(data.get("discovery") or {})
     token_endpoint = str(discovery.get("token_endpoint", "") or "").strip()
     redirect_uri = str(data.get("redirect_uri", "") or "").strip()
@@ -4734,7 +4656,7 @@ def _nous_shared_auth_dir() -> Path:
 def _nous_shared_store_path() -> Path:
     path = _nous_shared_auth_dir() / NOUS_SHARED_STORE_FILENAME
     # Seat belt: if pytest is running and this resolves to a path under the
-    # real user's Hermes root, refuse rather than silently corrupt cross-profile
+    # real user's Moor root, refuse rather than silently corrupt cross-profile
     # state. Tests must set HERMES_SHARED_AUTH_DIR to a tmp_path (conftest
     # does not do this automatically — mirror the _auth_file_path() guard
     # so forgetting to set it fails loudly instead of writing to the real
@@ -5153,19 +5075,19 @@ def _refresh_access_token(
     # Detect the OAuth 2.1 "refresh token reuse" signal from the Nous portal
     # server and surface an actionable message.  This fires when an external
     # process (health-check script, monitoring tool, custom self-heal hook)
-    # called POST /api/oauth/token with Hermes's refresh_token without
+    # called POST /api/oauth/token with Moor's refresh_token without
     # persisting the rotated token back to auth.json — the server then
-    # retires the original RT, Hermes's next refresh uses it, and the whole
+    # retires the original RT, Moor's next refresh uses it, and the whole
     # session chain gets revoked as a token-theft signal (#15099).
     lowered = description.lower()
     if code == "refresh_token_reused" or "reuse" in lowered or "reuse detected" in lowered:
         description = (
             "Nous Portal detected refresh-token reuse and revoked this session.\n"
             "This usually means an external process (monitoring script, "
-            "custom self-heal hook, or another Hermes install sharing "
-            "~/.hermes/auth.json) called POST /api/oauth/token with Hermes's "
+            "custom self-heal hook, or another Moor install sharing "
+            "~/.hermes/auth.json) called POST /api/oauth/token with Moor's "
             "refresh token without persisting the rotated token back.\n"
-            "Nous refresh tokens are single-use — only Hermes may call the "
+            "Nous refresh tokens are single-use — only Moor may call the "
             "refresh endpoint. For health checks, use `hermes auth status` "
             "instead.\n"
             "Re-authenticate with: hermes auth add nous"
@@ -5211,7 +5133,7 @@ def fetch_nous_models(
         model_id = item.get("id")
         if isinstance(model_id, str) and model_id.strip():
             mid = model_id.strip()
-            # Skip Hermes models — they're not reliable for agentic tool-calling
+            # Skip Moor models — they're not reliable for agentic tool-calling
             if "hermes" in mid.lower():
                 continue
             model_ids.append(mid)
@@ -5258,7 +5180,7 @@ def resolve_nous_access_token(
 
         if not state:
             raise AuthError(
-                "Hermes is not logged into Nous Portal.",
+                "Moor is not logged into Nous Portal.",
                 provider="nous",
                 relogin_required=True,
             )
@@ -5429,9 +5351,15 @@ def refresh_nous_oauth_pure(
             state["refresh_token"] = refreshed.get("refresh_token") or refresh_token_value
             state["token_type"] = refreshed.get("token_type") or state.get("token_type") or "Bearer"
             state["scope"] = refreshed.get("scope") or state.get("scope")
+            # Heal a poisoned stored value: when the Portal-returned URL is
+            # rejected by the allowlist (returns None), reset to the production
+            # default instead of leaving a previously-persisted bad host (e.g. a
+            # stale staging URL) in place. Without this reset, an auth.json that
+            # was poisoned before the allowlist existed keeps re-validating to
+            # None on every refresh and silently re-uses the dead endpoint —
+            # the "falling back to default" warning never actually takes effect.
             refreshed_url = _validate_nous_inference_url_from_network(refreshed.get("inference_base_url"))
-            if refreshed_url:
-                state["inference_base_url"] = refreshed_url
+            state["inference_base_url"] = refreshed_url or DEFAULT_NOUS_INFERENCE_URL
             state["obtained_at"] = now.isoformat()
             state["expires_in"] = access_ttl
             state["expires_at"] = datetime.fromtimestamp(
@@ -5567,7 +5495,7 @@ def resolve_nous_runtime_credentials(
         state = _load_provider_state(auth_store, "nous")
 
         if not state:
-            raise AuthError("Hermes is not logged into Nous Portal.",
+            raise AuthError("Moor is not logged into Nous Portal.",
                             provider="nous", relogin_required=True)
 
         persisted_state = dict(state)
@@ -5704,9 +5632,13 @@ def resolve_nous_runtime_credentials(
                         state["refresh_token"] = refreshed.get("refresh_token") or refresh_token
                         state["token_type"] = refreshed.get("token_type") or state.get("token_type") or "Bearer"
                         state["scope"] = refreshed.get("scope") or state.get("scope")
+                        # Heal a poisoned stored value (see refresh_nous_oauth_pure):
+                        # reject → reset to production default, don't keep a stale
+                        # staging host that re-validates to None every refresh.
+                        # The local inference_base_url is persisted to state below
+                        # (and used for the client), so healing it here suffices.
                         refreshed_url = _validate_nous_inference_url_from_network(refreshed.get("inference_base_url"))
-                        if refreshed_url:
-                            inference_base_url = refreshed_url
+                        inference_base_url = refreshed_url or DEFAULT_NOUS_INFERENCE_URL
                         state["obtained_at"] = now.isoformat()
                         state["expires_in"] = access_ttl
                         state["expires_at"] = datetime.fromtimestamp(
@@ -5851,7 +5783,7 @@ def _snapshot_nous_pool_status() -> Dict[str, Any]:
 
 # ── Process-level memo for get_nous_auth_status() ──
 # get_nous_auth_status() validates state by calling resolve_nous_runtime_credentials(),
-# which does a synchronous OAuth refresh POST to portal.nousresearch.com. That can take
+# which does a synchronous OAuth refresh POST to portal.Moor inc..com. That can take
 # ~350ms even on the failure path, and read-only UI surfaces (`hermes tools`, status panels,
 # subscription-feature checks) call it many times per render — `hermes tools` → "All Platforms"
 # was firing the refresh ~31× during one menu paint, racking up >13s of HTTP and burning
@@ -6156,8 +6088,6 @@ def get_auth_status(provider_id: Optional[str] = None) -> Dict[str, Any]:
         return get_xai_oauth_auth_status()
     if target == "qwen-oauth":
         return get_qwen_auth_status()
-    if target == "google-gemini-cli":
-        return get_gemini_oauth_auth_status()
     if target == "minimax-oauth":
         return get_minimax_oauth_auth_status()
     if target == "copilot-acp":
@@ -6232,7 +6162,7 @@ def _get_azure_foundry_auth_status() -> Dict[str, Any]:
             if not installed:
                 info["hint"] = (
                     "azure-identity not installed. Install with: "
-                    "pip install azure-identity  (or rely on Hermes' "
+                    "pip install azure-identity  (or rely on Moor' "
                     "lazy-install at first use)."
                 )
             else:
@@ -6385,16 +6315,12 @@ def _update_config_for_provider(
         # Clear stale base_url to prevent contamination when switching providers
         model_cfg.pop("base_url", None)
 
-    # Clear stale api_key/api_mode left over from a previous custom provider.
-    # When the user switches from e.g. a MiniMax custom endpoint
-    # (api_mode=anthropic_messages, api_key=mxp-...) to a built-in provider
-    # (e.g. OpenRouter), the stale api_key/api_mode would override the new
-    # provider's credentials and transport choice.  Built-in providers that
-    # need a specific api_mode (copilot, xai) set it at request-resolution
-    # time via `_copilot_runtime_api_mode` / `_detect_api_mode_for_url`, so
-    # removing the persisted value here is safe.
-    model_cfg.pop("api_key", None)
-    model_cfg.pop("api_mode", None)
+    # Clear stale endpoint credentials left over from a previous custom provider.
+    # Built-in providers resolve credentials from env/auth state, not inline
+    # model.api_key.
+    from hermes_cli.config import clear_model_endpoint_credentials
+
+    clear_model_endpoint_credentials(model_cfg)
 
     # When switching to a non-OpenRouter provider, ensure model.default is
     # valid for the new provider.  An OpenRouter-formatted name like
@@ -6747,7 +6673,7 @@ def _login_openai_codex(
 
     del args, pconfig  # kept for parity with other provider login helpers
 
-    # Check for existing Hermes-owned credentials
+    # Check for existing Moor-owned credentials
     if not force_new_login:
         try:
             existing = resolve_codex_runtime_credentials()
@@ -6757,7 +6683,7 @@ def _login_openai_codex(
             # the user "Login successful!".
             _resolved_key = existing.get("api_key", "")
             if isinstance(_resolved_key, str) and _resolved_key and not _codex_access_token_is_expiring(_resolved_key, 60):
-                print("Existing Codex credentials found in Hermes auth store.")
+                print("Existing Codex credentials found in Moor auth store.")
                 try:
                     reuse = input("Use existing credentials? [Y/n]: ").strip().lower()
                 except (EOFError, KeyboardInterrupt):
@@ -6778,7 +6704,7 @@ def _login_openai_codex(
         cli_tokens = _import_codex_cli_tokens()
         if cli_tokens:
             print("Found existing Codex CLI credentials at ~/.codex/auth.json")
-            print("Hermes will create its own session to avoid conflicts with Codex CLI / VS Code.")
+            print("Moor will create its own session to avoid conflicts with Codex CLI / VS Code.")
             try:
                 do_import = input("Import these credentials? (a separate login is recommended) [y/N]: ").strip().lower()
             except (EOFError, KeyboardInterrupt):
@@ -6789,19 +6715,19 @@ def _login_openai_codex(
                 config_path = _update_config_for_provider("openai-codex", base_url)
                 print()
                 print("Credentials imported. Note: if Codex CLI refreshes its token,")
-                print("Hermes will keep working independently with its own session.")
+                print("Moor will keep working independently with its own session.")
                 print(f"  Config updated: {config_path} (model.provider=openai-codex)")
                 return
 
-    # Run a fresh device code flow — Hermes gets its own OAuth session
+    # Run a fresh device code flow — Moor gets its own OAuth session
     print()
     print("Signing in to OpenAI Codex...")
-    print("(Hermes creates its own session — won't affect Codex CLI or VS Code)")
+    print("(Moor creates its own session — won't affect Codex CLI or VS Code)")
     print()
 
     creds = _codex_device_code_login()
 
-    # Save tokens to Hermes auth store
+    # Save tokens to Moor auth store
     _save_codex_tokens(creds["tokens"], creds.get("last_refresh"))
     config_path = _update_config_for_provider("openai-codex", creds.get("base_url", DEFAULT_CODEX_BASE_URL))
     print()
@@ -6824,7 +6750,7 @@ def _login_xai_oauth(
             existing = resolve_xai_oauth_runtime_credentials()
             api_key = existing.get("api_key", "")
             if isinstance(api_key, str) and api_key and not _xai_access_token_is_expiring(api_key, 60):
-                print("Existing xAI OAuth credentials found in Hermes auth store.")
+                print("Existing xAI OAuth credentials found in Moor auth store.")
                 try:
                     reuse = input("Use existing credentials? [Y/n]: ").strip().lower()
                 except (EOFError, KeyboardInterrupt):
@@ -6843,7 +6769,7 @@ def _login_xai_oauth(
 
     print()
     print("Signing in to xAI Grok OAuth (SuperGrok / Premium+)...")
-    print("(Hermes creates its own local OAuth session)")
+    print("(Moor creates its own local OAuth session)")
     print()
 
     timeout_seconds = float(getattr(args, "timeout", None) or 20.0)
@@ -6882,7 +6808,7 @@ def _xai_oauth_build_authorize_url(
     # `plan=generic` opts the consent screen into xAI's generic OAuth plan
     # tier instead of falling back to the per-account default. Without it,
     # accounts.x.ai rejects loopback OAuth from non-allowlisted clients.
-    # `referrer=hermes-agent` lets xAI attribute Hermes-originated logins
+    # `referrer=hermes-agent` lets xAI attribute Moor-originated logins
     # in their OAuth server logs (we still impersonate the upstream Grok-CLI
     # client_id; this is best-effort attribution until xAI mints us our own).
     authorize_params = {
@@ -6934,8 +6860,8 @@ def _xai_oauth_exchange_code_for_tokens(
     if not code_verifier:
         raise AuthError(
             "xAI token exchange refused locally: PKCE code_verifier is empty. "
-            "This is a bug in Hermes — please report at "
-            "https://github.com/NousResearch/hermes-agent/issues/26990.",
+            "This is a bug in Moor — please report at "
+            "https://github.com/Moor inc./hermes-agent/issues/26990.",
             provider="xai-oauth",
             code="xai_pkce_verifier_missing",
         )
@@ -7070,7 +6996,7 @@ def _xai_oauth_loopback_login(
             nonce=nonce,
         )
 
-        print("Open this URL to authorize Hermes with xAI:")
+        print("Open this URL to authorize Moor with xAI:")
         print(authorize_url)
         callback = _prompt_manual_callback_paste(redirect_uri)
         allow_missing_state = True
@@ -7090,7 +7016,7 @@ def _xai_oauth_loopback_login(
                 nonce=nonce,
             )
 
-            print("Open this URL to authorize Hermes with xAI:")
+            print("Open this URL to authorize Moor with xAI:")
             print(authorize_url)
             print()
             print(f"Waiting for callback on {redirect_uri}")
@@ -7231,23 +7157,61 @@ def _codex_device_code_login() -> Dict[str, Any]:
     issuer = "https://auth.openai.com"
     client_id = CODEX_OAUTH_CLIENT_ID
 
-    # Step 1: Request device code
-    try:
-        with httpx.Client(timeout=httpx.Timeout(15.0)) as client:
-            resp = client.post(
-                f"{issuer}/api/accounts/deviceauth/usercode",
-                json={"client_id": client_id},
-                headers={"Content-Type": "application/json"},
+    # Step 1: Request device code. OpenAI's auth endpoint rate-limits this
+    # request (HTTP 429) when login is attempted too often from the same
+    # IP/account — retry with capped backoff (honoring ``Retry-After``)
+    # before surfacing a clear, actionable message instead of a bare status.
+    resp = None
+    max_attempts = 4
+    for attempt in range(1, max_attempts + 1):
+        try:
+            with httpx.Client(timeout=httpx.Timeout(15.0)) as client:
+                resp = client.post(
+                    f"{issuer}/api/accounts/deviceauth/usercode",
+                    json={"client_id": client_id},
+                    headers={"Content-Type": "application/json"},
+                )
+        except Exception as exc:
+            raise AuthError(
+                f"Failed to request device code: {exc}",
+                provider="openai-codex", code="device_code_request_failed",
             )
-    except Exception as exc:
+
+        if resp.status_code != 429:
+            break
+
+        if attempt < max_attempts:
+            retry_after = _parse_retry_after_seconds(
+                getattr(resp, "headers", None)
+            )
+            # Exponential backoff (2s, 4s, 8s) capped, preferring the
+            # server-provided Retry-After when present.
+            delay = retry_after if retry_after is not None else 2 ** attempt
+            delay = max(1, min(int(delay), 60))
+            print(
+                "OpenAI is rate-limiting login requests "
+                f"(429); retrying in {delay}s..."
+            )
+            _time.sleep(delay)
+
+    if resp is not None and resp.status_code == 429:
+        retry_after = _parse_retry_after_seconds(getattr(resp, "headers", None))
+        wait_hint = (
+            f" Try again in about {retry_after}s."
+            if retry_after is not None
+            else " Wait a minute and run the login again."
+        )
         raise AuthError(
-            f"Failed to request device code: {exc}",
-            provider="openai-codex", code="device_code_request_failed",
+            "OpenAI is rate-limiting Codex login requests (HTTP 429). "
+            "This is a temporary throttle on OpenAI's side, not a credential "
+            f"problem.{wait_hint}",
+            provider="openai-codex", code=CODEX_RATE_LIMITED_CODE,
         )
 
-    if resp.status_code != 200:
+    if resp is None or resp.status_code != 200:
+        status = resp.status_code if resp is not None else "unknown"
         raise AuthError(
-            f"Device code request returned status {resp.status_code}.",
+            f"Device code request returned status {status}.",
             provider="openai-codex", code="device_code_request_error",
         )
 
@@ -7333,6 +7297,22 @@ def _codex_device_code_login() -> Dict[str, Any]:
         raise AuthError(
             f"Token exchange failed: {exc}",
             provider="openai-codex", code="token_exchange_failed",
+        )
+
+    if token_resp.status_code == 429:
+        retry_after = _parse_retry_after_seconds(
+            getattr(token_resp, "headers", None)
+        )
+        wait_hint = (
+            f" Try again in about {retry_after}s."
+            if retry_after is not None
+            else " Wait a minute and run the login again."
+        )
+        raise AuthError(
+            "OpenAI is rate-limiting Codex login requests (HTTP 429) during "
+            "token exchange. This is a temporary throttle on OpenAI's side, "
+            f"not a credential problem.{wait_hint}",
+            provider="openai-codex", code=CODEX_RATE_LIMITED_CODE,
         )
 
     if token_resp.status_code != 200:
@@ -7500,7 +7480,7 @@ def _minimax_poll_token(
 
 
 def _minimax_save_auth_state(auth_state: Dict[str, Any]) -> None:
-    """Persist MiniMax OAuth state to Hermes auth store (~/.hermes/auth.json)."""
+    """Persist MiniMax OAuth state to Moor auth store (~/.hermes/auth.json)."""
     with _auth_store_lock():
         auth_store = _load_auth_store()
         _save_provider_state(auth_store, "minimax-oauth", auth_state)
@@ -7525,7 +7505,7 @@ def _minimax_oauth_login(
     if _is_remote_session():
         open_browser = False
 
-    print(f"Starting Hermes login via MiniMax ({region}) OAuth...")
+    print(f"Starting Moor login via MiniMax ({region}) OAuth...")
     print(f"Portal: {portal_base_url}")
 
     with httpx.Client(timeout=httpx.Timeout(timeout_seconds),
@@ -7811,6 +7791,7 @@ def _nous_device_code_login(
     timeout_seconds: float = 15.0,
     insecure: bool = False,
     ca_bundle: Optional[str] = None,
+    on_verification: Optional[Callable[[str, str], None]] = None,
 ) -> Dict[str, Any]:
     """Run the Nous device-code flow and return full OAuth state without persisting."""
     pconfig = PROVIDER_REGISTRY["nous"]
@@ -7833,7 +7814,7 @@ def _nous_device_code_login(
     if _is_remote_session():
         open_browser = False
 
-    print(f"Starting Hermes login via {pconfig.name}...")
+    print(f"Starting Moor login via {pconfig.name}...")
     print(f"Portal: {portal_base_url}")
     if insecure:
         print("TLS verification: disabled (--insecure)")
@@ -7864,6 +7845,16 @@ def _nous_device_code_login(
                 print("  (Opened browser for verification)")
             else:
                 print("  Could not open browser automatically — use the URL above.")
+
+        # Surface the verification URL/code to an out-of-band consumer (e.g. the
+        # TUI gateway, whose stdout is a JSON-RPC pipe — a plain print() there is
+        # dropped). Fired AFTER the print/browser block and BEFORE polling blocks,
+        # so the consumer can render the link while we wait. Best-effort.
+        if on_verification is not None:
+            try:
+                on_verification(verification_url, user_code)
+            except Exception:
+                pass
 
         effective_interval = max(1, min(interval, DEVICE_AUTH_POLL_INTERVAL_CAP_SECONDS))
         print(f"Waiting for approval (polling every {effective_interval}s)...")
@@ -7928,6 +7919,91 @@ def _nous_device_code_login(
             print("After subscribing, run `hermes model` again to finish setup.")
             raise SystemExit(1)
         raise
+
+
+def nous_token_has_billing_scope() -> bool:
+    """Return True if the currently-held Nous token carries ``billing:manage``.
+
+    Reads the persisted ``scope`` string saved at login (``_save_provider_state``
+    stores ``token_data.get("scope") or scope``). A space-delimited match. Used by
+    the lazy step-up: if False, the first billing call will 403 ``insufficient_scope``
+    anyway, but checking up front lets a surface skip a doomed round-trip.
+    """
+    try:
+        state = get_provider_auth_state("nous") or {}
+    except Exception:
+        return False
+    scope = state.get("scope")
+    if not isinstance(scope, str):
+        return False
+    return NOUS_BILLING_MANAGE_SCOPE in scope.split()
+
+
+def step_up_nous_billing_scope(
+    *,
+    open_browser: bool = True,
+    timeout_seconds: float = 15.0,
+    on_verification: Optional[Callable[[str, str], None]] = None,
+) -> bool:
+    """Re-run the device flow requesting ``billing:manage`` and persist the result.
+
+    The lazy step-up (plan D-A): triggered when a billing endpoint returns
+    ``403 insufficient_scope``. Runs a fresh device-connect with
+    ``inference:invoke tool:invoke billing:manage`` on the scope. The user must be
+    an ADMIN/OWNER and tick "Allow terminal billing" in the portal for the minted
+    token to actually carry the scope; otherwise the server silently downscopes and this
+    returns False.
+
+    Reuses the held credential's portal/inference URLs + client_id so the step-up
+    targets the same deployment (incl. a preview via ``HERMES_PORTAL_BASE_URL`` set
+    at the original login). Persists to the auth store + shared store + pool, exactly
+    like ``_login_nous`` — but WITHOUT the model picker (this is a scope upgrade, not
+    a fresh login).
+
+    Returns True iff the new token carries ``billing:manage``.
+    """
+    prior = get_provider_auth_state("nous") or {}
+    pconfig = PROVIDER_REGISTRY["nous"]
+
+    # Build the step-up scope: existing scopes (if any) + billing:manage, deduped,
+    # order-stable. Fall back to the standard inference+tool+billing set.
+    _raw_scope = prior.get("scope")
+    prior_scope = _raw_scope if isinstance(_raw_scope, str) else ""
+    requested: list[str] = []
+    for tok in (prior_scope.split() or [NOUS_INFERENCE_INVOKE_SCOPE, "tool:invoke"]):
+        if tok and tok not in requested:
+            requested.append(tok)
+    if NOUS_BILLING_MANAGE_SCOPE not in requested:
+        requested.append(NOUS_BILLING_MANAGE_SCOPE)
+    scope = " ".join(requested)
+
+    auth_state = _nous_device_code_login(
+        portal_base_url=prior.get("portal_base_url") or None,
+        inference_base_url=prior.get("inference_base_url") or None,
+        client_id=prior.get("client_id") or pconfig.client_id,
+        scope=scope,
+        open_browser=open_browser,
+        timeout_seconds=timeout_seconds,
+        on_verification=on_verification,
+    )
+
+    with _auth_store_lock():
+        auth_store = _load_auth_store()
+        _save_provider_state(auth_store, "nous", auth_state)
+        _save_auth_store(auth_store)
+
+    # Mirror to shared store + reseed the pool (best-effort), same as _login_nous.
+    try:
+        _write_shared_nous_state(auth_state)
+    except Exception:
+        pass
+    try:
+        _sync_nous_pool_from_auth_store()
+    except Exception:
+        pass
+
+    granted = auth_state.get("scope")
+    return isinstance(granted, str) and NOUS_BILLING_MANAGE_SCOPE in granted.split()
 
 
 def _login_nous(args, pconfig: ProviderConfig) -> None:
@@ -8057,7 +8133,7 @@ def _login_nous(args, pconfig: ProviderConfig) -> None:
                     # The Portal's freeRecommendedModels endpoint is the
                     # source of truth for what's free *right now*. Augment
                     # the curated list with anything new the Portal flags
-                    # as free so users on older Hermes builds still see
+                    # as free so users on older Moor builds still see
                     # newly-launched free models without a CLI release.
                     model_ids, pricing = union_with_portal_free_recommendations(
                         model_ids, pricing, _portal_for_recs,
@@ -8157,9 +8233,9 @@ def logout_command(args) -> None:
             _reset_config_provider()
         print(f"Logged out of {provider_name}.")
         if should_reset_config and os.getenv("OPENROUTER_API_KEY"):
-            print("Hermes will use OpenRouter for inference.")
+            print("Moor will use OpenRouter for inference.")
         elif should_reset_config:
-            print("Run `hermes model` or configure an API key to use Hermes.")
+            print("Run `hermes model` or configure an API key to use Moor.")
         else:
             print("Model provider configuration was unchanged.")
     else:

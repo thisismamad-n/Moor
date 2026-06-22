@@ -50,7 +50,7 @@ _FALLBACK_PATTERNS = re.compile(
 _ACCESS_DENIED_PATTERN = re.compile(r"(access is denied|acceso denegado)", re.IGNORECASE)
 
 _TASK_NAME_DEFAULT = "Hermes_Gateway"
-_TASK_DESCRIPTION = "Hermes Agent Gateway - Messaging Platform Integration"
+_TASK_DESCRIPTION = "Moor Agent Gateway - Messaging Platform Integration"
 
 
 def _schtasks_encoding() -> str:
@@ -164,7 +164,7 @@ def _is_running_as_admin() -> bool:
 
 
 def _current_profile_cli_args() -> list[str]:
-    """Return CLI args that preserve the current Hermes profile."""
+    """Return CLI args that preserve the current Moor profile."""
     from hermes_cli.gateway import _profile_arg
 
     profile_arg = _profile_arg()
@@ -274,7 +274,7 @@ def get_task_script_path() -> Path:
 
     Lives under ``%LOCALAPPDATA%\\hermes\\gateway-service\\<task_name>.cmd``
     (or ``<HERMES_HOME>/gateway-service/<task_name>.cmd`` so per-profile
-    Hermes installs stay self-contained).
+    Moor installs stay self-contained).
     """
     _assert_windows()
     from hermes_cli.config import get_hermes_home
@@ -446,7 +446,7 @@ def _resolve_task_user() -> str | None:
 def _install_scheduled_task(task_name: str, script_path: Path) -> tuple[bool, str]:
     """Create or replace the Scheduled Task. Returns (success, detail).
 
-    Always recreate instead of ``/Change``. Older Hermes builds and failed
+    Always recreate instead of ``/Change``. Older Moor builds and failed
     experiments may have left repeat/restart settings on the task; ``/Change``
     preserves those stale triggers and can make the gateway relaunch every
     minute. Delete+create gives us a clean ONLOGON task every install.
@@ -790,7 +790,7 @@ def install(
         print("  UAC is Windows' admin approval prompt; it is needed to create/update the Scheduled Task.")
         if prompt_yes_no("  Open the UAC prompt now?", False):
             if _launch_elevated_install(force=force, start_now=start_now, start_on_login=start_on_login):
-                print("✓ Launched elevated Hermes gateway install prompt.")
+                print("✓ Launched elevated Moor gateway install prompt.")
                 if start_now:
                     print("  Approve the Windows UAC prompt; the elevated install will start the gateway afterwards.")
                 else:
@@ -831,7 +831,7 @@ def install(
         print("  UAC is Windows' admin approval prompt; it is needed to create/update the Scheduled Task.")
         if prompt_yes_no("  Open the UAC prompt now?", False):
             if _launch_elevated_install(force=force, start_now=start_now, start_on_login=start_on_login):
-                print("✓ Launched elevated Hermes gateway install prompt.")
+                print("✓ Launched elevated Moor gateway install prompt.")
                 if start_now:
                     print("  Approve the Windows UAC prompt; the elevated install will start the gateway afterwards.")
                 else:
@@ -932,7 +932,7 @@ def uninstall() -> None:
             print("  UAC is Windows' admin approval prompt; it is needed to remove the Scheduled Task.")
             if prompt_yes_no("  Open the UAC prompt now?", False):
                 if _launch_elevated_uninstall():
-                    print("✓ Launched elevated Hermes gateway uninstall prompt.")
+                    print("✓ Launched elevated Moor gateway uninstall prompt.")
                     print("  Approve the Windows UAC prompt, then run: hermes gateway status")
                     return
                 print("⚠ Elevated uninstall prompt was unavailable or cancelled.")
@@ -1302,10 +1302,54 @@ def stop() -> None:
         print("✗ No gateway was running")
 
 
+def _wait_for_gateway_absent(timeout_s: float = 30.0, interval_s: float = 0.5) -> bool:
+    """Block until no gateway process is detectable, or the timeout elapses.
+
+    ``stop()`` can return while the previous gateway is still draining
+    in-flight agents (the drain runs up to the restart-drain timeout). Uses the
+    authoritative ``get_running_pid()`` (lock + liveness + start-time +
+    gateway-shape) plus the now-strict ``_gateway_pids()`` scan so a relaunch
+    never races a still-alive old process.
+    """
+    from gateway.status import get_running_pid
+
+    deadline = time.monotonic() + max(timeout_s, interval_s)
+    while time.monotonic() < deadline:
+        if get_running_pid() is None and not _gateway_pids():
+            return True
+        time.sleep(interval_s)
+    return get_running_pid() is None and not _gateway_pids()
+
+
 def restart() -> None:
-    """Stop the gateway then start it again."""
+    """Stop the gateway then start it again.
+
+    Waits for the old gateway to be authoritatively gone before relaunching --
+    otherwise ``start()``'s "already running" guard sees the still-draining old
+    process and no-ops, and when that process later exits nothing replaces it (a
+    silent outage). Fails loudly if the process can't be cleared or the relaunch
+    doesn't produce a running gateway.
+    """
     _assert_windows()
+    from hermes_cli.gateway import kill_gateway_processes
+
     stop()
+
+    if not _wait_for_gateway_absent(timeout_s=30.0):
+        print("⚠ Gateway still present after stop; forcing termination before restart...")
+        kill_gateway_processes(all_profiles=False, force=True)
+        if not _wait_for_gateway_absent(timeout_s=10.0):
+            raise RuntimeError(
+                "Gateway process still detected after force kill; refusing to "
+                "start a duplicate. Investigate stray PIDs before retrying."
+            )
+
     # Give Windows a moment to release the listening port.
     time.sleep(1.0)
     start()
+
+    if not _wait_for_gateway_ready(timeout_s=15.0):
+        raise RuntimeError(
+            "Gateway restart did not produce a running gateway process. "
+            "Check logs/gateway.log and run `hermes gateway status`."
+        )

@@ -2,7 +2,7 @@
 
 Telegram channel broadcasts are delivered as ``Update.channel_post`` rather than
 ``Update.message``.  The adapter should use ``effective_message`` so channel
-posts are converted into Hermes gateway events instead of being silently
+posts are converted into Moor gateway events instead of being silently
 ignored.
 """
 
@@ -63,7 +63,7 @@ def _build_telegram_stubs():
 @pytest.fixture
 def telegram_adapter_cls(monkeypatch):
     """Import TelegramAdapter without leaking temporary telegram stubs."""
-    module_name = "gateway.platforms.telegram"
+    module_name = "plugins.platforms.telegram.adapter"
     existing_module = sys.modules.get(module_name)
     if existing_module is not None:
         yield existing_module.TelegramAdapter

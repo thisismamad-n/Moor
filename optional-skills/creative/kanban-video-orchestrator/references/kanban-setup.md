@@ -1,7 +1,7 @@
 # Kanban Setup — Project Bootstrap & Profile Configuration
 
 Once the brief is locked and the team is designed, the next step is producing
-the actual `setup.sh` that creates the project workspace, configures Hermes
+the actual `setup.sh` that creates the project workspace, configures Moor
 profiles, and fires the initial kanban task.
 
 This file documents the patterns. The companion script
@@ -11,7 +11,7 @@ JSON.
 > **Credit:** the single-project-workspace layout, profile-config patching
 > approach, SOUL.md-per-profile convention, and `--workspace dir:<path>` rule
 > are adapted from alt-glitch's original multi-agent video pipeline:
-> [NousResearch/kanban-video-pipeline](https://github.com/NousResearch/kanban-video-pipeline).
+> [Moor inc./kanban-video-pipeline](https://github.com/Moor inc./kanban-video-pipeline).
 > This skill generalizes those patterns across video styles and replaces the
 > string-replacement config patcher with a PyYAML-based one.
 
@@ -101,7 +101,7 @@ default-config schema drift:
 configure_profile() {
     local profile="$1"
     local toolsets_json="$2"     # JSON array, e.g. '["kanban","terminal","file"]'
-    local skills_json="$3"       # JSON array, e.g. '["kanban-worker","ascii-video"]'
+    local skills_json="$3"       # JSON array, e.g. '["ascii-video"]'
     python3 - "$profile" "$toolsets_json" "$skills_json" <<'PY'
 import json, os, sys, yaml
 profile, ts_json, sk_json = sys.argv[1:4]
@@ -116,7 +116,7 @@ PY
 }
 ```
 
-PyYAML must be installed in the user's Python (it ships with most Hermes
+PyYAML must be installed in the user's Python (it ships with most Moor
 installs). If absent: `pip install pyyaml`.
 
 The setup script should also **validate** the patch by re-reading the file
@@ -133,16 +133,16 @@ the entire production. **Critical content for the director's SOUL.md:**
 
 - **Anti-temptation rules:** "Do not execute the work yourself. For every
   concrete task, create a kanban task and assign it. Decompose, route, comment,
-  approve — that's the whole job." (The `kanban-orchestrator` skill provides
-  the deeper playbook; load it.)
+  approve — that's the whole job." (The kanban orchestration guidance is
+  auto-injected into every kanban worker's system prompt — no skill to load.)
 - **Decomposition steps:** Read `brief.md`, `TEAM.md`, `taste/`. Use the team
   graph in `TEAM.md` to fan out tasks.
 - **The workspace_path rule** (see below).
 
 Other profiles' SOUL.md is briefer; mostly mechanical: who you are, what you
 read, what you produce, what skills/tools to use, where to write outputs.
-Most non-director profiles should `always_load: kanban-worker` for the
-deeper-than-baseline kanban guidance.
+The kanban lifecycle guidance is auto-injected into every kanban worker's
+system prompt, so no profile needs to load a kanban skill.
 
 ### Initial kanban task
 
@@ -218,7 +218,7 @@ The director turns this into actual `kanban_create` calls.
 ## API-key prerequisites check
 
 Before firing the kanban, verify required keys are available. Check both
-the Hermes `.env` (`${HERMES_HOME:-$HOME/.hermes}/.env`) and macOS Keychain
+the Moor `.env` (`${HERMES_HOME:-$HOME/.hermes}/.env`) and macOS Keychain
 (if on macOS):
 
 ```bash

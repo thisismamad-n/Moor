@@ -1,4 +1,4 @@
-"""Slash command definitions and autocomplete for the Hermes CLI.
+"""Slash command definitions and autocomplete for the Moor CLI.
 
 Central registry for all slash commands. Every consumer -- CLI help, gateway
 dispatch, Telegram BotCommands, Slack subcommand mapping, autocomplete --
@@ -78,6 +78,8 @@ COMMAND_REGISTRY: list[CommandDef] = [
     CommandDef("save", "Save the current conversation", "Session",
                cli_only=True),
     CommandDef("retry", "Retry the last message (resend to agent)", "Session"),
+    CommandDef("prompt", "Compose your next prompt in $EDITOR (markdown), then send it", "Session",
+               cli_only=True, args_hint="[initial text]", aliases=("compose",)),
     CommandDef("undo", "Back up N user turns and re-prompt (default 1)", "Session",
                args_hint="[N]"),
     CommandDef("title", "Set a title for the current session", "Session",
@@ -90,7 +92,7 @@ COMMAND_REGISTRY: list[CommandDef] = [
                args_hint="[here [N] | focus topic]"),
     CommandDef("rollback", "List or restore filesystem checkpoints", "Session",
                args_hint="[number]"),
-    CommandDef("snapshot", "Create or restore state snapshots of Hermes config/state", "Session",
+    CommandDef("snapshot", "Create or restore state snapshots of Moor config/state", "Session",
                cli_only=True, aliases=("snap",), args_hint="[create|restore <id>|prune]"),
     CommandDef("stop", "Kill all running background processes", "Session"),
     CommandDef("approve", "Approve a pending dangerous command", "Session",
@@ -105,7 +107,7 @@ COMMAND_REGISTRY: list[CommandDef] = [
                aliases=("q",), args_hint="<prompt>"),
     CommandDef("steer", "Inject a message after the next tool call without interrupting", "Session",
                args_hint="<prompt>"),
-    CommandDef("goal", "Set a standing goal Hermes works on across turns until achieved", "Session",
+    CommandDef("goal", "Set a standing goal Moor works on across turns until achieved", "Session",
                args_hint="[text | pause | resume | clear | status]"),
     CommandDef("subgoal", "Add or manage extra criteria on the active goal", "Session",
                args_hint="[text | remove N | clear]"),
@@ -123,18 +125,19 @@ COMMAND_REGISTRY: list[CommandDef] = [
     # Configuration
     CommandDef("config", "Show current configuration", "Configuration",
                cli_only=True),
-    CommandDef("model", "Switch model for this session", "Configuration",
-               args_hint="[model] [--provider name] [--global] [--refresh]"),
+    CommandDef("model", "Switch model (persists by default)", "Configuration",
+               args_hint="[model] [--provider name] [--global|--session] [--refresh]"),
     CommandDef("codex-runtime", "Toggle codex app-server runtime for OpenAI/Codex models",
                "Configuration", aliases=("codex_runtime",),
                args_hint="[auto|codex_app_server]"),
-    CommandDef("gquota", "Show Google Gemini Code Assist quota usage", "Info",
-               cli_only=True),
 
     CommandDef("personality", "Set a predefined personality", "Configuration",
                args_hint="[name]"),
     CommandDef("statusbar", "Toggle the context/model status bar", "Configuration",
                cli_only=True, aliases=("sb",)),
+    CommandDef("timestamps", "Toggle [HH:MM] timestamps on messages and /history", "Configuration",
+               cli_only=True, args_hint="[on|off|status]",
+               subcommands=("on", "off", "status"), aliases=("ts",)),
     CommandDef("verbose", "Cycle tool progress display: off -> new -> all -> verbose",
                "Configuration", cli_only=True,
                gateway_config_gate="display.tool_progress_command"),
@@ -144,8 +147,8 @@ COMMAND_REGISTRY: list[CommandDef] = [
     CommandDef("yolo", "Toggle YOLO mode (skip all dangerous command approvals)",
                "Configuration"),
     CommandDef("reasoning", "Manage reasoning effort and display", "Configuration",
-               args_hint="[level|show|hide]",
-               subcommands=("none", "minimal", "low", "medium", "high", "xhigh", "show", "hide", "on", "off")),
+               args_hint="[level|show|hide|full|clamp]",
+               subcommands=("none", "minimal", "low", "medium", "high", "xhigh", "show", "hide", "on", "off", "full", "clamp")),
     CommandDef("fast", "Toggle fast mode — OpenAI Priority Processing / Anthropic Fast Mode (Normal/Fast)", "Configuration",
                args_hint="[normal|fast|status]",
                subcommands=("normal", "fast", "status", "on", "off")),
@@ -156,7 +159,7 @@ COMMAND_REGISTRY: list[CommandDef] = [
                subcommands=("kaomoji", "emoji", "unicode", "ascii")),
     CommandDef("voice", "Toggle voice mode", "Configuration",
                args_hint="[on|off|tts|status]", subcommands=("on", "off", "tts", "status")),
-    CommandDef("busy", "Control what Enter does while Hermes is working", "Configuration",
+    CommandDef("busy", "Control what Enter does while Moor is working", "Configuration",
                cli_only=True, args_hint="[queue|steer|interrupt|status]",
                subcommands=("queue", "steer", "interrupt", "status")),
 
@@ -215,6 +218,8 @@ COMMAND_REGISTRY: list[CommandDef] = [
                gateway_only=True),
     CommandDef("usage", "Show token usage and rate limits for the current session", "Info"),
     CommandDef("credits", "Show Nous credit balance and top up", "Info"),
+    CommandDef("billing", "Manage Nous terminal billing — buy credits, auto-reload, limits", "Info",
+               cli_only=True),
     CommandDef("insights", "Show usage insights and analytics", "Info",
                args_hint="[days]"),
     CommandDef("platforms", "Show gateway/messaging platform status", "Info",
@@ -227,8 +232,8 @@ COMMAND_REGISTRY: list[CommandDef] = [
                cli_only=True),
     CommandDef("image", "Attach a local image file for your next prompt", "Info",
                cli_only=True, args_hint="<path>"),
-    CommandDef("update", "Update Hermes Agent to the latest version", "Info"),
-    CommandDef("version", "Show Hermes Agent version", "Info", aliases=("v",)),
+    CommandDef("update", "Update Moor Agent to the latest version", "Info"),
+    CommandDef("version", "Show Moor Agent version", "Info", aliases=("v",)),
     CommandDef("debug", "Upload debug report (system info + logs) and get shareable links", "Info"),
 
     # Exit
@@ -556,7 +561,7 @@ _TELEGRAM_MENU_PRIORITY = (
 )
 """Built-in commands that should stay visible in Telegram's capped menu.
 
-Telegram only displays a small BotCommand menu in practice.  The full Hermes
+Telegram only displays a small BotCommand menu in practice.  The full Moor
 registry is still dispatchable when typed manually, but operational commands
 need to survive the visible menu cap ahead of lower-priority built-ins.
 """
@@ -1053,8 +1058,9 @@ _SLACK_PRIORITY_ALIASES = ("btw", "bg")
 # the telegram-parity test reads it so an entry here is a deliberate
 # "Slack-via-/hermes" decision, not a silent clamp.
 #   - credits: the billing/top-up surface; reached via /hermes credits on Slack.
+#   - billing: the terminal-billing surface (buy/auto-reload/limit); /hermes billing.
 #   - debug: the log/report upload surface; reached via /hermes debug on Slack.
-_SLACK_VIA_HERMES_ONLY = frozenset({"credits", "debug"})
+_SLACK_VIA_HERMES_ONLY = frozenset({"credits", "billing", "debug"})
 
 
 def _sanitize_slack_name(raw: str) -> str:
@@ -1095,7 +1101,7 @@ def slack_native_slashes() -> list[tuple[str, str, str]]:
     seen: set[str] = set()
 
     # Reserve /hermes as the catch-all top-level command.
-    entries.append(("hermes", "Talk to Hermes or run a subcommand", "[subcommand] [args]"))
+    entries.append(("hermes", "Talk to Moor or run a subcommand", "[subcommand] [args]"))
     seen.add("hermes")
 
     def _add(name: str, desc: str, hint: str) -> None:
@@ -1280,6 +1286,10 @@ class SlashCommandCompleter(Completer):
         current word doesn't look like a path.  A word is path-like when
         it starts with ``./``, ``../``, ``~/``, ``/``, or contains a
         ``/`` separator (e.g. ``src/main.py``).
+
+        Tokens containing a ``://`` scheme separator (e.g. URLs like
+        ``https://example.com/x``) are excluded even though they contain a
+        ``/`` — they are never useful local-path completions.
         """
         if not text:
             return None
@@ -1290,6 +1300,12 @@ class SlashCommandCompleter(Completer):
             i -= 1
         word = text[i + 1:]
         if not word:
+            return None
+        # URLs contain "/" but are not local paths. Treating them as paths fires
+        # os.listdir on every keystroke while typing/pasting a link (e.g. an
+        # https:// URL becomes a listdir of "https:") — pure latency, never a
+        # useful completion. Skip any token with a scheme separator.
+        if "://" in word:
             return None
         # Only trigger path completion for path-like tokens
         if word.startswith(("./", "../", "~/", "/")) or "/" in word:

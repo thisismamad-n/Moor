@@ -138,7 +138,7 @@ class CLICommandsMixin:
             print(f"  ❌ {result['error']}")
 
     def _handle_snapshot_command(self, command: str):
-        """Handle /snapshot — lightweight state snapshots for Hermes config/state.
+        """Handle /snapshot — lightweight state snapshots for Moor config/state.
 
         Syntax:
             /snapshot                  — list recent snapshots
@@ -947,52 +947,6 @@ class CLICommandsMixin:
         _cprint(f"  Original session: {parent_session_id}")
         _cprint(f"  Branch session:   {new_session_id}")
 
-    def _handle_gquota_command(self, cmd_original: str) -> None:
-        """Show Google Gemini Code Assist quota usage for the current OAuth account."""
-        try:
-            from agent.google_oauth import get_valid_access_token, GoogleOAuthError, load_credentials
-            from agent.google_code_assist import retrieve_user_quota, CodeAssistError
-        except ImportError as exc:
-            self._console_print(f"  [red]Gemini modules unavailable: {exc}[/]")
-            return
-
-        try:
-            access_token = get_valid_access_token()
-        except GoogleOAuthError as exc:
-            self._console_print(f"  [yellow]{exc}[/]")
-            self._console_print("  Run [bold]/model[/] and pick 'Google Gemini (OAuth)' to sign in.")
-            return
-
-        creds = load_credentials()
-        project_id = (creds.project_id if creds else "") or ""
-
-        try:
-            buckets = retrieve_user_quota(access_token, project_id=project_id)
-        except CodeAssistError as exc:
-            self._console_print(f"  [red]Quota lookup failed:[/] {exc}")
-            return
-
-        if not buckets:
-            self._console_print("  [dim]No quota buckets reported (account may be on legacy/unmetered tier).[/]")
-            return
-
-        # Sort for stable display, group by model
-        buckets.sort(key=lambda b: (b.model_id, b.token_type))
-        self._console_print()
-        self._console_print(f"  [bold]Gemini Code Assist quota[/]  (project: {project_id or '(auto / free-tier)'})")
-        self._console_print()
-        for b in buckets:
-            pct = max(0.0, min(1.0, b.remaining_fraction))
-            width = 20
-            filled = int(round(pct * width))
-            bar = "▓" * filled + "░" * (width - filled)
-            pct_str = f"{int(pct * 100):3d}%"
-            header = b.model_id
-            if b.token_type:
-                header += f" [{b.token_type}]"
-            self._console_print(f"    {header:40s}  {bar}  {pct_str}")
-        self._console_print()
-
     def _handle_personality_command(self, cmd: str):
         """Handle the /personality command to set predefined personalities."""
         from cli import save_config_value
@@ -1525,11 +1479,11 @@ class CLICommandsMixin:
                     try:
                         from hermes_cli.skin_engine import get_active_skin
                         _skin = get_active_skin()
-                        label = _skin.get_branding("response_label", "⚕ Hermes")
+                        label = _skin.get_branding("response_label", "⚕ Moor")
                         _resp_color = _maybe_remap_for_light_mode(_skin.get_color("response_border", "#CD7F32"))
                         _resp_text = _maybe_remap_for_light_mode(_skin.get_color("banner_text", "#FFF8DC"))
                     except Exception:
-                        label = "⚕ Hermes"
+                        label = "⚕ Moor"
                         _resp_color = "#CD7F32"
                         _resp_text = "#FFF8DC"
 
@@ -1732,7 +1686,7 @@ class CLICommandsMixin:
                     "Your browser_navigate, browser_snapshot, browser_click, and other browser tools now "
                     "control that CDP browser. The command itself is a signal that using browser tools for "
                     "their current browser-related request is expected; do not wait for separate permission "
-                    "just because CDP is connected. This is typically a Hermes-managed isolated debug "
+                    "just because CDP is connected. This is typically a Moor-managed isolated debug "
                     "profile, not the user's main everyday browser. It is still user-visible and may contain "
                     "pages, logged-in sessions, or cookies in that debug profile, so avoid destructive actions, "
                     "closing tabs, or navigating away unless the user's task calls for it.]"
@@ -1877,7 +1831,7 @@ class CLICommandsMixin:
         _cprint(f"  ⊙ Goal set ({state.max_turns}-turn budget): {state.goal}")
         _cprint(
             f"  {_DIM}After each turn, a judge model will check if the goal is done. "
-            f"Hermes keeps working until it is, you pause/clear it, or the budget is "
+            f"Moor keeps working until it is, you pause/clear it, or the budget is "
             f"exhausted. Use /goal status, /goal pause, /goal resume, /goal clear.{_RST}"
         )
         # Kick the loop off immediately so the user doesn't have to send a
@@ -2006,6 +1960,79 @@ class CLICommandsMixin:
         if self._apply_tui_skin_style():
             print("  Prompt + TUI colors updated.")
 
+    def _compose_in_editor(self, initial_text: str = "") -> str:
+        """Open ``$VISUAL``/``$EDITOR`` on a temp markdown file and return the
+        saved buffer (comment lines starting with ``#!`` stripped).
+
+        Returns the composed prompt text, or an empty string if the editor
+        could not be launched or the buffer was left empty. Factored out so
+        the read-back/strip logic is unit-testable without spawning an editor.
+        """
+        import os
+        import shlex
+        import subprocess
+        import tempfile
+
+        editor = os.environ.get("VISUAL") or os.environ.get("EDITOR")
+        if not editor:
+            editor = "notepad" if os.name == "nt" else "nano"
+
+        header = (
+            "#! Compose your prompt below. Lines starting with '#!' are ignored.\n"
+            "#! Save and quit to send; leave empty to cancel.\n\n"
+        )
+        fd, path = tempfile.mkstemp(suffix=".md", prefix="hermes_prompt_")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                fh.write(header)
+                if initial_text:
+                    fh.write(initial_text)
+            try:
+                subprocess.call([*shlex.split(editor), path])
+            except Exception:
+                # Fall back to a bare invocation (editor value may not be a
+                # simple argv-splittable string on some platforms).
+                subprocess.call(f"{editor} {shlex.quote(path)}", shell=True)
+            with open(path, "r", encoding="utf-8") as fh:
+                raw = fh.read()
+        finally:
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
+
+        lines = [ln for ln in raw.splitlines() if not ln.startswith("#!")]
+        return "\n".join(lines).strip()
+
+    def _handle_prompt_compose_command(self, cmd_original: str) -> None:
+        """Handle /prompt — compose the next prompt in $EDITOR and send it.
+
+        Opens the user's editor on a temporary markdown file (optionally
+        seeded with text passed after the command), then queues the saved
+        buffer as the next agent turn via the one-shot ``_pending_agent_seed``
+        the interactive loop already consumes (same path as /blueprint).
+        """
+        from cli import _DIM, _RST, _cprint
+
+        initial = ""
+        parts = (cmd_original or "").strip().split(None, 1)
+        if len(parts) > 1:
+            initial = parts[1]
+
+        try:
+            composed = self._compose_in_editor(initial)
+        except Exception as exc:
+            _cprint(f"  {_DIM}(>_<) Could not open editor: {exc}{_RST}")
+            return
+
+        if not composed:
+            _cprint(f"  {_DIM}(._.) Empty prompt — nothing sent.{_RST}")
+            return
+
+        # One-shot seed: the interactive loop runs this as the next agent turn
+        # right after process_command() returns (see cli.py main loop).
+        self._pending_agent_seed = composed
+
     def _handle_footer_command(self, cmd_original: str) -> None:
         """Toggle or inspect ``display.runtime_footer.enabled`` from the CLI.
 
@@ -2059,6 +2086,56 @@ class CLICommandsMixin:
         else:
             _cprint("  Failed to save runtime_footer setting to config.yaml")
 
+    def _handle_timestamps_command(self, cmd_original: str) -> None:
+        """Toggle or inspect ``display.timestamps`` from the CLI.
+
+        When on, submitted and streamed message labels carry an ``[HH:MM]``
+        suffix and ``/history`` prefixes each turn with its time (for turns
+        that carry a stored timestamp).
+
+        Usage:
+            /timestamps           → toggle
+            /timestamps on|off    → explicit
+            /timestamps status    → show current state
+        """
+        from cli import _cprint, save_config_value
+        from hermes_cli.colors import Colors as _Colors
+
+        arg = ""
+        try:
+            parts = (cmd_original or "").strip().split(None, 1)
+            if len(parts) > 1:
+                arg = parts[1].strip().lower()
+        except Exception:
+            arg = ""
+
+        current = bool(getattr(self, "show_timestamps", False))
+
+        if arg in {"status", "?"}:
+            state = "ON" if current else "OFF"
+            _cprint(f"  {_Colors.BOLD}Message timestamps:{_Colors.RESET} {state}")
+            return
+
+        if arg in {"on", "enable", "true", "1"}:
+            new_state = True
+        elif arg in {"off", "disable", "false", "0"}:
+            new_state = False
+        elif arg == "":
+            new_state = not current
+        else:
+            _cprint("  Usage: /timestamps [on|off|status]")
+            return
+
+        self.show_timestamps = new_state
+        if save_config_value("display.timestamps", new_state):
+            state = (
+                f"{_Colors.GREEN}ON{_Colors.RESET}" if new_state
+                else f"{_Colors.DIM}OFF{_Colors.RESET}"
+            )
+            _cprint(f"  Message timestamps: {state}")
+        else:
+            _cprint("  Failed to save timestamps setting to config.yaml")
+
     def _handle_reasoning_command(self, cmd: str):
         """Handle /reasoning — manage effort level and display toggle.
 
@@ -2067,6 +2144,8 @@ class CLICommandsMixin:
             /reasoning <level>      Set reasoning effort (none, minimal, low, medium, high, xhigh)
             /reasoning show|on      Show model thinking/reasoning in output
             /reasoning hide|off     Hide model thinking/reasoning from output
+            /reasoning full         Show complete thinking (no 10-line clamp)
+            /reasoning clamp        Collapse long thinking to the first 10 lines
         """
         from cli import _ACCENT, _DIM, _RST, _cprint, _parse_reasoning_config, save_config_value
         parts = cmd.strip().split(maxsplit=1)
@@ -2081,9 +2160,10 @@ class CLICommandsMixin:
             else:
                 level = rc.get("effort", "medium")
             display_state = "on ✓" if self.show_reasoning else "off"
+            full_state = "full" if getattr(self, "reasoning_full", False) else "clamped to 10 lines"
             _cprint(f"  {_ACCENT}Reasoning effort:  {level}{_RST}")
-            _cprint(f"  {_ACCENT}Reasoning display: {display_state}{_RST}")
-            _cprint(f"  {_DIM}Usage: /reasoning <none|minimal|low|medium|high|xhigh|show|hide>{_RST}")
+            _cprint(f"  {_ACCENT}Reasoning display: {display_state} ({full_state}){_RST}")
+            _cprint(f"  {_DIM}Usage: /reasoning <none|minimal|low|medium|high|xhigh|show|hide|full|clamp>{_RST}")
             return
 
         arg = parts[1].strip().lower()
@@ -2105,6 +2185,21 @@ class CLICommandsMixin:
             _cprint(f"  {_ACCENT}✓ Reasoning display: OFF (saved){_RST}")
             return
 
+        # Full / clamped recap toggle
+        if arg in {"full", "all"}:
+            self.reasoning_full = True
+            save_config_value("display.reasoning_full", True)
+            _cprint(f"  {_ACCENT}✓ Reasoning display: FULL (saved){_RST}")
+            _cprint(f"  {_DIM}  The post-response recap box will print complete thinking.{_RST}")
+            if not self.show_reasoning:
+                _cprint(f"  {_DIM}  Note: reasoning display is OFF — run /reasoning show to see it.{_RST}")
+            return
+        if arg in {"clamp", "collapse", "short"}:
+            self.reasoning_full = False
+            save_config_value("display.reasoning_full", False)
+            _cprint(f"  {_ACCENT}✓ Reasoning display: CLAMPED to 10 lines (saved){_RST}")
+            return
+
         # Effort level change
         parsed = _parse_reasoning_config(arg)
         if parsed is None:
@@ -2122,7 +2217,7 @@ class CLICommandsMixin:
             _cprint(f"  {_ACCENT}✓ Reasoning effort set to '{arg}' (session only){_RST}")
 
     def _handle_busy_command(self, cmd: str):
-        """Handle /busy — control what Enter does while Hermes is working.
+        """Handle /busy — control what Enter does while Moor is working.
 
         Usage:
             /busy               Show current busy input mode
@@ -2154,11 +2249,11 @@ class CLICommandsMixin:
         self.busy_input_mode = arg
         if save_config_value("display.busy_input_mode", arg):
             if arg == "queue":
-                behavior = "Enter will queue follow-up input while Hermes is busy."
+                behavior = "Enter will queue follow-up input while Moor is busy."
             elif arg == "steer":
                 behavior = "Enter will steer your message into the current run (after the next tool call)."
             else:
-                behavior = "Enter will interrupt the current run while Hermes is busy."
+                behavior = "Enter will interrupt the current run while Moor is busy."
             _cprint(f"  {_ACCENT}✓ Busy input mode set to '{arg}' (saved to config){_RST}")
             _cprint(f"  {_DIM}{behavior}{_RST}")
         else:
@@ -2217,7 +2312,7 @@ class CLICommandsMixin:
         run_debug_share(args)
 
     def _handle_update_command(self) -> bool:
-        """Handle /update — update Hermes Agent to the latest version.
+        """Handle /update — update Moor Agent to the latest version.
 
         In the classic CLI this exits the session and relaunches as
         ``hermes update`` so the user sees update output directly and gets
@@ -2231,7 +2326,7 @@ class CLICommandsMixin:
         from hermes_cli.config import is_managed, format_managed_message
 
         if is_managed():
-            print(f"  ✗ {format_managed_message('update Hermes Agent')}")
+            print(f"  ✗ {format_managed_message('update Moor Agent')}")
             return False
 
         # Use the prompt_toolkit-native modal so the confirmation panel
@@ -2239,11 +2334,11 @@ class CLICommandsMixin:
         # with the prompt_toolkit event loop (same pattern as
         # _confirm_destructive_slash).
         choices = [
-            ("once", "Update Now", "exit the current session and update Hermes Agent"),
+            ("once", "Update Now", "exit the current session and update Moor Agent"),
             ("cancel", "Cancel", "keep the current session"),
         ]
         raw = self._prompt_text_input_modal(
-            title="⚕  Update Hermes Agent",
+            title="⚕  Update Moor Agent",
             detail="This will exit the current session and run `hermes update`.",
             choices=choices,
         )

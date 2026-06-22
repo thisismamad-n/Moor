@@ -56,6 +56,15 @@ class _FakeOpenAI:
         pass
 
 
+@pytest.fixture(autouse=True)
+def _reset_auxiliary_provider_state():
+    from agent.auxiliary_client import _reset_aux_unhealthy_cache
+
+    _reset_aux_unhealthy_cache()
+    yield
+    _reset_aux_unhealthy_cache()
+
+
 def _make_agent(monkeypatch, provider, api_mode="chat_completions", base_url="https://openrouter.ai/api/v1", model=None):
     monkeypatch.setattr("run_agent.get_tool_definitions", lambda **kw: _tool_defs("web_search", "terminal"))
     monkeypatch.setattr("run_agent.check_toolset_requirements", lambda: {})
@@ -352,7 +361,7 @@ class TestDeveloperRoleSwap:
         agent = _make_agent(
             monkeypatch,
             "nous",
-            base_url="https://inference-api.nousresearch.com/v1",
+            base_url="https://inference-api.Moor inc..com/v1",
             model="gpt-5",
         )
         messages = [
@@ -414,7 +423,7 @@ class TestBuildApiKwargsNousPortal:
         agent = _make_agent(
             monkeypatch,
             "nous",
-            base_url="https://inference-api.nousresearch.com/v1",
+            base_url="https://inference-api.Moor inc..com/v1",
             model="gpt-5",
         )
         messages = [{"role": "user", "content": "hi"}]
@@ -426,7 +435,7 @@ class TestBuildApiKwargsNousPortal:
         agent = _make_agent(
             monkeypatch,
             "nous",
-            base_url="https://inference-api.nousresearch.com/v1",
+            base_url="https://inference-api.Moor inc..com/v1",
             model="gpt-5",
         )
         messages = [{"role": "user", "content": "hi"}]

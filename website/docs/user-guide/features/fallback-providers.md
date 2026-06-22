@@ -7,7 +7,7 @@ sidebar_position: 8
 
 # Fallback Providers
 
-Hermes Agent has three layers of resilience that keep your sessions running when providers hit issues:
+Moor Agent has three layers of resilience that keep your sessions running when providers hit issues:
 
 1. **[Credential pools](./credential-pools.md)** — rotate across multiple API keys for the *same* provider (tried first)
 2. **Primary model fallback** — automatically switches to a *different* provider:model when your main model fails
@@ -17,7 +17,7 @@ Credential pools handle same-provider rotation (e.g., multiple OpenRouter keys).
 
 ## Primary Model Fallback
 
-When your main LLM provider encounters errors — rate limits, server overload, auth failures, connection drops — Hermes can automatically switch to a backup provider:model pair mid-session without losing your conversation.
+When your main LLM provider encounters errors — rate limits, server overload, auth failures, connection drops — Moor can automatically switch to a backup provider:model pair mid-session without losing your conversation.
 
 ### Configuration
 
@@ -40,7 +40,7 @@ fallback_providers:
 Each entry requires both `provider` and `model`. Entries missing either field are ignored.
 
 :::note `fallback_model` vs `fallback_providers`
-`fallback_providers` (plural, list) is the current config shape and supports multiple fallbacks tried in order. `fallback_model` (singular) is the legacy single-fallback key — Hermes still honors it for back-compat, but `hermes fallback` writes the current `fallback_providers` key and migrates legacy config on write. When both are set, `fallback_providers` takes priority.
+`fallback_providers` (plural, list) is the current config shape and supports multiple fallbacks tried in order. `fallback_model` (singular) is the legacy single-fallback key — Moor still honors it for back-compat, but `hermes fallback` writes the current `fallback_providers` key and migrates legacy config on write. When both are set, `fallback_providers` takes priority.
 :::
 
 ### Supported Providers
@@ -62,7 +62,6 @@ Each entry requires both `provider` and `model`. Entries missing either field ar
 | GMI Cloud | `gmi` | `GMI_API_KEY` (optional: `GMI_BASE_URL`) |
 | StepFun | `stepfun` | `STEPFUN_API_KEY` (optional: `STEPFUN_BASE_URL`) |
 | Ollama Cloud | `ollama-cloud` | `OLLAMA_API_KEY` |
-| Google Gemini (OAuth) | `google-gemini-cli` | `hermes model` (Google OAuth; optional: `HERMES_GEMINI_PROJECT_ID`) |
 | Google AI Studio | `gemini` | `GOOGLE_API_KEY` (alias: `GEMINI_API_KEY`) |
 | xAI (Grok) | `xai` (alias `grok`) | `XAI_API_KEY` (optional: `XAI_BASE_URL`) |
 | xAI Grok OAuth (SuperGrok) | `xai-oauth` (alias `grok-oauth`) | `hermes model` → xAI Grok OAuth (browser login; SuperGrok subscription) |
@@ -107,7 +106,7 @@ The fallback activates automatically when the primary model fails with:
 - **Not found** (HTTP 404) — immediately
 - **Invalid responses** — when the API returns malformed or empty responses repeatedly
 
-When triggered, Hermes:
+When triggered, Moor:
 
 1. Resolves credentials for the fallback provider
 2. Builds a new API client
@@ -117,7 +116,7 @@ When triggered, Hermes:
 The switch is seamless — your conversation history, tool calls, and context are preserved. The agent continues from exactly where it left off, just using a different model.
 
 :::info Per-Turn, Not Per-Session
-Fallback is **turn-scoped**: each new user message starts with the primary model restored. If the primary fails mid-turn, fallback activates for that turn only. On the next message, Hermes tries the primary again. Within a single turn, fallback activates at most once — if the fallback also fails, normal error handling takes over (retries, then error message). This prevents cascading failover loops within a turn while giving the primary model a fresh chance every turn.
+Fallback is **turn-scoped**: each new user message starts with the primary model restored. If the primary fails mid-turn, fallback activates for that turn only. On the next message, Moor tries the primary again. Within a single turn, fallback activates at most once — if the fallback also fails, normal error handling takes over (retries, then error message). This prevents cascading failover loops within a turn while giving the primary model a fresh chance every turn.
 :::
 
 ### Examples
@@ -178,7 +177,7 @@ There are no environment variables for the primary fallback chain — configure 
 
 ## Auxiliary Task Fallback
 
-Hermes uses separate lightweight models for side tasks. Each task has its own provider resolution chain that acts as a built-in fallback system.
+Moor uses separate lightweight models for side tasks. Each task has its own provider resolution chain that acts as a built-in fallback system.
 
 ### Tasks with Independent Provider Resolution
 
@@ -195,7 +194,7 @@ Hermes uses separate lightweight models for side tasks. Each task has its own pr
 
 ### Auto-Detection Chain
 
-When a task's provider is set to `"auto"` (the default), Hermes first tries the main provider + main model for that auxiliary task. If that route is unavailable or later fails with a capacity-style error, Hermes now honors user-configured fallback policy before using the built-in discovery chain:
+When a task's provider is set to `"auto"` (the default), Moor first tries the main provider + main model for that auxiliary task. If that route is unavailable or later fails with a capacity-style error, Moor now honors user-configured fallback policy before using the built-in discovery chain:
 
 ```text
 Main provider + main model → auxiliary.<task>.fallback_chain →
@@ -252,7 +251,7 @@ auxiliary:
     model: ""
 ```
 
-Every task above follows the same **provider / model / base_url** pattern. Each task can also declare its own `fallback_chain`; if omitted, `provider: auto` uses the top-level `fallback_providers` chain before Hermes' built-in auxiliary discovery chain.
+Every task above follows the same **provider / model / base_url** pattern. Each task can also declare its own `fallback_chain`; if omitted, `provider: auto` uses the top-level `fallback_providers` chain before Moor' built-in auxiliary discovery chain.
 
 Context compression is configured under `auxiliary.compression`:
 
@@ -300,18 +299,18 @@ auxiliary:
     model: "qwen2.5-vl"
 ```
 
-`base_url` takes precedence over `provider`. Hermes uses the configured `api_key` for authentication, falling back to `OPENAI_API_KEY` if not set. It does **not** reuse `OPENROUTER_API_KEY` for custom endpoints.
+`base_url` takes precedence over `provider`. Moor uses the configured `api_key` for authentication, falling back to `OPENAI_API_KEY` if not set. It does **not** reuse `OPENROUTER_API_KEY` for custom endpoints.
 
 ---
 
 ## Auxiliary Capacity-Error Fallback
 
-When you set an explicit auxiliary provider (e.g. `auxiliary.vision.provider: glm`), Hermes treats that as your preferred choice — but if the provider literally cannot serve the request because of a **capacity error** (HTTP 402 payment required, HTTP 429 daily-quota exhaustion, connection failure), Hermes falls back through a layered chain instead of failing silently:
+When you set an explicit auxiliary provider (e.g. `auxiliary.vision.provider: glm`), Moor treats that as your preferred choice — but if the provider literally cannot serve the request because of a **capacity error** (HTTP 402 payment required, HTTP 429 daily-quota exhaustion, connection failure), Moor falls back through a layered chain instead of failing silently:
 
 1. **Primary aux provider** — the one you configured (tried first, always)
 2. **`auxiliary.<task>.fallback_chain`** — your per-task override list, if you wrote one
 3. **Main agent provider + model** — last-resort safety net (always tried, even if you didn't write a chain)
-4. **Warn + re-raise** — if every layer fails, Hermes logs `Auxiliary <task>: ... all fallbacks exhausted` at WARNING level and re-raises the original error
+4. **Warn + re-raise** — if every layer fails, Moor logs `Auxiliary <task>: ... all fallbacks exhausted` at WARNING level and re-raises the original error
 
 Transient HTTP 429 rate limits (`Retry-After: ...`) are treated as request constraints, not capacity problems — they respect your explicit provider choice and do **not** trigger the fallback ladder. Only daily/monthly quota exhaustion, payment errors, and connection failures bypass the explicit-provider gate.
 
@@ -343,13 +342,13 @@ You do **not** need to configure `fallback_chain` to get fallback — the main-a
 
 ### Provider quota errors that trigger fallback
 
-Hermes recognizes these as capacity-equivalent to 402 credit exhaustion (not transient rate limits):
+Moor recognizes these as capacity-equivalent to 402 credit exhaustion (not transient rate limits):
 
 - Bedrock / LiteLLM: `Too many tokens per day`, `daily limit`, `tokens per day`
 - Vertex AI / GCP: `quota exceeded`, `resource exhausted`, `RESOURCE_EXHAUSTED`
 - Generic: `daily quota`, `quota_exceeded`
 
-If your provider returns a different phrase for daily-quota exhaustion and Hermes doesn't trigger fallback, that's a bug — open an issue with the exact error string.
+If your provider returns a different phrase for daily-quota exhaustion and Moor doesn't trigger fallback, that's a bug — open an issue with the exact error string.
 
 ---
 
@@ -368,7 +367,7 @@ auxiliary:
 Older configs with `compression.summary_model` / `compression.summary_provider` / `compression.summary_base_url` are automatically migrated to `auxiliary.compression.*` on first load (config version 17).
 :::
 
-If no provider is available for compression, Hermes drops middle conversation turns without generating a summary rather than failing the session.
+If no provider is available for compression, Moor drops middle conversation turns without generating a summary rather than failing the session.
 
 ---
 

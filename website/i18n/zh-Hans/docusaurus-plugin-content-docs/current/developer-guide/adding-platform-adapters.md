@@ -4,7 +4,7 @@ sidebar_position: 9
 
 # 添加平台适配器
 
-本指南介绍如何向 Hermes gateway 添加新的消息平台。平台适配器将 Hermes 连接到外部消息服务（Telegram、Discord、WeCom 等），使用户可以通过该服务与 agent 交互。
+本指南介绍如何向 Moor gateway 添加新的消息平台。平台适配器将 Moor 连接到外部消息服务（Telegram、Discord、WeCom 等），使用户可以通过该服务与 agent 交互。
 
 :::tip
 添加平台有两种方式：
@@ -30,7 +30,7 @@ sidebar_position: 9
 
 ## Plugin 路径（推荐）{#plugin-path-recommended}
 
-Plugin 系统允许你在不修改任何 Hermes 核心代码的情况下添加平台适配器。你的 plugin 是一个包含两个文件的目录：
+Plugin 系统允许你在不修改任何 Moor 核心代码的情况下添加平台适配器。你的 plugin 是一个包含两个文件的目录：
 
 ```
 ~/.hermes/plugins/my-platform/
@@ -115,7 +115,7 @@ def _env_enablement() -> dict | None:
 
 
 def register(ctx):
-    """Plugin 入口点 — 由 Hermes plugin 系统调用。"""
+    """Plugin 入口点 — 由 Moor plugin 系统调用。"""
     ctx.register_platform(
         name="my_platform",
         label="My Platform",
@@ -333,7 +333,7 @@ label: My Platform
 kind: platform
 version: 1.0.0
 description: >
-  My Platform gateway adapter for Hermes Agent.
+  My Platform gateway adapter for Moor Agent.
 author: Your Name
 requires_env:
   - name: MY_PLATFORM_TOKEN
@@ -457,7 +457,7 @@ LINE 两者都支持：阈值默认为 45 秒用于免费 postback 获取，`LIN
 ## 分步清单（内置路径）{#step-by-step-checklist}
 
 :::note
-此清单用于将平台直接添加到 Hermes 核心代码库 — 通常由核心贡献者为官方支持的平台执行。社区/第三方平台应使用上方的 [Plugin 路径](#plugin-path-recommended)。
+此清单用于将平台直接添加到 Moor 核心代码库 — 通常由核心贡献者为官方支持的平台执行。社区/第三方平台应使用上方的 [Plugin 路径](#plugin-path-recommended)。
 :::
 
 ### 1. Platform 枚举
@@ -472,7 +472,7 @@ class Platform(str, Enum):
 
 ### 2. 适配器文件
 
-创建 `gateway/platforms/newplat.py`：
+创建 `plugins/platforms/newplat/adapter.py`：
 
 ```python
 from gateway.config import Platform, PlatformConfig
@@ -685,4 +685,4 @@ async def disconnect(self):
 | `bluebubbles.py` | REST + webhook | 中 | 简单 REST API 集成 |
 | `weixin.py` | 长轮询 + CDN | 高 | 媒体处理、加密 |
 | `wecom_callback.py` | 回调/webhook | 中 | HTTP 服务器、AES 加密、多应用 |
-| `telegram.py` | 长轮询 + Bot API | 高 | 支持群组、线程的全功能适配器 |
+| `plugins/platforms/irc/adapter.py` | 长轮询 + IRC 协议 | 高 | 带作用域令牌锁的全功能插件适配器 |

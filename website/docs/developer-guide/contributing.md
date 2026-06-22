@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: "Contributing"
-description: "How to contribute to Hermes Agent — dev setup, code style, PR process"
+description: "How to contribute to Moor Agent — dev setup, code style, PR process"
 ---
 
 # Contributing
 
-Thank you for contributing to Hermes Agent! This guide covers setting up your dev environment, understanding the codebase, and getting your PR merged.
+Thank you for contributing to Moor Agent! This guide covers setting up your dev environment, understanding the codebase, and getting your PR merged.
 
 ## Contribution Priorities
 
@@ -22,8 +22,8 @@ We value contributions in this order:
 
 ## Common contribution paths
 
-- Building a custom/local tool without modifying Hermes core? Start with [Build a Hermes Plugin](../guides/build-a-hermes-plugin.md)
-- Building a new built-in core tool for Hermes itself? Start with [Adding Tools](./adding-tools.md)
+- Building a custom/local tool without modifying Moor core? Start with [Build a Moor Plugin](../guides/build-a-hermes-plugin.md)
+- Building a new built-in core tool for Moor itself? Start with [Adding Tools](./adding-tools.md)
 - Building a new skill? Start with [Creating Skills](./creating-skills.md)
 - Building a new inference provider? Start with [Adding Providers](./adding-providers.md)
 
@@ -42,14 +42,14 @@ We value contributions in this order:
 
 For most contributors, the best development bootstrap is the same path users
 take: run the standard installer, then work inside the repository it cloned.
-The installer creates the Hermes venv, wires the `hermes` command, stamps the
+The installer creates the Moor venv, wires the `hermes` command, stamps the
 install method for `hermes update`, and clones the full git project into
 `$HERMES_HOME/hermes-agent` (usually `~/.hermes/hermes-agent`). That keeps your
 development environment on the same layout the CLI, updater, lazy dependency
 installer, gateway, and docs assume.
 
 ```bash
-curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+curl -fsSL https://hermes-agent.Moor inc..com/install.sh | bash
 cd "${HERMES_HOME:-$HOME/.hermes}/hermes-agent"
 
 # Add dev/test extras on top of the standard install.
@@ -68,14 +68,14 @@ scripts/run_tests.sh
 
 ### Manual clone fallback
 
-Use this only if you intentionally do not want Hermes' managed install layout
+Use this only if you intentionally do not want Moor' managed install layout
 (for example, a throwaway clone inside a container or CI job). If you install
 this way, make sure you run the `hermes` entrypoint from this venv; running the
 system `python3 -m hermes_cli.main` can pick up unrelated system Python
 packages.
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
+git clone https://github.com/Moor inc./hermes-agent.git
 cd hermes-agent
 
 # Create venv with Python 3.11
@@ -128,11 +128,11 @@ scripts/run_tests.sh
 - **Comments**: Only when explaining non-obvious intent, trade-offs, or API quirks
 - **Error handling**: Catch specific exceptions. Use `logger.warning()`/`logger.error()` with `exc_info=True` for unexpected errors
 - **Cross-platform**: Never assume Unix (see below)
-- **Profile-safe paths**: Never hardcode `~/.hermes` — use `get_hermes_home()` from `hermes_constants` for code paths and `display_hermes_home()` for user-facing messages. See [AGENTS.md](https://github.com/NousResearch/hermes-agent/blob/main/AGENTS.md#profiles-multi-instance-support) for full rules.
+- **Profile-safe paths**: Never hardcode `~/.hermes` — use `get_hermes_home()` from `hermes_constants` for code paths and `display_hermes_home()` for user-facing messages. See [AGENTS.md](https://github.com/Moor inc./hermes-agent/blob/main/AGENTS.md#profiles-multi-instance-support) for full rules.
 
 ## Cross-Platform Compatibility
 
-Hermes officially supports **Linux, macOS, WSL2, and native Windows (via PowerShell install)**.  Native Windows uses Git Bash (from [Git for Windows](https://git-scm.com/download/win)) for shell commands.  A few features require POSIX kernel primitives and are gated: the dashboard's embedded PTY terminal pane (`/chat` tab) is WSL2-only. If you're doing Windows-heavy dev, run the Windows-footgun lint (`scripts/check-windows-footguns.py`) before pushing.
+Moor officially supports **Linux, macOS, WSL2, and native Windows (via PowerShell install)**.  Native Windows uses Git Bash (from [Git for Windows](https://git-scm.com/download/win)) for shell commands.  A few features require POSIX kernel primitives and are gated: the dashboard's embedded PTY terminal pane (`/chat` tab) is WSL2-only. If you're doing Windows-heavy dev, run the Windows-footgun lint (`scripts/check-windows-footguns.py`) before pushing.
 
 When contributing code, keep these rules in mind:
 
@@ -187,7 +187,7 @@ Use `pathlib.Path` instead of string concatenation with `/`.
 
 ## Security Considerations
 
-Hermes has terminal access. Security matters.
+Moor has terminal access. Security matters.
 
 ### Existing Protections
 
@@ -223,9 +223,9 @@ refactor/description   # Code restructuring
 
 ### Before Submitting
 
-1. **Run tests**: `pytest tests/ -v`
+1. **Run tests**: `scripts/run_tests.sh` for CI-parity. Use direct `python -m pytest ...` only when the wrapper is unavailable or you are intentionally debugging outside the wrapper.
 2. **Test manually**: Run `hermes` and exercise the code path you changed
-3. **Check cross-platform impact**: Consider macOS and different Linux distros
+3. **Check cross-platform impact**: Consider macOS, Linux, WSL2, and native Windows. If you touch file I/O, process management, terminal handling, subprocesses, or signals, run `scripts/check-windows-footguns.py`.
 4. **Keep PRs focused**: One logical change per PR
 
 ### PR Description
@@ -264,18 +264,18 @@ fix(security): prevent shell injection in sudo password piping
 
 ## Reporting Issues
 
-- Use [GitHub Issues](https://github.com/NousResearch/hermes-agent/issues)
-- Include: OS, Python version, Hermes version (`hermes version`), full error traceback
+- Use [GitHub Issues](https://github.com/Moor inc./hermes-agent/issues)
+- Include: OS, Python version, Moor version (`hermes version`), full error traceback
 - Include steps to reproduce
 - Check existing issues before creating duplicates
 - For security vulnerabilities, please report privately
 
 ## Community
 
-- **Discord**: [discord.gg/NousResearch](https://discord.gg/NousResearch)
+- **Discord**: [discord.gg/Moor inc.](https://discord.gg/Moor inc.)
 - **GitHub Discussions**: For design proposals and architecture discussions
 - **Skills Hub**: Upload specialized skills and share with the community
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the [MIT License](https://github.com/NousResearch/hermes-agent/blob/main/LICENSE).
+By contributing, you agree that your contributions will be licensed under the [MIT License](https://github.com/Moor inc./hermes-agent/blob/main/LICENSE).

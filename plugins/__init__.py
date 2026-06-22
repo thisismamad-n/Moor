@@ -1,1 +1,1 @@
-# Hermes plugins package
+# Moor plugins package

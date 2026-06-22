@@ -1,16 +1,18 @@
 """Tests for subprocess env sanitization in LocalEnvironment.
 
-Verifies that Hermes-managed provider, tool, and gateway env vars are
+Verifies that Moor-managed provider, tool, and gateway env vars are
 stripped from subprocess environments so external CLIs are not silently
-misrouted or handed Hermes secrets.
+misrouted or handed Moor secrets.
 
-See: https://github.com/NousResearch/hermes-agent/issues/1002
-See: https://github.com/NousResearch/hermes-agent/issues/1264
+See: https://github.com/Moor inc./hermes-agent/issues/1002
+See: https://github.com/Moor inc./hermes-agent/issues/1264
 """
 
 import os
 import threading
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from tools.environments.local import (
     LocalEnvironment,
@@ -94,14 +96,14 @@ class TestProviderEnvBlocklist:
             assert var not in result_env, f"{var} leaked into subprocess env"
 
     def test_bedrock_bearer_token_is_stripped(self):
-        """The Bedrock-specific bearer token is a Hermes inference secret
+        """The Bedrock-specific bearer token is a Moor inference secret
         (analogous to OPENAI_API_KEY) and must not leak into subprocesses.
 
         Regression for #32314: AWS_BEARER_TOKEN_BEDROCK leaked into terminal /
         execute_code children because the ``bedrock`` ProviderConfig declares
         ``api_key_env_vars=()`` (auth_type="aws_sdk") and the blocklist builder
         only consulted that field. The reporter caught it when ``opencode
-        models`` run inside a Hermes terminal enumerated the entire Bedrock
+        models`` run inside a Moor terminal enumerated the entire Bedrock
         catalog off the leaked bearer token.
         """
         result_env = _run_with_env(extra_os_env={
@@ -124,7 +126,7 @@ class TestProviderEnvBlocklist:
         unconditionally — and (b) be unrecoverable, because env_passthrough.py
         refuses to re-allow anything in _HERMES_PROVIDER_ENV_BLOCKLIST
         (GHSA-rhgp-j443-p4rf). Only the Bedrock inference bearer token is
-        Hermes-managed; the rest belongs to the user.
+        Moor-managed; the rest belongs to the user.
         """
         general_chain = {
             "AWS_ACCESS_KEY_ID": "AKIAIOSFODNN7EXAMPLE",
@@ -268,7 +270,7 @@ class TestBlocklistCoverage:
                 )
 
     def test_bedrock_bearer_token_is_in_blocklist(self):
-        """auth_type='aws_sdk' providers contribute their Hermes-managed
+        """auth_type='aws_sdk' providers contribute their Moor-managed
         inference token (the Bedrock bearer) to the blocklist, keyed off
         auth_type so any future SDK-cred provider is covered automatically."""
         assert "AWS_BEARER_TOKEN_BEDROCK" in _HERMES_PROVIDER_ENV_BLOCKLIST
@@ -276,7 +278,7 @@ class TestBlocklistCoverage:
     def test_general_aws_chain_not_in_blocklist(self):
         """The general AWS credential chain must NOT be in the blocklist —
         no-regression guard for #32314. These belong to the user's trusted
-        operator shell (SECURITY.md §3.2), not to Hermes, and blocklisting
+        operator shell (SECURITY.md §3.2), not to Moor, and blocklisting
         them would be unrecoverable via env_passthrough (GHSA-rhgp-j443-p4rf).
         """
         general_chain = {
@@ -379,6 +381,18 @@ class TestBlocklistCoverage:
 class TestSanePathIncludesHomebrew:
     """Verify _SANE_PATH includes macOS Homebrew directories."""
 
+    @pytest.fixture(autouse=True)
+    def _disable_hermes_bin_injection(self):
+        """These tests assert the sane-path merge in isolation. Disable the
+        hermes-install-dir prepend (a separate concern, covered by
+        TestHermesBinDirOnPath) so a real ``hermes`` on the test runner's PATH
+        doesn't shift the asserted PATH layout."""
+        from tools.environments import local as local_mod
+        saved = local_mod._HERMES_BIN_DIR
+        local_mod._HERMES_BIN_DIR = None  # resolved -> no dir to inject
+        yield
+        local_mod._HERMES_BIN_DIR = saved
+
     def test_sane_path_includes_homebrew_bin(self):
         from tools.environments.local import _SANE_PATH
         assert "/opt/homebrew/bin" in _SANE_PATH
@@ -471,3 +485,81 @@ class TestSanePathIncludesHomebrew:
             result = _make_run_env({})
         assert result["Path"] == windows_env["Path"]
         assert "PATH" not in result
+
+
+class TestHermesBinDirOnPath:
+    """The hermes install dir is reachable in the terminal subshell PATH.
+
+    Plugins shelling out to bare ``hermes`` via the terminal tool must work
+    even when the gateway was launched without the hermes install dir on
+    PATH (systemd, service managers, cron). See the discussion that motivated
+    _resolve_hermes_bin_dir / _prepend_hermes_bin_dir.
+    """
+
+    def _reset_cache(self):
+        from tools.environments import local as local_mod
+        local_mod._HERMES_BIN_DIR = local_mod._SENTINEL
+
+    def test_resolves_via_which(self, monkeypatch):
+        from tools.environments import local as local_mod
+        self._reset_cache()
+        monkeypatch.setattr(local_mod.shutil, "which",
+                            lambda name: "/opt/hermes/bin/hermes" if name == "hermes" else None)
+        monkeypatch.setattr(local_mod.os.path, "isdir", lambda p: p == "/opt/hermes/bin")
+        assert local_mod._resolve_hermes_bin_dir() == "/opt/hermes/bin"
+
+    def test_resolves_via_sys_executable_dir(self, monkeypatch, tmp_path):
+        from tools.environments import local as local_mod
+        self._reset_cache()
+        venv_bin = tmp_path / "venv" / "bin"
+        venv_bin.mkdir(parents=True)
+        (venv_bin / "hermes").write_text("#!/bin/sh\n")
+        monkeypatch.setattr(local_mod.shutil, "which", lambda name: None)
+        monkeypatch.setattr(local_mod.sys, "argv", ["python"])
+        monkeypatch.setattr(local_mod.sys, "executable", str(venv_bin / "python"))
+        monkeypatch.setattr(local_mod, "_IS_WINDOWS", False)
+        assert local_mod._resolve_hermes_bin_dir() == str(venv_bin)
+
+    def test_returns_none_when_unresolvable(self, monkeypatch):
+        from tools.environments import local as local_mod
+        self._reset_cache()
+        monkeypatch.setattr(local_mod.shutil, "which", lambda name: None)
+        monkeypatch.setattr(local_mod.sys, "argv", ["python"])
+        monkeypatch.setattr(local_mod.sys, "executable", "/nonexistent/python")
+        assert local_mod._resolve_hermes_bin_dir() is None
+
+    def test_prepend_adds_missing_dir_at_front(self, monkeypatch):
+        from tools.environments import local as local_mod
+        self._reset_cache()
+        local_mod._HERMES_BIN_DIR = "/opt/hermes/bin"
+        out = local_mod._prepend_hermes_bin_dir("/usr/bin:/bin")
+        assert out.split(os.pathsep)[0] == "/opt/hermes/bin"
+        assert "/usr/bin" in out.split(os.pathsep)
+
+    def test_prepend_is_idempotent(self, monkeypatch):
+        from tools.environments import local as local_mod
+        self._reset_cache()
+        local_mod._HERMES_BIN_DIR = "/opt/hermes/bin"
+        once = local_mod._prepend_hermes_bin_dir("/usr/bin:/bin")
+        twice = local_mod._prepend_hermes_bin_dir(once)
+        assert twice == once
+        assert once.split(os.pathsep).count("/opt/hermes/bin") == 1
+
+    def test_prepend_noop_when_unresolved(self, monkeypatch):
+        from tools.environments import local as local_mod
+        self._reset_cache()
+        local_mod._HERMES_BIN_DIR = None
+        assert local_mod._prepend_hermes_bin_dir("/usr/bin:/bin") == "/usr/bin:/bin"
+
+    def test_make_run_env_injects_hermes_bin_dir(self, monkeypatch):
+        """A gateway env missing the hermes dir gets it back in the subshell PATH."""
+        from tools.environments import local as local_mod
+        from tools.environments.local import _make_run_env
+        self._reset_cache()
+        local_mod._HERMES_BIN_DIR = "/opt/hermes/bin"
+        monkeypatch.setattr(local_mod, "_IS_WINDOWS", False)
+        with patch.dict(os.environ, {"PATH": "/usr/bin:/bin"}, clear=True):
+            result = _make_run_env({})
+        entries = result["PATH"].split(os.pathsep)
+        assert entries[0] == "/opt/hermes/bin"
+        assert "/usr/bin" in entries

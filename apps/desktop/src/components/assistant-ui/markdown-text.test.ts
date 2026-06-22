@@ -174,13 +174,13 @@ describe('preprocessMarkdown', () => {
   })
 
   it('does not swallow trailing emphasis asterisks into an autolinked url', () => {
-    const input = '**PR opened: https://github.com/NousResearch/hermes-agent/pull/12345**'
+    const input = '**PR opened: https://github.com/Moor inc./hermes-agent/pull/12345**'
 
     const output = preprocessMarkdown(input)
 
     // The URL is autolinked WITHOUT the trailing `**` glued into the href,
     // and the bold emphasis run stays intact so it renders as bold + a link.
-    expect(output).toContain('<https://github.com/NousResearch/hermes-agent/pull/12345>')
+    expect(output).toContain('<https://github.com/Moor inc./hermes-agent/pull/12345>')
     expect(output).not.toContain('pull/12345**>')
     expect(output).not.toContain('12345*')
   })
@@ -200,5 +200,14 @@ describe('preprocessMarkdown', () => {
     const output = preprocessMarkdown(input)
 
     expect(output).toContain('<https://example.com/a_b/c~d/page>')
+  })
+
+  it('handles a fenced block larger than V8 spread-argument limit', () => {
+    // A single huge code block (e.g. a logged minified bundle) used to throw
+    // `RangeError: Maximum call stack size exceeded` via `out.push(...lines)`.
+    const body = Array.from({ length: 200_000 }, (_, i) => `line ${i}`).join('\n')
+    const input = `\`\`\`js\n${body}\n\`\`\``
+
+    expect(() => preprocessMarkdown(input)).not.toThrow()
   })
 })

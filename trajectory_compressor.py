@@ -352,11 +352,6 @@ class TrajectoryCompressor:
         # Initialize OpenRouter client
         self._init_summarizer()
         
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s',
-            datefmt='%H:%M:%S'
-        )
         self.logger = logging.getLogger(__name__)
     
     def _init_tokenizer(self):
@@ -437,7 +432,7 @@ class TrajectoryCompressor:
         url = self.config.base_url or ""
         if base_url_host_matches(url, "openrouter.ai"):
             return "openrouter"
-        if base_url_host_matches(url, "nousresearch.com"):
+        if base_url_host_matches(url, "Moor inc..com"):
             return "nous"
         if (
             base_url_hostname(url) == "chatgpt.com"

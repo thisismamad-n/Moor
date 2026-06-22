@@ -31,7 +31,7 @@ def _ensure_telegram_mock():
 
 _ensure_telegram_mock()
 
-from gateway.platforms.telegram import TelegramAdapter  # noqa: E402
+from plugins.platforms.telegram.adapter import TelegramAdapter  # noqa: E402
 
 
 @pytest.fixture()
@@ -309,8 +309,8 @@ class TestTelegramYamlConfigLoading:
 class TestDMTopicFallbackReplyToMode:
     """Tests for reply_to_mode enforcement on DM topic fallback paths.
 
-    Regression tests for https://github.com/NousResearch/hermes-agent/issues/23994:
-    reply_to_mode 'off' was ignored when sending via Hermes-created DM topic
+    Regression tests for https://github.com/Moor inc./hermes-agent/issues/23994:
+    reply_to_mode 'off' was ignored when sending via Moor-created DM topic
     lanes (telegram_dm_topic_reply_fallback metadata), causing quote bubbles
     despite the user setting reply_to_mode: 'off'.
     """

@@ -6,7 +6,7 @@ description: "Run custom code at key lifecycle points — log activity, send ale
 
 # Event Hooks
 
-Hermes has three hook systems that run custom code at key lifecycle points:
+Moor has three hook systems that run custom code at key lifecycle points:
 
 | System | Registered via | Runs in | Use case |
 |--------|---------------|---------|----------|
@@ -186,7 +186,7 @@ async def handle(event_type: str, context: dict):
 
 A popular pattern from the community: drop a Markdown checklist at `~/.hermes/BOOT.md`, and have the agent run it once every time the gateway starts. Useful for "on every boot, check overnight cron failures and ping me on Discord if anything failed," or "summarize the last 24h of deploy.log and post it to Slack #ops."
 
-This tutorial shows how to build it yourself as a user-defined hook. Hermes does not ship a built-in BOOT.md hook — you wire up exactly the behavior you want.
+This tutorial shows how to build it yourself as a user-defined hook. Moor does not ship a built-in BOOT.md hook — you wire up exactly the behavior you want.
 
 #### What we're building
 
@@ -335,7 +335,7 @@ Delete `~/.hermes/BOOT.md` to disable the checklist — the hook stays loaded bu
 
 #### Why this isn't a built-in
 
-An earlier version of Hermes shipped this as a built-in hook and silently spawned an agent with bare defaults on every gateway boot. That surprised users with custom endpoints and made the feature invisible to users who didn't know it was running. Keeping it as a documented pattern — built by you, in your hooks directory — means you see exactly what it does and opt in by writing the files.
+An earlier version of Moor shipped this as a built-in hook and silently spawned an agent with bare defaults on every gateway boot. That surprised users with custom endpoints and made the feature invisible to users who didn't know it was running. Keeping it as a documented pattern — built by you, in your hooks directory — means you see exactly what it does and opt in by writing the files.
 
 ### How It Works
 
@@ -385,6 +385,7 @@ def register(ctx):
 | [`on_session_end`](#on_session_end) | Session ends | ignored |
 | [`on_session_finalize`](#on_session_finalize) | CLI/gateway tears down an active session (flush, save, stats) | ignored |
 | [`on_session_reset`](#on_session_reset) | Gateway swaps in a fresh session key (e.g. `/new`, `/reset`) | ignored |
+| [`subagent_start`](#subagent_start) | A `delegate_task` child has been constructed and is about to run | ignored |
 | [`subagent_stop`](#subagent_stop) | A `delegate_task` child has exited | ignored |
 | [`pre_gateway_dispatch`](#pre_gateway_dispatch) | Gateway received a user message, before auth + dispatch | `{"action": "skip" \| "rewrite" \| "allow", ...}` to influence flow |
 | [`pre_approval_request`](#pre_approval_request) | Dangerous command needs user approval, before the prompt/notification is sent | ignored |
@@ -540,7 +541,7 @@ return "Recalled memories:\n- User likes Python"
 return None
 ```
 
-**Where context is injected:** Always the **user message**, never the system prompt. This preserves the prompt cache — the system prompt stays identical across turns, so cached tokens are reused. The system prompt is Hermes's territory (model guidance, tool enforcement, personality, skills). Plugins contribute context alongside the user's input.
+**Where context is injected:** Always the **user message**, never the system prompt. This preserves the prompt cache — the system prompt stays identical across turns, so cached tokens are reused. The system prompt is Moor's territory (model guidance, tool enforcement, personality, skills). Plugins contribute context alongside the user's input.
 
 All injected context is **ephemeral** — added at API call time only. The original user message in the conversation history is never mutated, and nothing is persisted to the session database.
 
@@ -809,6 +810,77 @@ See the **[Build a Plugin guide](/guides/build-a-hermes-plugin)** for the full w
 
 ---
 
+### `subagent_start`
+
+Fires **once per child agent** after `delegate_task` has constructed the child `AIAgent` and before that child is run. Whether you delegate a single task or a batch of three, this hook fires once for each child.
+
+This hook is specific to delegation/subagent lifecycle. It is not a universal "before any agent invocation" gate for gateway, CLI, cron, batch, MoA, or other runner-originated agent executions.
+
+**Callback signature:**
+
+```python
+def my_callback(parent_session_id: str | None,
+                parent_turn_id: str,
+                parent_subagent_id: str | None,
+                child_session_id: str | None,
+                child_subagent_id: str,
+                child_role: str,
+                child_goal: str,
+                **kwargs):
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `parent_session_id` | `str \| None` | Session ID of the delegating parent agent. |
+| `parent_turn_id` | `str` | Turn ID of the parent agent turn that requested delegation, if available. |
+| `parent_subagent_id` | `str \| None` | Parent subagent ID when this child was spawned by another subagent; `None` for top-level parent agents. |
+| `child_session_id` | `str \| None` | Session ID allocated for the child agent. |
+| `child_subagent_id` | `str` | Stable subagent ID used by delegation observability and controls. |
+| `child_role` | `str` | Effective child role after delegation policy is applied, for example `"leaf"` or `"orchestrator"`. |
+| `child_goal` | `str` | Delegated goal/prompt that the child agent will execute. |
+
+**Fires:** In `tools/delegate_tool.py`, inside `_build_child_agent()`, after the child `AIAgent` has been constructed and annotated with subagent identity metadata, and before `_run_single_child()` runs the child.
+
+**Return value:** Ignored. This is an observer hook only; returning a value does not block or mutate the child agent run.
+
+**Use cases:** Logging subagent creation, mapping parent/child session relationships, tracking nested delegation trees, emitting pre-run audit records, pre-allocating per-child observability resources.
+
+**Example — log subagent creation:**
+
+```python
+import logging
+
+logger = logging.getLogger(__name__)
+
+def log_subagent_start(
+    parent_session_id,
+    parent_turn_id,
+    child_session_id,
+    child_subagent_id,
+    child_role,
+    child_goal,
+    **kwargs,
+):
+    logger.info(
+        "SUBAGENT_START parent=%s turn=%s child_session=%s child=%s role=%s goal=%r",
+        parent_session_id,
+        parent_turn_id,
+        child_session_id,
+        child_subagent_id,
+        child_role,
+        child_goal[:200],
+    )
+
+def register(ctx):
+    ctx.register_hook("subagent_start", log_subagent_start)
+```
+
+:::info
+`subagent_start` is useful for delegation observability, but it is not a blocking policy hook. To block delegation before a child is built, use [`pre_tool_call`](#pre_tool_call) to block the `delegate_task` tool call.
+:::
+
+---
+
 ### `subagent_stop`
 
 Fires **once per child agent** after `delegate_task` finishes. Whether you delegated a single task or a batch of three, this hook fires once for each child, serialised on the parent thread.
@@ -958,7 +1030,7 @@ def my_callback(
 import subprocess
 
 def notify_approval(command, description, session_key, **kwargs):
-    title = "Hermes needs approval"
+    title = "Moor needs approval"
     body = f"{description}: {command[:80]}"
     subprocess.Popen([
         "osascript", "-e",
@@ -1143,7 +1215,7 @@ The hook is guarded on a non-empty, non-interrupted response — it will not fir
 
 ## Shell Hooks
 
-Declare shell-script hooks in your `cli-config.yaml` and Hermes will run them as subprocesses whenever the corresponding plugin-hook event fires — in both CLI and gateway sessions. No Python plugin authoring required.
+Declare shell-script hooks in your `cli-config.yaml` and Moor will run them as subprocesses whenever the corresponding plugin-hook event fires — in both CLI and gateway sessions. No Python plugin authoring required.
 
 Use shell hooks when you want a drop-in, single-file script (Bash, Python, anything with a shebang) to:
 
@@ -1184,7 +1256,7 @@ Event names must be one of the [plugin hook events](#plugin-hooks); typos produc
 
 ### JSON wire protocol
 
-Each time the event fires, Hermes spawns a subprocess for every matching hook (matcher permitting), pipes a JSON payload to **stdin**, and reads **stdout** back as JSON.
+Each time the event fires, Moor spawns a subprocess for every matching hook (matcher permitting), pipes a JSON payload to **stdin**, and reads **stdout** back as JSON.
 
 **stdin — payload the script receives:**
 
@@ -1206,7 +1278,7 @@ Each time the event fires, Hermes spawns a subprocess for every matching hook (m
 ```jsonc
 // Block a pre_tool_call (both shapes accepted; normalised internally):
 {"decision": "block", "reason":  "Forbidden: rm -rf"}   // Claude-Code style
-{"action":   "block", "message": "Forbidden: rm -rf"}   // Hermes-canonical
+{"action":   "block", "message": "Forbidden: rm -rf"}   // Moor-canonical
 
 // Inject context for pre_llm_call:
 {"context": "Today is Friday, 2026-04-17"}
@@ -1281,7 +1353,7 @@ else
 fi
 ```
 
-Claude Code's `UserPromptSubmit` event is intentionally not a separate Hermes event — `pre_llm_call` fires at the same place and already supports context injection. Use it here.
+Claude Code's `UserPromptSubmit` event is intentionally not a separate Moor event — `pre_llm_call` fires at the same place and already supports context injection. Use it here.
 
 #### 4. Log every subagent completion
 
@@ -1301,7 +1373,7 @@ printf '{}\n'
 
 ### Consent model
 
-Each unique `(event, command)` pair prompts the user for approval the first time Hermes sees it, then persists the decision to `~/.hermes/shell-hooks-allowlist.json`. Subsequent runs (CLI or gateway) skip the prompt.
+Each unique `(event, command)` pair prompts the user for approval the first time Moor sees it, then persists the decision to `~/.hermes/shell-hooks-allowlist.json`. Subsequent runs (CLI or gateway) skip the prompt.
 
 Three escape hatches bypass the interactive prompt — any one is sufficient:
 
@@ -1312,6 +1384,23 @@ Three escape hatches bypass the interactive prompt — any one is sufficient:
 Non-TTY runs (gateway, cron, CI) need one of these three — otherwise any newly-added hook silently stays un-registered and logs a warning.
 
 **Script edits are silently trusted.** The allowlist keys on the exact command string, not the script's hash, so editing the script on disk does not invalidate consent. `hermes hooks doctor` flags mtime drift so you can spot edits and decide whether to re-approve.
+
+#### Manual allowlisting
+
+Manual allowlisting is useful for non-TTY or service-account deployments where an operator cannot answer the first-use prompt interactively. The allowlist file is `~/.hermes/shell-hooks-allowlist.json`, and the expected format is an `approvals` array. Each approval records the hook `event` and the exact `command` string:
+
+```json
+{
+  "approvals": [
+    {
+      "event": "post_llm_call",
+      "command": "/home/hermes/.hermes/hooks/my-hook.py"
+    }
+  ]
+}
+```
+
+The command string must match the configured hook command exactly. A path-keyed object with a `sha256` field is not the expected format and will not approve the hook. Verify manual entries with `hermes hooks list`.
 
 ### The `hermes hooks` CLI
 

@@ -24,20 +24,21 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NousResearch/Hermes-Agent.git"
+    "url": "git+https://github.com/Moor inc./Moor-Agent.git"
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/NousResearch/Hermes-Agent/issues"
+    "url": "https://github.com/Moor inc./Moor-Agent/issues"
   },
-  "homepage": "https://github.com/NousResearch/Hermes-Agent#readme",
+  "homepage": "https://github.com/Moor inc./Moor-Agent#readme",
   "dependencies": {
     "@streamdown/math": "^1.0.2",
     "agent-browser": "^0.26.0"
   },
   "overrides": {
     "lodash": "4.18.1",
-    "@assistant-ui/store": "0.2.13"
+    "@assistant-ui/store": "0.2.13",
+    "yauzl": "^3.3.1"
   },
   "engines": {
     "node": ">=20.0.0"

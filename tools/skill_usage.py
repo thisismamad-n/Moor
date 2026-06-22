@@ -349,7 +349,7 @@ def list_agent_created_skill_names() -> List[str]:
     names: List[str] = []
     # Top-level SKILL.md files (flat layout) AND nested category/skill/SKILL.md
     for skill_md in base.rglob("SKILL.md"):
-        # Skip Hermes metadata, VCS, virtualenv/dependency, and cache dirs
+        # Skip Moor metadata, VCS, virtualenv/dependency, and cache dirs
         if is_excluded_skill_path(skill_md):
             continue
         try:
@@ -752,14 +752,27 @@ def restore_skill(skill_name: str) -> Tuple[bool, str]:
     if not archive_root.exists():
         return False, "no archive directory"
 
-    # Try exact name match first, then any prefix match (for timestamped dupes).
+    # Try exact name match first, then the timestamped-duplicate fallback.
     # Recursive walk handles nested archive layouts (e.g. .archive/<category>/<skill>/)
     # left behind by older archive paths or external imports.
     candidates = [p for p in archive_root.rglob("*") if p.is_dir() and p.name == skill_name]
     if not candidates:
+        # A name collision makes archive_skill() disambiguate by appending its
+        # UTC timestamp ("<skill>-YYYYMMDDHHMMSS", a 14-digit suffix), so only
+        # that exact shape is another copy of THIS skill. A bare
+        # startswith(f"{skill_name}-") also swallows unrelated sibling skills —
+        # restoring "git" would otherwise pull an archived "git-helpers" out of
+        # the archive and rename it to "git", destroying the sibling's only
+        # copy. Require the suffix to be the timestamp archive_skill writes.
+        prefix = f"{skill_name}-"
         candidates = sorted(
-            [p for p in archive_root.rglob("*")
-             if p.is_dir() and p.name.startswith(f"{skill_name}-")],
+            [
+                p for p in archive_root.rglob("*")
+                if p.is_dir()
+                and p.name.startswith(prefix)
+                and len(p.name) - len(prefix) == 14
+                and p.name[len(prefix):].isdigit()
+            ],
             reverse=True,
         )
     if not candidates:

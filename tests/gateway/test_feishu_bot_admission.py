@@ -28,7 +28,7 @@ from tests.gateway.feishu_helpers import (
     ],
 )
 def test_feishu_load_settings_populates_allow_bots(monkeypatch, env_value, expected):
-    from gateway.platforms.feishu import FeishuAdapter
+    from plugins.platforms.feishu.adapter import FeishuAdapter
 
     monkeypatch.setenv("FEISHU_APP_ID", "cli_test")
     monkeypatch.setenv("FEISHU_APP_SECRET", "secret_test")
@@ -39,7 +39,7 @@ def test_feishu_load_settings_populates_allow_bots(monkeypatch, env_value, expec
 
 
 def test_feishu_load_settings_allow_bots_defaults_to_none(monkeypatch):
-    from gateway.platforms.feishu import FeishuAdapter
+    from plugins.platforms.feishu.adapter import FeishuAdapter
 
     monkeypatch.setenv("FEISHU_APP_ID", "cli_test")
     monkeypatch.setenv("FEISHU_APP_SECRET", "secret_test")
@@ -51,7 +51,7 @@ def test_feishu_load_settings_allow_bots_defaults_to_none(monkeypatch):
 
 def test_feishu_load_settings_ignores_extra_allow_bots(monkeypatch):
     # extra is ignored — env is single source of truth (yaml is bridged to env).
-    from gateway.platforms.feishu import FeishuAdapter
+    from plugins.platforms.feishu.adapter import FeishuAdapter
 
     monkeypatch.setenv("FEISHU_APP_ID", "cli_test")
     monkeypatch.setenv("FEISHU_APP_SECRET", "secret_test")
@@ -62,7 +62,7 @@ def test_feishu_load_settings_ignores_extra_allow_bots(monkeypatch):
 
 
 def test_feishu_load_settings_falls_back_to_env_when_extra_missing(monkeypatch):
-    from gateway.platforms.feishu import FeishuAdapter
+    from plugins.platforms.feishu.adapter import FeishuAdapter
 
     monkeypatch.setenv("FEISHU_APP_ID", "cli_test")
     monkeypatch.setenv("FEISHU_APP_SECRET", "secret_test")
@@ -75,13 +75,13 @@ def test_feishu_load_settings_falls_back_to_env_when_extra_missing(monkeypatch):
 def test_feishu_load_settings_warns_on_unknown_allow_bots(monkeypatch, caplog):
     import logging
 
-    from gateway.platforms.feishu import FeishuAdapter
+    from plugins.platforms.feishu.adapter import FeishuAdapter
 
     monkeypatch.setenv("FEISHU_APP_ID", "cli_test")
     monkeypatch.setenv("FEISHU_APP_SECRET", "secret_test")
     monkeypatch.setenv("FEISHU_ALLOW_BOTS", "menton")  # typo
 
-    with caplog.at_level(logging.WARNING, logger="gateway.platforms.feishu"):
+    with caplog.at_level(logging.WARNING, logger="plugins.platforms.feishu.adapter"):
         settings = FeishuAdapter._load_settings(extra={})
 
     assert settings.allow_bots == "none"
@@ -98,7 +98,7 @@ def test_feishu_load_settings_warns_on_unknown_allow_bots(monkeypatch, caplog):
     ],
 )
 def test_feishu_load_settings_require_mention(monkeypatch, env_value, extra, expected):
-    from gateway.platforms.feishu import FeishuAdapter
+    from plugins.platforms.feishu.adapter import FeishuAdapter
 
     monkeypatch.setenv("FEISHU_APP_ID", "cli_test")
     monkeypatch.setenv("FEISHU_APP_SECRET", "secret_test")
@@ -112,7 +112,7 @@ def test_feishu_load_settings_require_mention(monkeypatch, env_value, extra, exp
 
 
 def test_feishu_load_settings_parses_per_group_require_mention(monkeypatch):
-    from gateway.platforms.feishu import FeishuAdapter
+    from plugins.platforms.feishu.adapter import FeishuAdapter
 
     monkeypatch.setenv("FEISHU_APP_ID", "cli_test")
     monkeypatch.setenv("FEISHU_APP_SECRET", "secret_test")
@@ -133,7 +133,7 @@ def test_feishu_load_settings_parses_per_group_require_mention(monkeypatch):
 
 
 def test_sender_identity_collects_every_non_empty_id_variant():
-    from gateway.platforms.feishu import _sender_identity
+    from plugins.platforms.feishu.adapter import _sender_identity
 
     sender = SimpleNamespace(
         sender_id=SimpleNamespace(open_id="ou_x", user_id="", union_id="un_x"),
@@ -142,21 +142,21 @@ def test_sender_identity_collects_every_non_empty_id_variant():
 
 
 def test_sender_identity_handles_missing_sender_id():
-    from gateway.platforms.feishu import _sender_identity
+    from plugins.platforms.feishu.adapter import _sender_identity
 
     assert _sender_identity(SimpleNamespace()) == frozenset()
 
 
 @pytest.mark.parametrize("sender_type", ["bot", "app"])
 def test_is_bot_sender_treats_bot_and_app_as_bot_origin(sender_type):
-    from gateway.platforms.feishu import _is_bot_sender
+    from plugins.platforms.feishu.adapter import _is_bot_sender
 
     assert _is_bot_sender(SimpleNamespace(sender_type=sender_type)) is True
 
 
 @pytest.mark.parametrize("sender_type", ["user", "", None])
 def test_is_bot_sender_rejects_non_bot_origin(sender_type):
-    from gateway.platforms.feishu import _is_bot_sender
+    from plugins.platforms.feishu.adapter import _is_bot_sender
 
     assert _is_bot_sender(SimpleNamespace(sender_type=sender_type)) is False
 
@@ -430,7 +430,7 @@ def test_admit_group_mention_checked_once_per_call():
 
 
 def test_admit_per_group_require_mention_overrides_global():
-    from gateway.platforms.feishu import FeishuGroupRule
+    from plugins.platforms.feishu.adapter import FeishuGroupRule
 
     adapter = make_adapter_skeleton(
         bot_open_id="ou_self", require_mention=True, group_policy="open",
@@ -454,7 +454,7 @@ def test_admit_per_group_require_mention_overrides_global():
 def test_hydrate_bot_identity_populates_self_ids_from_bot_v3_info(monkeypatch):
     import asyncio
 
-    from gateway.platforms import feishu as feishu_mod
+    import plugins.platforms.feishu.adapter as feishu_mod
     FeishuAdapter = feishu_mod.FeishuAdapter
 
     class _FakeBaseRequestBuilder:
@@ -497,7 +497,7 @@ def test_hydrate_bot_identity_populates_self_ids_from_bot_v3_info(monkeypatch):
         captured["uri"] = getattr(request, "uri", None)
         captured["http_method"] = getattr(request, "http_method", None)
         return SimpleNamespace(raw=SimpleNamespace(
-            content=b'{"code":0,"bot":{"app_name":"Hermes","open_id":"ou_hydrated"}}'
+            content=b'{"code":0,"bot":{"app_name":"Moor","open_id":"ou_hydrated"}}'
         ))
 
     adapter._client = SimpleNamespace(request=_fake_request)
@@ -507,7 +507,7 @@ def test_hydrate_bot_identity_populates_self_ids_from_bot_v3_info(monkeypatch):
     assert captured["uri"] == "/open-apis/bot/v3/info"
     assert str(captured["http_method"]).endswith("GET")
     assert adapter._bot_open_id == "ou_hydrated"
-    assert adapter._bot_name == "Hermes"
+    assert adapter._bot_name == "Moor"
     # /bot/v3/info doesn't surface user_id, so _bot_user_id stays empty.
     assert adapter._bot_user_id == ""
 
@@ -515,7 +515,7 @@ def test_hydrate_bot_identity_populates_self_ids_from_bot_v3_info(monkeypatch):
 def test_resolve_sender_profile_uses_open_id_for_bot_name_lookup():
     import asyncio
 
-    from gateway.platforms.feishu import FeishuAdapter
+    from plugins.platforms.feishu.adapter import FeishuAdapter
 
     adapter = object.__new__(FeishuAdapter)
     adapter._client = object()
@@ -569,7 +569,7 @@ def _group_case(
 
 
 def _group_rule(policy: str, **kwargs):
-    from gateway.platforms.feishu import FeishuGroupRule
+    from plugins.platforms.feishu.adapter import FeishuGroupRule
     return FeishuGroupRule(policy=policy, **kwargs)
 
 
@@ -700,7 +700,7 @@ def test_admit_accepts_realistic_bot_at_bot_group_event():
     mention = SimpleNamespace(
         key="@_user_1",
         id=SimpleNamespace(union_id="on_mentionUnion", user_id="", open_id="ou_self"),
-        name="Hermes",
+        name="Moor",
         mentioned_type="bot",
         tenant_key="tenant_ab",
     )

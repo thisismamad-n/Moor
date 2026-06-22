@@ -4,7 +4,7 @@ Standalone Web Tools Module
 
 This module provides generic web tools that work with multiple backend providers.
 Backend is selected during ``hermes tools`` setup (web.backend in config.yaml).
-When available, Hermes can route Firecrawl calls through a Nous-hosted tool-gateway
+When available, Moor can route Firecrawl calls through a Nous-hosted tool-gateway
 for Nous Subscribers only.
 
 Available tools:
@@ -111,10 +111,10 @@ logger = logging.getLogger(__name__)
 # ─── Backend Selection ────────────────────────────────────────────────────────
 
 def _env_value(name: str) -> str:
-    """Resolve ``name`` via Hermes config-aware env, falling back to process env.
+    """Resolve ``name`` via Moor config-aware env, falling back to process env.
 
     Mirrors the SearXNG provider's ``_searxng_url()`` so that values set
-    through Hermes' config/.env layer (``hermes config set``, ``hermes tools``)
+    through Moor' config/.env layer (``hermes config set``, ``hermes tools``)
     are honored here too — not just raw process-env exports. Without this,
     a config-only ``SEARXNG_URL`` (or any provider key) leaves the backend
     auto-detect cascade and ``check_web_api_key()`` blind to it. See #34290.
@@ -313,7 +313,7 @@ def _is_nous_auxiliary_client(client: Any) -> bool:
 
     base_url = str(getattr(client, "base_url", "") or "")
     host = (urlparse(base_url).hostname or "").lower()
-    return host == "nousresearch.com" or host.endswith(".nousresearch.com")
+    return host == "Moor inc..com" or host.endswith(".Moor inc..com")
 
 
 def _resolve_web_extract_auxiliary(model: Optional[str] = None) -> tuple[Optional[Any], Optional[str], Dict[str, Any]]:

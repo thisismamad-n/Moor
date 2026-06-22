@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: "Configuration"
-description: "Configure Hermes Agent — config.yaml, providers, models, API keys, and more"
+description: "Configure Moor Agent — config.yaml, providers, models, API keys, and more"
 ---
 
 # Configuration
@@ -59,6 +59,12 @@ Settings are resolved in this order (highest priority first):
 Secrets (API keys, bot tokens, passwords) go in `.env`. Everything else (model, terminal backend, compression settings, memory limits, toolsets) goes in `config.yaml`. When both are set, `config.yaml` wins for non-secret settings.
 :::
 
+:::tip Org deployments
+An administrator can pin specific config and secret values that a standard user
+cannot override, via a system-level managed directory. See
+[Managed Scope](/user-guide/managed-scope).
+:::
+
 ## Environment Variable Substitution
 
 You can reference environment variables in `config.yaml` using `${VAR_NAME}` syntax:
@@ -83,7 +89,7 @@ You can set `providers.<id>.request_timeout_seconds` for a provider-wide request
 
 You can also set `providers.<id>.stale_timeout_seconds` for the non-streaming stale-call detector, plus `providers.<id>.models.<model>.stale_timeout_seconds` for a model-specific override. This wins over the legacy `HERMES_API_CALL_STALE_TIMEOUT` env var.
 
-Leaving these unset keeps the legacy defaults (`HERMES_API_TIMEOUT=1800`s, `HERMES_API_CALL_STALE_TIMEOUT=300`s, native Anthropic 900s). Not currently wired for AWS Bedrock (both `bedrock_converse` and AnthropicBedrock SDK paths use boto3 with its own timeout configuration). See the commented example in [`cli-config.yaml.example`](https://github.com/NousResearch/hermes-agent/blob/main/cli-config.yaml.example).
+Leaving these unset keeps the legacy defaults (`HERMES_API_TIMEOUT=1800`s, `HERMES_API_CALL_STALE_TIMEOUT=90`s, native Anthropic 900s). The non-streaming stale detector is auto-disabled for local endpoints when left implicit and can scale upward for very large contexts. Not currently wired for AWS Bedrock (both `bedrock_converse` and AnthropicBedrock SDK paths use boto3 with its own timeout configuration). See the commented example in [`cli-config.yaml.example`](https://github.com/Moor inc./hermes-agent/blob/main/cli-config.yaml.example).
 
 ## Update Behavior
 
@@ -96,13 +102,13 @@ updates:
   non_interactive_local_changes: stash  # stash | discard
 ```
 
-For git installs, Hermes auto-stashes dirty tracked files and untracked files before checking out the update branch or pulling. Interactive terminal updates prompt before restoring that stash. Non-interactive updates (desktop/chat app, gateway, or `--yes`) use `updates.non_interactive_local_changes`: `stash` restores local source edits after a successful pull, while `discard` drops the update-created stash after a successful pull. Use `discard` only on managed installs where local source edits are never meant to persist.
+For git installs, Moor auto-stashes dirty tracked files and untracked files before checking out the update branch or pulling. Interactive terminal updates prompt before restoring that stash. Non-interactive updates (desktop/chat app, gateway, or `--yes`) use `updates.non_interactive_local_changes`: `stash` restores local source edits after a successful pull, while `discard` drops the update-created stash after a successful pull. Use `discard` only on managed installs where local source edits are never meant to persist.
 
-Before that stash step, Hermes also restores tracked `package-lock.json` diffs left by npm install/build churn. Commit or manually stash intentional lockfile edits before updating.
+Before that stash step, Moor also restores tracked `package-lock.json` diffs left by npm install/build churn. Commit or manually stash intentional lockfile edits before updating.
 
 ## Terminal Backend Configuration
 
-Hermes supports six terminal backends. Each determines where the agent's shell commands actually execute — your local machine, a Docker container, a remote server via SSH, a Modal cloud sandbox (direct or via the Nous-managed gateway), a Daytona workspace, or a Singularity/Apptainer container.
+Moor supports six terminal backends. Each determines where the agent's shell commands actually execute — your local machine, a Docker container, a remote server via SSH, a Modal cloud sandbox (direct or via the Nous-managed gateway), a Daytona workspace, or a Singularity/Apptainer container.
 
 ```yaml
 terminal:
@@ -116,7 +122,7 @@ terminal:
   daytona_image: "nikolaik/python-nodejs:python3.11-nodejs20"               # Container image for Daytona backend
 ```
 
-For cloud sandboxes such as Modal and Daytona, `container_persistent: true` means Hermes will try to preserve filesystem state across sandbox recreation. It does not promise that the same live sandbox, PID space, or background processes will still be running later.
+For cloud sandboxes such as Modal and Daytona, `container_persistent: true` means Moor will try to preserve filesystem state across sandbox recreation. It does not promise that the same live sandbox, PID space, or background processes will still be running later.
 
 ### Backend Overview
 
@@ -140,13 +146,13 @@ terminal:
 
 By default, local tool subprocesses keep your real OS-user `HOME`. This lets
 external CLIs such as `git`, `ssh`, `gh`, `az`, `npm`, Claude Code, and Codex
-find the credentials and config they already use in your normal shell. Hermes
+find the credentials and config they already use in your normal shell. Moor
 state is still profile-scoped through `HERMES_HOME`; `HOME` is not how profiles
 select config, memory, sessions, or skills.
 
-Hermes does **not** change your system-wide `HOME`, your shell startup files, or
+Moor does **not** change your system-wide `HOME`, your shell startup files, or
 the operating system account home. This setting only controls the environment
-passed to subprocesses that Hermes launches through tools such as `terminal`,
+passed to subprocesses that Moor launches through tools such as `terminal`,
 background terminal processes, `execute_code`, and ACP helper processes.
 
 #### `terminal.home_mode`
@@ -170,13 +176,13 @@ terminal:
   home_mode: profile
 ```
 
-In that mode tool subprocesses use `{HERMES_HOME}/home` as `HOME`. Hermes also
+In that mode tool subprocesses use `{HERMES_HOME}/home` as `HOME`. Moor also
 sets `HERMES_REAL_HOME` so scripts can still locate the actual user home when
 they need it. Container backends keep using `{HERMES_HOME}/home` in `auto` mode
-because that directory lives on the persistent Hermes data volume.
+because that directory lives on the persistent Moor data volume.
 
 Scripts that need to distinguish profile state from the real user home should
-prefer `HERMES_HOME` for Hermes data and `HERMES_REAL_HOME` for the account home:
+prefer `HERMES_HOME` for Moor data and `HERMES_REAL_HOME` for the account home:
 
 ```python
 from pathlib import Path
@@ -194,7 +200,7 @@ The agent has the same filesystem access as your user account. Use `hermes tools
 
 Runs commands inside a Docker container with security hardening (all capabilities dropped, no privilege escalation, PID limits).
 
-**Single persistent container, shared across Hermes processes.** Hermes starts ONE long-lived container on first use and routes every terminal, file, and `execute_code` call through `docker exec` into that same container — across sessions, `/new`, `/reset`, and `delegate_task` subagents. Working-directory changes, installed packages, files in `/workspace`, and **background processes** all carry over from one tool call to the next, and from one Hermes process to the next. When you close a TUI session, run `/quit`, or start a new `hermes` invocation, the container keeps running and the next Hermes process reuses it via a labeled lookup. See **Container lifecycle** below for the exact teardown rules.
+**Single persistent container, shared across Moor processes.** Moor starts ONE long-lived container on first use and routes every terminal, file, and `execute_code` call through `docker exec` into that same container — across sessions, `/new`, `/reset`, and `delegate_task` subagents. Working-directory changes, installed packages, files in `/workspace`, and **background processes** all carry over from one tool call to the next, and from one Moor process to the next. When you close a TUI session, run `/quit`, or start a new `hermes` invocation, the container keeps running and the next Moor process reuses it via a labeled lookup. See **Container lifecycle** below for the exact teardown rules.
 
 ```yaml
 terminal:
@@ -222,7 +228,7 @@ terminal:
 
   # Cross-process container reuse (defaults match the "one long-lived
   # container shared across sessions" contract — see Container lifecycle).
-  docker_persist_across_processes: true   # Reuse container across Hermes restarts
+  docker_persist_across_processes: true   # Reuse container across Moor restarts
   docker_orphan_reaper: true              # Sweep abandoned Exited containers at startup
 
   # Cross-backend lifecycle settings (apply to docker as well)
@@ -232,21 +238,21 @@ terminal:
 
 **`docker_env`** vs **`docker_forward_env`**: the former injects literal `KEY=value` pairs you specify in the config (the values live in your `config.yaml` or are passed as a JSON dict via `TERMINAL_DOCKER_ENV='{"DEBUG":"1"}'`). The latter forwards values from your shell or `~/.hermes/.env`, so the actual secret never appears in the config file. Use `docker_forward_env` for tokens and `docker_env` for static knobs the container needs.
 
-**`terminal.docker_extra_args`** (also overridable via `TERMINAL_DOCKER_EXTRA_ARGS='["--gpus=all"]'`) lets you pass arbitrary `docker run` flags that Hermes doesn't surface as first-class keys — `--gpus`, `--network`, `--add-host`, alternative `--security-opt` overrides, etc. Each entry must be a string; the list is appended last to the assembled `docker run` invocation so it can override Hermes' defaults if needed. Use sparingly — flags that conflict with the sandbox hardening (capability drops, `--user`, the workspace bind mount) will silently weaken isolation.
+**`terminal.docker_extra_args`** (also overridable via `TERMINAL_DOCKER_EXTRA_ARGS='["--gpus=all"]'`) lets you pass arbitrary `docker run` flags that Moor doesn't surface as first-class keys — `--gpus`, `--network`, `--add-host`, alternative `--security-opt` overrides, etc. Each entry must be a string; the list is appended last to the assembled `docker run` invocation so it can override Moor' defaults if needed. Use sparingly — flags that conflict with the sandbox hardening (capability drops, `--user`, the workspace bind mount) will silently weaken isolation.
 
-**Requirements:** Docker Desktop or Docker Engine installed and running. Hermes probes `$PATH` plus common macOS install locations (`/usr/local/bin/docker`, `/opt/homebrew/bin/docker`, Docker Desktop app bundle). Podman is supported out of the box: set `HERMES_DOCKER_BINARY=podman` (or the full path) to force it when both are installed.
+**Requirements:** Docker Desktop or Docker Engine installed and running. Moor probes `$PATH` plus common macOS install locations (`/usr/local/bin/docker`, `/opt/homebrew/bin/docker`, Docker Desktop app bundle). Podman is supported out of the box: set `HERMES_DOCKER_BINARY=podman` (or the full path) to force it when both are installed.
 
 #### Container lifecycle
 
-Every Hermes-managed container is tagged with three labels so subsequent processes (and the orphan reaper) can identify it:
+Every Moor-managed container is tagged with three labels so subsequent processes (and the orphan reaper) can identify it:
 
-- `hermes-agent=1` — marks it as Hermes-managed
+- `hermes-agent=1` — marks it as Moor-managed
 - `hermes-task-id=<sanitized task_id>` — keys the per-task reuse probe
-- `hermes-profile=<sanitized profile name>` — scopes reuse and reaping to the active Hermes profile
+- `hermes-profile=<sanitized profile name>` — scopes reuse and reaping to the active Moor profile
 
-On startup, Hermes runs `docker ps --filter label=hermes-task-id=<id> --filter label=hermes-profile=<profile>` and **attaches to the existing container** when it finds one. If the container is `exited` (e.g. after a Docker daemon restart), it's `docker start`'d and reused — filesystem state and any installed packages survive, but in-container background processes do not.
+On startup, Moor runs `docker ps --filter label=hermes-task-id=<id> --filter label=hermes-profile=<profile>` and **attaches to the existing container** when it finds one. If the container is `exited` (e.g. after a Docker daemon restart), it's `docker start`'d and reused — filesystem state and any installed packages survive, but in-container background processes do not.
 
-When a Hermes process exits — `/quit`, closing a TUI session, gateway shutdown, even SIGKILL — the cleanup path is a **no-op for the container in default mode**. The container keeps running. The next Hermes process attaches to it in milliseconds via the label probe. This is the behavior the "one long-lived container shared across sessions" contract requires: it's the only way background processes (npm watchers, dev servers, long-running pytest) survive across sessions.
+When a Moor process exits — `/quit`, closing a TUI session, gateway shutdown, even SIGKILL — the cleanup path is a **no-op for the container in default mode**. The container keeps running. The next Moor process attaches to it in milliseconds via the label probe. This is the behavior the "one long-lived container shared across sessions" contract requires: it's the only way background processes (npm watchers, dev servers, long-running pytest) survive across sessions.
 
 **The container is only torn down (stopped and `docker rm -f`'d) in these cases:**
 
@@ -260,7 +266,7 @@ When a Hermes process exits — `/quit`, closing a TUI session, gateway shutdown
 Edge cases worth knowing:
 
 - **OOM kill of in-container PID 1** transitions the container to `Exited`. Next reuse will `docker start` it; filesystem state survives, bg processes do not.
-- **Switching profiles** isolates containers from each other — a container labeled `hermes-profile=work` is invisible to a Hermes process running under `hermes-profile=research`. The orphan reaper is profile-scoped too, so cross-profile containers don't get reaped accidentally, but they also won't get cleaned up automatically until you start Hermes again under their original profile.
+- **Switching profiles** isolates containers from each other — a container labeled `hermes-profile=work` is invisible to a Moor process running under `hermes-profile=research`. The orphan reaper is profile-scoped too, so cross-profile containers don't get reaped accidentally, but they also won't get cleaned up automatically until you start Moor again under their original profile.
 
 Parallel subagents spawned via `delegate_task(tasks=[...])` share this one container — concurrent `cd`, env mutations, and writes to the same path will collide. If a subagent needs an isolated sandbox, it must register a per-task image override via `register_task_env_overrides()`, which RL and benchmark environments (TerminalBench2, HermesSweEnv, etc.) do automatically for their per-task Docker images.
 
@@ -387,7 +393,7 @@ If terminal commands fail immediately or the terminal tool is reported as disabl
 
 - **Local** — No special requirements. The safest default when getting started.
 - **Docker** — Run `docker version` to verify Docker is working. If it fails, fix Docker or `hermes config set terminal.backend local`.
-- **SSH** — Both `TERMINAL_SSH_HOST` and `TERMINAL_SSH_USER` must be set. Hermes logs a clear error if either is missing.
+- **SSH** — Both `TERMINAL_SSH_HOST` and `TERMINAL_SSH_USER` must be set. Moor logs a clear error if either is missing.
 - **Modal** — Needs `MODAL_TOKEN_ID` env var or `~/.modal.toml`. Run `hermes doctor` to check.
 - **Daytona** — Needs `DAYTONA_API_KEY`. The Daytona SDK handles server URL configuration.
 - **Singularity** — Needs `apptainer` or `singularity` in `$PATH`. Common on HPC clusters.
@@ -396,7 +402,7 @@ When in doubt, set `terminal.backend` back to `local` and verify that commands r
 
 ### Remote-to-Host File Sync on Teardown
 
-For the **SSH**, **Modal**, and **Daytona** backends (anywhere the agent's working tree lives on a different machine than the host running Hermes), Hermes tracks files the agent touched inside the remote sandbox and, on session teardown / sandbox cleanup, **syncs the modified files back to the host** under `~/.hermes/cache/remote-syncs/<session-id>/`.
+For the **SSH**, **Modal**, and **Daytona** backends (anywhere the agent's working tree lives on a different machine than the host running Moor), Moor tracks files the agent touched inside the remote sandbox and, on session teardown / sandbox cleanup, **syncs the modified files back to the host** under `~/.hermes/cache/remote-syncs/<session-id>/`.
 
 - Triggers on: session close, `/new`, `/reset`, gateway message timeout, `delegate_task` subagent completion when the child used a remote backend.
 - Covers the whole tree the agent modified, not just files it explicitly opened. Additions, edits, and deletions are all captured.
@@ -459,7 +465,7 @@ terminal:
     - "NPM_TOKEN"
 ```
 
-Hermes resolves each listed variable from your current shell first, then falls back to `~/.hermes/.env` if it was saved with `hermes config set`.
+Moor resolves each listed variable from your current shell first, then falls back to `~/.hermes/.env` if it was saved with `hermes config set`.
 
 :::warning
 Anything listed in `docker_forward_env` becomes visible to commands run inside the container. Only forward credentials you are comfortable exposing to the terminal session.
@@ -475,13 +481,13 @@ terminal:
   docker_run_as_host_user: true   # default: false
 ```
 
-When enabled, Hermes appends `--user $(id -u):$(id -g)` to the `docker run` command so files written into bind-mounted directories (`/workspace`, `/root`, anything in `docker_volumes`) are owned by your host user, not root. The trade-off: the container can no longer `apt install` or write to root-owned paths like `/root/.npm` — use a base image whose `HOME` is owned by a non-root user (or add your required tooling at image build time) if you need both.
+When enabled, Moor appends `--user $(id -u):$(id -g)` to the `docker run` command so files written into bind-mounted directories (`/workspace`, `/root`, anything in `docker_volumes`) are owned by your host user, not root. The trade-off: the container can no longer `apt install` or write to root-owned paths like `/root/.npm` — use a base image whose `HOME` is owned by a non-root user (or add your required tooling at image build time) if you need both.
 
 Leave this `false` (the default) for backwards-compatible behavior. Turn it on when your workflow is mostly "edit mounted host files" and you're tired of `sudo chown -R`.
 
 ### Optional: Mount the Launch Directory into `/workspace`
 
-Docker sandboxes stay isolated by default. Hermes does **not** pass your current host working directory into the container unless you explicitly opt in.
+Docker sandboxes stay isolated by default. Moor does **not** pass your current host working directory into the container unless you explicitly opt in.
 
 Enable it in `config.yaml`:
 
@@ -492,7 +498,7 @@ terminal:
 ```
 
 When enabled:
-- if you launch Hermes from `~/projects/my-app`, that host directory is bind-mounted to `/workspace`
+- if you launch Moor from `~/projects/my-app`, that host directory is bind-mounted to `/workspace`
 - the Docker backend starts in `/workspace`
 - file tools and terminal commands both see the same mounted project
 
@@ -500,7 +506,7 @@ When disabled, `/workspace` stays sandbox-owned unless you explicitly mount some
 
 Security tradeoff:
 - `false` preserves the sandbox boundary
-- `true` gives the sandbox direct access to the directory you launched Hermes from
+- `true` gives the sandbox direct access to the directory you launched Moor from
 
 Use the opt-in only when you intentionally want the container to work on live host files.
 
@@ -573,7 +579,7 @@ For details on declaring config settings in your own skills, see [Creating Skill
 
 ### Guard on agent-created skill writes
 
-When the agent uses `skill_manage` to create, edit, patch, or delete a skill, Hermes can optionally scan the new/updated content for dangerous keyword patterns (credential harvesting, obvious prompt injection, exfil instructions). The scanner is **off by default** — real agent workflows that legitimately touch `~/.ssh/` or mention `$OPENAI_API_KEY` were tripping the heuristic too often. Turn it back on if you want the scanner to prompt you before the agent's skill writes land:
+When the agent uses `skill_manage` to create, edit, patch, or delete a skill, Moor can optionally scan the new/updated content for dangerous keyword patterns (credential harvesting, obvious prompt injection, exfil instructions). The scanner is **off by default** — real agent workflows that legitimately touch `~/.ssh/` or mention `$OPENAI_API_KEY` were tripping the heuristic too often. Turn it back on if you want the scanner to prompt you before the agent's skill writes land:
 
 ```yaml
 skills:
@@ -606,6 +612,20 @@ memory:
 
 With `memory.write_approval: true`, memory writes need your approval before they land: interactive CLI turns prompt inline; messaging sessions and the background self-improvement review stage the write for `/memory pending` → `/memory approve <id>` / `/memory reject <id>` review. Toggle at runtime with `/memory approval on|off`. See [Controlling memory writes](/user-guide/features/memory#controlling-memory-writes-write_approval).
 
+## Context File Truncation
+
+Controls how much content Moor loads from each automatic context file before applying head/tail truncation. This applies to files injected into the system prompt such as `SOUL.md`, `.hermes.md`, `AGENTS.md`, `CLAUDE.md`, and `.cursorrules`. It does **not** affect the `read_file` tool.
+
+```yaml
+context_file_max_chars: 20000  # default
+```
+
+Raise it when you intentionally keep larger identity or project-context files and run models with enough context window to carry them:
+
+```yaml
+context_file_max_chars: 25000
+```
+
 ## File Read Safety
 
 Controls how much content a single `read_file` call can return. Reads that exceed the limit are rejected with an error telling the agent to use `offset` and `limit` for a smaller range. This prevents a single read of a minified JS bundle or large data file from flooding the context window.
@@ -628,7 +648,7 @@ The agent also deduplicates file reads automatically — if the same file region
 
 ## Tool Output Truncation Limits
 
-Three related caps control how much raw output a tool can return before Hermes truncates it:
+Three related caps control how much raw output a tool can return before Moor truncates it:
 
 ```yaml
 tool_output:
@@ -637,7 +657,7 @@ tool_output:
   max_line_length: 2000   # per-line cap in read_file's line-numbered view
 ```
 
-- **`max_bytes`** — When a `terminal` command produces more than this many characters of combined stdout/stderr, Hermes keeps the first 40% and last 60% and inserts a `[OUTPUT TRUNCATED]` notice between them. Default `50000` (≈12-15K tokens across typical tokenisers).
+- **`max_bytes`** — When a `terminal` command produces more than this many characters of combined stdout/stderr, Moor keeps the first 40% and last 60% and inserts a `[OUTPUT TRUNCATED]` notice between them. Default `50000` (≈12-15K tokens across typical tokenisers).
 - **`max_lines`** — Upper bound on the `limit` parameter of a single `read_file` call. Requests above this are clamped so a single read can't flood the context window. Default `2000`.
 - **`max_line_length`** — Per-line cap applied when `read_file` emits the line-numbered view. Lines longer than this are truncated to this many chars followed by `... [truncated]`. Default `2000`.
 
@@ -686,6 +706,13 @@ worktree: true    # Always create a worktree (same as hermes -w)
 
 When enabled, each CLI session creates a fresh worktree under `.worktrees/` with its own branch. Agents can edit files, commit, push, and create PRs without interfering with each other. Clean worktrees are removed on exit; dirty ones are kept for manual recovery.
 
+By default the new worktree branches from the **freshly-fetched remote tip** (the current branch's upstream, otherwise the remote's default branch) so it starts current with the project rather than from the local clone's possibly-stale `HEAD`. This keeps a PR's diff scoped to the actual change instead of inheriting whatever the local clone was behind by. Set `worktree_sync: false` to branch from local `HEAD` instead — useful offline, or when you deliberately want the clone's exact current state as the base. If the remote can't be reached, it falls back to local `HEAD` automatically.
+
+```yaml
+worktree_sync: true    # Default — branch from the fetched remote tip
+# worktree_sync: false # Branch from local HEAD (offline / pinned base)
+```
+
 You can also list gitignored files to copy into worktrees via `.worktreeinclude` in your repo root:
 
 ```
@@ -697,7 +724,7 @@ node_modules/
 
 ## Context Compression
 
-Hermes automatically compresses long conversations to stay within your model's context window. The compression summarizer is a separate LLM call — you can point it at any provider or endpoint.
+Moor automatically compresses long conversations to stay within your model's context window. The compression summarizer is a separate LLM call — you can point it at any provider or endpoint.
 
 All compression settings live in `config.yaml` (no environment variables).
 
@@ -710,7 +737,7 @@ compression:
   target_ratio: 0.20                                # Fraction of threshold to preserve as recent tail
   protect_last_n: 20                                # Min recent messages to keep uncompressed
   protect_first_n: 3                                # Non-system head messages pinned across compactions (0 = pin nothing)
-  hygiene_hard_message_limit: 400                   # Gateway safety valve — see below
+  hygiene_hard_message_limit: 5000                  # Gateway safety valve — see below
 
 # The summarization model/provider is configured under auxiliary:
 auxiliary:
@@ -724,7 +751,7 @@ auxiliary:
 Older configs with `compression.summary_model`, `compression.summary_provider`, and `compression.summary_base_url` are automatically migrated to `auxiliary.compression.*` on first load (config version 17). No manual action needed.
 :::
 
-`hygiene_hard_message_limit` is a gateway-only **pre-compression safety valve**. Runaway sessions with thousands of messages can hit model context limits before the normal percent-of-context threshold fires; when message count crosses this ceiling, Hermes forces compression regardless of token usage. Default `400` — raise it for platforms where very long sessions are normal, lower it to force more aggressive compression. Editing this value on a running gateway takes effect on the next message (see below).
+`hygiene_hard_message_limit` is a gateway-only **pre-compression safety valve**. It exists to break a death spiral: when API calls keep disconnecting on an oversized session, the gateway never receives token-usage data, so the token-based threshold can't fire, so the transcript keeps growing and disconnects get worse. This count-based floor fires on message count alone (always known, regardless of API failures) to force compression and recover the session. Default `5000` — far above any normal session, including large-context (1M+) models doing thousands of short turns, which compress on the token threshold long before this. Raise it further for unusual platforms, lower it to force more aggressive compression. Editing this value on a running gateway takes effect on the next message (see below).
 
 `protect_first_n` controls how many **non-system** head messages are pinned across every compaction. Default `3` — the opening user/assistant exchange survives every summarizer pass so the original goal stays visible. On long-running rolling-compaction sessions where the opening turn is no longer relevant, set `protect_first_n: 0` to pin nothing but the system prompt + summary + tail. The system prompt itself is always preserved regardless of this setting.
 
@@ -813,11 +840,11 @@ Budget pressure is enabled by default. The agent sees warnings naturally as part
 
 When the iteration budget is fully exhausted, the CLI shows a notification to the user: `⚠ Iteration budget reached (90/90) — response may be incomplete`. If the budget runs out during active work, the agent generates a summary of what was accomplished before stopping.
 
-`agent.api_max_retries` controls how many times Hermes retries a provider API call on transient errors (rate limits, connection drops, 5xx) **before** fallback-provider switching engages. The default is `3` — four attempts total. If you have [fallback providers](/user-guide/features/fallback-providers) configured and want to fail over faster, drop this to `0` so the first transient error on your primary immediately hands off to the fallback instead of churning retries against the flaky endpoint.
+`agent.api_max_retries` controls how many times Moor retries a provider API call on transient errors (rate limits, connection drops, 5xx) **before** fallback-provider switching engages. The default is `3` — four attempts total. If you have [fallback providers](/user-guide/features/fallback-providers) configured and want to fail over faster, drop this to `0` so the first transient error on your primary immediately hands off to the fallback instead of churning retries against the flaky endpoint.
 
 ### API Timeouts
 
-Hermes has separate timeout layers for streaming, plus a stale detector for non-streaming calls. The stale detectors auto-adjust for local providers only when you leave them at their implicit defaults.
+Moor has separate timeout layers for streaming, plus a stale detector for non-streaming calls. The stale detectors auto-adjust for local providers only when you leave them at their implicit defaults.
 
 | Timeout | Default | Local providers | Config / env |
 |---------|---------|----------------|--------------|
@@ -826,11 +853,11 @@ Hermes has separate timeout layers for streaming, plus a stale detector for non-
 | Stale non-stream detection | 300s | Auto-disabled when left implicit | `providers.<id>.stale_timeout_seconds` or `HERMES_API_CALL_STALE_TIMEOUT` |
 | API call (non-streaming) | 1800s | Unchanged | `providers.<id>.request_timeout_seconds` / `timeout_seconds` or `HERMES_API_TIMEOUT` |
 
-The **socket read timeout** controls how long httpx waits for the next chunk of data from the provider. Local LLMs can take minutes for prefill on large contexts before producing the first token, so Hermes raises this to 30 minutes when it detects a local endpoint. If you explicitly set `HERMES_STREAM_READ_TIMEOUT`, that value is always used regardless of endpoint detection.
+The **socket read timeout** controls how long httpx waits for the next chunk of data from the provider. Local LLMs can take minutes for prefill on large contexts before producing the first token, so Moor raises this to 30 minutes when it detects a local endpoint. If you explicitly set `HERMES_STREAM_READ_TIMEOUT`, that value is always used regardless of endpoint detection.
 
 The **stale stream detection** kills connections that receive SSE keep-alive pings but no actual content. This is disabled entirely for local providers since they don't send keep-alive pings during prefill.
 
-The **stale non-stream detection** kills non-streaming calls that produce no response for too long. By default Hermes disables this on local endpoints to avoid false positives during long prefills. If you explicitly set `providers.<id>.stale_timeout_seconds`, `providers.<id>.models.<model>.stale_timeout_seconds`, or `HERMES_API_CALL_STALE_TIMEOUT`, that explicit value is honored even on local endpoints.
+The **stale non-stream detection** kills non-streaming calls that produce no response for too long. By default Moor disables this on local endpoints to avoid false positives during long prefills. If you explicitly set `providers.<id>.stale_timeout_seconds`, `providers.<id>.models.<model>.stale_timeout_seconds`, or `HERMES_API_CALL_STALE_TIMEOUT`, that explicit value is honored even on local endpoints.
 
 ## Context Pressure Warnings
 
@@ -871,17 +898,17 @@ Options: `fill_first` (default), `round_robin`, `least_used`, `random`. See [Cre
 
 ## Prompt caching
 
-Hermes turns on cross-session prompt caching automatically when the active provider supports it — no user config needed.
+Moor turns on cross-session prompt caching automatically when the active provider supports it — no user config needed.
 
-For Claude on **native Anthropic**, **OpenRouter**, and **Nous Portal**, Hermes attaches `cache_control` breakpoints with the 1-hour TTL (`ttl: "1h"`) on the system prompt and skill blocks. The first send within a fresh hour pays full input rates; subsequent sends across any session within the same hour pull from the cache at the discounted cached-read rate. This means the system prompt, loaded skill content, and the early portion of any long-context include get reused across `hermes` sessions and across forked subagents for the first hour.
+For Claude on **native Anthropic**, **OpenRouter**, and **Nous Portal**, Moor attaches `cache_control` breakpoints with the 1-hour TTL (`ttl: "1h"`) on the system prompt and skill blocks. The first send within a fresh hour pays full input rates; subsequent sends across any session within the same hour pull from the cache at the discounted cached-read rate. This means the system prompt, loaded skill content, and the early portion of any long-context include get reused across `hermes` sessions and across forked subagents for the first hour.
 
-The Qwen Cloud (Alibaba DashScope) upstream caps cache TTL at 5 minutes, so Hermes uses the 5-minute breakpoint TTL there instead. Other Claude-via-third-party paths (AWS Bedrock, Azure Foundry) fall back to the provider's own caching defaults. xAI Grok uses a separate session-pinned conversation-id mechanism — see [xAI prompt caching](/integrations/providers#xai-grok--responses-api--prompt-caching).
+The Qwen Cloud (Alibaba DashScope) upstream caps cache TTL at 5 minutes, so Moor uses the 5-minute breakpoint TTL there instead. Other Claude-via-third-party paths (AWS Bedrock, Azure Foundry) fall back to the provider's own caching defaults. xAI Grok uses a separate session-pinned conversation-id mechanism — see [xAI prompt caching](/integrations/providers#xai-grok--responses-api--prompt-caching).
 
 No knob exists to disable this — caching is always-on and saves money even on single-turn conversations because the system prompt alone is a meaningful fraction of the input token count.
 
 ## Auxiliary Models
 
-Hermes uses "auxiliary" models for side tasks like image analysis, web page summarization, browser screenshot analysis, session-title generation, and context compression. By default (`auxiliary.*.provider: "auto"`), Hermes routes every auxiliary task to your **main chat model** — the same provider/model you picked in `hermes model`. You don't need to configure anything to get started, but be aware that on expensive reasoning models (Opus, MiniMax M2.7, etc.) auxiliary tasks add meaningful cost. If you want cheap-and-fast side tasks regardless of your main model, set `auxiliary.<task>.provider` and `auxiliary.<task>.model` explicitly (for example, Gemini Flash on OpenRouter for vision and web extraction).
+Moor uses "auxiliary" models for side tasks like image analysis, web page summarization, browser screenshot analysis, session-title generation, and context compression. By default (`auxiliary.*.provider: "auto"`), Moor routes every auxiliary task to your **main chat model** — the same provider/model you picked in `hermes model`. You don't need to configure anything to get started, but be aware that on expensive reasoning models (Opus, MiniMax M2.7, etc.) auxiliary tasks add meaningful cost. If you want cheap-and-fast side tasks regardless of your main model, set `auxiliary.<task>.provider` and `auxiliary.<task>.model` explicitly (for example, Gemini Flash on OpenRouter for vision and web extraction).
 
 :::note Why "auto" uses your main model
 Earlier builds split aggregator users (OpenRouter, Nous Portal) onto a cheap provider-side default. That was surprising — users who paid for an aggregator subscription would see a different model handling their auxiliary traffic. `auto` now uses the main model for everyone, and per-task overrides in `config.yaml` still win (see [Full auxiliary config reference](#full-auxiliary-config-reference) below).
@@ -913,7 +940,7 @@ Select a task, pick a provider (OAuth flows open a browser; API-key providers pr
 <div style={{position: 'relative', width: '100%', aspectRatio: '16 / 9', marginBottom: '1.5rem'}}>
   <iframe
     src="https://www.youtube.com/embed/NoF-YajElIM"
-    title="Hermes Agent — Auxiliary Models Tutorial"
+    title="Moor Agent — Auxiliary Models Tutorial"
     style={{position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0}}
     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
     allowFullScreen
@@ -922,7 +949,7 @@ Select a task, pick a provider (OAuth flows open a browser; API-key providers pr
 
 ### The universal config pattern
 
-Every model slot in Hermes — auxiliary tasks, compression, fallback — uses the same three knobs:
+Every model slot in Moor — auxiliary tasks, compression, fallback — uses the same three knobs:
 
 | Key | What it does | Default |
 |-----|-------------|---------|
@@ -930,16 +957,16 @@ Every model slot in Hermes — auxiliary tasks, compression, fallback — uses t
 | `model` | Which model to request | provider's default |
 | `base_url` | Custom OpenAI-compatible endpoint (overrides provider) | not set |
 
-When `base_url` is set, Hermes ignores the provider and calls that endpoint directly (using `api_key` or `OPENAI_API_KEY` for auth). When only `provider` is set, Hermes uses that provider's built-in auth and base URL.
+When `base_url` is set, Moor ignores the provider and calls that endpoint directly (using `api_key` or `OPENAI_API_KEY` for auth). When only `provider` is set, Moor uses that provider's built-in auth and base URL.
 
-Available providers for auxiliary tasks: `auto`, `main`, plus any provider in the [provider registry](/reference/environment-variables) — `openrouter`, `nous`, `openai-codex`, `copilot`, `copilot-acp`, `anthropic`, `gemini`, `google-gemini-cli`, `qwen-oauth`, `zai`, `kimi-coding`, `kimi-coding-cn`, `minimax`, `minimax-cn`, `minimax-oauth`, `deepseek`, `nvidia`, `xai`, `xai-oauth`, `ollama-cloud`, `alibaba`, `bedrock`, `huggingface`, `arcee`, `xiaomi`, `kilocode`, `opencode-zen`, `opencode-go`, `azure-foundry` — or any named custom provider from your `custom_providers` list (e.g. `provider: "beans"`).
+Available providers for auxiliary tasks: `auto`, `main`, plus any provider in the [provider registry](/reference/environment-variables) — `openrouter`, `nous`, `openai-codex`, `copilot`, `copilot-acp`, `anthropic`, `gemini`, `qwen-oauth`, `zai`, `kimi-coding`, `kimi-coding-cn`, `minimax`, `minimax-cn`, `minimax-oauth`, `deepseek`, `nvidia`, `xai`, `xai-oauth`, `ollama-cloud`, `alibaba`, `bedrock`, `huggingface`, `arcee`, `xiaomi`, `kilocode`, `opencode-zen`, `opencode-go`, `azure-foundry` — or any named custom provider from your `custom_providers` list (e.g. `provider: "beans"`).
 
 :::tip MiniMax OAuth
 `minimax-oauth` logs in via browser OAuth (no API key needed). Run `hermes model` and select **MiniMax (OAuth)** to authenticate. Auxiliary tasks use `MiniMax-M2.7-highspeed` automatically. See the [MiniMax OAuth guide](../guides/minimax-oauth.md).
 :::
 
 :::tip xAI Grok OAuth
-`xai-oauth` logs in via browser OAuth for SuperGrok and X Premium+ subscribers (no API key needed). Run `hermes model` and select **xAI Grok OAuth (SuperGrok / Premium+)** to authenticate. The same OAuth token is reused for every direct-to-xAI surface (chat, auxiliary tasks, TTS, image gen, video gen, transcription). See the [xAI Grok OAuth guide](../guides/xai-grok-oauth.md), and if Hermes is on a remote host see [OAuth over SSH / Remote Hosts](../guides/oauth-over-ssh.md).
+`xai-oauth` logs in via browser OAuth for SuperGrok and X Premium+ subscribers (no API key needed). Run `hermes model` and select **xAI Grok OAuth (SuperGrok / Premium+)** to authenticate. The same OAuth token is reused for every direct-to-xAI surface (chat, auxiliary tasks, TTS, image gen, video gen, transcription). See the [xAI Grok OAuth guide](../guides/xai-grok-oauth.md), and if Moor is on a remote host see [OAuth over SSH / Remote Hosts](../guides/oauth-over-ssh.md).
 :::
 
 :::warning `"main"` is for auxiliary tasks only
@@ -986,6 +1013,23 @@ auxiliary:
   # Context compression timeout (separate from compression.* config)
   compression:
     timeout: 120               # seconds — compression summarizes long conversations, needs more time
+    # fallback_chain:           # Optional — providers to try on rate-limit / connectivity failure
+    #   - provider: nous
+    #     model: deepseek/deepseek-chat
+    #   - provider: openrouter
+    #     model: google/gemini-2.5-flash
+    #     base_url: ""
+    #     api_key: ""
+
+  # Auto-generated session titles. Empty language follows the conversation;
+  # set e.g. "English" or "Japanese" to pin titles to one language.
+  title_generation:
+    provider: "auto"
+    model: ""
+    base_url: ""
+    api_key: ""
+    timeout: 30
+    language: ""
 
   # Skills hub — skill matching and search
   skills_hub:
@@ -1024,6 +1068,34 @@ Each auxiliary task has a configurable `timeout` (in seconds). Defaults: vision 
 Context compression has its own `compression:` block for thresholds and an `auxiliary.compression:` block for model/provider settings — see [Context Compression](#context-compression) above. The primary fallback chain uses a top-level `fallback_providers:` list — see [Fallback Providers](/integrations/providers#fallback-providers). All three follow the same provider/model/base_url pattern.
 :::
 
+### Per-task fallback chain for auxiliary tasks
+
+Each auxiliary task can optionally define a `fallback_chain` — a list of provider/model entries that Moor tries when the primary auxiliary provider fails due to rate limits, connectivity issues, or payment restrictions:
+
+```yaml
+auxiliary:
+  compression:
+    provider: openrouter
+    model: openai/gpt-4o-mini
+    fallback_chain:
+      - provider: nous
+        model: deepseek/deepseek-chat
+      - provider: openrouter
+        model: google/gemini-2.5-flash
+```
+
+When the primary auxiliary provider (`openrouter` / `openai/gpt-4o-mini`) returns a rate-limit, connection timeout, or payment-required error, Moor walks the `fallback_chain` in order. It skips entries whose provider matches the already-failed provider, and tries each remaining entry until one succeeds or the chain is exhausted. If all fallbacks fail, Moor falls back to the main agent model as a final safety net.
+
+Each entry supports the same three knobs as any auxiliary task config:
+
+| Key | Description |
+|-----|-------------|
+| `provider` | Provider name (`nous`, `openrouter`, `anthropic`, `gemini`, `main`, etc.) |
+| `model` | Model name for that provider |
+| `base_url` | (Optional) Custom OpenAI-compatible endpoint |
+
+`fallback_chain` is available on any auxiliary task — `compression`, `vision`, `web_extract`, `approval`, `skills_hub`, `mcp`, etc.
+
 ### OpenRouter routing & Pareto Code for auxiliary tasks
 
 When an auxiliary task resolves to OpenRouter (either explicitly or via `provider: "main"` while your main agent is on OpenRouter), the main agent's `provider_routing` and `openrouter.min_coding_score` settings **do not propagate** — by design, each auxiliary task is independent. To set OpenRouter provider preferences or use the [Pareto Code router](/integrations/providers#openrouter-pareto-code-router) for a specific aux task, set them per-task via `extra_body`:
@@ -1044,7 +1116,7 @@ auxiliary:
           min_coding_score: 0.5            # 0.0–1.0; higher = stronger coders
 ```
 
-The shape mirrors what OpenRouter accepts in the chat completions request body. Hermes forwards the entire `extra_body` verbatim, so any other OpenRouter request-body field documented at [openrouter.ai/docs](https://openrouter.ai/docs) works the same way.
+The shape mirrors what OpenRouter accepts in the chat completions request body. Moor forwards the entire `extra_body` verbatim, so any other OpenRouter request-body field documented at [openrouter.ai/docs](https://openrouter.ai/docs) works the same way.
 
 ### Changing the Vision Model
 
@@ -1098,7 +1170,7 @@ auxiliary:
     model: "qwen2.5-vl"
 ```
 
-`base_url` takes precedence over `provider`, so this is the most explicit way to route an auxiliary task to a specific endpoint. For direct endpoint overrides, Hermes uses the configured `api_key` or falls back to `OPENAI_API_KEY`; it does not reuse `OPENROUTER_API_KEY` for that custom endpoint.
+`base_url` takes precedence over `provider`, so this is the most explicit way to route an auxiliary task to a specific endpoint. For direct endpoint overrides, Moor uses the configured `api_key` or falls back to `OPENAI_API_KEY`; it does not reuse `OPENROUTER_API_KEY` for that custom endpoint.
 
 **Using OpenAI API key for vision:**
 ```yaml
@@ -1145,7 +1217,7 @@ auxiliary:
     model: "my-local-model"
 ```
 
-`provider: "main"` uses whatever provider Hermes uses for normal chat — whether that's a named custom provider (e.g. `beans`), a built-in provider like `openrouter`, or a legacy `OPENAI_BASE_URL` endpoint.
+`provider: "main"` uses whatever provider Moor uses for normal chat — whether that's a named custom provider (e.g. `beans`), a built-in provider like `openrouter`, or a legacy `OPENAI_BASE_URL` endpoint.
 
 :::tip
 If you use Codex OAuth as your main model provider, vision works automatically — no extra configuration needed. Codex is included in the auto-detection chain for vision.
@@ -1189,7 +1261,7 @@ When unset (default), reasoning effort defaults to "medium" — a balanced level
 
 :::note Adaptive-thinking models (Claude 4.6+, Fable/Mythos-class) over OpenRouter
 These models use *adaptive* thinking and don't accept the usual `reasoning.effort`
-field — OpenRouter ignores it for them. Hermes transparently routes your
+field — OpenRouter ignores it for them. Moor transparently routes your
 `reasoning_effort` to OpenRouter's `verbosity` parameter instead (which maps to
 Anthropic's `output_config.effort`), so the same `low`/`medium`/`high`/`xhigh`
 knob keeps working — no extra configuration needed. `none` (or unset) leaves the
@@ -1319,7 +1391,7 @@ display:
 
 ### File-mutation verifier
 
-When `display.file_mutation_verifier` is `true` (default), Hermes appends a one-line advisory to the assistant's final response whenever a `write_file` or `patch` call failed during the turn and was never superseded by a successful write to the same path. This catches the "batch of parallel patches, half silently fail, model summarises success" class of over-claim without requiring you to manually run `git status` after every edit.
+When `display.file_mutation_verifier` is `true` (default), Moor appends a one-line advisory to the assistant's final response whenever a `write_file` or `patch` call failed during the turn and was never superseded by a successful write to the same path. This catches the "batch of parallel patches, half silently fail, model summarises success" class of over-claim without requiring you to manually run `git status` after every edit.
 
 Example footer:
 
@@ -1358,7 +1430,7 @@ Tool progress requires a gateway adapter that can display progress updates safel
 
 ### Runtime-metadata footer (gateway only)
 
-When `display.runtime_footer.enabled: true`, Hermes appends a small runtime-context footer to the **final** message of each gateway turn. The current footer can show the model, context-window percentage, and current working directory. Off by default; opt in per-gateway if your team wants every reply to include this provenance.
+When `display.runtime_footer.enabled: true`, Moor appends a small runtime-context footer to the **final** message of each gateway turn. The current footer can show the model, context-window percentage, and current working directory. Off by default; opt in per-gateway if your team wants every reply to include this provenance.
 
 ```yaml
 display:
@@ -1397,7 +1469,7 @@ Platforms without an override fall back to the global `tool_progress` value. Val
 
 Signal is listed as a valid platform key because the setting can be saved per platform, but the current Signal adapter cannot edit sent messages and does not render tool-progress bubbles. Keep Signal `tool_progress` set to `off`; use the CLI or an editing-capable messaging platform if you need to watch each tool call live.
 
-`interim_assistant_messages` is gateway-only. When enabled, Hermes sends completed mid-turn assistant updates as separate chat messages. This is independent from `tool_progress` and does not require gateway streaming.
+`interim_assistant_messages` is gateway-only. When enabled, Moor sends completed mid-turn assistant updates as separate chat messages. This is independent from `tool_progress` and does not require gateway streaming.
 
 ## Privacy
 
@@ -1438,7 +1510,7 @@ Provider behavior:
 - `groq` uses Groq's Whisper-compatible endpoint and reads `GROQ_API_KEY`.
 - `openai` uses the OpenAI speech API and reads `VOICE_TOOLS_OPENAI_KEY`.
 
-If the requested provider is unavailable, Hermes falls back automatically in this order: `local` → `groq` → `openai`.
+If the requested provider is unavailable, Moor falls back automatically in this order: `local` → `groq` → `openai`.
 
 Groq and OpenAI model overrides are environment-driven:
 
@@ -1510,14 +1582,14 @@ and messaging gateway:
 max_concurrent_sessions: null  # null/0 = unlimited; positive integer = active session cap
 ```
 
-When the cap is reached, Hermes returns a direct limit message for new sessions.
+When the cap is reached, Moor returns a direct limit message for new sessions.
 Existing active sessions keep their normal behavior.
 
-The canonical key is top-level `max_concurrent_sessions`. Hermes also accepts
+The canonical key is top-level `max_concurrent_sessions`. Moor also accepts
 `gateway.max_concurrent_sessions` as a fallback, but the top-level key wins when
 both are set.
 
-The cap is enforced with a local runtime lease file and is best-effort: Hermes
+The cap is enforced with a local runtime lease file and is best-effort: Moor
 fails open if the registry cannot be read or locked so users are not stranded.
 It is intended for a single host/profile runtime, not a shared `$HERMES_HOME`
 mounted across multiple machines.
@@ -1529,15 +1601,15 @@ group_sessions_per_user: true  # true = per-user isolation in groups/channels, f
 ```
 
 - `true` is the default and recommended setting. In Discord channels, Telegram groups, Slack channels, and similar shared contexts, each sender gets their own session when the platform provides a user ID.
-- `false` reverts to the old shared-room behavior. That can be useful if you explicitly want Hermes to treat a channel like one collaborative conversation, but it also means users share context, token costs, and interrupt state.
-- Direct messages are unaffected. Hermes still keys DMs by chat/DM ID as usual.
+- `false` reverts to the old shared-room behavior. That can be useful if you explicitly want Moor to treat a channel like one collaborative conversation, but it also means users share context, token costs, and interrupt state.
+- Direct messages are unaffected. Moor still keys DMs by chat/DM ID as usual.
 - Threads stay isolated from their parent channel either way; with `true`, each participant also gets their own session inside the thread.
 
 For the behavior details and examples, see [Sessions](/user-guide/sessions) and the [Discord guide](/user-guide/messaging/discord).
 
 ## Unauthorized DM Behavior
 
-Control what Hermes does when an unknown user sends a direct message:
+Control what Moor does when an unknown user sends a direct message:
 
 ```yaml
 unauthorized_dm_behavior: pair
@@ -1546,8 +1618,9 @@ whatsapp:
   unauthorized_dm_behavior: ignore
 ```
 
-- `pair` is the default. Hermes denies access, but replies with a one-time pairing code in DMs.
+- `pair` is the default for chat-style DM platforms. Moor denies access, but replies with a one-time pairing code in DMs.
 - `ignore` silently drops unauthorized DMs.
+- Email defaults to `ignore` unless `platforms.email.unauthorized_dm_behavior: pair` is set, because inboxes can contain unrelated unread mail.
 - Platform sections override the global default, so you can keep pairing enabled broadly while making one platform quieter.
 
 ## Quick Commands
@@ -1608,7 +1681,7 @@ code_execution:
 **`mode`** controls the working directory and Python interpreter for scripts:
 
 - **`project`** (default) — scripts run in the session's working directory with the active virtualenv/conda env's python. Project deps (`pandas`, `torch`, project packages) and relative paths (`.env`, `./data.csv`) resolve naturally, matching what `terminal()` sees.
-- **`strict`** — scripts run in a temp staging directory with `sys.executable` (Hermes's own python). Maximum reproducibility, but project deps and relative paths won't resolve.
+- **`strict`** — scripts run in a temp staging directory with `sys.executable` (Moor's own python). Maximum reproducibility, but project deps and relative paths won't resolve.
 
 Environment scrubbing (strips `*_API_KEY`, `*_TOKEN`, `*_SECRET`, `*_PASSWORD`, `*_CREDENTIAL`, `*_PASSWD`, `*_AUTH`) and the tool whitelist apply identically in both modes — switching mode does not change the security posture.
 
@@ -1652,7 +1725,7 @@ browser:
   inactivity_timeout: 120        # Seconds before auto-closing idle sessions
   command_timeout: 30             # Timeout in seconds for browser commands (screenshot, navigate, etc.)
   record_sessions: false         # Auto-record browser sessions as WebM videos to ~/.hermes/browser_recordings/
-  # Optional CDP override — when set, Hermes attaches directly to your own
+  # Optional CDP override — when set, Moor attaches directly to your own
   # Chromium-family browser (via /browser connect) rather than starting a headless browser.
   cdp_url: ""
   # Dialog supervisor — controls how native JS dialogs (alert / confirm / prompt)
@@ -1663,7 +1736,7 @@ browser:
   camofox:
     managed_persistence: false   # When true, Camofox sessions persist cookies/logins across restarts
     user_id: ""                  # Optional externally managed Camofox userId
-    session_key: ""              # Optional session key sent when Hermes creates a tab
+    session_key: ""              # Optional session key sent when Moor creates a tab
     adopt_existing_tab: false    # Reuse an existing tab for this identity before creating one
 ```
 
@@ -1754,7 +1827,7 @@ The policy is cached for 30 seconds, so config changes take effect quickly witho
 
 ## Smart Approvals
 
-Control how Hermes handles potentially dangerous commands:
+Control how Moor handles potentially dangerous commands:
 
 ```yaml
 approvals:
@@ -1802,9 +1875,9 @@ delegation:
 
 **Subagent provider:model override:** By default, subagents inherit the parent agent's provider and model. Set `delegation.provider` and `delegation.model` to route subagents to a different provider:model pair — e.g., use a cheap/fast model for narrowly-scoped subtasks while your primary agent runs an expensive reasoning model.
 
-**Direct endpoint override:** If you want the obvious custom-endpoint path, set `delegation.base_url`, `delegation.api_key`, and `delegation.model`. That sends subagents directly to that OpenAI-compatible endpoint and takes precedence over `delegation.provider`. If `delegation.api_key` is omitted, Hermes falls back to `OPENAI_API_KEY` only.
+**Direct endpoint override:** If you want the obvious custom-endpoint path, set `delegation.base_url`, `delegation.api_key`, and `delegation.model`. That sends subagents directly to that OpenAI-compatible endpoint and takes precedence over `delegation.provider`. If `delegation.api_key` is omitted, Moor falls back to `OPENAI_API_KEY` only.
 
-**Wire protocol (`api_mode`):** Hermes auto-detects the wire protocol from `delegation.base_url` (e.g. paths ending in `/anthropic` → `anthropic_messages`; Codex / native Anthropic / Kimi-coding hostnames keep their existing detection). For endpoints the heuristic can't classify — for example Azure AI Foundry, MiniMax, Zhipu GLM, or LiteLLM proxies fronting an Anthropic-shaped backend — set `delegation.api_mode` explicitly to one of `chat_completions`, `codex_responses`, or `anthropic_messages`. Leave it empty (the default) to keep auto-detection.
+**Wire protocol (`api_mode`):** Moor auto-detects the wire protocol from `delegation.base_url` (e.g. paths ending in `/anthropic` → `anthropic_messages`; Codex / native Anthropic / Kimi-coding hostnames keep their existing detection). For endpoints the heuristic can't classify — for example Azure AI Foundry, MiniMax, Zhipu GLM, or LiteLLM proxies fronting an Anthropic-shaped backend — set `delegation.api_mode` explicitly to one of `chat_completions`, `codex_responses`, or `anthropic_messages`. Leave it empty (the default) to keep auto-detection.
 
 The delegation provider uses the same credential resolution as CLI/gateway startup. All configured providers are supported: `openrouter`, `nous`, `copilot`, `zai`, `kimi-coding`, `minimax`, `minimax-cn`. When a provider is set, the system automatically resolves the correct base URL, API key, and API mode — no manual credential wiring needed.
 
@@ -1823,23 +1896,23 @@ clarify:
 
 ## Context Files (SOUL.md, AGENTS.md)
 
-Hermes uses two different context scopes:
+Moor uses two different context scopes:
 
 | File | Purpose | Scope |
 |------|---------|-------|
 | `SOUL.md` | **Primary agent identity** — defines who the agent is (slot #1 in the system prompt) | `~/.hermes/SOUL.md` or `$HERMES_HOME/SOUL.md` |
-| `.hermes.md` / `HERMES.md` | Project-specific instructions (highest priority) | Walks to git root |
+| `.hermes.md` / `MOOR.md` | Project-specific instructions (highest priority) | Walks to git root |
 | `AGENTS.md` | Project-specific instructions, coding conventions | Recursive directory walk |
 | `CLAUDE.md` | Claude Code context files (also detected) | Working directory only |
 | `.cursorrules` | Cursor IDE rules (also detected) | Working directory only |
 | `.cursor/rules/*.mdc` | Cursor rule files (also detected) | Working directory only |
 
 - **SOUL.md** is the agent's primary identity. It occupies slot #1 in the system prompt, completely replacing the built-in default identity. Edit it to fully customize who the agent is.
-- If SOUL.md is missing, empty, or cannot be loaded, Hermes falls back to a built-in default identity.
+- If SOUL.md is missing, empty, or cannot be loaded, Moor falls back to a built-in default identity.
 - **Project context files use a priority system** — only ONE type is loaded (first match wins): `.hermes.md` → `AGENTS.md` → `CLAUDE.md` → `.cursorrules`. SOUL.md is always loaded independently.
 - **AGENTS.md** is hierarchical: if subdirectories also have AGENTS.md, all are combined.
-- Hermes automatically seeds a default `SOUL.md` if one does not already exist.
-- All loaded context files are capped at 20,000 characters with smart truncation.
+- Moor automatically seeds a default `SOUL.md` if one does not already exist.
+- All loaded context files are capped at `context_file_max_chars` characters (default 20,000) with smart truncation.
 
 See also:
 - [Personality & SOUL.md](/user-guide/features/personality)

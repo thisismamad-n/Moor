@@ -92,7 +92,7 @@ def test_run_gateway_refuses_root_in_official_docker(monkeypatch, tmp_path, caps
 
     assert exc_info.value.code == 1
     out = capsys.readouterr().out
-    assert "Refusing to run the Hermes gateway as root" in out
+    assert "Refusing to run the Moor gateway as root" in out
     assert "/opt/hermes/docker/entrypoint.sh" in out
 
 
@@ -283,7 +283,7 @@ def test_running_under_gateway_supervisor_markers(monkeypatch):
     _clear_supervisor_markers(monkeypatch)
     assert gateway._running_under_gateway_supervisor() is False
 
-    monkeypatch.setenv("XPC_SERVICE_NAME", "org.nousresearch.hermes.gateway")
+    monkeypatch.setenv("XPC_SERVICE_NAME", "org.Moor inc..hermes.gateway")
     assert gateway._running_under_gateway_supervisor() is True
 
     monkeypatch.setenv("XPC_SERVICE_NAME", "0")
@@ -305,6 +305,7 @@ def test_gateway_run_force_flag_survives_parser_extraction():
         subparsers,
         cmd_gateway=lambda _args: None,
         cmd_proxy=lambda _args: None,
+        cmd_gateway_enroll=lambda _args: None,
     )
 
     args = parser.parse_args(["gateway", "run", "--force"])
@@ -830,7 +831,7 @@ def test_scan_gateway_pids_detects_windows_hermes_exe_case_variants(monkeypatch)
             return SimpleNamespace(
                 returncode=0,
                 stdout=(
-                    "CommandLine=C:\\Program Files\\Hermes\\Hermes.EXE gateway run --replace\n"
+                    "CommandLine=C:\\Program Files\\Moor\\Moor.EXE gateway run --replace\n"
                     "ProcessId=2468\n\n"
                 ),
                 stderr="",

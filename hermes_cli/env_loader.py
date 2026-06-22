@@ -1,4 +1,4 @@
-"""Helpers for loading Hermes .env files consistently across entrypoints."""
+"""Helpers for loading Moor .env files consistently across entrypoints."""
 
 from __future__ import annotations
 
@@ -169,7 +169,7 @@ def _sanitize_env_file_if_needed(path: Path) -> None:
     copy-pasting API keys from terminals or rich-text editors.
 
     We delegate to ``hermes_cli.config._sanitize_env_lines`` which
-    already knows all valid Hermes env-var names and can split
+    already knows all valid Moor env-var names and can split
     concatenated lines correctly.
     """
     if not path.exists():
@@ -214,7 +214,7 @@ def load_hermes_dotenv(
     hermes_home: str | os.PathLike | None = None,
     project_env: str | os.PathLike | None = None,
 ) -> list[Path]:
-    """Load Hermes environment files with user config taking precedence.
+    """Load Moor environment files with user config taking precedence.
 
     Behavior:
     - `~/.hermes/.env` overrides stale shell-exported values when present.
@@ -243,15 +243,48 @@ def load_hermes_dotenv(
         loaded.append(project_env_path)
 
     _apply_external_secret_sources(home_path)
+    _apply_managed_env()
 
     return loaded
+
+
+def _apply_managed_env() -> None:
+    """Apply the managed-scope .env last, with override, so it beats user/shell.
+
+    Managed scope is machine-global (independent of HERMES_HOME / profile). v1
+    enforcement is "applied last with override=True" — at the end of startup load
+    ``os.environ`` holds the managed value for every managed key, beating both the
+    user ``.env`` and any pre-existing shell export. This deliberately inverts the
+    usual env-over-config precedence for the pinned keys (see
+    ``docs/design/managed-scope.md`` §4.1).
+
+    This does NOT prevent the agent from later mutating ``os.environ`` in-process
+    or ``export``-ing in a subprocess shell; that hard boundary is a documented
+    v2 item (design §8.1). v1 relies on filesystem permissions only.
+
+    Fail-open: a missing managed dir or .env is the common case and a no-op; any
+    error here is swallowed so managed scope can never block startup.
+    """
+    try:
+        from hermes_cli import managed_scope
+
+        managed_dir = managed_scope.get_managed_dir()
+    except Exception:  # noqa: BLE001 — managed scope must never block startup
+        return
+    if managed_dir is None:
+        return
+    managed_env = managed_dir / ".env"
+    if not managed_env.exists():
+        return
+    _sanitize_env_file_if_needed(managed_env)
+    _load_dotenv_with_fallback(managed_env, override=True)
 
 
 def _apply_external_secret_sources(home_path: Path) -> None:
     """Pull secrets from external sources (currently Bitwarden) into env.
 
     Runs AFTER dotenv loads so .env values are visible (we use them to
-    locate the access token) but BEFORE the rest of Hermes reads
+    locate the access token) but BEFORE the rest of Moor reads
     ``os.environ`` for credentials.  Any failure here is logged and
     swallowed — external secret sources must never block startup.
 

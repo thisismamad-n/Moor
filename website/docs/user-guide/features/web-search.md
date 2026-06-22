@@ -7,7 +7,7 @@ sidebar_position: 6
 
 # Web Search & Extract
 
-Hermes Agent includes two model-callable web tools backed by multiple providers:
+Moor Agent includes two model-callable web tools backed by multiple providers:
 
 - **`web_search`** — search the web and return ranked results
 - **`web_extract`** — fetch and extract readable content from one or more URLs
@@ -27,12 +27,12 @@ Both are configured through a single backend selection. Providers are chosen via
 | **Parallel** | `PARALLEL_API_KEY` | ✔ | ✔ | Paid |
 | **xAI (Grok)** | `XAI_API_KEY` or `hermes auth login xai-oauth` | ✔ | — | Paid (SuperGrok or per-token) |
 
-Brave Search, DDGS, and xAI are **search-only** — pair any of them with Firecrawl/Tavily/Exa/Parallel when you also need `web_extract`. DDGS uses the [`ddgs` Python package](https://pypi.org/project/ddgs/) under the hood; if it isn't already installed, run `pip install ddgs` (or let Hermes lazy-install it on first use). xAI runs Grok's server-side `web_search` tool on the Responses API — results are LLM-generated rather than index-backed, so titles, descriptions, and URL choice are all model output (see the [trust-model caveat](#xai-grok) below).
+Brave Search, DDGS, and xAI are **search-only** — pair any of them with Firecrawl/Tavily/Exa/Parallel when you also need `web_extract`. DDGS uses the [`ddgs` Python package](https://pypi.org/project/ddgs/) under the hood; if it isn't already installed, run `pip install ddgs` (or let Moor lazy-install it on first use). xAI runs Grok's server-side `web_search` tool on the Responses API — results are LLM-generated rather than index-backed, so titles, descriptions, and URL choice are all model output (see the [trust-model caveat](#xai-grok) below).
 
 **Per-capability split:** you can use different providers for search and extract independently — for example SearXNG (free) for search and Firecrawl for extract. See [Per-capability configuration](#per-capability-configuration) below.
 
 :::tip Nous Subscribers
-If you have a paid [Nous Portal](https://portal.nousresearch.com) subscription, web search and extract are available through the **[Tool Gateway](tool-gateway.md)** via managed Firecrawl — no API key needed. New installs can run `hermes setup --portal` to log in and turn on all gateway tools at once; existing installs can flip just web via `hermes tools`.
+If you have a paid [Nous Portal](https://portal.Moor inc..com) subscription, web search and extract are available through the **[Tool Gateway](tool-gateway.md)** via managed Firecrawl — no API key needed. New installs can run `hermes setup --portal` to log in and turn on all gateway tools at once; existing installs can flip just web via `hermes tools`.
 :::
 
 ---
@@ -48,7 +48,7 @@ Backends return raw page markdown, which can be huge (forum threads, docs sites,
 | 500 000 – 2 000 000 | Chunked: split into 100 k-char chunks, summarize each in parallel, then synthesize a final summary (~5 000 chars) |
 | Over 2 000 000 | Refused with a hint to use a more focused source URL |
 
-The summary keeps quotes, code blocks, and key facts in their original formatting — it's a content compressor, not a paraphraser. If summarization fails or times out, Hermes falls back to the first ~5 000 chars of raw content rather than a useless error.
+The summary keeps quotes, code blocks, and key facts in their original formatting — it's a content compressor, not a paraphraser. If summarization fails or times out, Moor falls back to the first ~5 000 chars of raw content rather than a useless error.
 
 ### Which model does the summarizing?
 
@@ -111,7 +111,7 @@ When `FIRECRAWL_API_URL` is set, the API key is optional (disable server auth wi
 
 ### SearXNG (free, self-hosted)
 
-SearXNG is a privacy-respecting, open-source metasearch engine that aggregates results from 70+ search engines. **No API key required** — just point Hermes at a running SearXNG instance.
+SearXNG is a privacy-respecting, open-source metasearch engine that aggregates results from 70+ search engines. **No API key required** — just point Moor at a running SearXNG instance.
 
 SearXNG is **search-only** — `web_extract` requires a separate extract provider.
 
@@ -165,7 +165,7 @@ Open `~/searxng/searxng/settings.yml` and find the `formats` block (around line 
 formats:
   - html
 
-# After (enable JSON for Hermes):
+# After (enable JSON for Moor):
 formats:
   - html
   - json
@@ -187,7 +187,7 @@ curl -s "http://localhost:8888/search?q=test&format=json" | python3 -c \
 
 You should see something like `10 results`. If you get a `403 Forbidden`, JSON format is still disabled — recheck step 4.
 
-**7. Configure Hermes:**
+**7. Configure Moor:**
 
 ```bash
 # ~/.hermes/.env
@@ -231,7 +231,7 @@ web:
   extract_backend: "firecrawl"   # or tavily, exa, parallel
 ```
 
-With this config, Hermes uses SearXNG for all search queries and Firecrawl for URL extraction — combining free search with high-quality extraction.
+With this config, Moor uses SearXNG for all search queries and Firecrawl for URL extraction — combining free search with high-quality extraction.
 
 ---
 
@@ -305,7 +305,7 @@ web:
 web:
   backend: "xai"
   xai:
-    model: grok-4.3              # reasoning model required by web_search (default)
+    model: grok-build-0.1        # reasoning model required by web_search (default)
     allowed_domains:             # optional, max 5 — mutex with excluded_domains
       - arxiv.org
     excluded_domains:            # optional, max 5
@@ -353,7 +353,7 @@ When per-capability keys are empty, both fall through to `web.backend`. When `we
 
 ### Auto-detection
 
-If no backend is explicitly configured, Hermes picks the first available one based on which credentials are set:
+If no backend is explicitly configured, Moor picks the first available one based on which credentials are set:
 
 | Credential present | Auto-selected backend |
 |--------------------|-----------------------|

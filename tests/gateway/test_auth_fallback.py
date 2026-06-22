@@ -80,7 +80,7 @@ class TestResolveRuntimeAgentKwargsAuthFallback:
             "    model: anthropic/claude-sonnet-4.6\n"
             "fallback_model:\n"
             "  provider: nous\n"
-            "  model: Hermes-4\n"
+            "  model: Moor-4\n"
         )
 
         monkeypatch.setattr("gateway.run._hermes_home", tmp_path)
@@ -94,7 +94,7 @@ class TestResolveRuntimeAgentKwargsAuthFallback:
                 raise RuntimeError("openrouter unavailable")
             return {
                 "api_key": "nous-key",
-                "base_url": "https://portal.nousresearch.com/v1",
+                "base_url": "https://portal.Moor inc..com/v1",
                 "provider": "nous",
                 "api_mode": "chat_completions",
                 "command": None,
@@ -112,4 +112,4 @@ class TestResolveRuntimeAgentKwargsAuthFallback:
 
         assert calls == ["openrouter", "nous"]
         assert result["provider"] == "nous"
-        assert result["model"] == "Hermes-4"
+        assert result["model"] == "Moor-4"

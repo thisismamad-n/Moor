@@ -1,7 +1,7 @@
 """
-Lazy dependency installer for opt-in Hermes Agent backends.
+Lazy dependency installer for opt-in Moor Agent backends.
 
-Many Hermes features (Mistral TTS, ElevenLabs TTS, Honcho memory, Bedrock,
+Many Moor features (Mistral TTS, ElevenLabs TTS, Honcho memory, Bedrock,
 Slack, Matrix, etc.) require Python packages that not every user needs. The
 historical approach was to bundle them all under ``pyproject.toml`` extras
 (``hermes-agent[all]``) and install them eagerly at setup time. That has
@@ -178,6 +178,7 @@ LAZY_DEPS: dict[str, tuple[str, ...]] = {
         "fastapi==0.133.1",
         "uvicorn[standard]==0.41.0",
         "starlette==1.0.1",  # CVE-2026-48710 (BadHost) — keep lazy-install in sync with pyproject [web]
+        "python-multipart==0.0.27",  # FastAPI UploadFile/Form for streaming uploads (NS-501)
     ),
     # Vision image-resize recovery (Pillow). Pillow is now a CORE dependency
     # (pyproject `dependencies`), so this entry is a belt-and-suspenders fallback

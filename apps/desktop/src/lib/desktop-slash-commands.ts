@@ -42,7 +42,7 @@ export type DesktopActionId =
 /** A command fulfilled by opening a desktop overlay picker. */
 export type DesktopPickerId = 'model' | 'session'
 
-/** Why a known Hermes command has no desktop UI surface. */
+/** Why a known Moor command has no desktop UI surface. */
 export type DesktopUnavailableReason = 'advanced' | 'messaging' | 'settings' | 'terminal'
 
 /**
@@ -100,7 +100,7 @@ const DESKTOP_COMMAND_SPECS: readonly DesktopCommandSpec[] = [
   { name: '/branch', description: 'Branch the latest message into a new chat', aliases: ['/fork'], surface: action('branch') },
   { name: '/yolo', description: 'Toggle YOLO — auto-approve dangerous commands', surface: action('yolo') },
   { name: '/handoff', description: 'Hand off this session to a messaging platform', surface: action('handoff'), args: true },
-  { name: '/profile', description: 'Switch the active Hermes profile', surface: action('profile') },
+  { name: '/profile', description: 'Switch the active Moor profile', surface: action('profile') },
   { name: '/skin', description: 'Switch desktop theme or cycle to the next one', surface: action('skin'), args: true },
   { name: '/title', description: 'Rename the current session', surface: action('title') },
   { name: '/help', description: 'Show desktop slash commands', aliases: ['/commands'], surface: action('help') },
@@ -138,7 +138,7 @@ const DESKTOP_COMMAND_SPECS: readonly DesktopCommandSpec[] = [
   { name: '/tools', description: 'List or toggle tools available to the agent', surface: exec(), args: true },
   { name: '/undo', description: 'Remove the last user/assistant exchange', surface: exec() },
   { name: '/usage', description: 'Show token usage for this session', surface: exec() },
-  { name: '/version', description: 'Show Hermes Agent version', surface: exec() },
+  { name: '/version', description: 'Show Moor Agent version', surface: exec() },
 
   // No desktop surface, but carry an alias (underscore spelling variants).
   { name: '/reload-mcp', aliases: ['/reload_mcp'], surface: unavailable('advanced') },
@@ -150,7 +150,7 @@ const DESKTOP_COMMAND_SPECS: readonly DesktopCommandSpec[] = [
 const NO_DESKTOP_SURFACE: Record<DesktopUnavailableReason, readonly string[]> = {
   terminal: [
     '/busy', '/clear', '/compact', '/config', '/copy', '/cron', '/details',
-    '/exit', '/footer', '/gateway', '/gquota', '/history', '/image', '/indicator', '/logs',
+    '/exit', '/footer', '/gateway', '/history', '/image', '/indicator', '/logs',
     '/mouse', '/paste', '/platforms', '/plugins', '/quit', '/redraw', '/reload', '/restart',
     '/sb', '/set-home', '/sethome', '/snap', '/snapshot', '/statusbar', '/toolsets', '/update', '/verbose'
   ],
@@ -211,7 +211,7 @@ function isKnownHermesSlashCommand(command: string): boolean {
 
 /**
  * An "extension" command is anything the backend surfaces that is NOT one of
- * Hermes' built-in slash commands — i.e. skill commands (`/gif-search`,
+ * Moor' built-in slash commands — i.e. skill commands (`/gif-search`,
  * `/codex`, …) and user-defined quick commands. These are user-activated, so
  * they appear in the desktop slash palette and execute when typed.
  */

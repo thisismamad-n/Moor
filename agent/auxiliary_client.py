@@ -40,6 +40,7 @@ Payment / credit exhaustion fallback:
   their OpenRouter balance but has Codex OAuth or another provider available.
 """
 
+import contextlib
 import json
 import logging
 import os
@@ -102,9 +103,42 @@ OpenAI = _OpenAIProxy()  # module-level name, resolves lazily on call/isinstance
 from agent.credential_pool import load_pool
 from hermes_cli.config import get_hermes_home
 from hermes_constants import OPENROUTER_BASE_URL
-from utils import base_url_host_matches, base_url_hostname, model_forces_max_completion_tokens, normalize_proxy_env_vars
+from utils import base_url_host_matches, base_url_hostname, env_float, model_forces_max_completion_tokens, normalize_proxy_env_vars
 
 logger = logging.getLogger(__name__)
+
+
+# ── Interrupt protection for atomic auxiliary tasks ──────────────────────
+# Some auxiliary tasks must NOT be aborted mid-flight by a gateway interrupt
+# (e.g. an incoming user message while the agent is busy). Context
+# compression is the prime case: if the summary LLM call is interrupted
+# part-way, compression falls back to a static "summary unavailable" marker
+# and the real handoff is lost (#23975). A thread-local flag lets such a
+# task mark its in-flight LLM call as interrupt-protected; the Codex
+# Responses stream's cancellation check honors it. TIMEOUTS still fire
+# (a hung call must die), and all OTHER aux tasks (vision, web_extract,
+# title_generation, …) remain freely interruptible.
+_aux_interrupt_protection = threading.local()
+
+
+def _aux_interrupt_protected() -> bool:
+    return bool(getattr(_aux_interrupt_protection, "active", False))
+
+
+@contextlib.contextmanager
+def aux_interrupt_protection(active: bool = True):
+    """Mark the current thread's auxiliary LLM call as interrupt-protected.
+
+    Used by atomic aux tasks (compression) so a mid-flight gateway interrupt
+    doesn't abort the call and trigger a degraded fallback. Re-entrant-safe:
+    restores the previous value on exit.
+    """
+    prev = getattr(_aux_interrupt_protection, "active", False)
+    _aux_interrupt_protection.active = active
+    try:
+        yield
+    finally:
+        _aux_interrupt_protection.active = prev
 
 
 def _safe_isinstance(obj: Any, maybe_type: Any) -> bool:
@@ -262,7 +296,7 @@ def _compression_threshold_for_model(
     """Return a context-compression threshold override for specific models.
 
     The threshold is the fraction of the model's context window that must be
-    consumed before Hermes triggers summarization.  Higher values delay
+    consumed before Moor triggers summarization.  Higher values delay
     compression and preserve more raw context.
 
     Per-model/route overrides:
@@ -348,8 +382,8 @@ _PROVIDERS_WITHOUT_VISION: frozenset = frozenset({
 # `X-Title` is the canonical attribution header OpenRouter's dashboard
 # reads; the previous `X-OpenRouter-Title` label was not recognized there.
 _OR_HEADERS_BASE = {
-    "HTTP-Referer": "https://hermes-agent.nousresearch.com",
-    "X-Title": "Hermes Agent",
+    "HTTP-Referer": "https://hermes-agent.Moor inc..com",
+    "X-Title": "Moor Agent",
     "X-OpenRouter-Categories": "productivity,cli-agent",
 }
 
@@ -485,7 +519,7 @@ auxiliary_is_nous: bool = False
 # Default auxiliary models per provider
 _OPENROUTER_MODEL = "google/gemini-3-flash-preview"
 _NOUS_MODEL = "google/gemini-3-flash-preview"
-_NOUS_DEFAULT_BASE_URL = "https://inference-api.nousresearch.com/v1"
+_NOUS_DEFAULT_BASE_URL = "https://inference-api.Moor inc..com/v1"
 _ANTHROPIC_DEFAULT_BASE_URL = "https://api.anthropic.com"
 _AUTH_JSON_PATH = get_hermes_home() / "auth.json"
 
@@ -519,7 +553,7 @@ def _codex_cloudflare_headers(access_token: str) -> Dict[str, str]:
     crash at client construction.
     """
     headers = {
-        "User-Agent": "codex_cli_rs/0.0.0 (Hermes Agent)",
+        "User-Agent": "codex_cli_rs/0.0.0 (Moor Agent)",
         "originator": "codex_cli_rs",
     }
     if not isinstance(access_token, str) or not access_token.strip():
@@ -629,6 +663,13 @@ def _pool_runtime_base_url(entry: Any, fallback: str = "") -> str:
         or fallback
     )
     return str(url or "").strip().rstrip("/")
+
+
+def _nous_min_key_ttl_seconds() -> int:
+    try:
+        return max(60, int(os.getenv("HERMES_NOUS_MIN_KEY_TTL_SECONDS", "1800")))
+    except (TypeError, ValueError):
+        return 1800
 
 
 # ── Codex Responses → chat.completions adapter ─────────────────────────────
@@ -805,7 +846,11 @@ class _CodexCompletionsAdapter:
                 raise TimeoutError(_timeout_message())
             try:
                 from tools.interrupt import is_interrupted
-                if is_interrupted():
+                # Honor interrupt protection for atomic aux tasks (compression):
+                # a mid-flight gateway interrupt must NOT abort the summary call
+                # and trigger a degraded fallback marker (#23975). Timeouts above
+                # still fire; other aux tasks remain interruptible.
+                if is_interrupted() and not _aux_interrupt_protected():
                     raise InterruptedError("Codex auxiliary Responses stream interrupted")
             except InterruptedError:
                 raise
@@ -997,7 +1042,7 @@ class _AnthropicCompletionsAdapter:
         self._is_oauth = is_oauth
 
     def create(self, **kwargs) -> Any:
-        from agent.anthropic_adapter import build_anthropic_kwargs
+        from agent.anthropic_adapter import build_anthropic_kwargs, create_anthropic_message
         from agent.transports import get_transport
 
         messages = kwargs.get("messages", [])
@@ -1041,7 +1086,7 @@ class _AnthropicCompletionsAdapter:
             if not _forbids_sampling_params(model):
                 anthropic_kwargs["temperature"] = temperature
 
-        response = self._client.messages.create(**anthropic_kwargs)
+        response = create_anthropic_message(self._client, anthropic_kwargs)
         _transport = get_transport("anthropic_messages")
         _nr = _transport.normalize_response(
             response, strip_tool_prefix=self._is_oauth
@@ -1300,6 +1345,57 @@ def _nous_base_url() -> str:
     return os.getenv("NOUS_INFERENCE_BASE_URL", _NOUS_DEFAULT_BASE_URL)
 
 
+def _resolve_nous_pool_runtime_api(*, force_refresh: bool = False) -> Optional[tuple[str, str]]:
+    """Resolve Nous auxiliary credentials from the selected pool entry."""
+    try:
+        from hermes_cli.auth import _agent_key_is_usable
+
+        pool = load_pool("nous")
+    except Exception as exc:
+        logger.debug("Auxiliary Nous pool credential resolution failed: %s", exc)
+        return None
+
+    if not pool or not pool.has_credentials():
+        return None
+
+    try:
+        entry = pool.select()
+    except Exception as exc:
+        logger.debug("Auxiliary Nous pool selection failed: %s", exc)
+        return None
+
+    if entry is None:
+        return None
+
+    state = {
+        "agent_key": getattr(entry, "agent_key", None),
+        "agent_key_expires_at": getattr(entry, "agent_key_expires_at", None),
+        "scope": getattr(entry, "scope", None),
+    }
+    if force_refresh or not _agent_key_is_usable(state, _nous_min_key_ttl_seconds()):
+        try:
+            refreshed = pool.try_refresh_current()
+        except Exception as exc:
+            logger.debug("Auxiliary Nous pool refresh failed: %s", exc)
+            refreshed = None
+        if refreshed is None:
+            return None
+        entry = refreshed
+
+    provider = {
+        "agent_key": getattr(entry, "agent_key", None),
+        "agent_key_expires_at": getattr(entry, "agent_key_expires_at", None),
+        "access_token": getattr(entry, "access_token", None),
+        "expires_at": getattr(entry, "expires_at", None),
+        "scope": getattr(entry, "scope", None),
+    }
+    api_key = _nous_api_key(provider)
+    base_url = _pool_runtime_base_url(entry, _NOUS_DEFAULT_BASE_URL)
+    if not api_key or not base_url:
+        return None
+    return api_key, base_url
+
+
 def _resolve_nous_runtime_api(*, force_refresh: bool = False) -> Optional[tuple[str, str]]:
     """Return fresh Nous runtime credentials when available.
 
@@ -1308,11 +1404,15 @@ def _resolve_nous_runtime_api(*, force_refresh: bool = False) -> Optional[tuple[
     relying only on whatever raw tokens happen to be sitting in auth.json
     or the credential pool.
     """
+    pooled = _resolve_nous_pool_runtime_api(force_refresh=force_refresh)
+    if pooled is not None:
+        return pooled
+
     try:
         from hermes_cli.auth import resolve_nous_runtime_credentials
 
         creds = resolve_nous_runtime_credentials(
-            timeout_seconds=float(os.getenv("HERMES_NOUS_TIMEOUT_SECONDS", "15")),
+            timeout_seconds=env_float("HERMES_NOUS_TIMEOUT_SECONDS", 15),
             force_refresh=force_refresh,
         )
     except Exception as exc:
@@ -1382,7 +1482,7 @@ def _resolve_xai_oauth_for_aux() -> Optional[Tuple[str, str]]:
 
 
 def _read_codex_access_token() -> Optional[str]:
-    """Read a valid, non-expired Codex OAuth access token from Hermes auth store.
+    """Read a valid, non-expired Codex OAuth access token from Moor auth store.
 
     If a credential pool exists but currently has no selectable runtime entry
     (for example all pool slots are marked exhausted), fall back to the
@@ -2696,7 +2796,7 @@ def _recoverable_pool_provider(
         return "openai-codex"
     if base_url_host_matches(base, "openrouter.ai"):
         return "openrouter"
-    if base_url_host_matches(base, "inference-api.nousresearch.com"):
+    if base_url_host_matches(base, "inference-api.Moor inc..com"):
         return "nous"
     if base_url_host_matches(base, "api.anthropic.com"):
         return "anthropic"
@@ -2905,7 +3005,7 @@ def _refresh_provider_credentials(provider: str) -> bool:
             from hermes_cli.auth import resolve_nous_runtime_credentials
 
             creds = resolve_nous_runtime_credentials(
-                timeout_seconds=float(os.getenv("HERMES_NOUS_TIMEOUT_SECONDS", "15")),
+                timeout_seconds=env_float("HERMES_NOUS_TIMEOUT_SECONDS", 15),
                 force_refresh=True,
             )
             if not str(creds.get("api_key", "") or "").strip():
@@ -3140,7 +3240,7 @@ def _try_main_fallback_chain(
     """Try the top-level main-agent fallback chain for an auxiliary call.
 
     ``provider: auto`` auxiliary tasks should respect the user's declared
-    main fallback policy before dropping into Hermes' built-in discovery
+    main fallback policy before dropping into Moor' built-in discovery
     chain. The top-level chain is read through ``get_fallback_chain`` so
     both modern ``fallback_providers`` and legacy ``fallback_model`` entries
     participate in the same order as the main agent.
@@ -5379,7 +5479,7 @@ def call_llm(
         # known-good default). Only applies to Nous-routed calls.
         _heal_is_nous = (
             resolved_provider == "nous"
-            or base_url_host_matches(_base_info, "inference-api.nousresearch.com")
+            or base_url_host_matches(_base_info, "inference-api.Moor inc..com")
         )
         if _is_model_not_found_error(first_err) and _heal_is_nous:
             healed_model = _refresh_nous_recommended_model(
@@ -5400,7 +5500,7 @@ def call_llm(
         # ── Nous auth refresh parity with main agent ──────────────────
         client_is_nous = (
             resolved_provider == "nous"
-            or base_url_host_matches(_base_info, "inference-api.nousresearch.com")
+            or base_url_host_matches(_base_info, "inference-api.Moor inc..com")
         )
         if (
             _is_payment_error(first_err)
@@ -5860,7 +5960,7 @@ async def async_call_llm(
         # fresh Portal fetch and retry once with the current recommendation.
         _heal_is_nous = (
             resolved_provider == "nous"
-            or base_url_host_matches(_client_base, "inference-api.nousresearch.com")
+            or base_url_host_matches(_client_base, "inference-api.Moor inc..com")
         )
         if _is_model_not_found_error(first_err) and _heal_is_nous:
             healed_model = _refresh_nous_recommended_model(
@@ -5881,7 +5981,7 @@ async def async_call_llm(
         # ── Nous auth refresh parity with main agent ──────────────────
         client_is_nous = (
             resolved_provider == "nous"
-            or base_url_host_matches(_client_base, "inference-api.nousresearch.com")
+            or base_url_host_matches(_client_base, "inference-api.Moor inc..com")
         )
         if (
             _is_payment_error(first_err)

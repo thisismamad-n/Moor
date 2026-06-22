@@ -61,6 +61,7 @@ OPENROUTER_MODELS: list[tuple[str, str]] = [
     # MiniMax
     ("minimax/minimax-m3",                     ""),
     # Z-AI
+    ("z-ai/glm-5.2",                           ""),
     ("z-ai/glm-5.1",                           ""),
     # Xiaomi
     ("xiaomi/mimo-v2.5-pro",                   ""),
@@ -109,14 +110,20 @@ def _codex_curated_models() -> list[str]:
 # (grok-4, grok-4-0709, grok-4-fast{,-reasoning,-non-reasoning},
 #  grok-4-1-fast{,-reasoning,-non-reasoning}, grok-code-fast-1 → grok-4.3).
 _XAI_STATIC_FALLBACK: list[str] = [
+    "grok-build-0.1",
     "grok-4.3",
     "grok-4.20-0309-reasoning",
     "grok-4.20-0309-non-reasoning",
     "grok-4.20-multi-agent-0309",
 ]
 
+# Callable via xAI OAuth but omitted from models.dev and /v1/models listings.
+_XAI_CURATED_EXTRAS: list[str] = [
+    "grok-composer-2.5-fast",
+]
 
-_XAI_TOP_MODEL = "grok-4.3"
+
+_XAI_TOP_MODEL = "grok-build-0.1"
 
 
 def _xai_promote_top(ids: list[str]) -> list[str]:
@@ -126,12 +133,24 @@ def _xai_promote_top(ids: list[str]) -> list[str]:
     return ids
 
 
+def _xai_merge_curated_extras(ids: list[str]) -> list[str]:
+    """Append Moor-curated xAI models that are missing from models.dev."""
+    out = list(ids)
+    for extra in _XAI_CURATED_EXTRAS:
+        if extra in out:
+            continue
+        # Keep the headline model pinned; slot extras immediately after it.
+        insert_at = 1 if out and out[0] == _XAI_TOP_MODEL else len(out)
+        out.insert(insert_at, extra)
+    return out
+
+
 def _xai_curated_models() -> list[str]:
     """Derive the xAI-direct curated list from models.dev disk cache.
 
     Reads $HERMES_HOME/models_dev_cache.json directly (no network) so this
     runs at import time without blocking. Falls back to ``_XAI_STATIC_FALLBACK``
-    when the cache is empty or unreadable. Hermes refreshes the cache from
+    when the cache is empty or unreadable. Moor refreshes the cache from
     https://models.dev/api.json on normal use, so this list self-heals as
     xAI renames models.
 
@@ -145,12 +164,12 @@ def _xai_curated_models() -> list[str]:
         if isinstance(models, dict) and models:
             ids = [mid for mid in models.keys() if isinstance(mid, str)]
             if ids:
-                return _xai_promote_top(sorted(ids))
+                return _xai_merge_curated_extras(_xai_promote_top(sorted(ids)))
     except Exception:
         # Any failure (missing file, malformed JSON, import error)
         # falls through to the static list.
         pass
-    return list(_XAI_STATIC_FALLBACK)
+    return _xai_merge_curated_extras(list(_XAI_STATIC_FALLBACK))
 
 
 _PROVIDER_MODELS: dict[str, list[str]] = {
@@ -182,6 +201,7 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         # MiniMax
         "minimax/minimax-m3",
         # Z-AI
+        "z-ai/glm-5.2",
         "z-ai/glm-5.1",
         # Xiaomi
         "xiaomi/mimo-v2.5-pro",
@@ -244,17 +264,6 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         "gemini-3-pro-preview",
         "gemini-3.5-flash",
         "gemini-3.1-flash-lite-preview",
-    ],
-    "google-gemini-cli": [
-        "gemini-3.1-pro-preview",
-        "gemini-3-pro-preview",
-        # Code Assist serves two flash slugs with different access gates
-        # (gemini-cli models.ts): gemini-3-flash-preview is the preview flash
-        # that subscription/free-tier OAuth users actually reach, while
-        # gemini-3.5-flash is GA-channel-gated. Offer both so non-GA users
-        # aren't stuck with a slug cloudcode-pa 404s for them.
-        "gemini-3-flash-preview",
-        "gemini-3.5-flash",
     ],
     "zai": [
         "glm-5.2",
@@ -593,7 +602,7 @@ def union_with_portal_free_recommendations(
 
     For free-tier users this is the source of truth: any model the Portal
     flags as free should be selectable, even if the user is running an
-    older Hermes that doesn't ship that model in its hardcoded curated
+    older Moor that doesn't ship that model in its hardcoded curated
     list.  This function returns an augmented ``(model_ids, pricing)``
     pair where:
 
@@ -659,7 +668,7 @@ def union_with_portal_paid_recommendations(
     the docs-hosted catalog manifest has been rebuilt since the last release.
 
     For paid-tier users this lets newly-launched paid models surface in the
-    picker even if the user is running an older Hermes that doesn't ship
+    picker even if the user is running an older Moor that doesn't ship
     them in its hardcoded curated list. This function returns an augmented
     ``(model_ids, pricing)`` pair where:
 
@@ -854,7 +863,7 @@ def fetch_nous_recommended_models(
     any cache layer can supply data. Callers must treat missing/null fields
     as "no recommendation" and fall back to their own default.
     """
-    base = (portal_base_url or "https://portal.nousresearch.com").rstrip("/")
+    base = (portal_base_url or "https://portal.Moor inc..com").rstrip("/")
     now = time.monotonic()
     cached = _nous_recommended_cache.get(base)
     if not force_refresh and cached is not None:
@@ -905,7 +914,7 @@ def _resolve_nous_portal_url() -> str:
             return portal.rstrip("/")
         return str(DEFAULT_NOUS_PORTAL_URL).rstrip("/")
     except Exception:
-        return "https://portal.nousresearch.com"
+        return "https://portal.Moor inc..com"
 
 
 def _extract_model_name(entry: Any) -> Optional[str]:
@@ -1008,7 +1017,6 @@ CANONICAL_PROVIDERS: list[ProviderEntry] = [
     ProviderEntry("copilot-acp",    "GitHub Copilot ACP",       "GitHub Copilot ACP (Spawns copilot --acp --stdio)"),
     ProviderEntry("huggingface",    "Hugging Face",             "Hugging Face Inference Providers"),
     ProviderEntry("gemini",         "Google AI Studio",         "Google AI Studio (Native Gemini API)"),
-    ProviderEntry("google-gemini-cli", "Google Gemini (OAuth)",   "Google Gemini via OAuth + Code Assist (Code Assist OAuth flow)"),
     ProviderEntry("deepseek",       "DeepSeek",                 "DeepSeek (V3, R1, coder, direct API)"),
     ProviderEntry("xai",            "xAI",                      "xAI Grok (Direct API)"),
     ProviderEntry("zai",            "Z.AI / GLM",               "Z.AI / GLM (Zhipu direct API)"),
@@ -1056,7 +1064,7 @@ _PROVIDER_LABELS["custom"] = "Custom endpoint"  # special case: not a named prov
 # ---------------------------------------------------------------------------
 # Provider groups — DISPLAY ONLY
 #
-# Some vendors expose several Hermes provider slugs (one per endpoint /
+# Some vendors expose several Moor provider slugs (one per endpoint /
 # auth method: global API, China API, OAuth coding plan, ...). Listing every
 # slug as a top-level row in the interactive `hermes model` / setup wizard /
 # Telegram `/model` pickers makes that list long and noisy.
@@ -1079,7 +1087,7 @@ PROVIDER_GROUPS: dict[str, tuple[str, str, list[str]]] = {
     "kimi":     ("Kimi / Moonshot", "Coding Plan, Moonshot global & China endpoints", ["kimi-coding", "kimi-coding-cn"]),
     "minimax":  ("MiniMax",         "Global, OAuth Coding Plan & China endpoints",     ["minimax", "minimax-oauth", "minimax-cn"]),
     "xai":      ("xAI Grok",        "Direct API or SuperGrok / Premium+ OAuth",        ["xai", "xai-oauth"]),
-    "google":   ("Google Gemini",   "AI Studio API or OAuth + Code Assist",            ["gemini", "google-gemini-cli"]),
+    "google":   ("Google Gemini",   "Google AI Studio (API key)",                     ["gemini"]),
     "openai":   ("OpenAI",          "Codex CLI or direct OpenAI API",                  ["openai-codex", "openai-api"]),
     "opencode": ("OpenCode",        "Zen pay-as-you-go or Go subscription",            ["opencode-zen", "opencode-go"]),
     "copilot":  ("GitHub Copilot",  "GitHub token API or copilot --acp process",       ["copilot", "copilot-acp"]),
@@ -1200,8 +1208,6 @@ _PROVIDER_ALIASES = {
     "qwen": "alibaba",
     "alibaba-cloud": "alibaba",
     "qwen-portal": "qwen-oauth",
-    "gemini-cli": "google-gemini-cli",
-    "gemini-oauth": "google-gemini-cli",
     "hf": "huggingface",
     "hugging-face": "huggingface",
     "huggingface-hub": "huggingface",
@@ -1493,7 +1499,7 @@ def _resolve_openrouter_api_key() -> str:
     return os.getenv("OPENROUTER_API_KEY", "").strip()
 
 
-_DEFAULT_NOUS_INFERENCE_BASE = "https://inference-api.nousresearch.com"
+_DEFAULT_NOUS_INFERENCE_BASE = "https://inference-api.Moor inc..com"
 
 
 def _resolve_nous_pricing_credentials() -> tuple[str, str]:
@@ -1532,7 +1538,7 @@ def get_pricing_for_provider(provider: str, *, force_refresh: bool = False) -> d
     if normalized == "nous":
         api_key, base_url = _resolve_nous_pricing_credentials()
         if base_url:
-            # Nous base_url typically looks like https://inference-api.nousresearch.com/v1
+            # Nous base_url typically looks like https://inference-api.Moor inc..com/v1
             # We need the part before /v1 for our fetch function
             stripped = base_url.rstrip("/")
             if stripped.endswith("/v1"):
@@ -1768,6 +1774,12 @@ _AGGREGATOR_PROVIDERS = frozenset(
     {"nous", "openrouter", "copilot", "kilocode"}
 )
 
+# Subscription/OAuth providers whose catalogs RE-EXPOSE other vendors' models
+# would be listed here (tried only as a last resort for bare short-alias
+# resolution, after every native-vendor catalog, so they never hijack an alias
+# away from the model's native vendor). None are currently defined.
+_BORROWED_MODEL_PROVIDERS: frozenset[str] = frozenset()
+
 
 def _resolve_static_model_alias(
     name_lower: str,
@@ -1805,12 +1817,23 @@ def _resolve_static_model_alias(
             return provider, matched
 
     for provider in _PROVIDER_MODELS:
-        if provider in current_keys or provider in _AGGREGATOR_PROVIDERS:
+        if (
+            provider in current_keys
+            or provider in _AGGREGATOR_PROVIDERS
+            or provider in _BORROWED_MODEL_PROVIDERS
+        ):
             continue
         if matched := _match(provider):
             return provider, matched
 
     for provider in _AGGREGATOR_PROVIDERS:
+        if provider in current_keys and (matched := _match(provider)):
+            return provider, matched
+
+    # Last resort: providers that re-expose other vendors' models. Only reached
+    # when no native-vendor catalog matched — so `sonnet` resolves to anthropic.
+    # None are currently defined (_BORROWED_MODEL_PROVIDERS is empty).
+    for provider in _BORROWED_MODEL_PROVIDERS:
         if provider in current_keys and (matched := _match(provider)):
             return provider, matched
 
@@ -1860,9 +1883,21 @@ def detect_static_provider_for_model(
 
     # --- Step 1: check static provider catalogs for a direct match ---
     for pid, models in _PROVIDER_MODELS.items():
-        if pid in current_keys or pid in _AGGREGATOR_PROVIDERS:
+        if (
+            pid in current_keys
+            or pid in _AGGREGATOR_PROVIDERS
+            or pid in _BORROWED_MODEL_PROVIDERS
+        ):
             continue
         if any(name_lower == m.lower() for m in models):
+            return (pid, name)
+
+    # Borrow-list providers (re-expose other vendors' models) only after every
+    # native-vendor catalog, and only when one is the current provider.
+    for pid in _BORROWED_MODEL_PROVIDERS:
+        if pid in current_keys:
+            continue
+        if any(name_lower == m.lower() for m in _PROVIDER_MODELS.get(pid, [])):
             return (pid, name)
 
     return None
@@ -1935,7 +1970,7 @@ def _find_openrouter_slug(model_name: str) -> Optional[str]:
 
 
 def normalize_provider(provider: Optional[str]) -> str:
-    """Normalize provider aliases to Hermes' canonical provider ids.
+    """Normalize provider aliases to Moor' canonical provider ids.
 
     Note: ``"auto"`` passes through unchanged — use
     ``hermes_cli.auth.resolve_provider()`` to resolve it to a concrete
@@ -2003,7 +2038,7 @@ def _strip_vendor_prefix(model_id: str) -> str:
 
 
 def model_supports_fast_mode(model_id: Optional[str]) -> bool:
-    """Return whether Hermes should expose the /fast toggle for this model."""
+    """Return whether Moor should expose the /fast toggle for this model."""
     return _is_anthropic_fast_model(model_id) or _is_openai_fast_model(model_id)
 
 
@@ -2179,7 +2214,7 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
     falling back to static lists. For providers in ``_MODELS_DEV_PREFERRED``
     (opencode-go/zen, xiaomi, deepseek, smaller inference providers, etc.),
     models.dev entries are merged on top of curated so new models released
-    on the platform appear in ``/model`` without a Hermes release.
+    on the platform appear in ``/model`` without a Moor release.
     """
     normalized = normalize_provider(provider)
     if normalized == "openrouter":
@@ -2189,7 +2224,7 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
 
         # Pass the live OAuth access token so the picker matches whatever
         # ChatGPT lists for this account right now (new models appear without
-        # a Hermes release). Falls back to the hardcoded catalog if no token
+        # a Moor release). Falls back to the hardcoded catalog if no token
         # or the endpoint is unreachable.
         access_token = None
         try:
@@ -2224,7 +2259,7 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
             pass
         # Live failed (or no creds). Fall back to the docs-hosted manifest
         # — NOT the in-repo _PROVIDER_MODELS["nous"] snapshot — so newly
-        # added Portal models still surface without a Hermes release.
+        # added Portal models still surface without a Moor release.
         manifest_ids = get_curated_nous_model_ids()
         if manifest_ids:
             return manifest_ids
@@ -2368,10 +2403,17 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
             if not base_url:
                 base_url = _p.base_url
             if api_key:
-                live = _p.fetch_models(api_key=api_key)
+                live = _p.fetch_models(api_key=api_key, base_url=base_url or None)
                 if live:
-                    if normalized in {"kimi-coding", "kimi-coding-cn"}:
-                        curated = list(_PROVIDER_MODELS.get(normalized, []))
+                    # Merge static curated list with live API results so
+                    # models that the live endpoint omits (stale cache,
+                    # partial rollout) still appear in the picker.
+                    # Curated entries come first so deliberately-surfaced
+                    # newest models (e.g. kimi-k2.7-code, #46309) stay at
+                    # the top of the picker; live-only entries are appended
+                    # afterwards for discovery.  (#46850)
+                    curated = list(_PROVIDER_MODELS.get(normalized, []))
+                    if curated:
                         merged = list(curated)
                         merged_lower = {m.lower() for m in curated}
                         for m in live:
@@ -3066,7 +3108,7 @@ _COPILOT_MODEL_ALIASES = {
     "anthropic/claude-sonnet-4": "claude-sonnet-4",
     "anthropic/claude-sonnet-4.5": "claude-sonnet-4.5",
     "anthropic/claude-haiku-4.5": "claude-haiku-4.5",
-    # Dash-notation fallbacks: Hermes' default Claude IDs elsewhere use
+    # Dash-notation fallbacks: Moor' default Claude IDs elsewhere use
     # hyphens (anthropic native format), but Copilot's API only accepts
     # dot-notation.  Accept both so users who configure copilot + a
     # default hyphenated Claude model don't hit HTTP 400
@@ -3705,7 +3747,7 @@ def validate_requested_model(
 
         message = (
             f"Note: could not reach this custom endpoint's model listing at `{probe.get('probed_url')}`. "
-            f"Hermes will still save `{requested}`, but the endpoint should expose `/models` for verification."
+            f"Moor will still save `{requested}`, but the endpoint should expose `/models` for verification."
         )
         if api_mode == "anthropic_messages":
             message += (
@@ -3802,7 +3844,7 @@ def validate_requested_model(
                 "message": (
                     f"Note: `{requested}` was not found in the MiniMax catalog."
                     f"{suggestion_text}"
-                    "\n  MiniMax does not expose a /models endpoint, so Hermes cannot verify the model name."
+                    "\n  MiniMax does not expose a /models endpoint, so Moor cannot verify the model name."
                     "\n  The model may still work if it exists on the server."
                 ),
             }
@@ -3933,6 +3975,24 @@ def validate_requested_model(
             suggestion_text = ""
             if suggestions:
                 suggestion_text = "\n  Similar models: " + ", ".join(f"`{s}`" for s in suggestions)
+
+            # Model not in live /v1/models — check the curated catalog
+            # before rejecting.  Providers may omit models from their live
+            # listing that are still valid (stale cache, partial rollout,
+            # gated previews).  Use the pure-catalog helper (no extra live
+            # fetch) so we only accept models Moor actually ships.  (#46850)
+            if _model_in_provider_catalog(
+                requested_for_lookup.lower(), _provider_keys(normalized)
+            ):
+                return {
+                    "accepted": True,
+                    "persist": True,
+                    "recognized": True,
+                    "message": (
+                        f"Note: `{requested}` was not found in the live /v1/models listing "
+                        f"but exists in the curated catalog — accepted."
+                    ),
+                }
 
         return {
             "accepted": False,

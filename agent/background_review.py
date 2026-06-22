@@ -113,7 +113,7 @@ _SKILL_REVIEW_PROMPT = (
     "If you notice two existing skills that overlap, note it in your "
     "reply — the background curator handles consolidation at scale.\n\n"
     "Protected skills (DO NOT edit these):\n"
-    "  • Bundled skills (shipped with Hermes, e.g. 'hermes-agent').\n"
+    "  • Bundled skills (shipped with Moor, e.g. 'hermes-agent').\n"
     "  • Hub-installed skills (installed via 'hermes skills install').\n"
     "Pinned skills (marked via 'hermes curator pin') CAN be improved — "
     "pin only blocks deletion/archive/consolidation by the curator, not "
@@ -199,7 +199,7 @@ _COMBINED_REVIEW_PROMPT = (
     "If you notice overlapping existing skills, mention it — the "
     "background curator handles consolidation.\n\n"
     "Protected skills (DO NOT edit these):\n"
-    "  • Bundled skills (shipped with Hermes, e.g. 'hermes-agent').\n"
+    "  • Bundled skills (shipped with Moor, e.g. 'hermes-agent').\n"
     "  • Hub-installed skills (installed via 'hermes skills install').\n"
     "Pinned skills (marked via 'hermes curator pin') CAN be improved — "
     "pin only blocks deletion/archive/consolidation by the curator, not "
@@ -300,6 +300,7 @@ def summarize_background_review_actions(
                     "target": args.get("target", "memory"),
                     "content": args.get("content", ""),
                     "old_text": args.get("old_text", ""),
+                    "operations": args.get("operations") or [],
                     "name": args.get("name", ""),
                     "old_string": args.get("old_string", ""),
                     "new_string": args.get("new_string", ""),
@@ -353,6 +354,7 @@ def summarize_background_review_actions(
             content = detail.get("content", "")
             old_text = detail.get("old_text", "")
             skill_name = detail.get("name", "")
+            operations = detail.get("operations") or []
             max_preview = 120
             if is_skill:
                 change = data.get("_change", {})
@@ -376,6 +378,21 @@ def summarize_background_review_actions(
                     actions.append(f"📝 Skill '{skill_name}' rewritten: {description}")
                 else:
                     actions.append(f"📝 {message}" if message else f"Skill {action}")
+            elif operations:
+                for op in operations:
+                    op = op or {}
+                    op_act = op.get("action", "")
+                    op_content = (op.get("content") or "")
+                    op_old = (op.get("old_text") or "")
+                    if op_act == "add" and op_content:
+                        preview = op_content[:max_preview] + ("…" if len(op_content) > max_preview else "")
+                        actions.append(f"{label} ➕ {preview}")
+                    elif op_act == "replace" and op_content:
+                        preview = op_content[:max_preview] + ("…" if len(op_content) > max_preview else "")
+                        actions.append(f"{label} ✏️ {preview}")
+                    elif op_act == "remove" and op_old:
+                        preview = op_old[:60] + ("…" if len(op_old) > 60 else "")
+                        actions.append(f"{label} ➖ {preview}")
             elif action == "add" and content:
                 preview = content[:max_preview] + ("…" if len(content) > max_preview else "")
                 actions.append(f"{label} ➕ {preview}")
@@ -391,6 +408,7 @@ def summarize_background_review_actions(
             "added" in message_lower
             or "replaced" in message_lower
             or "removed" in message_lower
+            or "applied" in message_lower
             or (target and "add" in message.lower())
             or "Entry added" in message
         ):
@@ -473,12 +491,12 @@ def _run_review_in_thread(
             _parent_runtime = agent._current_main_runtime()
             _parent_api_mode = _parent_runtime.get("api_mode") or None
             # The review fork needs to call agent-loop tools (memory,
-            # skill_manage). Those tools require Hermes' own dispatch,
+            # skill_manage). Those tools require Moor' own dispatch,
             # which the codex_app_server runtime bypasses entirely
             # (it runs the turn inside codex's subprocess). So when
             # the parent is on codex_app_server, downgrade the review
             # fork to codex_responses — same auth/credentials, but
-            # talks to the OpenAI Responses API directly so Hermes
+            # talks to the OpenAI Responses API directly so Moor
             # owns the loop and the agent-loop tools dispatch.
             if _parent_api_mode == "codex_app_server":
                 _parent_api_mode = "codex_responses"
@@ -517,6 +535,13 @@ def _run_review_in_thread(
             )
             review_agent._memory_write_origin = "background_review"
             review_agent._memory_write_context = "background_review"
+            # The review fork pins the parent's cached system prompt and keeps
+            # ``tools[]`` byte-identical to the parent so its outbound request
+            # hits the same provider cache prefix (see the toolset-parity note
+            # above). The between-turns MCP refresh in build_turn_context would
+            # add late-connecting MCP tools to this fork and break that parity,
+            # so opt the review fork out of it.
+            review_agent._skip_mcp_refresh = True
             review_agent._memory_store = agent._memory_store
             review_agent._memory_enabled = agent._memory_enabled
             review_agent._user_profile_enabled = agent._user_profile_enabled
@@ -550,6 +575,13 @@ def _run_review_in_thread(
             # if a future code path bypasses the cache.
             review_agent.session_start = agent.session_start
             review_agent.session_id = agent.session_id
+            # The fork shares the parent's live session_id (pinned above for
+            # prefix-cache parity). It is single-lifecycle and calls close()
+            # right after this run_conversation(); without opting out, close()
+            # would finalize the parent's still-active session row mid
+            # conversation (the review fires every ~10 turns). Leave session
+            # finalization to the real owner (CLI close / gateway reset / cron).
+            review_agent._end_session_on_close = False
             # Never let the review fork compress. It shares the parent's
             # session_id, so if it won a compression race it would rotate the
             # parent into a NEW child that the gateway never adopts (the fork

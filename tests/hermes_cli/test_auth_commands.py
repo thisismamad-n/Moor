@@ -129,51 +129,6 @@ def test_auth_add_anthropic_oauth_persists_pool_entry(tmp_path, monkeypatch):
     assert entry["expires_at_ms"] == 1711234567000
 
 
-def test_auth_add_google_gemini_cli_sets_active_provider(tmp_path, monkeypatch):
-    """hermes auth add google-gemini-cli must set active_provider in auth.json.
-
-    Tokens are managed by agent.google_oauth (written to the Google credential
-    file by start_oauth_flow). The auth.json entry must record active_provider
-    so get_active_provider() and _model_section_has_credentials() detect the
-    provider — without storing tokens that would become stale.
-    """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
-    _write_auth_store(tmp_path, {"version": 1, "providers": {}})
-    monkeypatch.setattr(
-        "agent.google_oauth.run_gemini_oauth_login_pure",
-        lambda: {
-            "access_token": "ya29.test-token",
-            "refresh_token": "google-refresh",
-            "email": "user@example.com",
-            "expires_at_ms": 9999999999000,
-            "project_id": "my-project",
-        },
-    )
-
-    from hermes_cli.auth_commands import auth_add_command
-
-    class _Args:
-        provider = "google-gemini-cli"
-        auth_type = "oauth"
-        api_key = None
-        label = None
-
-    auth_add_command(_Args())
-
-    payload = json.loads((tmp_path / "hermes" / "auth.json").read_text())
-    assert payload["active_provider"] == "google-gemini-cli"
-    state = payload["providers"]["google-gemini-cli"]
-    # Only email stored — no access_token/refresh_token (those live in
-    # the Google OAuth credential file managed by agent.google_oauth).
-    assert state.get("email") == "user@example.com"
-    assert "access_token" not in state
-    assert "refresh_token" not in state
-    # pool entry from pool.add_entry() still present for hermes auth list
-    entries = payload["credential_pool"]["google-gemini-cli"]
-    entry = next(item for item in entries if item["source"] == "manual:google_pkce")
-    assert entry["access_token"] == "ya29.test-token"
-
-
 def test_auth_add_qwen_oauth_sets_active_provider(tmp_path, monkeypatch):
     """hermes auth add qwen-oauth must set active_provider in auth.json.
 
@@ -287,7 +242,7 @@ def test_auth_add_nous_oauth_persists_pool_entry(tmp_path, monkeypatch):
     # `hermes auth add nous` must also populate providers.nous so the
     # 401-recovery path (resolve_nous_runtime_credentials) can refresh an
     # invoke JWT when the token expires. If this mirror is missing, recovery
-    # raises "Hermes is not logged into Nous Portal" and the agent dies.
+    # raises "Moor is not logged into Nous Portal" and the agent dies.
     singleton = payload["providers"]["nous"]
     assert singleton["access_token"] == token
     assert singleton["refresh_token"] == "refresh-token"
@@ -1679,7 +1634,7 @@ def test_seed_from_env_respects_openrouter_suppression(tmp_path, monkeypatch):
 
 
 # =============================================================================
-# Unified credential-source stickiness — every source Hermes reads from has a
+# Unified credential-source stickiness — every source Moor reads from has a
 # registered RemovalStep in agent.credential_sources, and every seeding path
 # gates on is_source_suppressed.  Below: one test per source proving remove
 # sticks across a fresh load_pool() call.

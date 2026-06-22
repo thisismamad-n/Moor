@@ -1,5 +1,5 @@
 """
-Unified tool configuration for Hermes Agent.
+Unified tool configuration for Moor Agent.
 
 `hermes tools` and `hermes setup tools` both enter this module.
 Select a platform → toggle toolsets on/off → for newly enabled tools
@@ -73,7 +73,6 @@ CONFIGURABLE_TOOLSETS = [
     ("clarify",         "❓ Clarifying Questions",      "clarify"),
     ("delegation",      "👥 Task Delegation",           "delegate_task"),
     ("cronjob",         "⏰ Cron Jobs",                 "create/list/update/pause/resume/run, with optional attached skills"),
-    ("messaging",       "📨 Cross-Platform Messaging",  "send_message"),
     ("homeassistant",    "🏠 Home Assistant",           "smart home device control"),
     ("spotify",          "🎵 Spotify",                  "playback, search, playlists, library"),
     ("discord",         "💬 Discord (read/participate)", "fetch messages, search members, create thread"),
@@ -411,7 +410,7 @@ TOOL_CATEGORIES = {
         "name": "X (Twitter) Search",
         "setup_title": "Select xAI Credential Source",
         "setup_note": (
-            "Hermes routes X searches through xAI's built-in x_search "
+            "Moor routes X searches through xAI's built-in x_search "
             "Responses tool. Both credential sources hit the same "
             "https://api.x.ai/v1/responses endpoint — pick whichever you "
             "already have. SuperGrok OAuth is preferred when both are set "
@@ -817,7 +816,7 @@ def _run_cua_driver_installer(label: str = "Installing", verbose: bool = True) -
                 _print_info("    IMPORTANT — grant macOS permissions now:")
                 _print_info("      System Settings > Privacy & Security > Accessibility")
                 _print_info("      System Settings > Privacy & Security > Screen Recording")
-                _print_info("    Both must allow the terminal / Hermes process.")
+                _print_info("    Both must allow the terminal / Moor process.")
             return True
         _print_warning(f"    cua-driver {label.lower()} did not complete. Re-run manually:")
         _print_info(f"      {install_cmd}")
@@ -897,7 +896,7 @@ def _run_post_setup(post_setup_key: str):
                 "    Pull the latest image to get the bundled Chromium:"
             )
             _print_info(
-                "      docker pull ghcr.io/nousresearch/hermes-agent:latest"
+                "      docker pull ghcr.io/Moor inc./hermes-agent:latest"
             )
             return
 
@@ -1101,7 +1100,7 @@ def _run_post_setup(post_setup_key: str):
         except Exception as exc:
             _print_warning(f"    Could not enable plugin automatically: {exc}")
             _print_info("    Run manually: hermes plugins enable observability/langfuse")
-        _print_info("    Restart Hermes for tracing to take effect.")
+        _print_info("    Restart Moor for tracing to take effect.")
         _print_info("    Verify: hermes plugins list")
 
     elif post_setup_key == "xai_grok":
@@ -3409,10 +3408,10 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
                 print(color("    (none enabled)", Colors.DIM))
         print()
         return
-    print(color("⚕ Hermes Tool Configuration", Colors.CYAN, Colors.BOLD))
+    print(color("⚕ Moor Tool Configuration", Colors.CYAN, Colors.BOLD))
     print(color("  Enable or disable tools per platform.", Colors.DIM))
     print(color("  Tools that need API keys will be configured when enabled.", Colors.DIM))
-    print(color("  Guide: https://hermes-agent.nousresearch.com/docs/user-guide/features/tools", Colors.DIM))
+    print(color("  Guide: https://hermes-agent.Moor inc..com/docs/user-guide/features/tools", Colors.DIM))
     print()
 
     # ── First-time install: linear flow, no platform menu ──

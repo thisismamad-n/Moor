@@ -6,16 +6,16 @@ description: "Project context files — .hermes.md, AGENTS.md, CLAUDE.md, global
 
 # Context Files
 
-Hermes Agent automatically discovers and loads context files that shape how it behaves. Some are project-local and discovered from your working directory. `SOUL.md` is now global to the Hermes instance and is loaded from `HERMES_HOME` only.
+Moor Agent automatically discovers and loads context files that shape how it behaves. Some are project-local and discovered from your working directory. `SOUL.md` is now global to the Moor instance and is loaded from `HERMES_HOME` only.
 
 ## Supported Context Files
 
 | File | Purpose | Discovery |
 |------|---------|-----------| 
-| **.hermes.md** / **HERMES.md** | Project instructions (highest priority) | Walks to git root |
+| **.hermes.md** / **MOOR.md** | Project instructions (highest priority) | Walks to git root |
 | **AGENTS.md** | Project instructions, conventions, architecture | CWD at startup + subdirectories progressively |
 | **CLAUDE.md** | Claude Code context files (also detected) | CWD at startup + subdirectories progressively |
-| **SOUL.md** | Global personality and tone customization for this Hermes instance | `HERMES_HOME/SOUL.md` only |
+| **SOUL.md** | Global personality and tone customization for this Moor instance | `HERMES_HOME/SOUL.md` only |
 | **.cursorrules** | Cursor IDE coding conventions | CWD only |
 | **.cursor/rules/*.mdc** | Cursor IDE rule modules | CWD only |
 
@@ -29,7 +29,7 @@ Only **one** project context type is loaded per session (first match wins): `.he
 
 ### Progressive Subdirectory Discovery
 
-At session start, Hermes loads the `AGENTS.md` from your working directory into the system prompt. As the agent navigates into subdirectories during the session (via `read_file`, `terminal`, `search_files`, etc.), it **progressively discovers** context files in those directories and injects them into the conversation at the moment they become relevant.
+At session start, Moor loads the `AGENTS.md` from your working directory into the system prompt. As the agent navigates into subdirectories during the session (via `read_file`, `terminal`, `search_files`, etc.), it **progressively discovers** context files in those directories and injects them into the conversation at the moment they become relevant.
 
 ```
 my-project/
@@ -84,21 +84,21 @@ This is a Next.js 14 web application with a Python FastAPI backend.
 **Location:**
 
 - `~/.hermes/SOUL.md`
-- or `$HERMES_HOME/SOUL.md` if you run Hermes with a custom home directory
+- or `$HERMES_HOME/SOUL.md` if you run Moor with a custom home directory
 
 Important details:
 
-- Hermes seeds a default `SOUL.md` automatically if one does not exist yet
-- Hermes loads `SOUL.md` only from `HERMES_HOME`
-- Hermes does not probe the working directory for `SOUL.md`
+- Moor seeds a default `SOUL.md` automatically if one does not exist yet
+- Moor loads `SOUL.md` only from `HERMES_HOME`
+- Moor does not probe the working directory for `SOUL.md`
 - If the file is empty, nothing from `SOUL.md` is added to the prompt
 - If the file has content, the content is injected verbatim after scanning and truncation
 
 ## .cursorrules
 
-Hermes is compatible with Cursor IDE's `.cursorrules` file and `.cursor/rules/*.mdc` rule modules. If these files exist in your project root and no higher-priority context file (`.hermes.md`, `AGENTS.md`, or `CLAUDE.md`) is found, they're loaded as the project context.
+Moor is compatible with Cursor IDE's `.cursorrules` file and `.cursor/rules/*.mdc` rule modules. If these files exist in your project root and no higher-priority context file (`.hermes.md`, `AGENTS.md`, or `CLAUDE.md`) is found, they're loaded as the project context.
 
-This means your existing Cursor conventions automatically apply when using Hermes.
+This means your existing Cursor conventions automatically apply when using Moor.
 
 ## How Context Files Are Loaded
 
@@ -109,7 +109,7 @@ Context files are loaded by `build_context_files_prompt()` in `agent/prompt_buil
 1. **Scan working directory** — checks for `.hermes.md` → `AGENTS.md` → `CLAUDE.md` → `.cursorrules` (first match wins)
 2. **Content is read** — each file is read as UTF-8 text
 3. **Security scan** — content is checked for prompt injection patterns
-4. **Truncation** — files exceeding 20,000 characters are head/tail truncated (70% head, 20% tail, with a marker in the middle)
+4. **Truncation** — files exceeding `context_file_max_chars` characters (default 20,000) are head/tail truncated (70% head, 20% tail, with a marker in the middle)
 5. **Assembly** — all sections are combined under a `# Project Context` header
 6. **Injection** — the assembled content is added to the system prompt
 
@@ -171,12 +171,12 @@ This scanner protects against common injection patterns, but it's not a substitu
 
 | Limit | Value |
 |-------|-------|
-| Max chars per file | 20,000 (~7,000 tokens) |
+| Max chars per file | `context_file_max_chars` (default 20,000, ~7,000 tokens) |
 | Head truncation ratio | 70% |
 | Tail truncation ratio | 20% |
 | Truncation marker | 10% (shows char counts and suggests using file tools) |
 
-When a file exceeds 20,000 characters, the truncation message reads:
+When a file exceeds the configured limit, the truncation message reads:
 
 ```
 [...truncated AGENTS.md: kept 14000+4000 of 25000 chars. Use file tools to read the full file.]
@@ -185,7 +185,7 @@ When a file exceeds 20,000 characters, the truncation message reads:
 ## Tips for Effective Context Files
 
 :::tip Best practices for AGENTS.md
-1. **Keep it concise** — stay well under 20K chars; the agent reads it every turn
+1. **Keep it concise** — stay under your configured `context_file_max_chars`; the agent reads it every turn
 2. **Structure with headers** — use `##` sections for architecture, conventions, important notes
 3. **Include concrete examples** — show preferred code patterns, API shapes, naming conventions
 4. **Mention what NOT to do** — "never modify migration files directly"

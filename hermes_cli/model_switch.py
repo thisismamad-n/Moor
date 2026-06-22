@@ -69,19 +69,19 @@ def _bare_custom_provider_def(current_base_url: str) -> Optional[ProviderDef]:
 # ---------------------------------------------------------------------------
 
 _HERMES_MODEL_WARNING = (
-    "Nous Research Hermes 3 & 4 models are NOT agentic and are not designed "
-    "for use with Hermes Agent. They lack the tool-calling capabilities "
+    "Nous Research Moor 3 & 4 models are NOT agentic and are not designed "
+    "for use with Moor Agent. They lack the tool-calling capabilities "
     "required for agent workflows. Consider using an agentic model instead "
     "(Claude, GPT, Gemini, DeepSeek, etc.)."
 )
 
-# Match only the real Nous Research Hermes 3 / Hermes 4 chat families.
+# Match only the real Nous Research Moor 3 / Moor 4 chat families.
 # The previous substring check (`"hermes" in name.lower()`) false-positived on
 # unrelated local Modelfiles like ``hermes-brain:qwen3-14b-ctx16k`` that just
 # happen to carry "hermes" in their tag but are fully tool-capable.
 #
 # Positive examples the regex must match:
-#   NousResearch/Hermes-3-Llama-3.1-70B, hermes-4-405b, openrouter/hermes3:70b
+#   Moor inc./Moor-3-Llama-3.1-70B, hermes-4-405b, openrouter/hermes3:70b
 # Negative examples it must NOT match:
 #   hermes-brain:qwen3-14b-ctx16k, qwen3:14b, claude-opus-4-6
 _NOUS_HERMES_NON_AGENTIC_RE = re.compile(
@@ -91,7 +91,7 @@ _NOUS_HERMES_NON_AGENTIC_RE = re.compile(
 
 
 def is_nous_hermes_non_agentic(model_name: str) -> bool:
-    """Return True if *model_name* is a real Nous Hermes 3/4 chat model.
+    """Return True if *model_name* is a real Nous Moor 3/4 chat model.
 
     Used to decide whether to surface the non-agentic warning at startup.
     Callers in :mod:`cli.py` and here should go through this single helper
@@ -103,7 +103,7 @@ def is_nous_hermes_non_agentic(model_name: str) -> bool:
 
 
 def _check_hermes_model_warning(model_name: str) -> str:
-    """Return a warning string if *model_name* is a Nous Hermes 3/4 chat model."""
+    """Return a warning string if *model_name* is a Nous Moor 3/4 chat model."""
     if is_nous_hermes_non_agentic(model_name):
         return _HERMES_MODEL_WARNING
     return ""
@@ -299,33 +299,45 @@ class ModelSwitchResult:
 # Flag parsing
 # ---------------------------------------------------------------------------
 
-def parse_model_flags(raw_args: str) -> tuple[str, str, bool, bool]:
-    """Parse --provider, --global, and --refresh flags from /model command args.
+def parse_model_flags(raw_args: str) -> tuple[str, str, bool, bool, bool]:
+    """Parse --provider, --global, --session, and --refresh flags from /model command args.
 
-    Returns (model_input, explicit_provider, is_global, force_refresh).
+    Returns ``(model_input, explicit_provider, is_global, force_refresh, is_session)``.
+
+    ``is_global`` and ``is_session`` are independent flag presences; the
+    *effective* persistence decision is resolved by
+    :func:`resolve_persist_behavior` so the config-gated default
+    (``model.persist_switch_by_default``) is applied in one place.
 
     Examples::
 
-        "sonnet"                         -> ("sonnet", "", False, False)
-        "sonnet --global"                -> ("sonnet", "", True, False)
-        "sonnet --provider anthropic"    -> ("sonnet", "anthropic", False, False)
-        "--provider my-ollama"           -> ("", "my-ollama", False, False)
-        "--refresh"                      -> ("", "", False, True)
-        "sonnet --provider anthropic --global" -> ("sonnet", "anthropic", True, False)
+        "sonnet"                         -> ("sonnet", "", False, False, False)
+        "sonnet --global"                -> ("sonnet", "", True, False, False)
+        "sonnet --session"               -> ("sonnet", "", False, False, True)
+        "sonnet --provider anthropic"    -> ("sonnet", "anthropic", False, False, False)
+        "--provider my-ollama"           -> ("", "my-ollama", False, False, False)
+        "--refresh"                      -> ("", "", False, True, False)
+        "sonnet --provider anthropic --global" -> ("sonnet", "anthropic", True, False, False)
     """
     is_global = False
     explicit_provider = ""
     force_refresh = False
+    is_session = False
 
     # Normalize Unicode dashes (Telegram/iOS auto-converts -- to em/en dash)
     # A single Unicode dash before a flag keyword becomes "--"
     import re as _re
-    raw_args = _re.sub(r'[\u2012\u2013\u2014\u2015](provider|global|refresh)', r'--\1', raw_args)
+    raw_args = _re.sub(r'[\u2012\u2013\u2014\u2015](provider|global|session|refresh)', r'--\1', raw_args)
 
     # Extract --global
     if "--global" in raw_args:
         is_global = True
         raw_args = raw_args.replace("--global", "").strip()
+
+    # Extract --session (explicit session-only; overrides the persist default)
+    if "--session" in raw_args:
+        is_session = True
+        raw_args = raw_args.replace("--session", "").strip()
 
     # Extract --refresh (bust the model picker disk cache before listing)
     if "--refresh" in raw_args:
@@ -345,7 +357,37 @@ def parse_model_flags(raw_args: str) -> tuple[str, str, bool, bool]:
             i += 1
 
     model_input = " ".join(filtered).strip()
-    return (model_input, explicit_provider, is_global, force_refresh)
+    return (model_input, explicit_provider, is_global, force_refresh, is_session)
+
+
+def resolve_persist_behavior(is_global: bool, is_session: bool) -> bool:
+    """Decide whether a ``/model`` switch should persist to ``config.yaml``.
+
+    Resolution order:
+
+    1. ``--session`` explicitly opts out → ``False`` (this session only).
+    2. ``--global`` explicitly opts in → ``True``.
+    3. Otherwise defer to ``model.persist_switch_by_default`` in
+       ``config.yaml`` (defaults to ``True``, so a plain ``/model <name>``
+       survives across sessions — the behavior users expect).
+
+    The config read is defensive: on a fresh install ``model`` may be a
+    flat string rather than a dict, in which case the built-in default
+    (``True``) applies.
+    """
+    if is_session:
+        return False
+    if is_global:
+        return True
+    try:
+        from hermes_cli.config import load_config
+
+        model_cfg = load_config().get("model")
+        if isinstance(model_cfg, dict):
+            return bool(model_cfg.get("persist_switch_by_default", True))
+    except Exception:
+        pass
+    return True
 
 
 # ---------------------------------------------------------------------------
@@ -1188,7 +1230,6 @@ def prewarm_picker_cache_async() -> Optional["_threading.Thread"]:
                 current_model=ctx.current_model,
                 user_providers=ctx.user_providers,
                 custom_providers=ctx.custom_providers,
-                max_models=50,
             )
         except Exception:
             # Best-effort warmup — never surface errors into the session.
@@ -1206,8 +1247,9 @@ def list_authenticated_providers(
     custom_providers: list | None = None,
     *,
     force_fresh_nous_tier: bool = False,
-    max_models: int = 8,
+    max_models: int | None = None,
     current_model: str = "",
+    refresh: bool = False,
 ) -> List[dict]:
     """Detect which providers have credentials and list their curated models.
 
@@ -1228,6 +1270,12 @@ def list_authenticated_providers(
     ``force_fresh_nous_tier`` bypasses the short Nous tier cache for explicit
     account-sensitive flows. UI picker opens should leave it false so they do
     not block on fresh Portal/account checks every time.
+
+    ``refresh`` busts the per-provider model-id disk cache
+    (``provider_models_cache.json``) up front so every row re-fetches its
+    live catalog. Use for an explicit user-triggered "refresh models" action
+    (e.g. the desktop picker's refresh control); leave false for normal picker
+    opens so they stay snappy on the 1h cache.
     """
     import os
     from agent.models_dev import (
@@ -1239,8 +1287,20 @@ def list_authenticated_providers(
     from hermes_cli.models import (
         OPENROUTER_MODELS, _PROVIDER_MODELS,
         _MODELS_DEV_PREFERRED, _merge_with_models_dev, cached_provider_model_ids,
-        get_curated_nous_model_ids,
+        clear_provider_models_cache, get_curated_nous_model_ids,
     )
+
+    # Explicit refresh: drop every provider's cached model-id list so the
+    # cached_provider_model_ids() calls below all re-fetch live. Without this
+    # a stale 1h cache can fall back to the curated static list when its live
+    # fetch later fails, silently dropping live-only models (e.g. OpenCode
+    # Zen's free tier) the user had seen before.
+    if refresh:
+        try:
+            clear_provider_models_cache()
+        except Exception:
+            pass
+
 
     results: List[dict] = []
     seen_slugs: set = set()  # lowercase-normalized to catch case variants (#9545)
@@ -1322,9 +1382,9 @@ def list_authenticated_providers(
     curated: dict[str, list[str]] = dict(_PROVIDER_MODELS)
     curated["openrouter"] = [mid for mid, _ in OPENROUTER_MODELS]
     # "nous" pulls from the remote model-catalog manifest published at
-    # https://hermes-agent.nousresearch.com/docs/api/model-catalog.json so
+    # https://hermes-agent.Moor inc..com/docs/api/model-catalog.json so
     # newly added Portal models surface in the /model picker without
-    # requiring a Hermes release. Falls back to the in-repo
+    # requiring a Moor release. Falls back to the in-repo
     # _PROVIDER_MODELS["nous"] snapshot when the manifest is unreachable.
     curated["nous"] = get_curated_nous_model_ids()
     # Ollama Cloud uses dynamic discovery (no static curated list)
@@ -1360,7 +1420,7 @@ def list_authenticated_providers(
             live = [current_model]
         curated["lmstudio"] = live
 
-    # --- 1. Check Hermes-mapped providers ---
+    # --- 1. Check Moor-mapped providers ---
     from hermes_cli.models import _AGGREGATOR_PROVIDERS as _AGG_PROVIDERS
     from hermes_cli.providers import ALIASES as _PROVIDER_ALIAS_TABLE
     for hermes_id, mdev_id in PROVIDER_TO_MODELS_DEV.items():
@@ -1426,7 +1486,7 @@ def list_authenticated_providers(
             if hermes_id in _MODELS_DEV_PREFERRED:
                 model_ids = _merge_with_models_dev(hermes_id, model_ids)
         total = len(model_ids)
-        top = model_ids[:max_models]
+        top = model_ids[:max_models] if max_models is not None else model_ids
 
         slug = hermes_id
         pinfo = _mdev_pinfo(mdev_id)
@@ -1445,20 +1505,20 @@ def list_authenticated_providers(
         seen_mdev_ids.add(mdev_id)
         _record_builtin_endpoint(slug)
 
-    # --- 2. Check Hermes-only providers (nous, openai-codex, copilot, opencode-go) ---
+    # --- 2. Check Moor-only providers (nous, openai-codex, copilot, opencode-go) ---
     from hermes_cli.providers import HERMES_OVERLAYS
     from hermes_cli.auth import PROVIDER_REGISTRY as _auth_registry
 
-    # Build reverse mapping: models.dev ID → Hermes provider ID.
+    # Build reverse mapping: models.dev ID → Moor provider ID.
     # HERMES_OVERLAYS keys may be models.dev IDs (e.g. "github-copilot")
-    # while _PROVIDER_MODELS and config.yaml use Hermes IDs ("copilot").
+    # while _PROVIDER_MODELS and config.yaml use Moor IDs ("copilot").
     _mdev_to_hermes = {v: k for k, v in PROVIDER_TO_MODELS_DEV.items()}
 
     for pid, overlay in HERMES_OVERLAYS.items():
         if pid.lower() in seen_slugs:
             continue
 
-        # Resolve Hermes slug — e.g. "github-copilot" → "copilot"
+        # Resolve Moor slug — e.g. "github-copilot" → "copilot"
         hermes_slug = _mdev_to_hermes.get(pid, pid)
         if hermes_slug.lower() in seen_slugs:
             continue
@@ -1589,7 +1649,7 @@ def list_authenticated_providers(
                 if hermes_slug in _MODELS_DEV_PREFERRED:
                     model_ids = _merge_with_models_dev(hermes_slug, model_ids)
         total = len(model_ids)
-        top = model_ids[:max_models]
+        top = model_ids[:max_models] if max_models is not None else model_ids
 
         results.append({
             "slug": hermes_slug,
@@ -1664,7 +1724,7 @@ def list_authenticated_providers(
             if not _cp_model_ids:
                 _cp_model_ids = curated.get(_cp.slug, [])
         _cp_total = len(_cp_model_ids)
-        _cp_top = _cp_model_ids[:max_models]
+        _cp_top = _cp_model_ids[:max_models] if max_models is not None else _cp_model_ids
 
         results.append({
             "slug": _cp.slug,
@@ -1695,7 +1755,7 @@ def list_authenticated_providers(
             if ep_name.lower() in seen_slugs:
                 continue
             display_name = ep_cfg.get("name", "") or ep_name
-            # ``base_url`` is Hermes's canonical write key (matches
+            # ``base_url`` is Moor's canonical write key (matches
             # custom_providers and _save_custom_provider); ``api`` / ``url``
             # remain as fallbacks for hand-edited / legacy configs.
             api_url = (
@@ -1713,7 +1773,7 @@ def list_authenticated_providers(
             if default_model:
                 models_list.append(default_model)
             # Also include the full models list from config.
-            # Hermes writes ``models:`` as a dict keyed by model id
+            # Moor writes ``models:`` as a dict keyed by model id
             # (see hermes_cli/main.py::_save_custom_provider); older
             # configs or hand-edited files may still use a list.
             cfg_models = ep_cfg.get("models", [])
@@ -1735,10 +1795,15 @@ def list_authenticated_providers(
                     if fb:
                         models_list = list(fb)
 
-            # Prefer the endpoint's live /models list when credentials are
-            # available, unless the provider explicitly opts out via
-            # discover_models: false (e.g. dedicated endpoints that expose
-            # the entire aggregator catalog via /models).
+            # Prefer the endpoint's live /models list when discoverable,
+            # unless the provider explicitly opts out via discover_models: false.
+            # Policy mirrors Section 4's should_probe logic:
+            # - With an api_key: always probe (user opted into the endpoint).
+            # - Without an api_key but with explicit models: skip — the user
+            #   is narrowing a public endpoint to a specific subset.
+            # - Without an api_key AND no explicit models: probe anyway so
+            #   bare-endpoint providers (local llama.cpp / Ollama servers)
+            #   still show their full model catalog.
             api_key = str(ep_cfg.get("api_key", "") or "").strip()
             if not api_key:
                 key_env = str(ep_cfg.get("key_env", "") or "").strip()
@@ -1746,7 +1811,11 @@ def list_authenticated_providers(
             discover = ep_cfg.get("discover_models", True)
             if isinstance(discover, str):
                 discover = discover.lower() not in {"false", "no", "0"}
-            if api_url and api_key and discover:
+            has_explicit_models = bool(models_list)
+            should_probe = bool(api_url) and discover and (
+                bool(api_key) or not has_explicit_models
+            )
+            if should_probe:
                 try:
                     from hermes_cli.models import fetch_api_models
                     live_models = fetch_api_models(api_key, api_url)
@@ -1804,7 +1873,7 @@ def list_authenticated_providers(
             "name": "Custom endpoint",
             "is_current": True,
             "is_user_defined": True,
-            "models": _models[:max_models] if max_models else _models,
+            "models": _models[:max_models] if max_models is not None else _models,
             "total_models": len(_models),
             "source": "model-config",
             "api_url": str(current_base_url).strip().rstrip("/"),
@@ -1869,7 +1938,7 @@ def list_authenticated_providers(
             if group_key not in groups:
                 # Strip per-model suffix so "Ollama — GLM 5.1" becomes
                 # "Ollama" for the grouped row. Em dash is the convention
-                # Hermes's own writer uses; a hyphen variant is accepted
+                # Moor's own writer uses; a hyphen variant is accepted
                 # for hand-edited configs.
                 display_name = raw_name
                 for sep in ("—", " - "):
@@ -1896,7 +1965,7 @@ def list_authenticated_providers(
                     groups[group_key]["discover_models"] = False
 
             # The singular ``model:`` field only holds the currently
-            # active model. Hermes's own writer (main.py::_save_custom_provider)
+            # active model. Moor's own writer (main.py::_save_custom_provider)
             # stores every configured model as a dict under ``models:``;
             # downstream readers (agent/models_dev.py, gateway/run.py,
             # run_agent.py, hermes_cli/config.py) already consume that dict.
@@ -2031,7 +2100,7 @@ def list_picker_providers(
     current_base_url: str = "",
     user_providers: dict = None,
     custom_providers: list | None = None,
-    max_models: int = 8,
+    max_models: int | None = None,
     current_model: str = "",
 ) -> List[dict]:
     """Interactive-picker variant of :func:`list_authenticated_providers`.
@@ -2074,7 +2143,7 @@ def list_picker_providers(
             except Exception:
                 live_ids = list(p.get("models", []))
             p = dict(p)
-            p["models"] = live_ids[:max_models]
+            p["models"] = live_ids[:max_models] if max_models is not None else live_ids
             p["total_models"] = len(live_ids)
 
         has_models = bool(p.get("models"))

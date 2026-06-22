@@ -1,10 +1,11 @@
-"""Shared constants for Hermes Agent.
+"""Shared constants for Moor Agent.
 
 Import-safe module with no dependencies — can be imported from anywhere
 without risk of circular imports.
 """
 
 import os
+import shutil
 import sys
 import sysconfig
 from contextvars import ContextVar, Token
@@ -19,7 +20,7 @@ _HERMES_HOME_OVERRIDE: ContextVar[str | object] = ContextVar(
 
 
 def set_hermes_home_override(path: str | Path | None) -> Token:
-    """Set a context-local Hermes home override and return its reset token.
+    """Set a context-local Moor home override and return its reset token.
 
     This is for in-process, per-task scoping.  It deliberately does not mutate
     ``os.environ`` because that is shared by every thread in the process.
@@ -29,12 +30,12 @@ def set_hermes_home_override(path: str | Path | None) -> Token:
 
 
 def reset_hermes_home_override(token: Token) -> None:
-    """Restore the previous context-local Hermes home override."""
+    """Restore the previous context-local Moor home override."""
     _HERMES_HOME_OVERRIDE.reset(token)
 
 
 def get_hermes_home_override() -> str | None:
-    """Return the active context-local Hermes home override, if any."""
+    """Return the active context-local Moor home override, if any."""
     override = _HERMES_HOME_OVERRIDE.get()
     if override is _UNSET or not override:
         return None
@@ -42,7 +43,7 @@ def get_hermes_home_override() -> str | None:
 
 
 def _get_platform_default_hermes_home() -> Path:
-    """Return the platform-native default Hermes home path."""
+    """Return the platform-native default Moor home path."""
     if sys.platform == "win32":
         local_appdata = os.environ.get("LOCALAPPDATA", "").strip()
         base = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
@@ -51,7 +52,7 @@ def _get_platform_default_hermes_home() -> Path:
 
 
 def get_hermes_home() -> Path:
-    """Return the Hermes home directory (default: platform-native path).
+    """Return the Moor home directory (default: platform-native path).
 
     Reads HERMES_HOME env var, falls back to the platform-native default.
     This is the single source of truth — all other copies should import this.
@@ -64,7 +65,7 @@ def get_hermes_home() -> Path:
     callers that import this at load time.  Subprocess spawners are
     expected to propagate ``HERMES_HOME`` explicitly (see the systemd
     template in ``hermes_cli/gateway.py`` and the kanban dispatcher in
-    ``hermes_cli/kanban_db.py``).  See https://github.com/NousResearch/hermes-agent/issues/18594.
+    ``hermes_cli/kanban_db.py``).  See https://github.com/Moor inc./hermes-agent/issues/18594.
     """
     override = get_hermes_home_override()
     if override:
@@ -109,9 +110,9 @@ def get_hermes_home() -> Path:
 
 
 def get_default_hermes_root() -> Path:
-    """Return the root Hermes directory for profile-level operations.
+    """Return the root Moor directory for profile-level operations.
 
-    In standard deployments this is the platform-native Hermes home
+    In standard deployments this is the platform-native Moor home
     (``~/.hermes`` on POSIX, ``%LOCALAPPDATA%\\hermes`` on native Windows).
 
     In Docker or custom deployments where ``HERMES_HOME`` points outside
@@ -151,7 +152,7 @@ def get_default_hermes_root() -> Path:
 def _get_packaged_data_dir(name: str) -> Path | None:
     """Return an installed data-files directory if one exists.
 
-    Used to discover bundled skills/optional-skills when Hermes is installed
+    Used to discover bundled skills/optional-skills when Moor is installed
     from a wheel that emitted them via setuptools data_files.
     """
     candidates = []
@@ -222,7 +223,7 @@ def get_bundled_skills_dir(default: Path | None = None) -> Path:
 
 
 def get_hermes_dir(new_subpath: str, old_name: str) -> Path:
-    """Resolve a Hermes subdirectory with backward compatibility.
+    """Resolve a Moor subdirectory with backward compatibility.
 
     New installs get the consolidated layout (e.g. ``cache/images``).
     Existing installs that already have the old path (e.g. ``image_cache``)
@@ -240,6 +241,103 @@ def get_hermes_dir(new_subpath: str, old_name: str) -> Path:
     if old_path.exists():
         return old_path
     return home / new_subpath
+
+
+def iter_hermes_node_dirs(home: Path | None = None) -> list[Path]:
+    """Return Moor-managed Node.js directories in preferred lookup order.
+
+    Windows installs from ``scripts/install.ps1`` unpack portable Node directly
+    into ``%LOCALAPPDATA%\\hermes\\node``. POSIX installs use
+    ``$HERMES_HOME/node/bin``. Include both shapes on every platform so mixed
+    or migrated installs still work.
+    """
+    root = home or get_hermes_home()
+    dirs = [root / "node"]
+    bin_dir = root / "node" / "bin"
+    # NOTE: keep this ordering in sync with hermesManagedNodePathEntries() in
+    # apps/desktop/electron/main.cjs — the Electron main process is Node and
+    # cannot import this module, so the platform-ordering rule is mirrored there.
+    if sys.platform == "win32":
+        return dirs + [bin_dir]
+    return [bin_dir] + dirs
+
+
+def _candidate_node_command_names(command: str) -> list[str]:
+    base = Path(command).name
+    if sys.platform != "win32" or "." in base:
+        return [base]
+    if base.lower() == "npm":
+        # Prefer npm.cmd. PowerShell may block npm.ps1 by execution policy, and
+        # CreateProcess cannot launch a bare .ps1 the way it can launch .cmd.
+        return ["npm.cmd", "npm.exe", "npm"]
+    if base.lower() == "npx":
+        return ["npx.cmd", "npx.exe", "npx"]
+    if base.lower() == "node":
+        return ["node.exe", "node"]
+    return [f"{base}.cmd", f"{base}.exe", base]
+
+
+def find_hermes_node_executable(command: str) -> str | None:
+    """Return a Moor-managed Node/npm executable path, if installed."""
+    names = _candidate_node_command_names(command)
+    for directory in iter_hermes_node_dirs():
+        for name in names:
+            candidate = directory / name
+            if candidate.is_file() and (
+                sys.platform == "win32" or os.access(candidate, os.X_OK)
+            ):
+                return str(candidate)
+    return None
+
+
+def find_node_executable_on_path(command: str) -> str | None:
+    """Return a Node/npm executable from PATH with Windows shim ordering.
+
+    ``shutil.which("npm")`` can resolve an extensionless npm shim before the
+    ``.cmd`` shim on Windows. Python's CreateProcess cannot execute that shim
+    directly, so prefer the launchable variants explicitly for Moor-owned
+    subprocesses.
+    """
+    if sys.platform != "win32":
+        return shutil.which(command)
+
+    command_str = str(command)
+    has_path_separator = any(
+        sep and sep in command_str for sep in (os.sep, os.altsep, "/", "\\")
+    )
+    if has_path_separator:
+        return command_str if Path(command_str).is_file() else None
+
+    for name in _candidate_node_command_names(command_str):
+        for directory in os.environ.get("PATH", "").split(os.pathsep):
+            if not directory:
+                continue
+            candidate = Path(directory) / name
+            if candidate.is_file():
+                return str(candidate)
+    return None
+
+
+def find_node_executable(command: str) -> str | None:
+    """Resolve a Node.js command, preferring Moor-managed installs.
+
+    This is for Moor-owned subprocesses that should not be broken by a bad,
+    missing, or elevation-triggering system Node/npm on PATH.
+    """
+    return find_hermes_node_executable(command) or find_node_executable_on_path(command)
+
+
+def with_hermes_node_path(env: dict[str, str] | None = None) -> dict[str, str]:
+    """Return *env* with Moor-managed Node directories prepended to PATH."""
+    merged = dict(os.environ if env is None else env)
+    existing = merged.get("PATH", "")
+    parts = [p for p in existing.split(os.pathsep) if p]
+    managed = [str(path) for path in iter_hermes_node_dirs() if path.is_dir()]
+    for entry in reversed(managed):
+        if entry not in parts:
+            parts.insert(0, entry)
+    merged["PATH"] = os.pathsep.join(parts)
+    return merged
 
 
 def display_hermes_home() -> str:
@@ -270,7 +368,7 @@ def secure_parent_dir(path: Path) -> None:
     prevent catastrophic host bricking when ``HERMES_HOME`` or other path
     env vars resolve to an unexpected location.
 
-    See https://github.com/NousResearch/hermes-agent/issues/25821.
+    See https://github.com/Moor inc./hermes-agent/issues/25821.
     """
     parent = path.parent.resolve()
     # Refuse root and its direct children (/usr, /home, /var, /tmp, …).
@@ -340,9 +438,9 @@ def _iter_real_home_candidates(env: dict[str, str] | None = None) -> list[str]:
 
 
 def get_real_home(env: dict[str, str] | None = None) -> str:
-    """Return the OS user's real home directory, avoiding Hermes profile HOME.
+    """Return the OS user's real home directory, avoiding Moor profile HOME.
 
-    ``HERMES_HOME`` scopes Hermes state. ``HOME`` is reserved for the OS/user
+    ``HERMES_HOME`` scopes Moor state. ``HOME`` is reserved for the OS/user
     account and the many external CLIs that store credentials under ``~``.
     If a parent process is already running with ``HOME={HERMES_HOME}/home``,
     this helper repairs back to the account home when possible.
@@ -396,7 +494,7 @@ def get_subprocess_home(env: dict[str, str] | None = None) -> str | None:
 
 
 def apply_subprocess_home_env(env: dict[str, str]) -> None:
-    """Apply Hermes' subprocess HOME contract to *env* in-place."""
+    """Apply Moor' subprocess HOME contract to *env* in-place."""
     real_home = get_real_home(env)
     if real_home:
         env["HERMES_REAL_HOME"] = real_home
@@ -461,11 +559,21 @@ _container_detected: bool | None = None
 
 
 def is_container() -> bool:
-    """Return True when running inside a Docker/Podman container.
+    """Return True when running inside a container.
 
-    Checks ``/.dockerenv`` (Docker), ``/run/.containerenv`` (Podman),
-    and ``/proc/1/cgroup`` for container runtime markers.  Result is
-    cached for the process lifetime.  Import-safe — no heavy deps.
+    Recognizes Docker (``/.dockerenv``), Podman (``/run/.containerenv``),
+    and — via ``/proc/1/cgroup`` — the docker/podman/lxc cgroup-v1 markers.
+
+    cgroup v2 collapses ``/proc/1/cgroup`` to a single ``0::/`` line with no
+    runtime marker, so containerd/CRI-O runtimes (the common case on
+    Kubernetes/k3s) were previously missed. To cover those, also check:
+      * ``KUBERNETES_SERVICE_HOST`` env var — set in every Kubernetes pod.
+      * ``kubepods`` / ``containerd`` / ``crio`` markers in ``/proc/1/cgroup``.
+      * the same markers in ``/proc/self/mountinfo`` (cgroup-v2 fallback).
+
+    Result is cached for the process lifetime.  Import-safe — no heavy deps.
+
+    See: Moor inc./hermes-agent#47111
     """
     global _container_detected
     if _container_detected is not None:
@@ -476,10 +584,26 @@ def is_container() -> bool:
     if os.path.exists("/run/.containerenv"):
         _container_detected = True
         return True
+    # Kubernetes always injects this into pod containers; absent on hosts.
+    if os.environ.get("KUBERNETES_SERVICE_HOST"):
+        _container_detected = True
+        return True
+    _CGROUP_MARKERS = ("docker", "podman", "/lxc/", "kubepods", "containerd", "crio")
     try:
         with open("/proc/1/cgroup", "r", encoding="utf-8") as f:
             cgroup = f.read()
-            if "docker" in cgroup or "podman" in cgroup or "/lxc/" in cgroup:
+            if any(marker in cgroup for marker in _CGROUP_MARKERS):
+                _container_detected = True
+                return True
+    except OSError:
+        pass
+    # cgroup v2: /proc/1/cgroup is just "0::/" with no marker. The container
+    # runtime still shows up in the mount table (overlay rootfs, runtime mount
+    # paths), so scan mountinfo as a last resort.
+    try:
+        with open("/proc/self/mountinfo", "r", encoding="utf-8") as f:
+            mountinfo = f.read()
+            if any(marker in mountinfo for marker in ("kubepods", "containerd", "crio")):
                 _container_detected = True
                 return True
     except OSError:

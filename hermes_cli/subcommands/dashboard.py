@@ -20,7 +20,7 @@ def build_dashboard_parser(
     dashboard_parser = subparsers.add_parser(
         "dashboard",
         help="Start the web UI dashboard",
-        description="Launch the Hermes Agent web dashboard for managing config, API keys, and sessions",
+        description="Launch the Moor Agent web dashboard for managing config, API keys, and sessions",
     )
     dashboard_parser.add_argument(
         "--port", type=int, default=9119, help="Port (default 9119, 0 for auto-assign by OS)"
@@ -34,7 +34,13 @@ def build_dashboard_parser(
     dashboard_parser.add_argument(
         "--insecure",
         action="store_true",
-        help="Allow binding to non-localhost (DANGEROUS: exposes API keys on the network)",
+        help=(
+            "DEPRECATED / NO-OP. Formerly bypassed dashboard auth on a "
+            "non-loopback bind. As of the June 2026 hardening it no longer "
+            "disables authentication — a public bind always requires an auth "
+            "provider (password or OAuth). Bind 127.0.0.1 + tunnel to keep it "
+            "local."
+        ),
     )
     dashboard_parser.add_argument(
         "--skip-build",
@@ -81,13 +87,13 @@ def build_dashboard_parser(
         action="store_true",
         help="List running hermes dashboard processes and exit",
     )
-    # Backward-compat shim: older Hermes desktop app shells (<= 0.15.x) spawn the
+    # Backward-compat shim: older Moor desktop app shells (<= 0.15.x) spawn the
     # backend as `hermes dashboard --no-open --tui --host ... --port ...`. The
     # `--tui` flag was removed from this subcommand in cae6b5486 (embedded chat is
     # always on now). When a user's CLI updates past that commit but their desktop
     # app binary has not, argparse used to hard-error with "unrecognized arguments:
     # --tui" and exit(2) — the backend died before becoming ready and the GUI just
-    # showed "Hermes couldn't start" with no actionable cause. Accept and silently
+    # showed "Moor couldn't start" with no actionable cause. Accept and silently
     # ignore the flag so an old app + new CLI degrades gracefully instead of
     # bricking. Hidden from --help; safe to delete once the floor app version is
     # well past 0.16.0.

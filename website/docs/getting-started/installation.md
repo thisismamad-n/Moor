@@ -1,33 +1,33 @@
 ---
 sidebar_position: 2
 title: "Installation"
-description: "Install Hermes Agent on Linux, macOS, WSL2, native Windows, or Android via Termux"
+description: "Install Moor Agent on Linux, macOS, WSL2, native Windows, or Android via Termux"
 ---
 
 # Installation
 
-Get Hermes Agent up and running in under two minutes!
+Get Moor Agent up and running in under two minutes!
 
 ## Quick Install
-### With the Hermes Desktop installer on macOS or Windows (recommended)
-To easily install the command-line and desktop applications, [download the Hermes Desktop installer](https://hermes-agent.nousresearch.com/) from our website and run it.
+### With the Moor Desktop installer on macOS or Windows (recommended)
+To easily install the command-line and desktop applications, [download the Moor Desktop installer](https://hermes-agent.Moor inc..com/) from our website and run it.
 
-### Without Hermes Desktop:
-For a command-line only install without Hermes Desktop, run:
+### Without Moor Desktop:
+For a command-line only install without Moor Desktop, run:
 
 #### Linux / macOS / WSL2 / Android (Termux)
 ```bash
-curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+curl -fsSL https://hermes-agent.Moor inc..com/install.sh | bash
 ```
 
 #### Windows (native)
 
 Run in powershell:
 ```powershell
-iex (irm https://hermes-agent.nousresearch.com/install.ps1) 
+iex (irm https://hermes-agent.Moor inc..com/install.ps1) 
 ```
 
-If you want to install & run Hermes Desktop after a command-line only install, simply run
+If you want to install & run Moor Desktop after a command-line only install, simply run
 ```bash
 hermes desktop
 ```
@@ -81,7 +81,7 @@ That logs you in, sets Nous as your provider, and turns on the Tool Gateway in o
 
 ## Prerequisites
 
-**Installer:** On non-Windows platforms, the only prerequisite is **Git**. The installer automatically handles everything else:
+**Installer:** On non-Windows platforms, the only prerequisite is **Git**. On Linux, also make sure `curl` and `xz-utils` are available (the installer downloads Node.js as a `.tar.xz` archive). The desktop app additionally requires `g++` (or `build-essential` on Debian/Ubuntu) to compile native modules. The installer automatically handles everything else:
 
 - **uv** (fast Python package manager)
 - **Python 3.11** (via uv, no sudo needed)
@@ -90,7 +90,7 @@ That logs you in, sets Nous as your provider, and turns on the Tool Gateway in o
 - **ffmpeg** (audio format conversion for TTS)
 
 :::info
-You do **not** need to install Python, Node.js, ripgrep, or ffmpeg manually. The installer detects what's missing and installs it for you. Just make sure `git` is available (`git --version`).
+You do **not** need to install Python, Node.js, ripgrep, or ffmpeg manually. The installer detects what's missing and installs it for you. Just make sure `git` is available (`git --version`). On Linux, ensure `curl` and `xz-utils` are installed (`sudo apt install curl xz-utils` on Debian/Ubuntu). For the desktop app, also install `build-essential` (`sudo apt install build-essential`).
 :::
 
 :::tip Nix users
@@ -107,7 +107,7 @@ If you want to clone the repo and install from source — for contributing, runn
 
 ## Non-Sudo / System Service User Installs
 
-Running Hermes as a dedicated unprivileged user (e.g. a `hermes` systemd service account, or any user without `sudo` access) is supported. The only thing on the install path that genuinely needs root is Playwright's `--with-deps` step, which `apt`-installs shared libraries (`libnss3`, `libxkbcommon`, etc.) used by Chromium. The installer detects whether sudo is available and gracefully degrades when it isn't — it will install the Chromium binary into the service user's own Playwright cache and print the exact command an administrator needs to run separately.
+Running Moor as a dedicated unprivileged user (e.g. a `hermes` systemd service account, or any user without `sudo` access) is supported. The only thing on the install path that genuinely needs root is Playwright's `--with-deps` step, which `apt`-installs shared libraries (`libnss3`, `libxkbcommon`, etc.) used by Chromium. The installer detects whether sudo is available and gracefully degrades when it isn't — it will install the Chromium binary into the service user's own Playwright cache and print the exact command an administrator needs to run separately.
 
 **Recommended split (Debian/Ubuntu):**
 
@@ -119,12 +119,12 @@ Running Hermes as a dedicated unprivileged user (e.g. a `hermes` systemd service
 
 2. **As the unprivileged service user**, run the regular installer. It will detect the missing sudo, skip `--with-deps`, and install Chromium into the user's local Playwright cache:
    ```bash
-   curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+   curl -fsSL https://hermes-agent.Moor inc..com/install.sh | bash
    ```
 
    If you want to skip the Playwright step entirely — for example because you're running headless and don't need browser automation — pass `--skip-browser`:
    ```bash
-   curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --skip-browser
+   curl -fsSL https://hermes-agent.Moor inc..com/install.sh | bash -s -- --skip-browser
    ```
 
 3. **Make `hermes` available to the service user's shells.** The installer writes the launcher to `~/.local/bin/hermes`. System service accounts often have a minimal PATH that doesn't include `~/.local/bin`. Either add it to the user's environment, or symlink the launcher into a system location:
@@ -154,4 +154,4 @@ For more diagnostics, run `hermes doctor` — it will tell you exactly what's mi
 
 ## Install method auto-detection
 
-Hermes auto-detects whether it was installed via `pip`, the git installer, Homebrew, or NixOS, and `hermes update` prints the matching update command for that path. There's no env var to set — the detection is based on the install layout (Python site-packages, `~/.hermes/hermes-agent/`, Homebrew prefix, or Nix store path). `hermes doctor` also surfaces the detected method under its environment summary.
+Moor auto-detects whether it was installed via `pip`, the git installer, Homebrew, or NixOS, and `hermes update` prints the matching update command for that path. There's no env var to set — the detection is based on the install layout (Python site-packages, `~/.hermes/hermes-agent/`, Homebrew prefix, or Nix store path). `hermes doctor` also surfaces the detected method under its environment summary.

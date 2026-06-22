@@ -191,6 +191,19 @@ ALL_TOOL_SCHEMAS = [PROFILE_SCHEMA, SEARCH_SCHEMA, REASONING_SCHEMA, CONTEXT_SCH
 class HonchoMemoryProvider(MemoryProvider):
     """Honcho AI-native memory with dialectic Q&A and persistent user modeling."""
 
+    def backup_paths(self) -> List[str]:
+        """Honcho keeps its peer/session config under ~/.honcho when no
+        profile-local honcho.json exists (see client.resolve_config_path)."""
+        paths: List[str] = []
+        try:
+            from .client import resolve_global_config_path
+            global_cfg = resolve_global_config_path()
+            # Capture the whole ~/.honcho dir so sibling state travels with it.
+            paths.append(str(global_cfg.parent))
+        except Exception:
+            pass
+        return paths
+
     def __init__(self):
         self._manager = None   # HonchoSessionManager
         self._config = None    # HonchoClientConfig
@@ -371,7 +384,7 @@ class HonchoMemoryProvider(MemoryProvider):
     def _start_session_init_background(self, *, wait_timeout: float = 0.0) -> None:
         """Start Honcho session initialization in a daemon thread.
 
-        This keeps Hermes CLI/gateway startup responsive when Honcho is down,
+        This keeps Moor CLI/gateway startup responsive when Honcho is down,
         slow, or its database is unhealthy. The thread may still take the SDK
         timeout path, but it cannot block agent construction or first prompt
         assembly. ``wait_timeout`` lets fast/mock initializations finish before
@@ -440,7 +453,7 @@ class HonchoMemoryProvider(MemoryProvider):
         session = self._manager.get_or_create(self._session_key)
 
         # ----- B6: Memory file migration (one-time, for new sessions) -----
-        # Skip under per-session strategy: every Hermes run creates a fresh
+        # Skip under per-session strategy: every Moor run creates a fresh
         # Honcho session by design, so uploading MEMORY.md/USER.md/SOUL.md to
         # each one would flood the backend with short-lived duplicates instead
         # of performing a one-time migration.

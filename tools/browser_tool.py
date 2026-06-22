@@ -619,7 +619,7 @@ def _is_local_mode() -> bool:
 
 
 def _is_local_backend() -> bool:
-    """Return True when the browser runs locally (no cloud provider).
+    """Return True when the browser runs locally AND the terminal is also local.
 
     SSRF protection is only meaningful for cloud backends (Browserbase,
     BrowserUse) where the agent could reach internal resources on a remote
@@ -627,8 +627,20 @@ def _is_local_backend() -> bool:
     Chromium without a cloud provider — the user already has full terminal
     and network access on the same machine, so the check adds no security
     value.
+
+    However, when the terminal runs in a container (docker, modal, daytona,
+    ssh, singularity), the browser on the host can access internal networks
+    that the terminal cannot.  In this case, SSRF protection should be
+    enabled even though the browser is technically "local".
     """
-    return _is_camofox_mode() or _get_cloud_provider() is None
+    if _is_camofox_mode():
+        return True
+    if _get_cloud_provider() is not None:
+        return False
+    # When terminal runs in a container, browser on host can access
+    # internal networks the terminal can't → treat as non-local.
+    terminal_backend = os.getenv("TERMINAL_ENV", "local").strip().lower()
+    return terminal_backend in ("local", "")
 
 
 _auto_local_for_private_urls_resolved = False
@@ -705,7 +717,7 @@ def _lightpanda_fallback_reason(engine: str, command: str, result: Dict[str, Any
     """Return the user-visible reason a Lightpanda result needs Chrome fallback.
 
     ``None`` means no fallback should run.  The returned string is copied into
-    the fallback result so CLI/TUI/gateway users can see when Hermes silently
+    the fallback result so CLI/TUI/gateway users can see when Moor silently
     switched from Lightpanda to Chrome for completeness.
     """
     if engine != "lightpanda":
@@ -835,7 +847,7 @@ def _run_chrome_fallback_command(
             hint = (
                 "Chrome fallback requires Chromium, but it is missing. "
                 "You're running in Docker — pull the latest image: "
-                "docker pull ghcr.io/nousresearch/hermes-agent:latest"
+                "docker pull ghcr.io/Moor inc./hermes-agent:latest"
             )
         else:
             hint = (
@@ -888,7 +900,7 @@ def _run_chrome_fallback_command(
             #   and that grandchild's CreateProcess dies silently
             #   ("Daemon process exited during startup with no error output")
             #   when inherited parent handles are in a weird state. Observed
-            #   in the Hermes CLI where sys.stdout and sys.stderr both report
+            #   in the Moor CLI where sys.stdout and sys.stderr both report
             #   fileno=1 (stderr dup'd onto stdout at the OS level).
             # * close_fds=True → block inheritance of every other handle.
             #   (Default on POSIX; must be explicit on Windows for stdio.)
@@ -1308,6 +1320,92 @@ def _write_owner_pid(socket_dir: str, session_name: str) -> None:
                      session_name, exc)
 
 
+def _verify_reapable_browser_daemon(daemon_pid: int, socket_dir: str,
+                                    session_name: str) -> bool:
+    """Confirm a live PID is genuinely *this* session's agent-browser daemon.
+
+    The orphan reaper scans world-writable, predictably-named temp paths
+    (``/tmp/agent-browser-h_*`` etc.) and reads a daemon PID from a ``.pid``
+    file we do not write ourselves — the agent-browser daemon writes it.  A
+    same-user actor can therefore plant a fake socket dir whose ``.pid`` points
+    at an arbitrary victim process, or a recycled PID can land on an unrelated
+    process after the real daemon exits.  Either way, terminating that PID
+    (a *tree* kill via ``_terminate_host_pid``) is an arbitrary-process DoS.
+
+    Before reaping we require, via ``psutil`` (a hard dependency, cross-platform
+    for same-user processes — the only processes the reaper can signal):
+
+      1. **Identity** — the process looks like agent-browser: ``agent-browser``
+         appears in its name or command line.
+      2. **Binding** — the process is bound to *this* session's socket dir: the
+         socket dir path (or its basename) appears in the command line, or in
+         ``AGENT_BROWSER_SOCKET_DIR`` in the process environment.
+
+    Requirement (2) is the real spoof defense: a planted process pointing at a
+    victim PID will not have the victim's cmdline/environ referencing our
+    socket dir.  An attacker would need a process that genuinely embeds this
+    exact session path — i.e. a real daemon they already own and could signal
+    directly.  Fail-closed: any ambiguity (unreadable cmdline, no match) means
+    we refuse to reap and leave the process and its socket dir alone.
+
+    Returns ``True`` only when both checks pass.
+    """
+    try:
+        import psutil
+    except ImportError:  # psutil is a hard dep; defensive only
+        logger.warning(
+            "Refusing to reap browser daemon PID %d (session %s): "
+            "psutil unavailable for identity verification",
+            daemon_pid, session_name)
+        return False
+
+    try:
+        proc = psutil.Process(daemon_pid)
+        name = (proc.name() or "").lower()
+        cmdline = " ".join(proc.cmdline() or []).lower()
+    except psutil.NoSuchProcess:
+        # Vanished between the liveness check and now — nothing to reap.
+        return False
+    except (psutil.AccessDenied, OSError) as exc:
+        logger.warning(
+            "Refusing to reap browser daemon PID %d (session %s): "
+            "could not read process identity (%s)",
+            daemon_pid, session_name, exc)
+        return False
+
+    looks_like_browser = "agent-browser" in name or "agent-browser" in cmdline
+    if not looks_like_browser:
+        logger.warning(
+            "Refusing to reap PID %d (session %s): not an agent-browser "
+            "process (name=%r)", daemon_pid, session_name, name)
+        return False
+
+    # Binding check: the live process must reference *this* socket dir.
+    socket_dir_l = socket_dir.lower()
+    socket_base_l = os.path.basename(socket_dir).lower()
+    bound = socket_dir_l in cmdline or (
+        socket_base_l and socket_base_l in cmdline)
+    if not bound:
+        try:
+            env_dir = (proc.environ() or {}).get(
+                "AGENT_BROWSER_SOCKET_DIR", "")
+            bound = bool(env_dir) and os.path.normpath(env_dir) == \
+                os.path.normpath(socket_dir)
+        except (psutil.AccessDenied, psutil.NoSuchProcess, OSError):
+            # environ() can be denied even same-user on some platforms.
+            # cmdline already failed to bind — fail closed.
+            bound = False
+
+    if not bound:
+        logger.warning(
+            "Refusing to reap agent-browser PID %d: not bound to session "
+            "socket dir %s (possible recycled PID or planted pid file)",
+            daemon_pid, socket_dir)
+        return False
+
+    return True
+
+
 def _reap_orphaned_browser_sessions():
     """Scan for orphaned agent-browser daemon processes from previous runs.
 
@@ -1401,6 +1499,17 @@ def _reap_orphaned_browser_sessions():
         from gateway.status import _pid_exists
         if not _pid_exists(daemon_pid):
             shutil.rmtree(socket_dir, ignore_errors=True)
+            continue
+
+        # The PID is live — but the .pid file lives in a world-writable,
+        # predictably-named temp dir we don't write ourselves, and PIDs get
+        # recycled after the real daemon exits.  Verify the process really is
+        # *this* session's agent-browser daemon before tree-killing it; refuse
+        # otherwise (don't touch the process, leave the socket dir for a later
+        # sweep once the imposter PID is gone).  Fixes the arbitrary same-user
+        # process DoS in issue #14073.
+        if not _verify_reapable_browser_daemon(
+                daemon_pid, socket_dir, session_name):
             continue
 
         # Daemon is alive and its owner is dead (or legacy + untracked).  Reap.
@@ -1598,7 +1707,7 @@ BROWSER_TOOL_SCHEMAS = [
     },
     {
         "name": "browser_vision",
-        "description": "Take a screenshot of the current page so you can inspect it visually. Use this when you need to understand what the page looks like - especially for CAPTCHAs, visual verification challenges, complex layouts, or cases where the text snapshot misses important visual information. When your active model has native vision, the screenshot is attached to your context directly and you inspect it on the next turn; otherwise Hermes falls back to an auxiliary vision model and returns a text analysis. Includes a screenshot_path that you can share with the user by including MEDIA:<screenshot_path> in your response. Requires browser_navigate to be called first.",
+        "description": "Take a screenshot of the current page so you can inspect it visually. Use this when you need to understand what the page looks like - especially for CAPTCHAs, visual verification challenges, complex layouts, or cases where the text snapshot misses important visual information. When your active model has native vision, the screenshot is attached to your context directly and you inspect it on the next turn; otherwise Moor falls back to an auxiliary vision model and returns a text analysis. Includes a screenshot_path that you can share with the user by including MEDIA:<screenshot_path> in your response. Requires browser_navigate to be called first.",
         "parameters": {
             "type": "object",
             "properties": {
@@ -1772,7 +1881,7 @@ def _find_agent_browser() -> str:
     """
     Find the agent-browser CLI executable.
 
-    Checks in order: current PATH, Homebrew/common bin dirs, Hermes-managed
+    Checks in order: current PATH, Homebrew/common bin dirs, Moor-managed
     node, local node_modules/.bin/, npx fallback.
 
     Returns:
@@ -1803,7 +1912,7 @@ def _find_agent_browser() -> str:
         _agent_browser_resolved = True
         return which_result
 
-    # Build an extended search PATH including Hermes-managed Node, macOS
+    # Build an extended search PATH including Moor-managed Node, macOS
     # versioned Homebrew installs, and fallback system dirs like Termux.
     extended_path = _merge_browser_path("")
     if extended_path:
@@ -1939,7 +2048,7 @@ def _run_browser_command(
             hint = (
                 "Chromium browser is missing. You're running in Docker — pull "
                 "the latest image to get the bundled Chromium: "
-                "docker pull ghcr.io/nousresearch/hermes-agent:latest"
+                "docker pull ghcr.io/Moor inc./hermes-agent:latest"
             )
         else:
             hint = (
@@ -3094,7 +3203,7 @@ def browser_vision(question: str, annotate: bool = False, task_id: Optional[str]
 
     Captures what's visually displayed in the browser. When the active model
     supports native vision, the screenshot is attached directly to the
-    conversation so the model can inspect it on the next turn; otherwise Hermes
+    conversation so the model can inspect it on the next turn; otherwise Moor
     falls back to the auxiliary vision model and returns a text analysis. Useful
     for visual content the text-based snapshot may not capture (CAPTCHAs,
     verification challenges, images, complex layouts, etc.).
@@ -3778,7 +3887,7 @@ if __name__ == "__main__":
                         "     Docker: pull the latest image — the current one "
                         "predates the bundled Chromium install"
                     )
-                    print("       docker pull ghcr.io/nousresearch/hermes-agent:latest")
+                    print("       docker pull ghcr.io/Moor inc./hermes-agent:latest")
                 else:
                     print("     Install it with:")
                     print("       npx agent-browser install --with-deps")

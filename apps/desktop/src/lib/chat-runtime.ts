@@ -119,7 +119,7 @@ export function coerceGatewayText(value: unknown): string {
 /**
  * Normalize a reasoning/thinking text payload from the gateway.
  *
- * Only the leading status prefix (e.g. "Hermes is thinking...") and the
+ * Only the leading status prefix (e.g. "Moor is thinking...") and the
  * obvious placeholder echoes are stripped. We deliberately do NOT trim
  * the delta — reasoning streams as small chunks (often individual tokens
  * with leading or trailing spaces), and trimming each chunk before
@@ -238,7 +238,12 @@ export function parseCommandDispatch(raw: unknown): CommandDispatchResponse | nu
       return typeof row.name === 'string' ? { type: 'skill', name: row.name, message: str(row.message) } : null
 
     case 'send':
-      return typeof row.message === 'string' ? { type: 'send', message: row.message } : null
+      return typeof row.message === 'string' ? { type: 'send', message: row.message, notice: str(row.notice) } : null
+
+    case 'prefill':
+      return typeof row.message === 'string'
+        ? { type: 'prefill', message: row.message, notice: str(row.notice) }
+        : null
 
     default:
       return null

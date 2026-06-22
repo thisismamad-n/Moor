@@ -1,4 +1,4 @@
-# nix/packages.nix — Hermes Agent package built with uv2nix
+# nix/packages.nix — Moor Agent package built with uv2nix
 { inputs, ... }:
 {
   perSystem =
@@ -50,8 +50,6 @@
         tui = hermesAgent.hermesTui;
         web = hermesAgent.hermesWeb;
         desktop = hermesAgent.hermesDesktop;
-
-        fix-lockfiles = hermesAgent.hermesNpmLib.mkFixLockfiles { attr = "tui"; };
       };
     };
 }

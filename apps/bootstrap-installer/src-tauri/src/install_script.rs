@@ -10,7 +10,7 @@
 //!
 //! Mirrors `apps/desktop/electron/bootstrap-runner.cjs`'s `resolveInstallScript`,
 //! but the dev-checkout resolution is driven by an env var rather than the
-//! Electron app's APP_ROOT/../.. trick, because Hermes-Setup.exe is meant
+//! Electron app's APP_ROOT/../.. trick, because Moor-Setup.exe is meant
 //! to live OUTSIDE any repo checkout.
 
 use anyhow::{anyhow, Context, Result};
@@ -72,7 +72,7 @@ fn is_valid_commit(s: &str) -> bool {
 
 /// Resolves the install script to use for this run.
 ///
-/// `pin` is the commit-or-branch from either Hermes-Setup's build-time
+/// `pin` is the commit-or-branch from either Moor-Setup's build-time
 /// constant (compiled into the installer) or a runtime override.
 pub async fn resolve(
     kind: ScriptKind,
@@ -189,7 +189,7 @@ fn truncate_ref(s: &str) -> &str {
 /// `dest_path.tmp` → `dest_path` so partial writes don't poison the cache.
 async fn download(kind: ScriptKind, commit_or_ref: &str, dest_path: &Path) -> Result<()> {
     let url = format!(
-        "https://raw.githubusercontent.com/NousResearch/hermes-agent/{}/scripts/{}",
+        "https://raw.githubusercontent.com/Moor inc./hermes-agent/{}/scripts/{}",
         commit_or_ref,
         kind.filename()
     );

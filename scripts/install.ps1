@@ -1,11 +1,11 @@
 # ============================================================================
-# Hermes Agent Installer for Windows
+# Moor Agent Installer for Windows
 # ============================================================================
 # Installation script for Windows (PowerShell).
 # Uses uv for fast Python provisioning and package management.
 #
 # Usage:
-#   iex (irm https://hermes-agent.nousresearch.com/install.ps1)
+#   iex (irm https://hermes-agent.Moor inc..com/install.ps1)
 #
 # Or download and run with options:
 #   .\install.ps1 -NoVenv -SkipSetup
@@ -43,15 +43,15 @@ param(
 
     # --- Desktop GUI build (opt-in) ---
     # When set, install.ps1 includes Stage-Desktop in the manifest and
-    # builds apps/desktop into a launchable Hermes.exe.
+    # builds apps/desktop into a launchable Moor.exe.
     #
     # Why opt-in:
-    #   * Hermes-Setup.exe (the signed Tauri bootstrap installer) passes
+    #   * Moor-Setup.exe (the signed Tauri bootstrap installer) passes
     #     -IncludeDesktop so a user who installed via the GUI ends up
     #     with a launchable desktop binary.
     #   * The Electron desktop's own bootstrap-runner.cjs runs install.ps1
-    #     from inside an already-launched Hermes.exe; if THAT recursively
-    #     built apps/desktop it would try to overwrite the live Hermes.exe
+    #     from inside an already-launched Moor.exe; if THAT recursively
+    #     built apps/desktop it would try to overwrite the live Moor.exe
     #     on disk and fail. The recursive path omits the flag.
     #   * The canonical CLI one-liner (irm | iex) omits the flag too;
     #     terminal users don't need a desktop binary built for them, and
@@ -89,11 +89,55 @@ try {
 }
 
 # ============================================================================
+# 8.3 short-path normalization
+# ============================================================================
+# When the Windows user-profile folder name contains a space (e.g.
+# "First Last"), Windows generates an 8.3 short alias for it (e.g. FIRST~1.LAS)
+# and may expose %TEMP%/%TMP% in that short form:
+#   C:\Users\FIRST~1.LAS\AppData\Local\Temp
+# PowerShell's FileSystem provider mishandles the "~1.ext" component when such a
+# path is handed to a provider cmdlet like `Tee-Object -FilePath` /
+# `Out-File -FilePath`, throwing:
+#   "An object at the specified path C:\Users\FIRST~1.LAS does not exist."
+# Every Node/Electron build+install stage streams its log to %TEMP% via
+# Tee-Object, so they all abort with that error, while the Python/uv stages --
+# which never write a side log to %TEMP% through a provider cmdlet -- complete
+# fine. Expanding %TEMP%/%TMP% back to their long form once, up front, lets
+# every downstream cmdlet (and child process) see a path the provider can
+# resolve. (GH: Windows desktop installer fails at Node/Electron stages.)
+
+function ConvertTo-LongPath {
+    param([string]$Path)
+    if ([string]::IsNullOrWhiteSpace($Path)) { return $Path }
+    # Only 8.3 short names carry a tilde+digit ("~1"); skip the COM round-trip
+    # for ordinary long paths.
+    if ($Path -notmatch '~\d') { return $Path }
+    try {
+        $fso = New-Object -ComObject Scripting.FileSystemObject
+        if ($fso.FolderExists($Path)) { return $fso.GetFolder($Path).Path }
+        if ($fso.FileExists($Path))   { return $fso.GetFile($Path).Path }
+    } catch {
+        # COM unavailable / locked-down host: fall back to the original path.
+    }
+    return $Path
+}
+
+foreach ($tmpVar in @('TEMP', 'TMP')) {
+    $current = [Environment]::GetEnvironmentVariable($tmpVar)
+    if ($current) {
+        $expanded = ConvertTo-LongPath $current
+        if ($expanded -and $expanded -ne $current) {
+            Set-Item -Path "Env:$tmpVar" -Value $expanded
+        }
+    }
+}
+
+# ============================================================================
 # Configuration
 # ============================================================================
 
-$RepoUrlSsh = "git@github.com:NousResearch/hermes-agent.git"
-$RepoUrlHttps = "https://github.com/NousResearch/hermes-agent.git"
+$RepoUrlSsh = "git@github.com:Moor inc./hermes-agent.git"
+$RepoUrlHttps = "https://github.com/Moor inc./hermes-agent.git"
 $PythonVersion = "3.11"
 $NodeVersion = "22"
 
@@ -158,7 +202,7 @@ function Get-WindowsArch {
 function Write-Banner {
     Write-Host ""
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
-    Write-Host "|             * Hermes Agent Installer                    |" -ForegroundColor Magenta
+    Write-Host "|             * Moor Agent Installer                    |" -ForegroundColor Magenta
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
     Write-Host "|  An open source AI agent by Nous Research.              |" -ForegroundColor Magenta
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
@@ -183,6 +227,18 @@ function Write-Warn {
 function Write-Err {
     param([string]$Message)
     Write-Host "[X] $Message" -ForegroundColor Red
+}
+
+function Invoke-NativeWithRelaxedErrorAction {
+    param([scriptblock]$Script)
+
+    $prevEAP = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        & $Script
+    } finally {
+        $ErrorActionPreference = $prevEAP
+    }
 }
 
 # Inspect npm output for a TLS-trust failure and, if found, print actionable
@@ -318,8 +374,38 @@ function Install-AgentBrowser {
 # Dependency checks
 # ============================================================================
 
+# Resolve the PowerShell host executable used to spawn child PowerShell
+# processes (the astral uv installer below).  We must NOT hardcode the bare
+# name `powershell`: it names *Windows PowerShell* and only resolves when its
+# System32 directory is on PATH.  When install.ps1 is run under PowerShell 7+
+# (`pwsh`) -- or any session where `powershell` isn't on PATH -- a bare
+# `powershell` spawn dies with "The term 'powershell' is not recognized",
+# aborting uv installation (field report: Windows install stuck, uv install
+# failed with exactly that message).  Prefer the absolute path of the host we
+# are already running in (PATH-independent), then fall back to whichever of
+# powershell/pwsh is resolvable, and only then to the bare name.
+function Get-PowerShellHostExe {
+    try {
+        $hostExe = (Get-Process -Id $PID).Path
+        if ($hostExe -and (Test-Path $hostExe)) {
+            $leaf = Split-Path $hostExe -Leaf
+            # Only trust the current host when it is a real PowerShell CLI
+            # (not e.g. powershell_ise.exe or an embedded host that can't take
+            # `-ExecutionPolicy`/`-Command`).
+            if ($leaf -match '^(?i:powershell|pwsh)\.exe$') { return $hostExe }
+        }
+    } catch { }
+    foreach ($candidate in @("powershell", "pwsh")) {
+        $cmd = Get-Command $candidate -CommandType Application -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+        if ($cmd -and $cmd.Source) { return $cmd.Source }
+    }
+    # Last-ditch: hand back the bare name so the spawn surfaces its own error.
+    return "powershell"
+}
+
 function Install-Uv {
-    # Hermes owns its own uv at $HermesHome\bin\uv.exe.  Always install there —
+    # Moor owns its own uv at $HermesHome\bin\uv.exe.  Always install there —
     # no PATH probing, no conda guards, no multi-location resolution chains.
     # The runtime update path (hermes_cli/managed_uv.py) looks in the same
     # place, so install.ps1 and `hermes update` stay in sync.
@@ -341,7 +427,11 @@ function Install-Uv {
     try {
         $ErrorActionPreference = "Continue"
         $env:UV_INSTALL_DIR = Join-Path $HermesHome "bin"
-        powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex" 2>&1 | Out-Null
+        # Spawn via the resolved host exe (see Get-PowerShellHostExe) rather
+        # than a bare `powershell`, which isn't guaranteed to be on PATH under
+        # PowerShell 7 / pwsh-only setups.
+        $psHostExe = Get-PowerShellHostExe
+        & $psHostExe -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex" 2>&1 | Out-Null
         $ErrorActionPreference = $prevEAP
 
         if (Test-Path $managedUv) {
@@ -536,7 +626,7 @@ function Install-Git {
     <#
     .SYNOPSIS
     Ensure Git (and Git Bash) are installed.  Git for Windows bundles bash.exe
-    which Hermes uses to run shell commands.
+    which Moor uses to run shell commands.
 
     Priority order (deliberately simple -- no winget, no registry, no system
     package manager):
@@ -549,19 +639,19 @@ function Install-Git {
 
     **Why PortableGit, not MinGit:**  MinGit is the minimal-automation
     distribution and ships ONLY ``git.exe`` -- no bash, no POSIX utilities.
-    Hermes needs ``bash.exe`` to run shell commands.  PortableGit is the
+    Moor needs ``bash.exe`` to run shell commands.  PortableGit is the
     full Git for Windows distribution without the installer UI; it ships
     ``git.exe`` + ``bash.exe`` + ``sh``, ``awk``, ``sed``, ``grep``, ``curl``,
     ``ssh``, etc. in ``usr\bin\``.
 
     We deliberately skip winget because it fails badly when the system Git
     install is in a half-installed state (partially registered, or uninstall-
-    blocked).  Owning the Hermes copy of Git ourselves is predictable and
+    blocked).  Owning the Moor copy of Git ourselves is predictable and
     recoverable: if it ever breaks, ``Remove-Item %LOCALAPPDATA%\hermes\git``
     and re-running this installer fully recovers.
 
     After install we locate ``bash.exe`` and persist the path in
-    ``HERMES_GIT_BASH_PATH`` (User scope) so Hermes can find it in a fresh
+    ``HERMES_GIT_BASH_PATH`` (User scope) so Moor can find it in a fresh
     shell without a second PATH refresh.
     #>
     Write-Info "Checking Git..."
@@ -606,7 +696,7 @@ function Install-Git {
         $gitVerTag = "$gitVer.windows.1"
 
         if ($arch -eq "32-bit-mingit") {
-            Write-Warn "32-bit Windows detected -- PortableGit is 64-bit only.  Installing MinGit 32-bit as a last resort; bash-dependent Hermes features (terminal tool, agent-browser) will not work on this machine."
+            Write-Warn "32-bit Windows detected -- PortableGit is 64-bit only.  Installing MinGit 32-bit as a last resort; bash-dependent Moor features (terminal tool, agent-browser) will not work on this machine."
             $assetName    = "MinGit-$gitVer-32-bit.zip"
             $downloadIsZip = $true
         } elseif ($arch -eq "arm64") {
@@ -686,7 +776,7 @@ function Install-Git {
         Write-Err "Could not install portable Git: $_"
         Write-Info ""
         Write-Info "Fallback: install Git manually from https://git-scm.com/download/win"
-        Write-Info "then re-run this installer.  Hermes needs Git Bash on Windows to run"
+        Write-Info "then re-run this installer.  Moor needs Git Bash on Windows to run"
         Write-Info "shell commands (same as Claude Code and other coding agents)."
         return $false
     }
@@ -696,7 +786,7 @@ function Set-GitBashEnvVar {
     <#
     .SYNOPSIS
     Locate ``bash.exe`` from an already-installed Git and persist the path in
-    ``HERMES_GIT_BASH_PATH`` (User env scope) so Hermes can find it even before
+    ``HERMES_GIT_BASH_PATH`` (User env scope) so Moor can find it even before
     PATH propagation completes in a newly-spawned shell.
     #>
     $candidates = @()
@@ -740,7 +830,7 @@ function Set-GitBashEnvVar {
         }
     }
 
-    Write-Warn "Could not locate bash.exe -- Hermes may not find Git Bash."
+    Write-Warn "Could not locate bash.exe -- Moor may not find Git Bash."
     Write-Info "If needed, set HERMES_GIT_BASH_PATH manually to your bash.exe path."
 }
 
@@ -774,17 +864,17 @@ function Test-Node {
         Write-Warn "Node.js $version is too old for the desktop build (need ^20.19 or >=22.12)"
     }
 
-    # Prefer a Hermes-managed Node from a previous run over a too-old system one.
+    # Prefer a Moor-managed Node from a previous run over a too-old system one.
     $managedNode = "$HermesHome\node\node.exe"
     if ((Test-Path $managedNode) -and (Test-NodeVersionOk (& $managedNode --version))) {
         $version = & $managedNode --version
         $env:Path = "$HermesHome\node;$env:Path"
-        Write-Success "Node.js $version found (Hermes-managed)"
+        Write-Success "Node.js $version found (Moor-managed)"
         $script:HasNode = $true
         return $true
     }
 
-    Write-Info "Installing Hermes-managed Node.js $NodeVersion LTS..."
+    Write-Info "Installing Moor-managed Node.js $NodeVersion LTS..."
 
     # Try the portable-zip path FIRST -- no UAC, no admin, no winget MSI.
     # winget install OpenJS.NodeJS.LTS triggers a system-wide MSI install
@@ -1243,7 +1333,7 @@ function Install-Repository {
                         if ($LASTEXITCODE -eq 0) {
                             git -c windows.appendAtomically=false stash drop $autostashRef 2>$null
                             Write-Warn "Local changes were restored on top of the updated codebase."
-                            Write-Warn "Review git diff / git status if Hermes behaves unexpectedly."
+                            Write-Warn "Review git diff / git status if Moor behaves unexpectedly."
                         } else {
                             Write-Err "Update succeeded, but restoring local changes failed. Your changes are still preserved in git stash."
                             Write-Info "Resolve manually with: git stash apply $autostashRef"
@@ -1306,7 +1396,7 @@ function Install-Repository {
         Write-Info "Trying SSH clone..."
         $env:GIT_SSH_COMMAND = "ssh -o BatchMode=yes -o ConnectTimeout=5"
         try {
-            git -c windows.appendAtomically=false clone --depth 1 --branch $Branch $RepoUrlSsh $InstallDir
+            Invoke-NativeWithRelaxedErrorAction { git -c windows.appendAtomically=false clone --depth 1 --branch $Branch $RepoUrlSsh $InstallDir }
             if ($LASTEXITCODE -eq 0) { $cloneSuccess = $true }
         } catch { }
         $env:GIT_SSH_COMMAND = $null
@@ -1315,7 +1405,7 @@ function Install-Repository {
             if (Test-Path $InstallDir) { Remove-Item -Recurse -Force $InstallDir -ErrorAction SilentlyContinue }
             Write-Info "SSH failed, trying HTTPS..."
             try {
-                git -c windows.appendAtomically=false clone --depth 1 --branch $Branch $RepoUrlHttps $InstallDir
+                Invoke-NativeWithRelaxedErrorAction { git -c windows.appendAtomically=false clone --depth 1 --branch $Branch $RepoUrlHttps $InstallDir }
                 if ($LASTEXITCODE -eq 0) { $cloneSuccess = $true }
             } catch { }
         }
@@ -1329,13 +1419,13 @@ function Install-Repository {
                 # for.  GitHub supports archive URLs for commits, tags, and
                 # branches; we honour Commit > Tag > Branch.
                 if ($Commit) {
-                    $zipUrl = "https://github.com/NousResearch/hermes-agent/archive/$Commit.zip"
+                    $zipUrl = "https://github.com/Moor inc./hermes-agent/archive/$Commit.zip"
                     $zipLabel = $Commit
                 } elseif ($Tag) {
-                    $zipUrl = "https://github.com/NousResearch/hermes-agent/archive/refs/tags/$Tag.zip"
+                    $zipUrl = "https://github.com/Moor inc./hermes-agent/archive/refs/tags/$Tag.zip"
                     $zipLabel = $Tag
                 } else {
-                    $zipUrl = "https://github.com/NousResearch/hermes-agent/archive/refs/heads/$Branch.zip"
+                    $zipUrl = "https://github.com/Moor inc./hermes-agent/archive/refs/heads/$Branch.zip"
                     $zipLabel = $Branch
                 }
                 $zipPath = "$env:TEMP\hermes-agent-$zipLabel.zip"
@@ -1443,8 +1533,20 @@ function Install-Venv {
         Remove-Item -Recurse -Force "venv"
     }
     
-    # uv creates the venv and pins the Python version in one step
-    & $UvCmd venv venv --python $PythonVersion
+    # uv creates the venv and pins the Python version in one step.  uv emits
+    # normal progress such as "Using CPython ..." on stderr; under Windows
+    # PowerShell 5.1 with EAP=Stop that stderr is a NativeCommandError unless
+    # we temporarily relax EAP and trust $LASTEXITCODE for real failures.
+    Invoke-NativeWithRelaxedErrorAction { & $UvCmd venv venv --python $PythonVersion }
+    # Relaxing EAP above means a *genuine* uv-venv failure (exit != 0) no longer
+    # aborts on its own. Capture $LASTEXITCODE immediately and fail fast, so the
+    # `venv` stage can't falsely report success (and Invoke-Stage can't emit
+    # ok=true) when the venv was never created.
+    $venvExitCode = $LASTEXITCODE
+    if ($venvExitCode -ne 0) {
+        Pop-Location
+        throw "Failed to create virtual environment (uv venv exited with $venvExitCode)"
+    }
 
     # Neutralize any inherited UV_PYTHON (e.g. $env:UV_PYTHON = "3.14" left in
     # the user's shell). uv honours UV_PYTHON over an existing venv for the
@@ -1514,7 +1616,7 @@ function Install-Dependencies {
         # in the wrong directory and imports fail with ModuleNotFoundError.
         # (Mirrors the same flag in scripts/install.sh::install_deps.)
         $env:UV_PROJECT_ENVIRONMENT = "$InstallDir\venv"
-        & $UvCmd sync --extra all --locked
+        Invoke-NativeWithRelaxedErrorAction { & $UvCmd sync --extra all --locked }
         if ($LASTEXITCODE -eq 0) {
             Write-Success "Main package installed (hash-verified via uv.lock)"
             $script:InstalledTier = "hash-verified (uv.lock)"
@@ -1589,7 +1691,7 @@ except Exception:
     if (-not $skipPipFallback) {
         foreach ($tier in $installTiers) {
         Write-Info "Trying tier: $($tier.Name) ..."
-        & $UvCmd pip install -e $tier.Spec
+        Invoke-NativeWithRelaxedErrorAction { & $UvCmd pip install -e $tier.Spec }
         if ($LASTEXITCODE -eq 0) {
             Write-Success "Main package installed ($($tier.Name))"
             $script:InstalledTier = $tier.Name
@@ -1715,7 +1817,7 @@ function Set-PathVariable {
 }
 
 function Write-BootstrapMarker {
-    # Writes $InstallDir\.hermes-bootstrap-complete which tells the Hermes
+    # Writes $InstallDir\.hermes-bootstrap-complete which tells the Moor
     # desktop app (apps/desktop/electron/main.cjs) "install.ps1 ran
     # successfully — DON'T trigger the legacy first-launch bootstrap
     # runner."
@@ -1726,7 +1828,7 @@ function Write-BootstrapMarker {
     #   BOOTSTRAP_MARKER_SCHEMA_VERSION = 1 (line 187)
     #
     # Pinned commit/branch come from -Commit + -Branch flags (passed by
-    # Hermes-Setup.exe) or fall back to whatever git resolves in the
+    # Moor-Setup.exe) or fall back to whatever git resolves in the
     # checkout. The desktop validates schemaVersion + pinnedCommit
     # length but doesn't enforce that HEAD matches the pin (users
     # update via `hermes update` which moves HEAD legitimately).
@@ -1836,7 +1938,7 @@ function Copy-ConfigTemplates {
     # Create SOUL.md if it doesn't exist (global persona file).
     # IMPORTANT: write without a BOM.  Windows PowerShell 5.1's
     # ``Set-Content -Encoding UTF8`` writes UTF-8 WITH a byte-order-mark
-    # (the default PS5 behaviour), and Hermes's prompt-injection scanner
+    # (the default PS5 behaviour), and Moor's prompt-injection scanner
     # flags the BOM as an invisible unicode character and refuses to
     # load the file.  PS7's ``-Encoding utf8NoBOM`` fixes that but we
     # don't control which PowerShell version the user has.  Go direct
@@ -1845,12 +1947,12 @@ function Copy-ConfigTemplates {
     $soulPath = "$HermesHome\SOUL.md"
     if (-not (Test-Path $soulPath)) {
         $soulContent = @"
-# Hermes Agent Persona
+# Moor Agent Persona
 
 <!--
 This file defines the agent's personality and tone.
 The agent will embody whatever you write here.
-Edit this to customize how Hermes communicates with you.
+Edit this to customize how Moor communicates with you.
 
 Examples:
   - "You are a warm, playful assistant who uses kaomoji occasionally."
@@ -1889,7 +1991,7 @@ Delete the contents (or this file) to use the default personality.
 
 function Install-NodeDeps {
     if (-not $HasNode) {
-        # Cross-process driver mode (Hermes-Setup.exe runs each -Stage NAME
+        # Cross-process driver mode (Moor-Setup.exe runs each -Stage NAME
         # in a fresh powershell.exe) means $script:HasNode set by Stage-Node
         # in the previous process isn't visible here. Re-probe rather than
         # trust the stale global — Stage-Node already ran successfully or
@@ -2117,7 +2219,7 @@ function Install-NodeDeps {
 # the per-user Electron download cache - most often a partial download resumed
 # into the same file, leaving concatenated junk - makes electron-builder's
 # `app-builder unpack-electron` extract a tree MISSING the electron binary, so
-# the final `electron` -> `Hermes` rename dies with ENOENT and every re-run
+# the final `electron` -> `Moor` rename dies with ENOENT and every re-run
 # repeats the broken extraction forever.
 #
 # We deliberately do not validate the zip ourselves: the common
@@ -2161,8 +2263,77 @@ function Clear-ElectronBuildCache {
     return $removed
 }
 
+# Last-resort Electron mirror after GitHub download fails (#47266).
+$script:DesktopElectronFallbackMirror = "https://npmmirror.com/mirrors/electron/"
+
+# Electron package dir — workspace-local nest first, then root hoist.
+function Get-ElectronDir {
+    param([string]$InstallDir)
+    $desktopLocal = Join-Path $InstallDir 'apps\desktop\node_modules\electron'
+    if (Test-Path -LiteralPath $desktopLocal) { return $desktopLocal }
+    return (Join-Path $InstallDir 'node_modules\electron')
+}
+
+# True when dist/ holds a usable Electron binary (#38673 / run-electron-builder.cjs).
+function Test-ElectronDist {
+    param([string]$InstallDir)
+    $electronDir = Get-ElectronDir -InstallDir $InstallDir
+    $distExe = Join-Path $electronDir 'dist\electron.exe'
+    return (Test-Path -LiteralPath $distExe)
+}
+
+# Best-effort: run electron/install.js to populate dist/ (optional mirror).
+function Restore-ElectronDist {
+    param([string]$InstallDir, [string]$Mirror)
+    if (Test-ElectronDist -InstallDir $InstallDir) { return $true }
+
+    $electronDir = Get-ElectronDir -InstallDir $InstallDir
+    $distExe = Join-Path $electronDir 'dist\electron.exe'
+    $installer = Join-Path $electronDir 'install.js'
+    if (-not (Test-Path -LiteralPath $installer)) { return $false }
+    $node = Get-Command node -ErrorAction SilentlyContinue
+    if (-not $node) { return $false }
+
+    $distDir = Join-Path $electronDir 'dist'
+    if (Test-Path -LiteralPath $distDir) {
+        Remove-Item -LiteralPath $distDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    Remove-Item -LiteralPath (Join-Path $electronDir 'path.txt') -Force -ErrorAction SilentlyContinue
+
+    $prevMirror = $env:ELECTRON_MIRROR
+    if ($Mirror) { $env:ELECTRON_MIRROR = $Mirror }
+    try {
+        # Out-Host so the downloader's progress shows on the console WITHOUT
+        # leaking into this function's return value (PowerShell returns every
+        # object left on the output stream, so a bare pipe here would make the
+        # boolean below ambiguous).
+        & $node.Source $installer 2>&1 | ForEach-Object { "$_" } | Out-Host
+    } catch {
+    } finally {
+        $env:ELECTRON_MIRROR = $prevMirror
+    }
+    return (Test-Path -LiteralPath $distExe)
+}
+
+function Test-ElectronPkgStagedMissingDist {
+    param([string]$InstallDir)
+    $electronDir = Get-ElectronDir -InstallDir $InstallDir
+    return (
+        (Test-Path -LiteralPath (Join-Path $electronDir 'package.json')) -and
+        (Test-Path -LiteralPath (Join-Path $electronDir 'install.js')) -and
+        (-not (Test-ElectronDist -InstallDir $InstallDir))
+    )
+}
+
+function Try-RestoreElectronDist {
+    param([string]$InstallDir)
+    if (Restore-ElectronDist -InstallDir $InstallDir) { return $true }
+    if ($env:ELECTRON_MIRROR) { return $false }
+    return Restore-ElectronDist -InstallDir $InstallDir -Mirror $script:DesktopElectronFallbackMirror
+}
+
 function Install-Desktop {
-    # Build apps/desktop into a launchable Hermes.exe. Only called from
+    # Build apps/desktop into a launchable Moor.exe. Only called from
     # Stage-Desktop, which is itself only included in the manifest when
     # -IncludeDesktop was passed to install.ps1.
     #
@@ -2175,13 +2346,13 @@ function Install-Desktop {
     # produces the unpacked binary at apps/desktop/release/<os>-unpacked/.
     #
     # The Tauri bootstrap installer's launch_hermes_desktop command
-    # resolves apps/desktop/release/win-unpacked/Hermes.exe directly,
+    # resolves apps/desktop/release/win-unpacked/Moor.exe directly,
     # so an "unpacked" build (electron-builder --dir) is enough — we
     # don't need to produce an NSIS/MSI artifact here.
 
     # Always re-resolve Node here. Stages run in separate PowerShell processes,
     # so $script:HasNode from Stage-Node isn't visible; more importantly Test-Node
-    # enforces the build floor (^20.19 || >=22.12) and prepends the Hermes-managed
+    # enforces the build floor (^20.19 || >=22.12) and prepends the Moor-managed
     # Node to PATH, so the build never runs on a too-old system Node -- the cause
     # of the opaque "Build desktop app ... exit code 1" failure (Vite crashes on
     # old Node).
@@ -2256,10 +2427,16 @@ function Install-Desktop {
         }
         $ErrorActionPreference = $prevEAP
         if ($code -ne 0) {
-            Show-NpmCertHint ($npmOut -join "`n") | Out-Null
-            throw "desktop workspace npm install failed (exit $code) -- see lines above for cause"
+            if (Test-ElectronPkgStagedMissingDist -InstallDir $InstallDir) {
+                Write-Warn "Desktop dependency install failed with a missing Electron dist; attempting self-heal..."
+                Try-RestoreElectronDist -InstallDir $InstallDir | Out-Null
+            } else {
+                Show-NpmCertHint ($npmOut -join "`n") | Out-Null
+                throw "desktop workspace npm install failed (exit $code) -- see lines above for cause"
+            }
+        } else {
+            Write-Success "Desktop workspace dependencies installed"
         }
-        Write-Success "Desktop workspace dependencies installed"
     } catch {
         if ($prevEAP) { $ErrorActionPreference = $prevEAP }
         Pop-Location
@@ -2270,7 +2447,7 @@ function Install-Desktop {
     # 2. Build apps/desktop. `npm run pack` runs:
     #      assert-root-install + write-build-stamp + stage-native-deps +
     #      tsc -b + vite build + electron-builder --dir
-    # The --dir mode produces an unpacked Hermes.exe in
+    # The --dir mode produces an unpacked Moor.exe in
     # apps/desktop/release/win-unpacked/ without bundling NSIS/MSI;
     # we don't need a distributable installer artifact, just a
     # launchable binary the Tauri installer can spawn.
@@ -2280,8 +2457,8 @@ function Install-Desktop {
     # apps/desktop/package.json's build.win block, electron-builder never
     # invokes signtool and therefore never fetches/extracts winCodeSign
     # (whose macOS symlinks crash 7-Zip on non-admin Windows — a dead end we
-    # are NOT trying to work around). The Hermes icon + product name are
-    # stamped onto Hermes.exe by our own rcedit step (Set-DesktopExeIdentity)
+    # are NOT trying to work around). The Moor icon + product name are
+    # stamped onto Moor.exe by our own rcedit step (Set-DesktopExeIdentity)
     # AFTER this build, completely decoupled from electron-builder signing.
     #
     # WIN_CSC_LINK and WIN_CSC_KEY_PASSWORD explicitly cleared as
@@ -2302,38 +2479,35 @@ function Install-Desktop {
         & $npmExe run pack 2>&1 | ForEach-Object { "$_" } | Tee-Object -FilePath $buildLog
         $code = $LASTEXITCODE
         if ($code -ne 0) {
-            # A corrupt cached Electron zip makes `pack` fail with an opaque
-            # ENOENT on the final `electron` -> `Hermes` rename: app-builder's
-            # unpack-electron extracted a partial tree (missing the binary) from
-            # the bad zip, and re-running reuses the poisoned cache forever.
-            # Purge the cached download + any stale unpacked output and retry
-            # once; @electron/get re-downloads with its own SHASUM check. Without
-            # this a corrupt download hard-fails the whole installer.
-            $purged = @(Clear-ElectronBuildCache -DesktopDir $desktopDir)
-            if ($purged.Count -gt 0) {
-                Write-Warn "Desktop build failed - cleared cached Electron download, retrying once:"
+            $purged = @()
+            $restored = $false
+            if (-not (Test-ElectronDist -InstallDir $InstallDir)) {
+                $purged = @(Clear-ElectronBuildCache -DesktopDir $desktopDir)
+                $restored = Restore-ElectronDist -InstallDir $InstallDir
+            }
+            if ($restored) {
+                Write-Warn "Desktop build failed - refreshed the Electron download, retrying once:"
                 foreach ($p in $purged) { Write-Info "  - $p" }
                 & $npmExe run pack 2>&1 | ForEach-Object { "$_" } | Tee-Object -FilePath $buildLog
                 $code = $LASTEXITCODE
             }
         }
-        # Still failing and the user hasn't pinned their own mirror: GitHub's
-        # Electron release host is likely blocked/throttled (the repeating
-        # "retrying" log). Retry once via npmmirror.com — the de-facto Electron
-        # community mirror (Alibaba). @electron/get SHASUM-checks the download,
-        # but the SHASUMS come from the same mirror, so that guards against a
-        # corrupt/partial download, NOT a compromised mirror: an explicit trust
-        # trade-off we only make AFTER the canonical GitHub download has failed,
-        # and we never override a user-pinned ELECTRON_MIRROR.
         if ($code -ne 0 -and -not $env:ELECTRON_MIRROR) {
-            $prevMirror = $env:ELECTRON_MIRROR
-            $env:ELECTRON_MIRROR = "https://npmmirror.com/mirrors/electron/"
+            $mirror = $script:DesktopElectronFallbackMirror
             Write-Warn "Desktop build still failing - the Electron download from GitHub looks blocked."
-            Write-Warn "Retrying once via a public Electron mirror ($($env:ELECTRON_MIRROR)):"
+            Write-Warn "Re-downloading Electron via a public mirror ($mirror), then rebuilding:"
             Write-Info "  (set ELECTRON_MIRROR yourself to use a different/trusted mirror)"
-            & $npmExe run pack 2>&1 | ForEach-Object { "$_" } | Tee-Object -FilePath $buildLog
-            $code = $LASTEXITCODE
-            $env:ELECTRON_MIRROR = $prevMirror
+            if (-not (Test-ElectronDist -InstallDir $InstallDir)) {
+                Restore-ElectronDist -InstallDir $InstallDir -Mirror $mirror | Out-Null
+            }
+            $prevMirror = $env:ELECTRON_MIRROR
+            $env:ELECTRON_MIRROR = $mirror
+            try {
+                & $npmExe run pack 2>&1 | ForEach-Object { "$_" } | Tee-Object -FilePath $buildLog
+                $code = $LASTEXITCODE
+            } finally {
+                $env:ELECTRON_MIRROR = $prevMirror
+            }
         }
         $ErrorActionPreference = $prevEAP
         if ($code -ne 0) {
@@ -2365,8 +2539,8 @@ function Install-Desktop {
     # 3. Sanity-check the produced binary. Probe both arches so this works
     # on x64 and arm64 build machines.
     $exeCandidates = @(
-        "$desktopDir\release\win-unpacked\Hermes.exe",
-        "$desktopDir\release\win-arm64-unpacked\Hermes.exe"
+        "$desktopDir\release\win-unpacked\Moor.exe",
+        "$desktopDir\release\win-arm64-unpacked\Moor.exe"
     )
     $found = $false
     $desktopExe = $null
@@ -2379,10 +2553,10 @@ function Install-Desktop {
         }
     }
     if (-not $found) {
-        throw "Desktop build completed but no Hermes.exe was found under $desktopDir\release\*-unpacked\"
+        throw "Desktop build completed but no Moor.exe was found under $desktopDir\release\*-unpacked\"
     }
 
-    # 3b. The Hermes icon + identity are stamped onto Hermes.exe by the
+    # 3b. The Moor icon + identity are stamped onto Moor.exe by the
     #     electron-builder `afterPack` hook (apps/desktop/scripts/after-pack.cjs)
     #     during `npm run pack` above — for every build, so the installer's
     #     --update rebuild stays branded too. No separate stamp step needed here.
@@ -2391,7 +2565,7 @@ function Install-Desktop {
     #     unfixable symlink crash; the afterPack hook runs rcedit directly.
 
     # 4. Create Start Menu + Desktop shortcuts pointing DIRECTLY at the packed
-    #    Hermes.exe. We deliberately do NOT point them at `hermes desktop`: that
+    #    Moor.exe. We deliberately do NOT point them at `hermes desktop`: that
     #    command rebuilds (npm install + electron-builder) on every launch,
     #    which would cost minutes each time. The packed exe is the consumer —
     #    launching it directly is instant, and updates flow through the
@@ -2422,8 +2596,8 @@ function New-DesktopShortcuts {
         }
 
         $targets = @(
-            (Join-Path ([Environment]::GetFolderPath('Programs')) 'Hermes.lnk'),
-            (Join-Path ([Environment]::GetFolderPath('Desktop')) 'Hermes.lnk')
+            (Join-Path ([Environment]::GetFolderPath('Programs')) 'Moor.lnk'),
+            (Join-Path ([Environment]::GetFolderPath('Desktop')) 'Moor.lnk')
         )
 
         foreach ($lnkPath in $targets) {
@@ -2436,7 +2610,7 @@ function New-DesktopShortcuts {
                 $sc.TargetPath = $TargetExe
                 $sc.WorkingDirectory = $workDir
                 $sc.IconLocation = $iconLocation
-                $sc.Description = 'Hermes Agent'
+                $sc.Description = 'Moor Agent'
                 $sc.Save()
                 Write-Success "Shortcut created: $lnkPath"
             } catch {
@@ -2447,7 +2621,7 @@ function New-DesktopShortcuts {
         # Bust the Windows shell icon cache so the desktop/Start-Menu shortcut
         # repaints with the (possibly newly-stamped) icon instead of a stale
         # cached bitmap. Critical on the --update path: the exe was re-stamped
-        # with the Hermes icon, but without this the shortcut can keep drawing
+        # with the Moor icon, but without this the shortcut can keep drawing
         # the old Electron icon until the user manually refreshes / reboots.
         # Best-effort and silent — never fail the install over a cosmetic cache.
         try {
@@ -2813,7 +2987,7 @@ $InstallStages = @(
     @{ Name = "git";              Title = "Installing Git";                       Category = "prereqs";      NeedsUserInput = $false; Worker = "Stage-Git" }
     @{ Name = "node";             Title = "Detecting Node.js";                    Category = "prereqs";      NeedsUserInput = $false; Worker = "Stage-Node" }
     @{ Name = "system-packages";  Title = "Installing ripgrep and ffmpeg";        Category = "prereqs";      NeedsUserInput = $false; Worker = "Stage-SystemPackages" }
-    @{ Name = "repository";       Title = "Cloning Hermes repository";            Category = "install";      NeedsUserInput = $false; Worker = "Stage-Repository" }
+    @{ Name = "repository";       Title = "Cloning Moor repository";            Category = "install";      NeedsUserInput = $false; Worker = "Stage-Repository" }
     @{ Name = "venv";             Title = "Creating Python virtual environment";  Category = "install";      NeedsUserInput = $false; Worker = "Stage-Venv" }
     @{ Name = "dependencies";     Title = "Installing Python dependencies";       Category = "install";      NeedsUserInput = $false; Worker = "Stage-Dependencies" }
     @{ Name = "node-deps";        Title = "Installing Node.js dependencies";      Category = "install";      NeedsUserInput = $false; Worker = "Stage-NodeDeps" }
@@ -2821,11 +2995,11 @@ $InstallStages = @(
 if ($IncludeDesktop) {
     # Insert AFTER node-deps so workspace npm is already installed when
     # the desktop build runs. Inserted only when explicitly requested
-    # (Hermes-Setup.exe), never via the irm|iex CLI one-liner.
+    # (Moor-Setup.exe), never via the irm|iex CLI one-liner.
     $InstallStages += @{ Name = "desktop"; Title = "Building desktop app"; Category = "install"; NeedsUserInput = $false; Worker = "Stage-Desktop" }
 }
 $InstallStages += @(
-    @{ Name = "path";             Title = "Adding Hermes to PATH";                Category = "finalize";     NeedsUserInput = $false; Worker = "Stage-Path" }
+    @{ Name = "path";             Title = "Adding Moor to PATH";                Category = "finalize";     NeedsUserInput = $false; Worker = "Stage-Path" }
     @{ Name = "config-templates"; Title = "Writing configuration templates";      Category = "finalize";     NeedsUserInput = $false; Worker = "Stage-ConfigTemplates" }
     @{ Name = "platform-sdks";    Title = "Installing messaging platform SDKs";   Category = "finalize";     NeedsUserInput = $false; Worker = "Stage-PlatformSdks" }
     @{ Name = "bootstrap-marker"; Title = "Marking install complete";              Category = "finalize";     NeedsUserInput = $false; Worker = "Stage-BootstrapMarker" }
@@ -3112,7 +3286,7 @@ try {
     Write-Err "Installation failed: $_"
     Write-Host ""
     Write-Info "If the error is unclear, try downloading and running the script directly:"
-    Write-Host "  Invoke-WebRequest -Uri 'https://hermes-agent.nousresearch.com/install.ps1' -OutFile install.ps1" -ForegroundColor Yellow
+    Write-Host "  Invoke-WebRequest -Uri 'https://hermes-agent.Moor inc..com/install.ps1' -OutFile install.ps1" -ForegroundColor Yellow
     Write-Host "  .\install.ps1" -ForegroundColor Yellow
     Write-Host ""
 }

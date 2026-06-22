@@ -1,14 +1,14 @@
 ---
 sidebar_position: 12
 title: "Kanban（多 Agent 看板）"
-description: "基于 SQLite 的持久化任务看板，用于协调多个 Hermes 配置文件"
+description: "基于 SQLite 的持久化任务看板，用于协调多个 Moor 配置文件"
 ---
 
 # Kanban — 多 Agent 配置文件协作
 
 > **想要详细教程？** 请阅读 [Kanban 教程](./kanban-tutorial) —— 包含四个用户故事（独立开发者、批量任务、带重试的角色流水线、熔断器），并附有各场景的仪表盘截图。本页是参考文档，教程是叙述性说明。
 
-Hermes Kanban 是一个持久化任务看板，在所有 Hermes 配置文件之间共享，允许多个具名 agent 协作完成工作，而无需脆弱的进程内子 agent 集群。每个任务都是 `~/.hermes/kanban.db` 中的一行记录；每次交接都是任何人都可以读写的一行记录；每个 worker 都是拥有独立身份的完整 OS 进程。
+Moor Kanban 是一个持久化任务看板，在所有 Moor 配置文件之间共享，允许多个具名 agent 协作完成工作，而无需脆弱的进程内子 agent 集群。每个任务都是 `~/.hermes/kanban.db` 中的一行记录；每次交接都是任何人都可以读写的一行记录；每个 worker 都是拥有独立身份的完整 OS 进程。
 
 ### 两个操作界面：模型通过工具交互，你通过 CLI 交互
 
@@ -240,7 +240,7 @@ kanban_create(
 kanban_complete(summary="decomposed into 2 research tasks + 1 writer; linked dependencies")
 ```
 
-"（编排器）"工具 —— `kanban_list`、`kanban_create`、`kanban_link`、`kanban_unblock`，以及对外部任务的 `kanban_comment` —— 通过同一工具集提供；约定（由 `kanban-orchestrator` skill 强制执行）是 worker 配置文件不进行扇出或路由无关工作，编排器配置文件不执行实现工作。调度器启动的 worker 仍然针对破坏性生命周期操作限定在任务范围内，无法修改无关任务。
+"（编排器）"工具 —— `kanban_list`、`kanban_create`、`kanban_link`、`kanban_unblock`，以及对外部任务的 `kanban_comment` —— 通过同一工具集提供；约定（编码在自动注入的 kanban 指引中）是 worker 配置文件不进行扇出或路由无关工作，编排器配置文件不执行实现工作。调度器启动的 worker 仍然针对破坏性生命周期操作限定在任务范围内，无法修改无关任务。
 
 ### 为什么使用工具而不是 shell 执行 `hermes kanban`
 
@@ -252,7 +252,7 @@ kanban_complete(summary="decomposed into 2 research tasks + 1 writer; linked dep
 
 **对普通会话零 schema 占用。** 普通的 `hermes chat` 会话在其 schema 中没有任何 `kanban_*` 工具，除非活动配置文件为编排器工作显式启用了 `kanban` 工具集。调度器启动的任务 worker 因为设置了 `HERMES_KANBAN_TASK` 而获得任务范围的工具；编排器配置文件通过配置获得更广泛的路由界面。对于从不使用 kanban 的用户，没有工具膨胀。
 
-`kanban-worker` 和 `kanban-orchestrator` skill 教导模型何时调用哪个工具以及调用顺序。
+自动注入的 kanban 指引教导模型何时调用哪个工具以及调用顺序。
 
 ### 推荐的交接证据
 
@@ -280,9 +280,9 @@ kanban_complete(summary="decomposed into 2 research tasks + 1 writer; linked dep
 
 不要将密钥、原始日志、token（令牌）、OAuth 材料和无关记录放入 `metadata`。改为存储指针和摘要。如果任务没有文件或测试，在 `summary` 中明确说明，并在 `metadata` 中放置确实存在的证据，例如来源 URL、issue id 或手动审查步骤。
 
-### Worker skill
+### Worker 生命周期
 
-任何应该能够处理 kanban 任务的配置文件都必须加载 `kanban-worker` skill。它通过**工具调用**（而非 CLI 命令）教导 worker 完整的生命周期：
+任何处理 kanban 任务的配置文件都会**自动**获得 worker 生命周期 —— 它在启动时被注入到 worker 的系统 prompt 中（`KANBAN_GUIDANCE` 块），因此**无需安装或配置任何东西**。它通过**工具调用**（而非 CLI 命令）教导 worker 完整的生命周期：
 
 1. 启动时，调用 `kanban_show()` 读取标题 + 正文 + 父级交接 + 先前尝试 + 完整评论线程。
 2. 通过终端工具执行 `cd $HERMES_KANBAN_WORKSPACE`，在那里完成工作。
@@ -290,20 +290,6 @@ kanban_complete(summary="decomposed into 2 research tasks + 1 writer; linked dep
 4. 以 `kanban_complete(summary="...", metadata={...})` 完成，或在卡住时以 `kanban_block(reason="...")` 完成。
 
 最终的 `kanban_complete` / `kanban_block` 调用是 worker 协议的一部分。如果 worker 进程以状态 0 退出而任务仍处于 `running` 状态，调度器将其视为协议违规，发出 `protocol_violation` 事件，并在下一个 tick 自动阻塞任务而不是重新启动它进入同一循环。这通常意味着模型写了一个纯文本答案并退出，而没有使用 Kanban 工具界面。
-
-`kanban-worker` 是一个内置 skill，在安装和更新期间同步到每个配置文件 —— 无需单独的 Skills Hub 安装步骤。验证它是否存在于你用于 kanban worker 的配置文件中（`researcher`、`writer`、`ops` 等）：
-
-```bash
-hermes -p <your-worker-profile> skills list | grep kanban-worker
-```
-
-如果内置副本丢失，为该配置文件恢复它：
-
-```bash
-hermes -p <your-worker-profile> skills reset kanban-worker --restore
-```
-
-调度器在启动每个 worker 时也会自动传递 `--skills kanban-worker`，因此即使配置文件的默认 skills 配置不包含它，worker 也始终拥有该模式库。
 
 ### 为特定任务固定额外 skill
 
@@ -340,11 +326,11 @@ hermes kanban create "audit auth flow" \
 
 **从仪表盘**，在内联创建表单的 **skills** 字段中以逗号分隔输入 skill 名称。
 
-这些 skill 是对内置 `kanban-worker` 的**补充** —— 调度器为每个 skill（以及内置的）发出一个 `--skills <name>` 标志，因此 worker 启动时加载了所有这些 skill。skill 名称必须与受让人配置文件上实际安装的 skill 匹配（运行 `hermes skills list` 查看可用内容）；没有运行时安装。
+调度器为列出的每个 skill 发出一个 `--skills <name>` 标志，因此 worker 在自动注入的 kanban 指引之上加载了所有这些 skill。skill 名称必须与受让人配置文件上实际安装的 skill 匹配（运行 `hermes skills list` 查看可用内容）；没有运行时安装。
 
-### 编排器 skill
+### 编排器的行为方式
 
-**行为良好的编排器不会自己做工作。** 它将用户的目标分解为任务，链接它们，将每个任务分配给你设置的配置文件之一，然后退后。`kanban-orchestrator` skill 将此编码为工具调用模式：反诱惑规则、Step-0 配置文件发现提示（调度器在未知受让人名称上静默失败，因此编排器必须将每张卡片落地到你机器上实际存在的配置文件），以及以 `kanban_create` / `kanban_link` / `kanban_comment` 为核心的分解手册。
+**行为良好的编排器不会自己做工作。** 它将用户的目标分解为任务，链接它们，将每个任务分配给你设置的配置文件之一，然后退后。编排器指引 —— 反诱惑规则、Step-0 配置文件发现提示（调度器在未知受让人名称上静默失败，因此编排器必须将每张卡片落地到你机器上实际存在的配置文件），以及以 `kanban_create` / `kanban_link` / `kanban_comment` 为核心的分解手册 —— 会自动注入到 worker 的系统 prompt 中；无需安装任何东西。
 
 典型的编排器轮次（两个并行研究员交接给一个写作者）：
 
@@ -365,23 +351,13 @@ kanban_complete(
 )
 ```
 
-`kanban-orchestrator` 是一个内置 skill。它在安装和更新期间同步到每个配置文件，因此无需单独的 Skills Hub 安装步骤。验证它是否存在于你的编排器配置文件中：
-
-```bash
-hermes -p orchestrator skills list | grep kanban-orchestrator
-```
-
-如果内置副本丢失，为该配置文件恢复它：
-
-```bash
-hermes -p orchestrator skills reset kanban-orchestrator --restore
-```
+编排器指引随 worker 的系统 prompt 自动提供 —— 无需按配置文件安装或同步任何东西。
 
 为获得最佳效果，将其与工具集限制为看板操作（`kanban`、`gateway`、`memory`）的配置文件配对，这样编排器即使尝试也无法执行实现任务。
 
 ## 仪表盘（GUI）
 
-`/kanban` CLI 和斜杠命令足以无头运行看板，但可视化看板通常是人工介入的正确界面：分诊、跨配置文件监督、阅读评论线程以及在列之间拖动卡片。Hermes 将此作为**内置仪表盘插件**在 `plugins/kanban/` 中提供 —— 不是核心功能，不是单独的服务 —— 遵循[扩展仪表盘](./extending-the-dashboard)中描述的模型。
+`/kanban` CLI 和斜杠命令足以无头运行看板，但可视化看板通常是人工介入的正确界面：分诊、跨配置文件监督、阅读评论线程以及在列之间拖动卡片。Moor 将此作为**内置仪表盘插件**在 `plugins/kanban/` 中提供 —— 不是核心功能，不是单独的服务 —— 遵循[扩展仪表盘](./extending-the-dashboard)中描述的模型。
 
 使用以下命令打开：
 
@@ -431,6 +407,7 @@ hermes dashboard        # 导航栏中出现 "Kanban" 标签页，位于 "Skills
 | `auto_decompose_per_tick` | `3` | 每个调度器 tick 的分解上限。超出部分推迟到下一个 tick。 |
 | `orchestrator_profile` | `""` | 拥有分解权的配置文件。空 = 回退到活动默认配置文件。 |
 | `default_assignee` | `""` | LLM 选择未知配置文件时子任务的落地位置。空 = 回退到活动默认配置文件。 |
+| `auto_subscribe_on_create` | `true` | 当 worker 在具有持久投递通道的会话（消息网关或 TUI）内调用 `kanban_create` 时，原始会话会自动订阅新任务的完成/阻塞事件。调度器仍负责驱动投递 —— 此设置只决定调用者的聊天/密钥是否出现在通知订阅表中。设为 `false` 则要求对每个任务显式调用 `kanban_notify-subscribe`。 |
 
 以及两个辅助 LLM 槽：
 
@@ -523,7 +500,7 @@ WebSocket 额外增加了一步：它要求仪表盘的临时会话 token 作为
 
 ### 扩展
 
-插件使用标准的 Hermes 仪表盘插件契约 —— 完整的 manifest 参考、shell 槽、页面范围槽和 Plugin SDK，请参阅[扩展仪表盘](./extending-the-dashboard)。额外的列、自定义卡片样式、租户过滤布局或完整的 `tab.override` 替换都可以表达，无需 fork 此插件。
+插件使用标准的 Moor 仪表盘插件契约 —— 完整的 manifest 参考、shell 槽、页面范围槽和 Plugin SDK，请参阅[扩展仪表盘](./extending-the-dashboard)。额外的列、自定义卡片样式、租户过滤布局或完整的 `tab.override` 替换都可以表达，无需 fork 此插件。
 
 要禁用而不删除：在 `config.yaml` 中添加 `dashboard.plugins.kanban.enabled: false`（或删除 `plugins/kanban/dashboard/manifest.json`）。
 

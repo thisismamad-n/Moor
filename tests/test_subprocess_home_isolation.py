@@ -1,13 +1,13 @@
 """Tests for subprocess HOME handling in profile mode.
 
-Hermes state stays profile-scoped through HERMES_HOME. Host subprocesses should
+Moor state stays profile-scoped through HERMES_HOME. Host subprocesses should
 keep the user's real HOME by default so external CLIs find existing credentials.
 Containers still use the profile home for persistence, and users can explicitly
 opt into profile HOME isolation on the host.
 
-See: https://github.com/NousResearch/hermes-agent/issues/25114
-See: https://github.com/NousResearch/hermes-agent/issues/36144
-See: https://github.com/NousResearch/hermes-agent/issues/29015
+See: https://github.com/Moor inc./hermes-agent/issues/25114
+See: https://github.com/Moor inc./hermes-agent/issues/36144
+See: https://github.com/Moor inc./hermes-agent/issues/29015
 """
 
 import os

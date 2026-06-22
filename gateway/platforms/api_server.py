@@ -2,14 +2,14 @@
 OpenAI-compatible API server platform adapter.
 
 Exposes an HTTP server with endpoints:
-- POST /v1/chat/completions        — OpenAI Chat Completions format (stateless; opt-in session continuity via X-Hermes-Session-Id header; opt-in long-term memory scoping via X-Hermes-Session-Key header)
-- POST /v1/responses               — OpenAI Responses API format (stateful via previous_response_id; X-Hermes-Session-Key supported)
+- POST /v1/chat/completions        — OpenAI Chat Completions format (stateless; opt-in session continuity via X-Moor-Session-Id header; opt-in long-term memory scoping via X-Moor-Session-Key header)
+- POST /v1/responses               — OpenAI Responses API format (stateful via previous_response_id; X-Moor-Session-Key supported)
 - GET  /v1/responses/{response_id} — Retrieve a stored response
 - DELETE /v1/responses/{response_id} — Delete a stored response
 - GET  /v1/models                  — lists hermes-agent as an available model
 - GET  /v1/capabilities            — machine-readable API capabilities for external UIs
-- GET  /api/sessions               — list client-visible Hermes sessions
-- POST /api/sessions               — create an empty Hermes session
+- GET  /api/sessions               — list client-visible Moor sessions
+- POST /api/sessions               — create an empty Moor session
 - GET/PATCH/DELETE /api/sessions/{session_id} — read/update/delete a session
 - GET  /api/sessions/{session_id}/messages — read session message history
 - POST /api/sessions/{session_id}/fork — branch a session using SessionDB lineage
@@ -686,7 +686,7 @@ def _derive_chat_session_id(
     conversation history with every request.  The system prompt and first user
     message are constant across all turns of the same conversation, so hashing
     them produces a deterministic session ID that lets the API server reuse
-    the same Hermes session (and therefore the same Docker container sandbox
+    the same Moor session (and therefore the same Docker container sandbox
     directory) across turns.
     """
     seed = f"{system_prompt or ''}\n{first_user_message}"
@@ -717,6 +717,16 @@ except ImportError:
     _cron_resume = None
     _cron_trigger = None
 
+
+def _notify_cron_provider_jobs_changed() -> None:
+    """Tell the active cron scheduler provider the job set changed after a REST
+    mutation (no-op for the built-in). Best-effort — never breaks the handler."""
+    try:
+        from cron.scheduler import _notify_provider_jobs_changed
+        _notify_provider_jobs_changed()
+    except Exception:
+        pass
+
 # Defense-in-depth: mirror the agent-facing cronjob tool, which scans the
 # user-supplied prompt for exfiltration/injection payloads at create/update
 # time (tools/cronjob_tools.py).  The REST cron endpoints are authenticated
@@ -738,6 +748,16 @@ class APIServerAdapter(BasePlatformAdapter):
     Runs an aiohttp web server that accepts OpenAI-format requests
     and routes them through hermes-agent's AIAgent.
     """
+
+    # Stateless request/response: every route (the OpenAI-spec
+    # /v1/chat/completions and /v1/responses, and the proprietary /v1/runs SSE
+    # stream) tears down its channel when the turn ends. There is no persistent
+    # outbound channel to push a background completion to a client that already
+    # received its response, and ``send()`` is a no-op stub. So async-delivery
+    # tools (terminal notify_on_complete / watch_patterns, delegate_task
+    # background=True) must NOT promise delivery on this path — see
+    # ``async_delivery_supported()``.
+    supports_async_delivery: bool = False
 
     def __init__(self, config: PlatformConfig):
         super().__init__(config, Platform.API_SERVER)
@@ -772,6 +792,15 @@ class APIServerAdapter(BasePlatformAdapter):
         # in-flight run by run_id.
         self._run_approval_sessions: Dict[str, str] = {}
         self._session_db: Optional[Any] = None  # Lazy-init SessionDB for session continuity
+        # Concurrency cap shared across all agent-serving endpoints
+        # (/v1/chat/completions, /v1/responses, /v1/runs). Read from
+        # config.yaml gateway.api_server.max_concurrent_runs; 0 disables
+        # the cap. Bounds CPU / memory / upstream-LLM-quota exhaustion
+        # from a request flood (#7483).
+        self._max_concurrent_runs: int = self._resolve_max_concurrent_runs()
+        # Number of in-flight runs on the non-streaming chat/responses paths
+        # (the /v1/runs path tracks its own in-flight set via _run_streams).
+        self._inflight_agent_runs: int = 0
 
     @staticmethod
     def _parse_cors_origins(value: Any) -> tuple[str, ...]:
@@ -787,6 +816,30 @@ class APIServerAdapter(BasePlatformAdapter):
             items = [str(value)]
 
         return tuple(str(item).strip() for item in items if str(item).strip())
+
+    @staticmethod
+    def _resolve_max_concurrent_runs() -> int:
+        """Read the concurrent-run cap from config.yaml (0 disables).
+
+        gateway.api_server.max_concurrent_runs. Falls back to the historical
+        default of 10 when unset or malformed. Negative values are clamped
+        to 0 (disabled).
+        """
+        default = 10
+        try:
+            from hermes_cli.config import cfg_get, load_config
+
+            raw = cfg_get(
+                load_config(),
+                "gateway",
+                "api_server",
+                "max_concurrent_runs",
+                default=default,
+            )
+            value = int(raw)
+        except Exception:
+            return default
+        return max(0, value)
 
     @staticmethod
     def _resolve_model_name(explicit: str) -> str:
@@ -936,11 +989,11 @@ class APIServerAdapter(BasePlatformAdapter):
     def _parse_session_key_header(
         self, request: "web.Request"
     ) -> tuple[Optional[str], Optional["web.Response"]]:
-        """Extract and validate the ``X-Hermes-Session-Key`` header.
+        """Extract and validate the ``X-Moor-Session-Key`` header.
 
         The session key is a stable per-channel identifier that scopes
         long-term memory (e.g. Honcho sessions) across transcripts.  It
-        is independent of ``X-Hermes-Session-Id``: callers may send
+        is independent of ``X-Moor-Session-Id``: callers may send
         either, both, or neither.
 
         Returns ``(session_key, None)`` on success (with an empty/absent
@@ -952,18 +1005,18 @@ class APIServerAdapter(BasePlatformAdapter):
         unauthenticated client on a local-only server can't inject itself
         into another user's long-term memory scope by guessing a key.
         """
-        raw = request.headers.get("X-Hermes-Session-Key", "").strip()
+        raw = request.headers.get("X-Moor-Session-Key", "").strip()
         if not raw:
             return None, None
 
         if not self._api_key:
             logger.warning(
-                "X-Hermes-Session-Key rejected: no API key configured. "
+                "X-Moor-Session-Key rejected: no API key configured. "
                 "Set API_SERVER_KEY to enable long-term memory scoping."
             )
             return None, web.json_response(
                 _openai_error(
-                    "X-Hermes-Session-Key requires API key authentication. "
+                    "X-Moor-Session-Key requires API key authentication. "
                     "Configure API_SERVER_KEY to enable this feature."
                 ),
                 status=403,
@@ -1026,14 +1079,20 @@ class APIServerAdapter(BasePlatformAdapter):
         gateway platforms), falling back to the hermes-api-server default.
 
         ``gateway_session_key`` is a stable per-channel identifier supplied
-        by the client (via ``X-Hermes-Session-Key``).  Unlike ``session_id``
+        by the client (via ``X-Moor-Session-Key``).  Unlike ``session_id``
         which scopes the short-term transcript and rotates on /new, this
         key is meant to persist across transcripts so long-term memory
         providers (e.g. Honcho) can scope their per-chat state correctly
         — matching the semantics of the native gateway's ``session_key``.
         """
         from run_agent import AIAgent
-        from gateway.run import _resolve_runtime_agent_kwargs, _resolve_gateway_model, _load_gateway_config, GatewayRunner
+        from gateway.run import (
+            _current_max_iterations,
+            _resolve_runtime_agent_kwargs,
+            _resolve_gateway_model,
+            _load_gateway_config,
+            GatewayRunner,
+        )
         from hermes_cli.tools_config import _get_platform_tools
 
         runtime_kwargs = _resolve_runtime_agent_kwargs()
@@ -1043,7 +1102,7 @@ class APIServerAdapter(BasePlatformAdapter):
         user_config = _load_gateway_config()
         enabled_toolsets = sorted(_get_platform_tools(user_config, "api_server"))
 
-        max_iterations = int(os.getenv("HERMES_MAX_ITERATIONS", "90"))
+        max_iterations = _current_max_iterations()
 
         # Load fallback provider chain so the API server platform has the
         # same fallback behaviour as Telegram/Discord/Slack (fixes #4954).
@@ -1087,16 +1146,35 @@ class APIServerAdapter(BasePlatformAdapter):
         dashboard can display full status without needing a shared PID file or
         /proc access.  No authentication required.
         """
-        from gateway.status import read_runtime_status
+        from gateway.status import (
+            derive_gateway_busy,
+            derive_gateway_drainable,
+            parse_active_agents,
+            read_runtime_status,
+        )
 
         runtime = read_runtime_status() or {}
+        gw_state = runtime.get("gateway_state")
+        gw_active = parse_active_agents(runtime.get("active_agents", 0))
+        # This endpoint is served BY the gateway process, so it is by definition
+        # alive — gateway_running is True. Derive busy/drainable from the same
+        # shared contract /api/status uses so the two surfaces never disagree.
         return web.json_response({
             "status": "ok",
             "platform": "hermes-agent",
             "version": _hermes_version(),
-            "gateway_state": runtime.get("gateway_state"),
+            "gateway_state": gw_state,
             "platforms": runtime.get("platforms", {}),
-            "active_agents": runtime.get("active_agents", 0),
+            "active_agents": gw_active,
+            "gateway_busy": derive_gateway_busy(
+                gateway_running=True,
+                gateway_state=gw_state,
+                active_agents=gw_active,
+            ),
+            "gateway_drainable": derive_gateway_drainable(
+                gateway_running=True,
+                gateway_state=gw_state,
+            ),
             "exit_reason": runtime.get("exit_reason"),
             "updated_at": runtime.get("updated_at"),
             "pid": os.getpid(),
@@ -1128,7 +1206,7 @@ class APIServerAdapter(BasePlatformAdapter):
 
         External UIs and orchestrators use this endpoint to discover the API
         server's plugin-safe contract without scraping docs or assuming that
-        every Hermes version exposes the same endpoints.
+        every Moor version exposes the same endpoints.
         """
         auth_err = self._check_auth(request)
         if auth_err:
@@ -1147,7 +1225,7 @@ class APIServerAdapter(BasePlatformAdapter):
                 "tool_execution": "server",
                 "split_runtime": False,
                 "description": (
-                    "The API server creates a server-side Hermes AIAgent; "
+                    "The API server creates a server-side Moor AIAgent; "
                     "tools execute on the API-server host unless a future "
                     "explicit split-runtime mode is enabled."
                 ),
@@ -1174,8 +1252,8 @@ class APIServerAdapter(BasePlatformAdapter):
                 "skills_api": True,
                 "audio_api": False,
                 "realtime_voice": False,
-                "session_continuity_header": "X-Hermes-Session-Id",
-                "session_key_header": "X-Hermes-Session-Key",
+                "session_continuity_header": "X-Moor-Session-Id",
+                "session_key_header": "X-Moor-Session-Key",
                 "cors": bool(self._cors_origins),
             },
             "endpoints": {
@@ -1360,7 +1438,7 @@ class APIServerAdapter(BasePlatformAdapter):
             return []
 
     async def _handle_list_sessions(self, request: "web.Request") -> "web.Response":
-        """GET /api/sessions — list persisted Hermes sessions."""
+        """GET /api/sessions — list persisted Moor sessions."""
         auth_err = self._check_auth(request)
         if auth_err:
             return auth_err
@@ -1389,7 +1467,7 @@ class APIServerAdapter(BasePlatformAdapter):
         })
 
     async def _handle_create_session(self, request: "web.Request") -> "web.Response":
-        """POST /api/sessions — create an empty Hermes session row."""
+        """POST /api/sessions — create an empty Moor session row."""
         auth_err = self._check_auth(request)
         if auth_err:
             return auth_err
@@ -1572,9 +1650,9 @@ class APIServerAdapter(BasePlatformAdapter):
         )
         effective_session_id = result.get("session_id") if isinstance(result, dict) else session_id
         final_response = result.get("final_response", "") if isinstance(result, dict) else ""
-        headers = {"X-Hermes-Session-Id": effective_session_id or session_id}
+        headers = {"X-Moor-Session-Id": effective_session_id or session_id}
         if gateway_session_key:
-            headers["X-Hermes-Session-Key"] = gateway_session_key
+            headers["X-Moor-Session-Key"] = gateway_session_key
         return web.json_response(
             {
                 "object": "hermes.session.chat.completion",
@@ -1698,10 +1776,10 @@ class APIServerAdapter(BasePlatformAdapter):
             "Content-Type": "text/event-stream",
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no",
-            "X-Hermes-Session-Id": session_id,
+            "X-Moor-Session-Id": session_id,
         }
         if gateway_session_key:
-            headers["X-Hermes-Session-Key"] = gateway_session_key
+            headers["X-Moor-Session-Key"] = gateway_session_key
         response = web.StreamResponse(status=200, headers=headers)
         await response.prepare(request)
         last_write = time.monotonic()
@@ -1731,6 +1809,11 @@ class APIServerAdapter(BasePlatformAdapter):
         auth_err = self._check_auth(request)
         if auth_err:
             return auth_err
+
+        # Bound total in-flight agent runs (configurable; #7483).
+        limited = self._concurrency_limited_response()
+        if limited is not None:
+            return limited
 
         # Parse request body
         try:
@@ -1783,26 +1866,26 @@ class APIServerAdapter(BasePlatformAdapter):
             )
 
         # Allow caller to scope long-term memory (e.g. Honcho) with a
-        # stable per-channel identifier via X-Hermes-Session-Key.  This
-        # is independent of X-Hermes-Session-Id: the key persists across
+        # stable per-channel identifier via X-Moor-Session-Key.  This
+        # is independent of X-Moor-Session-Id: the key persists across
         # transcripts while the id rotates when the caller starts a new
         # transcript (i.e. /new semantics).  See _parse_session_key_header.
         gateway_session_key, key_err = self._parse_session_key_header(request)
         if key_err is not None:
             return key_err
 
-        # Allow caller to continue an existing session by passing X-Hermes-Session-Id.
+        # Allow caller to continue an existing session by passing X-Moor-Session-Id.
         # When provided, history is loaded from state.db instead of from the request body.
         #
         # Security: session continuation exposes conversation history, so it is
         # only allowed when the API key is configured and the request is
         # authenticated.  Without this gate, any unauthenticated client could
         # read arbitrary session history by guessing/enumerating session IDs.
-        provided_session_id = request.headers.get("X-Hermes-Session-Id", "").strip()
+        provided_session_id = request.headers.get("X-Moor-Session-Id", "").strip()
         if provided_session_id:
             if not self._api_key:
                 logger.warning(
-                    "Session continuation via X-Hermes-Session-Id rejected: "
+                    "Session continuation via X-Moor-Session-Id rejected: "
                     "no API key configured.  Set API_SERVER_KEY to enable "
                     "session continuity."
                 )
@@ -1830,7 +1913,7 @@ class APIServerAdapter(BasePlatformAdapter):
         else:
             # Derive a stable session ID from the conversation fingerprint so
             # that consecutive messages from the same Open WebUI (or similar)
-            # conversation map to the same Hermes session.  The first user
+            # conversation map to the same Moor session.  The first user
             # message + system prompt are constant across all turns.
             first_user = ""
             for cm in conversation_messages:
@@ -1985,10 +2068,10 @@ class APIServerAdapter(BasePlatformAdapter):
             finish_reason = "stop"
 
         response_headers = {
-            "X-Hermes-Session-Id": result.get("session_id", session_id),
+            "X-Moor-Session-Id": result.get("session_id", session_id),
         }
         if gateway_session_key:
-            response_headers["X-Hermes-Session-Key"] = gateway_session_key
+            response_headers["X-Moor-Session-Key"] = gateway_session_key
 
         # Hard-fail path: no usable assistant text AND a real failure → 5xx
         # with OpenAI-style error envelope so SDK clients raise instead of
@@ -2004,13 +2087,13 @@ class APIServerAdapter(BasePlatformAdapter):
                 "partial": is_partial,
                 "failed": is_failed,
             }
-            response_headers["X-Hermes-Completed"] = "false"
-            response_headers["X-Hermes-Partial"] = "true" if is_partial else "false"
+            response_headers["X-Moor-Completed"] = "false"
+            response_headers["X-Moor-Partial"] = "true" if is_partial else "false"
             return web.json_response(err_body, status=502, headers=response_headers)
 
         # Soft-partial path: we have *some* text but the run did not complete
         # (e.g. truncation with partial buffered output). Still 200 but signal
-        # truncation via finish_reason="length" + Hermes-specific extras.
+        # truncation via finish_reason="length" + Moor-specific extras.
         response_data = {
             "id": completion_id,
             "object": "chat.completion",
@@ -2040,10 +2123,10 @@ class APIServerAdapter(BasePlatformAdapter):
                 "error": err_msg,
                 "error_code": "output_truncated" if finish_reason == "length" else "agent_error",
             }
-            response_headers["X-Hermes-Completed"] = "false"
-            response_headers["X-Hermes-Partial"] = "true" if is_partial else "false"
+            response_headers["X-Moor-Completed"] = "false"
+            response_headers["X-Moor-Partial"] = "true" if is_partial else "false"
             if err_msg:
-                response_headers["X-Hermes-Error"] = err_msg[:200]
+                response_headers["X-Moor-Error"] = err_msg[:200]
 
         return web.json_response(response_data, headers=response_headers)
 
@@ -2072,9 +2155,9 @@ class APIServerAdapter(BasePlatformAdapter):
         if cors:
             sse_headers.update(cors)
         if session_id:
-            sse_headers["X-Hermes-Session-Id"] = session_id
+            sse_headers["X-Moor-Session-Id"] = session_id
         if gateway_session_key:
-            sse_headers["X-Hermes-Session-Key"] = gateway_session_key
+            sse_headers["X-Moor-Session-Key"] = gateway_session_key
         response = web.StreamResponse(status=200, headers=sse_headers)
         await response.prepare(request)
 
@@ -2256,9 +2339,9 @@ class APIServerAdapter(BasePlatformAdapter):
         if cors:
             sse_headers.update(cors)
         if session_id:
-            sse_headers["X-Hermes-Session-Id"] = session_id
+            sse_headers["X-Moor-Session-Id"] = session_id
         if gateway_session_key:
-            sse_headers["X-Hermes-Session-Key"] = gateway_session_key
+            sse_headers["X-Moor-Session-Key"] = gateway_session_key
         response = web.StreamResponse(status=200, headers=sse_headers)
         await response.prepare(request)
 
@@ -2801,6 +2884,11 @@ class APIServerAdapter(BasePlatformAdapter):
         if auth_err:
             return auth_err
 
+        # Bound total in-flight agent runs (configurable; #7483).
+        limited = self._concurrency_limited_response()
+        if limited is not None:
+            return limited
+
         # Long-term memory scope header (see chat_completions for details).
         gateway_session_key, key_err = self._parse_session_key_header(request)
         if key_err is not None:
@@ -3070,9 +3158,9 @@ class APIServerAdapter(BasePlatformAdapter):
             if conversation:
                 self._response_store.set_conversation(conversation, response_id)
 
-        response_headers = {"X-Hermes-Session-Id": session_id}
+        response_headers = {"X-Moor-Session-Id": session_id}
         if gateway_session_key:
-            response_headers["X-Hermes-Session-Key"] = gateway_session_key
+            response_headers["X-Moor-Session-Key"] = gateway_session_key
         return web.json_response(response_data, headers=response_headers)
 
     # ------------------------------------------------------------------
@@ -3206,6 +3294,7 @@ class APIServerAdapter(BasePlatformAdapter):
                 kwargs["repeat"] = repeat
 
             job = _cron_create(**kwargs)
+            _notify_cron_provider_jobs_changed()
             return web.json_response({"job": job})
         except Exception as e:
             return web.json_response({"error": str(e)}, status=500)
@@ -3262,6 +3351,7 @@ class APIServerAdapter(BasePlatformAdapter):
             job = _cron_update(job_id, sanitized)
             if not job:
                 return web.json_response({"error": "Job not found"}, status=404)
+            _notify_cron_provider_jobs_changed()
             return web.json_response({"job": job})
         except Exception as e:
             return web.json_response({"error": str(e)}, status=500)
@@ -3281,6 +3371,7 @@ class APIServerAdapter(BasePlatformAdapter):
             success = _cron_remove(job_id)
             if not success:
                 return web.json_response({"error": "Job not found"}, status=404)
+            _notify_cron_provider_jobs_changed()
             return web.json_response({"ok": True})
         except Exception as e:
             return web.json_response({"error": str(e)}, status=500)
@@ -3300,6 +3391,7 @@ class APIServerAdapter(BasePlatformAdapter):
             job = _cron_pause(job_id)
             if not job:
                 return web.json_response({"error": "Job not found"}, status=404)
+            _notify_cron_provider_jobs_changed()
             return web.json_response({"job": job})
         except Exception as e:
             return web.json_response({"error": str(e)}, status=500)
@@ -3319,6 +3411,7 @@ class APIServerAdapter(BasePlatformAdapter):
             job = _cron_resume(job_id)
             if not job:
                 return web.json_response({"error": "Job not found"}, status=404)
+            _notify_cron_provider_jobs_changed()
             return web.json_response({"job": job})
         except Exception as e:
             return web.json_response({"error": str(e)}, status=500)
@@ -3341,6 +3434,64 @@ class APIServerAdapter(BasePlatformAdapter):
             return web.json_response({"job": job})
         except Exception as e:
             return web.json_response({"error": str(e)}, status=500)
+
+    async def _handle_cron_fire(self, request: "web.Request") -> "web.Response":
+        """POST /api/cron/fire — Chronos managed-cron fire webhook (NAS → agent).
+
+        Authenticated by a NAS-minted JWT (verified via the pluggable
+        fire-verifier), NOT API_SERVER_KEY — NAS holds no API server key, and
+        this is the only inbound that can trigger remote job execution, so it
+        gets its own purpose-scoped token check.
+
+        Returns 202 + runs the job in the background so a long agent turn never
+        trips NAS's HTTP timeout. The store CAS claim inside fire_due guards
+        against double-fire on a NAS/scheduler retry.
+        """
+        from hermes_cli.config import cfg_get, load_config
+        from plugins.cron.chronos.verify import get_fire_verifier
+
+        auth = request.headers.get("Authorization", "")
+        token = auth[7:].strip() if auth.startswith("Bearer ") else ""
+
+        cfg = load_config()
+        claims = get_fire_verifier()(
+            token=token,
+            expected_audience=cfg_get(cfg, "cron", "chronos", "expected_audience", default=""),
+            jwks_or_key=cfg_get(cfg, "cron", "chronos", "nas_jwks_url", default="") or None,
+            issuer=cfg_get(cfg, "cron", "chronos", "portal_url", default="") or None,
+        )
+        if claims is None:
+            logger.warning(
+                "cron fire: rejected invalid token: %s",
+                self._request_audit_log_suffix(request),
+            )
+            return web.json_response({"error": "invalid fire token"}, status=401)
+
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        job_id = (body or {}).get("job_id")
+        if not job_id:
+            return web.json_response({"error": "missing job_id"}, status=400)
+
+        from cron.scheduler_provider import resolve_cron_scheduler
+        provider = resolve_cron_scheduler()
+
+        loop = asyncio.get_running_loop()
+        # Fire in the background (202 immediately). fire_due claims via the
+        # store CAS, so a retry while this is in flight is de-duped.
+        task = asyncio.create_task(
+            asyncio.to_thread(provider.fire_due, job_id, adapters=None, loop=loop)
+        )
+        try:
+            self._background_tasks.add(task)
+            task.add_done_callback(self._background_tasks.discard)
+        except (TypeError, AttributeError):
+            pass
+
+        return web.json_response({"status": "accepted", "job_id": job_id}, status=202)
+
 
     # ------------------------------------------------------------------
     # Output extraction helper
@@ -3489,6 +3640,63 @@ class APIServerAdapter(BasePlatformAdapter):
     # Agent execution
     # ------------------------------------------------------------------
 
+    def _concurrency_limited_response(self) -> Optional["web.Response"]:
+        """Return a 429 response if the concurrent-run cap is reached, else None.
+
+        The cap bounds total in-flight agent activity across every
+        agent-serving endpoint: the non-streaming chat/responses paths
+        (tracked by ``_inflight_agent_runs``) plus the ``/v1/runs`` streaming
+        path (tracked by ``_run_streams``). A configured value of 0 disables
+        the cap entirely.
+        """
+        limit = self._max_concurrent_runs
+        if limit <= 0:
+            return None
+        inflight = self._inflight_agent_runs + len(self._run_streams)
+        if inflight >= limit:
+            return web.json_response(
+                _openai_error(
+                    f"Too many concurrent runs (max {limit})",
+                    err_type="rate_limit_error",
+                    code="rate_limit_exceeded",
+                ),
+                status=429,
+                headers={"Retry-After": "1"},
+            )
+        return None
+
+    @staticmethod
+    def _bind_api_server_session(
+        *,
+        chat_id: str = "",
+        session_key: str = "",
+        session_id: str = "",
+    ) -> list:
+        """Bind session contextvars for an API-server agent run.
+
+        This is the SINGLE structural chokepoint every API-server agent-entry
+        path must use to seed session context — it hardwires
+        ``platform="api_server"`` and ``async_delivery=False`` so a new route
+        physically cannot reintroduce the silent-no-op bug (#10760) by
+        forgetting to mark the channel as non-delivering. There is no
+        ``async_delivery`` parameter to get wrong; the stateless HTTP path can
+        never wake the agent after the turn ends, on ANY route.
+
+        Returns reset tokens; pass them to ``clear_session_vars`` in a
+        ``finally`` block (the binding is request-scoped and must not outlive
+        the turn — a session resumed later on a delivering interface, e.g. the
+        CLI or a gateway platform, re-binds fresh and is NOT blocked).
+        """
+        from gateway.session_context import set_session_vars
+
+        return set_session_vars(
+            platform="api_server",
+            chat_id=chat_id,
+            session_key=session_key,
+            session_id=session_id,
+            async_delivery=False,
+        )
+
     async def _run_agent(
         self,
         user_message: str,
@@ -3516,10 +3724,9 @@ class APIServerAdapter(BasePlatformAdapter):
         loop = asyncio.get_running_loop()
 
         def _run():
-            from gateway.session_context import clear_session_vars, set_session_vars
+            from gateway.session_context import clear_session_vars
 
-            tokens = set_session_vars(
-                platform="api_server",
+            tokens = self._bind_api_server_session(
                 chat_id=session_id or "",
                 session_key=gateway_session_key or session_id or "",
                 session_id=session_id or "",
@@ -3548,7 +3755,7 @@ class APIServerAdapter(BasePlatformAdapter):
                     "total_tokens": getattr(agent, "session_total_tokens", 0) or 0,
                 }
                 # Include the effective session ID in the result so callers
-                # (e.g. X-Hermes-Session-Id header) can track compression-
+                # (e.g. X-Moor-Session-Id header) can track compression-
                 # triggered session rotations. (#16938)
                 _eff_sid = getattr(agent, "session_id", session_id)
                 if isinstance(_eff_sid, str) and _eff_sid:
@@ -3557,13 +3764,16 @@ class APIServerAdapter(BasePlatformAdapter):
             finally:
                 clear_session_vars(tokens)
 
-        return await loop.run_in_executor(None, _run)
+        self._inflight_agent_runs += 1
+        try:
+            return await loop.run_in_executor(None, _run)
+        finally:
+            self._inflight_agent_runs -= 1
 
     # ------------------------------------------------------------------
     # /v1/runs — structured event streaming
     # ------------------------------------------------------------------
 
-    _MAX_CONCURRENT_RUNS = 10  # Prevent unbounded resource allocation
     _RUN_STREAM_TTL = 300  # seconds before orphaned runs are swept
     _RUN_STATUS_TTL = 3600  # seconds to retain terminal run status for polling
 
@@ -3639,12 +3849,11 @@ class APIServerAdapter(BasePlatformAdapter):
         if key_err is not None:
             return key_err
 
-        # Enforce concurrency limit
-        if len(self._run_streams) >= self._MAX_CONCURRENT_RUNS:
-            return web.json_response(
-                _openai_error(f"Too many concurrent runs (max {self._MAX_CONCURRENT_RUNS})", code="rate_limit_exceeded"),
-                status=429,
-            )
+        # Enforce concurrency limit (shared across all agent-serving
+        # endpoints; configurable via gateway.api_server.max_concurrent_runs).
+        limited = self._concurrency_limited_response()
+        if limited is not None:
+            return limited
 
         try:
             body = await request.json()
@@ -3772,7 +3981,7 @@ class APIServerAdapter(BasePlatformAdapter):
                         pass
 
                 def _run_sync():
-                    from gateway.session_context import clear_session_vars, set_session_vars
+                    from gateway.session_context import clear_session_vars
                     from tools.approval import (
                         register_gateway_notify,
                         reset_current_session_key,
@@ -3788,8 +3997,7 @@ class APIServerAdapter(BasePlatformAdapter):
                         # contextvars so concurrent runs do not share process
                         # environment state.
                         approval_token = set_current_session_key(approval_session_key)
-                        session_tokens = set_session_vars(
-                            platform="api_server",
+                        session_tokens = self._bind_api_server_session(
                             session_key=approval_session_key,
                         )
                         register_gateway_notify(approval_session_key, _approval_notify)
@@ -3916,7 +4124,7 @@ class APIServerAdapter(BasePlatformAdapter):
             task.add_done_callback(self._background_tasks.discard)
 
         response_headers = (
-            {"X-Hermes-Session-Key": gateway_session_key} if gateway_session_key else {}
+            {"X-Moor-Session-Key": gateway_session_key} if gateway_session_key else {}
         )
         return web.json_response(
             {"run_id": run_id, "status": "started"},
@@ -4196,13 +4404,18 @@ class APIServerAdapter(BasePlatformAdapter):
             self._app.router.add_post("/api/jobs/{job_id}/pause", self._handle_pause_job)
             self._app.router.add_post("/api/jobs/{job_id}/resume", self._handle_resume_job)
             self._app.router.add_post("/api/jobs/{job_id}/run", self._handle_run_job)
+
+            # Chronos managed-cron fire webhook (NAS → agent). Authenticated by a
+            # NAS-minted JWT (NOT API_SERVER_KEY), so it has its own auth path.
+            if _CRON_AVAILABLE:
+                self._app.router.add_post("/api/cron/fire", self._handle_cron_fire)
             # Structured event streaming
             self._app.router.add_post("/v1/runs", self._handle_runs)
             self._app.router.add_get("/v1/runs/{run_id}", self._handle_get_run)
             self._app.router.add_get("/v1/runs/{run_id}/events", self._handle_run_events)
             self._app.router.add_post("/v1/runs/{run_id}/approval", self._handle_run_approval)
             self._app.router.add_post("/v1/runs/{run_id}/stop", self._handle_stop_run)
-            # Store the adapter after native routes are registered. Local Hermes-Relay
+            # Store the adapter after native routes are registered. Local Moor-Relay
             # bootstrap shims use this key as a feature-detection hook; registering
             # native routes first lets those shims no-op instead of shadowing the
             # upstream session-control handlers.
@@ -4228,22 +4441,55 @@ class APIServerAdapter(BasePlatformAdapter):
                 )
                 return False
 
-            # Refuse to start network-accessible with a placeholder key.
-            # Ported from openclaw/openclaw#64586.
+            # Refuse to start network-accessible with a placeholder or weak key.
+            # Ported from openclaw/openclaw#64586; entropy floor raised to 16 in
+            # the June 2026 hermes-0day hardening (an 8-char key dispatching
+            # terminal-capable agent work on a public bind is brute-forceable).
             if is_network_accessible(self._host) and self._api_key:
                 try:
                     from hermes_cli.auth import has_usable_secret
-                    if not has_usable_secret(self._api_key, min_length=8):
+                    if not has_usable_secret(self._api_key, min_length=16):
                         logger.error(
-                            "[%s] Refusing to start: API_SERVER_KEY is set to a "
-                            "placeholder value. Generate a real secret "
-                            "(e.g. `openssl rand -hex 32`) and set API_SERVER_KEY "
-                            "before exposing the API server on %s.",
+                            "[%s] Refusing to start: API_SERVER_KEY is a "
+                            "placeholder or too short (<16 chars) for a "
+                            "network-accessible bind. This endpoint dispatches "
+                            "terminal-capable agent work — a guessable key is "
+                            "remote code execution. Generate a strong secret "
+                            "(e.g. `openssl rand -hex 32`) and set "
+                            "API_SERVER_KEY before exposing it on %s.",
                             self.name, self._host,
                         )
                         return False
                 except ImportError:
                     pass
+
+            # Loud warning when a network-accessible API server runs against an
+            # unsandboxed local terminal backend. The API server can drive the
+            # agent's terminal/file tools as the host user; on a public bind
+            # that is the exact surface the hermes-0day campaign abused to write
+            # ~/.hermes/config.yaml and plant persistence. Sandboxing (Docker /
+            # remote backend) contains the blast radius. Warn, don't refuse —
+            # the operator may have an external firewall / strong key.
+            if is_network_accessible(self._host):
+                try:
+                    from hermes_cli.config import load_config as _load_cfg
+                    _backend = (
+                        ((_load_cfg() or {}).get("terminal") or {}).get(
+                            "backend", "local"
+                        )
+                    )
+                except Exception:
+                    _backend = "local"
+                if str(_backend).lower() == "local":
+                    logger.warning(
+                        "[%s] API server is network-accessible (%s) AND the "
+                        "terminal backend is 'local' (unsandboxed). Agent work "
+                        "dispatched through this endpoint runs as the host user "
+                        "with full terminal/file access. Strongly consider a "
+                        "sandboxed backend (terminal.backend: docker) and "
+                        "firewalling this port to trusted networks only.",
+                        self.name, self._host,
+                    )
 
             # Port conflict detection — fail fast if port is already in use
             try:

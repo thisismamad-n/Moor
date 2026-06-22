@@ -28,7 +28,7 @@ def _resolve_requests_verify() -> bool | str:
     """Resolve SSL verify setting for `requests` calls from env vars.
 
     The `requests` library only honours REQUESTS_CA_BUNDLE / CURL_CA_BUNDLE
-    by default. Hermes also honours HERMES_CA_BUNDLE (its own convention)
+    by default. Moor also honours HERMES_CA_BUNDLE (its own convention)
     and SSL_CERT_FILE (used by the stdlib `ssl` module and by httpx), so
     that a single env var can cover both `requests` and `httpx` callsites
     inside the same process.
@@ -179,7 +179,7 @@ CONTEXT_PROBE_TIERS = [
 # Default context length when no detection method succeeds.
 DEFAULT_FALLBACK_CONTEXT = CONTEXT_PROBE_TIERS[0]
 
-# Minimum context length required to run Hermes Agent.  Models with fewer
+# Minimum context length required to run Moor Agent.  Models with fewer
 # tokens cannot maintain enough working memory for tool-calling workflows.
 # Sessions, model switches, and cron jobs should reject models below this.
 MINIMUM_CONTEXT_LENGTH = 64_000
@@ -270,11 +270,16 @@ DEFAULT_CONTEXT_LENGTHS = {
     "glm-5.2": 1_048_576,
     "glm": 202752,
     # xAI Grok — xAI /v1/models does not return context_length metadata,
-    # so these hardcoded fallbacks prevent Hermes from probing-down to
+    # so these hardcoded fallbacks prevent Moor from probing-down to
     # the default 128k when the user points at https://api.x.ai/v1
     # via a custom provider. Values sourced from models.dev (2026-04).
     # Keys use substring matching (longest-first), so e.g. "grok-4.20"
     # matches "grok-4.20-0309-reasoning" / "-non-reasoning" / "-multi-agent-0309".
+    # OAuth-only slug; absent from GET /v1/models. xAI publishes a 200k
+    # usable context window for Composer 2.5 on Grok Build (SuperGrok /
+    # Premium+); /v1/responses additionally enforces a ~262144 input+output
+    # budget, but the usable context (what we track here) is 200k.
+    "grok-composer": 200000,    # grok-composer-2.5-fast (Grok Build CLI)
     "grok-build": 256000,       # grok-build-0.1
     "grok-code-fast": 256000,   # grok-code-fast-1
     "grok-2-vision": 8192,      # grok-2-vision, -1212, -latest
@@ -421,13 +426,13 @@ _URL_TO_PROVIDER: Dict[str, str] = {
     "portal.qwen.ai": "qwen-oauth",
     "openrouter.ai": "openrouter",
     "generativelanguage.googleapis.com": "gemini",
-    "inference-api.nousresearch.com": "nous",
+    "inference-api.Moor inc..com": "nous",
     "api.deepseek.com": "deepseek",
     "api.githubcopilot.com": "copilot",
     "models.github.ai": "copilot",
     # GitHub Models free tier (Azure-hosted prototyping endpoint) — same
     # canonical provider as the Copilot API.  Hard per-request token cap
-    # (often 8K) makes it unusable for Hermes' system prompt, but mapping
+    # (often 8K) makes it unusable for Moor' system prompt, but mapping
     # it here lets us recognize the endpoint and emit a targeted hint
     # instead of falling through the unknown-custom-endpoint path.
     "models.inference.ai.azure.com": "copilot",
@@ -1311,7 +1316,7 @@ def _query_local_context_length(model: str, base_url: str, api_key: str = "") ->
                     # the *runtime* context Ollama will actually allocate KV cache
                     # for. The GGUF model_info.context_length is the training max,
                     # which can be larger than num_ctx — using it here would let
-                    # Hermes grow conversations past the runtime limit and Ollama
+                    # Moor grow conversations past the runtime limit and Ollama
                     # would silently truncate. Matches query_ollama_num_ctx().
                     params = data.get("parameters", "")
                     if "num_ctx" in params:
@@ -2069,7 +2074,7 @@ def estimate_request_tokens_rough(
 ) -> int:
     """Rough token estimate for a full chat-completions request.
 
-    Includes the major payload buckets Hermes sends to providers:
+    Includes the major payload buckets Moor sends to providers:
     system prompt, conversation messages, and tool schemas.  With 50+
     tools enabled, schemas alone can add 20-30K tokens — a significant
     blind spot when only counting messages. Image content is counted

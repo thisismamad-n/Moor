@@ -87,10 +87,6 @@ def test_gui_toolset_label_strips_leading_emoji():
     assert gui_toolset_label("Terminal & Processes") == "Terminal & Processes"
 
 
-def test_configurable_toolsets_include_messaging():
-    assert any(ts_key == "messaging" for ts_key, _, _ in CONFIGURABLE_TOOLSETS)
-
-
 def test_configurable_toolsets_include_context_engine():
     assert any(ts_key == "context_engine" for ts_key, _, _ in CONFIGURABLE_TOOLSETS)
 
@@ -128,12 +124,6 @@ def test_get_platform_tools_context_engine_respects_explicit_empty_selection():
     enabled = _get_platform_tools(config, "cli", include_default_mcp_servers=False)
 
     assert "context_engine" not in enabled
-
-
-def test_get_platform_tools_default_telegram_includes_messaging():
-    enabled = _get_platform_tools({}, "telegram")
-
-    assert "messaging" in enabled
 
 
 def test_get_platform_tools_default_whatsapp_includes_web():
@@ -449,7 +439,7 @@ def test_toolset_has_keys_for_vision_accepts_codex_auth(tmp_path, monkeypatch):
 def test_save_platform_tools_preserves_mcp_server_names():
     """Ensure MCP server names are preserved when saving platform tools.
 
-    Regression test for https://github.com/NousResearch/hermes-agent/issues/1247
+    Regression test for https://github.com/Moor inc./hermes-agent/issues/1247
     """
     config = {
         "platform_toolsets": {
@@ -945,7 +935,7 @@ def test_numeric_mcp_server_name_does_not_crash_sorted():
     _get_platform_tools must normalise them to str so that sorted()
     on the returned set never raises TypeError on mixed int/str.
 
-    Regression test for https://github.com/NousResearch/hermes-agent/issues/6901
+    Regression test for https://github.com/Moor inc./hermes-agent/issues/6901
     """
     config = {
         "platform_toolsets": {"cli": ["web", 12306]},

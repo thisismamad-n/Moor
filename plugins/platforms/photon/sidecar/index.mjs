@@ -1,20 +1,20 @@
-// Hermes Agent — Photon Spectrum sidecar
+// Moor Agent — Photon Spectrum sidecar
 //
 // Spawned by `plugins/platforms/photon/adapter.py` to bridge BOTH directions
 // of messaging to Photon's Spectrum platform via the `spectrum-ts` SDK (the
 // SDK is TypeScript-only, so a Node sidecar is unavoidable — there is no
 // Python SDK and no public HTTP message API).
 //
-// Inbound  (gRPC -> Hermes): the SDK's `app.messages` async iterator is a
+// Inbound  (gRPC -> Moor): the SDK's `app.messages` async iterator is a
 //   long-lived gRPC stream. We serialize each `[space, message]` to a
 //   normalized JSON event and stream it to the Python adapter over a
 //   loopback `GET /inbound` (NDJSON). We pause pulling from the stream while
 //   no consumer is attached so a backlog isn't pulled-and-lost before the
 //   gateway connects.
-// Outbound (Hermes -> gRPC): `/send` drives `space.send(...)`; `/typing`
+// Outbound (Moor -> gRPC): `/send` drives `space.send(...)`; `/typing`
 //   sends the documented `typing("start" | "stop")` content builder.
 //
-// Protocol (all requests require `X-Hermes-Sidecar-Token: ${TOKEN}`):
+// Protocol (all requests require `X-Moor-Sidecar-Token: ${TOKEN}`):
 //   - GET  /inbound    -> 200 NDJSON stream; one JSON event per line, blank
 //                         lines are heartbeats. One consumer at a time.
 //   - POST /healthz     -> {"ok": true}
@@ -57,6 +57,7 @@
 import http from "node:http";
 import crypto from "node:crypto";
 import { once } from "node:events";
+import { patchSpectrumTs } from "./patch-spectrum-mixed-attachments.mjs";
 
 const projectId = process.env.PHOTON_PROJECT_ID;
 const projectSecret = process.env.PHOTON_PROJECT_SECRET;
@@ -89,7 +90,26 @@ if (!projectId || !projectSecret || !sharedToken) {
 }
 
 // Lazy-load spectrum-ts so a missing install fails with a clear message
-// instead of a cryptic module-resolution error during import.
+// instead of a cryptic module-resolution error during import. Apply Moor'
+// pinned-sdk compatibility patch first so existing installs self-heal at
+// runtime, not only during npm postinstall.
+try {
+  const patchResult = patchSpectrumTs();
+  if (patchResult.patched) {
+    console.error(
+      `photon-sidecar: spectrum mixed attachment patch applied: ${patchResult.file}`
+    );
+  }
+} catch (e) {
+  console.error(
+    "photon-sidecar: spectrum mixed attachment patch failed. " +
+      "Run `npm install` inside plugins/platforms/photon/sidecar/ or " +
+      "upgrade the Photon sidecar patch for the pinned spectrum-ts version. " +
+      "Original error: " +
+      (e && e.stack ? e.stack : String(e))
+  );
+  process.exit(3);
+}
 let Spectrum,
   imessage,
   attachment,
@@ -272,6 +292,16 @@ async function normalizeContent(content) {
   }
   if (content.type === "attachment" || content.type === "voice") {
     return await normalizeBinaryContent(content);
+  }
+  if (content.type === "group") {
+    const items = [];
+    for (const item of Array.isArray(content.items) ? content.items : []) {
+      items.push({
+        id: item && typeof item === "object" ? item.id ?? null : null,
+        content: await normalizeContent(item?.content),
+      });
+    }
+    return { type: "group", items };
   }
   if (content.type === "reaction") {
     return {
@@ -533,7 +563,7 @@ const server = http.createServer(async (req, res) => {
       const space = await resolveSpace(spaceId);
 
       // spectrum-ts infers name + MIME from the file extension; pass
-      // overrides only when Hermes supplied them so a known-good
+      // overrides only when Moor supplied them so a known-good
       // inference isn't clobbered with an empty string.
       const opts = {};
       if (name) opts.name = name;

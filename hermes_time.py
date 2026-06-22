@@ -1,5 +1,5 @@
 """
-Timezone-aware clock for Hermes.
+Timezone-aware clock for Moor.
 
 Provides a single ``now()`` helper that returns a timezone-aware datetime
 based on the user's configured IANA timezone (e.g. ``Asia/Kolkata``).
@@ -9,7 +9,7 @@ Resolution order:
   2. ``timezone`` key in ``~/.hermes/config.yaml``
   3. Falls back to the server's local time (``datetime.now().astimezone()``)
 
-Invalid timezone values log a warning and fall back safely — Hermes never
+Invalid timezone values log a warning and fall back safely — Moor never
 crashes due to a bad timezone string.
 """
 
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 try:
     from zoneinfo import ZoneInfo
 except ImportError:
-    # Python 3.8 fallback (shouldn't be needed — Hermes requires 3.9+)
+    # Python 3.8 fallback (shouldn't be needed — Moor requires 3.9+)
     from backports.zoneinfo import ZoneInfo  # type: ignore[no-redef]
 
 # Cached state — resolved once, reused on every call.
@@ -52,6 +52,13 @@ def _resolve_timezone_name() -> str:
         if config_path.exists():
             with open(config_path, encoding="utf-8") as f:
                 cfg = yaml.safe_load(f) or {}
+            # Managed scope: an administrator can pin ``timezone`` too. Overlay
+            # via the shared helper (fail-open) since this reads config.yaml directly.
+            try:
+                from hermes_cli import managed_scope
+                cfg = managed_scope.apply_managed_overlay(cfg)
+            except Exception:
+                pass
             tz_cfg = cfg.get("timezone", "")
             if isinstance(tz_cfg, str) and tz_cfg.strip():
                 return tz_cfg.strip()

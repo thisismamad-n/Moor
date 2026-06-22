@@ -109,6 +109,10 @@ class TestDevicePathBlocking(unittest.TestCase):
         for path in ("/proc/cpuinfo", "/proc/meminfo", "/proc/uptime", "/proc/version"):
             self.assertFalse(_is_blocked_device(path), f"{path} should not be blocked")
 
+    def test_normpath_alias_to_blocked_device_is_blocked(self):
+        self.assertTrue(_is_blocked_device("/dev/../dev/zero"))
+        self.assertTrue(_is_blocked_device("/dev/./urandom"))
+
     def test_normal_files_not_blocked(self):
         self.assertFalse(_is_blocked_device("/tmp/test.py"))
         self.assertFalse(_is_blocked_device("/home/user/.bashrc"))
@@ -134,6 +138,17 @@ class TestDevicePathBlocking(unittest.TestCase):
                 self.skipTest(f"symlink unavailable: {exc}")
             self.assertFalse(_is_blocked_device(link_path))
 
+    def test_symlink_to_blocked_alias_is_blocked_before_realpath(self):
+        if not os.path.exists("/dev/stdin"):
+            self.skipTest("/dev/stdin is not available on this platform")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            link_path = os.path.join(tmpdir, "stdin-link")
+            try:
+                os.symlink("/dev/../dev/stdin", link_path)
+            except OSError as exc:
+                self.skipTest(f"symlink unavailable: {exc}")
+            self.assertTrue(_is_blocked_device(link_path))
+
     def test_read_file_tool_rejects_device(self):
         """read_file_tool returns an error without any file I/O."""
         result = json.loads(read_file_tool("/dev/zero", task_id="dev_test"))
@@ -150,6 +165,33 @@ class TestDevicePathBlocking(unittest.TestCase):
                 self.skipTest(f"symlink unavailable: {exc}")
 
             result = json.loads(read_file_tool(link_path, task_id="dev_link_test"))
+
+        self.assertIn("error", result)
+        self.assertIn("device file", result["error"])
+        mock_ops.assert_not_called()
+
+    @patch("tools.file_tools._get_file_ops")
+    def test_read_file_tool_rejects_task_cwd_relative_device_alias_symlink(self, mock_ops):
+        if not os.path.exists("/dev/stdin"):
+            self.skipTest("/dev/stdin is not available on this platform")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workspace = os.path.join(tmpdir, "workspace")
+            process_cwd = os.path.join(tmpdir, "process")
+            os.mkdir(workspace)
+            os.mkdir(process_cwd)
+            link_path = os.path.join(workspace, "stdin-link")
+            try:
+                os.symlink("/dev/../dev/stdin", link_path)
+            except OSError as exc:
+                self.skipTest(f"symlink unavailable: {exc}")
+
+            old_cwd = os.getcwd()
+            try:
+                os.chdir(process_cwd)
+                with patch.dict(os.environ, {"TERMINAL_CWD": workspace}, clear=False):
+                    result = json.loads(read_file_tool("stdin-link", task_id="dev_rel_link_test"))
+            finally:
+                os.chdir(old_cwd)
 
         self.assertIn("error", result)
         self.assertIn("device file", result["error"])
@@ -260,7 +302,7 @@ class TestFileDedup(unittest.TestCase):
         ))
 
         self.assertIn("error", result)
-        self.assertIn("internal read_file status text", result["error"])
+        self.assertIn("internal read_file display text", result["error"])
         fake.write_file.assert_not_called()
 
     @patch("tools.file_tools._get_file_ops")
@@ -284,14 +326,14 @@ class TestFileDedup(unittest.TestCase):
         ))
 
         self.assertIn("error", result)
-        self.assertIn("internal read_file status text", result["error"])
+        self.assertIn("internal read_file display text", result["error"])
         fake.write_file.assert_not_called()
 
     @patch("tools.file_tools._get_file_ops")
     def test_write_allows_large_file_that_quotes_status_text(self, mock_ops):
         """Legitimate large content that happens to quote the status is allowed.
 
-        Hermes' own docs / SKILL.md files may legitimately mention the dedup
+        Moor' own docs / SKILL.md files may legitimately mention the dedup
         message verbatim.  Only short, status-dominated writes are rejected —
         a normal file that contains the message as one line out of many must
         still write successfully.
@@ -675,7 +717,7 @@ class TestWriteInvalidatesDedup(unittest.TestCase):
     cache for the written path.  Without this, a read→write→read sequence
     within the same mtime second returns a stale 'File unchanged' stub.
 
-    Regression test for https://github.com/NousResearch/hermes-agent/issues/13144
+    Regression test for https://github.com/Moor inc./hermes-agent/issues/13144
     """
 
     def setUp(self):

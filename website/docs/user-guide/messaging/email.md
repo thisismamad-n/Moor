@@ -1,12 +1,12 @@
 ---
 sidebar_position: 7
 title: "Email"
-description: "Set up Hermes Agent as an email assistant via IMAP/SMTP"
+description: "Set up Moor Agent as an email assistant via IMAP/SMTP"
 ---
 
 # Email Setup
 
-Hermes can receive and reply to emails using standard IMAP and SMTP protocols. Send an email to the agent's address and it replies in-thread — no special client or bot API needed. Works with Gmail, Outlook, Yahoo, Fastmail, or any provider that supports IMAP/SMTP.
+Moor can receive and reply to emails using standard IMAP and SMTP protocols. Send an email to the agent's address and it replies in-thread — no special client or bot API needed. Works with Gmail, Outlook, Yahoo, Fastmail, or any provider that supports IMAP/SMTP.
 
 :::info Gateway adapter only: no external dependencies
 This page covers the Email gateway adapter, which uses Python's built-in `imaplib`, `smtplib`, and `email` modules. No additional packages or external services are required for this gateway path.
@@ -16,14 +16,14 @@ This is separate from the bundled [Himalaya email skill](/docs/user-guide/skills
 
 | Use case | What to configure | External dependency |
 |---|---|---|
-| Let people email the Hermes agent and receive replies | Email gateway adapter on this page | None beyond an IMAP/SMTP email account |
+| Let people email the Moor agent and receive replies | Email gateway adapter on this page | None beyond an IMAP/SMTP email account |
 | Let the agent inspect, compose, move, and manage mailbox messages from terminal tools | Himalaya email skill | `himalaya` CLI and `~/.config/himalaya/config.toml` |
 
 ---
 
 ## Prerequisites
 
-- **A dedicated email account** for your Hermes agent (don't use your personal email)
+- **A dedicated email account** for your Moor agent (don't use your personal email)
 - **IMAP enabled** on the email account
 - **An app password** if using Gmail or another provider with 2FA
 
@@ -50,7 +50,7 @@ Most email providers support IMAP/SMTP. Check your provider's documentation for:
 
 ---
 
-## Step 1: Configure Hermes
+## Step 1: Configure Moor
 
 The easiest way:
 
@@ -142,14 +142,15 @@ When enabled, attachment and inline parts are skipped before payload decoding. T
 
 ## Access Control
 
-Email access follows the same pattern as all other Hermes platforms:
+Email access is stricter by default than chat-style platforms:
 
 1. **`EMAIL_ALLOWED_USERS` set** → only emails from those addresses are processed
-2. **No allowlist set** → unknown senders get a pairing code
+2. **No allowlist set** → unknown senders are ignored silently
 3. **`EMAIL_ALLOW_ALL_USERS=true`** → any sender is accepted (use with caution)
+4. **`platforms.email.unauthorized_dm_behavior: pair`** → unknown senders receive a pairing code
 
 :::warning
-**Always configure `EMAIL_ALLOWED_USERS`.** Without it, anyone who knows the agent's email address could send commands. The agent has terminal access by default.
+**Use a dedicated inbox and configure `EMAIL_ALLOWED_USERS` for normal operation.** Email pairing is opt-in because shared inboxes often contain unrelated unread messages, and Moor should not reply to those contacts by default.
 :::
 
 ---

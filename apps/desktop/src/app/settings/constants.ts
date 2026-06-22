@@ -41,8 +41,8 @@ export const PROVIDER_GROUPS: ProviderPrefix[] = [
   {
     prefix: 'NOUS_',
     name: 'Nous Portal',
-    description: 'Hosted Hermes & Nous-trained models',
-    docsUrl: 'https://portal.nousresearch.com',
+    description: 'Hosted Moor & Nous-trained models',
+    docsUrl: 'https://portal.Moor inc..com',
     priority: 0
   },
   {
@@ -74,7 +74,6 @@ export const PROVIDER_GROUPS: ProviderPrefix[] = [
     priority: 4
   },
   { prefix: 'GEMINI_', name: 'Gemini', priority: 4 },
-  { prefix: 'HERMES_GEMINI_', name: 'Gemini', priority: 4 },
   {
     prefix: 'DEEPSEEK_',
     name: 'DeepSeek',
@@ -239,7 +238,7 @@ export const ENUM_OPTIONS: Record<string, string[]> = {
   'code_execution.mode': ['project', 'strict'],
   'context.engine': ['compressor', 'default', 'custom'],
   'delegation.reasoning_effort': ['', 'minimal', 'low', 'medium', 'high', 'xhigh'],
-  'memory.provider': ['', 'builtin', 'honcho'],
+  'memory.provider': ['', 'builtin', 'hindsight', 'honcho'],
   // Terminal execution backends — kept in sync with the dispatch ladder in
   // tools/terminal_tool.py::_create_environment (local/docker/singularity/
   // modal/daytona/ssh). Remote backends need extra env (image, tokens, host).
@@ -435,10 +434,10 @@ export const FIELD_DESCRIPTIONS: Record<string, string> = defineFieldCopy({
     personality: 'Default assistant style for new sessions.',
     showReasoning: 'Show reasoning sections when the backend provides them.'
   },
-  timezone: 'Used when Hermes needs local time context. Blank uses the system timezone.',
+  timezone: 'Used when Moor needs local time context. Blank uses the system timezone.',
   agent: {
     imageInputMode: 'Controls how image attachments are sent to the model.',
-    maxTurns: 'Upper bound for tool-calling turns before Hermes stops a run.'
+    maxTurns: 'Upper bound for tool-calling turns before Moor stops a run.'
   },
   terminal: {
     cwd: 'Default project folder for tool and terminal work.',
@@ -452,9 +451,9 @@ export const FIELD_DESCRIPTIONS: Record<string, string> = defineFieldCopy({
   codeExecution: {
     mode: 'How strictly code execution is scoped to the current project.'
   },
-  fileReadMaxChars: 'Maximum characters Hermes can read from one file request.',
+  fileReadMaxChars: 'Maximum characters Moor can read from one file request.',
   approvals: {
-    mode: 'How Hermes handles commands that need explicit approval.',
+    mode: 'How Moor handles commands that need explicit approval.',
     timeout: 'How long approval prompts wait before timing out.'
   },
   security: {
@@ -493,7 +492,7 @@ export const FIELD_DESCRIPTIONS: Record<string, string> = defineFieldCopy({
   },
   updates: {
     nonInteractiveLocalChanges:
-      'When Hermes updates itself from the app (no terminal prompt), keep local source edits (stash) or throw them away (discard). Terminal updates always ask.'
+      'When Moor updates itself from the app (no terminal prompt), keep local source edits (stash) or throw them away (discard). Terminal updates always ask.'
   }
 })
 

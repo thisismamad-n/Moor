@@ -1,4 +1,4 @@
-# nix/hermes-agent.nix — Overridable Hermes Agent package
+# nix/hermes-agent.nix — Overridable Moor Agent package
 #
 # callPackage auto-wires nixpkgs args; flake inputs are passed explicitly.
 # Users override via:
@@ -242,7 +242,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   meta = with lib; {
     description = "AI agent with advanced tool-calling capabilities";
-    homepage = "https://github.com/NousResearch/hermes-agent";
+    homepage = "https://github.com/Moor inc./hermes-agent";
     mainProgram = "hermes";
     license = licenses.mit;
     platforms = platforms.unix;

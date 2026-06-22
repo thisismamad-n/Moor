@@ -38,6 +38,20 @@ def _jwt_with_claims(claims: dict) -> str:
     return f"{header}.{payload}.sig"
 
 
+class _FakeAnthropicStream:
+    def __init__(self, final_message):
+        self._final_message = final_message
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def get_final_message(self):
+        return self._final_message
+
+
 @pytest.fixture(autouse=True)
 def _clean_env(monkeypatch):
     """Strip provider env vars so each test starts clean."""
@@ -107,7 +121,7 @@ class TestBuildCallKwargsMaxTokens:
             ("copilot", "gpt-5.5", "https://api.githubcopilot.com"),
             ("custom", "gpt-5", "https://api.openai.com/v1"),
             ("openrouter", "anthropic/claude-sonnet-4.6", "https://openrouter.ai/api/v1"),
-            ("nous", "hermes-4", "https://inference-api.nousresearch.com/v1"),
+            ("nous", "hermes-4", "https://inference-api.Moor inc..com/v1"),
             ("custom", "qwen", "http://localhost:8080/v1"),
             ("zai", "glm-4v-flash", "https://open.bigmodel.cn/api/paas/v4"),
         ],
@@ -990,6 +1004,37 @@ class TestVisionClientFallback:
         assert client.__class__.__name__ == "AnthropicAuxiliaryClient"
         assert model == "claude-haiku-4-5-20251001"
 
+    def test_anthropic_auxiliary_client_aggregates_stream_response(self):
+        from agent.auxiliary_client import AnthropicAuxiliaryClient
+
+        final_message = SimpleNamespace(
+            content=[SimpleNamespace(type="text", text="streamed aux response")],
+            stop_reason="end_turn",
+            usage=SimpleNamespace(input_tokens=3, output_tokens=4),
+        )
+        messages_api = SimpleNamespace(
+            stream=MagicMock(return_value=_FakeAnthropicStream(final_message)),
+            create=MagicMock(return_value="raw event-stream text"),
+        )
+        real_client = SimpleNamespace(messages=messages_api)
+        client = AnthropicAuxiliaryClient(
+            real_client,
+            "claude-sonnet-4-20250514",
+            "sk-test",
+            "https://sse-only.example/v1",
+        )
+
+        response = client.chat.completions.create(
+            messages=[{"role": "user", "content": "summarize"}],
+            max_tokens=16,
+        )
+
+        messages_api.stream.assert_called_once()
+        messages_api.create.assert_not_called()
+        assert response.choices[0].message.content == "streamed aux response"
+        assert response.usage.prompt_tokens == 3
+        assert response.usage.completion_tokens == 4
+
 
 class TestAuxiliaryPoolAwareness:
     def test_try_nous_uses_pool_entry(self):
@@ -1026,9 +1071,92 @@ class TestAuxiliaryPoolAwareness:
         assert mock_openai.call_args.kwargs["api_key"] == pooled_token
         assert mock_openai.call_args.kwargs["base_url"] == "https://inference.pool.example/v1"
 
+    def test_try_nous_refreshes_stale_pool_entry(self):
+        stale_token = _jwt_with_claims({
+            "scope": "inference:invoke",
+            "exp": int(time.time() - 60),
+        })
+        fresh_token = _jwt_with_claims({
+            "scope": "inference:invoke",
+            "exp": int(time.time() + 3600),
+        })
+
+        class _Entry:
+            def __init__(self, token):
+                self.access_token = "pooled-access-token"
+                self.agent_key = token
+                self.agent_key_expires_at = "2099-01-01T00:00:00+00:00"
+                self.scope = "inference:invoke"
+                self.inference_base_url = "https://inference.pool.example/v1"
+
+        class _Pool:
+            refreshed = False
+
+            def has_credentials(self):
+                return True
+
+            def select(self):
+                return _Entry(stale_token)
+
+            def try_refresh_current(self):
+                self.refreshed = True
+                return _Entry(fresh_token)
+
+        pool = _Pool()
+        with (
+            patch("agent.auxiliary_client.load_pool", return_value=pool),
+            patch("agent.auxiliary_client.OpenAI") as mock_openai,
+            patch("hermes_cli.models.get_nous_recommended_aux_model", return_value=None),
+        ):
+            from agent.auxiliary_client import _try_nous
+
+            client, model = _try_nous()
+
+        assert pool.refreshed is True
+        assert client is not None
+        assert model == "google/gemini-3-flash-preview"
+        assert mock_openai.call_args.kwargs["api_key"] == fresh_token
+        assert mock_openai.call_args.kwargs["base_url"] == "https://inference.pool.example/v1"
+
+    def test_resolve_nous_runtime_api_rejects_stale_pool_entry_when_refresh_fails(self):
+        stale_token = _jwt_with_claims({
+            "scope": "inference:invoke",
+            "exp": int(time.time() - 60),
+        })
+
+        class _Entry:
+            access_token = "pooled-access-token"
+            agent_key = stale_token
+            agent_key_expires_at = "2099-01-01T00:00:00+00:00"
+            scope = "inference:invoke"
+            inference_base_url = "https://inference.pool.example/v1"
+
+        class _Pool:
+            def has_credentials(self):
+                return True
+
+            def select(self):
+                return _Entry()
+
+            def try_refresh_current(self):
+                return None
+
+        with (
+            patch("agent.auxiliary_client.load_pool", return_value=_Pool()),
+            patch(
+                "hermes_cli.auth.resolve_nous_runtime_credentials",
+                side_effect=RuntimeError("no singleton auth"),
+            ),
+        ):
+            from agent.auxiliary_client import _resolve_nous_runtime_api
+
+            runtime = _resolve_nous_runtime_api()
+
+        assert runtime is None
+
     def test_try_nous_uses_portal_recommendation_for_text(self):
         """When the Portal recommends a compaction model, _try_nous honors it."""
-        fresh_base = "https://inference-api.nousresearch.com/v1"
+        fresh_base = "https://inference-api.Moor inc..com/v1"
         with (
             patch("agent.auxiliary_client._read_nous_auth", return_value={"access_token": "***"}),
             patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", fresh_base)),
@@ -1046,7 +1174,7 @@ class TestAuxiliaryPoolAwareness:
 
     def test_try_nous_uses_portal_recommendation_for_vision(self):
         """Vision tasks should ask for the vision-specific recommendation."""
-        fresh_base = "https://inference-api.nousresearch.com/v1"
+        fresh_base = "https://inference-api.Moor inc..com/v1"
         with (
             patch("agent.auxiliary_client._read_nous_auth", return_value={"access_token": "***"}),
             patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", fresh_base)),
@@ -1062,7 +1190,7 @@ class TestAuxiliaryPoolAwareness:
 
     def test_try_nous_falls_back_when_recommendation_lookup_raises(self):
         """If the Portal lookup throws, we must still return a usable model."""
-        fresh_base = "https://inference-api.nousresearch.com/v1"
+        fresh_base = "https://inference-api.Moor inc..com/v1"
         with (
             patch("agent.auxiliary_client._read_nous_auth", return_value={"access_token": "***"}),
             patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", fresh_base)),
@@ -1080,11 +1208,11 @@ class TestAuxiliaryPoolAwareness:
             status_code = 401
 
         stale_client = MagicMock()
-        stale_client.base_url = "https://inference-api.nousresearch.com/v1"
+        stale_client.base_url = "https://inference-api.Moor inc..com/v1"
         stale_client.chat.completions.create.side_effect = _Auth401("stale nous key")
 
         fresh_client = MagicMock()
-        fresh_client.base_url = "https://inference-api.nousresearch.com/v1"
+        fresh_client.base_url = "https://inference-api.Moor inc..com/v1"
         fresh_client.chat.completions.create.return_value = {"ok": True}
 
         with (
@@ -1092,7 +1220,7 @@ class TestAuxiliaryPoolAwareness:
             patch("agent.auxiliary_client._get_cached_client", return_value=(stale_client, "nous-model")),
             patch("agent.auxiliary_client.OpenAI", return_value=fresh_client),
             patch("agent.auxiliary_client._validate_llm_response", side_effect=lambda resp, _task: resp),
-            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", "https://inference-api.nousresearch.com/v1")),
+            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", "https://inference-api.Moor inc..com/v1")),
         ):
             result = call_llm(
                 task="compression",
@@ -1110,13 +1238,13 @@ class TestAuxiliaryPoolAwareness:
             status_code = 404
 
         stale_client = MagicMock()
-        stale_client.base_url = "https://inference-api.nousresearch.com/v1"
+        stale_client.base_url = "https://inference-api.Moor inc..com/v1"
         stale_client.chat.completions.create.side_effect = _Payment404(
             "model_not_supported_on_free_tier: model is not available on the free tier"
         )
 
         fresh_client = MagicMock()
-        fresh_client.base_url = "https://inference-api.nousresearch.com/v1"
+        fresh_client.base_url = "https://inference-api.Moor inc..com/v1"
         fresh_client.chat.completions.create.return_value = {"ok": True}
 
         with (
@@ -1124,7 +1252,7 @@ class TestAuxiliaryPoolAwareness:
             patch("agent.auxiliary_client._get_cached_client", return_value=(stale_client, "nous-model")),
             patch("agent.auxiliary_client.OpenAI", return_value=fresh_client),
             patch("agent.auxiliary_client._validate_llm_response", side_effect=lambda resp, _task: resp),
-            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", "https://inference-api.nousresearch.com/v1")),
+            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", "https://inference-api.Moor inc..com/v1")),
             patch(
                 "hermes_cli.nous_account.get_nous_portal_account_info",
                 return_value=NousPortalAccountInfo(
@@ -1150,11 +1278,11 @@ class TestAuxiliaryPoolAwareness:
             status_code = 401
 
         stale_client = MagicMock()
-        stale_client.base_url = "https://inference-api.nousresearch.com/v1"
+        stale_client.base_url = "https://inference-api.Moor inc..com/v1"
         stale_client.chat.completions.create = AsyncMock(side_effect=_Auth401("stale nous key"))
 
         fresh_async_client = MagicMock()
-        fresh_async_client.base_url = "https://inference-api.nousresearch.com/v1"
+        fresh_async_client.base_url = "https://inference-api.Moor inc..com/v1"
         fresh_async_client.chat.completions.create = AsyncMock(return_value={"ok": True})
 
         with (
@@ -1162,7 +1290,7 @@ class TestAuxiliaryPoolAwareness:
             patch("agent.auxiliary_client._get_cached_client", return_value=(stale_client, "nous-model")),
             patch("agent.auxiliary_client._to_async_client", return_value=(fresh_async_client, "nous-model")),
             patch("agent.auxiliary_client._validate_llm_response", side_effect=lambda resp, _task: resp),
-            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", "https://inference-api.nousresearch.com/v1")),
+            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", "https://inference-api.Moor inc..com/v1")),
         ):
             result = await async_call_llm(
                 task="session_search",
@@ -1181,13 +1309,13 @@ class TestAuxiliaryPoolAwareness:
             status_code = 404
 
         stale_client = MagicMock()
-        stale_client.base_url = "https://inference-api.nousresearch.com/v1"
+        stale_client.base_url = "https://inference-api.Moor inc..com/v1"
         stale_client.chat.completions.create = AsyncMock(side_effect=_Payment404(
             "model_not_supported_on_free_tier: model is not available on the free tier"
         ))
 
         fresh_async_client = MagicMock()
-        fresh_async_client.base_url = "https://inference-api.nousresearch.com/v1"
+        fresh_async_client.base_url = "https://inference-api.Moor inc..com/v1"
         fresh_async_client.chat.completions.create = AsyncMock(return_value={"ok": True})
 
         with (
@@ -1195,7 +1323,7 @@ class TestAuxiliaryPoolAwareness:
             patch("agent.auxiliary_client._get_cached_client", return_value=(stale_client, "nous-model")),
             patch("agent.auxiliary_client._to_async_client", return_value=(fresh_async_client, "nous-model")),
             patch("agent.auxiliary_client._validate_llm_response", side_effect=lambda resp, _task: resp),
-            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", "https://inference-api.nousresearch.com/v1")),
+            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", "https://inference-api.Moor inc..com/v1")),
             patch(
                 "hermes_cli.nous_account.get_nous_portal_account_info",
                 return_value=NousPortalAccountInfo(
@@ -1273,7 +1401,7 @@ class TestIsPaymentError:
     def test_404_free_tier_model_block_is_payment(self):
         exc = Exception(
             "Model 'gpt-5' is not available on the Free Tier. "
-            "Upgrade at https://portal.nousresearch.com or pick a free model."
+            "Upgrade at https://portal.Moor inc..com or pick a free model."
         )
         exc.status_code = 404
         assert _is_payment_error(exc) is True
@@ -3259,7 +3387,7 @@ class TestAuxiliaryClientPoisonedCacheEviction:
     Otherwise the next auxiliary call (compression retry, memory flush,
     background review) reuses the closed httpx transport and fails with
     ``Connection error`` even though the main provider route is healthy.
-    See https://github.com/NousResearch/hermes-agent/issues/23432.
+    See https://github.com/Moor inc./hermes-agent/issues/23432.
     """
 
     def test_evict_cached_client_instance_drops_direct_match(self):
@@ -3482,7 +3610,7 @@ class TestBuildCallKwargsToolDedup:
     Providers like Google Vertex, Azure, and Bedrock reject requests with
     duplicate tool names (HTTP 400).  This guard converts a hard failure into
     a warning log so agent turns succeed even if an upstream injection path
-    regresses.  See: https://github.com/NousResearch/hermes-agent/issues/18478
+    regresses.  See: https://github.com/Moor inc./hermes-agent/issues/18478
     """
 
     def _make_tool(self, name: str) -> dict:

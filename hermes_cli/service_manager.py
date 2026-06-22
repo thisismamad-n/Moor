@@ -134,7 +134,7 @@ def _s6_running() -> bool:
     — only works as root: for any other UID, the symlink at
     ``/proc/1/exe`` is unreadable and ``resolve()`` silently returns the
     path unchanged, so the resolved name is the literal ``"exe"`` and
-    detection always fails. Since every Hermes runtime call inside the
+    detection always fails. Since every Moor runtime call inside the
     container drops to hermes via ``s6-setuidgid``, that silent failure
     made the entire service-manager runtime-registration path inert in
     production (PR #30136 review).
@@ -424,7 +424,7 @@ def _seed_supervise_skeleton(svc_dir: Path) -> None:
     ``0700``. It also ``mkfifo``s ``<svc>/supervise/control`` with mode
     ``0600``. Because s6-supervise runs as PID 1's effective UID (root)
     these dirs end up root-owned mode 0700, and an unprivileged client
-    (the ``hermes`` user — UID 10000 — running every Hermes runtime
+    (the ``hermes`` user — UID 10000 — running every Moor runtime
     operation via ``s6-setuidgid``) gets ``EACCES`` on any ``s6-svc``,
     ``s6-svstat``, or ``s6-svwait`` invocation against the slot.
 
@@ -684,10 +684,25 @@ class S6ServiceManager:
         # start`, etc. See `_gateway_command_inner` for the matching
         # guard.
         lines.append("export HERMES_S6_SUPERVISED_CHILD=1")
+        # ``--replace`` makes the supervised gateway authoritative for its
+        # profile's HERMES_HOME. Without it, a gateway started OUTSIDE s6
+        # (a stray ``hermes gateway run`` from a shell, an agent action, or
+        # the Open WebUI helper) grabs the per-HERMES_HOME PID lock first;
+        # the supervised slot then execs a bare ``gateway run``, hits the
+        # "Another gateway instance is already running" guard, exits
+        # non-zero, and s6 restarts it — a restart loop that floods the
+        # log and never binds (NS-505). ``--replace``
+        # instead reaps the stale holder (hardened takeover path: marker +
+        # SIGTERM→SIGKILL-with-confirmation + scoped-lock cleanup, see
+        # gateway/run.py) so s6 always wins. The HERMES_S6_SUPERVISED_CHILD
+        # sentinel above prevents the run→start→run redirect recursion.
+        # Each profile is scoped to its own HERMES_HOME and s6 guarantees a
+        # single supervised instance per slot, so there is no legitimate
+        # supervised sibling for ``--replace`` to clobber.
         if profile == "default":
-            gateway_cmd = "hermes gateway run"
+            gateway_cmd = "hermes gateway run --replace"
         else:
-            gateway_cmd = f"hermes -p {shlex.quote(profile)} gateway run"
+            gateway_cmd = f"hermes -p {shlex.quote(profile)} gateway run --replace"
         # Skip the drop when already non-root (setgroups() lacks CAP_SETGID →
         # s6 boot-loop).
         lines.append(f'[ "$(id -u)" = 0 ] || exec {gateway_cmd}')

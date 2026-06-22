@@ -1,12 +1,12 @@
 #!/bin/bash
 # ============================================================================
-# Hermes Agent Installer
+# Moor Agent Installer
 # ============================================================================
 # Installation script for Linux, macOS, and Android/Termux.
 # Uses uv for desktop/server installs and Python's stdlib venv + pip on Termux.
 #
 # Usage:
-#   curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+#   curl -fsSL https://hermes-agent.Moor inc..com/install.sh | bash
 #
 # Or with options:
 #   curl -fsSL ... | bash -s -- --no-venv --skip-setup
@@ -16,7 +16,7 @@
 set -e
 
 # Guard against environment leakage when the installer is launched from another
-# Python-driven tool session (e.g. Hermes terminal tool). A pre-set PYTHONPATH
+# Python-driven tool session (e.g. Moor terminal tool). A pre-set PYTHONPATH
 # can force pip/entrypoints to import a different checkout than the one being
 # installed, which makes fresh installs appear broken or stale.
 if [ -n "${PYTHONPATH:-}" ]; then
@@ -43,8 +43,8 @@ NC='\033[0m' # No Color
 BOLD='\033[1m'
 
 # Configuration
-REPO_URL_SSH="git@github.com:NousResearch/hermes-agent.git"
-REPO_URL_HTTPS="https://github.com/NousResearch/hermes-agent.git"
+REPO_URL_SSH="git@github.com:Moor inc./hermes-agent.git"
+REPO_URL_HTTPS="https://github.com/Moor inc./hermes-agent.git"
 HERMES_HOME="${HERMES_HOME:-$HOME/.hermes}"
 # INSTALL_DIR is resolved AFTER arg parsing and OS detection so we can pick an
 # FHS-style layout for root installs.  Track whether the user gave us an
@@ -155,7 +155,7 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         -h|--help)
-            echo "Hermes Agent Installer"
+            echo "Moor Agent Installer"
             echo ""
             echo "Usage: install.sh [OPTIONS]"
             echo ""
@@ -172,7 +172,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --stage NAME   Run one desktop bootstrap stage"
             echo "  --json         Print a JSON result frame for --stage"
             echo "  --non-interactive  Skip stages that require user input"
-            echo "  --include-desktop  Also build the desktop app (apps/desktop -> Hermes.app)"
+            echo "  --include-desktop  Also build the desktop app (apps/desktop -> Moor.app)"
             echo "  --dir PATH     Installation directory"
             echo "                   default (non-root):  ~/.hermes/hermes-agent"
             echo "                   default (root, Linux): /usr/local/lib/hermes-agent"
@@ -180,7 +180,7 @@ while [[ $# -gt 0 ]]; do
             echo "  -h, --help     Show this help"
             echo ""
             echo "Notes:"
-            echo "  When running as root on Linux, Hermes installs the code under"
+            echo "  When running as root on Linux, Moor installs the code under"
             echo "  /usr/local/lib/hermes-agent and links the command into"
             echo "  /usr/local/bin/hermes (FHS layout — matches Claude Code / Codex CLI)."
             echo "  Data, config, sessions, and logs still live in \$HERMES_HOME"
@@ -210,7 +210,7 @@ print_banner() {
     echo ""
     echo -e "${MAGENTA}${BOLD}"
     echo "┌─────────────────────────────────────────────────────────┐"
-    echo "│             ⚕ Hermes Agent Installer                    │"
+    echo "│             ⚕ Moor Agent Installer                    │"
     echo "├─────────────────────────────────────────────────────────┤"
     echo "│  An open source AI agent by Nous Research.              │"
     echo "└─────────────────────────────────────────────────────────┘"
@@ -260,7 +260,7 @@ restore_dirty_lockfiles() {
 
 emit_manifest() {
     # Stage-Desktop is included only with --include-desktop, mirroring
-    # install.ps1: the signed bootstrap installer (Hermes-Setup) passes it so
+    # install.ps1: the signed bootstrap installer (Moor-Setup) passes it so
     # a GUI install ends up with a launchable app; the Electron app's own
     # first-launch bootstrap and the CLI one-liner omit it (building the
     # desktop from inside the already-running app would clobber it).
@@ -268,7 +268,7 @@ emit_manifest() {
     if [ "$INCLUDE_DESKTOP" = true ]; then
         desktop_stage='{"name":"desktop","title":"Build desktop app","category":"runtime","needs_user_input":false},'
     fi
-    printf '%s' '{"protocol_version":1,"stages":[{"name":"prerequisites","title":"System prerequisites","category":"runtime","needs_user_input":false},{"name":"repository","title":"Download Hermes Agent","category":"runtime","needs_user_input":false},{"name":"venv","title":"Create Python virtual environment","category":"runtime","needs_user_input":false},{"name":"python-deps","title":"Install Python dependencies","category":"runtime","needs_user_input":false},{"name":"node-deps","title":"Install browser-tool dependencies","category":"runtime","needs_user_input":false},{"name":"path","title":"Install hermes command","category":"runtime","needs_user_input":false},{"name":"config","title":"Prepare config and skills","category":"configuration","needs_user_input":false},{"name":"setup","title":"Configure API keys and settings","category":"configuration","needs_user_input":true},{"name":"gateway","title":"Configure gateway service","category":"configuration","needs_user_input":true},'"$desktop_stage"'{"name":"complete","title":"Finish install","category":"runtime","needs_user_input":false}]}'
+    printf '%s' '{"protocol_version":1,"stages":[{"name":"prerequisites","title":"System prerequisites","category":"runtime","needs_user_input":false},{"name":"repository","title":"Download Moor Agent","category":"runtime","needs_user_input":false},{"name":"venv","title":"Create Python virtual environment","category":"runtime","needs_user_input":false},{"name":"python-deps","title":"Install Python dependencies","category":"runtime","needs_user_input":false},{"name":"node-deps","title":"Install browser-tool dependencies","category":"runtime","needs_user_input":false},{"name":"path","title":"Install hermes command","category":"runtime","needs_user_input":false},{"name":"config","title":"Prepare config and skills","category":"configuration","needs_user_input":false},{"name":"setup","title":"Configure API keys and settings","category":"configuration","needs_user_input":true},{"name":"gateway","title":"Configure gateway service","category":"configuration","needs_user_input":true},'"$desktop_stage"'{"name":"complete","title":"Finish install","category":"runtime","needs_user_input":false}]}'
     printf '\n'
 }
 
@@ -413,7 +413,7 @@ get_command_link_display_dir() {
     fi
 }
 
-# Point a Hermes-managed Node's `npm install -g` at a directory that is on
+# Point a Moor-managed Node's `npm install -g` at a directory that is on
 # PATH. npm's default global prefix for a bundled Node is the Node dir itself,
 # so global package binaries land in $HERMES_HOME/node/bin — which is NOT on
 # PATH (only the command link dir is) and is wiped on every Node upgrade.
@@ -421,8 +421,8 @@ get_command_link_display_dir() {
 # the command link dir (node/npm/npx live there too, already on PATH) and
 # survive upgrades. Scoped to the managed Node via its prefix-local global
 # npmrc, so the user's other Node installs and their ~/.npmrc are untouched.
-# Hermes's own global installs pass an explicit --prefix and are unaffected.
-# Idempotent and a no-op when there is no Hermes-managed npm, so calling it on
+# Moor's own global installs pass an explicit --prefix and are unaffected.
+# Idempotent and a no-op when there is no Moor-managed npm, so calling it on
 # every install run repairs pre-existing installs, not just fresh ones.
 configure_managed_node_npm_prefix() {
     [ -x "$HERMES_HOME/node/bin/npm" ] || return 0
@@ -470,7 +470,7 @@ detect_os() {
             OS="windows"
             DISTRO="windows"
             log_error "Windows detected. Please use the PowerShell installer:"
-            log_info "  iex (irm https://hermes-agent.nousresearch.com/install.ps1)"
+            log_info "  iex (irm https://hermes-agent.Moor inc..com/install.ps1)"
             exit 1
             ;;
         *)
@@ -494,7 +494,7 @@ install_uv() {
         return 0
     fi
 
-    # Hermes owns its own uv at $HERMES_HOME/bin/uv.  Always install there —
+    # Moor owns its own uv at $HERMES_HOME/bin/uv.  Always install there —
     # no PATH probing, no conda guards, no multi-location resolution chains.
     # The runtime update path (hermes_cli/managed_uv.py) looks in the same
     # place, so install.sh and `hermes update` stay in sync.
@@ -725,7 +725,7 @@ check_git() {
 # `^20.19 || >=22.12` — older Node lacks `node:util.styleText`, so `vite build`
 # crashes with a SyntaxError that surfaces only as the opaque "Build desktop
 # app … exit code 1" install failure. Returns 0 when the given `node --version`
-# string clears that floor; anything below it is replaced with the Hermes-
+# string clears that floor; anything below it is replaced with the Moor-
 # managed Node $NODE_VERSION LTS.
 node_satisfies_build() {
     local ver="${1#v}"
@@ -741,7 +741,7 @@ node_satisfies_build() {
 check_node() {
     log_info "Checking Node.js (for browser tools)..."
 
-    # Repair pre-existing Hermes-managed installs where `npm install -g` lands
+    # Repair pre-existing Moor-managed installs where `npm install -g` lands
     # off PATH. No-op when there's no managed Node, so this is safe to run on
     # every install — including re-runs that skip the Node (re)install below.
     configure_managed_node_npm_prefix
@@ -752,16 +752,16 @@ check_node() {
         return 0
     fi
 
-    # Prefer a Hermes-managed Node from a previous run over a too-old system one.
+    # Prefer a Moor-managed Node from a previous run over a too-old system one.
     if [ -x "$HERMES_HOME/node/bin/node" ] && node_satisfies_build "$("$HERMES_HOME/node/bin/node" --version)"; then
         export PATH="$HERMES_HOME/node/bin:$PATH"
-        log_success "Node.js $("$HERMES_HOME/node/bin/node" --version) found (Hermes-managed)"
+        log_success "Node.js $("$HERMES_HOME/node/bin/node" --version) found (Moor-managed)"
         HAS_NODE=true
         return 0
     fi
 
     if command -v node &> /dev/null; then
-        log_warn "Node.js $(node --version) is too old for the desktop build (need ^20.19 or >=22.12) — installing Hermes-managed Node $NODE_VERSION LTS..."
+        log_warn "Node.js $(node --version) is too old for the desktop build (need ^20.19 or >=22.12) — installing Moor-managed Node $NODE_VERSION LTS..."
     elif [ "$DISTRO" = "termux" ]; then
         log_info "Node.js not found — installing Node.js via pkg..."
     else
@@ -915,7 +915,7 @@ check_network_prerequisites() {
         log_info "If mirrors are stale: termux-change-repo"
         log_info "Then test: curl -I https://pypi.org/simple/ && curl -I https://duckduckgo.com/"
     else
-        log_warn "Network checks failed. Hermes install may complete, but web search and dependency downloads can fail."
+        log_warn "Network checks failed. Moor install may complete, but web search and dependency downloads can fail."
         log_info "Verify internet/DNS and retry if pip install fails."
     fi
 }
@@ -1039,7 +1039,7 @@ install_system_packages() {
             if [ "$IS_INTERACTIVE" = true ]; then
                 echo ""
                 log_info "sudo is needed ONLY to install optional system packages (${pkgs[*]}) via your package manager."
-                log_info "Hermes Agent itself does not require or retain root access."
+                log_info "Moor Agent itself does not require or retain root access."
                 if prompt_yes_no "Install ${description}? (requires sudo)" "no"; then
                     if sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a $install_cmd; then
                         [ "$need_ripgrep" = true ] && HAS_RIPGREP=true && log_success "ripgrep installed"
@@ -1055,7 +1055,7 @@ install_system_packages() {
                 # but opening fails with ENXIO. See #16746.
                 echo ""
                 log_info "sudo is needed ONLY to install optional system packages (${pkgs[*]}) via your package manager."
-                log_info "Hermes Agent itself does not require or retain root access."
+                log_info "Moor Agent itself does not require or retain root access."
                 if prompt_yes_no "Install ${description}?" "yes"; then
                     if sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a $install_cmd < /dev/tty; then
                         [ "$need_ripgrep" = true ] && HAS_RIPGREP=true && log_success "ripgrep installed"
@@ -1185,7 +1185,7 @@ clone_repo() {
                     if git stash apply "$autostash_ref"; then
                         git stash drop "$autostash_ref" >/dev/null
                         log_warn "Local changes were restored on top of the updated codebase."
-                        log_warn "Review git diff / git status if Hermes behaves unexpectedly."
+                        log_warn "Review git diff / git status if Moor behaves unexpectedly."
                     else
                         log_error "Update succeeded, but restoring local changes failed. Your changes are still preserved in git stash."
                         log_info "Resolve manually with: git stash apply $autostash_ref"
@@ -1369,7 +1369,7 @@ install_deps() {
                     log_success "Build tools installed"
                 else
                     log_info "sudo is needed ONLY to install build tools (build-essential, python3-dev, libffi-dev) via apt."
-                    log_info "Hermes Agent itself does not require or retain root access."
+                    log_info "Moor Agent itself does not require or retain root access."
                     if prompt_yes_no "Install build tools?" "yes"; then
                         sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get update -qq && sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get install -y -qq build-essential python3-dev libffi-dev >/dev/null 2>&1 || true
                         log_success "Build tools installed"
@@ -1606,7 +1606,7 @@ EOF
 
         log_info "hermes not on PATH in non-login shells (common on RHEL-family)"
         PATH_LINE='export PATH="/usr/local/bin:$PATH"'
-        PATH_COMMENT='# Hermes Agent — ensure /usr/local/bin is on PATH (RHEL non-login shells)'
+        PATH_COMMENT='# Moor Agent — ensure /usr/local/bin is on PATH (RHEL non-login shells)'
         for SHELL_CONFIG in "$HOME/.bashrc" "$HOME/.bash_profile"; do
             [ -f "$SHELL_CONFIG" ] || continue
             if ! grep -v '^[[:space:]]*#' "$SHELL_CONFIG" 2>/dev/null \
@@ -1663,7 +1663,7 @@ EOF
         for SHELL_CONFIG in "${SHELL_CONFIGS[@]}"; do
             if ! grep -v '^[[:space:]]*#' "$SHELL_CONFIG" 2>/dev/null | grep -qE 'PATH=.*\.local/bin'; then
                 echo "" >> "$SHELL_CONFIG"
-                echo "# Hermes Agent — ensure ~/.local/bin is on PATH" >> "$SHELL_CONFIG"
+                echo "# Moor Agent — ensure ~/.local/bin is on PATH" >> "$SHELL_CONFIG"
                 echo "$PATH_LINE" >> "$SHELL_CONFIG"
                 log_success "Added ~/.local/bin to PATH in $SHELL_CONFIG"
             fi
@@ -1673,7 +1673,7 @@ EOF
         if [ "$IS_FISH" = "true" ]; then
             if ! grep -q 'fish_add_path.*\.local/bin' "$FISH_CONFIG" 2>/dev/null; then
                 echo "" >> "$FISH_CONFIG"
-                echo "# Hermes Agent — ensure ~/.local/bin is on PATH" >> "$FISH_CONFIG"
+                echo "# Moor Agent — ensure ~/.local/bin is on PATH" >> "$FISH_CONFIG"
                 echo 'fish_add_path "$HOME/.local/bin"' >> "$FISH_CONFIG"
                 log_success "Added ~/.local/bin to PATH in $FISH_CONFIG"
             fi
@@ -1730,12 +1730,12 @@ copy_config_templates() {
     # Create SOUL.md if it doesn't exist (global persona file)
     if [ ! -f "$HERMES_HOME/SOUL.md" ]; then
         cat > "$HERMES_HOME/SOUL.md" << 'SOUL_EOF'
-# Hermes Agent Persona
+# Moor Agent Persona
 
 <!--
 This file defines the agent's personality and tone.
 The agent will embody whatever you write here.
-Edit this to customize how Hermes communicates with you.
+Edit this to customize how Moor communicates with you.
 
 Examples:
   - "You are a warm, playful assistant who uses kaomoji occasionally."
@@ -1848,7 +1848,7 @@ configure_browser_env_from_system_browser() {
 
     {
         echo ""
-        echo "# Hermes Agent browser tools — use the system Chrome/Chromium binary."
+        echo "# Moor Agent browser tools — use the system Chrome/Chromium binary."
         echo "AGENT_BROWSER_EXECUTABLE_PATH=$browser_path"
     } >> "$env_file"
     log_success "Configured browser tools to use $browser_path"
@@ -1890,7 +1890,7 @@ install_node_deps() {
         DETECTED_BROWSER_EXECUTABLE="$(find_system_browser 2>/dev/null || true)"
         if [ -n "$DETECTED_BROWSER_EXECUTABLE" ]; then
             log_success "Found system Chrome/Chromium at $DETECTED_BROWSER_EXECUTABLE"
-            log_info "Skipping Playwright browser download; Hermes will use the system browser."
+            log_info "Skipping Playwright browser download; Moor will use the system browser."
         else
             case "$DISTRO" in
                 ubuntu|debian|raspbian|pop|linuxmint|elementary|zorin|kali|parrot)
@@ -2036,7 +2036,7 @@ maybe_start_gateway() {
 
     echo ""
     log_info "Messaging platform token detected!"
-    log_info "The gateway needs to be running for Hermes to send/receive messages."
+    log_info "The gateway needs to be running for Moor to send/receive messages."
 
     # If WhatsApp is enabled and no session exists yet, run foreground first for QR scan
     WHATSAPP_VAL=$(grep "^WHATSAPP_ENABLED=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2-)
@@ -2300,7 +2300,7 @@ postinstall_mode() {
     print_banner
     detect_os
 
-    log_info "Post-install mode: setting up Hermes for pip install"
+    log_info "Post-install mode: setting up Moor for pip install"
 
     check_node
     check_network_prerequisites
@@ -2324,7 +2324,7 @@ postinstall_mode() {
 # next `npm run pack` re-downloads and re-stages from scratch. A corrupt zip in
 # the per-user Electron download cache - most often a partial/resumed download
 # that leaves concatenated junk - makes electron-builder's `unpack-electron`
-# extract a tree MISSING the electron binary, so the `electron`->`Hermes` rename
+# extract a tree MISSING the electron binary, so the `electron`->`Moor` rename
 # dies with ENOENT and every re-run repeats the broken extraction forever. This
 # is the bash sibling of install.ps1's Clear-ElectronBuildCache and the Python
 # _purge_electron_build_cache() used by `hermes desktop`; install.sh was the only
@@ -2398,14 +2398,65 @@ _desktop_pack() {
     fi
 }
 
-# Public Electron mirror used as a last-resort fallback when GitHub's release
-# host is blocked/throttled (the repeating "retrying" symptom). npmmirror.com is
-# the de-facto Electron community mirror (Alibaba). @electron/get SHASUM-checks
-# the download, but the SHASUMS come from the same mirror — that guards against a
-# corrupt/partial download, NOT a compromised mirror. Reaching for it is an
-# explicit trust trade-off we only make AFTER the canonical GitHub download has
-# failed, and we never override a user-pinned ELECTRON_MIRROR.
+# Last-resort Electron mirror after GitHub download fails (#47266).
 DESKTOP_ELECTRON_FALLBACK_MIRROR="https://npmmirror.com/mirrors/electron/"
+
+# Electron package dir — workspace-local nest first, then root hoist.
+_electron_dir() {
+    local install_dir="$1"
+    if [ -d "$install_dir/apps/desktop/node_modules/electron" ]; then
+        printf '%s\n' "$install_dir/apps/desktop/node_modules/electron"
+    else
+        printf '%s\n' "$install_dir/node_modules/electron"
+    fi
+}
+
+# True when dist/ holds a usable Electron binary (#38673 / run-electron-builder.cjs).
+_electron_dist_ok() {
+    local install_dir="$1"
+    local electron_dir
+    electron_dir="$(_electron_dir "$install_dir")"
+    if [ "$OS" = "macos" ]; then
+        [ -e "$electron_dir/dist/Electron.app/Contents/MacOS/Electron" ]
+    else
+        [ -e "$electron_dir/dist/electron" ]
+    fi
+}
+
+# Best-effort: run electron/install.js to populate dist/ (optional mirror).
+_restore_electron_dist() {
+    local install_dir="$1"
+    local mirror="${2:-}"
+    local electron_dir
+    electron_dir="$(_electron_dir "$install_dir")"
+    _electron_dist_ok "$install_dir" && return 0
+
+    [ -f "$electron_dir/install.js" ] || return 1
+    command -v node >/dev/null 2>&1 || return 1
+
+    rm -rf "$electron_dir/dist" 2>/dev/null || true
+    rm -f "$electron_dir/path.txt" 2>/dev/null || true
+
+    if [ -n "$mirror" ]; then
+        ( cd "$electron_dir" && ELECTRON_MIRROR="$mirror" node install.js ) || true
+    else
+        ( cd "$electron_dir" && node install.js ) || true
+    fi
+    _electron_dist_ok "$install_dir"
+}
+
+_electron_pkg_staged_missing_dist() {
+    local install_dir="$1"
+    local electron_dir
+    electron_dir="$(_electron_dir "$install_dir")"
+    [ -f "$electron_dir/package.json" ] && [ -f "$electron_dir/install.js" ] && ! _electron_dist_ok "$install_dir"
+}
+
+_restore_electron_dist_with_fallback() {
+    local install_dir="$1"
+    _restore_electron_dist "$install_dir" \
+        || { [ -z "${ELECTRON_MIRROR:-}" ] && _restore_electron_dist "$install_dir" "$DESKTOP_ELECTRON_FALLBACK_MIRROR"; }
+}
 
 # Build apps/desktop into a launchable native app. Mirrors install.ps1's
 # Install-Desktop: a root-level npm install so the apps/* workspace resolves
@@ -2422,7 +2473,7 @@ install_desktop() {
     # with no app and a confusing "couldn't find a built desktop" at launch.
     # Always re-resolve Node here. Stages run in separate processes, so we can't
     # trust an earlier check; more importantly check_node now enforces the build
-    # floor (^20.19 || >=22.12) and prepends the Hermes-managed Node to PATH, so
+    # floor (^20.19 || >=22.12) and prepends the Moor-managed Node to PATH, so
     # the build never runs on a too-old system Node — the cause of the opaque
     # "Build desktop app … exit code 1" failure (Vite crashes on old Node).
     check_node
@@ -2448,7 +2499,12 @@ install_desktop() {
     #    `tsc -b` failing with no obvious cause. Fall back to `npm install`
     #    only if `npm ci` is unavailable or the lockfile is out of sync.
     log_info "Installing desktop workspace dependencies (includes Electron ~150MB, 1-3min)..."
-    ( cd "$INSTALL_DIR" && npm ci ) || ( cd "$INSTALL_DIR" && npm install ) || {
+    if ( cd "$INSTALL_DIR" && npm ci ) || ( cd "$INSTALL_DIR" && npm install ); then
+        log_success "Desktop workspace dependencies installed"
+    elif _electron_pkg_staged_missing_dist "$INSTALL_DIR"; then
+        log_warn "Desktop dependency install failed with a missing Electron dist; attempting self-heal..."
+        _restore_electron_dist_with_fallback "$INSTALL_DIR" || true
+    else
         log_error "Desktop workspace npm install failed"
         # Common cause: a previous 'sudo npm'/'sudo npx' left root-owned files in
         # ~/.npm, so this non-root install can't write the shared cache. npm hides
@@ -2461,8 +2517,7 @@ install_desktop() {
         log_info "Then re-run this installer, or build manually:"
         log_info "  cd \"$INSTALL_DIR\" && npm ci && cd apps/desktop && npm run pack"
         return 1
-    }
-    log_success "Desktop workspace dependencies installed"
+    fi
 
     # 2. Build, with up to three escalating attempts so a transient/blocked
     #    Electron download self-heals instead of failing the whole install:
@@ -2476,24 +2531,26 @@ install_desktop() {
     if _desktop_pack "$desktop_dir"; then
         pack_ok=true
     else
-        # (b) Corrupt cached Electron zip is the most common self-healable cause.
-        local purged
-        purged="$(clear_electron_build_cache "$desktop_dir")"
-        if [ -n "$purged" ]; then
-            log_warn "Desktop build failed; cleared cached Electron download and retrying once..."
+        local purged=""
+        local restored=false
+        if ! _electron_dist_ok "$INSTALL_DIR"; then
+            purged="$(clear_electron_build_cache "$desktop_dir")"
+            if _restore_electron_dist "$INSTALL_DIR"; then restored=true; fi
+        fi
+        if [ "$restored" = true ]; then
+            log_warn "Desktop build failed; refreshed the Electron download and retrying once..."
             if _desktop_pack "$desktop_dir"; then
                 pack_ok=true
             fi
         fi
     fi
 
-    # (c) Still failing and the user hasn't pinned their own mirror: the GitHub
-    #     release host is likely blocked/throttled. Retry once via a public
-    #     Electron mirror (@electron/get still SHASUM-verifies the download).
+    # (c) GitHub blocked → mirror fallback (#47266).
     if [ "$pack_ok" = false ] && [ -z "${ELECTRON_MIRROR:-}" ]; then
         log_warn "Desktop build still failing — the Electron download from GitHub looks blocked."
-        log_warn "Retrying once via a public Electron mirror ($DESKTOP_ELECTRON_FALLBACK_MIRROR)..."
+        log_warn "Re-downloading Electron via a public mirror ($DESKTOP_ELECTRON_FALLBACK_MIRROR), then rebuilding..."
         log_warn "  (set ELECTRON_MIRROR yourself to use a different/trusted mirror)"
+        _electron_dist_ok "$INSTALL_DIR" || _restore_electron_dist "$INSTALL_DIR" "$DESKTOP_ELECTRON_FALLBACK_MIRROR" || true
         if _desktop_pack "$desktop_dir" "$DESKTOP_ELECTRON_FALLBACK_MIRROR"; then
             pack_ok=true
         fi
@@ -2514,16 +2571,16 @@ install_desktop() {
 
     local app=""
     if [ "$OS" = "linux" ]; then
-        if [ -x "$desktop_dir/release/linux-unpacked/Hermes" ]; then
-            app="$desktop_dir/release/linux-unpacked/Hermes"
+        if [ -x "$desktop_dir/release/linux-unpacked/Moor" ]; then
+            app="$desktop_dir/release/linux-unpacked/Moor"
         elif [ -x "$desktop_dir/release/linux-unpacked/hermes" ]; then
             app="$desktop_dir/release/linux-unpacked/hermes"
         fi
     else
         local cand
         for cand in \
-            "$desktop_dir/release/mac-arm64/Hermes.app" \
-            "$desktop_dir/release/mac/Hermes.app"; do
+            "$desktop_dir/release/mac-arm64/Moor.app" \
+            "$desktop_dir/release/mac/Moor.app"; do
             if [ -d "$cand" ]; then
                 app="$cand"
                 break
@@ -2563,7 +2620,7 @@ install_desktop() {
     # macOS: make the locally-built (ad-hoc) app relaunchable after an in-place
     # self-update. An ad-hoc bundle has no stable Designated Requirement, so a
     # later in-place rebuild (new cdhash) plus the inherited quarantine flag
-    # trips Gatekeeper's tamper check ("Hermes is damaged and can't be opened").
+    # trips Gatekeeper's tamper check ("Moor is damaged and can't be opened").
     # Strip quarantine + re-apply a clean deep ad-hoc signature (no
     # hardened-runtime flag, which an ad-hoc build can't satisfy). Skipped when a
     # real signing identity is configured so a signed build isn't clobbered.
@@ -2664,7 +2721,7 @@ run_stage_body() {
             detect_os
             resolve_install_layout
             require_install_dir
-            # Each stage runs in its own process, so the Hermes-managed Node
+            # Each stage runs in its own process, so the Moor-managed Node
             # provisioned during prerequisites/node-deps (at $HERMES_HOME/node/bin)
             # isn't on PATH here. check_node re-adds it (or installs if missing)
             # so install_desktop can find npm instead of silently skipping.
@@ -2675,7 +2732,12 @@ run_stage_body() {
             detect_os
             resolve_install_layout
             print_success
-            echo "git" > "$HERMES_HOME/.install_method"
+            # Code-scoped stamp: write next to the install tree, not into
+            # $HERMES_HOME. $HERMES_HOME is a shared data dir (it can be
+            # bind-mounted into a Docker gateway too), so a stamp there gets
+            # clobbered by the container's 'docker' stamp and wrongly blocks
+            # 'hermes update' on this host install. See detect_install_method().
+            echo "git" > "$INSTALL_DIR/.install_method"
             ;;
         *)
             log_error "Unknown stage: $stage"
@@ -2754,7 +2816,12 @@ main() {
 
     print_success
 
-    echo "git" > "$HERMES_HOME/.install_method"
+    # Code-scoped stamp: write next to the install tree, not into $HERMES_HOME.
+    # $HERMES_HOME is a shared data dir (it can be bind-mounted into a Docker
+    # gateway too), so a stamp there gets clobbered by the container's 'docker'
+    # stamp and wrongly blocks 'hermes update' on this host install.
+    # See detect_install_method().
+    echo "git" > "$INSTALL_DIR/.install_method"
 }
 
 if [ "$MANIFEST_MODE" = true ]; then

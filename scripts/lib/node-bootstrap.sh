@@ -7,7 +7,7 @@
 #
 # Strategy (first hit wins — respects the user's existing tooling):
 #   1. modern `node` already on PATH
-#   2. ~/.hermes/node/ from a prior Hermes-managed install
+#   2. ~/.hermes/node/ from a prior Moor-managed install
 #   3. fnm, proto, nvm (in that order) if the user already uses a version manager
 #   4. Termux `pkg`, macOS Homebrew
 #   5. pinned nodejs.org tarball into ~/.hermes/node/ (always works, zero shell rc edits)
@@ -57,7 +57,7 @@ _nb_get_link_dir() {
     fi
 }
 
-# Redirect a Hermes-managed Node's `npm install -g` to the command link dir
+# Redirect a Moor-managed Node's `npm install -g` to the command link dir
 # (already on PATH) instead of the default $HERMES_HOME/node/bin, which is off
 # PATH and wiped on every Node upgrade. Scoped to the managed Node via its
 # prefix-local global npmrc; the user's other Node installs / ~/.npmrc are
@@ -249,7 +249,7 @@ ensure_node() {
     if [ -x "$HERMES_HOME/node/bin/node" ]; then
         export PATH="$HERMES_HOME/node/bin:$PATH"
         if _nb_have_modern_node; then
-            _nb_ok "Node $(node --version) found (Hermes-managed)"
+            _nb_ok "Node $(node --version) found (Moor-managed)"
             HERMES_NODE_AVAILABLE=true
             return 0
         fi

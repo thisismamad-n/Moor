@@ -226,7 +226,7 @@ def is_free_tier_model(model: str, base_url: str = "") -> bool:
         from hermes_cli.models import _is_model_free, _pricing_cache
 
         # Mirror get_pricing_for_provider's key normalization: the agent's
-        # Nous base_url is /v1-suffixed (https://inference-api.nousresearch.com/v1)
+        # Nous base_url is /v1-suffixed (https://inference-api.Moor inc..com/v1)
         # but the picker keys _pricing_cache on the pre-/v1 root.
         key = base_url.rstrip("/")
         if key.endswith("/v1"):
@@ -433,7 +433,7 @@ def parse_credits_headers(
             if version_val > 1 and not _version_warning_emitted:
                 _version_warning_emitted = True
                 logger.warning(
-                    "credits header version %d unsupported, ignoring — update Hermes",
+                    "credits header version %d unsupported, ignoring — update Moor",
                     version_val,
                 )
             return None

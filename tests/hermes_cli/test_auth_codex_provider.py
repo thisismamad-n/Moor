@@ -1,4 +1,4 @@
-"""Tests for Codex auth — tokens stored in Hermes auth store (~/.hermes/auth.json)."""
+"""Tests for Codex auth — tokens stored in Moor auth store (~/.hermes/auth.json)."""
 
 import json
 import time
@@ -23,7 +23,7 @@ from hermes_cli.auth import (
 
 
 def _setup_hermes_auth(hermes_home: Path, *, access_token: str = "access", refresh_token: str = "refresh"):
-    """Write Codex tokens into the Hermes auth store."""
+    """Write Codex tokens into the Moor auth store."""
     hermes_home.mkdir(parents=True, exist_ok=True)
     auth_store = {
         "version": 1,
@@ -753,7 +753,7 @@ def test_import_codex_cli_tokens_missing(tmp_path, monkeypatch):
 
 
 def test_codex_tokens_not_written_to_shared_file(tmp_path, monkeypatch):
-    """Verify _save_codex_tokens writes only to Hermes auth store, not ~/.codex/."""
+    """Verify _save_codex_tokens writes only to Moor auth store, not ~/.codex/."""
     hermes_home = tmp_path / "hermes"
     codex_home = tmp_path / "codex-cli"
     hermes_home.mkdir(parents=True, exist_ok=True)
@@ -765,10 +765,10 @@ def test_codex_tokens_not_written_to_shared_file(tmp_path, monkeypatch):
 
     _save_codex_tokens({"access_token": "hermes-at", "refresh_token": "hermes-rt"})
 
-    # ~/.codex/auth.json should NOT exist — _save_codex_tokens only touches Hermes store
+    # ~/.codex/auth.json should NOT exist — _save_codex_tokens only touches Moor store
     assert not (codex_home / "auth.json").exists()
 
-    # Hermes auth store should have the tokens
+    # Moor auth store should have the tokens
     data = _read_codex_tokens()
     assert data["tokens"]["access_token"] == "hermes-at"
 
@@ -1009,3 +1009,87 @@ def test_login_openai_codex_force_new_login_skips_existing_reuse_prompt(monkeypa
 
     assert called["device_login"] == 1
     assert called["tokens"]["access_token"] == "fresh-at"
+
+
+class _FakeResp:
+    def __init__(self, status_code, json_data=None, headers=None):
+        self.status_code = status_code
+        self._json = json_data or {}
+        self.headers = headers or {}
+
+    def json(self):
+        return self._json
+
+
+def _patch_httpx_post(monkeypatch, responses):
+    """Patch hermes_cli.auth.httpx.Client so .post() returns queued responses."""
+    seq = iter(responses)
+
+    class _FakeClient:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def post(self, *args, **kwargs):
+            return next(seq)
+
+    monkeypatch.setattr("hermes_cli.auth.httpx.Client", lambda *a, **k: _FakeClient())
+
+
+def test_device_code_login_retries_on_429_then_succeeds(monkeypatch):
+    """A transient 429 on the device-code request is retried, not surfaced."""
+    from hermes_cli import auth as auth_mod
+
+    sleeps = []
+    monkeypatch.setattr("time.sleep", lambda s: sleeps.append(s))
+
+    # First call 429 (with Retry-After), second call succeeds. The polling
+    # loop then returns the authorization code, and token exchange succeeds.
+    _patch_httpx_post(
+        monkeypatch,
+        [
+            _FakeResp(429, headers={"retry-after": "1"}),
+            _FakeResp(200, {"user_code": "ABCD", "device_auth_id": "dev-1", "interval": "5"}),
+            _FakeResp(200, {"authorization_code": "auth-code", "code_verifier": "verifier"}),
+            _FakeResp(200, {"access_token": "at", "refresh_token": "rt", "expires_in": 3600}),
+        ],
+    )
+    # Skip the polling sleep too (shares time.sleep, already patched).
+
+    creds = auth_mod._codex_device_code_login()
+
+    assert creds["tokens"]["access_token"] == "at"
+    # The 429 caused exactly one backoff sleep before the retry succeeded.
+    assert 1 in sleeps
+
+
+def test_device_code_login_persistent_429_raises_rate_limited(monkeypatch):
+    """A persistent 429 surfaces a clear rate-limit error, not a bare status."""
+    from hermes_cli import auth as auth_mod
+
+    monkeypatch.setattr("time.sleep", lambda s: None)
+    _patch_httpx_post(monkeypatch, [_FakeResp(429, headers={"retry-after": "30"})] * 4)
+
+    with pytest.raises(AuthError) as exc_info:
+        auth_mod._codex_device_code_login()
+
+    err = exc_info.value
+    assert err.code == auth_mod.CODEX_RATE_LIMITED_CODE
+    assert "rate-limiting" in str(err)
+    assert "30s" in str(err)
+    assert auth_mod.is_rate_limited_auth_error(err)
+
+
+def test_device_code_login_non_429_error_unchanged(monkeypatch):
+    """Non-429 failures keep the generic device_code_request_error code."""
+    from hermes_cli import auth as auth_mod
+
+    monkeypatch.setattr("time.sleep", lambda s: None)
+    _patch_httpx_post(monkeypatch, [_FakeResp(500)])
+
+    with pytest.raises(AuthError) as exc_info:
+        auth_mod._codex_device_code_login()
+
+    assert exc_info.value.code == "device_code_request_error"

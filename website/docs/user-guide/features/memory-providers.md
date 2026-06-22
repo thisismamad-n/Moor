@@ -6,7 +6,7 @@ description: "External memory provider plugins — Honcho, OpenViking, Mem0, Hin
 
 # Memory Providers
 
-Hermes Agent ships with 8 external memory provider plugins that give the agent persistent, cross-session knowledge beyond the built-in MEMORY.md and USER.md. Only **one** external provider can be active at a time — the built-in memory is always active alongside it.
+Moor Agent ships with 8 external memory provider plugins that give the agent persistent, cross-session knowledge beyond the built-in MEMORY.md and USER.md. Only **one** external provider can be active at a time — the built-in memory is always active alongside it.
 
 ## Quick Start
 
@@ -27,7 +27,7 @@ memory:
 
 ## How It Works
 
-When a memory provider is active, Hermes automatically:
+When a memory provider is active, Moor automatically:
 
 1. **Injects provider context** into the system prompt (what the provider knows)
 2. **Prefetches relevant memories** before each turn (background, non-blocking)
@@ -68,7 +68,7 @@ hermes memory setup        # select "honcho" — runs the Honcho-specific post-s
 
 The legacy `hermes honcho setup` command still works (it now redirects to `hermes memory setup`), but is only registered after Honcho is selected as the active memory provider.
 
-**Config:** `$HERMES_HOME/honcho.json` (profile-local) or `~/.honcho/config.json` (global). Resolution order: `$HERMES_HOME/honcho.json` > `~/.hermes/honcho.json` > `~/.honcho/config.json`. See the [config reference](https://github.com/NousResearch/hermes-agent/blob/main/plugins/memory/honcho/README.md) and the [Honcho integration guide](https://docs.honcho.dev/v3/guides/integrations/hermes).
+**Config:** `$HERMES_HOME/honcho.json` (profile-local) or `~/.honcho/config.json` (global). Resolution order: `$HERMES_HOME/honcho.json` > `~/.hermes/honcho.json` > `~/.honcho/config.json`. See the [config reference](https://github.com/Moor inc./hermes-agent/blob/main/plugins/memory/honcho/README.md) and the [Honcho integration guide](https://docs.honcho.dev/v3/guides/integrations/hermes).
 
 <details>
 <summary>Full config reference</summary>
@@ -145,15 +145,15 @@ If you previously used `hermes honcho setup`, your config and all server-side da
 
 **Multi-peer setup:**
 
-Honcho models conversations as peers exchanging messages — one user peer plus one AI peer per Hermes profile, all sharing a workspace. The workspace is the shared environment: the user peer is global across profiles, each AI peer is its own identity. Every AI peer builds an independent representation / card from its own observations, so a `coder` profile stays code-oriented while a `writer` profile stays editorial against the same user.
+Honcho models conversations as peers exchanging messages — one user peer plus one AI peer per Moor profile, all sharing a workspace. The workspace is the shared environment: the user peer is global across profiles, each AI peer is its own identity. Every AI peer builds an independent representation / card from its own observations, so a `coder` profile stays code-oriented while a `writer` profile stays editorial against the same user.
 
 The mapping:
 
 | Concept | What it is |
 |---------|-----------|
-| **Workspace** | Shared environment. All Hermes profiles under one workspace see the same user identity. |
+| **Workspace** | Shared environment. All Moor profiles under one workspace see the same user identity. |
 | **User peer** (`peerName`) | The human. Shared across profiles in the workspace. |
-| **AI peer** (`aiPeer`) | One per Hermes profile. Host key `hermes` → default; `hermes.<profile>` for others. |
+| **AI peer** (`aiPeer`) | One per Moor profile. Host key `hermes` → default; `hermes.<profile>` for others. |
 | **Observation** | Per-peer toggles controlling what Honcho models from whose messages. `directional` (default, all four on) or `unified` (single-observer pool). |
 
 ### New profile, fresh Honcho peer
@@ -170,7 +170,7 @@ hermes profile create coder --clone
 hermes honcho sync
 ```
 
-Scans every Hermes profile, creates host blocks for any profile without one, inherits settings from the default `hermes` block, and creates the new AI peers eagerly. Idempotent — skips profiles that already have a host block.
+Scans every Moor profile, creates host blocks for any profile without one, inherits settings from the default `hermes` block, and creates the new AI peers eagerly. Idempotent — skips profiles that already have a host block.
 
 ### Per-profile observation
 
@@ -270,7 +270,7 @@ Off-gateway these keys do nothing. `hermes memory setup` only prompts for them w
 
 </details>
 
-See the [config reference](https://github.com/NousResearch/hermes-agent/blob/main/plugins/memory/honcho/README.md) and [Honcho integration guide](https://docs.honcho.dev/v3/guides/integrations/hermes).
+See the [config reference](https://github.com/Moor inc./hermes-agent/blob/main/plugins/memory/honcho/README.md) and [Honcho integration guide](https://docs.honcho.dev/v3/guides/integrations/hermes).
 
 
 ---
@@ -294,17 +294,22 @@ Context database by Volcengine (ByteDance) with filesystem-style knowledge hiera
 pip install openviking
 openviking-server
 
-# Then configure Hermes
+# Then configure Moor
 hermes memory setup    # select "openviking"
 # Or manually:
 hermes config set memory.provider openviking
 echo "OPENVIKING_ENDPOINT=http://localhost:1933" >> ~/.hermes/.env
+# Authenticated servers should use a user/admin API key:
+echo "OPENVIKING_API_KEY=..." >> ~/.hermes/.env
 ```
 
 **Key features:**
 - Tiered context loading: L0 (~100 tokens) → L1 (~2k) → L2 (full)
 - Automatic memory extraction on session commit (profile, preferences, entities, events, cases, patterns)
 - `viking://` URI scheme for hierarchical knowledge browsing
+
+`OPENVIKING_ACCOUNT` and `OPENVIKING_USER` are used for local/trusted mode.
+`OPENVIKING_AGENT` is Moor' peer ID in OpenViking for peer-scoped memories.
 
 ---
 
@@ -374,14 +379,14 @@ The setup wizard installs dependencies automatically and only installs what's ne
 | `auto_retain` | `true` | Automatically retain conversation turns |
 | `auto_recall` | `true` | Automatically recall memories before each turn |
 | `retain_async` | `true` | Process retain asynchronously on the server |
-| `retain_context` | `conversation between Hermes Agent and the User` | Context label for retained memories |
+| `retain_context` | `conversation between Moor Agent and the User` | Context label for retained memories |
 | `retain_tags` | — | Default tags applied to retained memories; merged with per-call tool tags |
 | `retain_source` | — | Optional `metadata.source` attached to retained memories |
 | `retain_user_prefix` | `User` | Label used before user turns in auto-retained transcripts |
 | `retain_assistant_prefix` | `Assistant` | Label used before assistant turns in auto-retained transcripts |
 | `recall_tags` | — | Tags to filter on recall |
 
-See [plugin README](https://github.com/NousResearch/hermes-agent/blob/main/plugins/memory/hindsight/README.md) for the full configuration reference.
+See [plugin README](https://github.com/Moor inc./hermes-agent/blob/main/plugins/memory/hindsight/README.md) for the full configuration reference.
 
 ---
 
@@ -462,7 +467,7 @@ Persistent memory via the `brv` CLI — hierarchical knowledge tree with tiered 
 # Install the CLI first
 curl -fsSL https://byterover.dev/install.sh | sh
 
-# Then configure Hermes
+# Then configure Moor
 hermes memory setup    # select "byterover"
 # Or manually:
 hermes config set memory.provider byterover
@@ -516,7 +521,7 @@ echo 'SUPERMEMORY_API_KEY=***' >> ~/.hermes/.env
 - Full-session ingest — the entire conversation is sent once at session boundaries
 - Session-end conversation ingest (to `/v4/conversations`) for richer profile + graph building in Supermemory
 - Profile facts injected on first turn and at configurable intervals
-- **Profile-scoped containers** — use `{identity}` in `container_tag` (e.g. `hermes-{identity}` → `hermes-coder`) to isolate memories per Hermes profile
+- **Profile-scoped containers** — use `{identity}` in `container_tag` (e.g. `hermes-{identity}` → `hermes-coder`) to isolate memories per Moor profile
 - **Multi-container mode** — enable `enable_custom_container_tags` with a `custom_containers` list to let the agent read/write across named containers. Automatic operations stay on the primary container.
 
 <details>

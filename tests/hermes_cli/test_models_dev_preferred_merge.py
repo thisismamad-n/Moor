@@ -14,7 +14,7 @@ These guard the contract:
     fallback — no crash, no empty list.
 
 Merging is what lets new models (e.g. ``mimo-v2.5-pro`` on opencode-go)
-appear in ``/model`` without a Hermes release.
+appear in ``/model`` without a Moor release.
 """
 
 from unittest.mock import patch
@@ -114,6 +114,7 @@ class TestProviderModelIdsPreferred:
             patch("providers.base.ProviderProfile.fetch_models", return_value=["kimi-k2.6"]),
         ):
             out = provider_model_ids("kimi-coding")
+        # Curated-first order; curated newest (k2.7-code) stays ahead of live.
         assert out[:2] == ["kimi-k2.7-code", "kimi-k2.6"]
 
     def test_kimi_setup_flow_uses_same_coding_plan_catalog(self):

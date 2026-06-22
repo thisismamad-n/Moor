@@ -42,13 +42,65 @@ Wire protocol
 
     # Block a pre_tool_call (either shape accepted; normalised internally):
     {"decision": "block", "reason":  "Forbidden command"}   # Claude-Code-style
-    {"action":   "block", "message": "Forbidden command"}   # Hermes-canonical
+    {"action":   "block", "message": "Forbidden command"}   # Moor-canonical
 
     # Inject context for pre_llm_call:
     {"context": "Today is Friday"}
 
     # Silent no-op:
     <empty or any non-matching JSON object>
+
+Per-event ``extra`` keys
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``extra`` object contains every kwarg that is **not** one of the
+top-level payload keys (``tool_name``, ``args``, ``session_id``,
+``parent_session_id``).  The tables below list the ``extra`` keys
+emitted by each built-in hook site.
+
+``post_tool_call`` (emitted from ``model_tools.py``)::
+
+    result          – tool return value (serialised string)
+    status          – "ok" | "error" | "blocked"
+    error_type      – error category (e.g. "ValueError"), or None
+    error_message   – human-readable error text, or None
+    duration_ms     – wall-clock time in milliseconds
+    task_id         – current task id (empty string if none)
+    tool_call_id    – provider tool-call id
+    turn_id         – current turn id
+    api_request_id  – current API request id
+    middleware_trace – list of dicts from tool middleware chain
+
+``pre_tool_call`` (emitted from ``model_tools.py``)::
+
+    task_id         – current task id (empty string if none)
+    tool_call_id    – provider tool-call id
+    turn_id         – current turn id
+    api_request_id  – current API request id
+    middleware_trace – list of dicts from tool middleware chain
+
+``on_session_start`` (emitted from ``agent/conversation_loop.py``)::
+
+    model           – model name (e.g. "claude-sonnet-4-20250514")
+    platform        – platform identifier (e.g. "cli", "whatsapp")
+
+``on_session_end`` (emitted from ``agent/turn_finalizer.py``)::
+
+    task_id         – current task id
+    turn_id         – current turn id
+    completed       – bool, True when the turn produced a final response
+    interrupted     – bool, True when the user interrupted
+    model           – model name
+    platform        – platform identifier
+
+``subagent_stop`` (emitted from ``tools/delegate_tool.py``)::
+
+    parent_turn_id  – parent agent's current turn id
+    child_session_id – child (subagent) session id
+    child_role      – role string of the child agent
+    child_summary   – summary of the child's work
+    child_status    – exit status string (e.g. "success", "error")
+    duration_ms     – wall-clock time of the child run in milliseconds
 """
 
 from __future__ import annotations
@@ -494,10 +546,10 @@ def _block_message(primary: Any, secondary: Any) -> str:
 
 
 def _parse_response(event: str, stdout: str) -> Optional[Dict[str, Any]]:
-    """Translate stdout JSON into a Hermes wire-shape dict.
+    """Translate stdout JSON into a Moor wire-shape dict.
 
     For ``pre_tool_call`` the Claude-Code-style ``{"decision": "block",
-    "reason": "..."}`` payload is translated into the canonical Hermes
+    "reason": "..."}`` payload is translated into the canonical Moor
     ``{"action": "block", "message": "..."}`` shape expected by
     :func:`hermes_cli.plugins.get_pre_tool_call_block_message`.  This is
     the single most important correctness invariant in this module —
@@ -656,7 +708,7 @@ def _prompt_and_record(
         return False
 
     print(
-        f"\n⚠ Hermes is about to register a shell hook that will run a\n"
+        f"\n⚠ Moor is about to register a shell hook that will run a\n"
         f"  command on your behalf.\n\n"
         f"    Event:   {event}\n"
         f"    Command: {command}\n\n"
@@ -840,7 +892,7 @@ def run_once(
     diverge silently from production behaviour.
 
     Returns the :func:`_spawn` diagnostic dict plus a ``parsed`` field
-    holding the canonical Hermes-wire-shape response."""
+    holding the canonical Moor-wire-shape response."""
     stdin_json = _serialize_payload(spec.event, kwargs)
     result = _spawn(spec, stdin_json)
     result["parsed"] = _parse_response(spec.event, result["stdout"])

@@ -1,5 +1,5 @@
 """
-Interactive setup wizard for Hermes Agent.
+Interactive setup wizard for Moor Agent.
 
 Modular wizard with independently-runnable sections:
   1. Model & Provider — choose your AI provider and model
@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
-_DOCS_BASE = "https://hermes-agent.nousresearch.com/docs"
+_DOCS_BASE = "https://hermes-agent.Moor inc..com/docs"
 
 
 def _model_config_dict(config: Dict[str, Any]) -> Dict[str, Any]:
@@ -176,13 +176,13 @@ def is_interactive_stdin() -> bool:
 def print_noninteractive_setup_guidance(reason: str | None = None) -> None:
     """Print guidance for headless/non-interactive setup flows."""
     print()
-    print(color("⚕ Hermes Setup — Non-interactive mode", Colors.CYAN, Colors.BOLD))
+    print(color("⚕ Moor Setup — Non-interactive mode", Colors.CYAN, Colors.BOLD))
     print()
     if reason:
         print_info(reason)
     print_info("The interactive wizard cannot be used here.")
     print()
-    print_info("Configure Hermes using environment variables or config commands:")
+    print_info("Configure Moor using environment variables or config commands:")
     print_info("  hermes config set model.provider custom")
     print_info("  hermes config set model.base_url http://localhost:8080/v1")
     print_info("  hermes config set model.default your-model-name")
@@ -994,7 +994,7 @@ def _setup_tts_provider(config: dict):
 
     elif selected == "xai":
         # Resolution order: existing OAuth tokens (free for SuperGrok subscribers
-        # via the Hermes auth store) > existing XAI_API_KEY > prompt the user.
+        # via the Moor auth store) > existing XAI_API_KEY > prompt the user.
         # When neither is configured, offer both options instead of forcing the
         # API-key path — xAI TTS works fine with OAuth bearer tokens too.
         oauth_logged_in = _xai_oauth_logged_in_for_setup()
@@ -1135,9 +1135,9 @@ def setup_terminal_backend(config: dict):
     """Configure the terminal execution backend."""
     import platform as _platform
     print_header("Terminal Backend")
-    print_info("Choose where Hermes runs shell commands and code.")
+    print_info("Choose where Moor runs shell commands and code.")
     print_info("This affects tool execution, file access, and isolation.")
-    print_info(f"   Guide: {_DOCS_BASE}/developer-guide/environments")
+    print_info(f"   Guide: {_DOCS_BASE}/user-guide/configuration#terminal-backend-configuration")
     print()
 
     current_backend = cfg_get(config, "terminal", "backend", default="local")
@@ -1780,7 +1780,7 @@ def _setup_telegram():
         print_info("⚠️  No allowlist set - anyone who finds your bot can use it!")
 
     print()
-    print_info("📬 Home Channel: where Hermes delivers cron job results,")
+    print_info("📬 Home Channel: where Moor delivers cron job results,")
     print_info("   cross-platform messages, and notifications.")
     print_info("   For Telegram DMs, this is your user ID (same as above).")
 
@@ -1800,231 +1800,13 @@ def _setup_telegram():
             save_env_value("TELEGRAM_HOME_CHANNEL", home_channel)
 
 
-def _setup_slack():
-    """Configure Slack bot credentials."""
-    print_header("Slack")
-    existing = get_env_value("SLACK_BOT_TOKEN")
-    if existing:
-        print_info("Slack: already configured")
-        if not prompt_yes_no("Reconfigure Slack?", False):
-            # Even without reconfiguring, offer to refresh the manifest so
-            # new commands (e.g. /btw, /stop, ...) get registered in Slack.
-            if prompt_yes_no(
-                "Regenerate the Slack app manifest with the latest command "
-                "list? (recommended after `hermes update`)",
-                True,
-            ):
-                _write_slack_manifest_and_instruct()
-            return
-
-    print_info("Steps to create a Slack app:")
-    print_info("   1. Go to https://api.slack.com/apps → Create New App")
-    print_info("      Pick 'From an app manifest' — we'll generate one for you below.")
-    print_info("   2. Enable Socket Mode: Settings → Socket Mode → Enable")
-    print_info("      • Create an App-Level Token with 'connections:write' scope")
-    print_info("   3. Install to Workspace: Settings → Install App")
-    print_info("   4. After installing, invite the bot to channels: /invite @YourBot")
-    print()
-    print_info("   Full guide: https://hermes-agent.nousresearch.com/docs/user-guide/messaging/slack/")
-    print()
-
-    # Generate and write manifest up-front so the user can paste it into
-    # the "Create from manifest" flow instead of clicking through scopes /
-    # events / slash commands one at a time.
-    _write_slack_manifest_and_instruct()
-
-    print()
-    bot_token = prompt("Slack Bot Token (xoxb-...)", password=True)
-    if not bot_token:
-        return
-    save_env_value("SLACK_BOT_TOKEN", bot_token)
-    app_token = prompt("Slack App Token (xapp-...)", password=True)
-    if app_token:
-        save_env_value("SLACK_APP_TOKEN", app_token)
-    print_success("Slack tokens saved")
-
-    print()
-    print_info("🔒 Security: Restrict who can use your bot")
-    print_info("   To find a Member ID: click a user's name → View full profile → ⋮ → Copy member ID")
-    print()
-    allowed_users = prompt(
-        "Allowed user IDs (comma-separated, leave empty to deny everyone except paired users)"
-    )
-    if allowed_users:
-        save_env_value("SLACK_ALLOWED_USERS", allowed_users.replace(" ", ""))
-        print_success("Slack allowlist configured")
-    else:
-        print_warning("⚠️  No Slack allowlist set - unpaired users will be denied by default.")
-        print_info("   Set SLACK_ALLOW_ALL_USERS=true or GATEWAY_ALLOW_ALL_USERS=true only if you intentionally want open workspace access.")
-
-    print()
-    print_info("📬 Home Channel: where Hermes delivers cron job results,")
-    print_info("   cross-platform messages, and notifications.")
-    print_info("   To get a channel ID: open the channel in Slack, then right-click")
-    print_info("   the channel name → Copy link — the ID starts with C (e.g. C01ABC2DE3F).")
-    print_info("   You can also set this later by typing /set-home in a Slack channel.")
-    home_channel = prompt("Home channel ID (leave empty to set later with /set-home)")
-    if home_channel:
-        save_env_value("SLACK_HOME_CHANNEL", home_channel.strip())
+# _setup_slack and _write_slack_manifest_and_instruct moved to the slack
+# plugin: plugins/platforms/slack/adapter.py::interactive_setup (registered
+# via setup_fn and dispatched through the plugin path). #41112 / #3823.
 
 
-def _write_slack_manifest_and_instruct():
-    """Generate the Slack manifest, write it under HERMES_HOME, and print
-    paste-into-Slack instructions.
-
-    Exposed as its own helper so both the initial setup flow and the
-    "reconfigure? → no" branch can refresh the manifest without the user
-    re-entering tokens. Failures are non-fatal — if the manifest write
-    fails for any reason, we print a warning and skip rather than abort
-    the whole Slack setup.
-    """
-    try:
-        from hermes_cli.slack_cli import _build_full_manifest
-        from hermes_constants import get_hermes_home
-
-        manifest = _build_full_manifest(
-            bot_name="Hermes",
-            bot_description="Your Hermes agent on Slack",
-        )
-        target = Path(get_hermes_home()) / "slack-manifest.json"
-        target.parent.mkdir(parents=True, exist_ok=True)
-        import json as _json
-        target.write_text(
-            _json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
-            encoding="utf-8",
-        )
-        print_success(f"Slack app manifest written to: {target}")
-        print_info(
-            "   Paste it into https://api.slack.com/apps → your app → Features "
-            "→ App Manifest → Edit, then Save.  Slack will prompt to "
-            "reinstall if scopes or slash commands changed."
-        )
-        print_info(
-            "   Re-run `hermes slack manifest --write` anytime to refresh after "
-            "Hermes adds new commands."
-        )
-    except Exception as exc:  # pragma: no cover - best-effort UX helper
-        print_warning(f"Couldn't write Slack manifest: {exc}")
-        print_info(
-            "   You can generate it manually later with: "
-            "hermes slack manifest --write"
-        )
-
-
-def _setup_matrix():
-    """Configure Matrix credentials."""
-    print_header("Matrix")
-    existing = get_env_value("MATRIX_ACCESS_TOKEN") or get_env_value("MATRIX_PASSWORD")
-    if existing:
-        print_info("Matrix: already configured")
-        if not prompt_yes_no("Reconfigure Matrix?", False):
-            return
-
-    print_info("Works with any Matrix homeserver (Synapse, Conduit, Dendrite, or matrix.org).")
-    print_info("   1. Create a bot user on your homeserver, or use your own account")
-    print_info("   2. Get an access token from Element, or provide user ID + password")
-    print()
-    homeserver = prompt("Homeserver URL (e.g. https://matrix.example.org)")
-    if homeserver:
-        save_env_value("MATRIX_HOMESERVER", homeserver.rstrip("/"))
-
-    print()
-    print_info("Auth: provide an access token (recommended), or user ID + password.")
-    token = prompt("Access token (leave empty for password login)", password=True)
-    if token:
-        save_env_value("MATRIX_ACCESS_TOKEN", token)
-        user_id = prompt("User ID (@bot:server — optional, will be auto-detected)")
-        if user_id:
-            save_env_value("MATRIX_USER_ID", user_id)
-        print_success("Matrix access token saved")
-    else:
-        user_id = prompt("User ID (@bot:server)")
-        if user_id:
-            save_env_value("MATRIX_USER_ID", user_id)
-        password = prompt("Password", password=True)
-        if password:
-            save_env_value("MATRIX_PASSWORD", password)
-            print_success("Matrix credentials saved")
-
-    if token or get_env_value("MATRIX_PASSWORD"):
-        print()
-        want_e2ee = prompt_yes_no("Enable end-to-end encryption (E2EE)?", False)
-        if want_e2ee:
-            save_env_value("MATRIX_ENCRYPTION", "true")
-            print_success("E2EE enabled")
-
-        matrix_pkg = "mautrix[encryption]" if want_e2ee else "mautrix"
-        # Use the central lazy-deps feature group so we install ALL of
-        # platform.matrix's dependencies (mautrix, Markdown, aiosqlite,
-        # asyncpg, aiohttp-socks) — not just mautrix itself.  The previous
-        # hand-rolled ``pip install mautrix[encryption]`` left asyncpg /
-        # aiosqlite uninstalled and broke E2EE connect with
-        # ``No module named 'asyncpg'`` on every fresh install (#31116).
-        try:
-            from tools.lazy_deps import ensure as _lazy_ensure, feature_missing
-            _missing_before = feature_missing("platform.matrix")
-            if _missing_before:
-                print_info(
-                    f"Installing {matrix_pkg} (+ {len(_missing_before)} runtime deps)..."
-                )
-                try:
-                    _lazy_ensure("platform.matrix", prompt=False)
-                    print_success(f"{matrix_pkg} installed")
-                except Exception as exc:
-                    print_warning(
-                        f"Install failed — run manually: pip install "
-                        f"'mautrix[encryption]' asyncpg aiosqlite Markdown "
-                        f"aiohttp-socks"
-                    )
-                    print_info(f"  Error: {exc}")
-        except ImportError:
-            # tools.lazy_deps unavailable (extreme edge case — partial
-            # install).  Fall back to the legacy single-package install
-            # path so the wizard still does *something*.
-            try:
-                __import__("mautrix")
-            except ImportError:
-                print_info(f"Installing {matrix_pkg}...")
-                import subprocess
-                uv_bin = shutil.which("uv")
-                if uv_bin:
-                    result = subprocess.run(
-                        [uv_bin, "pip", "install", "--python", sys.executable, matrix_pkg],
-                        capture_output=True, text=True,
-                    )
-                else:
-                    result = subprocess.run(
-                        [sys.executable, "-m", "pip", "install", matrix_pkg],
-                        capture_output=True, text=True,
-                    )
-                if result.returncode == 0:
-                    print_success(f"{matrix_pkg} installed")
-                else:
-                    print_warning(
-                        f"Install failed — run manually: pip install "
-                        f"'{matrix_pkg}' asyncpg aiosqlite Markdown aiohttp-socks"
-                    )
-                    if result.stderr:
-                        print_info(f"  Error: {result.stderr.strip().splitlines()[-1]}")
-
-        print()
-        print_info("🔒 Security: Restrict who can use your bot")
-        print_info("   Matrix user IDs look like @username:server")
-        print()
-        allowed_users = prompt("Allowed user IDs (comma-separated, leave empty for open access)")
-        if allowed_users:
-            save_env_value("MATRIX_ALLOWED_USERS", allowed_users.replace(" ", ""))
-            print_success("Matrix allowlist configured")
-        else:
-            print_info("⚠️  No allowlist set - anyone who can message the bot can use it!")
-
-        print()
-        print_info("📬 Home Room: where Hermes delivers cron job results and notifications.")
-        print_info("   Room IDs look like !abc123:server (shown in Element room settings)")
-        print_info("   You can also set this later by typing /set-home in a Matrix room.")
-        home_room = prompt("Home room ID (leave empty to set later with /set-home)")
-        if home_room:
-            save_env_value("MATRIX_HOME_ROOM", home_room)
+# _setup_matrix moved to plugins/platforms/matrix/adapter.py::interactive_setup
+# (registered via setup_fn, dispatched through the plugin path). #41112.
 
 
 def _setup_bluebubbles():
@@ -2036,7 +1818,7 @@ def _setup_bluebubbles():
         if not prompt_yes_no("Reconfigure BlueBubbles?", False):
             return
 
-    print_info("Connects Hermes to iMessage via BlueBubbles — a free, open-source")
+    print_info("Connects Moor to iMessage via BlueBubbles — a free, open-source")
     print_info("macOS server that bridges iMessage to any device.")
     print_info("   Requires a Mac running BlueBubbles Server v1.0.0+")
     print_info("   Download: https://bluebubbles.app/")
@@ -2112,7 +1894,7 @@ def _setup_webhooks():
     print_warning("   internet. For security, run the gateway in a sandboxed environment")
     print_warning("   (Docker, VM, etc.) to limit blast radius from prompt injection.")
     print()
-    print_info("   Full guide: https://hermes-agent.nousresearch.com/docs/user-guide/messaging/webhooks/")
+    print_info("   Full guide: https://hermes-agent.Moor inc..com/docs/user-guide/messaging/webhooks/")
     print()
 
     port = prompt("Webhook port (default 8644)")
@@ -2139,7 +1921,7 @@ def _setup_webhooks():
     print_info("      http://your-server:8644/webhooks/<route-name>")
     print()
     print_info("   Route configuration guide:")
-    print_info("   https://hermes-agent.nousresearch.com/docs/user-guide/messaging/webhooks/#configuring-routes")
+    print_info("   https://hermes-agent.Moor inc..com/docs/user-guide/messaging/webhooks/#configuring-routes")
     print()
     print_info("   Open config in your editor:  hermes config edit")
     print_info("   Open config in your editor:  hermes config edit")
@@ -2150,7 +1932,7 @@ def setup_gateway(config: dict):
     from hermes_cli.gateway import _all_platforms, _platform_status, _configure_platform
 
     print_header("Messaging Platforms")
-    print_info("Connect to messaging platforms to chat with Hermes from anywhere.")
+    print_info("Connect to messaging platforms to chat with Moor from anywhere.")
     print_info("Toggle with Space, confirm with Enter.")
     print()
 
@@ -2586,15 +2368,15 @@ def _load_openclaw_migration_module():
 
 # Item kinds that represent high-impact changes warranting explicit warnings.
 # Gateway tokens/channels can hijack messaging platforms from the old agent.
-# Config values may have different semantics between OpenClaw and Hermes.
+# Config values may have different semantics between OpenClaw and Moor.
 # Instruction/context files (.md) can contain incompatible setup procedures.
 _HIGH_IMPACT_KIND_KEYWORDS = {
-    "gateway": "⚠ Gateway/messaging — this will configure Hermes to use your OpenClaw messaging channels",
-    "telegram": "⚠ Telegram — this will point Hermes at your OpenClaw Telegram bot",
-    "slack": "⚠ Slack — this will point Hermes at your OpenClaw Slack workspace",
-    "discord": "⚠ Discord — this will point Hermes at your OpenClaw Discord bot",
-    "whatsapp": "⚠ WhatsApp — this will point Hermes at your OpenClaw WhatsApp connection",
-    "config": "⚠ Config values — OpenClaw settings may not map 1:1 to Hermes equivalents",
+    "gateway": "⚠ Gateway/messaging — this will configure Moor to use your OpenClaw messaging channels",
+    "telegram": "⚠ Telegram — this will point Moor at your OpenClaw Telegram bot",
+    "slack": "⚠ Slack — this will point Moor at your OpenClaw Slack workspace",
+    "discord": "⚠ Discord — this will point Moor at your OpenClaw Discord bot",
+    "whatsapp": "⚠ WhatsApp — this will point Moor at your OpenClaw WhatsApp connection",
+    "config": "⚠ Config values — OpenClaw settings may not map 1:1 to Moor equivalents",
     "soul": "⚠ Instruction file — may contain OpenClaw-specific setup/restart procedures",
     "memory": "⚠ Memory/context file — may reference OpenClaw-specific infrastructure",
     "context": "⚠ Context file — may contain OpenClaw-specific instructions",
@@ -2638,7 +2420,7 @@ def _print_migration_preview(report: dict):
         print()
 
     if conflict_items:
-        print(color("  Would overwrite (conflicts with existing Hermes config):", Colors.YELLOW))
+        print(color("  Would overwrite (conflicts with existing Moor config):", Colors.YELLOW))
         for item in conflict_items:
             kind = item.get("kind", "unknown")
             reason = item.get("reason", "already exists")
@@ -2659,8 +2441,8 @@ def _print_migration_preview(report: dict):
         for warning in sorted(warnings_shown):
             print(color(f"    {warning}", Colors.YELLOW))
         print()
-        print(color("  Note: OpenClaw config values may have different semantics in Hermes.", Colors.YELLOW))
-        print(color("  For example, OpenClaw's tool_call_execution: \"auto\" ≠ Hermes's yolo mode.", Colors.YELLOW))
+        print(color("  Note: OpenClaw config values may have different semantics in Moor.", Colors.YELLOW))
+        print(color("  For example, OpenClaw's tool_call_execution: \"auto\" ≠ Moor's yolo mode.", Colors.YELLOW))
         print(color("  Instruction files (.md) from OpenClaw may contain incompatible procedures.", Colors.YELLOW))
         print()
 
@@ -2683,7 +2465,7 @@ def _offer_openclaw_migration(hermes_home: Path) -> bool:
     print()
     print_header("OpenClaw Installation Detected")
     print_info(f"Found OpenClaw data at {openclaw_dir}")
-    print_info("Hermes can preview what would be imported before making any changes.")
+    print_info("Moor can preview what would be imported before making any changes.")
     print()
 
     if not prompt_yes_no("Would you like to see what can be imported?", default=True):
@@ -2753,7 +2535,7 @@ def _offer_openclaw_migration(hermes_home: Path) -> bool:
         )
         return False
 
-    # Execute the migration — overwrite=False so existing Hermes configs are
+    # Execute the migration — overwrite=False so existing Moor configs are
     # preserved. The user saw the preview; conflicts are skipped by default.
     try:
         migrator = mod.Migrator(
@@ -2761,7 +2543,7 @@ def _offer_openclaw_migration(hermes_home: Path) -> bool:
             target_root=hermes_home.resolve(),
             execute=True,
             workspace_target=None,
-            overwrite=False,  # preserve existing Hermes config
+            overwrite=False,  # preserve existing Moor config
             migrate_secrets=True,
             output_dir=None,
             selected_options=selected,
@@ -2784,7 +2566,7 @@ def _offer_openclaw_migration(hermes_home: Path) -> bool:
     if migrated:
         print_success(f"Imported {migrated} item(s) from OpenClaw.")
     if conflicts:
-        print_info(f"Skipped {conflicts} item(s) that already exist in Hermes (use hermes claw migrate --overwrite to force).")
+        print_info(f"Skipped {conflicts} item(s) that already exist in Moor (use hermes claw migrate --overwrite to force).")
     if skipped:
         print_info(f"Skipped {skipped} item(s) (not found or unchanged).")
     if errors:
@@ -2818,7 +2600,7 @@ def _run_portal_one_shot(config: dict) -> None:
     Wired into ``hermes setup --portal`` and ``hermes portal``. This is the
     Nous-Portal slice of the first-time quick setup, collapsed into a single
     shareable command so a brand-new user goes from zero to a fully working
-    Hermes session — model selected, provider set, and web/image/tts/browser
+    Moor session — model selected, provider set, and web/image/tts/browser
     tools routed via their Portal sub — without being told to run
     ``hermes setup`` and hunt for the quick-setup option.
 
@@ -2838,7 +2620,7 @@ def _run_portal_one_shot(config: dict) -> None:
             Colors.MAGENTA,
         )
     )
-    print(color("│     ⚕ Hermes Setup — Nous Portal (one-shot)             │", Colors.MAGENTA))
+    print(color("│     ⚕ Moor Setup — Nous Portal (one-shot)             │", Colors.MAGENTA))
     print(
         color(
             "└─────────────────────────────────────────────────────────┘",
@@ -2850,7 +2632,7 @@ def _run_portal_one_shot(config: dict) -> None:
     print_info("    web search, image generation, TTS, browser automation")
     print_info("    — all routed through your Nous Portal sub.")
     print()
-    print_info("  Sign up: https://portal.nousresearch.com/manage-subscription")
+    print_info("  Sign up: https://portal.Moor inc..com/manage-subscription")
     print()
 
     # _model_flow_nous handles BOTH the logged-out path (device-code OAuth,
@@ -2968,7 +2750,7 @@ def run_setup_wizard(args):
                         Colors.MAGENTA,
                     )
                 )
-                print(color(f"│     ⚕ Hermes Setup — {label:<34s} │", Colors.MAGENTA))
+                print(color(f"│     ⚕ Moor Setup — {label:<34s} │", Colors.MAGENTA))
                 print(
                     color(
                         "└─────────────────────────────────────────────────────────┘",
@@ -3004,7 +2786,7 @@ def run_setup_wizard(args):
     )
     print(
         color(
-            "│             ⚕ Hermes Agent Setup Wizard                │", Colors.MAGENTA
+            "│             ⚕ Moor Agent Setup Wizard                │", Colors.MAGENTA
         )
     )
     print(
@@ -3015,7 +2797,7 @@ def run_setup_wizard(args):
     )
     print(
         color(
-            "│  Let's configure your Hermes Agent installation.       │", Colors.MAGENTA
+            "│  Let's configure your Moor Agent installation.       │", Colors.MAGENTA
         )
     )
     print(
@@ -3044,7 +2826,7 @@ def run_setup_wizard(args):
 
         print()
         print_header("Reconfigure")
-        print_success("You already have Hermes configured.")
+        print_success("You already have Moor configured.")
         print_info("Running the full wizard — each prompt shows your current value.")
         print_info("Press Enter to keep it, or type a new value to change it.")
         print_info("")
@@ -3069,16 +2851,20 @@ def run_setup_wizard(args):
             config = load_config()
 
         setup_mode = prompt_choice(
-            "How would you like to set up Hermes?",
+            "How would you like to set up Moor?",
             [
                 "Quick Setup (Nous Portal) — free OAuth login, no API keys, model + tools (recommended)",
                 "Full setup — configure every provider, tool & option yourself (bring your own keys)",
+                "Blank Slate — everything off except the bare minimum; opt in to each capability",
             ],
             0,
         )
 
         if setup_mode == 0:
             _run_first_time_quick_setup(config, hermes_home, is_existing)
+            return
+        if setup_mode == 2:
+            _run_blank_slate_setup(config, hermes_home, is_existing)
             return
 
     # ── Full Setup — run all sections ──
@@ -3146,7 +2932,7 @@ def _run_first_time_quick_setup(config: dict, hermes_home, is_existing: bool):
     print_header("Nous Portal")
     print_info("One subscription, 300+ models, plus the Tool Gateway:")
     print_info("  web search, image generation, TTS, browser automation.")
-    print_info("Sign up: https://portal.nousresearch.com/manage-subscription")
+    print_info("Sign up: https://portal.Moor inc..com/manage-subscription")
     print()
     try:
         from hermes_cli.main import _model_flow_nous
@@ -3195,6 +2981,237 @@ def _run_first_time_quick_setup(config: dict, hermes_home, is_existing: bool):
     print_info("  Configure all settings:    hermes setup")
     if gateway_choice != 0:
         print_info("  Connect Telegram/Discord:  hermes setup gateway")
+    print()
+
+    _print_setup_summary(config, hermes_home)
+
+
+def _blank_slate_minimal_toolsets(config: dict):
+    """Write the minimal toolset state for a Blank Slate install.
+
+    Only ``file`` and ``terminal`` are enabled. Two layers enforce this:
+
+    1. ``platform_toolsets["cli"] = ["file", "terminal"]`` — an explicit list of
+       configurable keys, which the resolver treats as authoritative
+       (``has_explicit_config``) so default toolsets aren't re-expanded.
+    2. ``agent.disabled_toolsets`` — a global hard-suppression list (applied last
+       in ``_get_platform_tools``, overriding every other path including the
+       non-configurable platform-toolset recovery that would otherwise re-add
+       toolsets like ``kanban``). We list every known toolset except the two we
+       keep, guaranteeing a true blank slate regardless of platform/recovery
+       quirks. The user re-enables any of them later via ``hermes tools`` (which
+       rewrites ``platform_toolsets``) or by editing ``agent.disabled_toolsets``.
+    """
+    keep = {"file", "terminal"}
+    config.setdefault("platform_toolsets", {})["cli"] = sorted(keep)
+
+    try:
+        from toolsets import TOOLSETS
+        from hermes_cli.tools_config import CONFIGURABLE_TOOLSETS, _get_plugin_toolset_keys
+
+        all_keys = set()
+        all_keys.update(k for k, _, _ in CONFIGURABLE_TOOLSETS)
+        all_keys.update(_get_plugin_toolset_keys())
+        # Plain (non-composite) TOOLSETS entries — catches recovered toolsets
+        # like ``kanban`` that aren't in CONFIGURABLE_TOOLSETS but get re-added.
+        for k, tdef in TOOLSETS.items():
+            if k.startswith("hermes-"):
+                continue  # platform composites — not user-facing toolsets
+            if isinstance(tdef, dict) and tdef.get("includes"):
+                continue  # composite groupings, not leaf toolsets
+            all_keys.add(k)
+
+        disabled = sorted(all_keys - keep)
+        if disabled:
+            config.setdefault("agent", {})["disabled_toolsets"] = disabled
+    except Exception as exc:
+        logger.debug("blank-slate disabled_toolsets computation skipped: %s", exc)
+
+
+def _blank_slate_minimize_config(config: dict):
+    """Turn OFF the optional config features for a Blank Slate install.
+
+    Everything here is opt-in afterwards via ``hermes setup agent`` /
+    ``hermes config set``. We keep only what's needed to run.
+    """
+    config.setdefault("agent", {})["max_turns"] = 90
+
+    # Compression off — minimal footprint; user opts in if they want long sessions.
+    config.setdefault("compression", {})["enabled"] = False
+
+    # No automatic memory / user-profile capture.
+    mem = config.setdefault("memory", {})
+    mem["memory_enabled"] = False
+    mem["user_profile_enabled"] = False
+
+    # No filesystem checkpoints, no smart model routing, no auto session reset.
+    config.setdefault("checkpoints", {})["enabled"] = False
+    config.setdefault("smart_model_routing", {})["enabled"] = False
+    config.setdefault("session_reset", {})["mode"] = "none"
+
+    # Quiet, minimal display.
+    config.setdefault("display", {})["tool_progress"] = "all"
+
+
+def _run_blank_slate_setup(config: dict, hermes_home, is_existing: bool):
+    """Blank Slate setup — start with everything off except the bare minimum.
+
+    Forces only the essentials to run an agent (provider + model, the file and
+    terminal toolsets) and turns every other tool/skill/plugin/MCP/config
+    feature OFF. After applying that minimal baseline, the user chooses one of
+    two paths:
+
+      1. Start with everything disabled — finish now with the minimal agent.
+      2. Walk through every configuration — opt each capability back in.
+
+    Either way nothing is enabled that the user did not explicitly choose.
+    """
+    from hermes_cli.config import load_config
+
+    print()
+    print_header("Blank Slate Setup")
+    print_info("Everything starts OFF. First we force-enable only what's required")
+    print_info("to run an agent, then you choose whether to stop there or walk")
+    print_info("through enabling more — opting in to exactly what you want.")
+    print_info("")
+    print_info("Forced on: Provider & Model, File Operations, Terminal.")
+    print_info("Everything else (web, browser, code exec, vision, memory,")
+    print_info("delegation, cron, skills, plugins, MCP, …) starts disabled.")
+    print()
+
+    # ── Step 1: Provider & Model (REQUIRED — the agent cannot run without it) ──
+    print_header("Step 1 — Provider & Model (required)")
+    setup_model_provider(config)
+    save_config(config)
+
+    # ── Step 2: Terminal backend (where commands run — a core decision) ──
+    print_header("Step 2 — Terminal Backend")
+    setup_terminal_backend(config)
+
+    # ── Step 3: Lock in the minimal toolset + minimized config knobs ──
+    _blank_slate_minimal_toolsets(config)
+    _blank_slate_minimize_config(config)
+    save_config(config)
+    print()
+    print_success("Minimal baseline applied:")
+    print_info("  Toolsets: file, terminal (everything else off)")
+    print_info("  Compression, memory, checkpoints, smart routing: off")
+
+    # ── The fork: stop here, or walk through enabling things ──
+    print()
+    print_header("How far do you want to go?")
+    path = prompt_choice(
+        "Your minimal agent is ready. What next?",
+        [
+            "Start with everything disabled — finish now (most minimal)",
+            "Walk through all configurations — opt in to tools, skills, plugins, MCP",
+        ],
+        0,
+    )
+
+    if path == 0:
+        save_config(config)
+        # Blank Slate means no bundled skills; record the opt-out so future
+        # `hermes update` runs don't re-inject them.
+        try:
+            from tools.skills_sync import set_bundled_skills_opt_out
+            set_bundled_skills_opt_out(True)
+        except Exception as exc:
+            logger.debug("blank-slate skill opt-out error: %s", exc)
+        print()
+        print_success("Blank Slate setup complete — minimal agent ready.")
+        print_info("Enable anything later, on demand:")
+        print_info("  Enable tools:        hermes tools")
+        print_info("  Seed skills:         hermes skills opt-in --sync")
+        print_info("  Add MCP servers:     hermes mcp add")
+        print_info("  Enable plugins:      hermes plugins")
+        print_info("  Tune agent settings: hermes setup agent")
+        print()
+        _print_setup_summary(config, hermes_home)
+        return
+
+    # ── Walkthrough path — opt in to each capability ──
+    _blank_slate_walkthrough(config, hermes_home)
+
+
+def _blank_slate_walkthrough(config: dict, hermes_home):
+    """Opt-in walkthrough for Blank Slate: skills, tools, plugins, MCP, gateway."""
+    from hermes_cli.config import load_config
+
+    # ── Bundled skills — default to NONE, offer to seed all ──
+    print()
+    print_header("Bundled Skills")
+    print_info("Blank Slate ships with NO bundled skills by default.")
+    seed_skills = prompt_yes_no(
+        "Seed the full bundled skill catalog? (No = start with zero skills)",
+        default=False,
+    )
+    try:
+        from tools.skills_sync import set_bundled_skills_opt_out, sync_skills
+        if seed_skills:
+            # Make sure no stale opt-out marker blocks the seed, then sync.
+            set_bundled_skills_opt_out(False)
+            result = sync_skills(quiet=True)
+            copied = len(result.get("copied", [])) if isinstance(result, dict) else 0
+            print_success(f"Seeded {copied} bundled skills.")
+        else:
+            set_bundled_skills_opt_out(True)
+            print_info("No skills seeded. A .no-bundled-skills marker keeps future")
+            print_info("`hermes update` runs from re-injecting them. Opt back in any")
+            print_info("time with `hermes skills opt-in --sync`.")
+    except Exception as exc:
+        logger.debug("blank-slate skill handling error: %s", exc)
+        print_warning(f"Skill setup step encountered an error: {exc}")
+
+    # ── Walk through enabling additional tools ──
+    print()
+    print_header("Tools")
+    print_info("Pick exactly which additional toolsets to turn on.")
+    print_info("(file and terminal are already on; leave the rest off if you want")
+    print_info(" the most minimal agent.)")
+    if prompt_yes_no("Open the tool selector to enable more tools?", default=False):
+        try:
+            from hermes_cli.tools_config import tools_command
+            tools_command(first_install=False, config=config)
+            # tools_command saves via its own load/save cycle — re-sync.
+            _refreshed = load_config()
+            config.clear()
+            config.update(_refreshed)
+        except Exception as exc:
+            logger.debug("blank-slate tools_command error: %s", exc)
+            print_warning(f"Tool selector encountered an error: {exc}")
+    else:
+        print_info("Keeping the minimal toolset. Add tools later with `hermes tools`.")
+
+    # ── Built-in plugins (off unless chosen) ──
+    print()
+    print_header("Plugins")
+    if prompt_yes_no("Review and enable built-in plugins now?", default=False):
+        print_info("Manage plugins with `hermes plugins list` / `hermes plugins install`.")
+    else:
+        print_info("No plugins enabled. Add later with `hermes plugins`.")
+
+    # ── MCP servers (off unless chosen) ──
+    print()
+    print_header("MCP Servers")
+    if prompt_yes_no("Add an MCP server now?", default=False):
+        print_info("Add servers with `hermes mcp add <name> --url ... | --command ...`.")
+    else:
+        print_info("No MCP servers configured. Add later with `hermes mcp add`.")
+
+    # ── Optional messaging gateway ──
+    print()
+    if prompt_yes_no("Connect a messaging platform (Telegram, Discord, …)?", default=False):
+        setup_gateway(config)
+
+    save_config(config)
+
+    print()
+    print_success("Blank Slate setup complete — minimal agent ready.")
+    print_info("  Enable more tools:   hermes tools")
+    print_info("  Seed skills:         hermes skills opt-in --sync")
+    print_info("  Add MCP servers:     hermes mcp add")
+    print_info("  Tune agent settings: hermes setup agent")
     print()
 
     _print_setup_summary(config, hermes_home)
@@ -3293,7 +3310,7 @@ def _run_quick_setup(config: dict, hermes_home):
     if missing_messaging:
         print()
         print_header("Messaging Platforms")
-        print_info("Connect Hermes to messaging apps to chat from anywhere.")
+        print_info("Connect Moor to messaging apps to chat from anywhere.")
         print_info("You can configure these later with 'hermes setup gateway'.")
 
         # Group by platform (preserving order)

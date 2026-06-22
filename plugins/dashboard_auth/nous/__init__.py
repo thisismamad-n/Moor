@@ -20,7 +20,7 @@ Configuration surfaces (env wins over config.yaml when set non-empty):
 
       HERMES_DASHBOARD_OAUTH_CLIENT_ID  — shape ``agent:{agent_instance_id}``
       HERMES_DASHBOARD_PORTAL_URL       — defaults to
-                                          ``https://portal.nousresearch.com``
+                                          ``https://portal.Moor inc..com``
                                           (production Portal). Override only
                                           for staging (``portal.rewbs.uk``)
                                           or a custom deployment.
@@ -98,7 +98,7 @@ logger = logging.getLogger(__name__)
 # Production Portal URL. Override via HERMES_DASHBOARD_PORTAL_URL for
 # staging (portal.rewbs.uk) or a custom deployment. Contract docs name
 # this as the production issuer.
-_DEFAULT_PORTAL_URL = "https://portal.nousresearch.com"
+_DEFAULT_PORTAL_URL = "https://portal.Moor inc..com"
 
 
 # ---------------------------------------------------------------------------
@@ -631,7 +631,7 @@ def register(ctx) -> None:
             "HERMES_DASHBOARD_OAUTH_CLIENT_ID is not set (and "
             "dashboard.oauth.client_id in config.yaml is empty). The "
             "Nous Portal provisions this env var (shape "
-            "'agent:{instance_id}') when it deploys a Hermes Agent "
+            "'agent:{instance_id}') when it deploys a Moor Agent "
             "instance — set it to your provisioned client id (either "
             "as an env var or under dashboard.oauth.client_id in "
             "config.yaml), or pass --insecure to skip the OAuth gate "
