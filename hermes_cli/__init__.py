@@ -1,5 +1,5 @@
 """
-Moor CLI - Unified command-line interface for Moor Agent.
+Hermes CLI - Unified command-line interface for Hermes Agent.
 
 Provides subcommands for:
 - hermes chat          - Interactive chat (same as ./hermes)
@@ -14,8 +14,8 @@ Provides subcommands for:
 import os
 import sys
 
-__version__ = "0.17.0"
-__release_date__ = "2026.6.19"
+__version__ = "0.18.2"
+__release_date__ = "2026.7.7.2"
 
 
 def _ensure_utf8():

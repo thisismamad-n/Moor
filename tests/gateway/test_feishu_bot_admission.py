@@ -388,6 +388,37 @@ def test_admit_pipeline(case):
 # --- Mention call-count semantics ------------------------------------------
 
 
+def test_dm_pairing_mode_forwards_unknown_sender_to_gateway_intake(monkeypatch):
+    """Empty FEISHU_ALLOWED_USERS must not block pairing handshake intake."""
+    monkeypatch.delenv("FEISHU_ALLOW_ALL_USERS", raising=False)
+    monkeypatch.delenv("GATEWAY_ALLOW_ALL_USERS", raising=False)
+    adapter = make_adapter_skeleton()
+    adapter._allowed_group_users = frozenset()
+    sender = make_sender(open_id="ou_unknown")
+    message = make_message(chat_type="p2p")
+    assert adapter._admit(sender, message) is None
+
+
+def test_dm_allowlist_rejects_unknown_sender(monkeypatch):
+    monkeypatch.delenv("FEISHU_ALLOW_ALL_USERS", raising=False)
+    monkeypatch.delenv("GATEWAY_ALLOW_ALL_USERS", raising=False)
+    adapter = make_adapter_skeleton()
+    adapter._allowed_group_users = frozenset({"ou_owner"})
+    sender = make_sender(open_id="ou_unknown")
+    message = make_message(chat_type="p2p")
+    assert adapter._admit(sender, message) == "dm_policy_rejected"
+
+
+def test_dm_allowlist_admits_configured_sender(monkeypatch):
+    monkeypatch.delenv("FEISHU_ALLOW_ALL_USERS", raising=False)
+    monkeypatch.delenv("GATEWAY_ALLOW_ALL_USERS", raising=False)
+    adapter = make_adapter_skeleton()
+    adapter._allowed_group_users = frozenset({"ou_owner"})
+    sender = make_sender(open_id="ou_owner")
+    message = make_message(chat_type="p2p")
+    assert adapter._admit(sender, message) is None
+
+
 def test_admit_skips_mention_check_under_all_mode():
     # Tripwire: under allow_bots=all the mention path must not be probed.
     adapter = make_adapter_skeleton(bot_open_id="ou_self", allow_bots="all")
@@ -497,7 +528,7 @@ def test_hydrate_bot_identity_populates_self_ids_from_bot_v3_info(monkeypatch):
         captured["uri"] = getattr(request, "uri", None)
         captured["http_method"] = getattr(request, "http_method", None)
         return SimpleNamespace(raw=SimpleNamespace(
-            content=b'{"code":0,"bot":{"app_name":"Moor","open_id":"ou_hydrated"}}'
+            content=b'{"code":0,"bot":{"app_name":"Hermes","open_id":"ou_hydrated"}}'
         ))
 
     adapter._client = SimpleNamespace(request=_fake_request)
@@ -507,7 +538,7 @@ def test_hydrate_bot_identity_populates_self_ids_from_bot_v3_info(monkeypatch):
     assert captured["uri"] == "/open-apis/bot/v3/info"
     assert str(captured["http_method"]).endswith("GET")
     assert adapter._bot_open_id == "ou_hydrated"
-    assert adapter._bot_name == "Moor"
+    assert adapter._bot_name == "Hermes"
     # /bot/v3/info doesn't surface user_id, so _bot_user_id stays empty.
     assert adapter._bot_user_id == ""
 
@@ -700,7 +731,7 @@ def test_admit_accepts_realistic_bot_at_bot_group_event():
     mention = SimpleNamespace(
         key="@_user_1",
         id=SimpleNamespace(union_id="on_mentionUnion", user_id="", open_id="ou_self"),
-        name="Moor",
+        name="Hermes",
         mentioned_type="bot",
         tenant_key="tenant_ab",
     )

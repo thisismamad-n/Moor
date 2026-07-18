@@ -1,20 +1,20 @@
 ---
 sidebar_position: 10
 title: "语音模式"
-description: "与 Moor Agent 进行实时语音对话 — CLI、Telegram、Discord（私信、文字频道和语音频道）"
+description: "与 Hermes Agent 进行实时语音对话 — CLI、Telegram、Discord（私信、文字频道和语音频道）"
 ---
 
 # 语音模式
 
-Moor Agent 支持在 CLI 和消息平台上进行完整的语音交互。通过麦克风与 Agent 对话，听取语音回复，并在 Discord 语音频道中进行实时语音对话。
+Hermes Agent 支持在 CLI 和消息平台上进行完整的语音交互。通过麦克风与 Agent 对话，听取语音回复，并在 Discord 语音频道中进行实时语音对话。
 
-如需包含推荐配置和实际使用模式的实践指南，请参阅 [使用 Moor 的语音模式](/guides/use-voice-mode-with-hermes)。
+如需包含推荐配置和实际使用模式的实践指南，请参阅 [使用 Hermes 的语音模式](/guides/use-voice-mode-with-hermes)。
 
 ## 前提条件
 
 使用语音功能前，请确保已完成以下准备：
 
-1. **已安装 Moor Agent** — `pip install hermes-agent`（参见 [安装](/getting-started/installation)）
+1. **已安装 Hermes Agent** — 通过安装脚本（参见 [安装](/getting-started/installation)）
 2. **已配置 LLM 提供商** — 运行 `hermes model` 或在 `~/.hermes/.env` 中设置首选提供商的凭据
 3. **基础设置正常** — 运行 `hermes` 验证 Agent 能够响应文字消息，再启用语音功能
 
@@ -40,19 +40,19 @@ Moor Agent 支持在 CLI 和消息平台上进行完整的语音交互。通过�
 
 ```bash
 # CLI 语音模式（麦克风 + 音频播放）
-pip install "hermes-agent[voice]"
+cd ~/.hermes/hermes-agent && uv pip install -e ".[voice]"
 
 # Discord + Telegram 消息（包含 discord.py[voice] 以支持语音频道）
-pip install "hermes-agent[messaging]"
+cd ~/.hermes/hermes-agent && uv pip install -e ".[messaging]"
 
 # 高级 TTS（ElevenLabs）
-pip install "hermes-agent[tts-premium]"
+cd ~/.hermes/hermes-agent && uv pip install -e ".[tts-premium]"
 
 # 本地 TTS（NeuTTS，可选）
 python -m pip install -U neutts[all]
 
 # 一次性安装所有内容
-pip install "hermes-agent[all]"
+cd ~/.hermes/hermes-agent && uv pip install -e ".[all]"
 ```
 
 | 扩展包 | 包含的包 | 用途 |
@@ -263,13 +263,13 @@ DISCORD_FREE_RESPONSE_CHANNELS=123456789,987654321
 
 | 级别 | 整数 | 包含内容 |
 |-------|---------|----------------|
-| 仅文字 | `274878286912` | 查看频道、发送消息、读取历史、嵌入内容、附件、帖子、反应 |
-| 文字 + 语音 | `274881432640` | 以上所有 + Connect、Speak |
+| 仅文字 | `309237763136` | 查看频道、发送消息、读取历史、嵌入内容、附件、帖子、反应、创建公开帖子 |
+| 文字 + 语音 | `309240908864` | 以上所有 + Connect、Speak |
 
 **使用更新后的权限 URL 重新邀请 Bot：**
 
 ```
-https://discord.com/oauth2/authorize?client_id=YOUR_APP_ID&scope=bot+applications.commands&permissions=274881432640
+https://discord.com/oauth2/authorize?client_id=YOUR_APP_ID&scope=bot+applications.commands&permissions=309240908864
 ```
 
 将 `YOUR_APP_ID` 替换为开发者门户中的应用 ID。

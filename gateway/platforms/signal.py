@@ -236,8 +236,16 @@ def _looks_like_e164_number(value: str) -> bool:
 
 
 def check_signal_requirements() -> bool:
-    """Check if Signal is configured (has URL and account)."""
-    return bool(os.getenv("SIGNAL_HTTP_URL") and os.getenv("SIGNAL_ACCOUNT"))
+    """Check if Signal runtime dependencies are available."""
+    return True
+
+
+def validate_signal_config(config: PlatformConfig) -> bool:
+    """Check if Signal has enough config to connect."""
+    extra = getattr(config, "extra", {}) or {}
+    http_url = (extra.get("http_url", "") or os.getenv("SIGNAL_HTTP_URL", "")).strip()
+    account = (extra.get("account", "") or os.getenv("SIGNAL_ACCOUNT", "")).strip()
+    return bool(http_url and account)
 
 
 # ---------------------------------------------------------------------------
@@ -338,7 +346,7 @@ class SignalAdapter(BasePlatformAdapter):
     # Lifecycle
     # ------------------------------------------------------------------
 
-    async def connect(self) -> bool:
+    async def connect(self, *, is_reconnect: bool = False) -> bool:
         """Connect to signal-cli daemon and start SSE listener."""
         if not self.http_url or not self.account:
             logger.error("Signal: SIGNAL_HTTP_URL and SIGNAL_ACCOUNT are required")
@@ -690,7 +698,7 @@ class SignalAdapter(BasePlatformAdapter):
         # Catches profile key updates, empty messages, and other metadata-only
         # envelopes that still carry a dataMessage wrapper but have nothing
         # worth processing. See issue: signal-cli logs "Profile key update" +
-        # Moor receives msg='' triggering a full agent turn for nothing.
+        # Hermes receives msg='' triggering a full agent turn for nothing.
         if (not text or not text.strip()) and not media_urls:
             logger.debug(
                 "Signal: skipping contentless envelope from %s (%d attachments)",

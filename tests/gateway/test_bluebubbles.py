@@ -141,8 +141,8 @@ class TestBlueBubblesHelpers:
         adapter = _make_adapter(monkeypatch, require_mention=True)
 
         assert adapter.require_mention is True
-        assert adapter._message_matches_mention_patterns("Moor, summarize this")
-        assert adapter._message_matches_mention_patterns("@Moor agent help")
+        assert adapter._message_matches_mention_patterns("Hermes, summarize this")
+        assert adapter._message_matches_mention_patterns("@Hermes agent help")
         assert not adapter._message_matches_mention_patterns("casual family chatter")
         assert not adapter._message_matches_mention_patterns("antihermes should not match")
 
@@ -154,14 +154,14 @@ class TestBlueBubblesHelpers:
         )
 
         assert adapter._message_matches_mention_patterns("Amos what is next?")
-        assert not adapter._message_matches_mention_patterns("Moor what is next?")
+        assert not adapter._message_matches_mention_patterns("Hermes what is next?")
 
     def test_clean_mention_text_strips_leading_wake_word(self, monkeypatch):
         adapter = _make_adapter(monkeypatch, require_mention=True)
 
-        assert adapter._clean_mention_text("Moor, summarize this") == "summarize this"
-        assert adapter._clean_mention_text("Moor agent: summarize this") == "summarize this"
-        assert adapter._clean_mention_text("please ask Moor about this") == "please ask Moor about this"
+        assert adapter._clean_mention_text("Hermes, summarize this") == "summarize this"
+        assert adapter._clean_mention_text("Hermes agent: summarize this") == "summarize this"
+        assert adapter._clean_mention_text("please ask Hermes about this") == "please ask Hermes about this"
 
 
 class _FakeBlueBubblesRequest:
@@ -221,7 +221,7 @@ class TestBlueBubblesMentionGating:
             "type": "new-message",
             "data": {
                 "guid": "msg-2",
-                "text": "Moor, summarize this",
+                "text": "Hermes, summarize this",
                 "handle": {"address": "+15555550100"},
                 "isFromMe": False,
                 "isGroup": True,
@@ -425,6 +425,110 @@ class TestBlueBubblesGuidResolution:
             adapter._resolve_chat_guid("")
         )
         assert result is None
+
+    @pytest.mark.asyncio
+    async def test_exact_chat_identifier_match_returns_dm_guid(self, monkeypatch):
+        """A 1:1 DM whose chatIdentifier equals the target resolves to its guid."""
+        adapter = _make_adapter(monkeypatch)
+
+        async def fake_api_post(path, payload):
+            return {
+                "data": [
+                    {
+                        "guid": "iMessage;-;user@example.com",
+                        "chatIdentifier": "user@example.com",
+                        "participants": [{"address": "user@example.com"}],
+                    }
+                ]
+            }
+
+        monkeypatch.setattr(adapter, "_api_post", fake_api_post)
+        result = await adapter._resolve_chat_guid("user@example.com")
+        assert result == "iMessage;-;user@example.com"
+
+    @pytest.mark.asyncio
+    async def test_participant_only_match_does_not_resolve_to_group(self, monkeypatch):
+        """Regression for #24157: contact appearing as a participant in a group
+        chat must NOT be selected when no DM with that exact chatIdentifier exists.
+
+        Otherwise an outbound DM reply leaks into the group thread.
+        """
+        adapter = _make_adapter(monkeypatch)
+
+        async def fake_api_post(path, payload):
+            return {
+                "data": [
+                    {
+                        "guid": "iMessage;+;chat0000000000-family-group",
+                        "chatIdentifier": "chat0000000000",
+                        "participants": [
+                            {"address": "user@example.com"},
+                            {"address": "+15555550100"},
+                        ],
+                    }
+                ]
+            }
+
+        monkeypatch.setattr(adapter, "_api_post", fake_api_post)
+        result = await adapter._resolve_chat_guid("user@example.com")
+        assert result is None, (
+            "participant-only match must not resolve to a group GUID — DM "
+            "replies would leak into the group thread"
+        )
+
+    @pytest.mark.asyncio
+    async def test_dm_chosen_over_group_when_both_contain_contact(self, monkeypatch):
+        """Even when a group chat is returned BEFORE a DM in the query result,
+        the resolver must lock onto the DM by chatIdentifier and not the
+        group via participant fallback.
+        """
+        adapter = _make_adapter(monkeypatch)
+
+        async def fake_api_post(path, payload):
+            return {
+                "data": [
+                    {
+                        "guid": "iMessage;+;chat0000000000-family-group",
+                        "chatIdentifier": "chat0000000000",
+                        "participants": [{"address": "user@example.com"}],
+                    },
+                    {
+                        "guid": "iMessage;-;user@example.com",
+                        "chatIdentifier": "user@example.com",
+                        "participants": [{"address": "user@example.com"}],
+                    },
+                ]
+            }
+
+        monkeypatch.setattr(adapter, "_api_post", fake_api_post)
+        result = await adapter._resolve_chat_guid("user@example.com")
+        assert result == "iMessage;-;user@example.com"
+
+    @pytest.mark.asyncio
+    async def test_unresolved_target_is_not_cached(self, monkeypatch):
+        """When no exact match is found, the resolver must NOT cache anything.
+
+        Otherwise a later attempt — after the DM has been created — would
+        keep returning the stale ``None`` from cache. Also guards against a
+        latent variant of #24157 where a group GUID could be cached under a
+        bare address key and persist across calls.
+        """
+        adapter = _make_adapter(monkeypatch)
+
+        async def fake_api_post(path, payload):
+            return {
+                "data": [
+                    {
+                        "guid": "iMessage;+;chat0000000000-family-group",
+                        "chatIdentifier": "chat0000000000",
+                        "participants": [{"address": "user@example.com"}],
+                    }
+                ]
+            }
+
+        monkeypatch.setattr(adapter, "_api_post", fake_api_post)
+        await adapter._resolve_chat_guid("user@example.com")
+        assert "user@example.com" not in adapter._guid_cache
 
 
 class TestBlueBubblesAttachmentDownload:

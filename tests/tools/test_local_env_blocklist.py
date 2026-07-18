@@ -1,11 +1,11 @@
 """Tests for subprocess env sanitization in LocalEnvironment.
 
-Verifies that Moor-managed provider, tool, and gateway env vars are
+Verifies that Hermes-managed provider, tool, and gateway env vars are
 stripped from subprocess environments so external CLIs are not silently
-misrouted or handed Moor secrets.
+misrouted or handed Hermes secrets.
 
-See: https://github.com/Moor inc./hermes-agent/issues/1002
-See: https://github.com/Moor inc./hermes-agent/issues/1264
+See: https://github.com/NousResearch/hermes-agent/issues/1002
+See: https://github.com/NousResearch/hermes-agent/issues/1264
 """
 
 import os
@@ -80,7 +80,6 @@ class TestProviderEnvBlocklist:
         must also be blocked — not just the hand-written extras."""
         registry_vars = {
             "ANTHROPIC_TOKEN": "ant-tok",
-            "CLAUDE_CODE_OAUTH_TOKEN": "cc-tok",
             "ZAI_API_KEY": "zai-key",
             "Z_AI_API_KEY": "z-ai-key",
             "GLM_API_KEY": "glm-key",
@@ -96,14 +95,14 @@ class TestProviderEnvBlocklist:
             assert var not in result_env, f"{var} leaked into subprocess env"
 
     def test_bedrock_bearer_token_is_stripped(self):
-        """The Bedrock-specific bearer token is a Moor inference secret
+        """The Bedrock-specific bearer token is a Hermes inference secret
         (analogous to OPENAI_API_KEY) and must not leak into subprocesses.
 
         Regression for #32314: AWS_BEARER_TOKEN_BEDROCK leaked into terminal /
         execute_code children because the ``bedrock`` ProviderConfig declares
         ``api_key_env_vars=()`` (auth_type="aws_sdk") and the blocklist builder
         only consulted that field. The reporter caught it when ``opencode
-        models`` run inside a Moor terminal enumerated the entire Bedrock
+        models`` run inside a Hermes terminal enumerated the entire Bedrock
         catalog off the leaked bearer token.
         """
         result_env = _run_with_env(extra_os_env={
@@ -113,6 +112,29 @@ class TestProviderEnvBlocklist:
         assert "AWS_BEARER_TOKEN_BEDROCK" not in result_env, (
             "AWS_BEARER_TOKEN_BEDROCK leaked into subprocess env (see #32314)"
         )
+
+    def test_vertex_credentials_path_is_stripped(self):
+        """The Vertex AI service-account JSON path must not leak into
+        subprocesses, even though it is filesystem path metadata rather
+        than a bare API key.
+
+        Regression: ``vertex`` authenticates via OAuth2 (service-account
+        JSON / ADC), not PROVIDER_REGISTRY, and OPTIONAL_ENV_VARS marks
+        VERTEX_CREDENTIALS_PATH as ``password=False`` (it's a path, not a
+        secret string) with ``category="provider"`` — a category the
+        registry-derived loop above never checks — so it fell through both
+        blocklist sources. GOOGLE_APPLICATION_CREDENTIALS (the ADC fallback
+        the adapter also reads) had the same gap. A leaked path discloses
+        the on-disk location of a GCP service-account key to every spawned
+        subprocess (terminal, codex/copilot app-server, browser workers).
+        """
+        result_env = _run_with_env(extra_os_env={
+            "VERTEX_CREDENTIALS_PATH": "/home/user/.config/gcloud/sa-key.json",
+            "GOOGLE_APPLICATION_CREDENTIALS": "/home/user/.config/gcloud/adc.json",
+        })
+
+        assert "VERTEX_CREDENTIALS_PATH" not in result_env
+        assert "GOOGLE_APPLICATION_CREDENTIALS" not in result_env
 
     def test_general_aws_credential_chain_is_preserved(self):
         """The GENERAL AWS credential chain must STILL pass through to
@@ -126,7 +148,7 @@ class TestProviderEnvBlocklist:
         unconditionally — and (b) be unrecoverable, because env_passthrough.py
         refuses to re-allow anything in _HERMES_PROVIDER_ENV_BLOCKLIST
         (GHSA-rhgp-j443-p4rf). Only the Bedrock inference bearer token is
-        Moor-managed; the rest belongs to the user.
+        Hermes-managed; the rest belongs to the user.
         """
         general_chain = {
             "AWS_ACCESS_KEY_ID": "AKIAIOSFODNN7EXAMPLE",
@@ -239,6 +261,54 @@ class TestForceEnvOptIn:
         assert result_env["OPENAI_BASE_URL"] == "http://intended/v1"
 
 
+class TestActiveVenvMarkerStripping:
+    """Active-virtualenv markers must not leak into terminal subprocesses (#23473).
+
+    The gateway runs inside its own venv, so its process environment carries
+    VIRTUAL_ENV (and possibly CONDA_PREFIX). If those leak into commands the
+    agent runs against ANOTHER Python project, ``uv``/``poetry`` treat the
+    inherited value as the active environment and build that project's deps
+    into the Hermes venv path instead of the project's own ``.venv`` —
+    silently clobbering the Hermes environment (and, when the other project
+    pins a different Python, breaking the gateway outright). The Hermes venv
+    stays reachable via PATH, so stripping the markers is safe.
+    """
+
+    def test_virtualenv_marker_stripped_end_to_end(self):
+        result_env = _run_with_env(extra_os_env={
+            "VIRTUAL_ENV": "/home/user/.hermes/hermes-agent/venv",
+        })
+        assert "VIRTUAL_ENV" not in result_env
+
+    def test_conda_prefix_marker_stripped_end_to_end(self):
+        result_env = _run_with_env(extra_os_env={
+            "CONDA_PREFIX": "/opt/conda/envs/hermes",
+        })
+        assert "CONDA_PREFIX" not in result_env
+
+    def test_make_run_env_strips_markers(self):
+        from tools.environments.local import _make_run_env
+        poison = {"VIRTUAL_ENV": "/venv", "CONDA_PREFIX": "/conda", "PATH": "/usr/bin"}
+        with patch.dict(os.environ, poison, clear=True):
+            result = _make_run_env({})
+        assert "VIRTUAL_ENV" not in result
+        assert "CONDA_PREFIX" not in result
+
+    def test_sanitize_subprocess_env_strips_markers(self):
+        from tools.environments.local import _sanitize_subprocess_env
+        base = {"VIRTUAL_ENV": "/venv", "CONDA_PREFIX": "/conda", "HOME": "/home/user"}
+        # Even an explicitly-passed extra marker is stripped.
+        result = _sanitize_subprocess_env(base, {"VIRTUAL_ENV": "/also/venv"})
+        assert "VIRTUAL_ENV" not in result
+        assert "CONDA_PREFIX" not in result
+        assert result.get("HOME") == "/home/user"
+
+    def test_markers_constant_contents(self):
+        from tools.environments.local import _ACTIVE_VENV_MARKER_VARS
+        assert "VIRTUAL_ENV" in _ACTIVE_VENV_MARKER_VARS
+        assert "CONDA_PREFIX" in _ACTIVE_VENV_MARKER_VARS
+
+
 class TestBlocklistCoverage:
     """Sanity checks that the blocklist covers all known providers."""
 
@@ -255,11 +325,18 @@ class TestBlocklistCoverage:
 
     def test_registry_vars_are_in_blocklist(self):
         """Every api_key_env_var and base_url_env_var from PROVIDER_REGISTRY
-        must appear in the blocklist — ensures no drift."""
+        must appear in the blocklist — ensures no drift.
+
+        CLAUDE_CODE_OAUTH_TOKEN is the one deliberate exemption: it is owned
+        by the user's Claude Code install, not Hermes (#55878).
+        """
         from hermes_cli.auth import PROVIDER_REGISTRY
 
+        exempt = {"CLAUDE_CODE_OAUTH_TOKEN"}
         for pconfig in PROVIDER_REGISTRY.values():
             for var in pconfig.api_key_env_vars:
+                if var in exempt:
+                    continue
                 assert var in _HERMES_PROVIDER_ENV_BLOCKLIST, (
                     f"Registry var {var} (provider={pconfig.id}) missing from blocklist"
                 )
@@ -270,7 +347,7 @@ class TestBlocklistCoverage:
                 )
 
     def test_bedrock_bearer_token_is_in_blocklist(self):
-        """auth_type='aws_sdk' providers contribute their Moor-managed
+        """auth_type='aws_sdk' providers contribute their Hermes-managed
         inference token (the Bedrock bearer) to the blocklist, keyed off
         auth_type so any future SDK-cred provider is covered automatically."""
         assert "AWS_BEARER_TOKEN_BEDROCK" in _HERMES_PROVIDER_ENV_BLOCKLIST
@@ -278,7 +355,7 @@ class TestBlocklistCoverage:
     def test_general_aws_chain_not_in_blocklist(self):
         """The general AWS credential chain must NOT be in the blocklist —
         no-regression guard for #32314. These belong to the user's trusted
-        operator shell (SECURITY.md §3.2), not to Moor, and blocklisting
+        operator shell (SECURITY.md §3.2), not to Hermes, and blocklisting
         them would be unrecoverable via env_passthrough (GHSA-rhgp-j443-p4rf).
         """
         general_chain = {
@@ -300,10 +377,18 @@ class TestBlocklistCoverage:
         )
 
     def test_extra_auth_vars_covered(self):
-        """Non-registry auth vars (ANTHROPIC_TOKEN, CLAUDE_CODE_OAUTH_TOKEN)
-        must also be in the blocklist."""
-        extras = {"ANTHROPIC_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN"}
+        """Non-registry auth vars (ANTHROPIC_TOKEN) must also be in the
+        blocklist."""
+        extras = {"ANTHROPIC_TOKEN"}
         assert extras.issubset(_HERMES_PROVIDER_ENV_BLOCKLIST)
+
+    def test_claude_code_oauth_token_is_inheritable(self):
+        """CLAUDE_CODE_OAUTH_TOKEN is owned by the user's Claude Code install
+        (subscription OAuth), not a Hermes inference credential. Stripping it
+        made agent-spawned ``claude`` fall through to the shared Keychain /
+        ~/.claude credential store and clobber the user's interactive login
+        on auth failure (#55878). It must stay inheritable."""
+        assert "CLAUDE_CODE_OAUTH_TOKEN" not in _HERMES_PROVIDER_ENV_BLOCKLIST
 
     def test_non_registry_provider_vars_are_in_blocklist(self):
         extras = {
@@ -563,3 +648,116 @@ class TestHermesBinDirOnPath:
         entries = result["PATH"].split(os.pathsep)
         assert entries[0] == "/opt/hermes/bin"
         assert "/usr/bin" in entries
+
+
+class TestHermesInternalDynamicSecrets:
+    """Dynamically-named Hermes secrets injected at gateway/CLI startup must
+    not leak into terminal subprocesses.
+
+    The static ``_HERMES_PROVIDER_ENV_BLOCKLIST`` is name-based and derived
+    from provider/tool registries, so it cannot enumerate:
+
+    - ``AUXILIARY_<TASK>_API_KEY`` / ``AUXILIARY_<TASK>_BASE_URL`` — per-task
+      side-LLM credentials bridged from ``config.yaml[auxiliary]`` by
+      ``gateway/run.py`` and ``cli.py``.
+    - ``GATEWAY_RELAY_*_SECRET`` / ``_KEY`` / ``_TOKEN`` — relay-auth material
+      provisioned by ``gateway/relay``.
+
+    ``_is_hermes_internal_secret`` is the single source of truth; every spawn
+    path (``_sanitize_subprocess_env``, ``_make_run_env``,
+    ``hermes_subprocess_env``, Docker forward filter, ``env_passthrough``)
+    consults it. These tests exercise the terminal execute path + predicate.
+    """
+
+    def test_predicate_matches_auxiliary_api_key(self):
+        from tools.environments.local import _is_hermes_internal_secret
+        assert _is_hermes_internal_secret("AUXILIARY_VISION_API_KEY")
+        assert _is_hermes_internal_secret("AUXILIARY_WEB_EXTRACT_API_KEY")
+        assert _is_hermes_internal_secret("AUXILIARY_APPROVAL_API_KEY")
+        # plugin-registered task names are covered by the pattern
+        assert _is_hermes_internal_secret("AUXILIARY_MY_PLUGIN_TASK_API_KEY")
+
+    def test_predicate_matches_auxiliary_base_url(self):
+        from tools.environments.local import _is_hermes_internal_secret
+        assert _is_hermes_internal_secret("AUXILIARY_VISION_BASE_URL")
+        assert _is_hermes_internal_secret("AUXILIARY_COMPRESSION_BASE_URL")
+
+    def test_predicate_matches_gateway_relay_auth(self):
+        from tools.environments.local import _is_hermes_internal_secret
+        assert _is_hermes_internal_secret("GATEWAY_RELAY_SECRET")
+        assert _is_hermes_internal_secret("GATEWAY_RELAY_DELIVERY_KEY")
+        assert _is_hermes_internal_secret("GATEWAY_RELAY_SESSION_TOKEN")
+
+    def test_predicate_allows_auxiliary_non_secrets(self):
+        """AUXILIARY_*_PROVIDER / _MODEL and GATEWAY_RELAY_* routing hints are
+        NOT secrets and must remain visible so tooling that reads them works."""
+        from tools.environments.local import _is_hermes_internal_secret
+        assert not _is_hermes_internal_secret("AUXILIARY_VISION_PROVIDER")
+        assert not _is_hermes_internal_secret("AUXILIARY_VISION_MODEL")
+        assert not _is_hermes_internal_secret("GATEWAY_RELAY_URL")
+        assert not _is_hermes_internal_secret("GATEWAY_RELAY_PLATFORMS")
+        assert not _is_hermes_internal_secret("GATEWAY_RELAY_ID")  # not a secret suffix
+        # unrelated vars pass through
+        assert not _is_hermes_internal_secret("PATH")
+        assert not _is_hermes_internal_secret("MY_APP_KEY")
+
+    def test_auxiliary_secrets_stripped_from_subprocess(self):
+        """AUXILIARY_*_API_KEY / _BASE_URL injected into os.environ must not
+        reach the terminal subprocess, while _PROVIDER / _MODEL survive."""
+        result_env = _run_with_env(extra_os_env={
+            "AUXILIARY_VISION_API_KEY": "sk-vision-secret",
+            "AUXILIARY_VISION_BASE_URL": "http://internal:1234/v1",
+            "AUXILIARY_WEB_EXTRACT_API_KEY": "sk-webx-secret",
+            "AUXILIARY_VISION_PROVIDER": "openai",
+            "AUXILIARY_VISION_MODEL": "gpt-4o",
+        })
+        assert "AUXILIARY_VISION_API_KEY" not in result_env
+        assert "AUXILIARY_VISION_BASE_URL" not in result_env
+        assert "AUXILIARY_WEB_EXTRACT_API_KEY" not in result_env
+        # Non-secret routing config is preserved.
+        assert result_env.get("AUXILIARY_VISION_PROVIDER") == "openai"
+        assert result_env.get("AUXILIARY_VISION_MODEL") == "gpt-4o"
+
+    def test_gateway_relay_secret_stripped_from_subprocess(self):
+        result_env = _run_with_env(extra_os_env={
+            "GATEWAY_RELAY_SECRET": "relay-signing-secret",
+            "GATEWAY_RELAY_DELIVERY_KEY": "relay-delivery-key",
+            "GATEWAY_RELAY_URL": "https://relay.example.com",
+        })
+        assert "GATEWAY_RELAY_SECRET" not in result_env
+        assert "GATEWAY_RELAY_DELIVERY_KEY" not in result_env
+        # Non-secret routing hint stays visible.
+        assert result_env.get("GATEWAY_RELAY_URL") == "https://relay.example.com"
+
+    def test_auxiliary_secret_stripped_even_when_passthrough_registered(self):
+        """A skill registering AUXILIARY_*_API_KEY as env_passthrough must NOT
+        be able to tunnel it into a subprocess — the strip is unconditional."""
+        with patch(
+            "tools.env_passthrough.is_env_passthrough",
+            side_effect=lambda name: name == "AUXILIARY_VISION_API_KEY",
+        ):
+            result_env = _run_with_env(extra_os_env={
+                "AUXILIARY_VISION_API_KEY": "sk-vision-secret",
+            })
+        assert "AUXILIARY_VISION_API_KEY" not in result_env
+
+    def test_make_run_env_strips_internal_secrets(self):
+        """The foreground _make_run_env path strips the same dynamic secrets."""
+        from tools.environments.local import _make_run_env
+        with patch.dict(os.environ, {
+            "PATH": "/usr/bin:/bin",
+            "AUXILIARY_VISION_API_KEY": "sk-secret",
+            "GATEWAY_RELAY_SECRET": "relay-secret",
+            "AUXILIARY_VISION_PROVIDER": "openai",
+        }, clear=True):
+            run_env = _make_run_env({})
+        assert "AUXILIARY_VISION_API_KEY" not in run_env
+        assert "GATEWAY_RELAY_SECRET" not in run_env
+        assert run_env.get("AUXILIARY_VISION_PROVIDER") == "openai"
+
+    def test_gateway_relay_static_names_in_blocklist(self):
+        """The static relay names are also added to the name-based blocklist so
+        the exact-match path catches them independently of the predicate."""
+        assert "GATEWAY_RELAY_SECRET" in _HERMES_PROVIDER_ENV_BLOCKLIST
+        assert "GATEWAY_RELAY_DELIVERY_KEY" in _HERMES_PROVIDER_ENV_BLOCKLIST
+        assert "GATEWAY_RELAY_ID" in _HERMES_PROVIDER_ENV_BLOCKLIST

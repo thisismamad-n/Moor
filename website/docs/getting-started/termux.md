@@ -1,19 +1,24 @@
 ---
 sidebar_position: 3
 title: "Android / Termux"
-description: "Run Moor Agent directly on an Android phone with Termux"
+description: "Run Hermes Agent directly on an Android phone with Termux"
 ---
 
-# Moor on Android with Termux
+# Hermes on Android with Termux
 
-This is the tested path for running Moor Agent directly on an Android phone through [Termux](https://termux.dev/).
+:::warning Tier 2 platform
+Termux (Android) is a [Tier 2 platform](./platform-support.md#tier-2). The installer script and documentation here are maintained on a best-effort basis only. Commits to `main` may break these packages at any point in time.
+:::
+
+Hermes Agent can run directly on an Android phone through [Termux](https://termux.dev/).
 
 It gives you a working local CLI on the phone, plus the core extras that are currently known to install cleanly on Android.
 
 ## What is supported in the tested path?
 
 The tested Termux bundle installs:
-- the Moor CLI
+
+- the Hermes CLI
 - cron support
 - PTY/background terminal support
 - Telegram gateway support (manual / best-effort background runs)
@@ -37,19 +42,20 @@ A few features still need desktop/server-style dependencies that are not publish
 - Docker-based terminal isolation is not available inside Termux
 - Android may still suspend Termux background jobs, so gateway persistence is best-effort rather than a normal managed service
 
-That does not stop Moor from working well as a phone-native CLI agent — it just means the recommended mobile install is intentionally narrower than the desktop/server install.
+That does not stop Hermes from working well as a phone-native CLI agent — it just means the recommended mobile install is intentionally narrower than the desktop/server install.
 
 ---
 
 ## Option 1: One-line installer
 
-Moor now ships a Termux-aware installer path:
+Hermes now ships a Termux-aware installer path:
 
 ```bash
-curl -fsSL https://hermes-agent.Moor inc..com/install.sh | bash
+curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
 ```
 
 On Termux, the installer automatically:
+
 - uses `pkg` for system packages
 - creates the venv with `python -m venv`
 - attempts the broad `.[termux-all]` extra first and falls back to the smaller `.[termux]` extra (then a base install) — the curl installer matches this order automatically
@@ -70,6 +76,7 @@ pkg install -y git python clang rust make pkg-config libffi openssl nodejs ripgr
 ```
 
 Why these packages?
+
 - `python` — runtime + venv support
 - `git` — clone/update the repo
 - `clang`, `rust`, `make`, `pkg-config`, `libffi`, `openssl` — needed to build a few Python dependencies on Android
@@ -77,10 +84,10 @@ Why these packages?
 - `ripgrep` — fast file search
 - `ffmpeg` — media / TTS conversions
 
-### 2. Clone Moor
+### 2. Clone Hermes
 
 ```bash
-git clone https://github.com/Moor inc./hermes-agent.git
+git clone https://github.com/NousResearch/hermes-agent.git
 cd hermes-agent
 ```
 
@@ -122,7 +129,7 @@ hermes version
 hermes doctor
 ```
 
-### 7. Start Moor
+### 7. Start Hermes
 
 ```bash
 hermes
@@ -172,6 +179,7 @@ python -m pip install -e '.[termux]' -c constraints-termux.txt
 ```
 
 The blocker is currently the `voice` extra:
+
 - `voice` pulls `faster-whisper`
 - `faster-whisper` depends on `ctranslate2`
 - `ctranslate2` does not publish Android wheels
@@ -229,6 +237,7 @@ python -m pip install -e '.[termux]' -c constraints-termux.txt
 - some optional extras may work, but only `.[termux]` and `.[termux-all]` are currently documented as the tested Android bundles
 
 If you hit a new Android-specific issue, please open a GitHub issue with:
+
 - your Android version
 - `termux-info`
 - `python --version`

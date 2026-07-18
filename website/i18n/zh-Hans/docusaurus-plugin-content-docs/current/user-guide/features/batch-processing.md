@@ -6,7 +6,7 @@ description: "大规模生成 agent 轨迹——并行处理、断点续跑与�
 
 # 批量处理
 
-批量处理让你能够并行地在数百乃至数千个 prompt（提示词）上运行 Moor agent，生成结构化的轨迹数据。其主要用途是**训练数据生成**——产出包含工具使用统计信息的 ShareGPT 格式轨迹，可用于微调或评估。
+批量处理让你能够并行地在数百乃至数千个 prompt（提示词）上运行 Hermes agent，生成结构化的轨迹数据。其主要用途是**训练数据生成**——产出包含工具使用统计信息的 ShareGPT 格式轨迹，可用于微调或评估。
 
 ## 概述
 
@@ -83,7 +83,7 @@ python batch_runner.py --list_distributions
 
 | 参数 | 说明 |
 |-----------|-------------|
-| `--reasoning_effort` | 推理力度：`none`、`minimal`、`low`、`medium`、`high`、`xhigh` |
+| `--reasoning_effort` | 推理力度：`none`、`minimal`、`low`、`medium`、`high`、`xhigh`、`max`、`ultra` |
 | `--reasoning_disabled` | 完全禁用推理/思考 token |
 
 ### 高级选项

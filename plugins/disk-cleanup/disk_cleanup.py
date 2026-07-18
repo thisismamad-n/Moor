@@ -1,4 +1,4 @@
-"""disk_cleanup — ephemeral file cleanup for Moor Agent.
+"""disk_cleanup — ephemeral file cleanup for Hermes Agent.
 
 Library module wrapping the deterministic cleanup rules written by
 @LVT382009 in PR #12212. The plugin ``__init__.py`` wires these
@@ -166,9 +166,13 @@ def _is_protected_cron_path(p: Path) -> bool:
     """Return True if *p* is a cron control-plane file/directory that must
     never be deleted.
 
-    This only matches the directory itself and known control-plane files
-    (``jobs.json``, ``.tick.lock``) — it does NOT blanket-protect
-    everything under ``cron/`` because ``cron/output/`` is disposable.
+    This matches, by EXACT path only, the ``cron/`` directory itself, known
+    control-plane files (``jobs.json``, ``.tick.lock``), and the ``output/``
+    root directory. It does NOT (and must not be "simplified" to) blanket-match
+    everything under ``cron/output/`` — those run artifacts are disposable and
+    are cleaned by retention policy; only the ``output/`` root itself is
+    protected, because deleting it wholesale erases every job's retained run
+    history at once.
     """
     # Lazily build the set once per process so HERMES_HOME is resolved
     # exactly once.
@@ -177,6 +181,7 @@ def _is_protected_cron_path(p: Path) -> bool:
         for parent in ("cron", "cronjobs"):
             base = hermes_home / parent
             _PROTECTED_CRON_PATHS.add(str(base))
+            _PROTECTED_CRON_PATHS.add(str(base / "output"))
             _PROTECTED_CRON_PATHS.add(str(base / "jobs.json"))
             _PROTECTED_CRON_PATHS.add(str(base / ".tick.lock"))
     resolved = str(p.resolve())
@@ -360,7 +365,7 @@ def quick() -> Dict[str, Any]:
             new_tracked.append(item)
 
     # Remove empty dirs under HERMES_HOME, but never recurse into known
-    # durable state trees.  Some installs place the Moor checkout, venv,
+    # durable state trees.  Some installs place the Hermes checkout, venv,
     # and desktop build under HERMES_HOME; a full rglob over that tree can
     # stall the gateway event loop for minutes.
     hermes_home = get_hermes_home()
@@ -566,7 +571,7 @@ def guess_category(path: Path) -> Optional[str]:
             # (e.g. ``jobs.json``, ``.tick.lock``) must never be
             # auto-tracked — deleting it wipes the live scheduler
             # registry. See issue #32164.
-            if len(rel.parts) >= 2 and rel.parts[1] == "output":
+            if len(rel.parts) >= 3 and rel.parts[1] == "output":
                 return "cron-output"
             return None
         if top == "cache":

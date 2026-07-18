@@ -31,6 +31,7 @@ def _isolate_discord_env(monkeypatch):
         "DISCORD_ALLOWED_USERS",
         "DISCORD_ALLOWED_ROLES",
         "DISCORD_ALLOW_ALL_USERS",
+        "TELEGRAM_ALLOW_BOTS",
         "GATEWAY_ALLOW_ALL_USERS",
         "GATEWAY_ALLOWED_USERS",
     ):
@@ -84,7 +85,7 @@ def test_discord_bot_authorized_when_allow_bots_mentions(monkeypatch):
     DISCORD_ALLOWED_USERS is set and the bot's ID is NOT in it.
 
     This is the exact scenario from #4466 — a Cloudflare Worker webhook
-    posts Notion events to Discord, the Moor bot gets @mentioned, and
+    posts Notion events to Discord, the Hermes bot gets @mentioned, and
     the webhook's bot ID is not (and shouldn't be) on the human
     allowlist.
     """

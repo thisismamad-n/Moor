@@ -32,8 +32,11 @@ export type DesktopActionId =
   | 'branch'
   | 'browser'
   | 'handoff'
+  | 'hatch'
   | 'help'
+  | 'journey'
   | 'new'
+  | 'pet'
   | 'profile'
   | 'skin'
   | 'title'
@@ -42,7 +45,7 @@ export type DesktopActionId =
 /** A command fulfilled by opening a desktop overlay picker. */
 export type DesktopPickerId = 'model' | 'session'
 
-/** Why a known Moor command has no desktop UI surface. */
+/** Why a known Hermes command has no desktop UI surface. */
 export type DesktopUnavailableReason = 'advanced' | 'messaging' | 'settings' | 'terminal'
 
 /**
@@ -97,10 +100,20 @@ const unavailable = (reason: DesktopUnavailableReason): DesktopCommandSurface =>
 const DESKTOP_COMMAND_SPECS: readonly DesktopCommandSpec[] = [
   // Local client actions
   { name: '/new', description: 'Start a new desktop chat', aliases: ['/reset'], surface: action('new') },
-  { name: '/branch', description: 'Branch the latest message into a new chat', aliases: ['/fork'], surface: action('branch') },
+  {
+    name: '/branch',
+    description: 'Branch the latest message into a new chat',
+    aliases: ['/fork'],
+    surface: action('branch')
+  },
   { name: '/yolo', description: 'Toggle YOLO — auto-approve dangerous commands', surface: action('yolo') },
-  { name: '/handoff', description: 'Hand off this session to a messaging platform', surface: action('handoff'), args: true },
-  { name: '/profile', description: 'Switch the active Moor profile', surface: action('profile') },
+  {
+    name: '/handoff',
+    description: 'Hand off this session to a messaging platform',
+    surface: action('handoff'),
+    args: true
+  },
+  { name: '/profile', description: 'Switch the active Hermes profile', surface: action('profile') },
   { name: '/skin', description: 'Switch desktop theme or cycle to the next one', surface: action('skin'), args: true },
   { name: '/title', description: 'Rename the current session', surface: action('title') },
   { name: '/help', description: 'Show desktop slash commands', aliases: ['/commands'], surface: action('help') },
@@ -109,6 +122,12 @@ const DESKTOP_COMMAND_SPECS: readonly DesktopCommandSpec[] = [
     description: 'Manage browser CDP connection [connect|disconnect|status] (local gateway only)',
     surface: action('browser'),
     args: true
+  },
+  {
+    name: '/journey',
+    description: 'Open the memory graph — skills + memories over time',
+    aliases: ['/learning', '/memory-graph'],
+    surface: action('journey')
   },
 
   // Overlay pickers
@@ -122,12 +141,29 @@ const DESKTOP_COMMAND_SPECS: readonly DesktopCommandSpec[] = [
   },
 
   // Backend-executed commands that render useful inline output
-  { name: '/agents', description: 'Show active desktop sessions and running tasks', aliases: ['/tasks'], surface: exec() },
+  {
+    name: '/agents',
+    description: 'Show active desktop sessions and running tasks',
+    aliases: ['/tasks'],
+    surface: exec()
+  },
   { name: '/background', description: 'Run a prompt in the background', aliases: ['/bg', '/btw'], surface: exec() },
   { name: '/compress', description: 'Compress this conversation context', surface: exec() },
   { name: '/debug', description: 'Create a debug report', surface: exec() },
   { name: '/goal', description: 'Manage the standing goal for this session', surface: exec() },
   { name: '/personality', description: 'Switch personality for this session', surface: exec(), args: true },
+  {
+    name: '/pet',
+    description: 'Toggle or adopt a petdex mascot (/pet, /pet list, /pet boba)',
+    surface: action('pet'),
+    args: true
+  },
+  {
+    name: '/hatch',
+    description: 'Generate a new pet (opens the pet generator)',
+    aliases: ['/generate-pet'],
+    surface: action('hatch')
+  },
   { name: '/queue', description: 'Queue a prompt for the next turn', aliases: ['/q'], surface: exec() },
   { name: '/retry', description: 'Retry the last user message', surface: exec() },
   { name: '/rollback', description: 'List or restore filesystem checkpoints', surface: exec() },
@@ -138,7 +174,7 @@ const DESKTOP_COMMAND_SPECS: readonly DesktopCommandSpec[] = [
   { name: '/tools', description: 'List or toggle tools available to the agent', surface: exec(), args: true },
   { name: '/undo', description: 'Remove the last user/assistant exchange', surface: exec() },
   { name: '/usage', description: 'Show token usage for this session', surface: exec() },
-  { name: '/version', description: 'Show Moor Agent version', surface: exec() },
+  { name: '/version', description: 'Show Hermes Agent version', surface: exec() },
 
   // No desktop surface, but carry an alias (underscore spelling variants).
   { name: '/reload-mcp', aliases: ['/reload_mcp'], surface: unavailable('advanced') },
@@ -149,13 +185,40 @@ const DESKTOP_COMMAND_SPECS: readonly DesktopCommandSpec[] = [
 // per reason beats 40 identical object literals.
 const NO_DESKTOP_SURFACE: Record<DesktopUnavailableReason, readonly string[]> = {
   terminal: [
-    '/busy', '/clear', '/compact', '/config', '/copy', '/cron', '/details',
-    '/exit', '/footer', '/gateway', '/history', '/image', '/indicator', '/logs',
-    '/mouse', '/paste', '/platforms', '/plugins', '/quit', '/redraw', '/reload', '/restart',
-    '/sb', '/set-home', '/sethome', '/snap', '/snapshot', '/statusbar', '/toolsets', '/update', '/verbose'
+    '/busy',
+    '/clear',
+    '/compact',
+    '/config',
+    '/copy',
+    '/cron',
+    '/details',
+    '/exit',
+    '/footer',
+    '/gateway',
+    '/history',
+    '/image',
+    '/indicator',
+    '/logs',
+    '/mouse',
+    '/paste',
+    '/platforms',
+    '/plugins',
+    '/quit',
+    '/redraw',
+    '/reload',
+    '/restart',
+    '/sb',
+    '/set-home',
+    '/sethome',
+    '/snap',
+    '/snapshot',
+    '/statusbar',
+    '/toolsets',
+    '/update',
+    '/verbose'
   ],
   messaging: ['/approve', '/deny'],
-  settings: ['/skills'],
+  settings: ['/skills', '/pets'],
   advanced: ['/curator', '/fast', '/insights', '/kanban', '/reasoning', '/voice']
 }
 
@@ -211,7 +274,7 @@ function isKnownHermesSlashCommand(command: string): boolean {
 
 /**
  * An "extension" command is anything the backend surfaces that is NOT one of
- * Moor' built-in slash commands — i.e. skill commands (`/gif-search`,
+ * Hermes' built-in slash commands — i.e. skill commands (`/gif-search`,
  * `/codex`, …) and user-defined quick commands. These are user-activated, so
  * they appear in the desktop slash palette and execute when typed.
  */

@@ -97,6 +97,24 @@ class TestParseResponse:
         )
         assert r is None
 
+    def test_pre_verify_continue_canonical(self):
+        r = shell_hooks._parse_response(
+            "pre_verify", '{"action": "continue", "message": "run checks"}',
+        )
+        assert r == {"action": "continue", "message": "run checks"}
+
+    def test_pre_verify_block_is_continue_claude_style(self):
+        # Claude-Code Stop hooks: block the stop == keep going; reason → message.
+        r = shell_hooks._parse_response(
+            "pre_verify", '{"decision": "block", "reason": "run the formatter"}',
+        )
+        assert r == {"action": "continue", "message": "run the formatter"}
+
+    def test_pre_verify_without_message_is_noop(self):
+        # A continue with nothing to tell the model lets the turn finish.
+        assert shell_hooks._parse_response("pre_verify", '{"action": "continue"}') is None
+        assert shell_hooks._parse_response("pre_verify", '{"decision": "allow"}') is None
+
     def test_block_action_without_message_uses_default(self):
         """Block is honored even when message/reason is absent."""
         r = shell_hooks._parse_response("pre_tool_call", '{"action": "block"}')
@@ -284,7 +302,7 @@ class TestCallbackSubprocess:
         """v1 schema-bug regression gate.
 
         Shell hook returns the Claude-Code-style payload and the bridge
-        must translate it to the canonical Moor block shape so that
+        must translate it to the canonical Hermes block shape so that
         get_pre_tool_call_block_message() surfaces the block.
         """
         script = _write_script(

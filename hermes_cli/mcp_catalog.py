@@ -10,7 +10,11 @@ Catalog policy:
 - Entries are added only by merging a PR into hermes-agent. Presence in the
   ``optional-mcps/`` directory = Nous approval. No community tier, no trust
   signals beyond "it's in the catalog".
-- Manifests pin transport details (commands, args, refs). MCPs are never
+- Manifests pin transport details (commands, args, refs). Pins follow the
+  same supply-chain rules as pyproject dependencies: exact versions for
+  package launchers (``uvx pkg==X``, ``npx pkg@X``), full commit SHAs for
+  git installs, and the pinned release should be at least 2 weeks old at
+  pin time. MCPs are never
   auto-updated; users explicitly re-run ``hermes mcp install <name>`` to
   pull a new manifest version after a repo update.
 - Secrets prompted at install time go to ``~/.hermes/.env`` (the
@@ -77,6 +81,10 @@ class TransportSpec:
     args: List[str] = field(default_factory=list)
     url: Optional[str] = None
     version: Optional[str] = None  # informational, pinned
+    # Static environment variables for the stdio subprocess (e.g. telemetry
+    # opt-outs, mode flags). NOT for secrets — credentials go through
+    # auth.env so they are prompted for and land in ~/.hermes/.env.
+    env: Dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -126,7 +134,7 @@ class CatalogError(Exception):
 
 
 def _catalog_root() -> Path:
-    """Return the optional-mcps/ directory shipped with this Moor install."""
+    """Return the optional-mcps/ directory shipped with this Hermes install."""
     # Prefer the env-var override / packaged location; fall back to the repo's
     # optional-mcps/ next to the package (source checkout).
     return get_optional_mcps_dir(Path(__file__).parent.parent / "optional-mcps")
@@ -162,7 +170,7 @@ def _parse_manifest(path: Path) -> CatalogEntry:
     if mv != _MANIFEST_VERSION:
         raise CatalogError(
             f"{path}: manifest_version {mv!r} unsupported "
-            f"(this Moor understands version {_MANIFEST_VERSION})"
+            f"(this Hermes understands version {_MANIFEST_VERSION})"
         )
 
     name = data.get("name") or ""
@@ -184,12 +192,20 @@ def _parse_manifest(path: Path) -> CatalogEntry:
     args = transport_raw.get("args") or []
     if not isinstance(args, list):
         raise CatalogError(f"{path}: transport.args must be a list")
+    env_raw = transport_raw.get("env") or {}
+    if not isinstance(env_raw, dict) or not all(
+        isinstance(k, str) and isinstance(v, str) for k, v in env_raw.items()
+    ):
+        raise CatalogError(
+            f"{path}: transport.env must be a mapping of string to string"
+        )
     transport = TransportSpec(
         type=t_type,
         command=transport_raw.get("command"),
         args=[str(a) for a in args],
         url=transport_raw.get("url"),
         version=transport_raw.get("version"),
+        env=dict(env_raw),
     )
     if t_type == "stdio" and not transport.command:
         raise CatalogError(f"{path}: stdio transport requires 'command'")
@@ -268,7 +284,7 @@ def list_catalog() -> List[CatalogEntry]:
     Invalid manifests are skipped silently (CI tests catch them at PR time).
     Manifests with a future ``manifest_version`` are also skipped, but the
     skip is surfaced via :func:`catalog_diagnostics` so the picker / catalog
-    UIs can tell the user their Moor is out of date.
+    UIs can tell the user their Hermes is out of date.
     """
     root = _catalog_root()
     if not root.exists():
@@ -303,8 +319,8 @@ def catalog_diagnostics() -> List[tuple]:
 
     Returns a list of ``(entry_name, kind, message)`` tuples where ``kind``
     is one of:
-      - ``future_manifest`` — manifest_version is newer than this Moor
-        understands. Update Moor to install this entry.
+      - ``future_manifest`` — manifest_version is newer than this Hermes
+        understands. Update Hermes to install this entry.
       - ``invalid`` — manifest is malformed in some other way (caught by
         CI for shipped manifests; user-modified manifests can hit this).
     """
@@ -468,6 +484,8 @@ def _build_server_config(
         cfg["command"] = _expand_install_dir(t.command or "", install_dir)
         if t.args:
             cfg["args"] = [_expand_install_dir(a, install_dir) for a in t.args]
+        if t.env:
+            cfg["env"] = dict(t.env)
     elif t.type == "http":
         cfg["url"] = t.url
         if entry.auth.type == "oauth":
@@ -744,7 +762,7 @@ def install_entry(entry: CatalogEntry, *, enable: bool = True) -> None:
     print(color(
         f"  ✓ Installed '{entry.name}' "
         f"({'enabled' if enable else 'disabled'}). "
-        f"Start a new Moor session to load its tools.",
+        f"Start a new Hermes session to load its tools.",
         Colors.GREEN,
     ))
     if entry.post_install:

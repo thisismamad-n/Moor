@@ -161,7 +161,7 @@ def cmd_disable(args) -> None:
 def cmd_sync(args) -> None:
     """Sync Honcho config to all existing profiles.
 
-    Scans all Moor profiles and creates host blocks for any that don't
+    Scans all Hermes profiles and creates host blocks for any that don't
     have one yet. Inherits settings from the default host block.
     """
     try:
@@ -237,7 +237,7 @@ _profile_override: str | None = None
 
 
 def _host_key() -> str:
-    """Return the active Honcho host key, derived from the current Moor profile."""
+    """Return the active Honcho host key, derived from the current Hermes profile."""
     if _profile_override:
         if _profile_override in {"default", "custom"}:
             return HOST
@@ -510,25 +510,21 @@ def _ensure_sdk_installed() -> bool:
         pass
 
     print("  honcho-ai is not installed.")
-    answer = _prompt("Install it now? (honcho-ai>=2.0.1)", default="y")
+    answer = _prompt("Install it now? (honcho-ai==2.2.0)", default="y")
     if answer.lower() not in {"y", "yes"}:
-        print("  Skipping install. Run: pip install 'honcho-ai>=2.0.1'\n")
+        print("  Skipping install. Run: pip install 'honcho-ai==2.2.0'\n")
         return False
 
-    import subprocess
     print("  Installing honcho-ai...", flush=True)
-    result = subprocess.run(
-        [sys.executable, "-m", "pip", "install", "honcho-ai>=2.0.1"],
-        capture_output=True,
-        text=True,
-        stdin=subprocess.DEVNULL,
-    )
+    from hermes_cli.tools_config import _pip_install
+
+    result = _pip_install(["honcho-ai==2.2.0"])
     if result.returncode == 0:
         print("  Installed.\n")
         return True
     else:
-        print(f"  Install failed:\n{result.stderr.strip()}")
-        print("  Run manually: pip install 'honcho-ai>=2.0.1'\n")
+        print(f"  Install failed:\n{(result.stderr or '').strip()}")
+        print("  Run manually: uv pip install 'honcho-ai==2.2.0'\n")
         return False
 
 
@@ -539,7 +535,7 @@ def cmd_setup(args) -> None:
     write_path = _local_config_path()
     read_path = _config_path()
     print("\nHoncho memory setup\n" + "─" * 40)
-    print("  Honcho gives Moor persistent cross-session memory.")
+    print("  Honcho gives Hermes persistent cross-session memory.")
     print(f"  Config: {write_path}")
     if read_path != write_path and read_path.exists():
         print(f"  (seeding from existing config at {read_path})")
@@ -622,21 +618,67 @@ def cmd_setup(args) -> None:
                 )
             else:
                 print("\n  No local JWT set. Local no-auth ready.")
-    else:
-        # --- Cloud: set default base URL, require API key ---
+    use_oauth = False
+    if not is_local:
+        # --- Cloud: OAuth (browser) or API key ---
         cfg.pop("baseUrl", None)  # cloud uses SDK default
 
-        current_key = cfg.get("apiKey", "")
-        masked = f"...{current_key[-8:]}" if len(current_key) > 8 else ("set" if current_key else "not set")
-        print(f"\n  Current API key: {masked}")
-        new_key = _prompt("Honcho API key (leave blank to keep current)", secret=True)
-        if new_key:
-            cfg["apiKey"] = new_key
+        # Detect an existing OAuth grant so re-running setup reflects it instead
+        # of looking like a fresh connect.
+        from plugins.memory.honcho.oauth import OAuthCredential
+        existing_oauth = OAuthCredential.from_host_block(hermes_host)
 
-        if not cfg.get("apiKey"):
-            print("\n  No API key configured. Get yours at https://app.honcho.dev")
-            print("  Run 'hermes honcho setup' again once you have a key.\n")
-            return
+        print("\n  Auth method:")
+        if existing_oauth is not None:
+            print(f"    (currently connected via OAuth — client {existing_oauth.client_id})")
+        print("    oauth  -- sign in via browser (recommended)")
+        print("    apikey -- paste an API key from https://app.honcho.dev")
+        method = _prompt("OAuth or API key?", default="oauth").strip().lower()
+        use_oauth = method in {"oauth", "o"}
+
+        if use_oauth:
+            # Sign in now, up front — the browser link is the whole point, so
+            # don't bury it behind the identity prompts. The grant's tokens are
+            # merged into the in-memory cfg so the wizard's final save preserves
+            # them; settings stay wizard-owned (apply_config=False).
+            from plugins.memory.honcho.oauth_flow import authorize_via_loopback
+
+            def _open(url: str) -> None:
+                print(f"\n  Open this link to authorize (waiting up to 5 minutes):\n\n    {url}\n")
+                import webbrowser
+
+                webbrowser.open(url)
+
+            print("\n  Starting browser sign-in…")
+            try:
+                cred = authorize_via_loopback(
+                    config_path=write_path,
+                    source="hermes-cli",
+                    apply_config=False,
+                    open_url=_open,
+                )
+            except Exception as e:
+                print(f"  OAuth sign-in failed: {e}")
+                print("  Re-run 'hermes honcho setup' to retry, or choose an API key instead.\n")
+                return
+            hermes_host["apiKey"] = cred.access_token
+            hermes_host["oauth"] = cred.oauth_block()
+            # Default the peer prompt to the name entered at consent.
+            if cred.consent_peer_name:
+                hermes_host["peerName"] = cred.consent_peer_name
+            print("  Authorized — token saved. Let's finish configuring.\n")
+        else:
+            current_key = cfg.get("apiKey", "")
+            masked = f"...{current_key[-8:]}" if len(current_key) > 8 else ("set" if current_key else "not set")
+            print(f"\n  Current API key: {masked}")
+            new_key = _prompt("Honcho API key (leave blank to keep current)", secret=True)
+            if new_key:
+                cfg["apiKey"] = new_key
+
+            if not cfg.get("apiKey"):
+                print("\n  No API key configured. Get yours at https://app.honcho.dev")
+                print("  Run 'hermes honcho setup' again once you have a key.\n")
+                return
 
     # --- 3. Identity ---
     current_peer = hermes_host.get("peerName") or cfg.get("peerName", "")
@@ -655,7 +697,7 @@ def cmd_setup(args) -> None:
         hermes_host["workspace"] = new_workspace
 
     # --- 3b. Gateway identity mapping ---
-    # These keys only affect the Moor GATEWAY (Telegram/Discord/Slack/...),
+    # These keys only affect the Hermes GATEWAY (Telegram/Discord/Slack/...),
     # the one entrypoint that supplies a runtime user ID.  CLI/TUI/desktop/ACP
     # sessions have no runtime ID and fall through to peerName, so the step is
     # moot off-gateway — gate it behind detection.
@@ -682,7 +724,7 @@ def cmd_setup(args) -> None:
     if gw_platforms is None:
         print("\n  Gateway identity mapping routes platform users to memory peers.")
         run_mapping = _prompt(
-            "Running the Moor gateway (Telegram/Discord/etc.)? (y/N)",
+            "Running the Hermes gateway (Telegram/Discord/etc.)? (y/N)",
             default="n",
         ).strip().lower() in {"y", "yes"}
     elif not gw_platforms:
@@ -786,7 +828,7 @@ def cmd_setup(args) -> None:
     current_obs = hermes_host.get("observationMode") or cfg.get("observationMode", "directional")
     print("\n  Observation mode:")
     print("    directional  -- all observations on, each AI peer builds its own view (default)")
-    print("    unified      -- shared pool, user observes self, AI observes others only")
+    print("    unified      -- user observes self, AI observes others only")
     new_obs = _prompt("Observation mode", default=current_obs)
     if new_obs in {"unified", "directional"}:
         hermes_host["observationMode"] = new_obs
@@ -933,7 +975,7 @@ def cmd_setup(args) -> None:
 
 
 def _active_profile_name() -> str:
-    """Return the active Moor profile name (respects --target-profile override)."""
+    """Return the active Hermes profile name (respects --target-profile override)."""
     if _profile_override:
         return _profile_override
     try:
@@ -1017,6 +1059,12 @@ def cmd_status(args) -> None:
     api_key = hcfg.api_key or ""
     masked = f"...{api_key[-8:]}" if len(api_key) > 8 else ("set" if api_key else "not set")
 
+    # Auth line distinguishes an OAuth grant (refreshable) from a static API key
+    # — the OAuth access token is also stored under apiKey, so masking alone hides it.
+    from plugins.memory.honcho.oauth import OAuthCredential
+    host_block = (getattr(hcfg, "raw", None) or {}).get("hosts", {}).get(hcfg.host) or {}
+    cred = OAuthCredential.from_host_block(host_block)
+
     profile = _active_profile_name()
     profile_label = f" [{hcfg.host}]" if profile != "default" else ""
 
@@ -1025,7 +1073,13 @@ def cmd_status(args) -> None:
         print(f"  Profile:        {profile}")
     print(f"  Host:           {hcfg.host}")
     print(f"  Enabled:        {hcfg.enabled}")
-    print(f"  API key:        {masked}")
+    if cred is not None:
+        import time as _time
+        remaining = int(cred.expires_at - _time.time())
+        token_state = f"valid {remaining // 60}m" if remaining > 0 else "expired — refreshes on next use"
+        print(f"  Auth:           OAuth ({cred.client_id}, token {token_state})")
+    else:
+        print(f"  Auth:           API key ({masked})")
     print(f"  Workspace:      {hcfg.workspace_id}")
 
     # Config paths — show where config was read from and where writes go
@@ -1034,7 +1088,7 @@ def cmd_status(args) -> None:
     if write_path != active_path:
         print(f"  Write to:       {write_path}  (profile-local)")
     if active_path == global_path:
-        print(f"  Fallback:       (none — using global ~/.honcho/config.json)")
+        print("  Fallback:       (none — using global ~/.honcho/config.json)")
     elif global_path.exists():
         print(f"  Fallback:       {global_path}  (exists, cross-app interop)")
 
@@ -1045,7 +1099,7 @@ def cmd_status(args) -> None:
     print(f"  Recall mode:    {hcfg.recall_mode}")
     print(f"  Context budget: {hcfg.context_tokens or '(uncapped)'} tokens")
     raw = getattr(hcfg, "raw", None) or {}
-    dialectic_cadence = raw.get("dialecticCadence") or 1
+    dialectic_cadence = getattr(hcfg, "dialectic_cadence", None) or raw.get("dialecticCadence") or 1
     print(f"  Dialectic cad:  every {dialectic_cadence} turn{'s' if dialectic_cadence != 1 else ''}")
     reasoning_cap = raw.get("reasoningLevelCap") or hcfg.reasoning_level_cap
     heuristic_on = "on" if hcfg.reasoning_heuristic else "off"
@@ -1094,7 +1148,7 @@ def _show_peer_cards(hcfg, client) -> None:
         if ai_text:
             # Truncate to first 200 chars
             display = ai_text[:200] + ("..." if len(ai_text) > 200 else "")
-            print(f"\n  AI peer representation:")
+            print("\n  AI peer representation:")
             print(f"    {display}")
 
         if not card and not ai_text:
@@ -1128,7 +1182,7 @@ def _cmd_status_all() -> None:
         marker = " *" if name == active else ""
         print(f"  {name + marker:<14} {host:<22} {enabled_str:<9} {recall:<9} {write}")
 
-    print(f"\n  * active profile\n")
+    print("\n  * active profile\n")
 
 
 def cmd_peers(args) -> None:
@@ -1215,7 +1269,7 @@ def cmd_peer(args) -> None:
         print(f"  User peer:   {user}")
         print("    Your identity in Honcho. Messages you send build this peer's card.")
         print(f"  AI peer:     {ai}")
-        print("    Moor' identity in Honcho. Seed with 'hermes honcho identity <file>'.")
+        print("    Hermes' identity in Honcho. Seed with 'hermes honcho identity <file>'.")
         print("    Dialectic calls ask this peer questions to warm session context.")
         print()
         print(f"  Dialectic reasoning:  {lvl}  ({', '.join(REASONING_LEVELS)})")
@@ -1268,7 +1322,7 @@ def cmd_mode(args) -> None:
         for m, desc in MODES.items():
             marker = " <-" if m == current else ""
             print(f"  {m:<10}  {desc}{marker}")
-        print(f"\n  Set with: hermes honcho mode [hybrid|context|tools]\n")
+        print("\n  Set with: hermes honcho mode [hybrid|context|tools]\n")
         return
 
     if mode_arg not in MODES:
@@ -1303,7 +1357,7 @@ def cmd_strategy(args) -> None:
         for s, desc in STRATEGIES.items():
             marker = " <-" if s == current else ""
             print(f"  {s:<15}  {desc}{marker}")
-        print(f"\n  Set with: hermes honcho strategy [per-session|per-directory|per-repo|global]\n")
+        print("\n  Set with: hermes honcho strategy [per-session|per-directory|per-repo|global]\n")
         return
 
     if strat_arg not in STRATEGIES:
@@ -1337,7 +1391,7 @@ def cmd_tokens(args) -> None:
         print("    the user and session, injected directly into the system prompt.")
         print()
         print(f"  Dialectic   {d_chars} chars, reasoning: {d_level}")
-        print("    AI-to-AI inference. Moor asks Honcho's AI peer a question")
+        print("    AI-to-AI inference. Hermes asks Honcho's AI peer a question")
         print("    (e.g. \"what were we working on?\") and Honcho runs its own model")
         print("    to synthesize an answer. Used for first-turn session continuity.")
         print("    Level controls how much reasoning Honcho spends on the answer.")
@@ -1436,7 +1490,7 @@ def cmd_identity(args) -> None:
 
 
 def cmd_migrate(args) -> None:
-    """Step-by-step migration guide: OpenClaw native memory → Moor + Honcho."""
+    """Step-by-step migration guide: OpenClaw native memory → Hermes + Honcho."""
     from pathlib import Path
 
     # ── Detect OpenClaw native memory files ──────────────────────────────────
@@ -1464,7 +1518,7 @@ def cmd_migrate(args) -> None:
     cfg = _read_config()
     has_key = bool(_resolve_api_key(cfg))
 
-    print("\nHoncho migration: OpenClaw native memory → Moor\n" + "─" * 50)
+    print("\nHoncho migration: OpenClaw native memory → Hermes\n" + "─" * 50)
     print()
     print("  OpenClaw's native memory stores context in local markdown files")
     print("  (USER.md, MEMORY.md, SOUL.md, ...) and injects them via QMD search.")
@@ -1481,7 +1535,7 @@ def cmd_migrate(args) -> None:
         print(f"  Honcho API key already configured: {masked}")
         print("  Skip to Step 2.")
     else:
-        print("  Honcho is a cloud memory service that gives Moor persistent memory")
+        print("  Honcho is a cloud memory service that gives Hermes persistent memory")
         print("  across sessions. You need an API key to use it.")
         print()
         print("  1. Get your API key at https://app.honcho.dev")
@@ -1528,7 +1582,7 @@ def cmd_migrate(args) -> None:
         print()
         print("  These are picked up automatically the first time you run 'hermes'")
         print("  with Honcho configured and no prior session history.")
-        print("  (Moor calls migrate_memory_files() on first session init.)")
+        print("  (Hermes calls migrate_memory_files() on first session init.)")
         print()
         print("  If you want to migrate them now without starting a session:")
         for f in user_files:
@@ -1575,7 +1629,7 @@ def cmd_migrate(args) -> None:
     print("  agent's character, capabilities, and behavioral rules. In OpenClaw")
     print("  these are injected via file search at prompt-build time.")
     print()
-    print("  In Moor, they are seeded once into Honcho's AI peer through the")
+    print("  In Hermes, they are seeded once into Honcho's AI peer through the")
     print("  observation pipeline. Honcho builds a representation from them and")
     print("  from every subsequent assistant message (observe_me=True). Over time")
     print("  the representation reflects actual behavior, not just declaration.")
@@ -1622,17 +1676,17 @@ def cmd_migrate(args) -> None:
     print()
     print("  Storage")
     print("    OpenClaw: markdown files on disk, searched via QMD at prompt-build time.")
-    print("    Moor:   cloud-backed Honcho peers. Files can stay on disk as source")
+    print("    Hermes:   cloud-backed Honcho peers. Files can stay on disk as source")
     print("              of truth; Honcho holds the live representation.")
     print()
     print("  Context injection")
     print("    OpenClaw: file excerpts injected synchronously before each LLM call.")
-    print("    Moor:   Honcho context fetched async at turn end, injected next turn.")
+    print("    Hermes:   Honcho context fetched async at turn end, injected next turn.")
     print("              First turn has no Honcho context; subsequent turns are loaded.")
     print()
     print("  Memory growth")
     print("    OpenClaw: you edit files manually to update memory.")
-    print("    Moor:   Honcho observes every message and updates representations")
+    print("    Hermes:   Honcho observes every message and updates representations")
     print("              automatically. Files become the seed, not the live store.")
     print()
     print("  Honcho tools (available to the agent during conversation)")
@@ -1644,7 +1698,7 @@ def cmd_migrate(args) -> None:
     print()
     print("  Session naming")
     print("    OpenClaw: no persistent session concept — files are global.")
-    print("    Moor:   per-session by default — each run gets its own session")
+    print("    Hermes:   per-session by default — each run gets its own session")
     print("              Map a custom name:  hermes honcho map <session-name>")
 
     # ── Step 6: Next steps ────────────────────────────────────────────────────
@@ -1801,7 +1855,7 @@ def register_cli(subparser) -> None:
 
     subs.add_parser(
         "migrate",
-        help="Step-by-step migration guide from openclaw-honcho to Moor Honcho",
+        help="Step-by-step migration guide from openclaw-honcho to Hermes Honcho",
     )
     subs.add_parser("enable", help="Enable Honcho for the active profile")
     subs.add_parser("disable", help="Disable Honcho for the active profile")

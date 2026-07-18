@@ -6,7 +6,7 @@ description: "用自然语言调度自动化任务，通过单一 cron 工具管
 
 # 定时任务（Cron）
 
-使用自然语言或 cron 表达式调度自动运行的任务。Moor 通过单一 `cronjob` 工具暴露 cron 管理能力，采用动作式操作，而非分散的 schedule/list/remove 工具。
+使用自然语言或 cron 表达式调度自动运行的任务。Hermes 通过单一 `cronjob` 工具暴露 cron 管理能力，采用动作式操作，而非分散的 schedule/list/remove 工具。
 
 ## Cron 当前能做什么
 
@@ -19,10 +19,10 @@ Cron 任务可以：
 - 在全新的 agent 会话中运行，使用正常的静态工具列表
 - 以**无 agent 模式**运行——按计划执行脚本，其 stdout 原样投递，零 LLM 参与（参见下方[无 agent 模式](#no-agent-mode-script-only-jobs)章节）
 
-所有这些功能均可通过 `cronjob` 工具由 Moor 自身使用，因此你可以用自然语言创建、暂停、编辑和删除任务——无需 CLI。
+所有这些功能均可通过 `cronjob` 工具由 Hermes 自身使用，因此你可以用自然语言创建、暂停、编辑和删除任务——无需 CLI。
 
 :::warning
-Cron 运行的会话不能递归创建更多 cron 任务。Moor 在 cron 执行内部禁用了 cron 管理工具，以防止失控的调度循环。
+Cron 运行的会话不能递归创建更多 cron 任务。Hermes 在 cron 执行内部禁用了 cron 管理工具，以防止失控的调度循环。
 :::
 
 ## 创建定时任务
@@ -49,13 +49,13 @@ hermes cron create "every 1h" "Use both skills and combine the result" \
 
 ### 通过自然对话
 
-直接向 Moor 描述：
+直接向 Hermes 描述：
 
 ```text
 Every morning at 9am, check Hacker News for AI news and send me a summary on Telegram.
 ```
 
-Moor 会在内部使用统一的 `cronjob` 工具。
+Hermes 会在内部使用统一的 `cronjob` 工具。
 
 ## 附带 skill 的 cron 任务
 
@@ -123,7 +123,7 @@ cronjob(
 
 ## 在指定 profile 中运行 cron 任务
 
-默认情况下，cron 任务继承创建它的 gateway/CLI 所属的 Moor profile。传入 `--profile <name>`（CLI）或 `profile=`（cronjob 工具）可将任务重定向到不同的 profile——调度器会解析该 profile 的 `HERMES_HOME`，在运行期间临时切换到该 profile，加载其 `.env` 和 `config.yaml`，并在其中执行任务：
+默认情况下，cron 任务继承创建它的 gateway/CLI 所属的 Hermes profile。传入 `--profile <name>`（CLI）或 `profile=`（cronjob 工具）可将任务重定向到不同的 profile——调度器会解析该 profile 的 `HERMES_HOME`，在运行期间临时切换到该 profile，加载其 `.env` 和 `config.yaml`，并在其中执行任务：
 
 ```bash
 # 将任务固定到 `night-ops` profile，无论在哪里调度
@@ -142,7 +142,7 @@ cronjob(
 )
 ```
 
-使用 `--profile default` 可显式固定到根 Moor profile。指定的 profile 必须已存在；调度器不会动态创建 profile。在 `cron edit` 时清除 profile 固定，传入空字符串（`--profile ""` 或 `profile=""`）——任务将恢复在调度器当前所在的 profile 中运行。
+使用 `--profile default` 可显式固定到根 Hermes profile。指定的 profile 必须已存在；调度器不会动态创建 profile。在 `cron edit` 时清除 profile 固定，传入空字符串（`--profile ""` 或 `profile=""`）——任务将恢复在调度器当前所在的 profile 中运行。
 
 如果固定的 profile 后来被删除，调度器会记录警告并回退到在当前 profile 中运行该任务，而不是崩溃——因此过期的 `profile` 引用不会卡住任务。
 
@@ -234,7 +234,7 @@ hermes cron status
 
 ### Gateway 调度器行为
 
-每次 tick 时，Moor：
+每次 tick 时，Hermes：
 
 1. 从 `~/.hermes/cron/jobs.json` 加载任务
 2. 对照当前时间检查 `next_run_at`
@@ -244,7 +244,13 @@ hermes cron status
 6. 投递最终响应
 7. 更新运行元数据和下次调度时间
 
-`~/.hermes/cron/.tick.lock` 处的文件锁防止重叠的调度器 tick 重复运行同一批任务。
+`~/.hermes/cron/.tick.lock` 文件锁可防止重叠的调度器 tick 重复运行同一批任务。
+
+### 执行历史
+
+Hermes 会在执行器或调度提供程序分派之前，将每次已领取的 cron 尝试记录到当前 profile 的 `~/.hermes/cron/executions.db`。尝试会依次进入 `claimed`、`running`，然后进入不可变的终态：`completed`、`failed` 或 `unknown`。重启后，只有原 PID 与进程启动时间指纹能够证明所有者已经消失时，Hermes 才会将遗留尝试标记为 `unknown`。未知尝试仅用于审计，绝不会自动重跑。
+
+使用 `hermes cron runs [job-id] --limit 20`（别名：`history`）查看最近的尝试。终态历史有界，活动尝试不会被清理；快速备份也包含该账本。
 
 ## 投递选项
 
@@ -319,6 +325,78 @@ cron:
   wrap_response: false
 ```
 
+### 可继续任务（回复 cron 投递）
+
+默认情况下，cron 投递是「发完即忘」的：消息发送出去，但不会进入聊天的对话历史，
+因此如果你回复它，agent 并不记得自己说过什么。将任务设为**可继续**后，投递的简报
+就变成一段你可以回复进去的对话——agent 会把简报保留在上下文中，而不会反问
+「Task #2 是什么？」。
+
+选择性启用，**默认关闭**。可在配置中全局启用，或通过 `cronjob` 工具的
+`attach_to_session` 按任务启用（会覆盖该任务的全局设置）：
+
+```yaml
+# ~/.hermes/config.yaml
+cron:
+  mirror_delivery: false   # 设为 true 使 cron 投递可继续
+```
+
+行为为**优先使用话题**，范围限定在任务的来源聊天：
+
+- **支持话题的平台**（Telegram 话题、Discord/Slack 话题）：每次投递都会新建
+  专用话题，并将简报植入该话题的会话中，因此在话题内回复即可带完整上下文继续。
+- **仅 DM 的平台**（WhatsApp、Signal、SMS）：不存在话题，因此简报会被镜像进
+  来源 DM 会话——DM 本身就是继续的载体。
+
+只有来源聊天会被触及：扇出/广播目标（`all`、显式的其他聊天投递）永远不会被设为可继续。
+
+#### 平铺频道内继续（Slack）
+
+上面的优先话题行为每次投递都会新建专用话题。如果你希望可继续任务**平铺落在频道
+时间线**中——不新建话题——将 Slack 的**继续投递方式**设为 `in_channel`：
+
+```yaml
+# ~/.hermes/config.yaml
+slack:
+  cron_continuable_surface: in_channel   # 默认："thread"
+  reply_in_thread: false                 # 必需搭配（见下）
+  require_mention: false                 # 纯文本回复即可继续任务
+```
+
+在 `in_channel` 模式下，简报作为普通的顶层频道消息投递（不新建话题），你的回复通过
+频道的共享会话继续任务。三项设置协同工作：
+
+- **`cron_continuable_surface: in_channel`**——投递时跳过新建话题。
+- **`reply_in_thread: false`**（必需）——让机器人在频道中*平铺*回复你，并将其
+  归入简报所植入的同一个整频道会话。缺少它时继续功能仍可用，但回复会出现在话题里
+  （安全回退为话题式继续，绝不会丢失回复——网关会在启动时记录一条警告便于发现不匹配）。
+- **`require_mention: false`**（或将该频道加入 `free_response_channels`）——这样你
+  可以用纯文本消息回复；否则机器人只在你每次 `@` 提及它时才被唤醒。
+
+由于继续载体是**整频道**会话，它是共享的：频道里的其他闲聊——以及第二个可继续的
+in_channel 任务——都会加入同一段滚动对话。这是「平铺在频道中」的固有取舍，与
+`reply_in_thread: false` 用户已经接受的取舍相同；若希望每次投递的后续讨论相互隔离，
+请使用默认的 `thread` 方式。
+
+这目前是 Slack 的能力。其他平台接受该键，但会回退到 `thread` 方式（它们的继续原语
+不同）；该选择按平台设置，位于各平台的配置下。这是网关侧的配置项——`/restart` 即可
+生效；无需重新安装 Slack 应用。
+
+:::note 1:1 私信（DM）
+`cron_continuable_surface` 是**频道**设置——1:1 私信没有「话题 vs 时间线」的区分
+（私信本身就是平铺的），因此该键在私信中无效。决定私信 cron 投递是否可继续的是另一个
+已有的独立开关 **`slack.dm_top_level_threads_as_sessions`**：
+
+- **`false`**——所有顶层私信共享同一个滚动私信会话，因此可继续的 cron 简报与你的回复
+  落在**同一个**会话里，任务得以带上下文继续。这正是私信中可继续 cron 所需要的。
+- **`true`**（默认）——每条顶层私信消息各自成为独立会话，因此对已投递简报的回复会开启
+  一个**全新**、不含该简报记录的会话。此模式下继续功能不可用（对 cron 或任何平铺投递皆然）。
+
+所以，若要让 cron 任务在 1:1 私信中可继续，请设置
+`slack.dm_top_level_threads_as_sessions: false`。私信不需要（也会忽略）
+`cron_continuable_surface`。
+:::
+
 ### 静默抑制
 
 如果 agent 的最终响应以 `[SILENT]` 开头，投递将被完全抑制。输出仍会保存到本地以供审计（位于 `~/.hermes/cron/output/`），但不会向投递目标发送任何消息。
@@ -368,13 +446,13 @@ hermes cron create "every 5m" \
 
 ### Agent 为你设置这些
 
-`cronjob` 工具的 schema 直接向 Moor 暴露了 `no_agent`，因此你可以在聊天中描述一个看门狗，让 agent 来配置它：
+`cronjob` 工具的 schema 直接向 Hermes 暴露了 `no_agent`，因此你可以在聊天中描述一个看门狗，让 agent 来配置它：
 
 ```text
 Ping me on Telegram if RAM is over 85%, every 5 minutes.
 ```
 
-Moor 会通过 `write_file` 将检查脚本写入 `~/.hermes/scripts/`，然后调用：
+Hermes 会通过 `write_file` 将检查脚本写入 `~/.hermes/scripts/`，然后调用：
 
 ```python
 cronjob(action="create", schedule="every 5m",
@@ -421,7 +499,7 @@ cronjob(
 
 **工作原理：**
 
-- 任务 2 触发时，Moor 从 `~/.hermes/cron/output/{job1_id}/*.md` 读取任务 1 的最新输出
+- 任务 2 触发时，Hermes 从 `~/.hermes/cron/output/{job1_id}/*.md` 读取任务 1 的最新输出
 - 该输出自动前置到任务 2 的 prompt
 - 任务 2 无需硬编码"读取此文件"——它以上下文形式接收内容
 - 链可以是任意长度：任务 1 → 任务 2 → 任务 3 → …
@@ -452,7 +530,7 @@ Cron 任务继承你配置的回退 provider 和凭证池轮换。如果主 API 
 
 ## 调度格式
 
-Agent 的最终响应会自动投递——你**无需**在 cron prompt 中为同一目标包含 `send_message`。如果 cron 运行调用了 `send_message` 且目标与调度器已投递的目标完全相同，Moor 会跳过该重复发送，并告知模型将面向用户的内容放在最终响应中。仅对额外或不同的目标使用 `send_message`。
+Agent 的最终响应会自动投递——你**无需**在 cron prompt 中为同一目标包含 `send_message`。如果 cron 运行调用了 `send_message` 且目标与调度器已投递的目标完全相同，Hermes 会跳过该重复发送，并告知模型将面向用户的内容放在最终响应中。仅对额外或不同的目标使用 `send_message`。
 
 ### 相对延迟（一次性）
 
@@ -540,11 +618,11 @@ cronjob(action="create", name="weekly-news-summary",
         prompt="Summarize this week's AI news: ...")
 ```
 
-当任务上设置了 `enabled_toolsets` 时，它优先生效；否则 `hermes tools` 的 cron 平台配置生效；否则 Moor 回退到内置默认值。这对成本控制很重要：在每个小型"获取新闻"任务中携带 `moa`、`browser`、`delegation` 会在每次 LLM 调用时膨胀工具 schema prompt。
+当任务上设置了 `enabled_toolsets` 时，它优先生效；否则 `hermes tools` 的 cron 平台配置生效；否则 Hermes 回退到内置默认值。这对成本控制很重要：在每个小型"获取新闻"任务中携带 `moa`、`browser`、`delegation` 会在每次 LLM 调用时膨胀工具 schema prompt。
 
 ### 完全跳过 agent：`wakeAgent`
 
-如果你的 cron 任务附加了预检脚本（通过 `script=`），脚本可以在运行时决定 Moor 是否应该调用 agent。在 stdout 最后一行输出如下格式：
+如果你的 cron 任务附加了预检脚本（通过 `script=`），脚本可以在运行时决定 Hermes 是否应该调用 agent。在 stdout 最后一行输出如下格式：
 
 ```text
 {"wakeAgent": false}
@@ -641,10 +719,10 @@ cronjob(action="create", name="summarize-new-msgs",
 同样的模式适用于任何可以从脚本查询的数据源——Postgres、HTTP API、你自己的状态存储——无需将 SQL 求值器内置到 cron 子系统中。
 
 :::tip
-Moor 自身的 `~/.hermes/state.db` 是内部 schema，会在版本间变更。不要从预运行门控中查询它——指向你自己的数据库或 feed。
+Hermes 自身的 `~/.hermes/state.db` 是内部 schema，会在版本间变更。不要从预运行门控中查询它——指向你自己的数据库或 feed。
 :::
 
-致谢：此方案集由 @iankar8 在 [#2654](https://github.com/Moor inc./hermes-agent/pull/2654) 中的探索所启发，该 PR 提议将 sql/file/command 触发器作为并行机制添加。`script` + `wakeAgent` 门控已以零成本覆盖了所有三种情况，因此该工作以文档形式落地。
+致谢：此方案集由 @iankar8 在 [#2654](https://github.com/NousResearch/hermes-agent/pull/2654) 中的探索所启发，该 PR 提议将 sql/file/command 触发器作为并行机制添加。`script` + `wakeAgent` 门控已以零成本覆盖了所有三种情况，因此该工作以文档形式落地。
 
 ### 串联任务：`context_from`
 
@@ -663,7 +741,7 @@ cronjob(action="create", name="daily-digest",
 
 任务存储在 `~/.hermes/cron/jobs.json`。任务运行的输出保存到 `~/.hermes/cron/output/{job_id}/{timestamp}.md`。
 
-任务可能将 `model` 和 `provider` 存储为 `null`。省略这些字段时，Moor 在执行时从全局配置中解析它们。只有设置了单任务覆盖时，这些字段才会出现在任务记录中。
+任务可能将 `model` 和 `provider` 存储为 `null`。省略这些字段时，Hermes 在执行时从全局配置中解析它们。只有设置了单任务覆盖时，这些字段才会出现在任务记录中。
 
 存储使用原子文件写入，因此中断的写入不会留下部分写入的任务文件。
 

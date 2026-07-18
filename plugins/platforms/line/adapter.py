@@ -1,5 +1,5 @@
 """
-LINE Messaging API platform adapter for Moor Agent.
+LINE Messaging API platform adapter for Hermes Agent.
 
 A bundled platform plugin that runs an aiohttp webhook server, accepts LINE
 webhook events (signature-verified), and relays messages to/from the agent
@@ -41,7 +41,7 @@ Synthesis credits
 -----------------
 
 This file is a synthesis of seven open community PRs adding LINE support
-to Moor Agent. It deliberately ports the *strongest* idea from each into
+to Hermes Agent. It deliberately ports the *strongest* idea from each into
 a single plugin-form module that requires zero core edits:
 
 * PR #18153 (leepoweii)   — Template Buttons postback cache state machine,
@@ -273,7 +273,9 @@ def verify_line_signature(body: bytes, signature: str, channel_secret: str) -> b
         expected = base64.b64encode(digest).decode("utf-8")
     except Exception:
         return False
-    return hmac.compare_digest(expected, signature)
+    # Compare as bytes: compare_digest raises TypeError on a str with
+    # non-ASCII characters, and the signature is a raw request header.
+    return hmac.compare_digest(expected.encode(), signature.encode())
 
 
 # ---------------------------------------------------------------------------
@@ -740,7 +742,7 @@ class LineAdapter(BasePlatformAdapter):
     # Connection lifecycle
     # ------------------------------------------------------------------
 
-    async def connect(self) -> bool:
+    async def connect(self, *, is_reconnect: bool = False) -> bool:
         if not self.channel_access_token or not self.channel_secret:
             self._set_fatal_error(
                 "config_missing",
@@ -1618,7 +1620,7 @@ def interactive_setup() -> None:
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Moor plugin system at startup."""
+    """Plugin entry point — called by the Hermes plugin system at startup."""
     ctx.register_platform(
         name="line",
         label="LINE",

@@ -1,5 +1,5 @@
 """
-Microsoft Teams platform adapter for Moor Agent.
+Microsoft Teams platform adapter for Hermes Agent.
 
 Uses the microsoft-teams-apps SDK for authentication and activity processing.
 Runs an aiohttp webhook server to receive messages from Teams.
@@ -102,6 +102,9 @@ from gateway.platforms.base import (
 logger = logging.getLogger(__name__)
 
 _DEFAULT_PORT = 3978
+# Bot Framework activities are JSON payloads well under 1 MiB; an explicit
+# aiohttp client_max_size keeps oversized/chunked request bodies bounded.
+_MAX_BODY_BYTES = 1_048_576
 _WEBHOOK_PATH = "/api/messages"
 
 
@@ -709,7 +712,7 @@ class TeamsAdapter(BasePlatformAdapter):
         # Used to send cards with the correct conversation type (personal/group/channel).
         self._conv_refs: Dict[str, Any] = {}
 
-    async def connect(self) -> bool:
+    async def connect(self, *, is_reconnect: bool = False) -> bool:
         # Lazy-install the Teams SDK on demand (parity with Slack/Discord/etc.),
         # then re-check the module globals it rebinds.
         check_teams_requirements()
@@ -738,8 +741,12 @@ class TeamsAdapter(BasePlatformAdapter):
             return False
 
         try:
-            # Set up aiohttp app first — the bridge adapter wires SDK routes into it
-            aiohttp_app = web.Application()
+            # Set up aiohttp app first — the bridge adapter wires SDK routes into it.
+            # client_max_size: Bot Framework activities are JSON (caps out well
+            # under 1 MiB); an explicit cap keeps oversized/chunked bodies from
+            # being buffered unbounded on a 0.0.0.0 bind (same pattern as
+            # webhook.py / raft, #58536/#58902).
+            aiohttp_app = web.Application(client_max_size=_MAX_BODY_BYTES)
             aiohttp_app.router.add_get("/health", lambda _: web.Response(text="ok"))
 
             self._app = App(
@@ -747,7 +754,7 @@ class TeamsAdapter(BasePlatformAdapter):
                 client_secret=self._client_secret,
                 tenant_id=self._tenant_id,
                 http_server_adapter=_AiohttpBridgeAdapter(aiohttp_app),
-                client=ClientOptions(headers={"User-Agent": "Moor"}),
+                client=ClientOptions(headers={"User-Agent": "Hermes"}),
             )
 
             # Register message handler before initialize()
@@ -1091,6 +1098,8 @@ class TeamsAdapter(BasePlatformAdapter):
         session_key: str,
         description: str = "dangerous command",
         metadata: Optional[Dict[str, Any]] = None,
+        allow_permanent: bool = True,
+        smart_denied: bool = False,
     ) -> SendResult:
         """Send an Adaptive Card approval prompt with Allow/Deny buttons."""
         if not self._app:
@@ -1104,39 +1113,34 @@ class TeamsAdapter(BasePlatformAdapter):
             "desc": description,
         }
 
-        card = (
-            AdaptiveCard()
-            .with_version("1.4")
-            .with_body([
-                TextBlock(text="⚠️ Command Approval Required", wrap=True, weight="Bolder"),
-                TextBlock(text=f"```\n{cmd_preview}\n```", wrap=True),
-                TextBlock(text=f"Reason: {description}", wrap=True, isSubtle=True),
-            ])
-            .with_actions([
-                ExecuteAction(
-                    title="Allow Once",
-                    verb="hermes_approve",
-                    data={**btn_data_base, "hermes_action": "approve_once"},
-                    style="positive",
-                ),
-                ExecuteAction(
-                    title="Allow Session",
-                    verb="hermes_approve",
-                    data={**btn_data_base, "hermes_action": "approve_session"},
-                ),
-                ExecuteAction(
-                    title="Always Allow",
-                    verb="hermes_approve",
+        actions = [ExecuteAction(
+            title="Allow Once", verb="hermes_approve",
+            data={**btn_data_base, "hermes_action": "approve_once"}, style="positive",
+        )]
+        if not smart_denied:
+            actions.append(ExecuteAction(
+                title="Allow Session", verb="hermes_approve",
+                data={**btn_data_base, "hermes_action": "approve_session"},
+            ))
+            if allow_permanent:
+                actions.append(ExecuteAction(
+                    title="Always Allow", verb="hermes_approve",
                     data={**btn_data_base, "hermes_action": "approve_always"},
-                ),
-                ExecuteAction(
-                    title="Deny",
-                    verb="hermes_approve",
-                    data={**btn_data_base, "hermes_action": "deny"},
-                    style="destructive",
-                ),
-            ])
-        )
+                ))
+        actions.append(ExecuteAction(
+            title="Deny", verb="hermes_approve",
+            data={**btn_data_base, "hermes_action": "deny"}, style="destructive",
+        ))
+        body = [
+            TextBlock(text="⚠️ Command Approval Required", wrap=True, weight="Bolder"),
+            TextBlock(text=f"```\n{cmd_preview}\n```", wrap=True),
+            TextBlock(text=f"Reason: {description}", wrap=True, isSubtle=True),
+        ]
+        if smart_denied:
+            body.append(TextBlock(
+                text="Smart DENY: owner override applies to this one operation only.", wrap=True
+            ))
+        card = AdaptiveCard().with_version("1.4").with_body(body).with_actions(actions)
 
         try:
             result = await self._send_card(chat_id, card)
@@ -1355,7 +1359,7 @@ def interactive_setup() -> None:
     print()
     print_info("Then expose port 3978 publicly (devtunnel / ngrok / cloudflared),")
     print_info("and create your bot:")
-    print_info("  teams app create --name \"Moor\" --endpoint \"https://<tunnel>/api/messages\"")
+    print_info("  teams app create --name \"Hermes\" --endpoint \"https://<tunnel>/api/messages\"")
     print()
     print_info("The CLI will print CLIENT_ID, CLIENT_SECRET, and TENANT_ID. Paste them below.")
     print()
@@ -1403,7 +1407,7 @@ def interactive_setup() -> None:
 # ── Plugin entry point ────────────────────────────────────────────────────────
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Moor plugin system."""
+    """Plugin entry point — called by the Hermes plugin system."""
     ctx.register_platform(
         name="teams",
         label="Microsoft Teams",

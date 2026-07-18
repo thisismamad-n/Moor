@@ -1,6 +1,6 @@
 """Tests for HERMES_HOME credential-file read blocking in file_safety.
 
-Regression for https://github.com/Moor inc./hermes-agent/issues/17656 —
+Regression for https://github.com/NousResearch/hermes-agent/issues/17656 —
 ``read_file`` was previously only sandboxed against ``HERMES_HOME`` itself,
 which left ``auth.json`` and ``.anthropic_oauth.json`` (plaintext provider
 keys + OAuth tokens) readable by the agent. A prompt-injection reaching
@@ -100,7 +100,7 @@ def test_skills_hub_block_still_applies(fake_home):
     hub_file = _create(fake_home, "skills/.hub/manifest.json")
     err = get_read_block_error(str(hub_file))
     assert err is not None
-    assert "internal Moor cache file" in err
+    assert "internal Hermes cache file" in err
 
 
 def test_path_traversal_resolves_to_blocked(fake_home, tmp_path):
@@ -144,6 +144,7 @@ def test_read_file_tool_blocks_relative_path_under_terminal_cwd(
     import json
 
     import tools.file_tools as ft
+    import tools.terminal_tool as terminal_tool
 
     _create(fake_home, "auth.json")
     # Force the file_tools resolver to anchor relative paths at HERMES_HOME
@@ -151,7 +152,7 @@ def test_read_file_tool_blocks_relative_path_under_terminal_cwd(
     monkeypatch.setenv("TERMINAL_CWD", str(fake_home))
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(
-        ft, "_get_live_tracking_cwd", lambda task_id="default": None
+        terminal_tool, "_session_cwd", {}
     )
 
     out = json.loads(ft.read_file_tool("auth.json"))
@@ -166,6 +167,7 @@ def test_read_file_tool_blocks_nested_google_oauth_path(
     import json
 
     import tools.file_tools as ft
+    import tools.terminal_tool as terminal_tool
 
     oauth = _create(fake_home, Path("auth") / "google_oauth.json")
     oauth.write_text(
@@ -180,7 +182,7 @@ def test_read_file_tool_blocks_nested_google_oauth_path(
     )
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(
-        ft, "_get_live_tracking_cwd", lambda task_id="default": None
+        terminal_tool, "_session_cwd", {}
     )
 
     out = json.loads(ft.read_file_tool(str(oauth), task_id="google-oauth-test"))
@@ -188,6 +190,100 @@ def test_read_file_tool_blocks_nested_google_oauth_path(
     assert "credential store" in out["error"]
     assert "REFRESH_TOKEN_MARKER" not in json.dumps(out)
     assert "ACCESS_TOKEN_MARKER" not in json.dumps(out)
+
+
+def test_search_tool_blocks_direct_auth_json_path(fake_home, monkeypatch):
+    """Searching a credential file directly must not invoke the search backend."""
+    import json
+
+    import tools.file_tools as ft
+    import tools.terminal_tool as terminal_tool
+
+    auth = _create(fake_home, "auth.json")
+    auth.write_text("SEARCH_DIRECT_AUTH_SECRET", encoding="utf-8")
+
+    def fail_if_called(task_id="default"):
+        raise AssertionError("search backend should not run for blocked path")
+
+    monkeypatch.setattr(ft, "_get_file_ops", fail_if_called)
+
+    out = json.loads(
+        ft.search_tool(
+            pattern="SEARCH_DIRECT_AUTH_SECRET",
+            path=str(auth),
+            task_id="search-direct-auth-json",
+        )
+    )
+    raw = json.dumps(out)
+    assert "error" in out
+    assert "credential store" in out["error"]
+    assert "SEARCH_DIRECT_AUTH_SECRET" not in raw
+
+
+def test_search_tool_filters_credential_results(fake_home, tmp_path, monkeypatch):
+    """Directory searches omit credential and MCP-token result entries."""
+    import json
+
+    from tools.file_operations import SearchMatch, SearchResult
+    import tools.file_tools as ft
+    import tools.terminal_tool as terminal_tool
+
+    auth = _create(fake_home, "auth.json")
+    token = _create(fake_home, Path("mcp-tokens") / "provider.json")
+    safe = _create(fake_home, "notes.txt")
+
+    class FakeFileOps:
+        def search(self, **kwargs):
+            return SearchResult(
+                matches=[
+                    SearchMatch(
+                        path=str(auth),
+                        line_number=1,
+                        content="SEARCH_AUTH_SECRET",
+                    ),
+                    SearchMatch(
+                        path=str(token),
+                        line_number=1,
+                        content="SEARCH_MCP_SECRET",
+                    ),
+                    SearchMatch(
+                        path=str(safe),
+                        line_number=1,
+                        content="public note",
+                    ),
+                ],
+                files=[str(auth), str(token), str(safe)],
+                total_count=5,
+                truncated=True,
+            )
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(ft, "_get_file_ops", lambda task_id="default": FakeFileOps())
+    monkeypatch.setattr(
+        terminal_tool, "_session_cwd", {}
+    )
+
+    search_response = ft.search_tool(
+        pattern="SEARCH",
+        path=str(fake_home),
+        task_id="search-filter-credentials",
+    )
+    out = json.loads(search_response.split("\n\n[Hint:", 1)[0])
+    raw = json.dumps(out)
+    returned_paths = {
+        match["path"] for match in out.get("matches", [])
+    } | set(out.get("files", []))
+
+    assert "SEARCH_AUTH_SECRET" not in raw
+    assert "SEARCH_MCP_SECRET" not in raw
+    assert str(auth) not in returned_paths
+    assert str(token) not in returned_paths
+    assert "public note" in raw
+    assert str(safe) in returned_paths
+    assert out["_omitted"].startswith("4 result(s) omitted")
+    assert out["total_count"] == 5
+    assert out["truncated"] is True
+    assert "[Hint: Results truncated." in search_response
 
 
 # ---------------------------------------------------------------------------
@@ -249,7 +345,7 @@ def test_mcp_tokens_dir_itself_blocked(fake_home):
 def test_identically_named_hermes_files_outside_home_not_blocked(
     fake_home, tmp_path
 ):
-    """Moor-specific filenames (``auth.json``, ``mcp-tokens/``, ``google_oauth.json``)
+    """Hermes-specific filenames (``auth.json``, ``mcp-tokens/``, ``google_oauth.json``)
     outside HERMES_HOME must remain readable — the gate is per-location for
     those, not per-filename. ``.env`` is the exception: it's blocked anywhere
     on disk (see test_project_local_env_blocked) because the basename always

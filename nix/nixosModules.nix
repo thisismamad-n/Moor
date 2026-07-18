@@ -37,13 +37,21 @@
     # Deep-merge config type (from 0xrsydn/nix-hermes-agent)
     deepConfigType = lib.types.mkOptionType {
       name = "hermes-config-attrs";
-      description = "Moor YAML config (attrset), merged deeply via lib.recursiveUpdate.";
+      description = "Hermes YAML config (attrset), merged deeply via lib.recursiveUpdate.";
       check = builtins.isAttrs;
       merge = _loc: defs: lib.foldl' lib.recursiveUpdate { } (map (d: d.value) defs);
     };
 
-    # Generate config.yaml from Nix attrset (YAML is a superset of JSON)
-    configJson = builtins.toJSON cfg.settings;
+    # Generate config.yaml from Nix attrset (YAML is a superset of JSON).
+    # terminal.cwd replaces the deprecated MESSAGING_CWD env var — hermes
+    # reads it from config.yaml and bridges it to TERMINAL_CWD internally.
+    # recursiveUpdate: cfg.settings wins, so an explicit
+    # settings.terminal.cwd overrides the workingDirectory default.
+    # Container mode uses the in-container mount path.
+    effectiveWorkDir = if cfg.container.enable then containerWorkDir else cfg.workingDirectory;
+    configJson = builtins.toJSON (
+      lib.recursiveUpdate { terminal.cwd = effectiveWorkDir; } cfg.settings
+    );
     generatedConfigFile = pkgs.writeText "hermes-config.yaml" configJson;
     configFile = if cfg.configFile != null then cfg.configFile else generatedConfigFile;
 
@@ -209,7 +217,7 @@
 
   in {
     options.services.hermes-agent = with lib; {
-      enable = mkEnableOption "Moor Agent gateway service";
+      enable = mkEnableOption "Hermes Agent gateway service";
 
       # ── Package ──────────────────────────────────────────────────────────
       package = mkOption {
@@ -265,7 +273,7 @@
         type = deepConfigType;
         default = { };
         description = ''
-          Declarative Moor config (attrset). Deep-merged across module
+          Declarative Hermes config (attrset). Deep-merged across module
           definitions and rendered as config.yaml.
         '';
         example = literalExpression ''
@@ -285,7 +293,7 @@
         description = ''
           Paths to environment files containing secrets (API keys, tokens).
           Contents are merged into $HERMES_HOME/.env at activation time.
-          Moor reads this file on every startup via load_hermes_dotenv().
+          Hermes reads this file on every startup via load_hermes_dotenv().
         '';
       };
 
@@ -484,7 +492,7 @@
         description = ''
           Directory-based plugin packages to symlink into the hermes plugins
           directory. Each package should contain a plugin.yaml and __init__.py
-          at its root. Moor discovers these automatically on startup.
+          at its root. Hermes discovers these automatically on startup.
         '';
         example = literalExpression ''
           [
@@ -674,16 +682,6 @@
         }];
       }
 
-      # ── Assertions ─────────────────────────────────────────────────────
-      {
-        assertions = let
-          names = map lib.getName cfg.extraPlugins;
-        in [{
-          assertion = (lib.length names) == (lib.length (lib.unique names));
-          message = "services.hermes-agent.extraPlugins: duplicate plugin names detected: ${toString names}. If using fetchFromGitHub, set name = \"plugin-name\" to disambiguate.";
-        }];
-      }
-
       # ── Warnings ──────────────────────────────────────────────────────
       # ── Per-user profile for extraPackages ───────────────────────────
       # Wire extraPackages into the hermes user's per-user profile so the
@@ -830,7 +828,7 @@
           ''}
 
           # Seed .env from Nix-declared environment + environmentFiles.
-          # Moor reads $HERMES_HOME/.env at startup via load_hermes_dotenv(),
+          # Hermes reads $HERMES_HOME/.env at startup via load_hermes_dotenv(),
           # so this is the single source of truth for both native and container mode.
           ${lib.optionalString (cfg.environment != {} || cfg.environmentFiles != []) ''
             ENV_FILE="${cfg.stateDir}/.hermes/.env"
@@ -874,7 +872,7 @@
       # ══════════════════════════════════════════════════════════════════
       (lib.mkIf (!cfg.container.enable) {
         systemd.services.hermes-agent = {
-          description = "Moor Agent Gateway";
+          description = "Hermes Agent Gateway";
           wantedBy = [ "multi-user.target" ];
           after = [ "network-online.target" ];
           wants = [ "network-online.target" ];
@@ -883,7 +881,8 @@
             HOME = cfg.stateDir;
             HERMES_HOME = "${cfg.stateDir}/.hermes";
             HERMES_MANAGED = "true";
-            MESSAGING_CWD = cfg.workingDirectory;
+            # Working directory is declared via terminal.cwd in the merged
+            # config.yaml (see configJson above) — MESSAGING_CWD is deprecated.
           };
 
           serviceConfig = {
@@ -935,7 +934,7 @@
         virtualisation.docker.enable = lib.mkDefault (cfg.container.backend == "docker");
 
         systemd.services.hermes-agent = {
-          description = "Moor Agent Gateway (container)";
+          description = "Hermes Agent Gateway (container)";
           wantedBy = [ "multi-user.target" ];
           after = [ "network-online.target" ]
             ++ lib.optional (cfg.container.backend == "docker") "docker.service";
@@ -980,7 +979,6 @@
                 --env HERMES_HOME=${containerDataDir}/.hermes \
                 --env HERMES_MANAGED=true \
                 --env HOME=${containerHomeDir} \
-                --env MESSAGING_CWD=${containerWorkDir} \
                 ${lib.concatStringsSep " " cfg.container.extraOptions} \
                 ${cfg.container.image} \
                 ${containerDataDir}/current-package/bin/hermes gateway run --replace ${lib.concatStringsSep " " cfg.extraArgs}

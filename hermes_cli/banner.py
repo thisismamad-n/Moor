@@ -2,7 +2,6 @@
 
 Pure display functions with no HermesCLI state dependency.
 """
-
 import json
 import logging
 import os
@@ -61,34 +60,28 @@ def _skin_color(key: str, fallback: str) -> str:
 
 from hermes_cli import __version__ as VERSION, __release_date__ as RELEASE_DATE
 
-HERMES_AGENT_LOGO = """[bold #FFD700]0100            1101     01001111         01001111     010100100101     [/]
-[bold #FFD700]01001101    01001101 0100111101001111 0100111101001111 0101    00100101 [/]
-[bold #FFD700]01001101010011010100 0100        1111 0100        1111 0101    00100101 [/]
-[#FFBF00]0100    1101    0100 0100        1111 0100        1111 010100100101     [/]
-[#FFBF00]0100            1101 0100        1111 0100        1111 0101    00100101 [/]
-[#FFBF00]0100            1101 0100        1111 0100        1111 0101        0010 [/]
-[#CD7F32]0100            1101 0100        1111 0100        1111 0101        0010 [/]
-[#CD7F32]0100            1101 0100111101001111 0100111101001111 0101        0010 [/]
-[#CD7F32]0100            1101     01001111         01001111     0101        0010 [/]"""
+HERMES_AGENT_LOGO = """[bold #FFD700]██╗  ██╗███████╗██████╗ ███╗   ███╗███████╗███████╗       █████╗  ██████╗ ███████╗███╗   ██╗████████╗[/]
+[bold #FFD700]██║  ██║██╔════╝██╔══██╗████╗ ████║██╔════╝██╔════╝      ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝[/]
+[#FFBF00]███████║█████╗  ██████╔╝██╔████╔██║█████╗  ███████╗█████╗███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║[/]
+[#FFBF00]██╔══██║██╔══╝  ██╔══██╗██║╚██╔╝██║██╔══╝  ╚════██║╚════╝██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║[/]
+[#CD7F32]██║  ██║███████╗██║  ██║██║ ╚═╝ ██║███████╗███████║      ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║[/]
+[#CD7F32]╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚══════╝      ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝[/]"""
 
-HERMES_CADUCEUS = """[#CD7F32]⠎⠋⠈⠈⢀⢠⠤⠖⠚⠘⠁⠁⠉⠈⢈⡁⣁⢁⡉⣈⢈⡁⠁⠁⠉⠉⠈⠊⠢⠦⣠⡀⠈⠈⠉[/]
-[#CD7F32]⢀⣤⠔⠙⠁⠁⢀⢀⡤⠴⠆⠚⠙⠋⠈⠁⠉⠈⠁⠉⠈⠉⠉⠋⠓⠲⠦⢤⡀⡀⠀⠉⠙⠔⢄[/]
-[#CD7F32]⠋⠀⠀⣠⡤⠚⠋⠁⠀⢀⣀⣤⠤⠶⠖⠂⠚⠛⠚⠛⠒⠲⠶⠦⡤⣄⣀⠀⠈⠈⠓⢶⢄⠀⠀[/]
-[#FFBF00]⣀⡴⠛⠁⠀⢀⣠⠶⠚⠉⠁⠀⣀⣀⣤⣤⡤⠤⠤⢤⣤⣤⣄⣀⠀⠀⠉⠙⠳⢦⣄⠀⠀⠑⠷[/]
-[#FFBF00]⠏⠀⠀⣠⠞⠋⠀⢀⣠⡴⠞⠛⠉⠀⠀⣀⣀⣀⣀⣀⣀⡀⠀⠉⠉⠳⠶⣄⡀⠀⠉⠛⣤⡀⠀[/]
-[#FFBF00]⠀⣠⡞⠁⠀⢀⡴⠛⠁⠀⢀⣤⠶⠛⠋⠉⠉⠉⠉⠉⠉⠙⠛⠲⢦⣄⠀⠈⠙⢶⣄⠀⠀⠹⣦[/]
-[bold #FFD700]⣰⡏⠀⠀⣰⠟⠀⠀⣠⡾⠋⠀⢀⣠⡴⠶⠛⠛⠛⠛⠲⠶⣤⣀⠀⠉⠻⣦⡀⠀⠙⢷⡀⠀⠈[/]
-[bold #FFD700]⡟⠀⠀⢰⡟⠀⠀⣸⡏⠀⠀⣰⠟⠁⠀⣠⣤⠴⠶⣤⣄⡀⠈⠙⢷⡄⠀⠈⢷⡄⠀⠈⢷⡀⠀[/]
-[bold #FFD700]⡇⠀⠀⢸⡇⠀⠀⣿⠀⠀⠀⣿⠀⠀⢸⣏⠀⢀⡀⠀⠉⢿⡄⠀⠈⣿⠀⠀⠘⣧⠀⠀⢸⡇⠀[/]
-[#FFBF00]⣧⠀⠀⠸⣇⠀⠀⢹⣇⠀⠀⠻⣦⡀⠀⠙⠛⠛⠁⠀⣠⡾⠁⠀⢀⡿⠀⠀⢰⡟⠀⠀⢸⡇⠀[/]
-[#FFBF00]⢹⣆⠀⠀⠻⣆⠀⠀⠙⢦⣄⠀⠈⠛⠳⠶⠶⠶⠶⠞⠋⠀⢀⣠⠟⠁⠀⢠⡾⠁⠀⢀⡿⠁⠀[/]
-[#FFBF00]⠀⠹⢦⡀⠀⠙⠷⣄⡀⠀⠉⠛⠶⢤⣤⣀⣀⣀⣠⣤⡴⠶⠛⠁⠀⣀⡴⠟⠁⠀⣠⡟⠁⠀⢠[/]
-[#CD7F32]⣆⠀⠈⠹⢦⣄⠀⠀⠙⠳⢦⣤⣀⣀⠀⠀⠀⠀⠀⠀⣀⣀⣤⡴⠞⠋⠀⢀⣠⠾⠋⠀⠀⣤⠏[/]
-[#CD7F32]⠙⠳⣤⡀⠀⠈⠛⠶⣤⣀⡀⠀⠈⠉⠉⠛⠛⠛⠛⠉⠉⠉⠀⣀⣠⡤⠞⠋⠁⠀⣀⡴⠟⠁⠀[/]
-[#CD7F32]⣆⠀⠀⠙⠳⠦⣄⢀⠀⠉⠉⠋⠓⠲⠶⠦⠶⠶⠶⠖⠛⠋⠉⠀⠀⣀⣤⡲⠛⠉⠀⢀⣠⠾[/]
-[#B8860B]⠉⠑⠶⢤⣀⠀⠀⠉⠙⠲⠔⠦⡠⣤⣠⣄⢀⣀⢠⣤⢠⡤⠢⠶⠚⠊⠉⠀⢀⢀⡤⠖⠋⠀⠀[/]
-[#B8860B]⠦⡄⡀⠀⠁⠙⠑⠆⢤⢠⡀⣀⣀⠀⠀⠀⠀⠀⠀⠀⢀⢀⡀⣠⢠⠄⠖⠑⠉⠁⠀⢀⢠⠤⠊[/]
-[#B8860B]⠀⠈⠈⠐⠐⠀⠀⠀⠀⠀⠀⠉⠈⠈⠁⠙⠘⠘⠁⠉⠈⠈⠁⠀⠀⠀⠀⠀⠐⠒⠃⠁⠁⠀⠀[/]"""
+HERMES_CADUCEUS = """[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡀⠀⣀⣀⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#CD7F32]⠀⠀⠀⠀⠀⠀⢀⣠⣴⣾⣿⣿⣇⠸⣿⣿⠇⣸⣿⣿⣷⣦⣄⡀⠀⠀⠀⠀⠀⠀[/]
+[#FFBF00]⠀⢀⣠⣴⣶⠿⠋⣩⡿⣿⡿⠻⣿⡇⢠⡄⢸⣿⠟⢿⣿⢿⣍⠙⠿⣶⣦⣄⡀⠀[/]
+[#FFBF00]⠀⠀⠉⠉⠁⠶⠟⠋⠀⠉⠀⢀⣈⣁⡈⢁⣈⣁⡀⠀⠉⠀⠙⠻⠶⠈⠉⠉⠀⠀[/]
+[#FFD700]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣴⣿⡿⠛⢁⡈⠛⢿⣿⣦⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#FFD700]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠿⣿⣦⣤⣈⠁⢠⣴⣿⠿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#FFBF00]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠻⢿⣿⣦⡉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#FFBF00]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⢷⣦⣈⠛⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣴⠦⠈⠙⠿⣦⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⣿⣤⡈⠁⢤⣿⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⠷⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⠑⢶⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠁⢰⡆⠈⡿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠳⠈⣡⠞⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]"""
 
 
 
@@ -127,8 +120,8 @@ _UPDATE_CHECK_CACHE_SECONDS = 6 * 3600
 # (e.g. nix-built hermes — no local git history to count against).
 UPDATE_AVAILABLE_NO_COUNT = -1
 
-_UPSTREAM_REPO_URL = "https://github.com/Moor inc./hermes-agent.git"
-_OFFICIAL_REPO_CANONICAL = "github.com/Moor inc./hermes-agent"
+_UPSTREAM_REPO_URL = "https://github.com/NousResearch/hermes-agent.git"
+_OFFICIAL_REPO_CANONICAL = "github.com/nousresearch/hermes-agent"
 
 
 def _canonical_github_remote(url: str | None) -> str:
@@ -158,7 +151,7 @@ def _is_ssh_remote(url: str | None) -> bool:
 
 
 def _is_official_ssh_remote(url: str | None) -> bool:
-    return _is_ssh_remote(url) and _canonical_github_remote(url) == _OFFICIAL_REPO_CANONICAL.lower()
+    return _is_ssh_remote(url) and _canonical_github_remote(url) == _OFFICIAL_REPO_CANONICAL
 
 
 def _git_stdout(args: list[str], *, cwd: Path, timeout: int = 5) -> Optional[str]:
@@ -203,7 +196,10 @@ def _check_via_local_git(repo_dir: Path) -> Optional[int]:
     origin_url = _git_stdout(["remote", "get-url", "origin"], cwd=repo_dir)
     if _is_official_ssh_remote(origin_url):
         head_rev = _git_stdout(["rev-parse", "HEAD"], cwd=repo_dir)
-        return _check_via_rev(head_rev) if head_rev else None
+        checked = _check_via_rev(head_rev) if head_rev else None
+        if checked == UPDATE_AVAILABLE_NO_COUNT:
+            return 1
+        return checked
 
     # Installer checkouts are shallow (`git clone --depth 1`). On a shallow
     # clone the history stops at a single commit, so a plain `git fetch` would
@@ -298,7 +294,7 @@ def check_via_pypi() -> Optional[int]:
 
 
 def check_for_updates() -> Optional[int]:
-    """Check whether a Moor update is available.
+    """Check whether a Hermes update is available.
 
     Two paths: if ``HERMES_REVISION`` is set (nix builds embed it), compare
     it to upstream main via ``git ls-remote``. Otherwise look for a local
@@ -325,8 +321,8 @@ def check_for_updates() -> Optional[int]:
     # both the Rich banner (build_welcome_banner) and the Ink badge
     # (branding.tsx, guarded on `typeof === 'number' && > 0`) show nothing.
     try:
-        from hermes_cli.config import detect_install_method
-        if detect_install_method() == "docker":
+        from hermes_cli.config import detect_install_method, get_project_root
+        if detect_install_method(get_project_root()) == "docker":
             return None
     except Exception:
         pass
@@ -374,7 +370,7 @@ def check_for_updates() -> Optional[int]:
 
 
 def _resolve_repo_dir() -> Optional[Path]:
-    """Return the active Moor git checkout, or None if this isn't a git install.
+    """Return the active Hermes git checkout, or None if this isn't a git install.
 
     Prefers the running code's location over the profile-scoped path
     because ``$HERMES_HOME/hermes-agent/`` may be a stale copy carried
@@ -461,7 +457,7 @@ def get_git_banner_state(repo_dir: Optional[Path] = None) -> Optional[dict]:
     return {"upstream": upstream, "local": local, "ahead": max(ahead, 0)}
 
 
-_RELEASE_URL_BASE = "https://github.com/Moor inc./hermes-agent/releases/tag"
+_RELEASE_URL_BASE = "https://github.com/NousResearch/hermes-agent/releases/tag"
 _latest_release_cache: Optional[tuple] = None  # (tag, url) once resolved
 
 
@@ -469,8 +465,8 @@ def get_latest_release_tag(repo_dir: Optional[Path] = None) -> Optional[tuple]:
     """Return ``(tag, release_url)`` for the latest git tag, or None.
 
     Local-only — runs ``git describe --tags --abbrev=0`` against the
-    Moor checkout. Cached per-process. Release URL always points at the
-    canonical Moor inc./hermes-agent repo (forks don't get a link).
+    Hermes checkout. Cached per-process. Release URL always points at the
+    canonical NousResearch/hermes-agent repo (forks don't get a link).
     """
     global _latest_release_cache
     if _latest_release_cache is not None:
@@ -509,7 +505,7 @@ def get_latest_release_tag(repo_dir: Optional[Path] = None) -> Optional[tuple]:
 
 def format_banner_version_label() -> str:
     """Return the version label shown in the startup banner title."""
-    base = f"Moor Agent v{VERSION} ({RELEASE_DATE})"
+    base = f"Hermes Agent v{VERSION} ({RELEASE_DATE})"
     state = get_git_banner_state()
     if not state:
         return base
@@ -586,7 +582,8 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
                          enabled_toolsets: List[str] = None,
                          session_id: str = None,
                          get_toolset_for_tool=None,
-                         context_length: int = None):
+                         context_length: int = None,
+                         provider: str = None):
     """Build and print a welcome banner with caduceus on left and info on right.
 
     Args:
@@ -598,6 +595,9 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
         session_id: Session identifier.
         get_toolset_for_tool: Callable to map tool name -> toolset name.
         context_length: Model's context window size in tokens.
+        provider: Active provider id. When ``"moa"``, ``model`` is a MoA
+            preset name and the banner renders the aggregator instead of a
+            bare model slug.
     """
     from model_tools import check_tool_availability, TOOLSET_REQUIREMENTS
     from rich.panel import Panel
@@ -654,13 +654,36 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
         _bskin = None
         _hero = HERMES_CADUCEUS
     left_lines = ["", _hero, ""]
-    model_short = model.split("/")[-1] if "/" in model else model
-    if model_short.endswith(".gguf"):
-        model_short = model_short[:-5]
-    if len(model_short) > 28:
-        model_short = model_short[:25] + "..."
-    ctx_str = f" [dim {dim}]·[/] [dim {dim}]{_format_context_length(context_length)} context[/]" if context_length else ""
-    left_lines.append(f"[{accent}]{model_short}[/]{ctx_str} [dim {dim}]·[/] [dim {dim}]Nous Research[/]")
+    if (provider or "").strip().lower() == "moa":
+        # MoA virtual provider: ``model`` is a preset name. Show the preset and
+        # its aggregator so the banner is meaningful instead of a bare slug.
+        preset_name = model
+        agg_label = ""
+        try:
+            from hermes_cli.config import load_config
+            from hermes_cli.moa_config import normalize_moa_config
+
+            _moa = normalize_moa_config(load_config().get("moa") or {})
+            _preset = _moa.get("presets", {}).get(preset_name)
+            if _preset:
+                _agg = _preset.get("aggregator") or {}
+                _am = str(_agg.get("model") or "")
+                agg_label = _am.split("/")[-1] if "/" in _am else _am
+        except Exception:
+            agg_label = ""
+        if len(preset_name) > 28:
+            preset_name = preset_name[:25] + "..."
+        agg_str = f" [dim {dim}]·[/] [dim {dim}]agg {agg_label}[/]" if agg_label else ""
+        ctx_str = f" [dim {dim}]·[/] [dim {dim}]{_format_context_length(context_length)} context[/]" if context_length else ""
+        left_lines.append(f"[{accent}]MoA: {preset_name}[/]{agg_str}{ctx_str} [dim {dim}]·[/] [dim {dim}]Nous Research[/]")
+    else:
+        model_short = model.split("/")[-1] if "/" in model else model
+        if model_short.endswith(".gguf"):
+            model_short = model_short[:-5]
+        if len(model_short) > 28:
+            model_short = model_short[:25] + "..."
+        ctx_str = f" [dim {dim}]·[/] [dim {dim}]{_format_context_length(context_length)} context[/]" if context_length else ""
+        left_lines.append(f"[{accent}]{model_short}[/]{ctx_str} [dim {dim}]·[/] [dim {dim}]Nous Research[/]")
 
     if os.getenv("HERMES_YOLO_MODE"):
         left_lines.append(f"[bold red]⚠ YOLO mode[/] [dim {dim}]— all approval prompts bypassed[/]")
@@ -780,18 +803,34 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
         skills_by_category = {}
         total_skills = 0
 
+    # Dynamically size skills display based on terminal width.
+    # Rich grid with 2 columns; right column gets roughly 60% of terminal.
+    _term_cols = shutil.get_terminal_size().columns
+    _right_col_width = max(int(_term_cols * 0.6) - 10, 30)
+
     if not _skills_enabled:
         right_lines.append(f"[dim {dim}]Skills toolset disabled[/]")
     elif skills_by_category:
         for category in sorted(skills_by_category.keys()):
             skill_names = sorted(skills_by_category[category])
-            if len(skill_names) > 8:
-                display_names = skill_names[:8]
-                skills_str = ", ".join(display_names) + f" +{len(skill_names) - 8} more"
-            else:
-                skills_str = ", ".join(skill_names)
-            if len(skills_str) > 50:
-                skills_str = skills_str[:47] + "..."
+            # Account for "category: " prefix
+            _prefix_len = len(category) + 2
+            _avail = max(_right_col_width - _prefix_len, 20)
+            # Accumulate skills until we run out of space
+            parts, length = [], 0
+            for i, name in enumerate(skill_names):
+                _sep = ", " if parts else ""
+                _needed = len(_sep) + len(name)
+                # Estimate indicator size IF we were to add this skill then stop
+                _after = len(skill_names) - (i + 1)  # remaining after adding this
+                _ind_len = len(f", +{_after} more") if _after > 0 else 0
+                if parts and length + _needed + _ind_len > _avail:
+                    remaining = len(skill_names) - len(parts)
+                    parts.append(f"+{remaining} more")
+                    break
+                parts.append(name)
+                length += _needed
+            skills_str = ", ".join(parts)
             right_lines.append(f"[dim {dim}]{category}:[/] [{text}]{skills_str}[/]")
     else:
         right_lines.append(f"[dim {dim}]No skills installed[/]")
@@ -849,17 +888,23 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
     except Exception:
         pass  # Never break the banner over an update check
 
-    # Pip-install warning — `pip install hermes-agent` is not the supported
-    # install path (it exists on PyPI for internal/CI reasons, not end users).
-    # Such installs miss the git checkout + installer-managed deps, so updates,
-    # self-update, and issue triage don't behave correctly. Warn, don't block.
+    # Unsupported install-method warning — pip/PyPI and Homebrew are no
+    # longer an officially supported distribution method (see
+    # website/docs/getting-started/platform-support.md). Such installs miss
+    # the git checkout + installer-managed deps, so updates, self-update, and
+    # issue triage don't behave correctly. Warn, don't block. NixOS is fully
+    # supported and never hits this.
     try:
-        from hermes_cli.config import detect_install_method
-        if detect_install_method() == "pip":
+        from hermes_cli.config import (
+            detect_install_method,
+            format_unsupported_install_warning,
+            is_unsupported_install_method,
+            get_project_root
+        )
+        _install_method = detect_install_method(get_project_root())
+        if is_unsupported_install_method(_install_method):
             right_lines.append(
-                "[bold yellow]⚠ pip install not officially supported[/]"
-                "[dim yellow] — exists for reasons other than user install; "
-                "expect instability and an inability to support issues[/]"
+                f"[bold yellow]⚠ {format_unsupported_install_warning(_install_method)}[/]"
             )
     except Exception:
         pass  # Never break the banner over the install-method check

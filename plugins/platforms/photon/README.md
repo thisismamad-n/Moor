@@ -1,6 +1,6 @@
 # Photon iMessage platform plugin
 
-This plugin connects Moor Agent to iMessage (and other Spectrum
+This plugin connects Hermes Agent to iMessage (and other Spectrum
 interfaces) through [Photon][photon] — a managed service that handles
 iMessage line allocation, delivery, and abuse-prevention so users don't
 have to run their own Mac relay.
@@ -13,7 +13,7 @@ recommend for everyone who doesn't already pay for a dedicated number.
 Like Discord and Slack, Photon is a **persistent-connection** channel — no
 public URL, no webhook, no signing secret. The `spectrum-ts` SDK holds a
 long-lived **gRPC stream** to Photon for both directions. Because the SDK is
-TypeScript-only, Moor runs it inside a small supervised Node sidecar and
+TypeScript-only, Hermes runs it inside a small supervised Node sidecar and
 talks to it over loopback.
 
 ```
@@ -37,7 +37,7 @@ talks to it over loopback.
   drops; the sidecar owns the gRPC reconnect to Photon.
 - **Outbound**: `send` / `send_typing` / reaction tapbacks are loopback POSTs
   to the sidecar (`/send`, `/send-attachment`, `/typing`, `/react`,
-  `/unreact`), authenticated with a shared `X-Moor-Sidecar-Token`.
+  `/unreact`), authenticated with a shared `X-Hermes-Sidecar-Token`.
 
 ## First-time setup
 
@@ -53,7 +53,7 @@ hermes gateway start
 
 1. **Device login** (RFC 8628, `client_id=photon-cli`) — opens
    `https://app.photon.codes/` for approval and stores the bearer token.
-2. **Find or create** the `Moor Agent` project on the Photon dashboard.
+2. **Find or create** the `Hermes Agent` project on the Photon dashboard.
 3. **Provision the project secret** — mint a fresh project secret (the
    dashboard reveals it only once) and persist it to `~/.hermes/.env` so the
    sidecar can authenticate `spectrum-ts`. Spectrum is always on, so there's no
@@ -66,7 +66,7 @@ hermes gateway start
    verbatim, so every setup runs the exact `spectrum-ts` version this plugin
    was written against).
 
-There is no separate `login` command; like every other Moor channel,
+There is no separate `login` command; like every other Hermes channel,
 onboarding goes through one setup surface. Re-running `setup` reuses an
 existing token/project, so it's safe to run again to finish a partial setup.
 Run `hermes photon status` to see what's configured.
@@ -94,7 +94,7 @@ Management metadata lives in `~/.hermes/auth.json` under `credential_pool`:
         "dashboard_project_id": "<project id>",
         "spectrum_project_id": "<project id>",
         "project_secret": "<projectSecret>",
-        "name": "Moor Agent"
+        "name": "Hermes Agent"
       }
     ]
   }
@@ -152,7 +152,7 @@ All env vars are documented in `plugin.yaml`. The most important:
   as a synthetic `reaction:added:<emoji>` event. Removal after a sidecar
   restart is best-effort — the live reaction handle is lost, so a stale
   tapback heals when the next reaction replaces it. Group spaces stay
-  reachable across restarts via spectrum-ts v3's `space.get(id)`.
+  reachable across restarts via spectrum-ts' `space.get(id)`.
 - **Message effects, polls** — supported by `spectrum-ts` but not yet
   exposed; the sidecar is the natural place to add them.
 
@@ -160,19 +160,30 @@ All env vars are documented in `plugin.yaml`. The most important:
 
 `spectrum-ts` is pinned to an **exact version** in `sidecar/package.json`
 (no `^` range) and installed with `npm ci`, because the SDK ships breaking
-majors (v2 removed `defineFusorPlatform`; v3 reworked space construction).
-A floating range or `npm install spectrum-ts@latest` would let a breaking
-release take down fresh setups silently. Upgrades are deliberate:
+majors (v2 removed `defineFusorPlatform`; v3 reworked space construction; v5
+split it into `@spectrum-ts/*` packages, with `spectrum-ts` as the umbrella
+that re-exports them; v8 made `richlink` outbound-only, so inbound rich links
+now arrive as plain `text`). A floating range or `npm install spectrum-ts@latest`
+would let a breaking release take down fresh setups silently. Upgrades are
+deliberate:
 
 1. Read the [SDK release notes](https://github.com/photon-hq/spectrum-ts/releases)
    for every version between the current pin and the target.
 2. Bump the exact pin in `sidecar/package.json`, then run `npm install`
    inside `sidecar/` to regenerate `package-lock.json`. Commit both.
-3. Migrate `sidecar/index.mjs` against the new typings
-   (`sidecar/node_modules/spectrum-ts/dist/*.d.ts` is the source of truth —
-   the hosted docs can lag).
-4. Run `pytest tests/plugins/platforms/photon/`.
-5. Verify end-to-end: `hermes photon status`, a DM and a group roundtrip,
+3. Migrate `sidecar/index.mjs` against the new typings. `spectrum-ts` re-exports
+   `@spectrum-ts/core` (the framework: `Spectrum`, content builders,
+   `Space`/`Message`) and `@spectrum-ts/imessage` (the provider), so the source
+   of truth is `sidecar/node_modules/@spectrum-ts/{core,imessage}/dist/*.d.ts`
+   (the hosted docs can lag).
+4. Re-validate `sidecar/patch-spectrum-mixed-attachments.mjs`. It rewrites the
+   compiled iMessage inbound mappers in `@spectrum-ts/imessage/dist/index.js`
+   so a bubble with both text and attachments keeps its typed text; the anchors
+   are tied to that build's output. `npm install` runs it via `postinstall` and
+   fails loudly if the anchors no longer match — update them to the new output
+   (`test_spectrum_patch.py` covers the patch).
+5. Run `pytest tests/plugins/platforms/photon/`.
+6. Verify end-to-end: `hermes photon status`, a DM and a group roundtrip,
    and an agent reply into a group right after a gateway restart (exercises
    `space.get` rehydration).
 

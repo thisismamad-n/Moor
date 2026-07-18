@@ -361,7 +361,7 @@ class TestDeveloperRoleSwap:
         agent = _make_agent(
             monkeypatch,
             "nous",
-            base_url="https://inference-api.Moor inc..com/v1",
+            base_url="https://inference-api.nousresearch.com/v1",
             model="gpt-5",
         )
         messages = [
@@ -423,19 +423,19 @@ class TestBuildApiKwargsNousPortal:
         agent = _make_agent(
             monkeypatch,
             "nous",
-            base_url="https://inference-api.Moor inc..com/v1",
+            base_url="https://inference-api.nousresearch.com/v1",
             model="gpt-5",
         )
         messages = [{"role": "user", "content": "hi"}]
         kwargs = agent._build_api_kwargs(messages)
         extra = kwargs.get("extra_body", {})
-        assert extra.get("tags") == nous_portal_tags()
+        assert extra.get("tags") == nous_portal_tags(session_id=agent.session_id)
 
     def test_uses_chat_completions_format(self, monkeypatch):
         agent = _make_agent(
             monkeypatch,
             "nous",
-            base_url="https://inference-api.Moor inc..com/v1",
+            base_url="https://inference-api.nousresearch.com/v1",
             model="gpt-5",
         )
         messages = [{"role": "user", "content": "hi"}]

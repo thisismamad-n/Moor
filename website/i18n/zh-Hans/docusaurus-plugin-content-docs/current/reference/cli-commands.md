@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 title: "CLI 命令参考"
-description: "Moor 终端命令及命令族的权威参考"
+description: "Hermes 终端命令及命令族的权威参考"
 ---
 
 # CLI 命令参考
@@ -21,7 +21,7 @@ hermes [global-options] <command> [subcommand/options]
 | 选项 | 说明 |
 |--------|-------------|
 | `--version`, `-V` | 显示版本并退出。 |
-| `--profile <name>`, `-p <name>` | 选择本次调用使用的 Moor profile（配置文件）。覆盖 `hermes profile use` 设置的粘性默认值。 |
+| `--profile <name>`, `-p <name>` | 选择本次调用使用的 Hermes profile（配置文件）。覆盖 `hermes profile use` 设置的粘性默认值。 |
 | `--resume <session>`, `-r <session>` | 通过 ID 或标题恢复之前的会话。 |
 | `--continue [name]`, `-c [name]` | 恢复最近的会话，或恢复最近一个匹配标题的会话。 |
 | `--worktree`, `-w` | 在隔离的 git worktree 中启动，用于并行 agent 工作流。 |
@@ -56,9 +56,9 @@ hermes [global-options] <command> [subcommand/options]
 | `hermes security audit` | 对 venv、plugin 依赖和固定 MCP 服务器进行按需供应链审计（OSV.dev）。 |
 | `hermes dump` | 可直接复制粘贴的设置摘要，用于支持/调试。 |
 | `hermes debug` | 调试工具——上传日志和系统信息以获取支持。 |
-| `hermes backup` | 将 Moor 主目录备份为 zip 文件。 |
+| `hermes backup` | 将 Hermes 主目录备份为 zip 文件。 |
 | `hermes checkpoints` | 检查/修剪/清除 `~/.hermes/checkpoints/`（`/rollback` 使用的影子存储）。不带参数运行可查看状态概览。 |
-| `hermes import` | 从 zip 文件恢复 Moor 备份。 |
+| `hermes import` | 从 zip 文件恢复 Hermes 备份。 |
 | `hermes logs` | 查看、跟踪和过滤 agent/gateway/错误日志文件。 |
 | `hermes config` | 显示、编辑、迁移和查询配置文件。 |
 | `hermes pairing` | 审批或撤销消息配对码。 |
@@ -66,9 +66,9 @@ hermes [global-options] <command> [subcommand/options]
 | `hermes bundles` | 将多个 skill 归组到单个 `/<name>` 斜杠命令下。参见 [Skill Bundles](../user-guide/features/skills.md#skill-bundles)。 |
 | `hermes curator` | 后台 skill 维护——状态、运行、暂停、固定。参见 [Curator](../user-guide/features/curator.md)。 |
 | `hermes memory` | 配置外部 memory provider。当对应 provider 激活时，特定于 plugin 的子命令（如 `hermes honcho`）会自动注册。 |
-| `hermes acp` | 将 Moor 作为 ACP 服务器运行，用于编辑器集成。 |
-| `hermes mcp` | 管理 MCP 服务器配置，并将 Moor 作为 MCP 服务器运行。 |
-| `hermes plugins` | 管理 Moor Agent plugin（安装、启用、禁用、删除）。 |
+| `hermes acp` | 将 Hermes 作为 ACP 服务器运行，用于编辑器集成。 |
+| `hermes mcp` | 管理 MCP 服务器配置，并将 Hermes 作为 MCP 服务器运行。 |
+| `hermes plugins` | 管理 Hermes Agent plugin（安装、启用、禁用、删除）。 |
 | `hermes portal` | Nous Portal 状态、订阅链接和 Tool Gateway 路由。参见 [Tool Gateway](../user-guide/features/tool-gateway.md)。 |
 | `hermes tools` | 按平台配置已启用的工具。 |
 | `hermes computer-use` | 安装或检查 cua-driver 后端（macOS Computer Use）。 |
@@ -76,11 +76,11 @@ hermes [global-options] <command> [subcommand/options]
 | `hermes insights` | 显示 token/费用/活动分析。 |
 | `hermes claw` | OpenClaw 迁移辅助工具。 |
 | `hermes dashboard` | 启动用于管理配置、API 密钥和会话的 Web 控制台。 |
-| `hermes profile` | 管理 profile——多个隔离的 Moor 实例。 |
+| `hermes profile` | 管理 profile——多个隔离的 Hermes 实例。 |
 | `hermes completion` | 打印 shell 补全脚本（bash/zsh/fish）。 |
 | `hermes version` | 显示版本信息。 |
-| `hermes update` | 拉取最新代码并重新安装依赖（git 安装），或检查 PyPI 并执行 `pip install --upgrade`（pip 安装）。`--check` 预览而不安装；`--backup` 在拉取前对 `HERMES_HOME` 进行快照。 |
-| `hermes uninstall` | 从系统中删除 Moor。 |
+| `hermes update` | 拉取最新代码并重新安装依赖。`--check` 预览而不安装；`--backup` 在拉取前对 `HERMES_HOME` 进行快照。 |
+| `hermes uninstall` | 从系统中删除 Hermes。 |
 
 ## `hermes chat`
 
@@ -151,7 +151,7 @@ HERMES_INFERENCE_MODEL=anthropic/claude-sonnet-4.6 hermes -z "…"
 
 ## `hermes model`
 
-交互式 provider + 模型选择器。**这是添加新 provider、设置 API 密钥和运行 OAuth 流程的命令。** 从终端运行——不要在活跃的 Moor 聊天会话内部运行。
+交互式 provider + 模型选择器。**这是添加新 provider、设置 API 密钥和运行 OAuth 流程的命令。** 从终端运行——不要在活跃的 Hermes 聊天会话内部运行。
 
 ```bash
 hermes model
@@ -166,11 +166,11 @@ hermes model
 - 将新默认值保存到 config
 
 :::warning hermes model 与 /model——了解区别
-**`hermes model`**（从终端运行，在任何 Moor 会话外部）是**完整的 provider 设置向导**。它可以添加新 provider、运行 OAuth 流程、提示输入 API 密钥并配置端点。
+**`hermes model`**（从终端运行，在任何 Hermes 会话外部）是**完整的 provider 设置向导**。它可以添加新 provider、运行 OAuth 流程、提示输入 API 密钥并配置端点。
 
-**`/model`**（在活跃的 Moor 聊天会话中输入）只能**在已设置好的 provider 和模型之间切换**。它无法添加新 provider、运行 OAuth 或提示输入 API 密钥。
+**`/model`**（在活跃的 Hermes 聊天会话中输入）只能**在已设置好的 provider 和模型之间切换**。它无法添加新 provider、运行 OAuth 或提示输入 API 密钥。
 
-**如果需要添加新 provider：** 先退出 Moor 会话（`Ctrl+C` 或 `/quit`），然后从终端提示符运行 `hermes model`。
+**如果需要添加新 provider：** 先退出 Hermes 会话（`Ctrl+C` 或 `/quit`），然后从终端提示符运行 `hermes model`。
 :::
 
 ### `/model` 斜杠命令（会话中途）
@@ -292,7 +292,7 @@ hermes portal [status|open|tools]
 | 子命令 | 说明 |
 |------------|-------------|
 | `status`（默认） | Portal 认证状态 + 每个工具的 Tool Gateway 路由摘要。不带子命令时也会显示。 |
-| `open` | 在默认浏览器中打开 `portal.Moor inc..com/manage-subscription`。 |
+| `open` | 在默认浏览器中打开 `portal.nousresearch.com/manage-subscription`。 |
 | `tools` | 列出每个 Tool Gateway 合作伙伴（Firecrawl、FAL、OpenAI TTS、Browser Use、Modal）及哪些通过 Nous 路由。 |
 
 关于 gateway 本身的配置，请参阅 [Tool Gateway](../user-guide/features/tool-gateway.md)。关于一键设置路径，请参阅上方的 `hermes setup --portal`。
@@ -318,7 +318,7 @@ hermes slack manifest --slashes-only  # 仅输出 features.slash_commands 数组
 | 标志 | 默认值 | 用途 |
 |------|---------|---------|
 | `--write [PATH]` | stdout | 写入文件而非 stdout。裸 `--write` 写入 `$HERMES_HOME/slack-manifest.json`。 |
-| `--name NAME` | `Moor` | Slack 中的机器人显示名称。 |
+| `--name NAME` | `Hermes` | Slack 中的机器人显示名称。 |
 | `--description DESC` | 默认简介 | Slack app 目录中显示的机器人描述。 |
 | `--slashes-only` | 关闭 | 仅输出 `features.slash_commands`，用于合并到手动维护的 manifest 中。 |
 
@@ -345,7 +345,7 @@ hermes auth remove openrouter 2                          # 按索引删除
 hermes auth reset openrouter                             # 清除冷却时间
 hermes auth status anthropic                             # 显示某 provider 的认证状态
 hermes auth logout anthropic                             # 登出并清除已存储的认证状态
-hermes auth spotify                                      # 通过 PKCE 将 Moor 与 Spotify 认证
+hermes auth spotify                                      # 通过 PKCE 将 Hermes 与 Spotify 认证
 ```
 
 子命令：`add`、`list`、`remove`、`reset`、`status`、`logout`、`spotify`。不带子命令调用时，启动交互式管理向导。
@@ -477,6 +477,7 @@ hermes webhook subscribe <name> [options]
 | `--deliver-chat-id` | 跨平台投递的目标聊天/频道 ID。 |
 | `--secret` | 自定义 HMAC 密钥。省略时自动生成。 |
 | `--deliver-only` | 跳过 agent——将渲染后的 `--prompt` 作为字面消息投递。零 LLM 成本，亚秒级投递。要求 `--deliver` 为真实目标（非 `log`）。 |
+| `--script` | 位于 `~/.hermes/scripts/` 下的过滤/转换脚本。webhook payload 以 JSON 形式通过 stdin 传入；JSON stdout 会替换 payload，空 stdout、`[SILENT]` 或非零退出码会忽略该 webhook。参见[脚本过滤与转换](../user-guide/messaging/webhooks.md#script-filters-and-transforms)。 |
 
 订阅持久化到 `~/.hermes/webhook_subscriptions.json`，webhook 适配器无需重启 gateway 即可热重载。
 
@@ -496,7 +497,7 @@ hermes doctor [--fix]
 hermes dump [--show-keys]
 ```
 
-输出整个 Moor 设置的紧凑纯文本摘要。专为复制粘贴到 Discord、GitHub issue 或 Telegram 寻求支持而设计——无 ANSI 颜色、无特殊格式，只有数据。
+输出整个 Hermes 设置的紧凑纯文本摘要。专为复制粘贴到 Discord、GitHub issue 或 Telegram 寻求支持而设计——无 ANSI 颜色、无特殊格式，只有数据。
 
 | 选项 | 说明 |
 |--------|-------------|
@@ -506,7 +507,7 @@ hermes dump [--show-keys]
 
 | 部分 | 详情 |
 |---------|---------|
-| **Header** | Moor 版本、发布日期、git commit hash |
+| **Header** | Hermes 版本、发布日期、git commit hash |
 | **Environment** | 操作系统、Python 版本、OpenAI SDK 版本 |
 | **Identity** | 活跃 profile 名称、HERMES_HOME 路径 |
 | **Model** | 已配置的默认模型和 provider |
@@ -580,7 +581,7 @@ hermes debug share [options]
 | `--expire <days>` | 粘贴过期天数（默认：7）。 |
 | `--local` | 在本地打印报告而非上传。 |
 
-报告包含系统信息（操作系统、Python 版本、Moor 版本）、近期 agent 和 gateway 日志（每文件 512 KB 限制）以及脱敏的 API 密钥状态。密钥始终脱敏——不会上传任何密钥。
+报告包含系统信息（操作系统、Python 版本、Hermes 版本）、近期 agent 和 gateway 日志（每文件 512 KB 限制）以及脱敏的 API 密钥状态。密钥始终脱敏——不会上传任何密钥。
 
 依次尝试的粘贴服务：paste.rs、dpaste.com。
 
@@ -599,7 +600,7 @@ hermes debug share --local      # 在终端打印报告（不上传）
 hermes backup [options]
 ```
 
-创建 Moor 配置、skill、会话和数据的 zip 归档。备份不包含 hermes-agent 代码库本身。
+创建 Hermes 配置、skill、会话和数据的 zip 归档。备份不包含 hermes-agent 代码库本身。
 
 | 选项 | 说明 |
 |--------|-------------|
@@ -607,7 +608,7 @@ hermes backup [options]
 | `-q`, `--quick` | 快速快照：仅包含关键状态文件（config.yaml、state.db、.env、auth、cron 任务）。比完整备份快得多。 |
 | `-l`, `--label <name>` | 快照标签（仅与 `--quick` 配合使用）。 |
 
-备份使用 SQLite 的 `backup()` API 进行安全复制，因此即使 Moor 正在运行也能正确工作（WAL 模式安全）。
+备份使用 SQLite 的 `backup()` API 进行安全复制，因此即使 Hermes 正在运行也能正确工作（WAL 模式安全）。
 
 **zip 中排除的内容：**
 
@@ -668,7 +669,7 @@ hermes checkpoints clear -f                         # 清除所有内容
 hermes import <zipfile> [options]
 ```
 
-将之前创建的 Moor 备份恢复到 Moor 主目录。归档中的所有文件会覆盖 Moor 主目录中的现有文件；`--force` 仅跳过当目标已有 Moor 安装时触发的确认提示。
+将之前创建的 Hermes 备份恢复到 Hermes 主目录。归档中的所有文件会覆盖 Hermes 主目录中的现有文件；`--force` 仅跳过当目标已有 Hermes 安装时触发的确认提示。
 
 | 选项 | 说明 |
 |--------|-------------|
@@ -690,7 +691,7 @@ hermes import ~/hermes-backup-20260423.zip --force   # 不提示直接覆盖
 hermes logs [log_name] [options]
 ```
 
-查看、跟踪和过滤 Moor 日志文件。所有日志存储在 `~/.hermes/logs/`（非默认 profile 存储在 `<profile>/logs/`）。
+查看、跟踪和过滤 Hermes 日志文件。所有日志存储在 `~/.hermes/logs/`（非默认 profile 存储在 `<profile>/logs/`）。
 
 ### 日志文件
 
@@ -750,7 +751,7 @@ hermes logs --level WARNING --since 2h --session tg-12345
 
 ### 日志轮转
 
-Moor 使用 Python 的 `RotatingFileHandler`。旧日志会自动轮转——查找 `agent.log.1`、`agent.log.2` 等。`hermes logs list` 子命令显示所有日志文件，包括已轮转的。
+Hermes 使用 Python 的 `RotatingFileHandler`。旧日志会自动轮转——查找 `agent.log.1`、`agent.log.2` 等。`hermes logs list` 子命令显示所有日志文件，包括已轮转的。
 
 ## `hermes config`
 
@@ -819,7 +820,7 @@ hermes skills inspect official/security/1password
 hermes skills inspect skills-sh/vercel-labs/json-render/json-render-react
 hermes skills install official/migration/openclaw-migration
 hermes skills install skills-sh/anthropics/skills/pdf --force
-hermes skills install https://sharethis.chat/SKILL.md                     # 直接 URL（单文件 SKILL.md）
+hermes skills install https://sharethis.chat/SKILL.md                     # 直接 URL（含引用的支持文件）
 hermes skills install https://example.com/SKILL.md --name my-skill        # frontmatter 无名称时覆盖名称
 hermes skills check
 hermes skills update
@@ -832,9 +833,9 @@ hermes skills reset google-workspace --restore --yes
 - `--force` 可以覆盖第三方/社区 skill 的非危险性策略阻止。
 - `--force` 不覆盖 `dangerous` 扫描结论。
 - `--source skills-sh` 搜索公共 `skills.sh` 目录。
-- `--source well-known` 允许你将 Moor 指向暴露 `/.well-known/skills/index.json` 的站点。
+- `--source well-known` 允许你将 Hermes 指向暴露 `/.well-known/skills/index.json` 的站点。
 - `--source browse-sh` 搜索 [browse.sh](https://browse.sh) 包含 200+ 站点特定浏览器自动化 skill 的目录。标识符形如 `browse-sh/airbnb.com/search-listings-ddgioa`。
-- 传入 `http(s)://…/*.md` URL 可直接安装单文件 SKILL.md。当 frontmatter 没有 `name:` 且 URL slug 不是有效标识符时，交互式终端会提示输入名称；非交互式界面（TUI 内的 `/skills install`、gateway 平台）需要改用 `--name <x>`。
+- 传入 `http(s)://…/*.md` URL 可安装 `SKILL.md`，以及其中明确引用且位于 `references/`、`templates/`、`scripts/`、`assets/` 和 `examples/` 下的文件。当 frontmatter 没有 `name:` 且 URL slug 不是有效标识符时，交互式终端会提示输入名称；非交互式界面（TUI 内的 `/skills install`、gateway 平台）需要改用 `--name <x>`。
 
 ## `hermes bundles`
 
@@ -962,7 +963,7 @@ hermes memory <subcommand>
 hermes acp
 ```
 
-将 Moor 作为 ACP（Agent Client Protocol）stdio 服务器启动，用于编辑器集成。
+将 Hermes 作为 ACP（Agent Client Protocol）stdio 服务器启动，用于编辑器集成。
 
 相关入口：
 
@@ -974,7 +975,7 @@ python -m acp_adapter
 首先安装支持：
 
 ```bash
-pip install -e '.[acp]'
+cd ~/.hermes/hermes-agent && uv pip install -e '.[acp]'
 ```
 
 参见 [ACP 编辑器集成](../user-guide/features/acp.md) 和 [ACP 内部原理](../developer-guide/acp-internals.md)。
@@ -985,11 +986,11 @@ pip install -e '.[acp]'
 hermes mcp <subcommand>
 ```
 
-管理 MCP（Model Context Protocol）服务器配置，并将 Moor 作为 MCP 服务器运行。
+管理 MCP（Model Context Protocol）服务器配置，并将 Hermes 作为 MCP 服务器运行。
 
 | 子命令 | 说明 |
 |------------|-------------|
-| `serve [-v\|--verbose]` | 将 Moor 作为 MCP 服务器运行——向其他 agent 暴露对话。 |
+| `serve [-v\|--verbose]` | 将 Hermes 作为 MCP 服务器运行——向其他 agent 暴露对话。 |
 | `add <name> [--url URL] [--command CMD] [--args ...] [--auth oauth\|header]` | 添加 MCP 服务器并自动发现工具。 |
 | `remove <name>`（别名：`rm`） | 从 config 中删除 MCP 服务器。 |
 | `list`（别名：`ls`） | 列出已配置的 MCP 服务器。 |
@@ -997,7 +998,7 @@ hermes mcp <subcommand>
 | `configure <name>`（别名：`config`） | 切换服务器的工具选择。 |
 | `login <name>` | 强制重新认证基于 OAuth 的 MCP 服务器。 |
 
-参见 [MCP 配置参考](./mcp-config-reference.md)、[在 Moor 中使用 MCP](../guides/use-mcp-with-hermes.md) 和 [MCP 服务器模式](../user-guide/features/mcp.md#running-hermes-as-an-mcp-server)。
+参见 [MCP 配置参考](./mcp-config-reference.md)、[在 Hermes 中使用 MCP](../guides/use-mcp-with-hermes.md) 和 [MCP 服务器模式](../user-guide/features/mcp.md#running-hermes-as-an-mcp-server)。
 
 ## `hermes plugins`
 
@@ -1026,7 +1027,7 @@ Provider plugin 选择保存到 `config.yaml`：
 
 通用 plugin 禁用列表存储在 `config.yaml` 的 `plugins.disabled` 下。
 
-参见 [Plugins](../user-guide/features/plugins.md) 和 [构建 Moor Plugin](../guides/build-a-hermes-plugin.md)。
+参见 [Plugins](../user-guide/features/plugins.md) 和 [构建 Hermes Plugin](../developer-guide/plugins/index.md)。
 
 ## `hermes tools`
 
@@ -1056,7 +1057,7 @@ hermes computer-use <subcommand>
 
 `hermes computer-use install` 是安装 `computer_use` toolset 使用的 [cua-driver](https://github.com/trycua/cua) 二进制文件的稳定入口。它运行与首次启用 Computer Use 时 `hermes tools` 调用的相同上游安装程序，因此如果 toolset 切换未触发安装（例如在已配置用户的设置中），可以安全地用于重新运行安装。
 
-`hermes update` 在更新结束时，如果 cua-driver 在 PATH 中，会自动重新运行上游安装程序，因此大多数用户不需要手动调用 `--upgrade`。当上游发布了你现在就想要的修复，而不想等待下次 Moor 更新时，使用此选项。
+`hermes update` 在更新结束时，如果 cua-driver 在 PATH 中，会自动重新运行上游安装程序，因此大多数用户不需要手动调用 `--upgrade`。当上游发布了你现在就想要的修复，而不想等待下次 Hermes 更新时，使用此选项。
 
 ## `hermes sessions`
 
@@ -1093,13 +1094,13 @@ hermes insights [--days N] [--source platform]
 hermes claw migrate [options]
 ```
 
-将 OpenClaw 设置迁移到 Moor。从 `~/.openclaw`（或自定义路径）读取并写入 `~/.hermes`。自动检测旧版目录名（`~/.clawdbot`、`~/.moltbot`）和配置文件名（`clawdbot.json`、`moltbot.json`）。
+将 OpenClaw 设置迁移到 Hermes。从 `~/.openclaw`（或自定义路径）读取并写入 `~/.hermes`。自动检测旧版目录名（`~/.clawdbot`、`~/.moltbot`）和配置文件名（`clawdbot.json`、`moltbot.json`）。
 
 | 选项 | 说明 |
 |--------|-------------|
 | `--dry-run` | 预览将迁移的内容而不写入任何内容。 |
 | `--preset <name>` | 迁移预设：`full`（所有兼容设置）或 `user-data`（排除基础设施配置）。两种预设都不导入密钥——需要显式传入 `--migrate-secrets`。 |
-| `--overwrite` | 在冲突时覆盖现有 Moor 文件（默认：当计划有冲突时拒绝应用）。 |
+| `--overwrite` | 在冲突时覆盖现有 Hermes 文件（默认：当计划有冲突时拒绝应用）。 |
 | `--migrate-secrets` | 在迁移中包含 API 密钥。即使在 `--preset full` 下也需要显式指定。 |
 | `--no-backup` | 跳过迁移前对 `~/.hermes/` 的 zip 快照（默认情况下，在应用前会将单个还原点归档写入 `~/.hermes/backups/pre-migration-*.zip`；可用 `hermes import` 恢复）。 |
 | `--source <path>` | 自定义 OpenClaw 目录（默认：`~/.openclaw`）。 |
@@ -1109,7 +1110,7 @@ hermes claw migrate [options]
 
 ### 迁移内容
 
-迁移涵盖 30+ 个类别，包括 persona、memory、skill、模型 provider、消息平台、agent 行为、会话策略、MCP 服务器、TTS 等。条目要么**直接导入**到 Moor 等效项，要么**归档**以供手动审查。
+迁移涵盖 30+ 个类别，包括 persona、memory、skill、模型 provider、消息平台、agent 行为、会话策略、MCP 服务器、TTS 等。条目要么**直接导入**到 Hermes 等效项，要么**归档**以供手动审查。
 
 **直接导入：** SOUL.md、MEMORY.md、USER.md、AGENTS.md、skill（4 个源目录）、默认模型、自定义 provider、MCP 服务器、消息平台 token 和许可名单（Telegram、Discord、Slack、WhatsApp、Signal、Matrix、Mattermost）、agent 默认值（推理努力程度、压缩、人工延迟、时区、沙箱）、会话重置策略、审批规则、TTS 配置、浏览器设置、工具设置、执行超时、命令许可名单、gateway 配置以及来自 3 个来源的 API 密钥。
 
@@ -1144,7 +1145,7 @@ hermes claw migrate --source /home/user/old-openclaw
 hermes dashboard [options]
 ```
 
-启动 Web 控制台——基于浏览器的界面，用于管理配置、API 密钥和监控会话。需要 `pip install hermes-agent[web]`（FastAPI + Uvicorn）。内嵌浏览器 Chat 标签页始终可用，但额外需要 `pty` extra（`pip install 'hermes-agent[web,pty]'`）以及 POSIX PTY 环境（如 Linux、macOS 或 WSL2）。完整文档请参阅 [Web 控制台](/user-guide/features/web-dashboard)。
+启动 Web 控制台——基于浏览器的界面，用于管理配置、API 密钥和监控会话。需要 `cd ~/.hermes/hermes-agent && uv pip install -e ".[web]"`（FastAPI + Uvicorn）。内嵌浏览器 Chat 标签页始终可用，但额外需要 `pty` extra（`cd ~/.hermes/hermes-agent && uv pip install -e ".[web,pty]"`）以及 POSIX PTY 环境（如 Linux、macOS 或 WSL2）。完整文档请参阅 [Web 控制台](/user-guide/features/web-dashboard)。
 
 | 选项 | 默认值 | 说明 |
 |--------|---------|-------------|
@@ -1169,7 +1170,7 @@ hermes dashboard --port 8080 --no-open
 hermes profile <subcommand>
 ```
 
-管理 profile——多个隔离的 Moor 实例，每个实例拥有自己的 config、会话、skill 和主目录。
+管理 profile——多个隔离的 Hermes 实例，每个实例拥有自己的 config、会话、skill 和主目录。
 
 | 子命令 | 说明 |
 |------------|-------------|
@@ -1206,7 +1207,7 @@ hermes -p work chat -q "Hello from work profile"
 hermes completion [bash|zsh|fish]
 ```
 
-将 shell 补全脚本打印到 stdout。在 shell profile 中 source 输出内容，即可对 Moor 命令、子命令和 profile 名称进行 Tab 补全。
+将 shell 补全脚本打印到 stdout。在 shell profile 中 source 输出内容，即可对 Hermes 命令、子命令和 profile 名称进行 Tab 补全。
 
 示例：
 
@@ -1227,9 +1228,7 @@ hermes completion fish > ~/.config/fish/completions/hermes.fish
 hermes update [--check] [--backup] [--restart-gateway]
 ```
 
-拉取最新的 `hermes-agent` 代码并在 venv 中重新安装依赖，然后重新运行安装后 hook（MCP 服务器、skill 同步、补全安装）。可在运行中的安装上安全执行。
-
-**pip 安装：** `hermes update` 自动检测基于 pip 的安装——查询 PyPI 获取最新版本并运行 `pip install --upgrade hermes-agent`，而非 `git pull`。PyPI 发布跟踪标记版本（主要/次要版本），而非 `main` 上的每个 commit。使用 `--check` 查看是否有更新的 PyPI 版本可用，而不安装。
+拉取最新的 `hermes-agent` 代码并在受管理的 venv 中重新安装依赖，然后重新运行安装后 hook（MCP 服务器、skill 同步、补全安装）。可在运行中的安装上安全执行。使用 `--check` 查看你的检出是否落后于 `origin/main`，而不安装。
 
 | 选项 | 说明 |
 |--------|-------------|
@@ -1240,7 +1239,7 @@ hermes update [--check] [--backup] [--restart-gateway]
 附加行为：
 
 - **配对数据快照。** 即使 `--backup` 关闭，`hermes update` 也会在 `git pull` 前对 `~/.hermes/pairing/` 和 Feishu 评论规则进行轻量快照。如果拉取覆盖了你正在编辑的文件，可以用 `hermes backup restore --state pre-update` 回滚。
-- **旧版 `hermes.service` 警告。** 如果 Moor 检测到预重命名的 `hermes.service` systemd 单元（而非当前的 `hermes-gateway.service`），会打印一次性迁移提示，帮助你避免循环重启问题。
+- **旧版 `hermes.service` 警告。** 如果 Hermes 检测到预重命名的 `hermes.service` systemd 单元（而非当前的 `hermes-gateway.service`），会打印一次性迁移提示，帮助你避免循环重启问题。
 - **退出码。** 成功时为 `0`，拉取/安装/安装后错误时为 `1`，阻止 `git pull` 的意外工作树变更时为 `2`。
 
 ## 维护命令
@@ -1249,7 +1248,7 @@ hermes update [--check] [--backup] [--restart-gateway]
 |---------|-------------|
 | `hermes version` | 打印版本信息。 |
 | `hermes update` | 拉取最新变更并重新安装依赖。 |
-| `hermes uninstall [--full] [--yes]` | 删除 Moor，可选择删除所有 config/数据。 |
+| `hermes uninstall [--full] [--yes]` | 删除 Hermes，可选择删除所有 config/数据。 |
 
 ## 另请参阅
 

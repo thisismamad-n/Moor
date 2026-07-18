@@ -10,7 +10,6 @@ import pytest
 # against each other (and against any other file that also touches
 # ``app.state``) — the marker name is shared across all dashboard-auth test
 # files that gate the app.
-pytestmark = pytest.mark.xdist_group("dashboard_auth_app_state")
 from fastapi.testclient import TestClient
 
 from hermes_cli import web_server
@@ -51,7 +50,7 @@ def test_loopback_protected_route_accepts_session_token(client_loopback):
     """The injected SPA token unlocks protected /api/ routes."""
     r = client_loopback.get(
         "/api/sessions",
-        headers={"X-Moor-Session-Token": web_server._SESSION_TOKEN},
+        headers={"X-Hermes-Session-Token": web_server._SESSION_TOKEN},
     )
     # 200 or 404 (no sessions yet) both prove the auth layer let it through.
     # 500 is also acceptable if there's a downstream issue unrelated to auth.

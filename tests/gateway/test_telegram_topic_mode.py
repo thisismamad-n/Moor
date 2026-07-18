@@ -1,7 +1,7 @@
 """Tests for Telegram private-chat topic-mode routing.
 
 Topic mode makes the root Telegram DM a system lobby while user-created
-Telegram topics act as independent Moor session lanes.
+Telegram topics act as independent Hermes session lanes.
 """
 
 from datetime import datetime
@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from hermes_state import SessionDB
-from gateway.config import GatewayConfig, Platform, PlatformConfig
+from gateway.config import GatewayConfig, HomeChannel, Platform, PlatformConfig
 from gateway.platforms.base import MessageEvent
 from gateway.session import SessionEntry, SessionSource, build_session_key
 
@@ -123,6 +123,10 @@ def _make_runner(session_db=None):
     runner._busy_ack_ts = {}
     runner._session_model_overrides = {}
     runner._pending_model_notes = {}
+    # Gateway holds the async facade; the slash handlers await it.
+    if session_db is not None:
+        from hermes_state import AsyncSessionDB
+        session_db = AsyncSessionDB(session_db)
     runner._session_db = session_db
     runner._reasoning_config = None
     runner._provider_routing = {}
@@ -336,10 +340,16 @@ async def test_group_new_keeps_existing_reset_semantics_when_dm_topic_mode_enabl
     monkeypatch.setattr(
         gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "***"}
     )
+    # /new appends a random tip from hermes_cli.tips; one tip's text contains
+    # the phrase "parallel work", which collides with the negative assertion
+    # below (observed as a 1-in-N CI flake). Pin the tip.
+    monkeypatch.setattr(
+        "hermes_cli.tips.get_random_tip", lambda: "pinned tip for test"
+    )
 
     result = await runner._handle_message(_make_group_event("/new", thread_id="555"))
 
-    assert "Started a new Moor session in this topic" not in result
+    assert "Started a new Hermes session in this topic" not in result
     assert "parallel work" not in result
     runner.session_store.reset_session.assert_called_once_with(group_key)
 
@@ -380,7 +390,7 @@ async def test_new_inside_telegram_topic_resets_current_topic_with_parallel_tip(
 
     result = await runner._handle_message(_make_event("/new", thread_id="17585"))
 
-    assert "Started a new Moor session in this topic" in result
+    assert "Started a new Hermes session in this topic" in result
     assert "parallel work" in result
     assert "All Messages" in result
     runner.session_store.reset_session.assert_called_once_with(topic_key)
@@ -699,7 +709,7 @@ async def test_topic_restore_inside_topic_binds_old_session_and_returns_last_ass
     result = await runner._handle_message(_make_event("/topic old-session", thread_id="17585"))
 
     assert "Session restored: Research notes" in result
-    assert "Last Moor message:" in result
+    assert "Last Hermes message:" in result
     assert "Here is the summary." in result
     binding = session_db.get_telegram_topic_binding(chat_id="208214988", thread_id="17585")
     assert binding is not None
@@ -797,6 +807,49 @@ async def test_first_message_inside_topic_records_topic_binding(tmp_path, monkey
 
 
 @pytest.mark.asyncio
+async def test_handoff_to_telegram_dm_topic_uses_dm_lane_not_generic_thread(tmp_path):
+    """Handoff-created Telegram DM topics must use the real DM-topic lane.
+
+    A positive Telegram chat_id is a private chat. If handoff treats the new
+    topic as generic chat_type="thread" with user_id="system:handoff", the
+    synthetic turn lands under agent:...:thread:chat:topic while real user
+    replies arrive as chat_type="dm" with user_id=chat_id. Recovery then sees
+    the topic as unbound and can rewrite it to another recent topic.
+    """
+    session_db = SessionDB(db_path=tmp_path / "state.db")
+    session_db.enable_telegram_topic_mode(chat_id="208214988", user_id="208214988")
+    runner = _make_runner(session_db=session_db)
+    runner.config.platforms[Platform.TELEGRAM].home_channel = HomeChannel(
+        platform=Platform.TELEGRAM,
+        chat_id="208214988",
+        name="Tester DM",
+    )
+    adapter = runner.adapters[Platform.TELEGRAM]
+    adapter.create_handoff_thread = AsyncMock(return_value="17585")
+    adapter.send.return_value = SimpleNamespace(success=True)
+    captured = {}
+
+    async def fake_handle_message(event):
+        captured["source"] = event.source
+        return "handoff ok"
+
+    runner._handle_message = AsyncMock(side_effect=fake_handle_message)
+
+    await runner._process_handoff({
+        "id": "cli-session",
+        "title": "CLI work",
+        "handoff_platform": "telegram",
+    })
+
+    expected_source = _make_source(thread_id="17585")
+    expected_key = build_session_key(expected_source)
+    runner.session_store.switch_session.assert_called_once_with(expected_key, "cli-session")
+    assert captured["source"].chat_type == "dm"
+    assert captured["source"].user_id == "208214988"
+    assert captured["source"].thread_id == "17585"
+
+
+@pytest.mark.asyncio
 async def test_topic_root_command_creates_and_pins_system_topic(tmp_path, monkeypatch):
     import gateway.run as gateway_run
 
@@ -822,7 +875,7 @@ async def test_topic_root_command_creates_and_pins_system_topic(tmp_path, monkey
     adapter._create_dm_topic.assert_awaited_once_with(208214988, "System")
     adapter.send.assert_awaited_once_with(
         "208214988",
-        "System topic for Moor commands and status.",
+        "System topic for Hermes commands and status.",
         metadata={"thread_id": "4242"},
     )
     bot.pin_chat_message.assert_awaited_once_with(
@@ -1399,7 +1452,8 @@ def test_session_split_restores_source_thread_id_from_binding(tmp_path):
     )
 
     runner = object.__new__(GatewayRunner)
-    runner._session_db = db
+    from hermes_state import AsyncSessionDB
+    runner._session_db = AsyncSessionDB(db)
 
     # Build a source that looks like it came from a synthetic/recovered event:
     # platform and chat_type match a Telegram DM, but thread_id is None.
@@ -1416,7 +1470,9 @@ def test_session_split_restores_source_thread_id_from_binding(tmp_path):
         and runner._session_db is not None
     ):
         try:
-            _binding = runner._session_db.get_telegram_topic_binding_by_session(
+            # Mirror production: this block runs in the run_sync executor, so it
+            # uses the sync handle (self._session_db._db), not the async facade.
+            _binding = runner._session_db._db.get_telegram_topic_binding_by_session(
                 session_id="sess-split-new",
             )
             if _binding and _binding.get("thread_id"):

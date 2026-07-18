@@ -21,7 +21,7 @@ def trap_config(tmp_path: Path) -> Path:
     """A config.yaml with retired models AND comments to verify round-trip."""
     p = tmp_path / "config.yaml"
     p.write_text(
-        "# Moor config (sample)\n"
+        "# Hermes config (sample)\n"
         "principal:\n"
         "  provider: xai             # the main model\n"
         "  model: grok-4-1-fast-non-reasoning  # retiring May 15\n"
@@ -152,7 +152,7 @@ class TestRoundTripPreservation:
         issues = find_retired_xai_refs(_parse(trap_config))
         apply_migration(trap_config, issues)
         text = trap_config.read_text(encoding="utf-8")
-        assert "# Moor config (sample)" in text
+        assert "# Hermes config (sample)" in text
 
     def test_preserves_inline_comments_on_unmodified_lines(self, trap_config: Path):
         issues = find_retired_xai_refs(_parse(trap_config))
@@ -221,3 +221,30 @@ class TestIdempotence:
         assert issues_2 == []
         result_2 = apply_migration(trap_config, issues_2)
         assert result_2.config_changed is False
+
+
+# ---------------------------------------------------------------------------
+# Fail-closed on unreadable existing config
+# ---------------------------------------------------------------------------
+
+class TestUnreadableExistingConfig:
+    def test_apply_refuses_to_overwrite_unreadable_config(self, trap_config: Path):
+        """apply_migration must not clobber an existing config.yaml it can't
+        read. It reads the file first (which raises on an unreadable file), and
+        the require_readable_config_before_write guard before the write is a
+        belt-and-suspenders backstop for the read-then-write window. Either way
+        the original bytes must survive."""
+        import os
+
+        issues = find_retired_xai_refs(_parse(trap_config))
+        assert issues  # sanity: trap_config has retired refs
+        original = trap_config.read_bytes()
+
+        os.chmod(trap_config, 0o000)
+        try:
+            with pytest.raises((PermissionError, RuntimeError, OSError)):
+                apply_migration(trap_config, issues, backup=False)
+        finally:
+            os.chmod(trap_config, 0o644)
+
+        assert trap_config.read_bytes() == original

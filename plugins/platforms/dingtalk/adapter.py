@@ -239,7 +239,7 @@ class DingTalkAdapter(BasePlatformAdapter):
 
     # -- Connection lifecycle -----------------------------------------------
 
-    async def connect(self) -> bool:
+    async def connect(self, *, is_reconnect: bool = False) -> bool:
         """Connect to DingTalk via Stream Mode."""
         if not DINGTALK_STREAM_AVAILABLE:
             logger.warning(
@@ -905,7 +905,7 @@ class DingTalkAdapter(BasePlatformAdapter):
 
         payload = {
             "msgtype": "markdown",
-            "markdown": {"title": "Moor", "text": normalized},
+            "markdown": {"title": "Hermes", "text": normalized},
         }
 
         try:
@@ -1686,7 +1686,7 @@ def _build_adapter(config):
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Moor plugin system."""
+    """Plugin entry point — called by the Hermes plugin system."""
     ctx.register_platform(
         name="dingtalk",
         label="DingTalk",

@@ -12,18 +12,21 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Switch } from '@/components/ui/switch'
 import { useI18n } from '@/i18n'
+import { normalize } from '@/lib/text'
 import { setModelPreset } from '@/store/model-presets'
 import { notifyError } from '@/store/notifications'
 import { $activeSessionId, setCurrentFastMode, setCurrentReasoningEffort } from '@/store/session'
 
-// Moor' real reasoning levels (see VALID_REASONING_EFFORTS); `none` is owned
+// Hermes' real reasoning levels (see VALID_REASONING_EFFORTS); `none` is owned
 // by the Thinking toggle, not the radio.
 const EFFORT_OPTIONS = [
   { value: 'minimal', labelKey: 'minimal' },
   { value: 'low', labelKey: 'low' },
   { value: 'medium', labelKey: 'medium' },
   { value: 'high', labelKey: 'high' },
-  { value: 'xhigh', labelKey: 'max' }
+  { value: 'xhigh', labelKey: 'xhigh' },
+  { value: 'max', labelKey: 'max' },
+  { value: 'ultra', labelKey: 'ultra' }
 ] as const
 
 /** How "fast" is achieved for a given model — two different mechanisms:
@@ -166,7 +169,11 @@ export function ModelEditSubmenu({
       }
       void (async () => {
         try {
-          await requestGateway('config.set', { key: 'fast', session_id: activeSessionId, value: enabled ? 'fast' : 'normal' })
+          await requestGateway('config.set', {
+            key: 'fast',
+            session_id: activeSessionId,
+            value: enabled ? 'fast' : 'normal'
+          })
         } catch (err) {
           setCurrentFastMode(!enabled)
           setModelPreset(provider, model, { fast: !enabled })
@@ -228,12 +235,12 @@ export function ModelEditSubmenu({
 }
 
 function isThinkingEnabled(effort: string): boolean {
-  // Empty = Moor default (medium) = on; only an explicit "none" is off.
-  return (effort || 'medium').trim().toLowerCase() !== 'none'
+  // Empty = Hermes default (medium) = on; only an explicit "none" is off.
+  return normalize(effort || 'medium') !== 'none'
 }
 
 function normalizeEffort(effort: string): string {
-  const value = (effort || 'medium').trim().toLowerCase()
+  const value = normalize(effort || 'medium')
 
   // Thinking off → no effort selected in the radio group.
   if (value === 'none') {

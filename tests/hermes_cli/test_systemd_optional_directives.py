@@ -88,7 +88,7 @@ RestartMaxDelaySec=300
         )
         # What the installed unit looks like on older systemd (directives stripped)
         installed = """[Unit]
-Description=Moor Gateway
+Description=Hermes Gateway
 After=network-online.target
 
 [Service]
@@ -104,7 +104,7 @@ WantedBy=default.target
 """
         # What generate_systemd_unit produces (with the directives)
         expected = """[Unit]
-Description=Moor Gateway
+Description=Hermes Gateway
 After=network-online.target
 
 [Service]
@@ -139,13 +139,36 @@ WantedBy=default.target
 
 
 class TestSystemdUnitIsCurrent:
+    def test_unit_without_fatal_config_restart_policy_is_not_current(
+        self, tmp_path, monkeypatch,
+    ):
+        from hermes_cli import gateway as gw
+
+        expected = """[Service]
+Restart=always
+RestartForceExitStatus=75
+RestartPreventExitStatus=78
+"""
+        installed = expected.replace("RestartPreventExitStatus=78\n", "")
+        unit_file = tmp_path / "hermes-gateway.service"
+        unit_file.write_text(installed)
+
+        monkeypatch.setattr(gw, "get_systemd_unit_path", lambda system=False: unit_file)
+        monkeypatch.setattr(
+            gw,
+            "generate_systemd_unit",
+            lambda system=False, run_as_user=None: expected,
+        )
+
+        assert gw.systemd_unit_is_current(system=False) is False
+
     def test_unit_without_optional_directives_is_current(self, tmp_path, monkeypatch):
         """Installed unit missing RestartMaxDelaySec/RestartSteps should be
         considered current when the generated unit includes them."""
         from hermes_cli import gateway as gw
 
         installed = """[Unit]
-Description=Moor Gateway
+Description=Hermes Gateway
 
 [Service]
 Type=simple
@@ -173,7 +196,7 @@ WantedBy=default.target
         from hermes_cli import gateway as gw
 
         installed = """[Unit]
-Description=Moor Gateway
+Description=Hermes Gateway
 
 [Service]
 Type=simple
@@ -185,7 +208,7 @@ RestartSec=10
 WantedBy=default.target
 """
         expected = """[Unit]
-Description=Moor Gateway
+Description=Hermes Gateway
 
 [Service]
 Type=simple
@@ -215,7 +238,7 @@ WantedBy=default.target
         from hermes_cli import gateway as gw
 
         unit_text = """[Unit]
-Description=Moor Gateway
+Description=Hermes Gateway
 
 [Service]
 Type=simple

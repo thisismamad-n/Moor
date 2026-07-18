@@ -1,6 +1,6 @@
-"""Projects codex app-server events into Moor' messages list.
+"""Projects codex app-server events into Hermes' messages list.
 
-The translator that lets Moor' memory/skill review keep working under the
+The translator that lets Hermes' memory/skill review keep working under the
 Codex runtime: it converts Codex `item/*` notifications into the standard
 OpenAI-shaped `{role, content, tool_calls, tool_call_id}` entries that
 `agent/curator.py` already knows how to read.
@@ -16,9 +16,9 @@ Codex emits items with a discriminator field `type`:
   - plan/hookPrompt/collabAgentToolCall → recorded as opaque assistant notes
 
 Each item maps to AT MOST one assistant entry + one tool entry, preserving
-Moor' message-alternation invariants (system → user → assistant → user/tool
+Hermes' message-alternation invariants (system → user → assistant → user/tool
 → assistant → ...). Multiple Codex tool calls within one Codex turn produce
-multiple consecutive (assistant, tool) pairs, which is the same shape Moor
+multiple consecutive (assistant, tool) pairs, which is the same shape Hermes
 already produces for parallel tool calls.
 
 Counters tracked alongside projection:
@@ -48,7 +48,7 @@ def _deterministic_call_id(item_type: str, item_id: str) -> str:
 
 
 def _format_tool_args(d: dict) -> str:
-    """Format a dict as JSON the way Moor' existing tool_calls path does."""
+    """Format a dict as JSON the way Hermes' existing tool_calls path does."""
     return json.dumps(d, ensure_ascii=False, sort_keys=True)
 
 
@@ -70,7 +70,7 @@ class CodexEventProjector:
     """Stateful projector consuming Codex notifications in arrival order.
 
     Owns the in-progress reasoning content (codex emits reasoning as separate
-    items but Moor stashes it on the next assistant message)."""
+    items but Hermes stashes it on the next assistant message)."""
 
     def __init__(self) -> None:
         self._pending_reasoning: list[str] = []
@@ -83,7 +83,7 @@ class CodexEventProjector:
 
         # We only materialize messages on `item/completed`. Streaming deltas
         # (`item/<type>/outputDelta`, `item/<type>/delta`) are display-only and
-        # don't enter the messages list — same way Moor already only writes
+        # don't enter the messages list — same way Hermes already only writes
         # the assistant message after the streaming completion event.
         if method != "item/completed":
             return ProjectionResult()
@@ -127,7 +127,7 @@ class CodexEventProjector:
     def _project_user_message(self, item: dict) -> ProjectionResult:
         # codex's userMessage content is a list of UserInput variants. For
         # projection purposes we flatten any text fragments and ignore
-        # non-text parts (images, etc.) — Moor' messages store text only.
+        # non-text parts (images, etc.) — Hermes' messages store text only.
         text_parts: list[str] = []
         for fragment in item.get("content") or []:
             if isinstance(fragment, dict):
@@ -217,7 +217,9 @@ class CodexEventProjector:
     def _project_mcp_tool_call(self, item: dict, item_id: str) -> ProjectionResult:
         server = item.get("server") or "mcp"
         tool = item.get("tool") or "unknown"
-        call_id = _deterministic_call_id(f"mcp_{server}_{tool}", item_id)
+        # Mirror the native MCP tool-name convention (mcp__server__tool) so the
+        # deterministic call_id input stays consistent with registration names.
+        call_id = _deterministic_call_id(f"mcp__{server}__{tool}", item_id)
         args = item.get("arguments") or {}
         if not isinstance(args, dict):
             args = {"arguments": args}

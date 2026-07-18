@@ -2,7 +2,7 @@
 
 Source: https://docs.x.ai/developers/migration/may-15-retirement
 
-Pure logic: walks a Moor config dict, returns issues for any reference
+Pure logic: walks a Hermes config dict, returns issues for any reference
 to a retired xAI model. No I/O, no CLI dependencies — testable in isolation
 and reusable from both `hermes doctor` and a future `hermes migrate xai`.
 """
@@ -34,7 +34,7 @@ _RETIRED_MODELS: Dict[str, Dict[str, Optional[str]]] = {
 
 @dataclass(frozen=True)
 class RetirementIssue:
-    """A reference to a retired xAI model found in a Moor config."""
+    """A reference to a retired xAI model found in a Hermes config."""
 
     config_path: str            # e.g. "principal.model" or "auxiliary.vision.model"
     current_model: str          # exact value found in config (preserves casing/prefix)
@@ -60,7 +60,7 @@ def _looks_like_xai(model_id: Optional[str]) -> bool:
 
 
 def find_retired_xai_refs(config: Dict[str, Any]) -> List[RetirementIssue]:
-    """Walk all model slots in a Moor config and return retirement issues.
+    """Walk all model slots in a Hermes config and return retirement issues.
 
     Slots scanned:
       - ``principal.model``
@@ -242,6 +242,9 @@ def apply_migration(
         )
         shutil.copy2(config_path, backup_path)
 
+    from hermes_cli.config import require_readable_config_before_write
+
+    require_readable_config_before_write(config_path)
     with config_path.open("w", encoding="utf-8") as fh:
         yaml.dump(doc, fh)
 

@@ -1,6 +1,6 @@
 """OpenAI-compatible facade over Google AI Studio's native Gemini API.
 
-Moor keeps ``api_mode='chat_completions'`` for the ``gemini`` provider so the
+Hermes keeps ``api_mode='chat_completions'`` for the ``gemini`` provider so the
 main agent loop can keep using its existing OpenAI-shaped message flow.
 This adapter is the transport shim that converts those OpenAI-style
 ``messages[]`` / ``tools[]`` requests into Gemini's native
@@ -8,7 +8,7 @@ This adapter is the transport shim that converts those OpenAI-style
 
 Why this exists
 ---------------
-Google's OpenAI-compatible endpoint has been brittle for Moor's multi-turn
+Google's OpenAI-compatible endpoint has been brittle for Hermes's multi-turn
 agent/tool loop (auth churn, tool-call replay quirks, thought-signature
 requirements).  The native Gemini API is the canonical path and avoids the
 OpenAI-compat layer entirely.
@@ -27,9 +27,17 @@ from typing import Any, Dict, Iterator, List, Optional
 
 import httpx
 
+from agent.bounded_response import read_streaming_error_body
 from agent.gemini_schema import sanitize_gemini_tool_parameters
 
 logger = logging.getLogger(__name__)
+
+try:
+    import hermes_cli as _hermes_cli
+
+    _HERMES_VERSION = str(_hermes_cli.__version__)
+except Exception:
+    _HERMES_VERSION = "0.0.0"
 
 DEFAULT_GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 
@@ -72,7 +80,7 @@ def probe_gemini_tier(
 
     Returns one of:
 
-    - ``"free"``    -- key is on the free tier (unusable with Moor)
+    - ``"free"``    -- key is on the free tier (unusable with Hermes)
     - ``"paid"``    -- key is on a paid tier
     - ``"unknown"`` -- probe failed; callers should proceed without blocking.
     """
@@ -98,7 +106,10 @@ def probe_gemini_tier(
                 url,
                 params={"key": key},
                 json=payload,
-                headers={"Content-Type": "application/json"},
+                headers={
+                    "Content-Type": "application/json",
+                    "X-Goog-Api-Client": f"hermes-agent/{_HERMES_VERSION}",
+                },
             )
     except Exception as exc:
         logger.debug("probe_gemini_tier: network error: %s", exc)
@@ -144,7 +155,7 @@ def is_free_tier_quota_error(error_message: str) -> bool:
 
 _FREE_TIER_GUIDANCE = (
     "\n\nYour Google API key is on the free tier (<= 250 requests/day for "
-    "gemini-2.5-flash). Moor typically makes 3-10 API calls per user turn, "
+    "gemini-2.5-flash). Hermes typically makes 3-10 API calls per user turn, "
     "so the free tier is exhausted in a handful of messages and cannot sustain "
     "an agent session. Enable billing on your Google Cloud project and "
     "regenerate the key in a billing-enabled project: "
@@ -153,7 +164,7 @@ _FREE_TIER_GUIDANCE = (
 
 
 class GeminiAPIError(Exception):
-    """Error shape compatible with Moor retry/error classification."""
+    """Error shape compatible with Hermes retry/error classification."""
 
     def __init__(
         self,
@@ -337,6 +348,22 @@ def _build_gemini_contents(messages: List[Dict[str, Any]]) -> tuple[List[Dict[st
         if parts:
             contents.append({"role": gemini_role, "parts": parts})
 
+    # Gemini's generateContent requires strict user/model alternation;
+    # consecutive same-role contents are rejected with HTTP 400 "Please ensure
+    # that multiturn requests alternate between user and model". The loop above
+    # emits one content per source message, so parallel tool calls (N tool
+    # results become N user functionResponse contents), back-to-back user turns,
+    # or merged assistant turns would each violate that. Merge adjacent
+    # same-role contents by concatenating their parts. For parallel calls this
+    # also produces the grouped multi-functionResponse turn Gemini expects.
+    merged_contents: List[Dict[str, Any]] = []
+    for content in contents:
+        if merged_contents and merged_contents[-1]["role"] == content["role"]:
+            merged_contents[-1]["parts"].extend(content["parts"])
+        else:
+            merged_contents.append(content)
+    contents = merged_contents
+
     system_instruction = None
     joined_system = "\n".join(part for part in system_text_parts if part).strip()
     if joined_system:
@@ -435,7 +462,7 @@ def build_gemini_request(
         # Gemini's native generateContent does NOT treat an omitted
         # maxOutputTokens as "use the model's full output budget" — it applies
         # a low internal default and the model stops early with
-        # finishReason=MAX_TOKENS, truncating tool calls mid-stream (Moor
+        # finishReason=MAX_TOKENS, truncating tool calls mid-stream (Hermes
         # then retries 3× and refuses the incomplete call). Every current
         # Gemini text model (2.5 + 3.x, flash / flash-lite / pro) caps at
         # 65,535 output tokens, so default to that ceiling when the caller
@@ -726,14 +753,17 @@ def translate_stream_event(event: Dict[str, Any], model: str, tool_call_indices:
     return chunks
 
 
-def gemini_http_error(response: httpx.Response) -> GeminiAPIError:
+def gemini_http_error(
+    response: httpx.Response, *, body_text: Optional[str] = None
+) -> GeminiAPIError:
     status = response.status_code
-    body_text = ""
     body_json: Dict[str, Any] = {}
-    try:
-        body_text = response.text
-    except Exception:
-        body_text = ""
+    if body_text is None:
+        try:
+            body_text = response.text
+        except Exception:
+            body_text = ""
+    body_text = body_text or ""
     if body_text:
         try:
             parsed = json.loads(body_text)
@@ -881,7 +911,11 @@ class GeminiNativeClient:
             "Content-Type": "application/json",
             "Accept": "application/json",
             "x-goog-api-key": self.api_key,
-            "User-Agent": "hermes-agent (gemini-native)",
+            # Include Hermes client context following Gemini's partner
+            # integration guidance.
+            # See https://ai.google.dev/gemini-api/docs/partner-integration
+            "User-Agent": f"hermes-agent/{_HERMES_VERSION} (gemini-native)",
+            "X-Goog-Api-Client": f"hermes-agent/{_HERMES_VERSION}",
         }
         headers.update(self._default_headers)
         return headers
@@ -952,8 +986,8 @@ class GeminiNativeClient:
             try:
                 with self._http.stream("POST", url, json=request, headers=stream_headers, timeout=timeout) as response:
                     if response.status_code != 200:
-                        response.read()
-                        raise gemini_http_error(response)
+                        body_text = read_streaming_error_body(response)
+                        raise gemini_http_error(response, body_text=body_text)
                     tool_call_indices: Dict[str, Dict[str, Any]] = {}
                     for event in _iter_sse_events(response):
                         for chunk in translate_stream_event(event, model, tool_call_indices):

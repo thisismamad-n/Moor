@@ -79,7 +79,7 @@ def test_build_welcome_banner_title_is_hyperlinked_to_release():
     import tools.mcp_tool as _mcp
 
     _banner._latest_release_cache = None
-    tag_url = ("v2026.4.23", "https://github.com/Moor inc./hermes-agent/releases/tag/v2026.4.23")
+    tag_url = ("v2026.4.23", "https://github.com/NousResearch/hermes-agent/releases/tag/v2026.4.23")
 
     buf = io.StringIO()
     with (
@@ -99,7 +99,7 @@ def test_build_welcome_banner_title_is_hyperlinked_to_release():
 
     raw = buf.getvalue()
     # The existing version label must still be present in the title
-    assert "Moor Agent v" in raw, "Version label missing from title"
+    assert "Hermes Agent v" in raw, "Version label missing from title"
     # OSC-8 hyperlink escape sequence present with the release URL
     assert "\x1b]8;" in raw, "OSC-8 hyperlink not emitted"
     assert "releases/tag/v2026.4.23" in raw, "Release URL missing from banner output"
@@ -131,7 +131,7 @@ def test_build_welcome_banner_title_falls_back_when_no_tag():
         )
 
     raw = buf.getvalue()
-    assert "Moor Agent v" in raw, "Version label missing from title"
+    assert "Hermes Agent v" in raw, "Version label missing from title"
     assert "\x1b]8;" not in raw, "OSC-8 hyperlink should not be emitted without a tag"
 
 
@@ -278,3 +278,77 @@ def test_banner_skills_section_reflects_disabled_skills_toolset():
     out_enabled = console.export_text()
     assert "Skills toolset disabled" not in out_enabled
     assert "ascii-art" in out_enabled
+
+
+def test_build_welcome_banner_moa_provider_shows_preset_and_aggregator(tmp_path, monkeypatch):
+    """With provider='moa', the banner renders the preset + aggregator, not a bare slug."""
+    import yaml
+
+    home = tmp_path / ".hermes"
+    home.mkdir()
+    monkeypatch.setenv("HERMES_HOME", str(home))
+    (home / "config.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "moa": {
+                    "default_preset": "opus-gpt",
+                    "presets": {
+                        "opus-gpt": {
+                            "enabled": True,
+                            "reference_models": [
+                                {"provider": "openrouter", "model": "openai/gpt-5.5"},
+                                {"provider": "openrouter", "model": "anthropic/claude-opus-4.8"},
+                            ],
+                            "aggregator": {"provider": "openrouter", "model": "anthropic/claude-opus-4.8"},
+                        }
+                    },
+                }
+            }
+        )
+    )
+
+    with (
+        patch.object(model_tools, "check_tool_availability", return_value=([], [])),
+        patch.object(banner, "get_available_skills", return_value={}),
+        patch.object(banner, "get_update_result", return_value=None),
+        patch.object(tools.mcp_tool, "get_mcp_status", return_value=[]),
+    ):
+        console = Console(record=True, force_terminal=False, color_system=None, width=160)
+        banner.build_welcome_banner(
+            console=console,
+            model="opus-gpt",
+            cwd="/tmp/project",
+            tools=[],
+            enabled_toolsets=[],
+            provider="moa",
+        )
+
+    out = console.export_text()
+    assert "MoA: opus-gpt" in out
+    assert "agg claude-opus-4.8" in out
+
+
+def test_build_welcome_banner_non_moa_unchanged(tmp_path, monkeypatch):
+    """A normal provider still renders the bare model slug, no MoA prefix."""
+    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    (tmp_path / ".hermes").mkdir()
+
+    with (
+        patch.object(model_tools, "check_tool_availability", return_value=([], [])),
+        patch.object(banner, "get_available_skills", return_value={}),
+        patch.object(banner, "get_update_result", return_value=None),
+        patch.object(tools.mcp_tool, "get_mcp_status", return_value=[]),
+    ):
+        console = Console(record=True, force_terminal=False, color_system=None, width=160)
+        banner.build_welcome_banner(
+            console=console,
+            model="anthropic/claude-opus-4.8",
+            cwd="/tmp/project",
+            tools=[],
+            enabled_toolsets=[],
+            provider="openrouter",
+        )
+
+    out = console.export_text()
+    assert "claude-opus-4.8" in out
+    assert "MoA:" not in out

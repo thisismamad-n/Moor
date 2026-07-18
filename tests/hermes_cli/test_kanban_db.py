@@ -1691,7 +1691,7 @@ def test_has_spawnable_ready_false_when_only_terminal_lanes(kanban_home, monkeyp
 
 def test_has_spawnable_ready_true_when_real_profile_present(kanban_home, monkeypatch):
     """``has_spawnable_ready`` returns True as soon as ANY ready task
-    has an assignee that maps to a real Moor profile — preserves the
+    has an assignee that maps to a real Hermes profile — preserves the
     real "stuck" signal when a daily/agent task is queued."""
     from hermes_cli import profiles
     monkeypatch.setattr(
@@ -1877,6 +1877,30 @@ def test_respawn_guard_recent_success(kanban_home):
         )
         reason = kb.check_respawn_guard(conn, t)
     assert reason == "recent_success"
+
+
+def test_respawn_guard_recent_success_bypassed_by_requeue(kanban_home):
+    """An explicit re-queue after a recent success (operator done->ready,
+    promote, unblock, reclaim) is a deliberate re-run and must bypass the
+    recent_success guard — otherwise a manual done->ready just sits there
+    until the window elapses."""
+    with kb.connect() as conn:
+        t = kb.create_task(conn, title="rerun-me", assignee="alice")
+        now = int(time.time())
+        conn.execute(
+            "INSERT INTO task_runs (task_id, status, outcome, started_at, ended_at) "
+            "VALUES (?, 'done', 'completed', ?, ?)",
+            (t, now - 120, now - 60),
+        )
+        # Baseline: a recent completion defers the respawn.
+        assert kb.check_respawn_guard(conn, t) == "recent_success"
+        # Operator drags done -> ready: a 'status' event after completion.
+        conn.execute(
+            "INSERT INTO task_events (task_id, kind, created_at) "
+            "VALUES (?, 'status', ?)",
+            (t, now - 10),
+        )
+        assert kb.check_respawn_guard(conn, t) is None
 
 
 def test_respawn_guard_stale_success_not_guarded(kanban_home):
@@ -2336,7 +2360,176 @@ def test_cleanup_workspace_removes_managed_scratch_dir(kanban_home):
         kb.set_workspace_path(conn, t, ws)
         assert ws.is_dir()
         kb.complete_task(conn, t, result="ok")
-    assert not ws.exists(), "Moor-managed scratch dir should be cleaned up"
+    assert not ws.exists(), "Hermes-managed scratch dir should be cleaned up"
+
+
+def test_complete_task_persists_scratch_artifacts_before_cleanup(kanban_home):
+    """Completion artifacts from scratch workspaces survive workspace cleanup."""
+    with kb.connect() as conn:
+        t = kb.create_task(conn, title="render chart")
+        task = kb.get_task(conn, t)
+        ws = kb.resolve_workspace(task)
+        kb.set_workspace_path(conn, t, ws)
+        artifact = ws / "chart.png"
+        artifact.write_bytes(b"png-bytes")
+
+        assert kb.complete_task(
+            conn,
+            t,
+            result="ok",
+            metadata={"artifacts": [str(artifact)]},
+        )
+
+        completed = [e for e in kb.list_events(conn, t) if e.kind == "completed"][-1]
+        persisted = Path(completed.payload["artifacts"][0])
+        run = kb.latest_run(conn, t)
+
+    assert not ws.exists(), "scratch workspace should still be cleaned up"
+    assert persisted.exists(), "artifact copy should survive scratch cleanup"
+    assert persisted.parent == kb.task_attachments_dir(t)
+    assert persisted.name == "chart.png"
+    assert persisted.read_bytes() == b"png-bytes"
+    assert str(persisted) != str(artifact)
+    assert run is not None
+    assert run.metadata["artifacts"] == [str(persisted)]
+    with kb.connect() as conn:
+        attachments = kb.list_attachments(conn, t)
+    assert [(a.filename, a.stored_path) for a in attachments] == [
+        ("chart.png", str(persisted.resolve()))
+    ]
+
+
+def test_complete_task_rejects_missing_declared_scratch_artifact(kanban_home):
+    """A declared scratch deliverable must not disappear behind a false Done."""
+    with kb.connect() as conn:
+        t = kb.create_task(conn, title="missing report")
+        task = kb.get_task(conn, t)
+        ws = kb.resolve_workspace(task)
+        kb.set_workspace_path(conn, t, ws)
+        missing = ws / "report.md"
+
+        with pytest.raises(kb.ArtifactPreservationError, match="unavailable"):
+            kb.complete_task(
+                conn,
+                t,
+                result="report complete",
+                metadata={"artifacts": [str(missing)]},
+            )
+
+        assert kb.get_task(conn, t).status == "ready"
+        assert kb.list_attachments(conn, t) == []
+    assert ws.exists(), "failed completion must keep scratch available for retry"
+
+
+def test_complete_task_preserves_legacy_artifact_path_from_summary(kanban_home):
+    """Summary-only workers keep the file they tell the user was delivered."""
+    with kb.connect() as conn:
+        t = kb.create_task(conn, title="legacy report")
+        task = kb.get_task(conn, t)
+        ws = kb.resolve_workspace(task)
+        kb.set_workspace_path(conn, t, ws)
+        report = ws / "report.md"
+        report.write_text("legacy deliverable", encoding="utf-8")
+
+        assert kb.complete_task(
+            conn,
+            t,
+            summary=f"Task complete — delivered {report}",
+        )
+        run = kb.latest_run(conn, t)
+
+    persisted = Path(run.metadata["artifacts"][0])
+    assert not ws.exists()
+    assert persisted.read_text(encoding="utf-8") == "legacy deliverable"
+    assert persisted.parent == kb.task_attachments_dir(t)
+
+
+def test_complete_task_leaves_non_scratch_artifact_paths_unchanged(
+    kanban_home,
+    tmp_path,
+):
+    """Only artifacts inside the managed scratch workspace are copied."""
+    external = tmp_path / "report.md"
+    external.write_text("keep me here", encoding="utf-8")
+
+    with kb.connect() as conn:
+        t = kb.create_task(conn, title="external report")
+        task = kb.get_task(conn, t)
+        ws = kb.resolve_workspace(task)
+        kb.set_workspace_path(conn, t, ws)
+
+        assert kb.complete_task(
+            conn,
+            t,
+            result="ok",
+            metadata={"artifacts": [str(external)]},
+        )
+
+        completed = [e for e in kb.list_events(conn, t) if e.kind == "completed"][-1]
+        run = kb.latest_run(conn, t)
+
+    assert not ws.exists(), "scratch workspace should still be cleaned up"
+    assert external.exists()
+    assert completed.payload["artifacts"] == [str(external)]
+    assert run is not None
+    assert run.metadata["artifacts"] == [str(external)]
+
+
+def test_complete_task_persists_duplicate_scratch_artifact_names(kanban_home):
+    """Scratch artifact persistence does not overwrite duplicate basenames."""
+    with kb.connect() as conn:
+        t = kb.create_task(conn, title="render reports")
+        task = kb.get_task(conn, t)
+        ws = kb.resolve_workspace(task)
+        kb.set_workspace_path(conn, t, ws)
+        first = ws / "a" / "report.txt"
+        second = ws / "b" / "report.txt"
+        first.parent.mkdir(parents=True)
+        second.parent.mkdir(parents=True)
+        first.write_text("first", encoding="utf-8")
+        second.write_text("second", encoding="utf-8")
+
+        assert kb.complete_task(
+            conn,
+            t,
+            result="ok",
+            metadata={"artifacts": [str(first), str(second)]},
+        )
+
+        completed = [e for e in kb.list_events(conn, t) if e.kind == "completed"][-1]
+        persisted = [Path(p) for p in completed.payload["artifacts"]]
+
+    assert not ws.exists(), "scratch workspace should still be cleaned up"
+    assert [p.name for p in persisted] == ["report.txt", "report_1.txt"]
+    assert [p.read_text(encoding="utf-8") for p in persisted] == ["first", "second"]
+    assert all(p.parent == kb.task_attachments_dir(t) for p in persisted)
+
+
+def test_complete_task_persists_board_scratch_artifacts_to_board_attachments(kanban_home):
+    """Board scratch artifacts are copied under that board's attachment root."""
+    kb.create_board("work-proj")
+
+    with kb.connect(board="work-proj") as conn:
+        t = kb.create_task(conn, title="board chart", board="work-proj")
+        task = kb.get_task(conn, t)
+        ws = kb.resolve_workspace(task, board="work-proj")
+        kb.set_workspace_path(conn, t, ws)
+        artifact = ws / "chart.png"
+        artifact.write_bytes(b"board-png")
+
+        assert kb.complete_task(
+            conn,
+            t,
+            result="ok",
+            metadata={"artifacts": [str(artifact)]},
+        )
+
+        completed = [e for e in kb.list_events(conn, t) if e.kind == "completed"][-1]
+        persisted = Path(completed.payload["artifacts"][0])
+
+    assert not ws.exists(), "board scratch workspace should still be cleaned up"
+    assert persisted.exists()
+    assert persisted.parent == kb.task_attachments_dir(t, board="work-proj")
 
 
 def test_cleanup_workspace_refuses_path_outside_scratch_root(kanban_home, tmp_path):
@@ -2500,13 +2693,13 @@ def test_is_managed_scratch_path_rejects_real_source_tree(kanban_home, tmp_path)
 
 
 def test_is_managed_scratch_path_rejects_kanban_metadata_subtrees(kanban_home):
-    """Moor' own DB/metadata/log subtrees under ``<kanban_home>/kanban`` are NOT managed.
+    """Hermes' own DB/metadata/log subtrees under ``<kanban_home>/kanban`` are NOT managed.
 
     Regression guard for the Copilot finding on #28819: a scratch task whose
     ``workspace_path`` was mis-set to the kanban home, the logs dir, or a
     board's metadata dir (i.e. the board root itself, not its ``workspaces/``
     child) must be refused. Without this, the containment check would happily
-    ``shutil.rmtree`` Moor' DB/metadata/logs on task completion.
+    ``shutil.rmtree`` Hermes' DB/metadata/logs on task completion.
     """
     kanban_root = kanban_home / "kanban"
     kanban_root.mkdir(parents=True, exist_ok=True)
@@ -3403,7 +3596,7 @@ def test_resolve_hermes_argv_module_actually_runs():
         f"`{' '.join(argv)} --version` failed (rc={r.returncode}); "
         f"stderr={r.stderr[:200]!r}"
     )
-    assert "Moor Agent" in r.stdout, f"unexpected output: {r.stdout[:200]!r}"
+    assert "Hermes Agent" in r.stdout, f"unexpected output: {r.stdout[:200]!r}"
 
 
 # ---------------------------------------------------------------------------

@@ -1,13 +1,13 @@
 import { type CSSProperties } from 'react'
-import { Button } from '../components/button'
+
+import { HackeryButton } from '../components/hackery-button'
 import { startInstall } from '../store'
-import { ArrowRight } from 'lucide-react'
 
 /*
  * Welcome screen.
  *
  * Mirrors the desktop's chat intro (apps/desktop/src/components/chat/intro.tsx):
- *   - MOOR AGENT wordmark rendered in Collapse Bold, uppercase, tracked
+ *   - HERMES AGENT wordmark rendered in Collapse Bold, uppercase, tracked
  *   - mix-blend-plus-lighter so the type "glows" on the canvas
  *   - fit-text utility so the wordmark sizes itself to the column
  *
@@ -31,9 +31,9 @@ export default function Welcome() {
           }
         >
           <span>
-            <span>MOOR AGENT</span>
+            <span>HERMES AGENT</span>
           </span>
-          <span aria-hidden="true">MOOR AGENT</span>
+          <span aria-hidden="true">HERMES AGENT</span>
         </p>
 
         <p className="m-0 text-center text-base leading-normal tracking-tight text-muted-foreground">
@@ -42,17 +42,7 @@ export default function Welcome() {
         </p>
       </div>
 
-      <Button
-        onClick={() => void startInstall()}
-        size="lg"
-        className="group inline-flex items-center gap-2 px-6"
-      >
-        Install Moor
-        <ArrowRight
-          size={18}
-          className="transition-transform group-hover:translate-x-0.5"
-        />
-      </Button>
+      <HackeryButton label="Install" onClick={() => void startInstall()} />
     </div>
   )
 }

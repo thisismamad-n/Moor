@@ -700,13 +700,51 @@ class TestBuildContextFilesPrompt:
         with patch("pathlib.Path.home", return_value=fake_home):
             result = build_context_files_prompt(cwd=str(tmp_path))
         assert "Project Context" in result
-        assert "Moor Agent" in result
+        assert "Hermes Agent" in result
 
     def test_loads_agents_md(self, tmp_path):
         (tmp_path / "AGENTS.md").write_text("Use Ruff for linting.")
         result = build_context_files_prompt(cwd=str(tmp_path))
         assert "Ruff for linting" in result
         assert "Project Context" in result
+
+    def test_skips_agents_md_in_install_tree_on_fallback(self, monkeypatch, tmp_path):
+        # A backend that FALLS BACK into the install tree (cwd=None → getcwd,
+        # the desktop default) must not load that tree's contributor AGENTS.md
+        # as project context. The guard keys off the package root, so point it
+        # at a fake tree holding an AGENTS.md and getcwd into it.
+        import agent.runtime_cwd as rt
+
+        monkeypatch.setattr(rt, "_PACKAGE_ROOT", tmp_path.resolve())
+        (tmp_path / "AGENTS.md").write_text("Never give up on the right solution.")
+        monkeypatch.chdir(tmp_path)
+        result = build_context_files_prompt(cwd=None, skip_soul=True)
+        assert "Never give up" not in result
+        assert result == ""
+
+    def test_loads_agents_md_in_install_tree_when_explicit(self, monkeypatch, tmp_path):
+        # An EXPLICIT cwd pointing at the install tree is a deliberate user
+        # choice (developing Hermes) — discovery must still run.
+        import agent.runtime_cwd as rt
+
+        monkeypatch.setattr(rt, "_PACKAGE_ROOT", tmp_path.resolve())
+        (tmp_path / "AGENTS.md").write_text("Never give up on the right solution.")
+        result = build_context_files_prompt(cwd=str(tmp_path), skip_soul=True)
+        assert "Never give up" in result
+
+    def test_loads_agents_md_in_install_tree_fallback_for_cli(self, monkeypatch, tmp_path):
+        # CLI/TUI surfaces launch from the user's shell cwd, so an in-tree
+        # fallback there is deliberate — allow_install_tree_fallback=True
+        # (system_prompt.py passes it for platform cli/tui) keeps discovery on.
+        import agent.runtime_cwd as rt
+
+        monkeypatch.setattr(rt, "_PACKAGE_ROOT", tmp_path.resolve())
+        (tmp_path / "AGENTS.md").write_text("Never give up on the right solution.")
+        monkeypatch.chdir(tmp_path)
+        result = build_context_files_prompt(
+            cwd=None, skip_soul=True, allow_install_tree_fallback=True
+        )
+        assert "Never give up" in result
 
     def test_loads_cursorrules(self, tmp_path):
         (tmp_path / ".cursorrules").write_text("Always use type hints.")
@@ -765,7 +803,7 @@ class TestBuildContextFilesPrompt:
         assert "Top level" in result
         assert "Src-specific" not in result
 
-    # --- .hermes.md / MOOR.md discovery ---
+    # --- .hermes.md / HERMES.md discovery ---
 
     def test_loads_hermes_md(self, tmp_path):
         (tmp_path / ".hermes.md").write_text("Use pytest for testing.")
@@ -774,13 +812,13 @@ class TestBuildContextFilesPrompt:
         assert "Project Context" in result
 
     def test_loads_hermes_md_uppercase(self, tmp_path):
-        (tmp_path / "MOOR.md").write_text("Always use type hints.")
+        (tmp_path / "HERMES.md").write_text("Always use type hints.")
         result = build_context_files_prompt(cwd=str(tmp_path))
         assert "type hints" in result
 
     def test_hermes_md_lowercase_takes_priority(self, tmp_path):
         (tmp_path / ".hermes.md").write_text("From dotfile.")
-        (tmp_path / "MOOR.md").write_text("From uppercase.")
+        (tmp_path / "HERMES.md").write_text("From uppercase.")
         result = build_context_files_prompt(cwd=str(tmp_path))
         assert "From dotfile" in result
         assert "From uppercase" not in result
@@ -821,9 +859,9 @@ class TestBuildContextFilesPrompt:
     def test_hermes_md_beats_agents_md(self, tmp_path):
         """When both exist, .hermes.md wins and AGENTS.md is not loaded."""
         (tmp_path / "AGENTS.md").write_text("Agent guidelines here.")
-        (tmp_path / ".hermes.md").write_text("Moor project rules.")
+        (tmp_path / ".hermes.md").write_text("Hermes project rules.")
         result = build_context_files_prompt(cwd=str(tmp_path))
-        assert "Moor project rules" in result
+        assert "Hermes project rules" in result
         assert "Agent guidelines" not in result
 
     def test_agents_md_beats_claude_md(self, tmp_path):
@@ -874,12 +912,12 @@ class TestBuildContextFilesPrompt:
 
     def test_hermes_md_beats_all_others(self, tmp_path):
         """When all four types exist, only .hermes.md is loaded."""
-        (tmp_path / ".hermes.md").write_text("Moor wins.")
+        (tmp_path / ".hermes.md").write_text("Hermes wins.")
         (tmp_path / "AGENTS.md").write_text("Agents lose.")
         (tmp_path / "CLAUDE.md").write_text("Claude loses.")
         (tmp_path / ".cursorrules").write_text("Cursor loses.")
         result = build_context_files_prompt(cwd=str(tmp_path))
-        assert "Moor wins" in result
+        assert "Hermes wins" in result
         assert "Agents lose" not in result
         assert "Claude loses" not in result
         assert "Cursor loses" not in result
@@ -902,12 +940,12 @@ class TestFindHermesMd:
         assert _find_hermes_md(tmp_path) == tmp_path / ".hermes.md"
 
     def test_finds_uppercase(self, tmp_path):
-        (tmp_path / "MOOR.md").write_text("rules")
-        assert _find_hermes_md(tmp_path) == tmp_path / "MOOR.md"
+        (tmp_path / "HERMES.md").write_text("rules")
+        assert _find_hermes_md(tmp_path) == tmp_path / "HERMES.md"
 
     def test_prefers_lowercase(self, tmp_path):
         (tmp_path / ".hermes.md").write_text("lower")
-        (tmp_path / "MOOR.md").write_text("upper")
+        (tmp_path / "HERMES.md").write_text("upper")
         assert _find_hermes_md(tmp_path) == tmp_path / ".hermes.md"
 
     def test_walks_to_git_root(self, tmp_path):
@@ -927,6 +965,43 @@ class TestFindHermesMd:
         repo.mkdir()
         (repo / ".git").mkdir()
         assert _find_hermes_md(repo) is None
+
+    def test_no_git_root_checks_cwd_only(self, tmp_path):
+        """Outside a git repo, only cwd is checked — parents are NOT walked.
+
+        Walking parents with no git root to stop the loop would climb all
+        the way to / and pick up a .hermes.md planted in /tmp, /home, or /
+        on a shared system — a cross-user prompt-injection vector.
+        """
+        from unittest.mock import patch
+
+        parent = tmp_path / "parent"
+        parent.mkdir()
+        (parent / ".hermes.md").write_text("planted by another user")
+        cwd = parent / "work"
+        cwd.mkdir()
+        # No git root anywhere up the tree.
+        with patch("agent.prompt_builder._find_git_root", return_value=None):
+            assert _find_hermes_md(cwd) is None
+
+    def test_no_git_root_finds_in_cwd(self, tmp_path):
+        """Outside a git repo, a .hermes.md in cwd itself is still found."""
+        from unittest.mock import patch
+
+        (tmp_path / ".hermes.md").write_text("local rules")
+        with patch("agent.prompt_builder._find_git_root", return_value=None):
+            assert _find_hermes_md(tmp_path) == tmp_path / ".hermes.md"
+
+    def test_walks_parents_inside_git_repo(self, tmp_path):
+        """Inside a git repo, parent walk up to the git root still works."""
+        from unittest.mock import patch
+
+        (tmp_path / ".hermes.md").write_text("repo root rules")
+        sub = tmp_path / "a" / "b"
+        sub.mkdir(parents=True)
+        # Simulate cwd being inside a repo rooted at tmp_path.
+        with patch("agent.prompt_builder._find_git_root", return_value=tmp_path):
+            assert _find_hermes_md(sub) == tmp_path / ".hermes.md"
 
 
 class TestFindGitRoot:
@@ -990,8 +1065,17 @@ class TestPromptBuilderConstants:
         assert "discord" in PLATFORM_HINTS
         assert "cron" in PLATFORM_HINTS
         assert "cli" in PLATFORM_HINTS
+        assert "tui" in PLATFORM_HINTS
         assert "api_server" in PLATFORM_HINTS
         assert "webui" in PLATFORM_HINTS
+
+    def test_cli_and_tui_hints_flag_local_only_cron(self):
+        """#51568 — cron jobs from CLI/TUI sessions don't deliver back into
+        the session, so the agent must be told up front not to promise it."""
+        for key in ("cli", "tui"):
+            hint = PLATFORM_HINTS[key]
+            assert "LOCAL-ONLY" in hint
+            assert "deliver" in hint
 
     def test_whatsapp_cloud_hint_mentions_24h_window(self):
         """The Cloud API's 24-hour conversation window is a hard rule the
@@ -1008,6 +1092,19 @@ class TestPromptBuilderConstants:
         Baileys for outbound attachments."""
         hint = PLATFORM_HINTS["whatsapp_cloud"]
         assert "MEDIA:" in hint
+
+    def test_markdown_converting_platform_hints_do_not_forbid_markdown(self):
+        """#12224 — WhatsApp (Baileys) and Signal adapters actively convert
+        markdown to native formatting (gateway/platforms/whatsapp_common.py
+        format_message + signal_format.markdown_to_signal: bold, italic,
+        strikethrough, headers, bullets). Their hints previously told the
+        agent "do not use markdown", which made it strip bullets/bold the
+        adapter would have rendered. The hint must affirm markdown, not
+        forbid it."""
+        for key in ("whatsapp", "signal"):
+            hint = PLATFORM_HINTS[key]
+            assert "do not use markdown" not in hint.lower()
+            assert "markdown" in hint.lower()
 
     def test_cli_hint_does_not_suggest_media_tags(self):
         # Regression: MEDIA:/path tags are intercepted only by messaging
@@ -1033,15 +1130,22 @@ class TestPromptBuilderConstants:
         hint = PLATFORM_HINTS["telegram"]
         lowered = hint.lower()
         assert "Telegram has NO table syntax" not in hint
-        assert "rich markdown" in lowered
-        assert "table" in lowered
-        assert "task list" in lowered
-        assert "math" in lowered
+        # Base hint covers MarkdownV2-compatible constructs.
+        assert "MEDIA:" in hint
+        # Rich-messages extension (TELEGRAM_RICH_MESSAGES_HINT) covers the
+        # Bot API 10.1 guidance; it is injected conditionally in
+        # system_prompt.py when rich_messages: true.
+        from agent.prompt_builder import TELEGRAM_RICH_MESSAGES_HINT
+        rich_lowered = TELEGRAM_RICH_MESSAGES_HINT.lower()
+        assert "rich markdown" in rich_lowered
+        assert "table" in rich_lowered
+        assert "task list" in rich_lowered
+        assert "math" in rich_lowered
         # Hint should proactively steer toward structured formatting, not just
         # permit it: bullet + numbered lists for scannable, structured output.
-        assert "bullet" in lowered
-        assert "numbered" in lowered
-        # Local media delivery guidance must remain intact.
+        assert "bullet" in rich_lowered
+        assert "numbered" in rich_lowered
+        # Local media delivery guidance must remain intact in the base hint.
         assert "include MEDIA:" in hint
 
     def test_platform_hints_mattermost(self):
@@ -1196,6 +1300,46 @@ class TestEnvironmentHints:
         assert "Terminal backend: modal" in result
         assert "Linux 6.8.0" in result
         assert "/workspace" in result
+
+    def test_probe_remote_backend_imports_real_factory(self, monkeypatch):
+        """Regression for #53667: the probe imported a nonexistent
+        ``get_environment`` from ``tools.environments`` and always died with
+        ``ImportError: cannot import name 'get_environment'`` (cosmetic — it
+        only dropped the live backend description to a static fallback). The
+        real factory is ``_create_environment`` in ``tools.terminal_tool``;
+        the probe must import and call THAT, returning a parsed line instead
+        of None."""
+        import agent.prompt_builder as _pb
+
+        monkeypatch.setenv("TERMINAL_ENV", "docker")
+        _pb._clear_backend_probe_cache()
+
+        class _FakeEnv:
+            def execute(self, cmd, timeout=None):
+                return {
+                    "returncode": 0,
+                    "output": (
+                        "os=Linux\nkernel=6.8.0\nhome=/root\n"
+                        "cwd=/workspace\nuser=root\n"
+                    ),
+                }
+
+        created = {}
+
+        def _fake_create_environment(*, env_type, **kwargs):
+            created["env_type"] = env_type
+            return _FakeEnv()
+
+        # Patch the REAL factory in tools.terminal_tool — the probe imports it
+        # locally, so the import itself must succeed (the bug was here).
+        import tools.terminal_tool as _tt
+        monkeypatch.setattr(_tt, "_create_environment", _fake_create_environment)
+
+        line = _pb._probe_remote_backend("docker")
+        assert created.get("env_type") == "docker"
+        assert line is not None
+        assert "Linux 6.8.0" in line
+        assert "root" in line
 
     def test_remote_backend_list_covers_known_sandboxes(self):
         """Regression guard: if someone adds a remote backend, they must list it here."""

@@ -26,9 +26,9 @@ import webbrowser
 from hermes_cli.colors import Colors, color
 from hermes_cli.config import load_config
 
-DEFAULT_PORTAL_URL = "https://portal.Moor inc..com"
-SUBSCRIPTION_URL = "https://portal.Moor inc..com/manage-subscription"
-DOCS_URL = "https://hermes-agent.Moor inc..com/docs/user-guide/features/tool-gateway"
+DEFAULT_PORTAL_URL = "https://portal.nousresearch.com"
+SUBSCRIPTION_URL = "https://portal.nousresearch.com/manage-subscription"
+DOCS_URL = "https://hermes-agent.nousresearch.com/docs/user-guide/features/tool-gateway"
 
 
 def _cmd_status(args) -> int:
@@ -58,7 +58,7 @@ def _cmd_status(args) -> int:
     else:
         print(f"  Auth:    {color('not logged in', Colors.YELLOW)}")
         print(f"  Sign up: {SUBSCRIPTION_URL}")
-        print(f"  Login:   hermes portal")
+        print("  Login:   hermes portal")
 
     # Provider selection (independent of auth)
     model_cfg = config.get("model") if isinstance(config.get("model"), dict) else {}

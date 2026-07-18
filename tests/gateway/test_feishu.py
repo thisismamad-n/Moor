@@ -21,6 +21,18 @@ except ImportError:
     _HAS_LARK_OAPI = False
 
 
+class _FakeRequestContent:
+    def __init__(self, body: bytes):
+        self.body = body
+        self.read_sizes: list[int] = []
+
+    async def readexactly(self, size: int) -> bytes:
+        self.read_sizes.append(size)
+        if len(self.body) < size:
+            raise asyncio.IncompleteReadError(self.body, size)
+        return self.body[:size]
+
+
 def _mock_event_dispatcher_builder(mock_handler_class):
     mock_builder = Mock()
     mock_builder.register_p2_im_message_message_read_v1 = Mock(return_value=mock_builder)
@@ -161,6 +173,16 @@ class TestFeishuMessageNormalization(unittest.TestCase):
 
 
 class TestFeishuAdapterMessaging(unittest.TestCase):
+    @unittest.skipUnless(_HAS_LARK_OAPI, "lark-oapi not installed")
+    def test_websocket_sdk_accepts_channel_ua_tag(self):
+        """The shipped SDK must support the Channel signaling argument."""
+        import inspect
+
+        from lark_oapi.ws import Client as FeishuWSClient
+
+        signature = inspect.signature(FeishuWSClient)
+        self.assertIn("extra_ua_tags", signature.parameters)
+
     @patch.dict(os.environ, {
         "FEISHU_APP_ID": "cli_app",
         "FEISHU_APP_SECRET": "secret_app",
@@ -178,7 +200,7 @@ class TestFeishuAdapterMessaging(unittest.TestCase):
         runner = AsyncMock()
         site = AsyncMock()
         web_module = SimpleNamespace(
-            Application=lambda: SimpleNamespace(router=SimpleNamespace(add_post=lambda *_args, **_kwargs: None)),
+            Application=lambda **_kwargs: SimpleNamespace(router=SimpleNamespace(add_post=lambda *_args, **_kwargs: None)),
             AppRunner=lambda _app: runner,
             TCPSite=lambda _runner, host, port: SimpleNamespace(start=site.start, host=host, port=port),
         )
@@ -251,6 +273,77 @@ class TestFeishuAdapterMessaging(unittest.TestCase):
             metadata={"platform": "feishu"},
         )
         release_lock.assert_called_once_with("feishu-app-id", "cli_app")
+
+    def test_disconnect_sends_websocket_close_frame(self):
+        """Regression test for #10202: disconnect() must call the WSS
+        client's ``_disconnect()`` coroutine so a WebSocket CLOSE frame
+        is sent to Feishu. Without this, Feishu's server continues
+        routing to the stale connection, silencing the channel.
+        """
+        import threading
+        from types import SimpleNamespace
+        from gateway.config import PlatformConfig
+        from plugins.platforms.feishu.adapter import FeishuAdapter
+
+        adapter = FeishuAdapter(PlatformConfig())
+
+        # Real thread loop to schedule the close coroutine on.
+        ws_thread_loop = asyncio.new_event_loop()
+        ready = threading.Event()
+
+        def _run_loop() -> None:
+            asyncio.set_event_loop(ws_thread_loop)
+            ready.set()
+            ws_thread_loop.run_forever()
+
+        thread = threading.Thread(target=_run_loop, daemon=True)
+        thread.start()
+        ready.wait()
+
+        close_called = threading.Event()
+
+        async def _fake_disconnect() -> None:
+            close_called.set()
+
+        ws_client = SimpleNamespace(_disconnect=_fake_disconnect, _auto_reconnect=True)
+        adapter._ws_client = ws_client
+        adapter._ws_thread_loop = ws_thread_loop
+        adapter._ws_future = None
+
+        try:
+            asyncio.run(adapter.disconnect())
+        finally:
+            if not ws_thread_loop.is_closed():
+                ws_thread_loop.call_soon_threadsafe(ws_thread_loop.stop)
+            thread.join(timeout=2.0)
+            if not ws_thread_loop.is_closed():
+                ws_thread_loop.close()
+
+        self.assertTrue(
+            close_called.is_set(),
+            "disconnect() must schedule ws_client._disconnect() on the ws thread loop",
+        )
+        # _disable_websocket_auto_reconnect() must still run.
+        self.assertIsNone(adapter._ws_client)
+
+    def test_disconnect_tolerates_missing_internal_disconnect(self):
+        """If the lark_oapi client layout changes and ``_disconnect``
+        disappears, disconnect() must not raise — fall through to the
+        existing task-cancel path.
+        """
+        from types import SimpleNamespace
+        from gateway.config import PlatformConfig
+        from plugins.platforms.feishu.adapter import FeishuAdapter
+
+        adapter = FeishuAdapter(PlatformConfig())
+        # No ``_disconnect`` attribute — ``hasattr`` guard should skip.
+        adapter._ws_client = SimpleNamespace(_auto_reconnect=True)
+        adapter._ws_thread_loop = None
+        adapter._ws_future = None
+
+        # Must not raise.
+        asyncio.run(adapter.disconnect())
+        self.assertIsNone(adapter._ws_client)
 
     @patch.dict(os.environ, {
         "FEISHU_APP_ID": "cli_app",
@@ -330,6 +423,65 @@ class TestFeishuAdapterMessaging(unittest.TestCase):
         self.assertTrue(connected)
         self.assertEqual(sleeps, [1])
         self.assertEqual(fake_loop.calls, 2)
+
+    @patch.dict(os.environ, {
+        "FEISHU_APP_ID": "cli_app",
+        "FEISHU_APP_SECRET": "secret_app",
+    }, clear=True)
+    def test_connect_websocket_sets_channel_ua_tag(self):
+        """Verify that FeishuWSClient receives extra_ua_tags=["channel"].
+
+        Without this UA tag the Feishu server does not push group @mention
+        events over the WebSocket transport.  See
+        https://github.com/NousResearch/hermes-agent/issues/50656
+        """
+        from gateway.config import PlatformConfig
+        from plugins.platforms.feishu.adapter import FeishuAdapter
+
+        adapter = FeishuAdapter(PlatformConfig())
+        ws_client = SimpleNamespace()
+
+        with (
+            patch("plugins.platforms.feishu.adapter.FEISHU_AVAILABLE", True),
+            patch("plugins.platforms.feishu.adapter.FEISHU_WEBSOCKET_AVAILABLE", True),
+            patch("plugins.platforms.feishu.adapter.lark",
+                  SimpleNamespace(LogLevel=SimpleNamespace(INFO="INFO", WARNING="WARNING"))),
+            patch("plugins.platforms.feishu.adapter.EventDispatcherHandler") as mock_handler_class,
+            patch("plugins.platforms.feishu.adapter.FeishuWSClient") as mock_ws_client,
+            patch("plugins.platforms.feishu.adapter._run_official_feishu_ws_client"),
+            patch("plugins.platforms.feishu.adapter.acquire_scoped_lock", return_value=(True, None)),
+            patch("plugins.platforms.feishu.adapter.release_scoped_lock"),
+            patch.object(adapter, "_hydrate_bot_identity", new=AsyncMock()),
+            patch.object(adapter, "_build_lark_client", return_value=SimpleNamespace()),
+        ):
+            _mock_event_dispatcher_builder(mock_handler_class)
+
+            loop = asyncio.new_event_loop()
+            future = loop.create_future()
+            future.set_result(None)
+
+            class _Loop:
+                def run_in_executor(self, *_args, **_kwargs):
+                    return future
+                def is_closed(self):
+                    return False
+
+            try:
+                with patch("plugins.platforms.feishu.adapter.asyncio.get_running_loop",
+                           return_value=_Loop()):
+                    connected = asyncio.run(adapter.connect())
+            finally:
+                loop.close()
+
+        self.assertTrue(connected)
+        # Verify the Channel SDK UA tag is present — this is the fix for
+        # group @mention message delivery over WebSocket.
+        mock_ws_client.assert_called_once()
+        call_kwargs = mock_ws_client.call_args.kwargs
+        self.assertIn("extra_ua_tags", call_kwargs,
+                      "FeishuWSClient must receive extra_ua_tags for group @mention delivery")
+        self.assertEqual(call_kwargs["extra_ua_tags"], ["channel"],
+                         "extra_ua_tags must be ['channel'] to enable group event routing")
 
     @patch.dict(os.environ, {}, clear=True)
     def test_edit_message_updates_existing_feishu_message(self):
@@ -428,7 +580,7 @@ class TestFeishuAdapterMessaging(unittest.TestCase):
                 self.request = request
                 return SimpleNamespace(
                     success=lambda: True,
-                    data=SimpleNamespace(name="Moor Group", chat_type="group"),
+                    data=SimpleNamespace(name="Hermes Group", chat_type="group"),
                 )
 
         chat_api = _ChatAPI()
@@ -448,7 +600,7 @@ class TestFeishuAdapterMessaging(unittest.TestCase):
 
         self.assertEqual(chat_api.request.chat_id, "oc_chat")
         self.assertEqual(info["chat_id"], "oc_chat")
-        self.assertEqual(info["name"], "Moor Group")
+        self.assertEqual(info["name"], "Hermes Group")
         self.assertEqual(info["type"], "group")
 
 class TestAdapterModule(unittest.TestCase):
@@ -798,7 +950,7 @@ class TestAdapterBehavior(unittest.TestCase):
         {
             "FEISHU_GROUP_POLICY": "allowlist",
             "FEISHU_ALLOWED_USERS": "ou_allowed",
-            "FEISHU_BOT_NAME": "Moor Bot",
+            "FEISHU_BOT_NAME": "Hermes Bot",
         },
         clear=True,
     )
@@ -811,7 +963,7 @@ class TestAdapterBehavior(unittest.TestCase):
         mentioned = SimpleNamespace(
             mentions=[
                 SimpleNamespace(
-                    name="Moor Bot",
+                    name="Hermes Bot",
                     id=SimpleNamespace(open_id=None, user_id=None),
                 )
             ]
@@ -1040,7 +1192,7 @@ class TestAdapterBehavior(unittest.TestCase):
         sender_id = SimpleNamespace(open_id="ou_any", user_id=None)
 
         bot_mention = SimpleNamespace(
-            name="Moor",
+            name="Hermes",
             id=SimpleNamespace(open_id="ou_bot", user_id="u_bot"),
         )
         other_mention = SimpleNamespace(
@@ -1066,11 +1218,11 @@ class TestAdapterBehavior(unittest.TestCase):
         # Case 1: bot has only a name (open_id not hydrated / not configured).
         # Name fallback is the only available signal for any mention.
         adapter = FeishuAdapter(PlatformConfig())
-        adapter._bot_name = "Moor Bot"
+        adapter._bot_name = "Hermes Bot"
         sender_id = SimpleNamespace(open_id="ou_any", user_id=None)
 
         name_only_mention = SimpleNamespace(
-            name="Moor Bot",
+            name="Hermes Bot",
             id=SimpleNamespace(open_id=None, user_id=None),
         )
         different_mention = SimpleNamespace(
@@ -1089,14 +1241,14 @@ class TestAdapterBehavior(unittest.TestCase):
         # open_id must NOT admit (IDs override names).
         adapter2 = FeishuAdapter(PlatformConfig())
         adapter2._bot_open_id = "ou_bot"
-        adapter2._bot_name = "Moor Bot"
+        adapter2._bot_name = "Hermes Bot"
 
         same_name_other_id_mention = SimpleNamespace(
-            name="Moor Bot",
+            name="Hermes Bot",
             id=SimpleNamespace(open_id="ou_other", user_id="u_other"),
         )
         bot_mention = SimpleNamespace(
-            name="Moor Bot",
+            name="Hermes Bot",
             id=SimpleNamespace(open_id="ou_bot", user_id=None),
         )
 
@@ -1533,7 +1685,7 @@ class TestAdapterBehavior(unittest.TestCase):
             remote="127.0.0.1",
             content_length=None,
             headers={},
-            read=AsyncMock(return_value=body),
+            content=_FakeRequestContent(body),
         )
 
         response = asyncio.run(adapter._handle_webhook_request(request))
@@ -1562,7 +1714,7 @@ class TestAdapterBehavior(unittest.TestCase):
             remote="203.0.113.10",
             content_length=None,
             headers={},
-            read=AsyncMock(return_value=body),
+            content=_FakeRequestContent(body),
         )
 
         response = asyncio.run(adapter._handle_webhook_request(request))
@@ -2866,7 +3018,7 @@ class TestHydrateBotIdentity(unittest.TestCase):
             {
                 "code": 0,
                 "bot": {
-                    "bot_name": "Moor Bot",
+                    "bot_name": "Hermes Bot",
                     "open_id": "ou_hermes_hydrated",
                 },
             }
@@ -2877,13 +3029,13 @@ class TestHydrateBotIdentity(unittest.TestCase):
         asyncio.run(adapter._hydrate_bot_identity())
 
         self.assertEqual(adapter._bot_open_id, "ou_hermes_hydrated")
-        self.assertEqual(adapter._bot_name, "Moor Bot")
+        self.assertEqual(adapter._bot_name, "Hermes Bot")
 
     @patch.dict(
         os.environ,
         {
             "FEISHU_BOT_OPEN_ID": "ou_env",
-            "FEISHU_BOT_NAME": "Env Moor",
+            "FEISHU_BOT_NAME": "Env Hermes",
         },
         clear=True,
     )
@@ -2894,7 +3046,7 @@ class TestHydrateBotIdentity(unittest.TestCase):
             {
                 "code": 0,
                 "bot": {
-                    "bot_name": "Hydrated Moor",
+                    "bot_name": "Hydrated Hermes",
                     "open_id": "ou_hydrated",
                 },
             }
@@ -2908,7 +3060,7 @@ class TestHydrateBotIdentity(unittest.TestCase):
         # from an old app registration doesn't break @mention gating.
         adapter._client.request.assert_called_once()
         self.assertEqual(adapter._bot_open_id, "ou_hydrated")
-        self.assertEqual(adapter._bot_name, "Hydrated Moor")
+        self.assertEqual(adapter._bot_name, "Hydrated Hermes")
 
     @patch.dict(os.environ, {"FEISHU_BOT_OPEN_ID": "ou_env"}, clear=True)
     def test_hydration_overwrites_stale_env_open_id(self):
@@ -2919,7 +3071,7 @@ class TestHydrateBotIdentity(unittest.TestCase):
             {
                 "code": 0,
                 "bot": {
-                    "bot_name": "Moor Bot",
+                    "bot_name": "Hermes Bot",
                     "open_id": "ou_probe_DIFFERENT",
                 },
             }
@@ -2929,13 +3081,13 @@ class TestHydrateBotIdentity(unittest.TestCase):
         asyncio.run(adapter._hydrate_bot_identity())
 
         self.assertEqual(adapter._bot_open_id, "ou_probe_DIFFERENT")
-        self.assertEqual(adapter._bot_name, "Moor Bot")  # filled in
+        self.assertEqual(adapter._bot_name, "Hermes Bot")  # filled in
 
     @patch.dict(
         os.environ,
         {
             "FEISHU_BOT_OPEN_ID": "ou_env",
-            "FEISHU_BOT_NAME": "Env Moor",
+            "FEISHU_BOT_NAME": "Env Hermes",
         },
         clear=True,
     )
@@ -2947,7 +3099,7 @@ class TestHydrateBotIdentity(unittest.TestCase):
         asyncio.run(adapter._hydrate_bot_identity())
 
         self.assertEqual(adapter._bot_open_id, "ou_env")
-        self.assertEqual(adapter._bot_name, "Env Moor")
+        self.assertEqual(adapter._bot_name, "Env Hermes")
 
     @patch.dict(os.environ, {}, clear=True)
     def test_hydration_tolerates_probe_failure_and_falls_back_to_app_info(self):
@@ -3190,6 +3342,30 @@ class TestWebhookSecurity(unittest.TestCase):
         response = asyncio.run(adapter._handle_webhook_request(request))
         self.assertEqual(response.status, 413)
 
+    def test_webhook_request_rejects_oversized_chunked_body_while_reading(self):
+        from gateway.config import PlatformConfig
+        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from plugins.platforms.feishu.adapter import FeishuAdapter, _FEISHU_WEBHOOK_MAX_BODY_BYTES
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            token = set_hermes_home_override(tmpdir)
+            try:
+                adapter = FeishuAdapter(PlatformConfig())
+            finally:
+                reset_hermes_home_override(token)
+            content = _FakeRequestContent(b"A" * (_FEISHU_WEBHOOK_MAX_BODY_BYTES + 2))
+            request = SimpleNamespace(
+                remote="127.0.0.1",
+                content_length=None,
+                headers={},
+                content=content,
+            )
+
+            response = asyncio.run(adapter._handle_webhook_request(request))
+
+            self.assertEqual(response.status, 413)
+            self.assertEqual(content.read_sizes, [_FEISHU_WEBHOOK_MAX_BODY_BYTES + 1])
+
     @patch.dict(os.environ, {}, clear=True)
     def test_webhook_request_rejects_invalid_json(self):
         from gateway.config import PlatformConfig
@@ -3199,7 +3375,7 @@ class TestWebhookSecurity(unittest.TestCase):
         request = SimpleNamespace(
             remote="127.0.0.1",
             content_length=None,
-            read=AsyncMock(return_value=b"not-json"),
+            content=_FakeRequestContent(b"not-json"),
         )
         response = asyncio.run(adapter._handle_webhook_request(request))
         self.assertEqual(response.status, 400)
@@ -3215,7 +3391,7 @@ class TestWebhookSecurity(unittest.TestCase):
             remote="127.0.0.1",
             content_length=None,
             headers={"x-lark-request-timestamp": "123", "x-lark-request-nonce": "abc", "x-lark-signature": "bad"},
-            read=AsyncMock(return_value=body),
+            content=_FakeRequestContent(body),
         )
         response = asyncio.run(adapter._handle_webhook_request(request))
         self.assertEqual(response.status, 401)
@@ -3264,7 +3440,7 @@ class TestWebhookSecurity(unittest.TestCase):
         request = SimpleNamespace(
             remote="127.0.0.1",
             content_length=None,
-            read=AsyncMock(return_value=body),
+            content=_FakeRequestContent(body),
         )
         response = asyncio.run(adapter._handle_webhook_request(request))
         self.assertEqual(response.status, 200)
@@ -3864,7 +4040,7 @@ class TestFeishuMentionMap(unittest.TestCase):
         mention = SimpleNamespace(key="@_all", id=None, name="")
         result = _build_mentions_map(
             [mention],
-            _FeishuBotIdentity(open_id="ou_bot", name="Moor"),
+            _FeishuBotIdentity(open_id="ou_bot", name="Hermes"),
         )
         self.assertEqual(result["@_all"], FeishuMentionRef(is_all=True))
 
@@ -3874,12 +4050,12 @@ class TestFeishuMentionMap(unittest.TestCase):
         mention = SimpleNamespace(
             key="@_user_1",
             id=SimpleNamespace(open_id="ou_bot", user_id=""),
-            name="Moor",
+            name="Hermes",
         )
         ref = _build_mentions_map([mention], _FeishuBotIdentity(open_id="ou_bot"))["@_user_1"]
         self.assertTrue(ref.is_self)
         self.assertEqual(ref.open_id, "ou_bot")
-        self.assertEqual(ref.name, "Moor")
+        self.assertEqual(ref.name, "Hermes")
 
     def test_build_mentions_map_marks_self_by_name_fallback(self):
         from plugins.platforms.feishu.adapter import _build_mentions_map, _FeishuBotIdentity
@@ -3887,9 +4063,9 @@ class TestFeishuMentionMap(unittest.TestCase):
         mention = SimpleNamespace(
             key="@_user_1",
             id=SimpleNamespace(open_id="", user_id=""),
-            name="Moor",
+            name="Hermes",
         )
-        result = _build_mentions_map([mention], _FeishuBotIdentity(name="Moor"))
+        result = _build_mentions_map([mention], _FeishuBotIdentity(name="Hermes"))
         self.assertTrue(result["@_user_1"].is_self)
 
     def test_build_mentions_map_name_match_does_not_override_mismatching_open_id(self):
@@ -3902,11 +4078,11 @@ class TestFeishuMentionMap(unittest.TestCase):
         human_with_same_name = SimpleNamespace(
             key="@_user_1",
             id=SimpleNamespace(open_id="ou_human", user_id=""),
-            name="Moor Bot",
+            name="Hermes Bot",
         )
         result = _build_mentions_map(
             [human_with_same_name],
-            _FeishuBotIdentity(open_id="ou_bot", name="Moor Bot"),
+            _FeishuBotIdentity(open_id="ou_bot", name="Hermes Bot"),
         )
         self.assertFalse(result["@_user_1"].is_self)
 
@@ -3920,12 +4096,12 @@ class TestFeishuMentionMap(unittest.TestCase):
         bot_mention = SimpleNamespace(
             key="@_user_1",
             id=SimpleNamespace(open_id="ou_bot_actual", user_id=""),
-            name="Moor Bot",
+            name="Hermes Bot",
         )
         # Bot identity has name but no open_id yet (hydration pending).
         result = _build_mentions_map(
             [bot_mention],
-            _FeishuBotIdentity(open_id="", name="Moor Bot"),
+            _FeishuBotIdentity(open_id="", name="Hermes Bot"),
         )
         self.assertTrue(result["@_user_1"].is_self)
 
@@ -3988,7 +4164,7 @@ class TestFeishuMentionHint(unittest.TestCase):
         from plugins.platforms.feishu.adapter import FeishuMentionRef, _build_mention_hint
 
         refs = [
-            FeishuMentionRef(name="Moor", open_id="ou_bot", is_self=True),
+            FeishuMentionRef(name="Hermes", open_id="ou_bot", is_self=True),
             FeishuMentionRef(name="Alice", open_id="ou_alice"),
         ]
         self.assertEqual(
@@ -3999,7 +4175,7 @@ class TestFeishuMentionHint(unittest.TestCase):
     def test_hint_returns_empty_when_only_self(self):
         from plugins.platforms.feishu.adapter import FeishuMentionRef, _build_mention_hint
 
-        refs = [FeishuMentionRef(name="Moor", open_id="ou_bot", is_self=True)]
+        refs = [FeishuMentionRef(name="Hermes", open_id="ou_bot", is_self=True)]
         self.assertEqual(_build_mention_hint(refs), "")
 
     def test_hint_returns_empty_for_no_refs(self):
@@ -4040,7 +4216,7 @@ class TestFeishuMentionHint(unittest.TestCase):
 
 
 class TestFeishuStripLeadingSelf(unittest.TestCase):
-    def _make_refs(self, *, self_name="Moor", other_name=None):
+    def _make_refs(self, *, self_name="Hermes", other_name=None):
         from plugins.platforms.feishu.adapter import FeishuMentionRef
 
         refs = [FeishuMentionRef(name=self_name, open_id="ou_bot", is_self=True)]
@@ -4051,40 +4227,40 @@ class TestFeishuStripLeadingSelf(unittest.TestCase):
     def test_strips_leading_self(self):
         from plugins.platforms.feishu.adapter import _strip_edge_self_mentions
 
-        result = _strip_edge_self_mentions("@Moor /help", self._make_refs())
+        result = _strip_edge_self_mentions("@Hermes /help", self._make_refs())
         self.assertEqual(result, "/help")
 
     def test_strips_consecutive_leading_self(self):
         from plugins.platforms.feishu.adapter import _strip_edge_self_mentions
 
-        result = _strip_edge_self_mentions("@Moor @Moor hi", self._make_refs())
+        result = _strip_edge_self_mentions("@Hermes @Hermes hi", self._make_refs())
         self.assertEqual(result, "hi")
 
     def test_stops_at_first_non_self_token(self):
         from plugins.platforms.feishu.adapter import _strip_edge_self_mentions
 
         result = _strip_edge_self_mentions(
-            "@Moor @Alice make a group", self._make_refs(other_name="Alice")
+            "@Hermes @Alice make a group", self._make_refs(other_name="Alice")
         )
         self.assertEqual(result, "@Alice make a group")
 
     def test_preserves_mid_text_self(self):
         from plugins.platforms.feishu.adapter import _strip_edge_self_mentions
 
-        result = _strip_edge_self_mentions("check @Moor said yesterday", self._make_refs())
-        self.assertEqual(result, "check @Moor said yesterday")
+        result = _strip_edge_self_mentions("check @Hermes said yesterday", self._make_refs())
+        self.assertEqual(result, "check @Hermes said yesterday")
 
     def test_strips_trailing_self_at_end_of_text(self):
         from plugins.platforms.feishu.adapter import _strip_edge_self_mentions
 
-        result = _strip_edge_self_mentions("look up docs @Moor", self._make_refs())
+        result = _strip_edge_self_mentions("look up docs @Hermes", self._make_refs())
         self.assertEqual(result, "look up docs")
 
     def test_strips_trailing_self_with_terminal_punct(self):
         from plugins.platforms.feishu.adapter import _strip_edge_self_mentions
 
         # Terminal punct after the mention — strip the mention, keep the punct.
-        result = _strip_edge_self_mentions("look up docs @Moor.", self._make_refs())
+        result = _strip_edge_self_mentions("look up docs @Hermes.", self._make_refs())
         self.assertEqual(result, "look up docs.")
 
     def test_preserves_trailing_self_before_non_terminal_char(self):
@@ -4092,14 +4268,14 @@ class TestFeishuStripLeadingSelf(unittest.TestCase):
 
         # Non-terminal char (here a Chinese particle) follows — preserve.
         result = _strip_edge_self_mentions(
-            "please don't @Moor anymore", self._make_refs()
+            "please don't @Hermes anymore", self._make_refs()
         )
-        self.assertEqual(result, "please don't @Moor anymore")
+        self.assertEqual(result, "please don't @Hermes anymore")
 
     def test_returns_input_when_refs_empty(self):
         from plugins.platforms.feishu.adapter import _strip_edge_self_mentions
 
-        self.assertEqual(_strip_edge_self_mentions("@Moor /help", []), "@Moor /help")
+        self.assertEqual(_strip_edge_self_mentions("@Hermes /help", []), "@Hermes /help")
 
     def test_returns_input_when_no_self_refs(self):
         from plugins.platforms.feishu.adapter import _strip_edge_self_mentions, FeishuMentionRef
@@ -4131,10 +4307,10 @@ class TestFeishuNormalizeText(unittest.TestCase):
     def test_renders_self_mention_with_name(self):
         from plugins.platforms.feishu.adapter import _normalize_feishu_text, FeishuMentionRef
 
-        refs = {"@_user_1": FeishuMentionRef(name="Moor", open_id="ou_bot", is_self=True)}
+        refs = {"@_user_1": FeishuMentionRef(name="Hermes", open_id="ou_bot", is_self=True)}
         self.assertEqual(
             _normalize_feishu_text("stop pinging @_user_1 please", refs),
-            "stop pinging @Moor please",
+            "stop pinging @Hermes please",
         )
 
     def test_at_all_rendered_as_english_literal(self):
@@ -4244,7 +4420,7 @@ class TestFeishuNormalizeWithMentions(unittest.TestCase):
         mention = SimpleNamespace(
             key="@_user_1",
             id=SimpleNamespace(open_id="ou_bot", user_id=""),
-            name="Moor",
+            name="Hermes",
         )
         normalized = normalize_feishu_message(
             message_type="text",
@@ -4254,7 +4430,7 @@ class TestFeishuNormalizeWithMentions(unittest.TestCase):
         )
         self.assertTrue(normalized.mentions[0].is_self)
         # self mention is still rendered — strip is a separate adapter-level pass
-        self.assertEqual(normalized.text_content, "@Moor /help")
+        self.assertEqual(normalized.text_content, "@Hermes /help")
 
     def test_text_message_at_all_surfaces_ref(self):
         from plugins.platforms.feishu.adapter import normalize_feishu_message
@@ -4314,7 +4490,7 @@ class TestFeishuNormalizeWithMentions(unittest.TestCase):
             "en_us": {
                 "content": [
                     [
-                        {"tag": "at", "user_id": "@_user_1", "user_name": "Moor"},
+                        {"tag": "at", "user_id": "@_user_1", "user_name": "Hermes"},
                         {"tag": "text", "text": " check this"},
                     ]
                 ]
@@ -4323,7 +4499,7 @@ class TestFeishuNormalizeWithMentions(unittest.TestCase):
         bot_mention = SimpleNamespace(
             key="@_user_1",
             id=SimpleNamespace(open_id="ou_bot", user_id=""),
-            name="Moor",
+            name="Hermes",
         )
         normalized = normalize_feishu_message(
             message_type="post",
@@ -4352,7 +4528,7 @@ class TestFeishuPostMentionsBot(unittest.TestCase):
         adapter = self._build_adapter()
         self.assertTrue(
             adapter._post_mentions_bot(
-                [FeishuMentionRef(name="Moor", open_id="ou_bot", is_self=True)]
+                [FeishuMentionRef(name="Hermes", open_id="ou_bot", is_self=True)]
             )
         )
         self.assertFalse(
@@ -4373,7 +4549,7 @@ class TestFeishuExtractMessageContent(unittest.TestCase):
         adapter = FeishuAdapter.__new__(FeishuAdapter)
         adapter._bot_open_id = "ou_bot"
         adapter._bot_user_id = ""
-        adapter._bot_name = "Moor"
+        adapter._bot_name = "Hermes"
         adapter._download_feishu_message_resources = AsyncMock(return_value=([], []))
         return adapter
 
@@ -4420,7 +4596,7 @@ class TestFeishuProcessInboundMessage(unittest.TestCase):
         adapter = FeishuAdapter.__new__(FeishuAdapter)
         adapter._bot_open_id = "ou_bot"
         adapter._bot_user_id = ""
-        adapter._bot_name = "Moor"
+        adapter._bot_name = "Hermes"
         adapter._download_feishu_message_resources = AsyncMock(return_value=([], []))
         adapter._fetch_message_text = AsyncMock(return_value=None)
         adapter.get_chat_info = AsyncMock(return_value={"name": "Test Chat"})
@@ -4439,7 +4615,7 @@ class TestFeishuProcessInboundMessage(unittest.TestCase):
         bot_mention = SimpleNamespace(
             key="@_user_1",
             id=SimpleNamespace(open_id="ou_bot", user_id=""),
-            name="Moor",
+            name="Hermes",
         )
         message = SimpleNamespace(
             content=json.dumps({"text": "@_user_1 /help"}),
@@ -4507,7 +4683,7 @@ class TestFeishuProcessInboundMessage(unittest.TestCase):
         bot_mention = SimpleNamespace(
             key="@_user_1",
             id=SimpleNamespace(open_id="ou_bot", user_id=""),
-            name="Moor",
+            name="Hermes",
         )
         alice = SimpleNamespace(
             key="@_user_2",
@@ -4542,7 +4718,7 @@ class TestFeishuProcessInboundMessage(unittest.TestCase):
         bot_mention = SimpleNamespace(
             key="@_user_1",
             id=SimpleNamespace(open_id="ou_bot", user_id=""),
-            name="Moor",
+            name="Hermes",
         )
         message = SimpleNamespace(
             content=json.dumps({"text": "stop pinging @_user_1 please"}),
@@ -4564,19 +4740,19 @@ class TestFeishuProcessInboundMessage(unittest.TestCase):
             )
         )
         event = adapter._dispatch_inbound_event.call_args.args[0]
-        self.assertEqual(event.text, "stop pinging @Moor please")
+        self.assertEqual(event.text, "stop pinging @Hermes please")
 
     def test_pure_self_mention_message_is_ignored(self):
         """A message containing only '@Bot' (no body, no media) must not dispatch.
 
-        Regression guard: the rendered '@Moor' slips past the pre-strip empty
+        Regression guard: the rendered '@Hermes' slips past the pre-strip empty
         guard; the post-strip guard must catch it.
         """
         adapter = self._build_adapter()
         bot_mention = SimpleNamespace(
             key="@_user_1",
             id=SimpleNamespace(open_id="ou_bot", user_id=""),
-            name="Moor",
+            name="Hermes",
         )
         message = SimpleNamespace(
             content=json.dumps({"text": "@_user_1"}),
@@ -4604,7 +4780,7 @@ class TestFeishuFetchMessageText(unittest.TestCase):
         adapter = FeishuAdapter.__new__(FeishuAdapter)
         adapter._bot_open_id = "ou_bot"
         adapter._bot_user_id = ""
-        adapter._bot_name = "Moor"
+        adapter._bot_name = "Hermes"
         adapter._message_text_cache = OrderedDict()
         adapter._client = Mock()
         adapter._build_get_message_request = Mock(return_value=object())
@@ -4666,7 +4842,7 @@ class TestFeishuFetchMessageText(unittest.TestCase):
             key="@_user_1",
             id="ou_bot",
             id_type="open_id",
-            name="Moor",
+            name="Hermes",
         )
         parent = SimpleNamespace(
             body=SimpleNamespace(content=json.dumps({"text": "@_user_1 hi"})),
@@ -4680,7 +4856,7 @@ class TestFeishuFetchMessageText(unittest.TestCase):
 
         # The rendered text should still have the bot name substituted.
         result = asyncio.run(adapter._fetch_message_text("m_parent"))
-        self.assertEqual(result, "@Moor hi")
+        self.assertEqual(result, "@Hermes hi")
 
     def test_build_mentions_map_string_id_shape(self):
         """_build_mentions_map accepts the reply-history shape (id as str +
@@ -4695,7 +4871,7 @@ class TestFeishuFetchMessageText(unittest.TestCase):
         self.assertFalse(ref.is_self)
 
         # open_id discriminator, is_self matches via open_id
-        bot_oid = SimpleNamespace(key="@_user_3", id="ou_bot", id_type="open_id", name="Moor")
+        bot_oid = SimpleNamespace(key="@_user_3", id="ou_bot", id_type="open_id", name="Hermes")
         self.assertTrue(
             _build_mentions_map([bot_oid], _FeishuBotIdentity(open_id="ou_bot"))["@_user_3"].is_self
         )
@@ -4710,7 +4886,7 @@ class TestFeishuMentionEndToEnd(unittest.TestCase):
         adapter = FeishuAdapter.__new__(FeishuAdapter)
         adapter._bot_open_id = "ou_bot"
         adapter._bot_user_id = ""
-        adapter._bot_name = "Moor"
+        adapter._bot_name = "Hermes"
         adapter._download_feishu_message_resources = AsyncMock(return_value=([], []))
         adapter._fetch_message_text = AsyncMock(return_value=None)
         adapter.get_chat_info = AsyncMock(return_value={"name": "Test Chat"})
@@ -4754,14 +4930,14 @@ class TestFeishuMentionEndToEnd(unittest.TestCase):
             adapter,
             "@_user_1 @_user_2 @_user_3 build me a group",
             [
-                {"key": "@_user_1", "open_id": "ou_bot", "name": "Moor"},
+                {"key": "@_user_1", "open_id": "ou_bot", "name": "Hermes"},
                 {"key": "@_user_2", "open_id": "ou_alice", "name": "Alice"},
                 {"key": "@_user_3", "open_id": "ou_bob", "name": "Bob"},
             ],
         )
         self.assertIn("[Mentioned: Alice (open_id=ou_alice), Bob (open_id=ou_bob)]", event.text)
         self.assertIn("@Alice @Bob build me a group", event.text)
-        self.assertNotIn("@Moor", event.text)
+        self.assertNotIn("@Hermes", event.text)
 
     def test_scenario_at_all_announcement(self):
         adapter = self._build_adapter()
@@ -4780,7 +4956,7 @@ class TestFeishuMentionEndToEnd(unittest.TestCase):
         event = self._run(
             adapter,
             "who are you @_user_1",
-            [{"key": "@_user_1", "open_id": "ou_bot", "name": "Moor"}],
+            [{"key": "@_user_1", "open_id": "ou_bot", "name": "Hermes"}],
         )
         self.assertEqual(event.text, "who are you")
 
@@ -4791,9 +4967,9 @@ class TestFeishuMentionEndToEnd(unittest.TestCase):
         event = self._run(
             adapter,
             "please don't @_user_1 anymore",
-            [{"key": "@_user_1", "open_id": "ou_bot", "name": "Moor"}],
+            [{"key": "@_user_1", "open_id": "ou_bot", "name": "Hermes"}],
         )
-        self.assertEqual(event.text, "please don't @Moor anymore")
+        self.assertEqual(event.text, "please don't @Hermes anymore")
 
     def test_scenario_no_mentions_zero_regression(self):
         adapter = self._build_adapter()
@@ -4846,7 +5022,7 @@ class TestFeishuMentionEndToEnd(unittest.TestCase):
         bot_mention = SimpleNamespace(
             key="@_user_1",
             id=SimpleNamespace(open_id="ou_bot", user_id=""),
-            name="Moor",
+            name="Hermes",
         )
         alice_mention = SimpleNamespace(
             key="@_user_2",
@@ -4856,7 +5032,7 @@ class TestFeishuMentionEndToEnd(unittest.TestCase):
         post_content = json.dumps({
             "zh_cn": {
                 "content": [[
-                    {"tag": "at", "user_id": "@_user_1", "user_name": "Moor"},
+                    {"tag": "at", "user_id": "@_user_1", "user_name": "Hermes"},
                     {"tag": "at", "user_id": "@_user_2", "user_name": "Alice"},
                     {"tag": "text", "text": " review the spec with Alice"},
                 ]]
@@ -4881,10 +5057,10 @@ class TestFeishuMentionEndToEnd(unittest.TestCase):
         event = adapter._dispatch_inbound_event.call_args.args[0]
         # Hint surfaces Alice; bot excluded because is_self=True.
         self.assertIn("[Mentioned: Alice (open_id=ou_alice)]", event.text)
-        self.assertNotIn("Moor (open_id=", event.text)
-        # Body: leading @Moor stripped, Alice preserved, trailing text intact.
+        self.assertNotIn("Hermes (open_id=", event.text)
+        # Body: leading @Hermes stripped, Alice preserved, trailing text intact.
         self.assertIn("@Alice review the spec with Alice", event.text)
-        self.assertNotIn("@Moor @Alice", event.text)
+        self.assertNotIn("@Hermes @Alice", event.text)
 
 
 class TestChatLockEviction(unittest.TestCase):

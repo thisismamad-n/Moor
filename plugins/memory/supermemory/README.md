@@ -5,7 +5,7 @@ Semantic long-term memory with profile recall, semantic search, explicit memory 
 ## Requirements
 
 - `pip install supermemory`
-- Supermemory API key from [supermemory.ai](https://supermemory.ai)
+- Supermemory API key from [app.supermemory.ai/integrations?connect=hermes](http://app.supermemory.ai/integrations?connect=hermes)
 
 ## Setup
 
@@ -58,13 +58,13 @@ Kebab-case names are registered for the agent; snake_case aliases remain support
 
 All Supermemory API calls send `x-sm-source: hermes`, and document writes stamp
 `metadata.sm_source: hermes`. This is a **functional routing key, not telemetry**:
-it groups Moor-written memories into a dedicated "Moor" Space in the
+it groups Hermes-written memories into a dedicated "Hermes" Space in the
 Supermemory app, so you can filter, browse, and bulk-manage them per source agent
 (alongside Codex, Claude Code, etc.) from the Supermemory UI.
 
 ## Behavior
 
-When enabled, Moor can:
+When enabled, Hermes can:
 
 - prefetch relevant memory context before each turn
 - buffer the full conversation and ingest it as **one session** at session end (or on `/reset`, branch, compression, or shutdown)
@@ -75,7 +75,7 @@ The session is written once via the conversations endpoint, which drives Superme
 
 ## Profile-Scoped Containers
 
-Use `{identity}` in the `container_tag` to scope memories per Moor profile:
+Use `{identity}` in the `container_tag` to scope memories per Hermes profile:
 
 ```json
 {

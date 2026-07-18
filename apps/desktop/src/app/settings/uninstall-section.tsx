@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import type { DesktopUninstallMode, DesktopUninstallSummary } from '@/global'
 import { AlertTriangle, Loader2, Trash2 } from '@/lib/icons'
 import { cn } from '@/lib/utils'
-import type { DesktopUninstallMode, DesktopUninstallSummary } from '@/global'
 
 import { SectionHeading } from './primitives'
 
@@ -21,22 +21,22 @@ const OPTIONS: ModeOption[] = [
   {
     mode: 'gui',
     title: 'Uninstall Chat GUI only',
-    description: 'Remove this desktop app. The Moor agent, your config, and chats all stay.',
+    description: 'Remove this desktop app. The Hermes agent, your config, and chats all stay.',
     consequence: 'the desktop Chat GUI (this app and its data)',
     needsAgent: false
   },
   {
     mode: 'lite',
     title: 'Uninstall GUI + agent, keep my data',
-    description: 'Remove the app and the Moor agent, but keep config, chats, and secrets for a future reinstall.',
-    consequence: 'the Chat GUI and the Moor agent (config, chats, and secrets are kept)',
+    description: 'Remove the app and the Hermes agent, but keep config, chats, and secrets for a future reinstall.',
+    consequence: 'the Chat GUI and the Hermes agent (config, chats, and secrets are kept)',
     needsAgent: true
   },
   {
     mode: 'full',
     title: 'Uninstall everything',
     description: 'Remove the app, the agent, and all user data — config, chats, scheduled jobs, secrets, logs.',
-    consequence: 'EVERYTHING — the Chat GUI, the Moor agent, and all of your config, chats, secrets, and logs',
+    consequence: 'EVERYTHING — the Chat GUI, the Hermes agent, and all of your config, chats, secrets, and logs',
     // full removes the agent (and user data), so it's an agent-removing option:
     // hide it on a lite client with no local agent, same as lite. A lite client
     // connecting to a remote backend has no local agent OR local user data the
@@ -55,10 +55,13 @@ export function UninstallSection() {
   useEffect(() => {
     let alive = true
     const bridge = window.hermesDesktop?.uninstall
+
     if (!bridge) {
       setLoading(false)
+
       return
     }
+
     void bridge
       .summary()
       .then(result => {
@@ -74,12 +77,14 @@ export function UninstallSection() {
           setLoading(false)
         }
       })
+
     return () => {
       alive = false
     }
   }, [])
 
   const bridge = window.hermesDesktop?.uninstall
+
   if (!bridge) {
     return null
   }
@@ -93,10 +98,13 @@ export function UninstallSection() {
     if (!pending) {
       return
     }
+
     setRunning(true)
     setError(null)
+
     try {
       const result = await bridge.run(pending)
+
       if (!result.ok) {
         setError(result.message || result.error || 'Uninstall could not start.')
         setRunning(false)
@@ -129,18 +137,11 @@ export function UninstallSection() {
               This removes {pendingOption.consequence}. This can&apos;t be undone.
             </p>
             {summary?.running_app_path && (
-              <p className="mt-1 font-mono text-[0.68rem] text-muted-foreground/60">
-                App: {summary.running_app_path}
-              </p>
+              <p className="mt-1 font-mono text-[0.68rem] text-muted-foreground/60">App: {summary.running_app_path}</p>
             )}
             {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <Button
-                disabled={running}
-                onClick={() => void handleConfirm()}
-                size="sm"
-                variant="destructive"
-              >
+              <Button disabled={running} onClick={() => void handleConfirm()} size="sm" variant="destructive">
                 {running && <Loader2 className="size-3 animate-spin" />}
                 {running ? 'Uninstalling…' : 'Yes, uninstall'}
               </Button>
@@ -151,7 +152,7 @@ export function UninstallSection() {
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            <p className="text-sm font-medium">Uninstall Moor</p>
+            <p className="text-sm font-medium">Uninstall Hermes</p>
             <p className="text-xs text-muted-foreground">
               Choose how much to remove. The app closes to finish the job; reopen the installer any time to come back.
             </p>

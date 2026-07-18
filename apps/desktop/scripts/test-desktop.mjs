@@ -5,23 +5,24 @@ import { spawn, spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { listPackage } from '@electron/asar'
 
-const DESKTOP_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const PACKAGE_JSON = JSON.parse(fs.readFileSync(path.join(DESKTOP_ROOT, 'package.json'), 'utf8'))
+import PACKAGE_JSON from '../package.json' with { type: 'json' }
+
 const MODE = process.argv[2] || 'help'
 const ARCH = process.arch === 'arm64' ? 'arm64' : 'x64'
+const DESKTOP_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const RELEASE_ROOT = path.join(DESKTOP_ROOT, 'release')
 const PLATFORM = process.platform
 
 // Platform-specific packaged-app layout. The thin installer ships an Electron
 // app shell plus extraResources (install-stamp.json + native-deps/) -- it
-// no longer bundles the Moor Agent Python payload (that's fetched at first
+// no longer bundles the Hermes Agent Python payload (that's fetched at first
 // launch via install.ps1 / install.sh, per the Phase 1 thin-installer flow).
 const APP = (() => {
   if (PLATFORM === 'darwin') {
-    const appPath = path.join(RELEASE_ROOT, `mac-${ARCH}`, 'Moor.app')
+    const appPath = path.join(RELEASE_ROOT, `mac-${ARCH}`, 'Hermes.app')
     return {
       appPath,
-      binary: path.join(appPath, 'Contents', 'MacOS', 'Moor'),
+      binary: path.join(appPath, 'Contents', 'MacOS', 'Hermes'),
       resourcesPath: path.join(appPath, 'Contents', 'Resources'),
       asarPath: path.join(appPath, 'Contents', 'Resources', 'app.asar'),
       unpackedDistIndex: path.join(appPath, 'Contents', 'Resources', 'app.asar.unpacked', 'dist', 'index.html')
@@ -31,7 +32,7 @@ const APP = (() => {
     const unpacked = path.join(RELEASE_ROOT, 'win-unpacked')
     return {
       appPath: unpacked,
-      binary: path.join(unpacked, 'Moor.exe'),
+      binary: path.join(unpacked, 'Hermes.exe'),
       resourcesPath: path.join(unpacked, 'resources'),
       asarPath: path.join(unpacked, 'resources', 'app.asar'),
       unpackedDistIndex: path.join(unpacked, 'resources', 'app.asar.unpacked', 'dist', 'index.html')
@@ -41,14 +42,14 @@ const APP = (() => {
   const unpacked = path.join(RELEASE_ROOT, 'linux-unpacked')
   return {
     appPath: unpacked,
-    binary: path.join(unpacked, 'hermes'),
+    binary: path.join(unpacked, 'Hermes'),
     resourcesPath: path.join(unpacked, 'resources'),
     asarPath: path.join(unpacked, 'resources', 'app.asar'),
     unpackedDistIndex: path.join(unpacked, 'resources', 'app.asar.unpacked', 'dist', 'index.html')
   }
 })()
 
-// Default HERMES_HOME for non-sandboxed runs -- matches main.cjs's
+// Default HERMES_HOME for non-sandboxed runs -- matches main.ts's
 // resolveHermesHome(). On Windows it's %LOCALAPPDATA%\hermes; elsewhere
 // it's ~/.hermes. The fresh-install sandbox launchFresh() sets its own
 // HERMES_HOME and never touches this.
@@ -83,17 +84,23 @@ function exists(target) {
   return fs.existsSync(target)
 }
 
-// Match nodepty native binding location to what main.cjs's resolver fallback
-// expects (apps/desktop/electron/main.cjs, packaged-build branch).  Upstream
-// node-pty 1.x is N-API based and ships per-arch prebuilts under
-// prebuilds/<platform>-<arch>/ instead of build/Release/.  We check the
-// per-arch dir since that's what stage-native-deps actually copies.
+// Match node-pty native binding location to what the bundled electron-main.cjs
+// resolves at runtime. stage-native-deps.mjs stages node-pty into
+// dist/node_modules/node-pty, and dist/** is asarUnpacked (see package.json
+// build.asarUnpack), so in a packaged build it lands under
+// resources/app.asar.unpacked/dist/node_modules/node-pty — reachable by a bare
+// require('node-pty') from the bundle. Upstream node-pty 1.x is N-API based and
+// ships per-arch prebuilts under prebuilds/<platform>-<arch>/; nix/local builds
+// instead compile from source into build/Release/. The stage script copies
+// whichever is present, so we accept either as the native payload.
 function expectedNativeDepPaths() {
-  const root = path.join(APP.resourcesPath, 'native-deps', 'node-pty')
+  const root = path.join(APP.resourcesPath, 'app.asar.unpacked', 'dist', 'node_modules', 'node-pty')
   const prebuildsDir = path.join(root, 'prebuilds', `${PLATFORM}-${ARCH}`)
+  const buildReleaseDir = path.join(root, 'build', 'Release')
   return {
     packageJson: path.join(root, 'package.json'),
     prebuildsDir,
+    buildReleaseDir,
     libIndex: path.join(root, 'lib', 'index.js')
   }
 }
@@ -101,10 +108,9 @@ function expectedNativeDepPaths() {
 function ensurePlatformBuilds() {
   if (PLATFORM === 'darwin') return
   if (PLATFORM === 'win32') return
+  if (PLATFORM === 'linux') return
   die(
-    `Desktop bundle validation is only wired for darwin / win32 today; platform=${PLATFORM} ` +
-      `is not yet supported. The thin-installer story for Linux ships in Phase 2 alongside ` +
-      `install.sh's stage protocol.`
+    `Desktop bundle validation is only wired for darwin / win32 / linux; platform=${PLATFORM} is not supported.`
   )
 }
 
@@ -118,10 +124,10 @@ function ensurePackagedApp() {
 
 function resolveDmgPath() {
   if (!exists(RELEASE_ROOT)) {
-    return path.join(RELEASE_ROOT, `Moor-${PACKAGE_JSON.version}-${ARCH}.dmg`)
+    return path.join(RELEASE_ROOT, `Hermes-${PACKAGE_JSON.version}-${ARCH}.dmg`)
   }
 
-  const prefix = `Moor-${PACKAGE_JSON.version}`
+  const prefix = `Hermes-${PACKAGE_JSON.version}`
   const candidates = fs
     .readdirSync(RELEASE_ROOT)
     .filter(name => name.endsWith('.dmg'))
@@ -135,11 +141,11 @@ function resolveDmgPath() {
 
   return candidates.length > 0
     ? path.join(RELEASE_ROOT, candidates[0])
-    : path.join(RELEASE_ROOT, `Moor-${PACKAGE_JSON.version}-${ARCH}.dmg`)
+    : path.join(RELEASE_ROOT, `Hermes-${PACKAGE_JSON.version}-${ARCH}.dmg`)
 }
 
 function resolveNsisPath() {
-  // electron-builder NSIS artifactName template is 'Moor-${version}-${os}-${arch}.${ext}'
+  // electron-builder NSIS artifactName template is 'Hermes-${version}-${os}-${arch}.${ext}'
   if (!exists(RELEASE_ROOT)) return null
   const candidates = fs
     .readdirSync(RELEASE_ROOT)
@@ -276,11 +282,11 @@ function launchFresh() {
 }
 
 // Validate the packaged bundle matches the thin-installer architecture:
-//   - The Moor Agent Python payload is NOT shipped (it's fetched at first
+//   - The Hermes Agent Python payload is NOT shipped (it's fetched at first
 //     launch via install.ps1's stage protocol).
 //   - install-stamp.json IS shipped in resources/ with a valid commit + branch.
-//   - native-deps/@homebridge/node-pty-prebuilt-multiarch/ IS shipped with
-//     the package.json + lib/ + at least one .node binary (the renderer's
+//   - node-pty IS shipped inside app.asar.unpacked/dist/node_modules/node-pty
+//     with package.json + lib/ + at least one .node binary (the renderer's
 //     integrated terminal needs this; see Phase 1F.6).
 //   - The renderer's dist/index.html is reachable (either unpacked or
 //     inside app.asar).
@@ -320,24 +326,35 @@ function validateBundle() {
   // Positive assertion: node-pty native deps shipped
   const native = expectedNativeDepPaths()
   if (!exists(native.packageJson)) {
-    die(`Missing node-pty package.json in resources/native-deps: ${native.packageJson}`)
+    die(`Missing node-pty package.json in app.asar.unpacked: ${native.packageJson}`)
   }
   if (!exists(native.libIndex)) {
-    die(`Missing node-pty lib/index.js in resources/native-deps: ${native.libIndex}`)
+    die(`Missing node-pty lib/index.js in app.asar.unpacked: ${native.libIndex}`)
   }
-  if (!exists(native.prebuildsDir)) {
-    die(`Missing node-pty prebuilds dir for ${PLATFORM}-${ARCH}: ${native.prebuildsDir}`)
+  // The native binary lands in prebuilds/<platform>-<arch>/ (downloaded prebuild)
+  // OR build/Release/ (compiled from source). stage-native-deps.mjs copies
+  // whichever is present, so accept either.
+  const nativeBinaryDirs = [native.prebuildsDir, native.buildReleaseDir].filter(exists)
+  if (nativeBinaryDirs.length === 0) {
+    die(
+      `Missing node-pty native binary dir for ${PLATFORM}-${ARCH}: neither ` +
+        `${native.prebuildsDir} nor ${native.buildReleaseDir} exists`
+    )
   }
-  const nodeBinaries = fs.readdirSync(native.prebuildsDir).filter(name => name.endsWith('.node'))
+  const nodeBinaries = nativeBinaryDirs.flatMap(dir =>
+    fs.readdirSync(dir).filter(name => name.endsWith('.node'))
+  )
   if (nodeBinaries.length === 0) {
-    die(`No .node native binaries found in: ${native.prebuildsDir}`)
+    die(`No .node native binaries found in: ${nativeBinaryDirs.join(', ')}`)
   }
   // Darwin requires a runtime-execed spawn-helper alongside pty.node; missing
   // it manifests as "ENOENT: spawn-helper" on first pty.spawn() call.
   if (PLATFORM === 'darwin') {
-    const spawnHelper = path.join(native.prebuildsDir, 'spawn-helper')
-    if (!exists(spawnHelper)) {
-      die(`Missing node-pty spawn-helper (required on darwin): ${spawnHelper}`)
+    const spawnHelper = nativeBinaryDirs
+      .map(dir => path.join(dir, 'spawn-helper'))
+      .find(exists)
+    if (!spawnHelper) {
+      die(`Missing node-pty spawn-helper (required on darwin) in: ${nativeBinaryDirs.join(', ')}`)
     }
   }
 
@@ -382,7 +399,7 @@ function printArtifacts(options = {}) {
 
 function help() {
   console.log(`Usage:
-  npm run test:desktop:existing  # build packaged app, launch with normal PATH/existing Moor
+  npm run test:desktop:existing  # build packaged app, launch with normal PATH/existing Hermes
   npm run test:desktop:fresh     # build packaged app, launch with temp userData + HERMES_HOME
   npm run test:desktop:dmg       # (macOS only) build DMG and open it
   npm run test:desktop:nsis      # (win32 only) build NSIS installer

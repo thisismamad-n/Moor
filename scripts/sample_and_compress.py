@@ -28,11 +28,11 @@ load_dotenv()
 
 # Default datasets to sample from
 DEFAULT_DATASETS = [
-    "Moor inc./swe-terminus-agent-glm-kimi-minimax",
-    "Moor inc./hermes-agent-megascience-sft1",
-    "Moor inc./Moor-Agent-Thinking-GLM-4.7-SFT2",
-    "Moor inc./Moor-Agent-Thinking-GLM-4.7-SFT1",
-    "Moor inc./terminal-tasks-glm-hermes-agent"
+    "NousResearch/swe-terminus-agent-glm-kimi-minimax",
+    "NousResearch/hermes-agent-megascience-sft1",
+    "NousResearch/Hermes-Agent-Thinking-GLM-4.7-SFT2",
+    "NousResearch/Hermes-Agent-Thinking-GLM-4.7-SFT1",
+    "NousResearch/terminal-tasks-glm-hermes-agent"
 ]
 
 
@@ -41,7 +41,7 @@ def load_dataset_from_hf(dataset_name: str) -> List[Dict[str, Any]]:
     Load a dataset from HuggingFace.
     
     Args:
-        dataset_name: HuggingFace dataset name (e.g., "Moor inc./dataset-name")
+        dataset_name: HuggingFace dataset name (e.g., "NousResearch/dataset-name")
         
     Returns:
         List of trajectory entries
@@ -211,7 +211,7 @@ def sample_from_datasets(
         source = entry.get("_source_dataset", "unknown").split("/")[-1]
         source_counts[source] = source_counts.get(source, 0) + 1
     
-    print(f"\n📌 Sample distribution by source:")
+    print("\n📌 Sample distribution by source:")
     for source, count in sorted(source_counts.items()):
         print(f"      {source}: {count:,}")
     
@@ -269,7 +269,7 @@ def run_compression(input_dir: Path, output_dir: Path, config_path: str):
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from trajectory_compressor import TrajectoryCompressor, CompressionConfig
     
-    print(f"\n🗜️  Running trajectory compression...")
+    print("\n🗜️  Running trajectory compression...")
     print(f"   Input: {input_dir}")
     print(f"   Output: {output_dir}")
     print(f"   Config: {config_path}")
@@ -348,7 +348,7 @@ def main(
     else:
         dataset_list = DEFAULT_DATASETS
     
-    print(f"\n📋 Configuration:")
+    print("\n📋 Configuration:")
     print(f"   Total samples: {total_samples:,}")
     print(f"   Min tokens filter: {min_tokens:,}")
     print(f"   Parallel workers: {num_proc}")
@@ -401,8 +401,8 @@ def main(
     print(f"\n📁 Raw samples:        {sampled_dir}")
     print(f"📁 Compressed batches: {compressed_dir}")
     print(f"📁 Final output:       {final_output}")
-    print(f"\nTo upload to HuggingFace:")
-    print(f"   huggingface-cli upload Moor inc./{output_name} {final_output}")
+    print("\nTo upload to HuggingFace:")
+    print(f"   huggingface-cli upload NousResearch/{output_name} {final_output}")
 
 
 if __name__ == "__main__":

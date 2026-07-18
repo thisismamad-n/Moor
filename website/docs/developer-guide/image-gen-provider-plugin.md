@@ -1,7 +1,7 @@
 ---
 sidebar_position: 11
 title: "Image Generation Provider Plugins"
-description: "How to build an image-generation backend plugin for Moor Agent"
+description: "How to build an image-generation backend plugin for Hermes Agent"
 ---
 
 # Building an Image Generation Provider Plugin
@@ -9,12 +9,12 @@ description: "How to build an image-generation backend plugin for Moor Agent"
 Image-gen provider plugins register a backend that services every `image_generate` tool call — DALL·E, gpt-image, Grok, Flux, Imagen, Stable Diffusion, fal, Replicate, a local ComfyUI rig, anything. Built-in providers (OpenAI, OpenAI-Codex, xAI) all ship as plugins. You can add a new one, or override a bundled one, by dropping a directory into `plugins/image_gen/<name>/`.
 
 :::tip
-Image-gen is one of several **backend plugins** Moor supports. The others (with more specialized ABCs) are [Memory Provider Plugins](/developer-guide/memory-provider-plugin), [Context Engine Plugins](/developer-guide/context-engine-plugin), and [Model Provider Plugins](/developer-guide/model-provider-plugin). General tool/hook/CLI plugins live in [Build a Moor Plugin](/guides/build-a-hermes-plugin).
+Image-gen is one of several **backend plugins** Hermes supports. The others (with more specialized ABCs) are [Memory Provider Plugins](/developer-guide/memory-provider-plugin), [Context Engine Plugins](/developer-guide/context-engine-plugin), and [Model Provider Plugins](/developer-guide/model-provider-plugin). General tool/hook/CLI plugins live in [Build a Hermes Plugin](/developer-guide/plugins).
 :::
 
 ## How discovery works
 
-Moor scans for image-gen backends in three places:
+Hermes scans for image-gen backends in three places:
 
 1. **Bundled** — `<repo>/plugins/image_gen/<name>/` (auto-loaded with `kind: backend`, always available)
 2. **User** — `~/.hermes/plugins/image_gen/<name>/` (opt-in via `plugins.enabled`)
@@ -307,10 +307,10 @@ Or interactively: `hermes tools` → "Image Generation" → select `my-backend` 
 my-backend-imggen = "my_backend_imggen_package"
 ```
 
-`my_backend_imggen_package` must expose a top-level `register` function. See [Distribute via pip](/guides/build-a-hermes-plugin#distribute-via-pip) in the general plugin guide for the full setup.
+`my_backend_imggen_package` must expose a top-level `register` function. See [Distribute via pip](/developer-guide/plugins#distribute-via-pip) in the general plugin guide for the full setup.
 
 ## Related pages
 
 - [Image Generation](/user-guide/features/image-generation) — user-facing feature documentation
 - [Plugins overview](/user-guide/features/plugins) — all plugin types at a glance
-- [Build a Moor Plugin](/guides/build-a-hermes-plugin) — general tools/hooks/slash commands guide
+- [Build a Hermes Plugin](/developer-guide/plugins) — general tools/hooks/slash commands guide

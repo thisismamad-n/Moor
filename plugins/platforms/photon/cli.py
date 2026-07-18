@@ -10,7 +10,7 @@ Subcommands:
     telemetry          show or toggle Spectrum SDK telemetry (on/off)
 
 The device-code login runs automatically as the first step of ``setup``;
-there is no standalone ``login`` verb (matching how every other Moor
+there is no standalone ``login`` verb (matching how every other Hermes
 gateway channel onboards through a single setup surface).
 
 Photon uses the spectrum-ts gRPC stream for inbound — there is no webhook
@@ -45,7 +45,7 @@ def register_cli(parser: argparse.ArgumentParser) -> None:
         help="First-time setup (device login + project + user + sidecar)",
     )
     p_setup.add_argument("--project-name", default=None,
-                         help="Project name (default: 'Moor Agent')")
+                         help="Project name (default: 'Hermes Agent')")
     p_setup.add_argument("--phone", default=None,
                          help="Your E.164 phone number (e.g. +15551234567)")
     p_setup.add_argument("--first-name", default=None)
@@ -141,7 +141,7 @@ def _cmd_setup(args: argparse.Namespace) -> int:
     else:
         print("[1/5] Reusing existing Photon token")
 
-    # 2. Find or create the "Moor Agent" project.
+    # 2. Find or create the "Hermes Agent" project.
     name = args.project_name or photon_auth.DEFAULT_PROJECT_NAME
     dashboard_id = photon_auth.load_dashboard_project_id()
     try:
@@ -376,11 +376,12 @@ def _install_sidecar() -> int:
         return 1
     # spectrum-ts is pinned exactly in package.json/package-lock.json because
     # the SDK ships breaking majors (v2 removed defineFusorPlatform; v3
-    # reworked space construction). Upgrades are deliberate: bump the pin,
-    # migrate sidecar/index.mjs, re-run the photon tests — never `@latest`
-    # (see README "Upgrading spectrum-ts"). `npm ci` installs the committed
-    # lockfile verbatim; fall back to `npm install` when the lockfile is
-    # missing or drifted (e.g. a dev checkout mid-upgrade).
+    # reworked space construction; v5 split it into @spectrum-ts/* packages).
+    # Upgrades are deliberate: bump the pin, migrate sidecar/index.mjs, re-run
+    # the photon tests — never `@latest` (see README "Upgrading spectrum-ts").
+    # `npm ci` installs the committed lockfile verbatim; fall back to
+    # `npm install` when the lockfile is missing or drifted (e.g. a dev
+    # checkout mid-upgrade).
     print(f"  $ cd {_SIDECAR_DIR} && {npm} ci")
     proc = subprocess.run(  # noqa: S603
         [npm, "ci"],

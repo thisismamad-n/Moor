@@ -11,7 +11,13 @@ def _mock_subprocess_run(monkeypatch):
     """Mock subprocess.run to intercept docker run -d and docker version calls.
 
     Returns a list of captured (cmd, kwargs) tuples for inspection.
+
+    Pre-seeds the cgroup-limit probe cache to ``True`` so the throwaway probe
+    container (a ``docker run ... sleep 0``) does not run and pollute the
+    captured call list — these tests inspect the real sandbox-start ``run``.
+    Tests that exercise the probe itself live in test_docker_cgroup_limits.py.
     """
+    docker_env._cgroup_limits_ok = True
     calls = []
 
     def _run(cmd, **kwargs):
@@ -440,7 +446,7 @@ def test_normalize_env_dict_rejects_complex_values():
 def test_security_args_include_setuid_setgid_for_privdrop(monkeypatch):
     """The default (run_as_host_user=False) invocation must include SETUID and
     SETGID caps so the image's init can drop from root to a non-root user
-    (e.g. via ``s6-setuidgid`` in the bundled Moor image, or ``gosu``/``su``
+    (e.g. via ``s6-setuidgid`` in the bundled Hermes image, or ``gosu``/``su``
     in user-provided images).
 
     Without these caps the privilege-drop helper fails with
@@ -610,7 +616,7 @@ def test_run_command_tags_task_and_profile_labels(monkeypatch):
     """task_id and the active profile name are surfaced as labels so future
     cross-process reuse logic can filter to a specific (task, profile) pair
     without parsing container names. Profile resolution uses the helper that
-    returns ``"default"`` for the root Moor home."""
+    returns ``"default"`` for the root Hermes home."""
     monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")
     monkeypatch.setattr(docker_env, "_get_active_profile_name", lambda: "research-bot")
     calls = _mock_subprocess_run(monkeypatch)
@@ -724,7 +730,7 @@ def _mock_subprocess_run_with_reuse(monkeypatch, ps_state: str | None,
 def test_reuse_attaches_to_running_container_without_docker_run(monkeypatch):
     """When a labeled container is already ``running``, the reuse probe
     must pick it up and skip ``docker run`` entirely. Regression for the
-    issue #20561 root cause: every Moor process spawning a new container
+    issue #20561 root cause: every Hermes process spawning a new container
     despite docs claiming "ONE long-lived container shared across sessions"."""
     monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")
     monkeypatch.setattr(docker_env, "_get_active_profile_name", lambda: "default")
@@ -750,7 +756,7 @@ def test_reuse_attaches_to_running_container_without_docker_run(monkeypatch):
 
 def test_reuse_starts_stopped_container_before_attaching(monkeypatch):
     """A labeled container in ``exited`` state must be restarted via
-    ``docker start`` before the new Moor process uses it. Without this
+    ``docker start`` before the new Hermes process uses it. Without this
     step, ``docker exec`` against a stopped container errors out and the
     first agent command fails opaquely."""
     monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")
@@ -956,7 +962,7 @@ def test_cleanup_with_persist_is_noop_for_container(monkeypatch):
     processes inside the container (npm watchers, pytest watchers, etc.).
 
     Resource reclamation in this mode happens via the orphan reaper on next
-    Moor startup, not on graceful exit. Issue #20561 — the first iteration
+    Hermes startup, not on graceful exit. Issue #20561 — the first iteration
     of this PR did docker stop here, which Ben caught as contradicting the
     "ONE long-lived container" semantics."""
     monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")
@@ -1193,7 +1199,7 @@ def test_wait_for_cleanup_returns_true_when_no_thread_started():
     shutdowns."""
     env = docker_env.DockerEnvironment.__new__(docker_env.DockerEnvironment)
     # No _cleanup_thread set — simulates an env that was never cleanup()'d.
-    assert env.wait_for_cleanup(timeout=1.0) is True
+    assert env.wait_for_cleanup(timeout=10.0) is True
 
 
 def test_wait_for_cleanup_after_cleanup_returns_true(monkeypatch):
@@ -1298,7 +1304,7 @@ def test_reap_orphan_returns_zero_when_no_matches(monkeypatch):
 def test_reap_orphan_removes_stale_exited_container(monkeypatch):
     """An Exited container older than max_age_seconds must be removed.
     This is the core repair path for issue #20561 — without the reaper,
-    SIGKILL'd Moor processes leak containers permanently."""
+    SIGKILL'd Hermes processes leak containers permanently."""
     old = _now_iso(offset_seconds=900)  # 15 minutes ago
     calls = _reaper_run_mock(
         monkeypatch, ps_ids=["old-cid"], inspect_responses={"old-cid": old},
@@ -1316,7 +1322,7 @@ def test_reap_orphan_removes_stale_exited_container(monkeypatch):
 
 def test_reap_orphan_spares_recently_exited_container(monkeypatch):
     """A container exited within max_age_seconds must NOT be reaped — that
-    container belongs to a Moor process that just finished and may be
+    container belongs to a Hermes process that just finished and may be
     about to be replaced. Conservative window prevents racing sibling
     processes."""
     recent = _now_iso(offset_seconds=60)  # 1 minute ago
@@ -1354,7 +1360,7 @@ def test_reap_orphan_scopes_to_profile_filter_via_label(monkeypatch):
     )
     assert "status=exited" in flat, (
         "must filter to exited containers only — running containers may "
-        "belong to a sibling Moor process and must NEVER be reaped"
+        "belong to a sibling Hermes process and must NEVER be reaped"
     )
 
 

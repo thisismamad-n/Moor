@@ -21,7 +21,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use tracing_appender::non_blocking::WorkerGuard;
 
-/// Returns the canonical Moor home directory, respecting $HERMES_HOME if set.
+/// Returns the canonical Hermes home directory, respecting $HERMES_HOME if set.
 pub fn hermes_home() -> PathBuf {
     if let Ok(override_path) = std::env::var("HERMES_HOME") {
         if !override_path.trim().is_empty() {
@@ -150,7 +150,7 @@ fn repair_macos_installer_helper(path: &Path) {
 fn repair_macos_installer_helper(_path: &Path) {}
 
 /// Where install.ps1 writes the bootstrap-complete marker (existence-only file
-/// the Electron app also checks). Per main.cjs:
+/// the Electron app also checks). Per main.ts:
 ///   const BOOTSTRAP_COMPLETE_MARKER = path.join(ACTIVE_HERMES_ROOT, '.hermes-bootstrap-complete')
 /// We don't always know ACTIVE_HERMES_ROOT until install.ps1 reports it, so
 /// this is a probe helper, not a definitive path.

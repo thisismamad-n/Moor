@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Build the Moor Model Catalog — a centralized JSON manifest of curated models.
+"""Build the Hermes Model Catalog — a centralized JSON manifest of curated models.
 
 This script reads the in-repo hardcoded curated lists (``OPENROUTER_MODELS``,
 ``_PROVIDER_MODELS["nous"]``) and writes them to a JSON manifest that the
-Moor CLI fetches at runtime. Publishing the catalog through the docs site
-lets maintainers update model lists without shipping a Moor release.
+Hermes CLI fetches at runtime. Publishing the catalog through the docs site
+lets maintainers update model lists without shipping a Hermes release.
 
 The runtime fetcher falls back to the same in-repo hardcoded lists if the
 manifest is unreachable, so this script is a convenience for keeping the
@@ -17,7 +17,7 @@ Usage::
 Output: ``website/static/api/model-catalog.json``
 
 Live URL (after ``deploy-site.yml`` runs on merge to main):
-``https://hermes-agent.Moor inc..com/docs/api/model-catalog.json``
+``https://hermes-agent.nousresearch.com/docs/api/model-catalog.json``
 """
 
 from __future__ import annotations
@@ -33,10 +33,29 @@ sys.path.insert(0, REPO_ROOT)
 # Ensure HERMES_HOME is set for imports that touch it at module level.
 os.environ.setdefault("HERMES_HOME", os.path.join(os.path.expanduser("~"), ".hermes"))
 
-from hermes_cli.models import OPENROUTER_MODELS, _PROVIDER_MODELS  # noqa: E402
+from hermes_cli.models import (  # noqa: E402
+    OPENROUTER_MODELS,
+    PREFERRED_SILENT_DEFAULT_MODEL,
+    _PROVIDER_MODELS,
+)
 
 OUTPUT_PATH = os.path.join(REPO_ROOT, "website", "static", "api", "model-catalog.json")
 CATALOG_VERSION = 1
+
+
+def _openrouter_entry(mid: str, desc: str) -> dict:
+    entry: dict = {"id": mid, "description": desc}
+    if mid == PREFERRED_SILENT_DEFAULT_MODEL:
+        entry["description"] = desc or "default"
+        entry["default"] = True
+    return entry
+
+
+def _nous_entry(mid: str) -> dict:
+    entry: dict = {"id": mid}
+    if mid == PREFERRED_SILENT_DEFAULT_MODEL:
+        entry["default"] = True
+    return entry
 
 
 def build_catalog() -> dict:
@@ -45,7 +64,7 @@ def build_catalog() -> dict:
         "updated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "metadata": {
             "source": "hermes-agent repo",
-            "docs": "https://hermes-agent.Moor inc..com/docs/reference/model-catalog",
+            "docs": "https://hermes-agent.nousresearch.com/docs/reference/model-catalog",
         },
         "providers": {
             "openrouter": {
@@ -53,11 +72,13 @@ def build_catalog() -> dict:
                     "display_name": "OpenRouter",
                     "note": (
                         "Descriptions drive picker badges. Live /api/v1/models "
-                        "filters curated ids by tool-calling support and free pricing."
+                        "filters curated ids by tool-calling support and free pricing. "
+                        'The entry labeled "default": true is the model Hermes '
+                        "silently lands on when the user never picked one."
                     ),
                 },
                 "models": [
-                    {"id": mid, "description": desc}
+                    _openrouter_entry(mid, desc)
                     for mid, desc in OPENROUTER_MODELS
                 ],
             },
@@ -66,11 +87,13 @@ def build_catalog() -> dict:
                     "display_name": "Nous Portal",
                     "note": (
                         "Free-tier gating is determined live via Portal pricing "
-                        "(partition_nous_models_by_tier), not this manifest."
+                        "(partition_nous_models_by_tier), not this manifest. "
+                        'The entry labeled "default": true is the model Hermes '
+                        "silently lands on when the user never picked one."
                     ),
                 },
                 "models": [
-                    {"id": mid}
+                    _nous_entry(mid)
                     for mid in _PROVIDER_MODELS.get("nous", [])
                 ],
             },

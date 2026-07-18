@@ -1,14 +1,14 @@
 ---
 sidebar_position: 1
 title: "消息网关"
-description: "通过 Telegram、Discord、Slack、WhatsApp、Signal、SMS、Email、Home Assistant、Mattermost、Matrix、DingTalk、Yuanbao、Microsoft Teams、LINE、Webhooks 或任何兼容 OpenAI 的前端与 Moor 对话 — 架构与配置概览"
+description: "通过 Telegram、Discord、Slack、WhatsApp、Signal、SMS、Email、Home Assistant、Mattermost、Matrix、DingTalk、Yuanbao、Microsoft Teams、LINE、Webhooks 或任何兼容 OpenAI 的前端与 Hermes 对话 — 架构与配置概览"
 ---
 
 # 消息网关
 
-通过 Telegram、Discord、Slack、WhatsApp、Signal、SMS、Email、Home Assistant、Mattermost、Matrix、DingTalk、Feishu/Lark、WeCom、Weixin、BlueBubbles（iMessage）、QQ、Yuanbao、Microsoft Teams、LINE、ntfy 或浏览器与 Moor 对话。网关是一个单一后台进程，连接所有已配置的平台，管理会话，运行 cron 任务，并传递语音消息。
+通过 Telegram、Discord、Slack、WhatsApp、Signal、SMS、Email、Home Assistant、Mattermost、Matrix、DingTalk、Feishu/Lark、WeCom、Weixin、BlueBubbles（iMessage）、QQ、Yuanbao、Microsoft Teams、LINE、ntfy 或浏览器与 Hermes 对话。网关是一个单一后台进程，连接所有已配置的平台，管理会话，运行 cron 任务，并传递语音消息。
 
-完整的语音功能集——包括 CLI 麦克风模式、消息中的语音回复以及 Discord 语音频道对话——请参阅 [Voice Mode](/user-guide/features/voice-mode) 和 [Use Voice Mode with Moor](/guides/use-voice-mode-with-hermes)。
+完整的语音功能集——包括 CLI 麦克风模式、消息中的语音回复以及 Discord 语音频道对话——请参阅 [Voice Mode](/user-guide/features/voice-mode) 和 [Use Voice Mode with Hermes](/guides/use-voice-mode-with-hermes)。
 
 ## 平台对比
 
@@ -43,7 +43,7 @@ description: "通过 Telegram、Discord、Slack、WhatsApp、Signal、SMS、Emai
 
 ```mermaid
 flowchart TB
-    subgraph Gateway["Moor Gateway"]
+    subgraph Gateway["Hermes Gateway"]
         subgraph Adapters["Platform adapters"]
             tg[Telegram]
             dc[Discord]
@@ -150,7 +150,7 @@ hermes gateway status --system         # 仅 Linux：显式检查系统服务
 | `/rollback [number]` | 列出或恢复文件系统检查点 |
 | `/background <prompt>` | 在独立后台会话中运行 prompt（提示词） |
 | `/reload-mcp` | 从配置重新加载 MCP 服务器 |
-| `/update` | 将 Moor Agent 更新至最新版本 |
+| `/update` | 将 Hermes Agent 更新至最新版本 |
 | `/help` | 显示可用命令 |
 | `/<skill-name>` | 调用任意已安装的技能 |
 
@@ -162,13 +162,21 @@ hermes gateway status --system         # 仅 Linux：显式检查系统服务
 
 ### 重置策略
 
-会话根据可配置的策略重置：
+**默认情况下会话永不自动重置** —— 上下文会一直保留，直到你手动 `/reset` 或触发上下文压缩。如果你希望会话自动重置，可在 `~/.hermes/config.yaml` 的 `session_reset` 部分选择启用：
 
-| 策略 | 默认值 | 说明 |
-|--------|---------|-------------|
-| 每日 | 凌晨 4:00 | 每天在指定时间重置 |
-| 空闲 | 1440 分钟 | 空闲 N 分钟后重置 |
-| 两者 | （组合） | 以先触发者为准 |
+```yaml
+session_reset:
+  mode: idle        # "idle"、"daily"、"both" 或 "none"（默认）
+  idle_minutes: 1440  # idle/both 模式：空闲多少分钟后重置
+  at_hour: 4          # daily/both 模式：每天的重置时间（0-23，本地时间）
+```
+
+| 模式 | 说明 |
+|------|-------------|
+| `none` | 永不自动重置（默认） |
+| `daily` | 每天在指定时间重置 |
+| `idle` | 空闲 N 分钟后重置 |
+| `both` | 以先触发者为准 |
 
 在 `~/.hermes/gateway.json` 中配置各平台的覆盖设置：
 
@@ -281,7 +289,7 @@ display:
   busy_ack_enabled: true   # 设为 false 可完全抑制 ⚡/⏳/⏩ 聊天回复
 ```
 
-第一次在任意平台向繁忙的 agent 发送消息时，Moor 会在繁忙确认中附加一行提示，说明该配置项（`"💡 First-time tip — …"`）。该提示每次安装只触发一次——由 `onboarding.seen.busy_input_prompt` 下的标志锁定。删除该键可再次看到提示。
+第一次在任意平台向繁忙的 agent 发送消息时，Hermes 会在繁忙确认中附加一行提示，说明该配置项（`"💡 First-time tip — …"`）。该提示每次安装只触发一次——由 `onboarding.seen.busy_input_prompt` 下的标志锁定。删除该键可再次看到提示。
 
 如果你觉得繁忙确认消息过多——尤其是使用语音输入或快速连续发送消息时——可设置 `display.busy_ack_enabled: false`。你的输入仍会正常排队/引导/中断，只是聊天回复被静默。
 
@@ -312,7 +320,7 @@ display:
 /background Check all servers in the cluster and report any that are down
 ```
 
-Moor 立即确认：
+Hermes 立即确认：
 
 ```
 🔄 Background task started: "Check all servers in the cluster..."
@@ -384,10 +392,10 @@ journalctl -u hermes-gateway -f
 
 笔记本和开发机使用用户服务。VPS 或无头主机（需要开机自动启动而不依赖 systemd linger）使用系统服务。
 
-除非你确实有此需要，否则避免同时安装用户和系统网关单元。Moor 检测到两者同时存在时会发出警告，因为 start/stop/status 行为会变得不明确。
+除非你确实有此需要，否则避免同时安装用户和系统网关单元。Hermes 检测到两者同时存在时会发出警告，因为 start/stop/status 行为会变得不明确。
 
 :::info 多个安装
-如果你在同一台机器上运行多个 Moor 安装（使用不同的 `HERMES_HOME` 目录），每个安装都有自己的 systemd 服务名称。默认的 `~/.hermes` 使用 `hermes-gateway`；其他安装使用 `hermes-gateway-<hash>`。`hermes gateway` 命令会自动针对当前 `HERMES_HOME` 对应的正确服务。
+如果你在同一台机器上运行多个 Hermes 安装（使用不同的 `HERMES_HOME` 目录），每个安装都有自己的 systemd 服务名称。默认的 `~/.hermes` 使用 `hermes-gateway`；其他安装使用 `hermes-gateway-<hash>`。`hermes gateway` 命令会自动针对当前 `HERMES_HOME` 对应的正确服务。
 :::
 
 ### macOS（launchd）
@@ -404,7 +412,7 @@ tail -f ~/.hermes/logs/gateway.log   # 查看日志
 
 - **PATH** — 安装时你的完整 shell PATH，并在前面添加了 venv `bin/` 和 `node_modules/.bin`。这确保用户安装的工具（Node.js、ffmpeg 等）可供网关子进程（如 WhatsApp 桥接）使用。
 - **VIRTUAL_ENV** — 指向 Python 虚拟环境，使工具能正确解析包。
-- **HERMES_HOME** — 将网关限定到你的 Moor 安装。
+- **HERMES_HOME** — 将网关限定到你的 Hermes 安装。
 
 :::tip 安装后 PATH 变更
 launchd plist 是静态的——如果你在配置网关后安装了新工具（例如通过 nvm 安装新版 Node.js，或通过 Homebrew 安装 ffmpeg），请重新运行 `hermes gateway install` 以捕获更新后的 PATH。网关会检测到过时的 plist 并自动重新加载。
@@ -494,6 +502,21 @@ gateway:
 ```
 
 在嘈杂或低优先级的平台上禁用，同时在主要聊天上保持启用。无论有多少会话正在进行，每次重启只发送一次通知。
+
+### 正在输入指示器
+
+当 agent 正在处理消息时，网关会在支持的平台上显示实时的输入状态——Telegram/Discord/Signal 上的"正在输入……"气泡，或 Slack 上的"is thinking…"助手状态。这由 `gateway-config.yaml` 中每个平台的 `typing_indicator` 标志控制，默认为 `true`：
+
+```yaml
+gateway:
+  platforms:
+    slack:
+      typing_indicator: false   # 在 Slack 上不显示"is thinking…"
+    telegram:
+      # typing_indicator 未设置 → 默认为 true
+```
+
+在任何不需要该指示器的平台上设置 `typing_indicator: false`。部分用户觉得 Slack 的"is thinking…"状态比较嘈杂（由于它使用 Slack 的 Assistant API，显示期间还会短暂禁用输入框）。禁用它只会抑制该指示器——消息投递及其他一切均不受影响。该标志是通用的，因此同一个键对每个平台都有效。
 
 ### 网关重启后的会话恢复
 

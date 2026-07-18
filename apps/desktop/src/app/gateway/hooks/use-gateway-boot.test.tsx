@@ -68,7 +68,9 @@ class FakeWebSocket {
   }
 
   private emit(type: string, ev: unknown) {
-    for (const fn of this.listeners[type] ?? []) fn(ev)
+    for (const fn of this.listeners[type] ?? []) {
+      fn(ev)
+    }
   }
 }
 
@@ -95,6 +97,7 @@ function fakeDesktop() {
     })),
     onBootProgress: vi.fn(() => () => undefined),
     onBackendExit: vi.fn(() => () => undefined),
+    onConnectionApplied: vi.fn(() => () => undefined),
     onPowerResume: vi.fn(() => () => undefined),
     onWindowStateChanged: vi.fn(() => () => undefined),
     touchBackend: vi.fn(async () => undefined),
@@ -189,7 +192,7 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
     // After ~45s waitForHermes gives up and getConnection rejects → boot()
     // catch → failDesktopBoot → the BootFailureOverlay recovery surface.
     await act(async () => {
-      rejectConn(new Error('Moor backend did not become ready: timeout'))
+      rejectConn(new Error('Hermes backend did not become ready: timeout'))
       await vi.advanceTimersByTimeAsync(0)
     })
 
@@ -250,9 +253,11 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
     FakeWebSocket.mode = 'fail'
     act(() => FakeWebSocket.instances[0].drop())
     await flushAsync()
+
     for (let i = 0; i < 8; i += 1) {
       await advanceBackoff()
     }
+
     expect($desktopBoot.get().error).toBeTruthy()
 
     // The remote comes back: next reconnect attempt opens.

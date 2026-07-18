@@ -3,12 +3,12 @@
 Bootstrap a video production kanban from a structured plan JSON.
 
 Reads a plan.json describing the team + brief, expands templates from
-../assets/, and writes a setup.sh that creates Moor profiles and fires the
+../assets/, and writes a setup.sh that creates Hermes profiles and fires the
 initial kanban task.
 
 Profile-config patching, SOUL.md-per-profile, TEAM.md task-graph convention,
 and the `hermes kanban create --workspace dir:` initial-task pattern are
-adapted from alt-glitch's Moor inc./kanban-video-pipeline.
+adapted from alt-glitch's NousResearch/kanban-video-pipeline.
 
 Usage:
     bootstrap_pipeline.py plan.json [--out setup.sh]
@@ -98,13 +98,13 @@ def validate_plan(plan: dict) -> list[str]:
                           "responsibilities"]:
                     if k not in t:
                         errors.append(f"team[{i}] missing {k}")
-                # Profile name must match Moor's regex (lowercase
+                # Profile name must match Hermes's regex (lowercase
                 # alphanumeric + hyphens + underscores, up to 64 chars).
                 if "profile" in t:
                     if not PROFILE_NAME_RE.match(t["profile"]):
                         errors.append(
                             f"team[{i}].profile {t['profile']!r} must match "
-                            f"[a-z0-9][a-z0-9_-]{{0,63}} per Moor profile rules"
+                            f"[a-z0-9][a-z0-9_-]{{0,63}} per Hermes profile rules"
                         )
                     if t["profile"] in seen_profiles:
                         errors.append(
@@ -311,12 +311,12 @@ def render_team_md(plan: dict) -> str:
         "",
         "## Per-task workspace requirement",
         "",
-        f"All `kanban_create` calls MUST pass:",
-        f"```",
-        f'workspace_kind="dir"',
+        "All `kanban_create` calls MUST pass:",
+        "```",
+        'workspace_kind="dir"',
         f'workspace_path="$HOME/projects/video-pipeline/{plan["slug"]}"',
         f'tenant="{plan["tenant"]}"',
-        f"```",
+        "```",
     ])
     return "\n".join(lines)
 

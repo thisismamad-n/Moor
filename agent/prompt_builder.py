@@ -7,6 +7,7 @@ assemble pieces, then combines them with memory and ephemeral prompts.
 import json
 import logging
 import os
+import sys
 import threading
 import contextvars
 from collections import OrderedDict
@@ -17,6 +18,8 @@ from typing import Optional
 
 from agent.runtime_cwd import resolve_agent_cwd
 from agent.skill_utils import (
+    EXCLUDED_SKILL_DIRS,
+    SKILL_SUPPORT_DIRS,
     extract_skill_conditions,
     extract_skill_description,
     get_all_skills_dirs,
@@ -25,6 +28,7 @@ from agent.skill_utils import (
     parse_frontmatter,
     skill_matches_environment,
     skill_matches_platform,
+    skill_matches_platform_list,
 )
 from utils import atomic_json_write
 
@@ -75,11 +79,11 @@ def _find_git_root(start: Path) -> Optional[Path]:
     return None
 
 
-_HERMES_MD_NAMES = (".hermes.md", "MOOR.md")
+_HERMES_MD_NAMES = (".hermes.md", "HERMES.md")
 
 
 def _find_hermes_md(cwd: Path) -> Optional[Path]:
-    """Discover the nearest ``.hermes.md`` or ``MOOR.md``.
+    """Discover the nearest ``.hermes.md`` or ``HERMES.md``.
 
     Search order: *cwd* first, then each parent directory up to (and
     including) the git repository root.  Returns the first match, or
@@ -88,12 +92,15 @@ def _find_hermes_md(cwd: Path) -> Optional[Path]:
     stop_at = _find_git_root(cwd)
     current = cwd.resolve()
 
-    for directory in [current, *current.parents]:
+    # When there is no git root, only check cwd itself – walking parents
+    # could pick up a .hermes.md planted in /tmp, /home, etc.
+    search_dirs = [current, *current.parents] if stop_at else [current]
+
+    for directory in search_dirs:
         for name in _HERMES_MD_NAMES:
             candidate = directory / name
             if candidate.is_file():
                 return candidate
-        # Stop walking at the git root (or filesystem root).
         if stop_at and directory == stop_at:
             break
     return None
@@ -107,6 +114,7 @@ def _strip_yaml_frontmatter(content: str) -> str:
     strip it so only the human-readable markdown body is injected into the
     system prompt.
     """
+    content = content.lstrip("\ufeff")  # tolerate UTF-8 BOM (Windows editors)
     if content.startswith("---"):
         end = content.find("\n---", 3)
         if end != -1:
@@ -121,7 +129,7 @@ def _strip_yaml_frontmatter(content: str) -> str:
 # =========================================================================
 
 DEFAULT_AGENT_IDENTITY = (
-    "You are Moor Agent, an intelligent AI assistant created by Nous Research. "
+    "You are Hermes Agent, an intelligent AI assistant created by Nous Research. "
     "You are helpful, knowledgeable, and direct. You assist users with a wide "
     "range of tasks including answering questions, writing and editing code, "
     "analyzing information, creative work, and executing actions via your tools. "
@@ -131,10 +139,10 @@ DEFAULT_AGENT_IDENTITY = (
 )
 
 HERMES_AGENT_HELP_GUIDANCE = (
-    "You run on Moor Agent (by Nous Research). When the user needs help with "
-    "Moor itself — configuring, setting up, using, extending, or troubleshooting "
+    "You run on Hermes Agent (by Nous Research). When the user needs help with "
+    "Hermes itself — configuring, setting up, using, extending, or troubleshooting "
     "it — or when you need to understand your own features, tools, or capabilities, "
-    "the documentation at https://hermes-agent.Moor inc..com/docs is your "
+    "the documentation at https://hermes-agent.nousresearch.com/docs is your "
     "authoritative reference and always holds the latest, most up-to-date "
     "information. Load the `hermes-agent` skill with skill_view(name='hermes-agent') "
     "for additional guidance and proven workflows, but treat the docs as the source "
@@ -243,10 +251,17 @@ KANBAN_GUIDANCE = (
     "- **Workspace.** `cd $HERMES_KANBAN_WORKSPACE` first. For a `worktree` kind "
     "with no `.git`, `git worktree add <path> "
     "${HERMES_KANBAN_BRANCH:-wt/$HERMES_KANBAN_TASK}` from the main repo, then "
-    "cd there.\n"
+    "cd there. For a project-linked task the workspace is a fresh "
+    "`<repo>/.worktrees/<task-id>` and `$HERMES_KANBAN_BRANCH` a deterministic "
+    "`<project-slug>/<task-id>` — the main repo is two levels up, so run "
+    "`git worktree add` from there.\n"
     "- **Deliverables.** Files a human wants go in "
     "`kanban_complete(artifacts=[<absolute paths>])` (top-level param; paths in "
     "`metadata` are NOT uploaded). Files must exist at completion.\n"
+    "- **Attachments.** Attach real downloadable artifacts instead of pasting "
+    "links in comments: `kanban_attach` (base64) or `kanban_attach_url` "
+    "(server-side public http(s) fetch); 25 MB cap, `kanban_attachments` "
+    "lists them. Workers may only attach to their own task.\n"
     "- **Created cards.** List ids in `kanban_complete(created_cards=[...])` "
     "ONLY when captured from a successful `kanban_create` return — never invent "
     "or paste ids; the kernel rejects the completion on any phantom id.\n"
@@ -593,7 +608,7 @@ def format_steer_marker(steer_text: str) -> str:
 
 STEER_CHANNEL_NOTE = (
     "## Mid-turn user steering\n"
-    "While you work, the user can send an out-of-band message that Moor "
+    "While you work, the user can send an out-of-band message that Hermes "
     "appends to the end of a tool result, wrapped exactly as:\n"
     f"{STEER_MARKER_OPEN}\n<their message>\n{STEER_MARKER_CLOSE}\n"
     "Text inside that marker is a genuine message from the user delivered "
@@ -614,7 +629,12 @@ DEVELOPER_ROLE_MODELS = ("gpt-5", "codex")
 PLATFORM_HINTS = {
     "whatsapp": (
         "You are on a text messaging communication platform, WhatsApp. "
-        "Please do not use markdown as it does not render. "
+        "Standard markdown (**bold**, *italic*, ~~strike~~, # headers, "
+        "`code`, ```code blocks```, [links](url)) is auto-converted to "
+        "WhatsApp's native syntax (*bold*, _italic_, ~strike~, monospace) — "
+        "feel free to write in markdown, and use bullet lists ('- item') "
+        "freely. Tables are NOT supported — prefer bullet lists or labeled "
+        "key:value pairs. "
         "You can send media files natively: to deliver a file to the user, "
         "include MEDIA:/absolute/path/to/file in your response. The file "
         "will be sent as a native WhatsApp attachment — images (.jpg, .png, "
@@ -644,19 +664,7 @@ PLATFORM_HINTS = {
         "Standard Markdown is automatically converted to Telegram formatting. "
         "Supported: **bold**, *italic*, ~~strikethrough~~, ||spoiler||, "
         "`inline code`, ```code blocks```, [links](url), and ## headers. "
-        "Telegram now supports rich Markdown, so lean into it: whenever it "
-        "makes the answer clearer or easier to scan, actively reach for real "
-        "Markdown tables (pipe `| col | col |` syntax), bullet and numbered "
-        "lists, task lists (`- [ ]` / `- [x]`), headings, nested blockquotes, "
-        "collapsible details, footnotes/references, math/formulas (`$...$`, "
-        "`$$...$$`), underline, subscript/superscript, marked (highlighted) "
-        "text, and anchors. Default to structured formatting over dense "
-        "paragraphs for any comparison, set of steps, key/value summary, or "
-        "tabular data. Prefer real Markdown tables and task lists over "
-        "hand-built bullet substitutes when presenting structured data; these "
-        "degrade gracefully (tables become readable bullet groups) when rich "
-        "rendering is unavailable, but advanced constructs like math and "
-        "collapsible details may render as plain source text in that case. "
+        "Prefer bullet lists and labeled key:value pairs for structured data. "
         "You can send media files natively: to deliver a file to the user, "
         "include MEDIA:/absolute/path/to/file in your response. Images "
         "(.png, .jpg, .webp) appear as photos, audio (.ogg) sends as voice "
@@ -679,7 +687,11 @@ PLATFORM_HINTS = {
     ),
     "signal": (
         "You are on a text messaging communication platform, Signal. "
-        "Please do not use markdown as it does not render. "
+        "Standard markdown (**bold**, *italic*, ~~strike~~, # headers, "
+        "`code`, ```code blocks```) is auto-converted to Signal's native "
+        "rich formatting — feel free to write in markdown, and use bullet "
+        "lists ('- item') freely (they render as • bullets). Tables are NOT "
+        "supported — prefer bullet lists or labeled key:value pairs. "
         "You can send media files natively: to deliver a file to the user, "
         "include MEDIA:/absolute/path/to/file in your response. Images "
         "(.png, .jpg, .webp) appear as photos, audio as attachments, and other "
@@ -709,7 +721,35 @@ PLATFORM_HINTS = {
         "(those are only intercepted on messaging platforms like Telegram, "
         "Discord, Slack, etc.; on the CLI they render as literal text). "
         "When referring to a file you created or changed, just state its "
-        "absolute path in plain text; the user can open it from there."
+        "absolute path in plain text; the user can open it from there. "
+        "Cron jobs scheduled from this session are LOCAL-ONLY: their output is "
+        "saved (viewable via cronjob action='list') but is NOT delivered back "
+        "into this terminal — there is no live-delivery channel here. If the "
+        "user wants to be notified when a job runs, the job's `deliver` must "
+        "target a gateway-connected messaging platform (e.g. deliver='telegram' "
+        "or 'all'). Do not promise the user that a deliver='origin' or "
+        "default-deliver cron job will message them in this session."
+    ),
+    "tui": (
+        "You are running in the Hermes terminal UI (TUI). "
+        "Cron jobs scheduled from this session are LOCAL-ONLY: their output is "
+        "saved (viewable via cronjob action='list') but is NOT delivered back "
+        "into this TUI session — there is no live-delivery channel here. If the "
+        "user wants to be notified when a job runs, the job's `deliver` must "
+        "target a gateway-connected messaging platform (e.g. deliver='telegram' "
+        "or 'all'). Do not promise the user that a deliver='origin' or "
+        "default-deliver cron job will message them in this session."
+    ),
+    "desktop": (
+        "You are chatting inside the Hermes desktop app — a graphical chat "
+        "surface, not a terminal. Use markdown freely: it renders with full "
+        "GitHub flavor (tables, code blocks with syntax highlighting, math "
+        "via $...$, task lists, blockquote callouts). "
+        "You can deliver files natively — include MEDIA:/absolute/path/to/file "
+        "in your response. Images (.png, .jpg, .webp) appear inline, audio and "
+        "video play inline, and other files arrive as download links. You can "
+        "also include image URLs in markdown format ![alt](url) and they "
+        "render inline as photos."
     ),
     "sms": (
         "You are communicating via SMS. Keep responses concise and use plain text "
@@ -805,7 +845,7 @@ PLATFORM_HINTS = {
         "brief and natural."
     ),
     "webui": (
-        "You are in the Moor WebUI, a browser-based chat interface. "
+        "You are in the Hermes WebUI, a browser-based chat interface. "
         "Full Markdown rendering is supported — headings, bold, italic, code "
         "blocks, tables, math (LaTeX), and Mermaid diagrams all render natively. "
         "To display local or remote media/files inline, include "
@@ -817,6 +857,27 @@ PLATFORM_HINTS = {
         "Use MEDIA:/absolute/path instead."
     ),
 }
+
+# Telegram rich-messages extension — only injected when the user has opted in
+# to ``platforms.telegram.extra.rich_messages: true``.  The base
+# PLATFORM_HINTS["telegram"] covers MarkdownV2-compatible constructs; this
+# extension adds the Bot API 10.1 rich-Markdown guidance (tables, task lists,
+# collapsible details, math, etc.).
+TELEGRAM_RICH_MESSAGES_HINT = (
+    "Telegram now supports rich Markdown, so lean into it: whenever it "
+    "makes the answer clearer or easier to scan, actively reach for real "
+    "Markdown tables (pipe `| col | col |` syntax), bullet and numbered "
+    "lists, task lists (`- [ ]` / `- [x]`), headings, nested blockquotes, "
+    "collapsible details, footnotes/references, math/formulas (`$...$`, "
+    "`$$...$$`), underline, subscript/superscript, marked (highlighted) "
+    "text, and anchors. Default to structured formatting over dense "
+    "paragraphs for any comparison, set of steps, key/value summary, or "
+    "tabular data. Prefer real Markdown tables and task lists over "
+    "hand-built bullet substitutes when presenting structured data; these "
+    "degrade gracefully (tables become readable bullet groups) when rich "
+    "rendering is unavailable, but advanced constructs like math and "
+    "collapsible details may render as plain source text in that case. "
+)
 
 # ---------------------------------------------------------------------------
 # Environment hints — execution-environment awareness for the agent.
@@ -838,7 +899,7 @@ WSL_ENVIRONMENT_HINT = (
 
 # Non-local terminal backends that run commands (and therefore every file
 # tool: read_file, write_file, patch, search_files) inside a separate
-# container / remote host rather than on the machine where Moor itself
+# container / remote host rather than on the machine where Hermes itself
 # runs. For these backends, host info (Windows/Linux/macOS, $HOME, cwd) is
 # misleading — the agent should only see the machine it can actually touch.
 _REMOTE_TERMINAL_BACKENDS = frozenset({
@@ -865,7 +926,7 @@ _BACKEND_FALLBACK_DESCRIPTIONS: dict[str, str] = {
 # on the first prompt build of a session. Keyed by (env_type, cwd_hint) so
 # a mid-process backend switch rebuilds the string. Kept in-module (not on
 # disk) because the probe captures live backend state that may change
-# across Moor restarts.
+# across Hermes restarts.
 _BACKEND_PROBE_CACHE: dict[tuple[str, str], str] = {}
 
 
@@ -886,7 +947,7 @@ def _probe_remote_backend(env_type: str) -> str | None:
     Returns a pre-formatted multi-line string describing the backend's OS,
     $HOME, cwd, and user — or None if the probe failed. Result is cached
     per process. Used only for non-local backends where the agent's tools
-    operate on a different machine than the host Moor runs on.
+    operate on a different machine than the host Hermes runs on.
     """
     cwd_hint = os.getenv("TERMINAL_CWD", "")
     cache_key = (env_type, cwd_hint)
@@ -897,8 +958,7 @@ def _probe_remote_backend(env_type: str) -> str | None:
     try:
         # Import locally: tools/ imports are heavy and only relevant when a
         # non-local backend is actually configured.
-        from tools.terminal_tool import _get_env_config  # type: ignore
-        from tools.environments import get_environment  # type: ignore
+        from tools.terminal_tool import _create_environment, _get_env_config  # type: ignore
     except Exception as e:
         logger.debug("Backend probe unavailable (import failed): %s", e)
         _BACKEND_PROBE_CACHE[cache_key] = ""
@@ -906,7 +966,59 @@ def _probe_remote_backend(env_type: str) -> str | None:
 
     try:
         config = _get_env_config()
-        env = get_environment(config)
+        # Build the environment the same way tools/terminal_tool.py does for a
+        # live command: select the backend image, then assemble ssh/container
+        # config from the env-derived dict. (There is no `get_environment`
+        # factory — the real entry point is `_create_environment`.)
+        if env_type == "docker":
+            image = config.get("docker_image", "")
+        elif env_type == "singularity":
+            image = config.get("singularity_image", "")
+        elif env_type == "modal":
+            image = config.get("modal_image", "")
+        elif env_type == "daytona":
+            image = config.get("daytona_image", "")
+        else:
+            image = ""
+
+        ssh_config = None
+        if env_type == "ssh":
+            ssh_config = {
+                "host": config.get("ssh_host", ""),
+                "user": config.get("ssh_user", ""),
+                "port": config.get("ssh_port", 22),
+                "key": config.get("ssh_key", ""),
+                "persistent": config.get("ssh_persistent", False),
+            }
+
+        container_config = None
+        if env_type in {"docker", "singularity", "modal", "daytona"}:
+            container_config = {
+                "container_cpu": config.get("container_cpu", 1),
+                "container_memory": config.get("container_memory", 5120),
+                "container_disk": config.get("container_disk", 51200),
+                "container_persistent": config.get("container_persistent", True),
+                "modal_mode": config.get("modal_mode", "auto"),
+                "docker_volumes": config.get("docker_volumes", []),
+                "docker_mount_cwd_to_workspace": config.get("docker_mount_cwd_to_workspace", False),
+                "docker_forward_env": config.get("docker_forward_env", []),
+                "docker_env": config.get("docker_env", {}),
+                "docker_run_as_host_user": config.get("docker_run_as_host_user", False),
+                "docker_extra_args": config.get("docker_extra_args", []),
+                "docker_persist_across_processes": config.get("docker_persist_across_processes", True),
+                "docker_orphan_reaper": config.get("docker_orphan_reaper", True),
+            }
+
+        env = _create_environment(
+            env_type=env_type,
+            image=image,
+            cwd=config.get("cwd", ""),
+            timeout=config.get("timeout", 180),
+            ssh_config=ssh_config,
+            container_config=container_config,
+            task_id="prompt-backend-probe",
+            host_cwd=config.get("host_cwd"),
+        )
         # Single-line POSIX probe — works on any Unixy backend. Wrapped in
         # `2>/dev/null` so a missing binary doesn't pollute the output.
         probe_cmd = (
@@ -1025,8 +1137,8 @@ def build_environment_hints() -> str:
                 f"Terminal backend: {backend}. Your `terminal`, `read_file`, "
                 f"`write_file`, `patch`, and `search_files` tools all operate "
                 f"inside this {backend} environment — NOT on the machine "
-                f"where Moor itself is running. The host OS, home, and cwd "
-                f"of the Moor process are irrelevant; only the following "
+                f"where Hermes itself is running. The host OS, home, and cwd "
+                f"of the Hermes process are irrelevant; only the following "
                 f"backend state matters:\n{probe}"
             )
         else:
@@ -1036,7 +1148,7 @@ def build_environment_hints() -> str:
             hints.append(
                 f"Terminal backend: {backend}. Your `terminal`, `read_file`, "
                 f"`write_file`, `patch`, and `search_files` tools all operate "
-                f"inside {description} — NOT on the machine where Moor "
+                f"inside {description} — NOT on the machine where Hermes "
                 f"itself runs. The backend probe didn't respond at "
                 f"prompt-build time, so the sandbox's current user, $HOME, "
                 f"and working directory are unknown from here. If you need "
@@ -1044,26 +1156,10 @@ def build_environment_hints() -> str:
                 f"`uname -a && whoami && pwd`."
             )
 
-    # Moor desktop GUI — any agent running under the desktop app should know
-    # it. HERMES_DESKTOP marks the backend powering the chat; HERMES_DESKTOP_TERMINAL
-    # marks a hermes launched in the embedded terminal pane. Both set by main.cjs.
-    _truthy = ("1", "true", "yes")
-    _in_desktop = (os.getenv("HERMES_DESKTOP") or "").strip().lower() in _truthy
-    _in_desktop_term = (os.getenv("HERMES_DESKTOP_TERMINAL") or "").strip().lower() in _truthy
-    if _in_desktop or _in_desktop_term:
-        _desktop_hint = "Runtime surface: you're running inside the Moor desktop GUI app."
-        if _in_desktop_term:
-            _desktop_hint += (
-                " You're in its embedded terminal pane, beside the GUI chat — the user can "
-                "select your output (⌥-drag on macOS, Shift-drag elsewhere) and press "
-                "⌘/Ctrl+L to send it to the chat composer."
-            )
-        hints.append(_desktop_hint)
-
     if is_wsl():
         hints.append(WSL_ENVIRONMENT_HINT)
 
-    # Embedder-supplied environment description. Lets a host that wraps Moor
+    # Embedder-supplied environment description. Lets a host that wraps Hermes
     # (e.g. a sandbox runner / managed platform) explain the environment the
     # agent is running in — proxy, credential handling, mount layout — without
     # forking the identity slot (SOUL.md). Read once at prompt-build time, so
@@ -1193,13 +1289,26 @@ def clear_skills_system_prompt_cache(*, clear_snapshot: bool = False) -> None:
 def _build_skills_manifest(skills_dir: Path) -> dict[str, list[int]]:
     """Build an mtime/size manifest of all SKILL.md and DESCRIPTION.md files."""
     manifest: dict[str, list[int]] = {}
-    for filename in ("SKILL.md", "DESCRIPTION.md"):
-        for path in iter_skill_index_files(skills_dir, filename):
+    skills_dir_str = str(skills_dir)
+    base = os.path.join(skills_dir_str, "")
+    prefix_len = len(base)
+    for root, dirs, files in os.walk(skills_dir_str, followlinks=True):
+        has_skill_md = "SKILL.md" in files
+        dirs[:] = [
+            d
+            for d in dirs
+            if d not in EXCLUDED_SKILL_DIRS
+            and not (has_skill_md and d in SKILL_SUPPORT_DIRS)
+        ]
+        for filename in ("SKILL.md", "DESCRIPTION.md"):
+            if filename not in files:
+                continue
+            path = os.path.join(root, filename)
             try:
-                st = path.stat()
+                st = os.stat(path)
             except OSError:
                 continue
-            manifest[str(path.relative_to(skills_dir))] = [st.st_mtime_ns, st.st_size]
+            manifest[path[prefix_len:]] = [st.st_mtime_ns, st.st_size]
     return manifest
 
 
@@ -1331,6 +1440,22 @@ def _skill_should_show(
     return True
 
 
+def _current_session_platform_hint() -> str:
+    """Return the active platform without importing the gateway package on CLI startup."""
+    platform = os.environ.get("HERMES_PLATFORM") or os.environ.get("HERMES_SESSION_PLATFORM")
+    if platform:
+        return platform
+
+    session_context = sys.modules.get("gateway.session_context")
+    get_session_env = getattr(session_context, "get_session_env", None) if session_context else None
+    if get_session_env is None:
+        return ""
+    try:
+        return get_session_env("HERMES_SESSION_PLATFORM") or ""
+    except Exception:
+        return ""
+
+
 def build_skills_system_prompt(
     available_tools: "set[str] | None" = None,
     available_toolsets: "set[str] | None" = None,
@@ -1365,15 +1490,10 @@ def build_skills_system_prompt(
     # ── Layer 1: in-process LRU cache ─────────────────────────────────
     # Include the resolved platform so per-platform disabled-skill lists
     # produce distinct cache entries (gateway serves multiple platforms).
-    from gateway.session_context import get_session_env
-    _platform_hint = (
-        os.environ.get("HERMES_PLATFORM")
-        or get_session_env("HERMES_SESSION_PLATFORM")
-        or ""
-    )
+    _platform_hint = _current_session_platform_hint()
     disabled = get_disabled_skill_names(_platform_hint or None)
     cache_key = (
-        str(skills_dir.resolve()),
+        str(skills_dir),
         tuple(str(d) for d in external_dirs),
         tuple(sorted(str(t) for t in (available_tools or set()))),
         tuple(sorted(str(ts) for ts in (available_toolsets or set()))),
@@ -1402,7 +1522,7 @@ def build_skills_system_prompt(
             category = entry.get("category") or "general"
             frontmatter_name = entry.get("frontmatter_name") or skill_name
             platforms = entry.get("platforms") or []
-            if not skill_matches_platform({"platforms": platforms}):
+            if not skill_matches_platform_list(platforms):
                 continue
             if frontmatter_name in disabled or skill_name in disabled:
                 continue
@@ -1573,7 +1693,7 @@ def build_skills_system_prompt(
             "for tasks like code review, planning, and testing — load them even for tasks you "
             "already know how to do, because the skill defines how it should be done here.\n"
             "Whenever the user asks you to configure, set up, install, enable, disable, modify, "
-            "or troubleshoot Moor Agent itself — its CLI, config, models, providers, tools, "
+            "or troubleshoot Hermes Agent itself — its CLI, config, models, providers, tools, "
             "skills, voice, gateway, plugins, or any feature — load the `hermes-agent` skill "
             "first. It has the actual commands (e.g. `hermes config set …`, `hermes tools`, "
             "`hermes setup`) so you don't have to guess or invent workarounds.\n"
@@ -1742,7 +1862,7 @@ def load_soul_md(context_length: Optional[int] = None) -> Optional[str]:
 
 
 def _load_hermes_md(cwd_path: Path, context_length: Optional[int] = None) -> str:
-    """.hermes.md / MOOR.md — walk to git root."""
+    """.hermes.md / HERMES.md — walk to git root."""
     hermes_md_path = _find_hermes_md(cwd_path)
     if not hermes_md_path:
         return ""
@@ -1842,11 +1962,12 @@ def build_context_files_prompt(
     cwd: Optional[str] = None,
     skip_soul: bool = False,
     context_length: Optional[int] = None,
+    allow_install_tree_fallback: bool = False,
 ) -> str:
     """Discover and load context files for the system prompt.
 
     Priority (first found wins — only ONE project context type is loaded):
-      1. .hermes.md / MOOR.md  (walk to git root)
+      1. .hermes.md / HERMES.md  (walk to git root)
       2. AGENTS.md / agents.md   (cwd only)
       3. CLAUDE.md / claude.md   (cwd only)
       4. .cursorrules / .cursor/rules/*.mdc  (cwd only)
@@ -1863,17 +1984,43 @@ def build_context_files_prompt(
     """
     if cwd is None:
         cwd = os.getcwd()
+        cwd_is_fallback = True
+    else:
+        cwd_is_fallback = False
 
     cwd_path = Path(cwd).resolve()
     sections = []
 
-    # Priority-based project context: first match wins
-    project_context = (
-        _load_hermes_md(cwd_path, context_length)
-        or _load_agents_md(cwd_path, context_length)
-        or _load_claude_md(cwd_path, context_length)
-        or _load_cursorrules(cwd_path, context_length)
-    )
+    # Never let a FALLBACK-picked directory inside the Hermes install/source
+    # tree gain system-prompt authority. A backend that self-spawns into that
+    # tree (the desktop app default) would otherwise load this repo's
+    # contributor AGENTS.md as authoritative project context (#64590). An
+    # explicitly configured cwd is honored verbatim — the Hermes tree is a
+    # legitimate workspace when the user deliberately points a session at it —
+    # and CLI-style surfaces pass allow_install_tree_fallback=True because
+    # their launch dir IS the user's shell cwd (developing Hermes in-tree).
+    from agent.runtime_cwd import _is_install_tree
+
+    if (
+        cwd_is_fallback
+        and not allow_install_tree_fallback
+        and _is_install_tree(cwd_path)
+    ):
+        logger.warning(
+            "skipping project-context discovery: working-directory resolution "
+            "fell back to the Hermes install tree (%s) — set terminal.cwd to "
+            "your project directory",
+            cwd_path,
+        )
+        project_context = ""
+    else:
+        # Priority-based project context: first match wins
+        project_context = (
+            _load_hermes_md(cwd_path, context_length)
+            or _load_agents_md(cwd_path, context_length)
+            or _load_claude_md(cwd_path, context_length)
+            or _load_cursorrules(cwd_path, context_length)
+        )
     if project_context:
         sections.append(project_context)
 

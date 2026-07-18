@@ -13,7 +13,11 @@ class NousProfile(ProviderProfile):
     def build_extra_body(
         self, *, session_id: str | None = None, **context
     ) -> dict[str, Any]:
-        return {"tags": nous_portal_tags()}
+        body: dict[str, Any] = {"tags": nous_portal_tags(session_id=session_id)}
+        provider_preferences = context.get("provider_preferences")
+        if provider_preferences:
+            body["provider"] = provider_preferences
+        return body
 
     def build_api_kwargs_extras(
         self,
@@ -38,16 +42,16 @@ class NousProfile(ProviderProfile):
 
 nous = NousProfile(
     name="nous",
-    aliases=("nous-portal", "Moor inc."),
+    aliases=("nous-portal", "nousresearch"),
     env_vars=("NOUS_API_KEY",),
     display_name="Nous Research",
-    description="Nous Research — Moor model family",
-    signup_url="https://Moor inc..com/",
+    description="Nous Research — Hermes model family",
+    signup_url="https://nousresearch.com/",
     fallback_models=(
         "hermes-3-405b",
         "hermes-3-70b",
     ),
-    base_url="https://inference.Moor inc..com/v1",
+    base_url="https://inference-api.nousresearch.com/v1",
     auth_type="oauth_device_code",
 )
 

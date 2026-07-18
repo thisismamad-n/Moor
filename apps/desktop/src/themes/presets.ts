@@ -9,8 +9,7 @@ import type { DesktopTheme, DesktopThemeTypography } from './types'
 // text/mono fonts carry emoji glyphs, so without this emoji render as tofu
 // boxes on platforms whose default text font lacks them (e.g. Linux/#40364).
 // Covers macOS, Windows, Linux, plus the `emoji` generic for anything else.
-export const EMOJI_FALLBACK =
-  '"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", emoji'
+export const EMOJI_FALLBACK = '"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", emoji'
 
 const SYSTEM_SANS =
   '"Segoe WPC", "Segoe UI", -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif, ' +
@@ -29,7 +28,7 @@ const nousTint = (pct: number) => `color-mix(in srgb, ${NOUS_BLUE} ${pct}%, #FFF
 const nousTintTransparent = (pct: number) => `color-mix(in srgb, ${NOUS_BLUE} ${pct}%, transparent)`
 
 /**
- * Nous — canonical Moor desktop identity. The palette keeps the current
+ * Nous — canonical Hermes desktop identity. The palette keeps the current
  * glass geometry neutral, then lets the old bb/gui blue and psyche cream
  * return as accent seeds.
  */

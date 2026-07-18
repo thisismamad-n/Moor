@@ -13,7 +13,7 @@ from hermes_cli import main as hermes_main
 # ---------------------------------------------------------------------------
 # Module isolation: _import_cli() wipes tools.* / cli / run_agent from
 # sys.modules so it can re-import cli fresh.  Without cleanup the wiped
-# modules leak into subsequent tests on the same xdist worker, breaking
+# modules leak into subsequent tests, breaking
 # mock patches that target "tools.file_tools._get_file_ops" etc.
 # ---------------------------------------------------------------------------
 
@@ -344,7 +344,7 @@ def test_model_flow_nous_does_not_restore_stale_custom_api_key(tmp_path, monkeyp
     monkeypatch.setattr(
         "hermes_cli.auth.resolve_nous_runtime_credentials",
         lambda *args, **kwargs: {
-            "base_url": "https://inference-api.Moor inc..com/v1",
+            "base_url": "https://inference-api.nousresearch.com/v1",
             "api_key": "nous-key",
         },
     )
@@ -373,7 +373,7 @@ def test_model_flow_nous_does_not_restore_stale_custom_api_key(tmp_path, monkeyp
     model = config.get("model")
     assert model["provider"] == "nous"
     assert model["default"] == selected_model
-    assert model["base_url"] == "https://inference-api.Moor inc..com/v1"
+    assert model["base_url"] == "https://inference-api.nousresearch.com/v1"
     assert "api_key" not in model
     assert "api_mode" not in model
 
@@ -818,8 +818,8 @@ def test_cmd_model_forwards_nous_login_tls_options(monkeypatch):
 
     hermes_main.cmd_model(
         SimpleNamespace(
-            portal_url="https://portal.Moor inc..com",
-            inference_url="https://inference.Moor inc..com/v1",
+            portal_url="https://portal.nousresearch.com",
+            inference_url="https://inference.nousresearch.com/v1",
             client_id="hermes-local",
             scope="openid profile",
             no_browser=True,
@@ -830,8 +830,8 @@ def test_cmd_model_forwards_nous_login_tls_options(monkeypatch):
     )
 
     assert captured == {
-        "portal_url": "https://portal.Moor inc..com",
-        "inference_url": "https://inference.Moor inc..com/v1",
+        "portal_url": "https://portal.nousresearch.com",
+        "inference_url": "https://inference.nousresearch.com/v1",
         "client_id": "hermes-local",
         "scope": "openid profile",
         "no_browser": True,

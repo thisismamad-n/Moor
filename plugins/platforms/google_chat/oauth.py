@@ -379,13 +379,14 @@ def install_deps() -> bool:
 
     print("Installing Google Chat OAuth dependencies...")
     try:
-        subprocess.check_call(
-            [sys.executable, "-m", "pip", "install", "--quiet"] + _REQUIRED_PACKAGES,
-            stdout=subprocess.DEVNULL,
-        )
+        from hermes_cli.tools_config import _pip_install
+
+        result = _pip_install(["--quiet"] + _REQUIRED_PACKAGES)
+        if result.returncode != 0:
+            raise RuntimeError((result.stderr or "install failed").strip()[:300])
         print("Dependencies installed.")
         return True
-    except subprocess.CalledProcessError as exc:
+    except Exception as exc:
         print(f"ERROR: Failed to install dependencies: {exc}")
         print("Or install via the optional extra:")
         print("  pip install 'hermes-agent[google_chat]'")
@@ -628,7 +629,7 @@ def revoke(email: Optional[str] = None) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Google Chat user-OAuth setup for Moor (native attachment delivery)"
+        description="Google Chat user-OAuth setup for Hermes (native attachment delivery)"
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--check", action="store_true",

@@ -1,6 +1,6 @@
 """Shared logic for the /codex-runtime slash command.
 
-Toggles `model.openai_runtime` between "auto" (= chat_completions, Moor'
+Toggles `model.openai_runtime` between "auto" (= chat_completions, Hermes'
 default) and "codex_app_server" (= hand turns to a codex subprocess).
 
 Both CLI (cli.py) and gateway (gateway/run.py) call into this module so the
@@ -144,8 +144,17 @@ def apply(
             codex_version=ver if ok else None,
         )
 
-    # No change requested
-    if new_value == current:
+    # No-config-change paths. For `auto` we return immediately — disabling
+    # doesn't touch ~/.codex/. For `codex_app_server`, we fall through to
+    # the migration block below: the config value is already correct, but
+    # the world state (managed block in ~/.codex/config.toml, hermes-tools
+    # MCP callback, plugin discovery) may be stale or missing — common
+    # footgun when users pre-set `openai_runtime: codex_app_server` in
+    # config.yaml without ever running the slash command. The migration is
+    # idempotent by design (it replaces its own managed block in place), so
+    # re-running is cheap and safe.
+    reapplying_enable = new_value == current == "codex_app_server"
+    if new_value == current and not reapplying_enable:
         return CodexRuntimeStatus(
             success=True,
             new_value=current,
@@ -172,29 +181,33 @@ def apply(
                 codex_version=None,
             )
 
-    set_runtime(config, new_value)
-    if persist_callback is not None:
-        try:
-            persist_callback(config)
-        except Exception as exc:
-            logger.exception("failed to persist openai_runtime change")
-            return CodexRuntimeStatus(
-                success=False,
-                new_value=new_value,
-                old_value=current,
-                message=f"updated config in memory but persist failed: {exc}",
-            )
+    if not reapplying_enable:
+        set_runtime(config, new_value)
+        if persist_callback is not None:
+            try:
+                persist_callback(config)
+            except Exception as exc:
+                logger.exception("failed to persist openai_runtime change")
+                return CodexRuntimeStatus(
+                    success=False,
+                    new_value=new_value,
+                    old_value=current,
+                    message=f"updated config in memory but persist failed: {exc}",
+                )
 
-    msg_lines = [
-        f"openai_runtime: {current} → {new_value}",
-    ]
+    if reapplying_enable:
+        msg_lines = [
+            f"openai_runtime already set to {current} — re-applying migration"
+        ]
+    else:
+        msg_lines = [f"openai_runtime: {current} → {new_value}"]
     if new_value == "codex_app_server":
         ok, ver = _check_binary_cached()
         if ok:
             msg_lines.append(f"codex CLI: {ver}")
-        # Auto-migrate Moor' MCP servers + Codex's installed curated
+        # Auto-migrate Hermes' MCP servers + Codex's installed curated
         # plugins into ~/.codex/config.toml so the spawned codex subprocess
-        # sees the same tool surface AND can call back into Moor for
+        # sees the same tool surface AND can call back into Hermes for
         # browser/web/delegate_task/vision/memory tools (#7 fix).
         # Failures are non-fatal — the runtime change still proceeds.
         try:
@@ -221,7 +234,7 @@ def apply(
                     f"Codex plugin discovery skipped: "
                     f"{mig_report.plugin_query_error}"
                 )
-            # Permissions + Moor tool callback are always-on production
+            # Permissions + Hermes tool callback are always-on production
             # bits the user benefits from knowing about.
             if mig_report.wrote_permissions_default:
                 msg_lines.append(
@@ -230,14 +243,14 @@ def apply(
                 )
             if "hermes-tools" in mig_report.migrated:
                 msg_lines.append(
-                    "Moor tool callback registered: codex can now use "
+                    "Hermes tool callback registered: codex can now use "
                     "web_search, web_extract, browser_*, vision_analyze, "
                     "image_generate, skill_view, skills_list, text_to_speech, "
                     "kanban_* (worker + orchestrator) via MCP."
                 )
                 msg_lines.append(
                     "  (delegate_task, memory, session_search, todo run "
-                    "only on the default Moor runtime — they need the "
+                    "only on the default Hermes runtime — they need the "
                     "agent loop context.)"
                 )
             msg_lines.append(f"  (config: {mig_report.target_path})")
@@ -248,14 +261,14 @@ def apply(
         msg_lines.append(
             "OpenAI/Codex turns now run through `codex app-server` "
             "(terminal/file ops/patching inside Codex; "
-            "Moor tools available via MCP callback)."
+            "Hermes tools available via MCP callback)."
         )
         msg_lines.append(
             "Effective on next session — current cached agent keeps "
             "the prior runtime to preserve prompt cache."
         )
     else:
-        msg_lines.append("OpenAI/Codex turns will use the default Moor runtime.")
+        msg_lines.append("OpenAI/Codex turns will use the default Hermes runtime.")
         msg_lines.append("Effective on next session.")
     return CodexRuntimeStatus(
         success=True,

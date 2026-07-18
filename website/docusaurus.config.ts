@@ -3,14 +3,14 @@ import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
-  title: 'Moor Agent',
+  title: 'Hermes Agent',
   tagline: 'The self-improving AI agent',
   favicon: 'img/favicon.ico',
 
-  url: 'https://hermes-agent.Moor inc..com',
+  url: 'https://hermes-agent.nousresearch.com',
   baseUrl: '/docs/',
 
-  organizationName: 'Moor inc.',
+  organizationName: 'NousResearch',
   projectName: 'hermes-agent',
 
   onBrokenLinks: 'warn',
@@ -62,6 +62,14 @@ const config: Config = {
           /^user-guide\/skills\/bundled\//,
           /^user-guide\/skills\/optional\//,
         ],
+        // Exact-or-prefix matching only (default is edit distance 1).
+        // With fuzzy distance 1, "keet" matched "meetings"/"keep" (one
+        // edit away after stemming), and multi-word typo queries against
+        // our ~14 MB index could stall the single-threaded search worker
+        // for 25s+, backing up every subsequent keystroke's search until
+        // the bar appeared dead. Distance 0 keeps "word or its extension"
+        // semantics (keet -> keet*) and removes the pathological scans.
+        fuzzyMatchingDistance: 0,
       }),
     ],
   ],
@@ -78,6 +86,12 @@ const config: Config = {
             from: '/guides/automation-templates',
             to: '/guides/automation-blueprints',
           },
+          {
+            // Moved when the Plugins subcategory was created under
+            // Developer Guide > Extending (docs restructure, July 2026)
+            from: '/guides/build-a-hermes-plugin',
+            to: '/developer-guide/plugins',
+          },
         ],
       },
     ],
@@ -90,7 +104,7 @@ const config: Config = {
         docs: {
           routeBasePath: '/',  // Docs at the root of /docs/
           sidebarPath: './sidebars.ts',
-          editUrl: 'https://github.com/Moor inc./hermes-agent/edit/main/website/',
+          editUrl: 'https://github.com/NousResearch/hermes-agent/edit/main/website/',
         },
         blog: false,
         theme: {
@@ -113,9 +127,9 @@ const config: Config = {
       },
     },
     navbar: {
-      title: 'Moor Agent',
+      title: 'Hermes Agent',
       logo: {
-        alt: 'Moor Agent',
+        alt: 'Hermes Agent',
         src: 'img/logo.png',
       },
       items: [
@@ -131,7 +145,7 @@ const config: Config = {
           position: 'left',
         },
         {
-          href: 'https://hermes-agent.Moor inc..com/',
+          href: 'https://hermes-agent.nousresearch.com/',
           label: 'Download',
           position: 'left',
         },
@@ -140,17 +154,17 @@ const config: Config = {
           position: 'right',
         },
         {
-          href: 'https://hermes-agent.Moor inc..com',
+          href: 'https://hermes-agent.nousresearch.com',
           label: 'Home',
           position: 'right',
         },
         {
-          href: 'https://github.com/Moor inc./hermes-agent',
+          href: 'https://github.com/NousResearch/hermes-agent',
           label: 'GitHub',
           position: 'right',
         },
         {
-          href: 'https://discord.gg/Moor inc.',
+          href: 'https://discord.gg/NousResearch',
           label: 'Discord',
           position: 'right',
         },
@@ -171,21 +185,21 @@ const config: Config = {
         {
           title: 'Community',
           items: [
-            { label: 'Discord', href: 'https://discord.gg/Moor inc.' },
-            { label: 'GitHub Issues', href: 'https://github.com/Moor inc./hermes-agent/issues' },
+            { label: 'Discord', href: 'https://discord.gg/NousResearch' },
+            { label: 'GitHub Issues', href: 'https://github.com/NousResearch/hermes-agent/issues' },
             { label: 'Skills Hub', href: 'https://agentskills.io' },
           ],
         },
         {
           title: 'More',
           items: [
-            { label: 'Desktop Download', href: 'https://hermes-agent.Moor inc..com/' },
-            { label: 'GitHub', href: 'https://github.com/Moor inc./hermes-agent' },
-            { label: 'Nous Research', href: 'https://Moor inc..com' },
+            { label: 'Desktop Download', href: 'https://hermes-agent.nousresearch.com/' },
+            { label: 'GitHub', href: 'https://github.com/NousResearch/hermes-agent' },
+            { label: 'Nous Research', href: 'https://nousresearch.com' },
           ],
         },
       ],
-      copyright: `Built by <a href="https://Moor inc..com">Nous Research</a> · MIT License · ${new Date().getFullYear()}`,
+      copyright: `Built by <a href="https://nousresearch.com">Nous Research</a> · MIT License · ${new Date().getFullYear()}`,
     },
     prism: {
       theme: prismThemes.github,

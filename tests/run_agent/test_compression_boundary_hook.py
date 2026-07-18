@@ -5,7 +5,7 @@ context engine receives on_session_start(new_sid, boundary_reason="compression",
 old_session_id=<old>). This lets plugin engines (e.g. hermes-lcm) preserve
 DAG lineage across the split instead of treating it as a fresh /new.
 
-See hermes-lcm#68: after Moor compresses and mints a new physical session,
+See hermes-lcm#68: after Hermes compresses and mints a new physical session,
 LCM was losing continuity (compression_count: 1, store_messages: 0,
 dag_nodes: 0). With boundary_reason="compression" plugins can distinguish
 this from a real user-initiated /new.
@@ -22,7 +22,7 @@ class TestCompressionBoundaryHook:
     def _make_agent(self, session_db):
         with patch.dict(os.environ, {"OPENROUTER_API_KEY": "test-key"}):
             from run_agent import AIAgent
-            return AIAgent(
+            agent = AIAgent(
                 api_key="test-key",
                 base_url="https://openrouter.ai/api/v1",
                 model="test/model",
@@ -32,6 +32,9 @@ class TestCompressionBoundaryHook:
                 skip_context_files=True,
                 skip_memory=True,
             )
+            # ROTATION fallback — pin in_place=False regardless of default (#38763).
+            agent.compression_in_place = False
+            return agent
 
     def test_on_session_start_called_with_compression_boundary(self):
         from hermes_state import SessionDB
@@ -167,7 +170,7 @@ class TestSessionCompressEvent:
     def _make_agent(self, session_db, event_callback=None):
         with patch.dict(os.environ, {"OPENROUTER_API_KEY": "test-key"}):
             from run_agent import AIAgent
-            return AIAgent(
+            agent = AIAgent(
                 api_key="test-key",
                 base_url="https://openrouter.ai/api/v1",
                 model="test/model",
@@ -178,6 +181,9 @@ class TestSessionCompressEvent:
                 skip_memory=True,
                 event_callback=event_callback,
             )
+            # ROTATION fallback — pin in_place=False regardless of default (#38763).
+            agent.compression_in_place = False
+            return agent
 
     def _stub_compressor(self):
         compressor = MagicMock()

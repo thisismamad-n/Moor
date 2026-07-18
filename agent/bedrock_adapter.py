@@ -1,4 +1,4 @@
-"""AWS Bedrock Converse API adapter for Moor Agent.
+"""AWS Bedrock Converse API adapter for Hermes Agent.
 
 Provides native integration with Amazon Bedrock using the Converse API,
 bypassing the OpenAI-compatible endpoint in favor of direct AWS SDK calls.
@@ -69,10 +69,10 @@ def _require_boto3():
         raise ImportError(
             "The 'boto3' package is required for the AWS Bedrock provider. "
             "Install it with: pip install boto3\n"
-            "Or install Moor with Bedrock support: pip install -e '.[bedrock]'"
+            "Or install Hermes with Bedrock support: pip install -e '.[bedrock]'"
         )
     # converse() / converse_stream() were added in boto3 1.34.59.
-    # When Moor is installed editable into system Python, the system boto3
+    # When Hermes is installed editable into system Python, the system boto3
     # (e.g. Ubuntu 24.04 ships 1.34.46) may take precedence over the venv
     # version pinned in pyproject.toml.
     try:
@@ -528,10 +528,19 @@ def _convert_content_to_converse(content) -> List[Dict]:
                         mime_part = header[5:].split(";")[0]
                         if mime_part:
                             media_type = mime_part
+                    # Decode base64 to raw bytes — boto3 re-encodes at the
+                    # wire layer, so passing the base64 string directly
+                    # results in double-encoding and Bedrock rejects it with
+                    # "Failed to sanitize image".  Ref: #33317.
+                    import base64
+                    try:
+                        raw_bytes = base64.b64decode(data)
+                    except Exception:
+                        raw_bytes = data.encode("utf-8")
                     blocks.append({
                         "image": {
                             "format": media_type.split("/")[-1] if "/" in media_type else "jpeg",
-                            "source": {"bytes": data},
+                            "source": {"bytes": raw_bytes},
                         }
                     })
                 else:

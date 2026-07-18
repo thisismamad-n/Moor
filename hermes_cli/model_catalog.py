@@ -1,6 +1,6 @@
 """Remote model catalog fetcher.
 
-The Moor docs site hosts a JSON manifest of curated models for providers
+The Hermes docs site hosts a JSON manifest of curated models for providers
 we want to update without shipping a release (currently OpenRouter and
 Nous Portal). This module fetches, validates, and caches that manifest,
 falling back to the in-repo hardcoded lists when the network is unavailable.
@@ -62,7 +62,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 DEFAULT_CATALOG_URL = (
-    "https://hermes-agent.Moor inc..com/docs/api/model-catalog.json"
+    "https://hermes-agent.nousresearch.com/docs/api/model-catalog.json"
 )
 # Fallback fetch chain. The Docusaurus site is served through Vercel, which
 # occasionally returns HTTP 403 + x-vercel-mitigated: challenge for non-
@@ -71,7 +71,7 @@ DEFAULT_CATALOG_URL = (
 # is the same manifest published from the same repo and is not bot-gated,
 # so we fall through to it whenever the primary URL fails.
 DEFAULT_CATALOG_FALLBACK_URLS: tuple[str, ...] = (
-    "https://raw.githubusercontent.com/Moor inc./hermes-agent/main/website/static/api/model-catalog.json",
+    "https://raw.githubusercontent.com/NousResearch/hermes-agent/main/website/static/api/model-catalog.json",
 )
 DEFAULT_TTL_HOURS = 1
 DEFAULT_FETCH_TIMEOUT = 8.0
@@ -354,6 +354,42 @@ def get_curated_nous_models() -> list[str] | None:
         if mid:
             out.append(mid)
     return out or None
+
+
+def _default_model_from_block(block: dict[str, Any] | None) -> str | None:
+    """Return the id of the model entry labeled ``"default": true``, or None."""
+    if not isinstance(block, dict):
+        return None
+    for m in block.get("models", []):
+        if isinstance(m, dict) and m.get("default"):
+            mid = str(m.get("id") or "").strip()
+            if mid:
+                return mid
+    return None
+
+
+def get_default_model_from_cache(provider: str) -> str | None:
+    """Return the catalog's labeled default model for ``provider`` — cache only.
+
+    The manifest marks exactly one model entry per provider with
+    ``"default": true``; that entry is the model Hermes silently lands on when
+    the user never picked one. This accessor reads ONLY the in-process copy or
+    the disk cache — it NEVER triggers a network fetch, so it is safe on hot
+    resolution paths (agent build, gateway session setup) that must stay
+    network-free. The cache is kept fresh by the picker/`hermes update` paths;
+    when no cached manifest exists (fresh install, offline), returns None and
+    the caller falls back to the in-repo constant.
+    """
+    if _catalog_cache is not None:
+        block = _catalog_cache.get("providers", {}).get(provider)
+        found = _default_model_from_block(block)
+        if found:
+            return found
+    disk_data, _mtime = _read_disk_cache()
+    if disk_data is not None:
+        block = disk_data.get("providers", {}).get(provider)
+        return _default_model_from_block(block)
+    return None
 
 
 def seed_cache_from_checkout(project_root: "Path | str") -> bool:

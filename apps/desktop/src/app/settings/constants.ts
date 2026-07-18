@@ -1,4 +1,5 @@
 import {
+  Box,
   Brain,
   type IconComponent,
   Lock,
@@ -7,14 +8,13 @@ import {
   Monitor,
   Moon,
   Palette,
-  Sparkles,
   Sun,
   Wrench
 } from '@/lib/icons'
 import type { ThemeMode } from '@/themes/context'
 
-import type { DesktopConfigSection } from './types'
 import { defineFieldCopy } from './field-copy'
+import type { DesktopConfigSection } from './types'
 
 // Provider group definitions used to fold raw env-var names like
 // ``XAI_API_KEY`` into a single "xAI" card with a friendly label, short
@@ -41,9 +41,18 @@ export const PROVIDER_GROUPS: ProviderPrefix[] = [
   {
     prefix: 'NOUS_',
     name: 'Nous Portal',
-    description: 'Hosted Moor & Nous-trained models',
-    docsUrl: 'https://portal.Moor inc..com',
+    description: 'Hosted Hermes & Nous-trained models',
+    docsUrl: 'https://portal.nousresearch.com',
     priority: 0
+  },
+  {
+    prefix: 'FIREWORKS_',
+    name: 'Fireworks AI',
+    description: 'OpenAI-compatible direct model API',
+    docsUrl: 'https://app.fireworks.ai/settings/users/api-keys',
+    // Slot #2 — mirrors CANONICAL_PROVIDERS (after Nous, ahead of OpenRouter).
+    // Same numeric priority as OpenRouter; name sort puts Fireworks first.
+    priority: 1
   },
   {
     prefix: 'OPENROUTER_',
@@ -237,7 +246,7 @@ export const ENUM_OPTIONS: Record<string, string[]> = {
   'approvals.mode': ['manual', 'smart', 'off'],
   'code_execution.mode': ['project', 'strict'],
   'context.engine': ['compressor', 'default', 'custom'],
-  'delegation.reasoning_effort': ['', 'minimal', 'low', 'medium', 'high', 'xhigh'],
+  'delegation.reasoning_effort': ['', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra'],
   'memory.provider': ['', 'builtin', 'hindsight', 'honcho'],
   // Terminal execution backends — kept in sync with the dispatch ladder in
   // tools/terminal_tool.py::_create_environment (local/docker/singularity/
@@ -335,6 +344,7 @@ export const FIELD_LABELS: Record<string, string> = defineFieldCopy({
   },
   stt: {
     enabled: 'Speech To Text',
+    echoTranscripts: 'Echo Transcripts',
     provider: 'Speech-To-Text Provider',
     local: {
       model: 'Local Transcription Model',
@@ -434,10 +444,10 @@ export const FIELD_DESCRIPTIONS: Record<string, string> = defineFieldCopy({
     personality: 'Default assistant style for new sessions.',
     showReasoning: 'Show reasoning sections when the backend provides them.'
   },
-  timezone: 'Used when Moor needs local time context. Blank uses the system timezone.',
+  timezone: 'Used when Hermes needs local time context. Blank uses the system timezone.',
   agent: {
     imageInputMode: 'Controls how image attachments are sent to the model.',
-    maxTurns: 'Upper bound for tool-calling turns before Moor stops a run.'
+    maxTurns: 'Upper bound for tool-calling turns before Hermes stops a run.'
   },
   terminal: {
     cwd: 'Default project folder for tool and terminal work.',
@@ -451,9 +461,9 @@ export const FIELD_DESCRIPTIONS: Record<string, string> = defineFieldCopy({
   codeExecution: {
     mode: 'How strictly code execution is scoped to the current project.'
   },
-  fileReadMaxChars: 'Maximum characters Moor can read from one file request.',
+  fileReadMaxChars: 'Maximum characters Hermes can read from one file request.',
   approvals: {
-    mode: 'How Moor handles commands that need explicit approval.',
+    mode: 'How Hermes handles commands that need explicit approval.',
     timeout: 'How long approval prompts wait before timing out.'
   },
   security: {
@@ -486,13 +496,14 @@ export const FIELD_DESCRIPTIONS: Record<string, string> = defineFieldCopy({
   },
   stt: {
     enabled: 'Enable local or provider-backed speech transcription.',
+    echoTranscripts: 'Post the raw 🎙️ transcript of voice messages back to the chat.',
     elevenlabs: {
       languageCode: 'Optional ISO-639-3 language code. Blank lets ElevenLabs auto-detect.'
     }
   },
   updates: {
     nonInteractiveLocalChanges:
-      'When Moor updates itself from the app (no terminal prompt), keep local source edits (stash) or throw them away (discard). Terminal updates always ask.'
+      'When Hermes updates itself from the app (no terminal prompt), keep local source edits (stash) or throw them away (discard). Terminal updates always ask.'
   }
 })
 
@@ -501,7 +512,7 @@ export const SECTIONS: DesktopConfigSection[] = [
   {
     id: 'model',
     label: 'Model',
-    icon: Sparkles,
+    icon: Box,
     keys: ['model_context_length', 'fallback_providers']
   },
   {
@@ -568,6 +579,7 @@ export const SECTIONS: DesktopConfigSection[] = [
     keys: [
       'tts.provider',
       'stt.enabled',
+      'stt.echo_transcripts',
       'stt.provider',
       'voice.auto_tts',
       'tts.edge.voice',

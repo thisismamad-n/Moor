@@ -837,7 +837,7 @@ class TestVoiceChannelCommands:
         mock_adapter._voice_input_callback = None
         event = self._make_discord_event()
         event.source.chat_type = "group"
-        event.source.chat_name = "Moor Server / #general"
+        event.source.chat_name = "Hermes Server / #general"
         runner.adapters[event.source.platform] = mock_adapter
         result = await runner._handle_voice_channel_join(event)
         assert "joined" in result.lower()
@@ -971,7 +971,7 @@ class TestVoiceChannelCommands:
 
         bound_source = SessionSource(
             chat_id="123",
-            chat_name="Moor Server / #general",
+            chat_name="Hermes Server / #general",
             chat_type="group",
             user_id="user1",
             user_name="user1",
@@ -993,7 +993,7 @@ class TestVoiceChannelCommands:
         event = mock_adapter.handle_message.call_args[0][0]
         assert event.source.chat_id == "123"
         assert event.source.chat_type == "group"
-        assert event.source.chat_name == "Moor Server / #general"
+        assert event.source.chat_name == "Hermes Server / #general"
         assert event.source.user_id == "42"
 
     @pytest.mark.asyncio
@@ -1211,7 +1211,7 @@ class TestDiscordVoiceChannelMethods:
 
     def test_is_allowed_user_empty_list(self):
         adapter = self._make_adapter()
-        assert adapter._is_allowed_user("42") is True
+        assert adapter._is_allowed_user("42") is False
 
     def test_is_allowed_user_in_list(self):
         adapter = self._make_adapter()
@@ -1222,6 +1222,32 @@ class TestDiscordVoiceChannelMethods:
         adapter = self._make_adapter()
         adapter._allowed_user_ids = {"99"}
         assert adapter._is_allowed_user("42") is False
+
+    def test_is_allowed_user_wildcard_only(self):
+        """``DISCORD_ALLOWED_USERS="*"`` opens access to all users.
+
+        Mirrors ``SIGNAL_ALLOWED_USERS`` and the existing
+        ``DISCORD_ALLOWED_CHANNELS`` / ``_IGNORED_CHANNELS`` /
+        ``_FREE_RESPONSE_CHANNELS`` wildcard handling. This is the
+        convention ``claw migrate`` emits (#22334).
+        """
+        adapter = self._make_adapter()
+        adapter._allowed_user_ids = {"*"}
+        assert adapter._is_allowed_user("42") is True
+        assert adapter._is_allowed_user("999999999999999999") is True
+
+    def test_is_allowed_user_wildcard_mixed_with_ids(self):
+        """``DISCORD_ALLOWED_USERS="123,*"`` honors ``*`` for any user."""
+        adapter = self._make_adapter()
+        adapter._allowed_user_ids = {"123456789012345678", "*"}
+        assert adapter._is_allowed_user("42") is True
+        assert adapter._is_allowed_user("123456789012345678") is True
+
+    def test_is_allowed_user_wildcard_in_dm(self):
+        """Wildcard short-circuits before role-auth gating, so DMs honor it too."""
+        adapter = self._make_adapter()
+        adapter._allowed_user_ids = {"*"}
+        assert adapter._is_allowed_user("42", is_dm=True) is True
 
     @pytest.mark.asyncio
     async def test_process_voice_input_success(self):

@@ -87,7 +87,7 @@ def _resolve_portal_base_url(override: Optional[str] = None) -> str:
             return base.rstrip("/")
         return str(DEFAULT_NOUS_PORTAL_URL).rstrip("/")
     except Exception:
-        return "https://portal.Moor inc..com"
+        return "https://portal.nousresearch.com"
 
 
 def _register_self_hosted_client(
@@ -155,7 +155,7 @@ def _register_self_hosted_client(
         if exc.code == 401:
             raise RuntimeError(
                 "Nous Portal rejected the access token (401). "
-                "Try `hermes auth login nous` to re-authenticate."
+                "Try `hermes auth add nous` to re-authenticate."
             ) from exc
         if exc.code == 403:
             raise RuntimeError(
@@ -251,7 +251,7 @@ def cmd_dashboard_register(args) -> None:
     except AuthError as exc:
         if getattr(exc, "relogin_required", False):
             print("✗ You're not logged into Nous Portal.")
-            print("  Run `hermes setup` (or `hermes auth login nous`) first, then retry.")
+            print("  Run `hermes setup` (or `hermes auth add nous`) first, then retry.")
         else:
             print(f"✗ Could not resolve a Nous Portal access token: {exc}")
         sys.exit(1)
@@ -352,7 +352,7 @@ def cmd_dashboard_register(args) -> None:
     #      don't clutter .env for the common production case and don't alter an
     #      existing entry unexpectedly.
     wrote_portal_url = False
-    default_portal = "https://portal.Moor inc..com"
+    default_portal = "https://portal.nousresearch.com"
     existing_portal = None
     try:
         existing_portal = get_env_value("HERMES_DASHBOARD_PORTAL_URL")

@@ -1,5 +1,5 @@
 """
-Interactive setup wizard for Moor Agent.
+Interactive setup wizard for Hermes Agent.
 
 Modular wizard with independently-runnable sections:
   1. Model & Provider — choose your AI provider and model
@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
-_DOCS_BASE = "https://hermes-agent.Moor inc..com/docs"
+_DOCS_BASE = "https://hermes-agent.nousresearch.com/docs"
 
 
 def _model_config_dict(config: Dict[str, Any]) -> Dict[str, Any]:
@@ -92,6 +92,11 @@ _DEFAULT_PROVIDER_MODELS = {
     "gemini": [
         "gemini-3.1-pro-preview", "gemini-3-pro-preview",
         "gemini-3-flash-preview", "gemini-3.1-flash-lite-preview",
+    ],
+    "vertex": [
+        "google/gemini-3.1-pro-preview", "google/gemini-3-pro-preview",
+        "google/gemini-3-flash-preview", "google/gemini-3.1-flash-lite-preview",
+        "google/gemini-2.5-pro", "google/gemini-2.5-flash",
     ],
     "zai": ["glm-5.2", "glm-5.1", "glm-5", "glm-4.7", "glm-4.5", "glm-4.5-flash"],
     "kimi-coding": ["kimi-k2.6", "kimi-k2.5", "kimi-k2-thinking", "kimi-k2-turbo-preview"],
@@ -176,13 +181,13 @@ def is_interactive_stdin() -> bool:
 def print_noninteractive_setup_guidance(reason: str | None = None) -> None:
     """Print guidance for headless/non-interactive setup flows."""
     print()
-    print(color("⚕ Moor Setup — Non-interactive mode", Colors.CYAN, Colors.BOLD))
+    print(color("⚕ Hermes Setup — Non-interactive mode", Colors.CYAN, Colors.BOLD))
     print()
     if reason:
         print_info(reason)
     print_info("The interactive wizard cannot be used here.")
     print()
-    print_info("Configure Moor using environment variables or config commands:")
+    print_info("Configure Hermes using environment variables or config commands:")
     print_info("  hermes config set model.provider custom")
     print_info("  hermes config set model.base_url http://localhost:8080/v1")
     print_info("  hermes config set model.default your-model-name")
@@ -272,8 +277,35 @@ def prompt_choice(question: str, choices: list, default: int = 0, description: s
             sys.exit(1)
 
 
+def is_noninteractive() -> bool:
+    """True when no human is available to answer a prompt.
+
+    The dashboard/desktop spawn CLI actions with ``stdin=DEVNULL`` and
+    ``HERMES_NONINTERACTIVE=1`` (see ``hermes_cli/web_server.py``). In that
+    context an ``input()`` raises ``EOFError`` immediately, so a prompt that
+    aborts on EOF kills the spawned action — this is what made the desktop
+    "restart gateway" fail when the Windows gateway service was not yet
+    installed (the start path asks "Install it now?" with no one to answer).
+    Honour the explicit env flag here so callers fall back to their default.
+    """
+    return os.environ.get("HERMES_NONINTERACTIVE", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
 def prompt_yes_no(question: str, default: bool = True) -> bool:
-    """Prompt for yes/no. Ctrl+C exits, empty input returns default."""
+    """Prompt for yes/no. Ctrl+C exits, empty input returns default.
+
+    Non-interactive callers (``HERMES_NONINTERACTIVE=1`` or a closed/redirected
+    stdin) have no one to answer, so fall back to ``default`` instead of
+    aborting the whole process.
+    """
+    if is_noninteractive():
+        return default
+
     default_str = "Y/n" if default else "y/N"
 
     while True:
@@ -283,9 +315,15 @@ def prompt_yes_no(question: str, default: bool = True) -> bool:
                 .strip()
                 .lower()
             )
-        except (KeyboardInterrupt, EOFError):
+        except KeyboardInterrupt:
             print()
             sys.exit(1)
+        except EOFError:
+            # No stdin to read (closed/redirected, e.g. a spawned action with
+            # stdin=DEVNULL). Accept the default rather than exit so the caller
+            # can proceed unattended instead of failing the whole command.
+            print()
+            return default
 
         if not value:
             return default
@@ -375,11 +413,6 @@ def _print_setup_summary(config: dict, hermes_home):
     else:
         tool_status.append(("Vision (image analysis)", False, "run 'hermes setup' to configure"))
 
-    # Mixture of Agents — requires OpenRouter specifically (calls multiple models)
-    if get_env_value("OPENROUTER_API_KEY"):
-        tool_status.append(("Mixture of Agents", True, None))
-    else:
-        tool_status.append(("Mixture of Agents", False, "OPENROUTER_API_KEY"))
 
     # Web tools (Exa, Parallel, Firecrawl, or Tavily)
     if subscription_features.web.managed_by_nous:
@@ -795,17 +828,24 @@ def _install_neutts_deps() -> bool:
     print_info("Installing neutts Python package...")
     print_info("This will also download the TTS model (~300MB) on first use.")
     print()
+
+    # Route through the canonical uv → pip → ensurepip ladder so pip-less
+    # venvs (Ubuntu 25.10 `python -m venv`, `uv venv`) work out of the box.
+    from hermes_cli.tools_config import _pip_install
+
     try:
-        subprocess.run(
-            [sys.executable, "-m", "pip", "install", "-U", "neutts[all]", "--quiet"],
-            check=True, timeout=300,
-        )
+        result = _pip_install(["-U", "neutts[all]", "--quiet"], timeout=300)
+    except Exception as e:
+        print_error(f"Failed to install neutts: {e}")
+        print_info("Try manually: uv pip install -U 'neutts[all]'")
+        return False
+    if result.returncode == 0:
         print_success("neutts installed successfully")
         return True
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
-        print_error(f"Failed to install neutts: {e}")
-        print_info("Try manually: python -m pip install -U neutts[all]")
-        return False
+    err = (result.stderr or "").strip()
+    print_error(f"Failed to install neutts: {err[:300] if err else 'install failed'}")
+    print_info("Try manually: uv pip install -U 'neutts[all]'")
+    return False
 
 
 def _install_kittentts_deps() -> bool:
@@ -820,17 +860,22 @@ def _install_kittentts_deps() -> bool:
     print()
     print_info("Installing kittentts Python package (~25-80MB model downloaded on first use)...")
     print()
+
+    from hermes_cli.tools_config import _pip_install
+
     try:
-        subprocess.run(
-            [sys.executable, "-m", "pip", "install", "-U", wheel_url, "soundfile", "--quiet"],
-            check=True, timeout=300,
-        )
+        result = _pip_install(["-U", wheel_url, "soundfile", "--quiet"], timeout=300)
+    except Exception as e:
+        print_error(f"Failed to install kittentts: {e}")
+        print_info(f"Try manually: uv pip install -U '{wheel_url}' soundfile")
+        return False
+    if result.returncode == 0:
         print_success("kittentts installed successfully")
         return True
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
-        print_error(f"Failed to install kittentts: {e}")
-        print_info(f"Try manually: python -m pip install -U '{wheel_url}' soundfile")
-        return False
+    err = (result.stderr or "").strip()
+    print_error(f"Failed to install kittentts: {err[:300] if err else 'install failed'}")
+    print_info(f"Try manually: uv pip install -U '{wheel_url}' soundfile")
+    return False
 
 
 def _xai_oauth_logged_in_for_setup() -> bool:
@@ -848,7 +893,7 @@ def _xai_oauth_logged_in_for_setup() -> bool:
 
 
 def _run_xai_oauth_login_from_setup() -> bool:
-    """Run the xAI Grok OAuth loopback login from inside the setup wizard.
+    """Run the xAI Grok OAuth device-code login from inside the setup wizard.
 
     Returns True on success, False on any failure (the caller falls back
     to whatever the user picked next, e.g. Edge TTS).
@@ -859,7 +904,7 @@ def _run_xai_oauth_login_from_setup() -> bool:
             _is_remote_session,
             _save_xai_oauth_tokens,
             _update_config_for_provider,
-            _xai_oauth_loopback_login,
+            _xai_oauth_device_code_login,
         )
     except Exception as exc:
         print_warning(f"xAI Grok OAuth helpers unavailable: {exc}")
@@ -869,12 +914,13 @@ def _run_xai_oauth_login_from_setup() -> bool:
     print()
     print_info("Signing in to xAI Grok OAuth (SuperGrok / Premium+)...")
     try:
-        creds = _xai_oauth_loopback_login(open_browser=open_browser)
+        creds = _xai_oauth_device_code_login(open_browser=open_browser)
         _save_xai_oauth_tokens(
             creds["tokens"],
             discovery=creds.get("discovery"),
             redirect_uri=creds.get("redirect_uri", ""),
             last_refresh=creds.get("last_refresh"),
+            auth_mode="oauth_device_code",
         )
         _update_config_for_provider(
             "xai-oauth", creds.get("base_url", DEFAULT_XAI_OAUTH_BASE_URL)
@@ -994,7 +1040,7 @@ def _setup_tts_provider(config: dict):
 
     elif selected == "xai":
         # Resolution order: existing OAuth tokens (free for SuperGrok subscribers
-        # via the Moor auth store) > existing XAI_API_KEY > prompt the user.
+        # via the Hermes auth store) > existing XAI_API_KEY > prompt the user.
         # When neither is configured, offer both options instead of forcing the
         # API-key path — xAI TTS works fine with OAuth bearer tokens too.
         oauth_logged_in = _xai_oauth_logged_in_for_setup()
@@ -1135,7 +1181,7 @@ def setup_terminal_backend(config: dict):
     """Configure the terminal execution backend."""
     import platform as _platform
     print_header("Terminal Backend")
-    print_info("Choose where Moor runs shell commands and code.")
+    print_info("Choose where Hermes runs shell commands and code.")
     print_info("This affects tool execution, file access, and isolation.")
     print_info(f"   Guide: {_DOCS_BASE}/user-guide/configuration#terminal-backend-configuration")
     print()
@@ -1268,32 +1314,13 @@ def setup_terminal_backend(config: dict):
                 __import__("modal")
             except ImportError:
                 print_info("Installing modal SDK...")
-                import subprocess
+                from hermes_cli.tools_config import _pip_install
 
-                uv_bin = shutil.which("uv")
-                if uv_bin:
-                    result = subprocess.run(
-                        [
-                            uv_bin,
-                            "pip",
-                            "install",
-                            "--python",
-                            sys.executable,
-                            "modal",
-                        ],
-                        capture_output=True,
-                        text=True,
-                    )
-                else:
-                    result = subprocess.run(
-                        [sys.executable, "-m", "pip", "install", "modal"],
-                        capture_output=True,
-                        text=True,
-                    )
+                result = _pip_install(["modal"])
                 if result.returncode == 0:
                     print_success("modal SDK installed")
                 else:
-                    print_warning("Install failed — run manually: pip install modal")
+                    print_warning("Install failed — run manually: uv pip install modal")
 
             # Modal token
             print()
@@ -1328,25 +1355,13 @@ def setup_terminal_backend(config: dict):
             __import__("daytona")
         except ImportError:
             print_info("Installing daytona SDK...")
-            import subprocess
+            from hermes_cli.tools_config import _pip_install
 
-            uv_bin = shutil.which("uv")
-            if uv_bin:
-                result = subprocess.run(
-                    [uv_bin, "pip", "install", "--python", sys.executable, "daytona"],
-                    capture_output=True,
-                    text=True,
-                )
-            else:
-                result = subprocess.run(
-                    [sys.executable, "-m", "pip", "install", "daytona"],
-                    capture_output=True,
-                    text=True,
-                )
+            result = _pip_install(["daytona"])
             if result.returncode == 0:
                 print_success("daytona SDK installed")
             else:
-                print_warning("Install failed — run manually: pip install daytona")
+                print_warning("Install failed — run manually: uv pip install daytona")
                 if result.stderr:
                     print_info(f"  Error: {result.stderr.strip().splitlines()[-1]}")
 
@@ -1448,9 +1463,9 @@ def _apply_default_agent_settings(config: dict):
     config.setdefault("compression", {})["enabled"] = True
     config["compression"]["threshold"] = 0.50
 
-    # Default to never auto-resetting sessions. The gateway treats absent
-    # session_reset as "both", so we must write "none" explicitly to make
-    # the no-auto-reset default actually take effect.
+    # Default: never auto-reset sessions. This matches the gateway's own
+    # default (SessionResetPolicy.mode = "none"); we still write it
+    # explicitly so the choice is visible/editable in config.yaml.
     config.setdefault("session_reset", {})["mode"] = "none"
 
     save_config(config)
@@ -1503,10 +1518,11 @@ def setup_agent_settings(config: dict):
     print_info("  new     — Show tool name only when it changes (less noise)")
     print_info("  all     — Show every tool call with a short preview")
     print_info("  verbose — Full args, results, and debug logs")
+    print_info("  log     — Silent in chat; write every tool call to ~/.hermes/logs/tool_calls.log (gateway only)")
 
     current_mode = cfg_get(config, "display", "tool_progress", default="all")
     mode = prompt("Tool progress mode", current_mode)
-    if mode.lower() in {"off", "new", "all", "verbose"}:
+    if mode.lower() in {"off", "new", "all", "verbose", "log"}:
         if "display" not in config:
             config["display"] = {}
         config["display"]["tool_progress"] = mode.lower()
@@ -1560,19 +1576,19 @@ def setup_agent_settings(config: dict):
     print_info("")
 
     reset_choices = [
-        "Inactivity + daily reset (recommended - reset whichever comes first)",
+        "Inactivity + daily reset (reset whichever comes first)",
         "Inactivity only (reset after N minutes of no messages)",
         "Daily only (reset at a fixed hour each day)",
-        "Never auto-reset (context lives until /reset or context compression)",
+        "Never auto-reset (recommended - context lives until /reset or context compression)",
         "Keep current settings",
     ]
 
     current_policy = config.get("session_reset", {})
-    current_mode = current_policy.get("mode", "both")
+    current_mode = current_policy.get("mode", "none")
     current_idle = current_policy.get("idle_minutes", 1440)
     current_hour = current_policy.get("at_hour", 4)
 
-    default_reset = {"both": 0, "idle": 1, "daily": 2, "none": 3}.get(current_mode, 0)
+    default_reset = {"both": 0, "idle": 1, "daily": 2, "none": 3}.get(current_mode, 3)
 
     reset_idx = prompt_choice("Session reset mode:", reset_choices, default_reset)
 
@@ -1780,7 +1796,7 @@ def _setup_telegram():
         print_info("⚠️  No allowlist set - anyone who finds your bot can use it!")
 
     print()
-    print_info("📬 Home Channel: where Moor delivers cron job results,")
+    print_info("📬 Home Channel: where Hermes delivers cron job results,")
     print_info("   cross-platform messages, and notifications.")
     print_info("   For Telegram DMs, this is your user ID (same as above).")
 
@@ -1818,7 +1834,7 @@ def _setup_bluebubbles():
         if not prompt_yes_no("Reconfigure BlueBubbles?", False):
             return
 
-    print_info("Connects Moor to iMessage via BlueBubbles — a free, open-source")
+    print_info("Connects Hermes to iMessage via BlueBubbles — a free, open-source")
     print_info("macOS server that bridges iMessage to any device.")
     print_info("   Requires a Mac running BlueBubbles Server v1.0.0+")
     print_info("   Download: https://bluebubbles.app/")
@@ -1894,7 +1910,7 @@ def _setup_webhooks():
     print_warning("   internet. For security, run the gateway in a sandboxed environment")
     print_warning("   (Docker, VM, etc.) to limit blast radius from prompt injection.")
     print()
-    print_info("   Full guide: https://hermes-agent.Moor inc..com/docs/user-guide/messaging/webhooks/")
+    print_info("   Full guide: https://hermes-agent.nousresearch.com/docs/user-guide/messaging/webhooks/")
     print()
 
     port = prompt("Webhook port (default 8644)")
@@ -1921,7 +1937,7 @@ def _setup_webhooks():
     print_info("      http://your-server:8644/webhooks/<route-name>")
     print()
     print_info("   Route configuration guide:")
-    print_info("   https://hermes-agent.Moor inc..com/docs/user-guide/messaging/webhooks/#configuring-routes")
+    print_info("   https://hermes-agent.nousresearch.com/docs/user-guide/messaging/webhooks/#configuring-routes")
     print()
     print_info("   Open config in your editor:  hermes config edit")
     print_info("   Open config in your editor:  hermes config edit")
@@ -1932,7 +1948,7 @@ def setup_gateway(config: dict):
     from hermes_cli.gateway import _all_platforms, _platform_status, _configure_platform
 
     print_header("Messaging Platforms")
-    print_info("Connect to messaging platforms to chat with Moor from anywhere.")
+    print_info("Connect to messaging platforms to chat with Hermes from anywhere.")
     print_info("Toggle with Space, confirm with Enter.")
     print()
 
@@ -2143,8 +2159,8 @@ def setup_gateway(config: dict):
                     print_info("  You can try manually: hermes gateway install")
             else:
                 print_info("  You can install later: hermes gateway install")
-                if supports_systemd:
-                    print_info("  Or as a boot-time service: sudo hermes gateway install --system")
+                if supports_systemd and os.geteuid() == 0:  # windows-footgun: ok — guarded by supports_systemd (Linux only)
+                    print_info("  Or as a boot-time service: hermes gateway install --system")
                 print_info("  Or run in foreground:  hermes gateway")
         else:
             from hermes_constants import is_container
@@ -2368,15 +2384,15 @@ def _load_openclaw_migration_module():
 
 # Item kinds that represent high-impact changes warranting explicit warnings.
 # Gateway tokens/channels can hijack messaging platforms from the old agent.
-# Config values may have different semantics between OpenClaw and Moor.
+# Config values may have different semantics between OpenClaw and Hermes.
 # Instruction/context files (.md) can contain incompatible setup procedures.
 _HIGH_IMPACT_KIND_KEYWORDS = {
-    "gateway": "⚠ Gateway/messaging — this will configure Moor to use your OpenClaw messaging channels",
-    "telegram": "⚠ Telegram — this will point Moor at your OpenClaw Telegram bot",
-    "slack": "⚠ Slack — this will point Moor at your OpenClaw Slack workspace",
-    "discord": "⚠ Discord — this will point Moor at your OpenClaw Discord bot",
-    "whatsapp": "⚠ WhatsApp — this will point Moor at your OpenClaw WhatsApp connection",
-    "config": "⚠ Config values — OpenClaw settings may not map 1:1 to Moor equivalents",
+    "gateway": "⚠ Gateway/messaging — this will configure Hermes to use your OpenClaw messaging channels",
+    "telegram": "⚠ Telegram — this will point Hermes at your OpenClaw Telegram bot",
+    "slack": "⚠ Slack — this will point Hermes at your OpenClaw Slack workspace",
+    "discord": "⚠ Discord — this will point Hermes at your OpenClaw Discord bot",
+    "whatsapp": "⚠ WhatsApp — this will point Hermes at your OpenClaw WhatsApp connection",
+    "config": "⚠ Config values — OpenClaw settings may not map 1:1 to Hermes equivalents",
     "soul": "⚠ Instruction file — may contain OpenClaw-specific setup/restart procedures",
     "memory": "⚠ Memory/context file — may reference OpenClaw-specific infrastructure",
     "context": "⚠ Context file — may contain OpenClaw-specific instructions",
@@ -2420,7 +2436,7 @@ def _print_migration_preview(report: dict):
         print()
 
     if conflict_items:
-        print(color("  Would overwrite (conflicts with existing Moor config):", Colors.YELLOW))
+        print(color("  Would overwrite (conflicts with existing Hermes config):", Colors.YELLOW))
         for item in conflict_items:
             kind = item.get("kind", "unknown")
             reason = item.get("reason", "already exists")
@@ -2441,8 +2457,8 @@ def _print_migration_preview(report: dict):
         for warning in sorted(warnings_shown):
             print(color(f"    {warning}", Colors.YELLOW))
         print()
-        print(color("  Note: OpenClaw config values may have different semantics in Moor.", Colors.YELLOW))
-        print(color("  For example, OpenClaw's tool_call_execution: \"auto\" ≠ Moor's yolo mode.", Colors.YELLOW))
+        print(color("  Note: OpenClaw config values may have different semantics in Hermes.", Colors.YELLOW))
+        print(color("  For example, OpenClaw's tool_call_execution: \"auto\" ≠ Hermes's yolo mode.", Colors.YELLOW))
         print(color("  Instruction files (.md) from OpenClaw may contain incompatible procedures.", Colors.YELLOW))
         print()
 
@@ -2465,7 +2481,7 @@ def _offer_openclaw_migration(hermes_home: Path) -> bool:
     print()
     print_header("OpenClaw Installation Detected")
     print_info(f"Found OpenClaw data at {openclaw_dir}")
-    print_info("Moor can preview what would be imported before making any changes.")
+    print_info("Hermes can preview what would be imported before making any changes.")
     print()
 
     if not prompt_yes_no("Would you like to see what can be imported?", default=True):
@@ -2535,7 +2551,7 @@ def _offer_openclaw_migration(hermes_home: Path) -> bool:
         )
         return False
 
-    # Execute the migration — overwrite=False so existing Moor configs are
+    # Execute the migration — overwrite=False so existing Hermes configs are
     # preserved. The user saw the preview; conflicts are skipped by default.
     try:
         migrator = mod.Migrator(
@@ -2543,7 +2559,7 @@ def _offer_openclaw_migration(hermes_home: Path) -> bool:
             target_root=hermes_home.resolve(),
             execute=True,
             workspace_target=None,
-            overwrite=False,  # preserve existing Moor config
+            overwrite=False,  # preserve existing Hermes config
             migrate_secrets=True,
             output_dir=None,
             selected_options=selected,
@@ -2566,7 +2582,7 @@ def _offer_openclaw_migration(hermes_home: Path) -> bool:
     if migrated:
         print_success(f"Imported {migrated} item(s) from OpenClaw.")
     if conflicts:
-        print_info(f"Skipped {conflicts} item(s) that already exist in Moor (use hermes claw migrate --overwrite to force).")
+        print_info(f"Skipped {conflicts} item(s) that already exist in Hermes (use hermes claw migrate --overwrite to force).")
     if skipped:
         print_info(f"Skipped {skipped} item(s) (not found or unchanged).")
     if errors:
@@ -2600,7 +2616,7 @@ def _run_portal_one_shot(config: dict) -> None:
     Wired into ``hermes setup --portal`` and ``hermes portal``. This is the
     Nous-Portal slice of the first-time quick setup, collapsed into a single
     shareable command so a brand-new user goes from zero to a fully working
-    Moor session — model selected, provider set, and web/image/tts/browser
+    Hermes session — model selected, provider set, and web/image/tts/browser
     tools routed via their Portal sub — without being told to run
     ``hermes setup`` and hunt for the quick-setup option.
 
@@ -2620,7 +2636,7 @@ def _run_portal_one_shot(config: dict) -> None:
             Colors.MAGENTA,
         )
     )
-    print(color("│     ⚕ Moor Setup — Nous Portal (one-shot)             │", Colors.MAGENTA))
+    print(color("│     ⚕ Hermes Setup — Nous Portal (one-shot)             │", Colors.MAGENTA))
     print(
         color(
             "└─────────────────────────────────────────────────────────┘",
@@ -2632,7 +2648,7 @@ def _run_portal_one_shot(config: dict) -> None:
     print_info("    web search, image generation, TTS, browser automation")
     print_info("    — all routed through your Nous Portal sub.")
     print()
-    print_info("  Sign up: https://portal.Moor inc..com/manage-subscription")
+    print_info("  Sign up: https://portal.nousresearch.com/manage-subscription")
     print()
 
     # _model_flow_nous handles BOTH the logged-out path (device-code OAuth,
@@ -2750,7 +2766,7 @@ def run_setup_wizard(args):
                         Colors.MAGENTA,
                     )
                 )
-                print(color(f"│     ⚕ Moor Setup — {label:<34s} │", Colors.MAGENTA))
+                print(color(f"│     ⚕ Hermes Setup — {label:<34s} │", Colors.MAGENTA))
                 print(
                     color(
                         "└─────────────────────────────────────────────────────────┘",
@@ -2786,7 +2802,7 @@ def run_setup_wizard(args):
     )
     print(
         color(
-            "│             ⚕ Moor Agent Setup Wizard                │", Colors.MAGENTA
+            "│             ⚕ Hermes Agent Setup Wizard                │", Colors.MAGENTA
         )
     )
     print(
@@ -2797,7 +2813,7 @@ def run_setup_wizard(args):
     )
     print(
         color(
-            "│  Let's configure your Moor Agent installation.       │", Colors.MAGENTA
+            "│  Let's configure your Hermes Agent installation.       │", Colors.MAGENTA
         )
     )
     print(
@@ -2826,7 +2842,7 @@ def run_setup_wizard(args):
 
         print()
         print_header("Reconfigure")
-        print_success("You already have Moor configured.")
+        print_success("You already have Hermes configured.")
         print_info("Running the full wizard — each prompt shows your current value.")
         print_info("Press Enter to keep it, or type a new value to change it.")
         print_info("")
@@ -2851,7 +2867,7 @@ def run_setup_wizard(args):
             config = load_config()
 
         setup_mode = prompt_choice(
-            "How would you like to set up Moor?",
+            "How would you like to set up Hermes?",
             [
                 "Quick Setup (Nous Portal) — free OAuth login, no API keys, model + tools (recommended)",
                 "Full setup — configure every provider, tool & option yourself (bring your own keys)",
@@ -2932,7 +2948,7 @@ def _run_first_time_quick_setup(config: dict, hermes_home, is_existing: bool):
     print_header("Nous Portal")
     print_info("One subscription, 300+ models, plus the Tool Gateway:")
     print_info("  web search, image generation, TTS, browser automation.")
-    print_info("Sign up: https://portal.Moor inc..com/manage-subscription")
+    print_info("Sign up: https://portal.nousresearch.com/manage-subscription")
     print()
     try:
         from hermes_cli.main import _model_flow_nous
@@ -3019,6 +3035,12 @@ def _blank_slate_minimal_toolsets(config: dict):
                 continue  # platform composites — not user-facing toolsets
             if isinstance(tdef, dict) and tdef.get("includes"):
                 continue  # composite groupings, not leaf toolsets
+            if isinstance(tdef, dict) and tdef.get("posture"):
+                continue  # posture toolsets (e.g. coding) are session-level
+                # selections made by agent/coding_context.py — not permanent
+                # user-facing disables. Adding them here causes model_tools
+                # to subtract their tools (terminal, read_file, …) from the
+                # minimal Blank Slate surface (#57315).
             all_keys.add(k)
 
         disabled = sorted(all_keys - keep)
@@ -3310,7 +3332,7 @@ def _run_quick_setup(config: dict, hermes_home):
     if missing_messaging:
         print()
         print_header("Messaging Platforms")
-        print_info("Connect Moor to messaging apps to chat from anywhere.")
+        print_info("Connect Hermes to messaging apps to chat from anywhere.")
         print_info("You can configure these later with 'hermes setup gateway'.")
 
         # Group by platform (preserving order)
