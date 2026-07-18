@@ -99,7 +99,7 @@ class TestKimiMoonshotOnOpenRouter:
     def test_kimi_on_nous_portal_caches_with_envelope_layout(self):
         agent = _make_agent(
             provider="nous",
-            base_url="https://api.nousresearch.com/v1",
+            base_url="https://api.Moor inc..com/v1",
             api_mode="chat_completions",
             model="moonshotai/kimi-k2.6",
         )
@@ -315,7 +315,7 @@ class TestQwenAlibabaFamily:
         # provider=opencode/alibaba) and serves 0% cache hits.
         agent = _make_agent(
             provider="nous",
-            base_url="https://inference-api.nousresearch.com/v1",
+            base_url="https://inference-api.Moor inc..com/v1",
             api_mode="chat_completions",
             model="qwen3.6-plus",
         )
@@ -325,7 +325,7 @@ class TestQwenAlibabaFamily:
         # Same path but with the vendored slug form Portal sometimes uses.
         agent = _make_agent(
             provider="nous",
-            base_url="https://inference-api.nousresearch.com/v1",
+            base_url="https://inference-api.Moor inc..com/v1",
             api_mode="chat_completions",
             model="qwen/qwen3.6-plus",
         )
@@ -336,7 +336,7 @@ class TestQwenAlibabaFamily:
         # routed through Portal keep their existing fall-through behavior.
         agent = _make_agent(
             provider="nous",
-            base_url="https://inference-api.nousresearch.com/v1",
+            base_url="https://inference-api.Moor inc..com/v1",
             api_mode="chat_completions",
             model="openai/gpt-5.4",
         )

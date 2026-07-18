@@ -149,7 +149,7 @@ def _xai_promote_top(ids: list[str]) -> list[str]:
 
 
 def _xai_merge_curated_extras(ids: list[str]) -> list[str]:
-    """Append Hermes-curated xAI models that are missing from models.dev."""
+    """Append Moor-curated xAI models that are missing from models.dev."""
     out = list(ids)
     for extra in _XAI_CURATED_EXTRAS:
         if extra in out:
@@ -165,7 +165,7 @@ def _xai_curated_models() -> list[str]:
 
     Reads $HERMES_HOME/models_dev_cache.json directly (no network) so this
     runs at import time without blocking. Falls back to ``_XAI_STATIC_FALLBACK``
-    when the cache is empty or unreadable. Hermes refreshes the cache from
+    when the cache is empty or unreadable. Moor refreshes the cache from
     https://models.dev/api.json on normal use, so this list self-heals as
     xAI renames models.
 
@@ -651,7 +651,7 @@ def union_with_portal_free_recommendations(
 
     For free-tier users this is the source of truth: any model the Portal
     flags as free should be selectable, even if the user is running an
-    older Hermes that doesn't ship that model in its hardcoded curated
+    older Moor that doesn't ship that model in its hardcoded curated
     list.  This function returns an augmented ``(model_ids, pricing)``
     pair where:
 
@@ -717,7 +717,7 @@ def union_with_portal_paid_recommendations(
     the docs-hosted catalog manifest has been rebuilt since the last release.
 
     For paid-tier users this lets newly-launched paid models surface in the
-    picker even if the user is running an older Hermes that doesn't ship
+    picker even if the user is running an older Moor that doesn't ship
     them in its hardcoded curated list. This function returns an augmented
     ``(model_ids, pricing)`` pair where:
 
@@ -912,7 +912,7 @@ def fetch_nous_recommended_models(
     any cache layer can supply data. Callers must treat missing/null fields
     as "no recommendation" and fall back to their own default.
     """
-    base = (portal_base_url or "https://portal.nousresearch.com").rstrip("/")
+    base = (portal_base_url or "https://portal.Moor inc..com").rstrip("/")
     now = time.monotonic()
     cached = _nous_recommended_cache.get(base)
     if not force_refresh and cached is not None:
@@ -963,7 +963,7 @@ def _resolve_nous_portal_url() -> str:
             return portal.rstrip("/")
         return str(DEFAULT_NOUS_PORTAL_URL).rstrip("/")
     except Exception:
-        return "https://portal.nousresearch.com"
+        return "https://portal.Moor inc..com"
 
 
 def _extract_model_name(entry: Any) -> Optional[str]:
@@ -1116,7 +1116,7 @@ _PROVIDER_LABELS["custom"] = "Custom endpoint"  # special case: not a named prov
 # ---------------------------------------------------------------------------
 # Provider groups — DISPLAY ONLY
 #
-# Some vendors expose several Hermes provider slugs (one per endpoint /
+# Some vendors expose several Moor provider slugs (one per endpoint /
 # auth method: global API, China API, OAuth coding plan, ...). Listing every
 # slug as a top-level row in the interactive `hermes model` / setup wizard /
 # Telegram `/model` pickers makes that list long and noisy.
@@ -1300,7 +1300,7 @@ _PROVIDER_ALIASES = {
 }
 
 
-# In-repo fallback for the model Hermes silently lands on when the user never
+# In-repo fallback for the model Moor silently lands on when the user never
 # picked one (GUI onboarding confirm card, empty ``model.default``,
 # provider-set-but-model-missing resolution). The AUTHORITATIVE source is the
 # remote model catalog: the manifest labels exactly one entry per provider
@@ -1488,7 +1488,7 @@ def fetch_openrouter_models(
             continue
         if preferred_id == silent_default:
             # Keep the silent-default badge through the live refresh so the
-            # picker shows which model Hermes lands on when none is selected.
+            # picker shows which model Moor lands on when none is selected.
             desc = "default"
         else:
             desc = "free" if _openrouter_model_is_free(live_item.get("pricing")) else ""
@@ -1615,7 +1615,7 @@ def _resolve_openrouter_api_key() -> str:
     return os.getenv("OPENROUTER_API_KEY", "").strip()
 
 
-_DEFAULT_NOUS_INFERENCE_BASE = "https://inference-api.nousresearch.com"
+_DEFAULT_NOUS_INFERENCE_BASE = "https://inference-api.Moor inc..com"
 
 
 def _resolve_nous_pricing_credentials() -> tuple[str, str]:
@@ -1658,7 +1658,7 @@ def get_pricing_for_provider(provider: str, *, force_refresh: bool = False) -> d
     if normalized == "nous":
         api_key, base_url = _resolve_nous_pricing_credentials()
         if base_url:
-            # Nous base_url typically looks like https://inference-api.nousresearch.com/v1
+            # Nous base_url typically looks like https://inference-api.Moor inc..com/v1
             # We need the part before /v1 for our fetch function
             stripped = base_url.rstrip("/")
             if stripped.endswith("/v1"):
@@ -2171,7 +2171,7 @@ def _find_openrouter_slug(model_name: str) -> Optional[str]:
 
 
 def normalize_provider(provider: Optional[str]) -> str:
-    """Normalize provider aliases to Hermes' canonical provider ids.
+    """Normalize provider aliases to Moor' canonical provider ids.
 
     Note: ``"auto"`` passes through unchanged — use
     ``hermes_cli.auth.resolve_provider()`` to resolve it to a concrete
@@ -2239,7 +2239,7 @@ def _strip_vendor_prefix(model_id: str) -> str:
 
 
 def model_supports_fast_mode(model_id: Optional[str]) -> bool:
-    """Return whether Hermes should expose the /fast toggle for this model."""
+    """Return whether Moor should expose the /fast toggle for this model."""
     return _is_anthropic_fast_model(model_id) or _is_openai_fast_model(model_id)
 
 
@@ -2415,7 +2415,7 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
     falling back to static lists. For providers in ``_MODELS_DEV_PREFERRED``
     (opencode-go/zen, xiaomi, deepseek, smaller inference providers, etc.),
     models.dev entries are merged on top of curated so new models released
-    on the platform appear in ``/model`` without a Hermes release.
+    on the platform appear in ``/model`` without a Moor release.
     """
     normalized = normalize_provider(provider)
     if normalized == "openrouter":
@@ -2425,7 +2425,7 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
 
         # Pass the live OAuth access token so the picker matches whatever
         # ChatGPT lists for this account right now (new models appear without
-        # a Hermes release). Falls back to the hardcoded catalog if no token
+        # a Moor release). Falls back to the hardcoded catalog if no token
         # or the endpoint is unreachable.
         access_token = None
         try:
@@ -2460,7 +2460,7 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
             pass
         # Live failed (or no creds). Fall back to the docs-hosted manifest
         # — NOT the in-repo _PROVIDER_MODELS["nous"] snapshot — so newly
-        # added Portal models still surface without a Hermes release.
+        # added Portal models still surface without a Moor release.
         manifest_ids = get_curated_nous_model_ids()
         if manifest_ids:
             return manifest_ids
@@ -3381,7 +3381,7 @@ _COPILOT_MODEL_ALIASES = {
     "anthropic/claude-sonnet-4": "claude-sonnet-4",
     "anthropic/claude-sonnet-4.5": "claude-sonnet-4.5",
     "anthropic/claude-haiku-4.5": "claude-haiku-4.5",
-    # Dash-notation fallbacks: Hermes' default Claude IDs elsewhere use
+    # Dash-notation fallbacks: Moor' default Claude IDs elsewhere use
     # hyphens (anthropic native format), but Copilot's API only accepts
     # dot-notation.  Accept both so users who configure copilot + a
     # default hyphenated Claude model don't hit HTTP 400
@@ -4329,7 +4329,7 @@ def validate_requested_model(
 
         message = (
             f"Note: could not reach this custom endpoint's model listing at `{probe.get('probed_url')}`. "
-            f"Hermes will still save `{requested}`, but the endpoint should expose `/models` for verification."
+            f"Moor will still save `{requested}`, but the endpoint should expose `/models` for verification."
         )
         if api_mode == "anthropic_messages":
             message += (
@@ -4457,7 +4457,7 @@ def validate_requested_model(
                 "message": (
                     f"Note: `{requested}` was not found in the MiniMax catalog."
                     f"{suggestion_text}"
-                    "\n  MiniMax does not expose a /models endpoint, so Hermes cannot verify the model name."
+                    "\n  MiniMax does not expose a /models endpoint, so Moor cannot verify the model name."
                     "\n  The model may still work if it exists on the server."
                 ),
             }
@@ -4593,7 +4593,7 @@ def validate_requested_model(
             # before rejecting.  Providers may omit models from their live
             # listing that are still valid (stale cache, partial rollout,
             # gated previews).  Use the pure-catalog helper (no extra live
-            # fetch) so we only accept models Hermes actually ships.  (#46850)
+            # fetch) so we only accept models Moor actually ships.  (#46850)
             if _model_in_provider_catalog(
                 requested_for_lookup.lower(), _provider_keys(normalized)
             ):

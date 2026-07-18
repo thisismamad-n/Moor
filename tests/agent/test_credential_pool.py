@@ -1733,7 +1733,7 @@ def test_load_pool_api_key_path_skips_oauth_autodiscovery(tmp_path, monkeypatch)
     ANTHROPIC_TOKEN.  That env-var pattern is the explicit signal that the
     user opted into the API-key path and explicitly OUT of the OAuth
     masquerade (Claude Code identity injection + `mcp_` tool-name rewrite
-    + claude-cli user-agent).  Autodiscovered Claude Code / Hermes PKCE
+    + claude-cli user-agent).  Autodiscovered Claude Code / Moor PKCE
     tokens from other tools' credential files must NOT be silently mixed
     into the anthropic pool — otherwise rotation on a 401/429 could flip
     the session onto OAuth credentials mid-conversation.
@@ -2444,8 +2444,8 @@ def test_nous_seed_from_singletons_preserves_obtained_at_timestamps(tmp_path, mo
                     "access_token": "at_XXXXXXXX",
                     "refresh_token": "rt_YYYYYYYY",
                     "client_id": "hermes-cli",
-                    "portal_base_url": "https://portal.nousresearch.com",
-                    "inference_base_url": "https://inference.nousresearch.com/v1",
+                    "portal_base_url": "https://portal.Moor inc..com",
+                    "inference_base_url": "https://inference.Moor inc..com/v1",
                     "token_type": "Bearer",
                     "scope": "openid profile",
                     "obtained_at": "2026-04-24T10:00:00+00:00",

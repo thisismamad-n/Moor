@@ -714,7 +714,7 @@ DANGEROUS_PATTERNS = [
     # /private/etc/ mirror).
     (rf'\b(cp|mv|install)\b.*\s{_SYSTEM_CONFIG_PATH}', "copy/move file into system config path"),
     (rf'\b(cp|mv|install)\b.*\s["\']?{_PROJECT_SENSITIVE_WRITE_TARGET}["\']?{_COMMAND_TAIL}', "overwrite project env/config file"),
-    # cp/mv/install OVERWRITING a sensitive credential/SSH/shell-rc/Hermes file.
+    # cp/mv/install OVERWRITING a sensitive credential/SSH/shell-rc/Moor file.
     # The tee/redirection patterns above already gate _SENSITIVE_WRITE_TARGET
     # (~/.ssh/*, ~/.netrc/.pgpass/.npmrc/.pypirc, shell rc files,
     # ~/.hermes/config.yaml/.env), but cp/mv/install was only paired for /etc and
@@ -737,12 +737,12 @@ DANGEROUS_PATTERNS = [
     (rf'\b(?:perl|ruby)\b.*(?:^|\s)-[^\s]*i\b.*(?:{_USER_SENSITIVE_WRITE_TARGET})[^\s"\']*', "in-place edit of sensitive credential/SSH/shell-rc path (perl/ruby)"),
     (rf'\bsed\s+-[^\s]*i.*\s{_SYSTEM_CONFIG_PATH}', "in-place edit of system config"),
     (rf'\bsed\s+--in-place\b.*\s{_SYSTEM_CONFIG_PATH}', "in-place edit of system config (long flag)"),
-    # In-place edit of a Hermes-managed security file (~/.hermes/config.yaml or
+    # In-place edit of a Moor-managed security file (~/.hermes/config.yaml or
     # .env). sed -i bypasses the redirection/tee patterns above because it
     # mutates the file directly. Pairs the file_tools write_file/patch deny so
     # the terminal side is not an open door. See #14639.
-    (rf'\bsed\s+-[^\s]*i.*(?:{_HERMES_CONFIG_PATH}|{_HERMES_ENV_PATH})', "in-place edit of Hermes config/env"),
-    (rf'\bsed\s+--in-place\b.*(?:{_HERMES_CONFIG_PATH}|{_HERMES_ENV_PATH})', "in-place edit of Hermes config/env (long flag)"),
+    (rf'\bsed\s+-[^\s]*i.*(?:{_HERMES_CONFIG_PATH}|{_HERMES_ENV_PATH})', "in-place edit of Moor config/env"),
+    (rf'\bsed\s+--in-place\b.*(?:{_HERMES_CONFIG_PATH}|{_HERMES_ENV_PATH})', "in-place edit of Moor config/env (long flag)"),
     # perl -i and ruby -i perform the same in-place mutation as sed -i but are
     # not caught by the -e/-c script-execution pattern above (which targets code
     # evaluation, not file mutation). Pairs the sed -i coverage from #14639.
@@ -751,7 +751,7 @@ DANGEROUS_PATTERNS = [
     # backup suffix (`perl -i.bak`). Match any flag token containing `i`
     # anywhere in the args, not just the first token — `perl -e '...'` (code
     # eval, no -i) does not trip because it has no `-...i` flag token.
-    (rf'\b(?:perl|ruby)\b.*(?:^|\s)-[^\s]*i\b.*(?:{_HERMES_CONFIG_PATH}|{_HERMES_ENV_PATH})', "in-place edit of Hermes config/env (perl/ruby)"),
+    (rf'\b(?:perl|ruby)\b.*(?:^|\s)-[^\s]*i\b.*(?:{_HERMES_CONFIG_PATH}|{_HERMES_ENV_PATH})', "in-place edit of Moor config/env (perl/ruby)"),
     # Interpreter heredocs are handled by _execution_flag_findings() alongside
     # inline-exec flags; keep only shell heredocs regex-based here.
     # Shell execution via heredoc — `bash <<'EOF' ... EOF` runs arbitrary
@@ -900,9 +900,9 @@ def _normalize_command_for_detection(command: str) -> str:
     # would otherwise dissolve (-> C:Usersalice) and make the fold impossible.
     # The fold matches either separator, so POSIX paths are unaffected by order.
     #
-    # Fold the (more specific) Hermes home first: on Windows it nests under the
+    # Fold the (more specific) Moor home first: on Windows it nests under the
     # user home (C:\Users\alice\AppData\...\hermes), so folding the user home
-    # first would eat the prefix the Hermes-home fold needs.
+    # first would eat the prefix the Moor-home fold needs.
     command = _rewrite_resolved_hermes_home(command)
     command = _rewrite_resolved_user_home(command)
     # Strip shell backslash-escapes: r\m → rm. Prevents \-injection bypass.
@@ -1009,7 +1009,7 @@ def _rewrite_resolved_user_home(command: str) -> str:
 
 
 def _rewrite_resolved_hermes_home(command: str) -> str:
-    """Rewrite the resolved absolute Hermes home prefix to ``~/.hermes/``.
+    """Rewrite the resolved absolute Moor home prefix to ``~/.hermes/``.
 
     Resolves the active ``HERMES_HOME`` at call time (and its symlink-resolved
     form) and folds an occurrence of ``<home>/`` in *command* into
@@ -1965,7 +1965,7 @@ def _command_detection_variants(command: str):
 
 
 def _is_verification_artifact_cleanup(command: str) -> bool:
-    """Return whether *command* only removes one Hermes ad-hoc temp script."""
+    """Return whether *command* only removes one Moor ad-hoc temp script."""
     try:
         argv = shlex.split(command, posix=True)
     except ValueError:
@@ -2470,7 +2470,7 @@ def _get_approval_mode() -> str:
 
 
 def is_approval_bypass_active() -> bool:
-    """Return True when the user has opted out of Hermes approval prompts.
+    """Return True when the user has opted out of Moor approval prompts.
 
     Collapses the canonical three-source bypass check used across the codebase
     into one place:

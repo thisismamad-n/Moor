@@ -141,7 +141,7 @@ test('resolveVenvHermesCommand: returns the resolved python backend descriptor w
 test('resolveVenvHermesCommand: is case-insensitive on hermes.exe and the Scripts dir name', () => {
   const deps = makeDeps()
 
-  assert.ok(resolveVenvHermesCommand('/root/venv/Scripts/HERMES.EXE', [], deps))
+  assert.ok(resolveVenvHermesCommand('/root/venv/Scripts/MOOR.EXE', [], deps))
   assert.ok(resolveVenvHermesCommand('/root/venv/SCRIPTS/hermes.exe', [], deps))
 })
 

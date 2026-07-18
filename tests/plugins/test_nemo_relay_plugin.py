@@ -630,7 +630,7 @@ mode = "test"
     initialize = next(event for event in fake.events if event[0] == "plugin.initialize")
     assert initialize[1] == {"version": 1}
     assert "does not expose the CLI lifecycle resolver" in caplog.text
-    assert "Use Hermes-owned [[dynamic_plugins]]" in caplog.text
+    assert "Use Moor-owned [[dynamic_plugins]]" in caplog.text
 
 
 def test_nemo_relay_explicit_dynamic_paths_resolve_from_plugins_toml(tmp_path, monkeypatch):

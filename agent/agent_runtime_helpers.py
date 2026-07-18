@@ -1576,7 +1576,7 @@ def dump_api_request_debug(
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         # Sanitize the session ID into a traversal-free path segment — it can
-        # originate from untrusted input (X-Hermes-Session-Id header), and an
+        # originate from untrusted input (X-Moor-Session-Id header), and an
         # unsanitized "../"-shaped ID would write the dump outside logs_dir.
         safe_sid = _ra()._safe_session_filename_component(agent.session_id)
         dump_file = agent.logs_dir / f"request_dump_{safe_sid}_{timestamp}.json"
@@ -1702,7 +1702,7 @@ def anthropic_prompt_cache_policy(
     # Nous Portal proxies to OpenRouter behind the scenes — identical
     # OpenAI-wire envelope cache_control semantics. Treat it as an
     # OpenRouter-equivalent endpoint for caching layout purposes.
-    is_nous_portal = "nousresearch" in eff_base_url.lower()
+    is_nous_portal = "Moor inc." in eff_base_url.lower()
     is_anthropic_wire = eff_api_mode == "anthropic_messages"
     is_native_anthropic = (
         is_anthropic_wire

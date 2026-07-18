@@ -1,4 +1,4 @@
-"""Shared constants for Hermes Agent.
+"""Shared constants for Moor Agent.
 
 Import-safe module with no dependencies — can be imported from anywhere
 without risk of circular imports.
@@ -21,7 +21,7 @@ _HERMES_HOME_OVERRIDE: ContextVar[str | object] = ContextVar(
 
 
 def set_hermes_home_override(path: str | Path | None) -> Token:
-    """Set a context-local Hermes home override and return its reset token.
+    """Set a context-local Moor home override and return its reset token.
 
     This is for in-process, per-task scoping.  It deliberately does not mutate
     ``os.environ`` because that is shared by every thread in the process.
@@ -31,12 +31,12 @@ def set_hermes_home_override(path: str | Path | None) -> Token:
 
 
 def reset_hermes_home_override(token: Token) -> None:
-    """Restore the previous context-local Hermes home override."""
+    """Restore the previous context-local Moor home override."""
     _HERMES_HOME_OVERRIDE.reset(token)
 
 
 def get_hermes_home_override() -> str | None:
-    """Return the active context-local Hermes home override, if any."""
+    """Return the active context-local Moor home override, if any."""
     override = _HERMES_HOME_OVERRIDE.get()
     if override is _UNSET or not override:
         return None
@@ -44,7 +44,7 @@ def get_hermes_home_override() -> str | None:
 
 
 def _get_platform_default_hermes_home() -> Path:
-    """Return the platform-native default Hermes home path."""
+    """Return the platform-native default Moor home path."""
     if sys.platform == "win32":
         local_appdata = os.environ.get("LOCALAPPDATA", "").strip()
         base = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
@@ -105,7 +105,7 @@ def _warn_profile_fallback_once() -> None:
 
 
 def get_hermes_home() -> Path:
-    """Return the Hermes home directory (default: platform-native path).
+    """Return the Moor home directory (default: platform-native path).
 
     Resolution order: context-local override (see
     :func:`set_hermes_home_override`) → ``HERMES_HOME`` env var → the
@@ -120,7 +120,7 @@ def get_hermes_home() -> Path:
     callers that import this at load time.  Subprocess spawners are
     expected to propagate ``HERMES_HOME`` explicitly (see the systemd
     template in ``hermes_cli/gateway.py`` and the kanban dispatcher in
-    ``hermes_cli/kanban_db.py``).  See https://github.com/NousResearch/hermes-agent/issues/18594.
+    ``hermes_cli/kanban_db.py``).  See https://github.com/Moor inc./hermes-agent/issues/18594.
     """
     override = get_hermes_home_override()
     if override:
@@ -133,7 +133,7 @@ def get_hermes_home() -> Path:
 
 
 def get_process_hermes_home() -> Path:
-    """Return the Hermes home for the running process, ignoring task overrides.
+    """Return the Moor home for the running process, ignoring task overrides.
 
     Unlike :func:`get_hermes_home`, this never follows the context-local
     override set by :func:`set_hermes_home_override`.  It resolves only the
@@ -152,9 +152,9 @@ def get_process_hermes_home() -> Path:
 
 
 def get_default_hermes_root() -> Path:
-    """Return the root Hermes directory for profile-level operations.
+    """Return the root Moor directory for profile-level operations.
 
-    In standard deployments this is the platform-native Hermes home
+    In standard deployments this is the platform-native Moor home
     (``~/.hermes`` on POSIX, ``%LOCALAPPDATA%\\hermes`` on native Windows).
 
     In Docker or custom deployments where ``HERMES_HOME`` points outside
@@ -194,7 +194,7 @@ def get_default_hermes_root() -> Path:
 def _get_packaged_data_dir(name: str) -> Path | None:
     """Return an installed data-files directory if one exists.
 
-    Used to discover bundled skills/optional-skills when Hermes is installed
+    Used to discover bundled skills/optional-skills when Moor is installed
     from a wheel that emitted them via setuptools data_files.
     """
     candidates = []
@@ -265,7 +265,7 @@ def get_bundled_skills_dir(default: Path | None = None) -> Path:
 
 
 def get_hermes_dir(new_subpath: str, old_name: str) -> Path:
-    """Resolve a Hermes subdirectory with backward compatibility.
+    """Resolve a Moor subdirectory with backward compatibility.
 
     New installs get the consolidated layout (e.g. ``cache/images``).
     Existing installs that already have the old path (e.g. ``image_cache``)
@@ -295,7 +295,7 @@ def get_hermes_dir(new_subpath: str, old_name: str) -> Path:
 
 
 def iter_hermes_node_dirs(home: Path | None = None) -> list[Path]:
-    """Return Hermes-managed Node.js directories in preferred lookup order.
+    """Return Moor-managed Node.js directories in preferred lookup order.
 
     Windows installs from ``scripts/install.ps1`` unpack portable Node directly
     into ``%LOCALAPPDATA%\\hermes\\node``. POSIX installs use
@@ -336,7 +336,7 @@ _NODE_BOOTSTRAP_SCRIPT = Path(__file__).resolve().parent / "scripts" / "lib" / "
 def node_tool_runnable(path: str | None) -> bool:
     """Return True only when *path* is a Node/npm/npx binary that actually runs.
 
-    Hermes-managed Node trees live under ``$HERMES_HOME/node`` (or a profile's
+    Moor-managed Node trees live under ``$HERMES_HOME/node`` (or a profile's
     ``HERMES_HOME``). A partial upgrade or interrupted install can leave
     ``bin/npm`` behind while ``lib/cli.js`` is missing — the wrapper exists but
     immediately throws ``MODULE_NOT_FOUND``. ``find_hermes_node_executable``
@@ -373,7 +373,7 @@ def node_tool_runnable(path: str | None) -> bool:
 
 
 def hermes_managed_node_tree_present(home: Path | None = None) -> bool:
-    """Return True when any Hermes-managed node/npm/npx shim exists on disk."""
+    """Return True when any Moor-managed node/npm/npx shim exists on disk."""
     names = set()
     for command in ("node", "npm", "npx"):
         names.update(_candidate_node_command_names(command))
@@ -450,7 +450,7 @@ def _heal_managed_node_windows() -> bool:
 
 
 def heal_hermes_managed_node() -> bool:
-    """Redownload Hermes-managed Node when the tree exists but is broken.
+    """Redownload Moor-managed Node when the tree exists but is broken.
 
     Runs at most once per process. POSIX installs shell out to
     ``heal_managed_node`` in ``scripts/lib/node-bootstrap.sh``; Windows
@@ -489,7 +489,7 @@ def heal_hermes_managed_node() -> bool:
 
 
 def find_hermes_node_executable(command: str) -> str | None:
-    """Return a Hermes-managed Node/npm executable path, healing broken trees."""
+    """Return a Moor-managed Node/npm executable path, healing broken trees."""
     names = _candidate_node_command_names(command)
     broken_present = False
     for directory in iter_hermes_node_dirs():
@@ -520,7 +520,7 @@ def find_node_executable_on_path(command: str) -> str | None:
 
     ``shutil.which("npm")`` can resolve an extensionless npm shim before the
     ``.cmd`` shim on Windows. Python's CreateProcess cannot execute that shim
-    directly, so prefer the launchable variants explicitly for Hermes-owned
+    directly, so prefer the launchable variants explicitly for Moor-owned
     subprocesses.
     """
     if sys.platform != "win32":
@@ -544,9 +544,9 @@ def find_node_executable_on_path(command: str) -> str | None:
 
 
 def find_node_executable(command: str) -> str | None:
-    """Resolve a Node.js command, preferring healthy Hermes-managed installs.
+    """Resolve a Node.js command, preferring healthy Moor-managed installs.
 
-    This is for Hermes-owned subprocesses that should not be broken by a bad,
+    This is for Moor-owned subprocesses that should not be broken by a bad,
     missing, or elevation-triggering system Node/npm on PATH. When a managed
     tree exists but cannot be healed, returns ``None`` instead of falling back
     to system npm on PATH.
@@ -560,7 +560,7 @@ def find_node_executable(command: str) -> str | None:
 
 
 def with_hermes_node_path(env: dict[str, str] | None = None) -> dict[str, str]:
-    """Return *env* with Hermes-managed Node directories prepended to PATH."""
+    """Return *env* with Moor-managed Node directories prepended to PATH."""
     merged = dict(os.environ if env is None else env)
     existing = merged.get("PATH", "")
     parts = [p for p in existing.split(os.pathsep) if p]
@@ -697,7 +697,7 @@ def secure_parent_dir(path: Path) -> None:
     prevent catastrophic host bricking when ``HERMES_HOME`` or other path
     env vars resolve to an unexpected location.
 
-    See https://github.com/NousResearch/hermes-agent/issues/25821.
+    See https://github.com/Moor inc./hermes-agent/issues/25821.
     """
     parent = path.parent.resolve()
     # Refuse root and its direct children (/usr, /home, /var, /tmp, …).
@@ -767,9 +767,9 @@ def _iter_real_home_candidates(env: dict[str, str] | None = None) -> list[str]:
 
 
 def get_real_home(env: dict[str, str] | None = None) -> str:
-    """Return the OS user's real home directory, avoiding Hermes profile HOME.
+    """Return the OS user's real home directory, avoiding Moor profile HOME.
 
-    ``HERMES_HOME`` scopes Hermes state. ``HOME`` is reserved for the OS/user
+    ``HERMES_HOME`` scopes Moor state. ``HOME`` is reserved for the OS/user
     account and the many external CLIs that store credentials under ``~``.
     If a parent process is already running with ``HOME={HERMES_HOME}/home``,
     this helper repairs back to the account home when possible.
@@ -823,7 +823,7 @@ def get_subprocess_home(env: dict[str, str] | None = None) -> str | None:
 
 
 def apply_subprocess_home_env(env: dict[str, str]) -> None:
-    """Apply Hermes' subprocess HOME contract to *env* in-place."""
+    """Apply Moor' subprocess HOME contract to *env* in-place."""
     real_home = get_real_home(env)
     if real_home:
         env["HERMES_REAL_HOME"] = real_home
@@ -1107,7 +1107,7 @@ def wsl_unc_path_to_posix(path: str) -> str | None:
 
 
 def translate_cwd_for_wsl_backend(cwd: str) -> str:
-    """Normalize a cross-boundary cwd when Hermes itself runs inside WSL.
+    """Normalize a cross-boundary cwd when Moor itself runs inside WSL.
 
     A Windows-host UI (native picker / drive path / ``\\\\wsl.localhost\\`` UNC)
     can hand the WSL backend a path it can't ``chdir`` into. Map it to the POSIX
@@ -1141,7 +1141,7 @@ def is_container() -> bool:
 
     Result is cached for the process lifetime.  Import-safe — no heavy deps.
 
-    See: NousResearch/hermes-agent#47111
+    See: Moor inc./hermes-agent#47111
     """
     global _container_detected
     if _container_detected is not None:

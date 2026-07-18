@@ -89,16 +89,16 @@ def get_env_value(name: str, default=None):
 
 
 def hermes_xai_user_agent() -> str:
-    """Return a stable Hermes-specific User-Agent for xAI HTTP calls."""
+    """Return a stable Moor-specific User-Agent for xAI HTTP calls."""
     try:
         from hermes_cli import __version__
     except Exception:
         __version__ = "unknown"
-    return f"Hermes-Agent/{__version__}"
+    return f"Moor-Agent/{__version__}"
 
 
 def _load_config_section(section_name: str) -> Dict[str, Any]:
-    """Return a top-level Hermes config section as a dict, or empty."""
+    """Return a top-level Moor config section as a dict, or empty."""
     try:
         from hermes_cli.config import load_config
 
@@ -222,7 +222,7 @@ def xai_storage_notice_text(section_name: str) -> str:
 
 
 def maybe_mark_xai_storage_notice_seen(section_name: str) -> Optional[str]:
-    """Return the storage notice once per Hermes home, then mark it seen."""
+    """Return the storage notice once per Moor home, then mark it seen."""
     notice = xai_storage_notice_text(section_name)
     if not notice:
         return None
@@ -247,9 +247,9 @@ def resolve_xai_http_credentials(
 ) -> Dict[str, str]:
     """Resolve bearer credentials for direct xAI HTTP endpoints.
 
-    Prefers Hermes-managed xAI OAuth credentials when available, then falls back
+    Prefers Moor-managed xAI OAuth credentials when available, then falls back
     to ``XAI_API_KEY`` resolved via ``hermes_cli.config.get_env_value`` so keys
-    stored in ``~/.hermes/.env`` (the standard Hermes location) are honored —
+    stored in ``~/.hermes/.env`` (the standard Moor location) are honored —
     not just ones already exported into ``os.environ``. This keeps direct xAI
     endpoints (images, TTS, STT, etc.) aligned with the main runtime auth model
     and preserves the regression contract from PR #17140 / #17163.

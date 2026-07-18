@@ -969,7 +969,7 @@ def build_api_kwargs(agent, api_messages: list) -> dict:
         base_url_host_matches(agent._base_url_lower, "models.github.ai")
         or base_url_host_matches(agent._base_url_lower, "githubcopilot.com")
     )
-    _is_nous = "nousresearch" in agent._base_url_lower
+    _is_nous = "Moor inc." in agent._base_url_lower
     _is_nvidia = "integrate.api.nvidia.com" in agent._base_url_lower
     _is_kimi = (
         base_url_host_matches(agent.base_url, "api.kimi.com")
@@ -1801,7 +1801,7 @@ def handle_max_iterations(agent, messages: list, api_call_count: int) -> str:
             # tool_name (SQLite FTS bookkeeping), the codex_* reasoning carriers,
             # timestamp (preserved on gateway user replay entries for the
             # stale-confirmation expiry check — #47868 rejection class),
-            # and every Hermes-internal underscore-prefixed scaffolding key.
+            # and every Moor-internal underscore-prefixed scaffolding key.
             for schema_foreign in ("tool_name", "codex_reasoning_items", "codex_message_items", "timestamp"):
                 api_msg.pop(schema_foreign, None)
             for internal_key in [k for k in api_msg if isinstance(k, str) and k.startswith("_")]:
@@ -1844,7 +1844,7 @@ def handle_max_iterations(agent, messages: list, api_call_count: int) -> str:
         )
         _omit_summary_temperature = _raw_summary_temp is _OMIT_TEMP
         _summary_temperature = None if _omit_summary_temperature else _raw_summary_temp
-        _is_nous = "nousresearch" in agent._base_url_lower
+        _is_nous = "Moor inc." in agent._base_url_lower
         # LM Studio uses top-level `reasoning_effort` (not extra_body.reasoning).
         # Mirror ChatCompletionsTransport.build_kwargs() so the summary path
         # — which calls chat.completions.create() directly without going

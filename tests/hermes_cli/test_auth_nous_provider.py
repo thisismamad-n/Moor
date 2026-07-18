@@ -234,7 +234,7 @@ def test_resolve_nous_runtime_credentials_env_override_wins_live_not_persisted(
 
     hermes_home = tmp_path / "hermes"
     override_url = "https://ai.wildebeest-newton.ts.net/v1"
-    network_url = "https://inference-api.nousresearch.com/v1"
+    network_url = "https://inference-api.Moor inc..com/v1"
     refreshed_token = _invoke_jwt(seconds=3600)
     _setup_nous_auth(
         hermes_home,
@@ -295,8 +295,8 @@ def test_resolve_nous_runtime_credentials_invoke_jwt_is_idempotent(
         "active_provider": "nous",
         "providers": {
             "nous": {
-                "portal_base_url": "https://portal.nousresearch.com",
-                "inference_base_url": "https://inference-api.nousresearch.com/v1",
+                "portal_base_url": "https://portal.Moor inc..com",
+                "inference_base_url": "https://inference-api.Moor inc..com/v1",
                 "client_id": "hermes-cli",
                 "token_type": "Bearer",
                 "scope": auth_mod.DEFAULT_NOUS_SCOPE,
@@ -1056,8 +1056,8 @@ class TestLoginNousSkipKeepsCurrent:
         fake_auth_state = {
             "access_token": "fake-nous-token",
             "agent_key": "fake-agent-key",
-            "inference_base_url": "https://inference-api.nousresearch.com",
-            "portal_base_url": "https://portal.nousresearch.com",
+            "inference_base_url": "https://inference-api.Moor inc..com",
+            "portal_base_url": "https://portal.Moor inc..com",
             "refresh_token": "fake-refresh",
             "token_expires_at": 9999999999,
         }
@@ -1250,7 +1250,7 @@ def test_persist_nous_credentials_writes_both_pool_and_providers(tmp_path, monke
 
 def test_persist_nous_credentials_allows_recovery_from_401(tmp_path, monkeypatch):
     """End-to-end: after persisting via the helper, resolve_nous_runtime_credentials
-    must succeed (not raise "Hermes is not logged into Nous Portal").
+    must succeed (not raise "Moor is not logged into Nous Portal").
 
     This is the exact path that run_agent.py's `_try_refresh_nous_client_credentials`
     calls after a Nous 401 — before the fix it would raise AuthError because
@@ -1273,7 +1273,7 @@ def test_persist_nous_credentials_allows_recovery_from_401(tmp_path, monkeypatch
 
     # Stub the network-touching steps so we don't actually contact the
     # portal — the point of this test is that state lookup succeeds and
-    # doesn't raise "Hermes is not logged into Nous Portal".
+    # doesn't raise "Moor is not logged into Nous Portal".
     def _fake_refresh_access_token(*, client, portal_base_url, client_id, refresh_token):
         return {
             "access_token": new_jwt,
@@ -1443,10 +1443,10 @@ def test_refresh_token_reuse_detection_surfaces_actionable_message():
     """Regression for #15099.
 
     When the Nous Portal server returns ``invalid_grant`` with
-    ``error_description`` containing "reuse detected", Hermes must surface an
+    ``error_description`` containing "reuse detected", Moor must surface an
     actionable message explaining that an external process consumed the
     refresh token.  The default opaque "Refresh token reuse detected; please
-    re-authenticate" string led users to report this as a Hermes persistence
+    re-authenticate" string led users to report this as a Moor persistence
     bug when the true cause is external RT consumption (monitoring scripts,
     custom self-heal hooks).
     """
@@ -1468,7 +1468,7 @@ def test_refresh_token_reuse_detection_surfaces_actionable_message():
     with pytest.raises(AuthError) as exc_info:
         _refresh_access_token(
             client=_FakeClient(),
-            portal_base_url="https://portal.nousresearch.com",
+            portal_base_url="https://portal.Moor inc..com",
             client_id="hermes-cli",
             refresh_token="rt_consumed_elsewhere",
         )
@@ -1503,7 +1503,7 @@ def test_refresh_token_reuse_error_code_is_terminal():
     with pytest.raises(AuthError) as exc_info:
         auth_mod._refresh_access_token(
             client=_FakeClient(),
-            portal_base_url="https://portal.nousresearch.com",
+            portal_base_url="https://portal.Moor inc..com",
             client_id="hermes-cli",
             refresh_token="rt_consumed_elsewhere",
         )
@@ -1538,7 +1538,7 @@ def test_refresh_token_exchange_sends_refresh_token_header():
 
     payload = _refresh_access_token(
         client=client,
-        portal_base_url="https://portal.nousresearch.com",
+        portal_base_url="https://portal.Moor inc..com",
         client_id="hermes-cli",
         refresh_token="refresh-1",
     )
@@ -1579,7 +1579,7 @@ def test_refresh_non_reuse_error_keeps_original_description():
     with pytest.raises(AuthError) as exc_info:
         _refresh_access_token(
             client=_FakeClient(),
-            portal_base_url="https://portal.nousresearch.com",
+            portal_base_url="https://portal.Moor inc..com",
             client_id="hermes-cli",
             refresh_token="rt_anything",
         )
@@ -2252,7 +2252,7 @@ class TestStalePortalBaseUrlMigration:
             "active_provider": "nous",
             "providers": {
                 "nous": {
-                    "portal_base_url": "https://api.nousresearch.com",
+                    "portal_base_url": "https://api.Moor inc..com",
                     "access_token": "test-token",
                     "refresh_token": "test-refresh",
                 }
@@ -2324,7 +2324,7 @@ class TestStalePortalBaseUrlMigration:
         )
         auth_file = tmp_path / "auth.json"
         store = json.loads(auth_file.read_text())
-        store["providers"]["nous"]["portal_base_url"] = "https://api.nousresearch.com"
+        store["providers"]["nous"]["portal_base_url"] = "https://api.Moor inc..com"
         auth_file.write_text(json.dumps(store, indent=2))
 
         refresh_calls = []
@@ -2413,7 +2413,7 @@ class TestStalePortalBaseUrlMigration:
                 "expires_in": 3600,
                 "token_type": "Bearer",
                 "scope": "inference:invoke",
-                "inference_base_url": "https://inference-api.nousresearch.com/v1",
+                "inference_base_url": "https://inference-api.Moor inc..com/v1",
             }
 
         monkeypatch.setattr(auth_mod, "_refresh_access_token", _fake_refresh_access_token)
@@ -2440,7 +2440,7 @@ class TestStalePortalBaseUrlMigration:
         auth_file = hermes_home / "auth.json"
         store = json.loads(auth_file.read_text())
         store["providers"]["nous"]["portal_base_url"] = (
-            "http://portal.nousresearch.com"
+            "http://portal.Moor inc..com"
         )
         auth_file.write_text(json.dumps(store, indent=2))
 

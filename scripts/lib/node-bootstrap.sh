@@ -230,7 +230,7 @@ _nb_install_bundled_node() {
 }
 
 # ---------------------------------------------------------------------------
-# Heal a broken Hermes-managed Node tree (partial upgrade / missing lib/)
+# Heal a broken Moor-managed Node tree (partial upgrade / missing lib/)
 # ---------------------------------------------------------------------------
 
 _nb_managed_tool_broken() {
@@ -268,7 +268,7 @@ heal_managed_node() {
     if ! _nb_managed_node_needs_heal; then
         return 0
     fi
-    _nb_log "Hermes-managed Node is broken — redownloading to $HERMES_HOME/node/..."
+    _nb_log "Moor-managed Node is broken — redownloading to $HERMES_HOME/node/..."
     _nb_install_bundled_node
 }
 

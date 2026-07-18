@@ -19,7 +19,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Using Hermes',
+      label: 'Using Moor',
       collapsed: true,
       items: [
         'user-guide/cli',

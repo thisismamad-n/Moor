@@ -1,5 +1,5 @@
 """
-Session-scoped context variables for the Hermes gateway.
+Session-scoped context variables for the Moor gateway.
 
 Replaces the previous ``os.environ``-based session state
 (``HERMES_SESSION_PLATFORM``, ``HERMES_SESSION_CHAT_ID``, etc.) with
@@ -347,7 +347,7 @@ def declare_stateless_channel() -> None:
     returned within the turn instead of being dispatched to a channel that will
     never deliver them.
 
-    See NousResearch/hermes-agent#53027 and #63142.
+    See Moor inc./hermes-agent#53027 and #63142.
     """
     _SESSION_ASYNC_DELIVERY.set(False)
 

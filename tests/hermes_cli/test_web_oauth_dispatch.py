@@ -31,7 +31,7 @@ from fastapi.testclient import TestClient
 from hermes_cli.web_server import _SESSION_TOKEN, app
 
 client = TestClient(app)
-HEADERS = {"X-Hermes-Session-Token": _SESSION_TOKEN}
+HEADERS = {"X-Moor-Session-Token": _SESSION_TOKEN}
 
 
 def _make_profile_home(tmp_path, monkeypatch, profile="coder"):
@@ -45,9 +45,9 @@ def _fake_nous_device_data():
     return {
         "device_code": "device-code",
         "user_code": "NOUS-1234",
-        "verification_uri": "https://portal.nousresearch.com/device",
+        "verification_uri": "https://portal.Moor inc..com/device",
         "verification_uri_complete": (
-            "https://portal.nousresearch.com/device?user_code=NOUS-1234"
+            "https://portal.Moor inc..com/device?user_code=NOUS-1234"
         ),
         "expires_in": 600,
         "interval": 5,
@@ -55,7 +55,7 @@ def _fake_nous_device_data():
 
 
 def _invoke_scope_refusal():
-    request = httpx.Request("POST", "https://portal.nousresearch.com/oauth/device/code")
+    request = httpx.Request("POST", "https://portal.Moor inc..com/oauth/device/code")
     response = httpx.Response(
         400,
         json={
@@ -402,7 +402,7 @@ def test_nous_dashboard_poller_preserves_effective_scope_when_token_omits_scope(
         "created_at": time.time(),
         "status": "pending",
         "error_message": None,
-        "portal_base_url": "https://portal.nousresearch.com",
+        "portal_base_url": "https://portal.Moor inc..com",
         "client_id": "hermes-cli",
         "device_code": "device-code",
         "interval": 5,
@@ -553,7 +553,7 @@ def test_copilot_acp_now_in_accounts():
 
 
 def test_oauth_catalog_marks_external_providers_not_disconnectable():
-    """External CLI credentials are visible in Accounts but cannot be removed by Hermes."""
+    """External CLI credentials are visible in Accounts but cannot be removed by Moor."""
     resp = client.get("/api/providers/oauth", headers=HEADERS)
     assert resp.status_code == 200, resp.text
     providers = {p["id"]: p for p in resp.json()["providers"]}

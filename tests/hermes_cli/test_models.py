@@ -798,7 +798,7 @@ class TestNousRecommendedModels:
         mock_cm = self._mock_urlopen(self._SAMPLE_PAYLOAD)
         with patch("hermes_cli.models._urlopen_model_catalog_request", return_value=mock_cm) as mock_urlopen:
             fetch_nous_recommended_models("https://portal.example.com")
-            fetch_nous_recommended_models("https://portal.staging-nousresearch.com")
+            fetch_nous_recommended_models("https://portal.staging-Moor inc..com")
         assert mock_urlopen.call_count == 2  # different portals → separate fetches
 
     def test_fetch_returns_empty_on_network_failure(self):

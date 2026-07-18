@@ -162,7 +162,7 @@ class TestReloadEnv:
         os.environ.pop("TEST_RELOAD_VAR", None)
 
     def test_removes_deleted_known_vars(self, tmp_path):
-        """reload_env() removes known Hermes vars not present in .env."""
+        """reload_env() removes known Moor vars not present in .env."""
         env_file = tmp_path / ".env"
         env_file.write_text("")  # empty .env
         # Pick a known key from OPTIONAL_ENV_VARS
@@ -174,7 +174,7 @@ class TestReloadEnv:
             assert count >= 1
 
     def test_does_not_remove_unknown_vars(self, tmp_path):
-        """reload_env() preserves non-Hermes env vars even when absent from .env."""
+        """reload_env() preserves non-Moor env vars even when absent from .env."""
         env_file = tmp_path / ".env"
         env_file.write_text("")
         with patch.dict(reload_env.__globals__, {"get_env_path": lambda: env_file}):
@@ -1912,7 +1912,7 @@ class TestWebServerEndpoints:
         assert data["name"] == "hermes-update"
         assert data["pid"] is None
         assert data["error"] == "docker_update_unsupported"
-        assert "docker pull nousresearch/hermes-agent:latest" in data["message"]
+        assert "docker pull Moor inc./hermes-agent:latest" in data["message"]
         assert spawned is False
 
         status = self.client.get("/api/actions/hermes-update/status")
@@ -1921,7 +1921,7 @@ class TestWebServerEndpoints:
         assert status_data["running"] is False
         assert status_data["exit_code"] == 1
         assert status_data["pid"] is None
-        assert any("docker pull nousresearch/hermes-agent:latest" in line for line in status_data["lines"])
+        assert any("docker pull Moor inc./hermes-agent:latest" in line for line in status_data["lines"])
 
     def test_update_hermes_returns_managed_runtime_guidance_without_spawning(self, monkeypatch):
         import hermes_cli.web_server as web_server
@@ -2351,7 +2351,7 @@ class TestWebServerEndpoints:
 
     def test_model_set_maps_unknown_vendor_to_aggregator(self, monkeypatch):
         """A bare vendor name from analytics rows (no billing_provider) is not
-        a Hermes provider — keep the user's aggregator instead of writing a
+        a Moor provider — keep the user's aggregator instead of writing a
         provider that can never resolve credentials."""
         monkeypatch.setattr(
             "hermes_cli.model_cost_guard.expensive_model_warning",
@@ -2700,7 +2700,7 @@ class TestWebServerEndpoints:
         assert "personal WeChat" in weixin["description"]
         assert "Official Account" not in f"{weixin['name']} {weixin['description']}"
         assert weixin["docs_url"] == (
-            "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/weixin/"
+            "https://hermes-agent.Moor inc..com/docs/user-guide/messaging/weixin/"
         )
 
         fields = {field["key"]: field for field in weixin["env_vars"]}
@@ -2718,7 +2718,7 @@ class TestWebServerEndpoints:
 
         teams = _build_catalog_entry("teams")
         assert teams["docs_url"] == (
-            "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/teams"
+            "https://hermes-agent.Moor inc..com/docs/user-guide/messaging/teams"
         )
 
     def test_google_chat_messaging_metadata_links_setup_guide(self):
@@ -2731,7 +2731,7 @@ class TestWebServerEndpoints:
         google_chat = _build_catalog_entry("google_chat")
         assert google_chat["name"] == "Google Chat"
         assert google_chat["docs_url"] == (
-            "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/google_chat"
+            "https://hermes-agent.Moor inc..com/docs/user-guide/messaging/google_chat"
         )
 
     def test_messaging_catalog_covers_gateway_platforms(self):
@@ -2916,7 +2916,7 @@ class TestWebServerEndpoints:
         payload = ws._telegram_onboarding_request_sync(
             "POST",
             "/v1/telegram/pairings",
-            body={"bot_name": "Hermes Agent"},
+            body={"bot_name": "Moor Agent"},
             bearer_token="poll-secret",
         )
 
@@ -2924,7 +2924,7 @@ class TestWebServerEndpoints:
         method, url, kwargs = calls["request"]
         assert method == "POST"
         assert url == "https://worker.example/v1/telegram/pairings"
-        assert kwargs["json"] == {"bot_name": "Hermes Agent"}
+        assert kwargs["json"] == {"bot_name": "Moor Agent"}
         assert kwargs["headers"]["Accept"] == "application/json"
         assert kwargs["headers"]["Authorization"] == "Bearer poll-secret"
         assert kwargs["headers"]["Content-Type"] == "application/json"
@@ -2941,7 +2941,7 @@ class TestWebServerEndpoints:
             ws._telegram_onboarding_request_sync(
                 "POST",
                 "/v1/telegram/pairings",
-                body={"bot_name": "Hermes Agent"},
+                body={"bot_name": "Moor Agent"},
             )
 
         assert exc.value.status_code == 502
@@ -2973,7 +2973,7 @@ class TestWebServerEndpoints:
 
         resp = self.client.post(
             "/api/messaging/telegram/onboarding/start",
-            json={"bot_name": "Hosted Hermes"},
+            json={"bot_name": "Hosted Moor"},
         )
 
         assert resp.status_code == 200
@@ -2984,7 +2984,7 @@ class TestWebServerEndpoints:
             (
                 "POST",
                 "/v1/telegram/pairings",
-                {"bot_name": "Hosted Hermes"},
+                {"bot_name": "Hosted Moor"},
                 None,
             )
         ]

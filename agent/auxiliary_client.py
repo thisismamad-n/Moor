@@ -202,13 +202,13 @@ def _openai_http_client_kwargs(
 
 def _create_openai_client(*, api_key: str, base_url: str, **kwargs: Any) -> Any:
     kwargs = {**_openai_http_client_kwargs(base_url), **kwargs}
-    # Hermes owns auxiliary retry + provider/model fallback policy (the
+    # Moor owns auxiliary retry + provider/model fallback policy (the
     # same-provider transient retry in call_llm plus the except-chain
     # fallback). The OpenAI SDK's own default (max_retries=2 → up to 3
     # attempts) silently multiplies the effective wall time of every aux call
     # by 3× on a slow/hung endpoint, so a 120s timeout can stall ~360s before
-    # Hermes sees a single failure (issue #54465). Disable SDK-internal retries
-    # by default and let Hermes control the budget; explicit callers can still
+    # Moor sees a single failure (issue #54465). Disable SDK-internal retries
+    # by default and let Moor control the budget; explicit callers can still
     # override via kwargs.
     kwargs.setdefault("max_retries", 0)
     return OpenAI(api_key=api_key, base_url=base_url, **kwargs)
@@ -441,7 +441,7 @@ def _compression_threshold_for_model(
     """Return a context-compression threshold override for specific models.
 
     The threshold is the fraction of the model's context window that must be
-    consumed before Hermes triggers summarization.  Higher values delay
+    consumed before Moor triggers summarization.  Higher values delay
     compression and preserve more raw context.
 
     Per-model/route overrides:
@@ -567,8 +567,8 @@ _PROVIDERS_WITHOUT_VISION: frozenset = frozenset({
 # `X-Title` is the canonical attribution header OpenRouter's dashboard
 # reads; the previous `X-OpenRouter-Title` label was not recognized there.
 _OR_HEADERS_BASE = {
-    "HTTP-Referer": "https://hermes-agent.nousresearch.com",
-    "X-Title": "Hermes Agent",
+    "HTTP-Referer": "https://hermes-agent.Moor inc..com",
+    "X-Title": "Moor Agent",
     "X-OpenRouter-Categories": "productivity,cli-agent",
 }
 
@@ -716,7 +716,7 @@ auxiliary_is_nous: bool = False
 # Default auxiliary models per provider
 _OPENROUTER_MODEL = "google/gemini-3-flash-preview"
 _NOUS_MODEL = "google/gemini-3-flash-preview"
-_NOUS_DEFAULT_BASE_URL = "https://inference-api.nousresearch.com/v1"
+_NOUS_DEFAULT_BASE_URL = "https://inference-api.Moor inc..com/v1"
 _ANTHROPIC_DEFAULT_BASE_URL = "https://api.anthropic.com"
 _AUTH_JSON_PATH = get_hermes_home() / "auth.json"
 
@@ -750,7 +750,7 @@ def _codex_cloudflare_headers(access_token: str) -> Dict[str, str]:
     crash at client construction.
     """
     headers = {
-        "User-Agent": "codex_cli_rs/0.0.0 (Hermes Agent)",
+        "User-Agent": "codex_cli_rs/0.0.0 (Moor Agent)",
         "originator": "codex_cli_rs",
     }
     if not isinstance(access_token, str) or not access_token.strip():
@@ -1376,7 +1376,7 @@ class _AnthropicCompletionsAdapter:
         #     the native ``thinking`` field above (build_anthropic_kwargs);
         #     forwarding the raw field alongside would double-specify
         #     reasoning and 400 on strict gateways.
-        #   - ``_``-prefixed keys: private Hermes plumbing (_reasoning_config
+        #   - ``_``-prefixed keys: private Moor plumbing (_reasoning_config
         #     et al.), never wire fields.
         caller_extra_body = kwargs.get("extra_body")
         if caller_extra_body and isinstance(caller_extra_body, dict):
@@ -1878,7 +1878,7 @@ def _resolve_xai_oauth_for_aux() -> Optional[Tuple[str, str]]:
 
 
 def _read_codex_access_token() -> Optional[str]:
-    """Read a valid, non-expired Codex OAuth access token from Hermes auth store.
+    """Read a valid, non-expired Codex OAuth access token from Moor auth store.
 
     If a credential pool exists but currently has no selectable runtime entry
     (for example all pool slots are marked exhausted), fall back to the
@@ -3493,7 +3493,7 @@ def _recoverable_pool_provider(
         return "openai-codex"
     if base_url_host_matches(base, "openrouter.ai"):
         return "openrouter"
-    if base_url_host_matches(base, "inference-api.nousresearch.com"):
+    if base_url_host_matches(base, "inference-api.Moor inc..com"):
         return "nous"
     if base_url_host_matches(base, "api.anthropic.com"):
         return "anthropic"
@@ -3783,7 +3783,7 @@ def _auth_refresh_provider_for_route(
         return "openai-codex"
     if base_url_host_matches(client_base_url, "api.anthropic.com"):
         return "anthropic"
-    if base_url_host_matches(client_base_url, "inference-api.nousresearch.com"):
+    if base_url_host_matches(client_base_url, "inference-api.Moor inc..com"):
         return "nous"
     return normalized
 
@@ -4282,7 +4282,7 @@ def _try_main_fallback_chain(
     """Try the top-level main-agent fallback chain for an auxiliary call.
 
     ``provider: auto`` auxiliary tasks should respect the user's declared
-    main fallback policy before dropping into Hermes' built-in discovery
+    main fallback policy before dropping into Moor' built-in discovery
     chain. The top-level chain is read through ``get_fallback_chain`` so
     both modern ``fallback_providers`` and legacy ``fallback_model`` entries
     participate in the same order as the main agent.
@@ -4645,7 +4645,7 @@ def _to_async_client(sync_client, model: str, is_vision: bool = False):
         **_openai_http_client_kwargs(sync_base_url, async_mode=True),
         **async_kwargs,
     }
-    # See _create_openai_client: disable SDK-internal retries so Hermes owns
+    # See _create_openai_client: disable SDK-internal retries so Moor owns
     # the auxiliary retry/timeout budget (issue #54465).
     async_kwargs.setdefault("max_retries", 0)
     return AsyncOpenAI(**async_kwargs), model
@@ -6775,7 +6775,7 @@ def _build_call_kwargs(
         kwargs["extra_body"] = merged_extra
 
     # Native Anthropic Messages adapters do not consume ``extra_body``. Carry
-    # the normalized Hermes reasoning config through a private kwarg so the
+    # the normalized Moor reasoning config through a private kwarg so the
     # adapter can pass it into build_anthropic_kwargs(), where provider-aware
     # thinking/output_config projection lives. Do not expose this private kwarg
     # to ordinary OpenAI-compatible SDK clients, which would reject it.
@@ -6937,7 +6937,7 @@ def call_llm(
         tools: Tool definitions (for function calling).
         timeout: Request timeout in seconds (None = read from auxiliary.{task}.timeout config).
         extra_body: Additional request body fields.
-        reasoning_config: Optional Hermes reasoning config for direct model calls
+        reasoning_config: Optional Moor reasoning config for direct model calls
               such as MoA reference/aggregator slots.
         stream: When True, return the raw SDK streaming iterator instead of a
             validated complete response. The caller is responsible for consuming
@@ -7197,7 +7197,7 @@ def call_llm(
         # known-good default). Only applies to Nous-routed calls.
         _heal_is_nous = (
             resolved_provider == "nous"
-            or base_url_host_matches(_base_info, "inference-api.nousresearch.com")
+            or base_url_host_matches(_base_info, "inference-api.Moor inc..com")
         )
         if _is_model_not_found_error(first_err) and _heal_is_nous:
             healed_model = _refresh_nous_recommended_model(
@@ -7218,7 +7218,7 @@ def call_llm(
         # ── Nous auth refresh parity with main agent ──────────────────
         client_is_nous = (
             resolved_provider == "nous"
-            or base_url_host_matches(_base_info, "inference-api.nousresearch.com")
+            or base_url_host_matches(_base_info, "inference-api.Moor inc..com")
         )
         if (
             _is_payment_error(first_err)
@@ -7760,7 +7760,7 @@ async def async_call_llm(
         # fresh Portal fetch and retry once with the current recommendation.
         _heal_is_nous = (
             resolved_provider == "nous"
-            or base_url_host_matches(_client_base, "inference-api.nousresearch.com")
+            or base_url_host_matches(_client_base, "inference-api.Moor inc..com")
         )
         if _is_model_not_found_error(first_err) and _heal_is_nous:
             healed_model = _refresh_nous_recommended_model(
@@ -7781,7 +7781,7 @@ async def async_call_llm(
         # ── Nous auth refresh parity with main agent ──────────────────
         client_is_nous = (
             resolved_provider == "nous"
-            or base_url_host_matches(_client_base, "inference-api.nousresearch.com")
+            or base_url_host_matches(_client_base, "inference-api.Moor inc..com")
         )
         if (
             _is_payment_error(first_err)

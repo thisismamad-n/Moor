@@ -332,7 +332,7 @@ def _safe_session_filename_component(session_id: str) -> str:
     """Return a stable, path-safe filename component for a session ID.
 
     Session IDs can originate from untrusted input (e.g. the
-    ``X-Hermes-Session-Id`` API header) and are otherwise interpolated raw
+    ``X-Moor-Session-Id`` API header) and are otherwise interpolated raw
     into on-disk artifact filenames under ``~/.hermes/sessions/``.  Without
     sanitization, a traversal-shaped ID such as ``../../../../etc/pwned``
     would let a caller write the session snapshot / request dump outside the
@@ -2135,7 +2135,7 @@ class AIAgent:
         That body covers several real causes we cannot distinguish without
         more info from xAI.  The most common (and least obvious) one is
         that **X Premium+ does NOT include API access** — only standalone
-        SuperGrok subscribers can use Hermes against xai-oauth.  Lots of
+        SuperGrok subscribers can use Moor against xai-oauth.  Lots of
         users see Grok in their X app, assume it works here too, and hit
         this 403 with no idea why.  Lead the hint with that.
 
@@ -2660,7 +2660,7 @@ class AIAgent:
         # session-id changes land in the right file without any re-point
         # bookkeeping at the call sites.  Sanitize the session ID into a
         # single traversal-free path segment — session IDs can come from
-        # untrusted input (X-Hermes-Session-Id header) and must not escape
+        # untrusted input (X-Moor-Session-Id header) and must not escape
         # the sessions directory.
         try:
             safe_sid = _safe_session_filename_component(self.session_id)
@@ -5646,7 +5646,7 @@ class AIAgent:
         Some providers/routes reject `reasoning` with 400s, so gate it to
         known reasoning-capable model families and direct Nous Portal.
         """
-        if base_url_host_matches(self._base_url_lower, "nousresearch.com"):
+        if base_url_host_matches(self._base_url_lower, "Moor inc..com"):
             return True
         if (
             base_url_host_matches(self._base_url_lower, "models.github.ai")

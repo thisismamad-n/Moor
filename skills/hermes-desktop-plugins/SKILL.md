@@ -10,9 +10,9 @@ metadata:
     related_skills: []
 ---
 
-# Hermes Desktop Plugins Skill
+# Moor Desktop Plugins Skill
 
-Write plugins for the Hermes desktop app: statusbar items, layout panes,
+Write plugins for the Moor desktop app: statusbar items, layout panes,
 command-palette commands, keybinds, routes, and themes. A plugin is a single
 plain-JavaScript ESM file the app loads at runtime — no build step, no repo
 changes. This skill does not cover backend plugins (`~/.hermes/plugins/`);
@@ -26,7 +26,7 @@ those are Python and documented separately.
 
 ## Prerequisites
 
-- The Hermes desktop app (it loads plugins; the CLI/gateway alone does not).
+- The Moor desktop app (it loads plugins; the CLI/gateway alone does not).
 - Write access to `$HERMES_HOME/desktop-plugins/` (usually
   `~/.hermes/desktop-plugins/`).
 

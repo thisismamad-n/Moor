@@ -693,7 +693,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
           }))
         }
       } else if (event.type === 'error') {
-        const errorMessage = payload?.message || 'Hermes reported an error'
+        const errorMessage = payload?.message || 'Moor reported an error'
         const looksLikeProviderSetup = isProviderSetupErrorMessage(errorMessage)
 
         // A turn that errors out has also ended — drop any open blocking prompt
@@ -729,7 +729,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
           notify({
             id: `gateway-error:${errorMessage}`,
             kind: 'error',
-            title: 'Hermes error',
+            title: 'Moor error',
             message: errorMessage
           })
         }

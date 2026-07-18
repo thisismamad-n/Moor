@@ -6788,7 +6788,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 )
                 continue
 
-            _cli_visible_print(f"\n  [Hermes #{visible_index}]{_ts_suffix(msg)}")
+            _cli_visible_print(f"\n  [Moor #{visible_index}]{_ts_suffix(msg)}")
             tool_calls = msg.get("tool_calls") or []
             if content_text:
                 preview = content_text[:preview_limit]
@@ -8965,7 +8965,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin):
         """Queue background notifications owned by this visible CLI session.
 
         ``process_registry`` restores durable delegation completions into every
-        process using the same Hermes profile.  Always pass this CLI's stable
+        process using the same Moor profile.  Always pass this CLI's stable
         session identity when draining so another window cannot claim and mark
         delivered a completion that belongs to this one.
         """

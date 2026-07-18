@@ -107,12 +107,12 @@ test('profileRemoteOverride treats a cloud entry as a remote override', () => {
   // entry would (Q6) — the override must be returned, not dropped.
   const config = {
     profiles: {
-      coder: { mode: 'cloud', url: 'https://agent-1.agents.nousresearch.com', authMode: 'oauth' }
+      coder: { mode: 'cloud', url: 'https://agent-1.agents.Moor inc..com', authMode: 'oauth' }
     }
   }
 
   assert.deepEqual(profileRemoteOverride(config, 'coder'), {
-    url: 'https://agent-1.agents.nousresearch.com',
+    url: 'https://agent-1.agents.Moor inc..com',
     authMode: 'oauth',
     token: undefined
   })

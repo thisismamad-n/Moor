@@ -1,5 +1,5 @@
 """
-Hermes CLI - Unified command-line interface for Hermes Agent.
+Moor CLI - Unified command-line interface for Moor Agent.
 
 Provides subcommands for:
 - hermes chat          - Interactive chat (same as ./hermes)
