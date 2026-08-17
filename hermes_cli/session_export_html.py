@@ -6,7 +6,6 @@ No remote dependencies.
 Enhanced with UI-UX-PRO-MAX design intelligence.
 """
 
-import json
 import datetime
 import secrets
 from typing import Any, Dict, List
@@ -810,8 +809,13 @@ def generate_multi_session_html_export(sessions: List[Dict[str, Any]]) -> str:
     for s in sessions:
         sid = str(s.get("id", "N/A"))
         escaped_sid = _escape_html(sid)
+<<<<<<< HEAD
         title = s.get("title") or "Moor Session"
         model = s.get("model", "Unknown")
+=======
+        title = s.get("title") or "Hermes Session"
+        model = s.get("model") or "Unknown"
+>>>>>>> upstream/main
         started_at = _format_timestamp(s.get("started_at", 0))
         messages = s.get("messages", [])
         
@@ -857,7 +861,11 @@ def generate_multi_session_html_export(sessions: List[Dict[str, Any]]) -> str:
 
     script_nonce = secrets.token_urlsafe(16)
     return HTML_TEMPLATE.format(
+<<<<<<< HEAD
         page_title="Moor Session Export" if is_multi else _escape_html(sessions[0].get("title", "Moor Session")),
+=======
+        page_title="Hermes Session Export" if is_multi else _escape_html(sessions[0].get("title") or "Hermes Session"),
+>>>>>>> upstream/main
         sidebar_html=sidebar_html,
         sessions_html="\n".join(sessions_html_list),
         main_margin="var(--sidebar-width)" if is_multi else "0",

@@ -21,8 +21,13 @@ The fix is a one-line SSH local-forward. For MCP servers on an interactive termi
 ssh -N -L 43827:127.0.0.1:43827 user@remote-host
 
 # In your existing SSH session on the remote machine:
+<<<<<<< HEAD
 hermes auth add spotify --no-browser
 # → Moor prints an authorize URL. Open it in a browser on your laptop.
+=======
+hermes auth spotify --no-browser
+# → Hermes prints an authorize URL. Open it in a browser on your laptop.
+>>>>>>> upstream/main
 # → Your browser redirects to 127.0.0.1:43827/callback, the tunnel forwards
 #   the request to the remote listener, login completes.
 ```
@@ -92,7 +97,7 @@ ssh -N -L 43827:127.0.0.1:43827 user@remote-host
 
 ```bash
 ssh user@remote-host
-hermes auth add spotify --no-browser
+hermes auth spotify --no-browser
 ```
 
 Moor detects the SSH session, skips the browser auto-open, and prints an authorize URL plus a `Waiting for callback on http://127.0.0.1:<port>/callback` line.

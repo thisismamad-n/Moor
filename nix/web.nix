@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # nix/web.nix — Moor Web Dashboard (Vite/React) frontend build
 { pkgs, hermesNpmLib, ... }:
 let
@@ -9,13 +10,18 @@ let
       "apps/shared"
     ];
   };
+=======
+# nix/web.nix — Hermes Web Dashboard (Vite/React) frontend build
+{ hermesNpmLib, ... }:
+hermesNpmLib.buildNpmPackage {
+  dirs = [
+    "web"
+>>>>>>> upstream/main
 
-  packageJson = builtins.fromJSON (builtins.readFile (npm.src + "/web/package.json"));
-  version = packageJson.version;
-in
-pkgs.buildNpmPackage (npm // {
-  pname = "hermes-web";
-  inherit version;
+    # @hermes/shared ships as a file: workspace dep of web, so its source
+    # must be in the filtered src tree too.
+    "apps/shared"
+  ];
 
   doCheck = false;
 
@@ -38,4 +44,4 @@ pkgs.buildNpmPackage (npm // {
     cp -r web/dist $out
     runHook postInstall
   '';
-})
+}

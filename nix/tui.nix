@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # nix/tui.nix — Moor TUI (Ink/React) compiled with tsc and bundled
 { pkgs, hermesNpmLib, ... }:
 let
@@ -9,6 +10,15 @@ in
 pkgs.buildNpmPackage (npm // {
   pname = "hermes-tui";
   inherit version;
+=======
+# nix/tui.nix — Hermes TUI (Ink/React) compiled with tsc and bundled
+{ hermesNpmLib, ... }:
+hermesNpmLib.buildNpmPackage {
+  dirs = [
+    "ui-tui"
+    "apps/shared"
+  ];
+>>>>>>> upstream/main
 
   doCheck = false;
 
@@ -30,4 +40,4 @@ pkgs.buildNpmPackage (npm // {
 
     runHook postInstall
   '';
-})
+}

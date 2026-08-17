@@ -70,6 +70,7 @@ def test_console_ws_rejects_missing_or_bad_token(console_client):
     assert exc.value.code == 4401
 
 
+<<<<<<< HEAD
 def test_console_ws_runs_read_only_command(console_client):
     with console_client.websocket_connect(_url()) as conn:
         ready = conn.receive_json()
@@ -101,11 +102,13 @@ def test_console_ws_confirmed_command_executes_after_confirmation(console_client
     assert load_config()["display"]["interface"] == "cli"
 
 
+=======
+>>>>>>> upstream/main
 def test_console_ws_cancel_returns_to_prompt(console_client, monkeypatch):
     from hermes_cli.console_engine import ConsoleResult, HermesConsoleEngine
 
     def slow_execute(self, line: str, *, confirmed: bool = False):
-        time.sleep(0.5)
+        time.sleep(0.2)
         return ConsoleResult("ok", output="late", command=line)
 
     monkeypatch.setattr(HermesConsoleEngine, "execute", slow_execute)

@@ -35,50 +35,9 @@ RestartSteps=5
         assert "Restart=always" in result
         assert "RestartSec=5" in result
 
-    def test_preserves_other_directives(self):
-        from hermes_cli.gateway import _strip_optional_systemd_directives
-        text = """[Service]
-Type=simple
-ExecStart=/usr/bin/python gateway run
-Restart=always
-RestartSec=5
-KillMode=mixed
-KillSignal=SIGTERM
-"""
-        result = _strip_optional_systemd_directives(text)
-        assert "Type=simple" in result
-        assert "ExecStart=" in result
-        assert "KillMode=mixed" in result
-        assert "KillSignal=SIGTERM" in result
 
-    def test_handles_empty_string(self):
-        from hermes_cli.gateway import _strip_optional_systemd_directives
-        assert _strip_optional_systemd_directives("") == ""
 
-    def test_handles_no_optional_directives(self):
-        from hermes_cli.gateway import _strip_optional_systemd_directives
-        text = "[Service]\nRestart=always\n"
-        result = _strip_optional_systemd_directives(text)
-        assert "Restart=always" in result
-        assert "RestartMaxDelaySec" not in result
 
-    def test_preserves_comments(self):
-        from hermes_cli.gateway import _strip_optional_systemd_directives
-        text = """[Service]
-# RestartMaxDelaySec is set below
-RestartMaxDelaySec=300
-"""
-        result = _strip_optional_systemd_directives(text)
-        # The comment line should be preserved
-        assert "# RestartMaxDelaySec" in result
-        # The actual directive should be removed
-        assert "RestartMaxDelaySec=300" not in result
-
-    def test_handles_inline_values_with_equals(self):
-        from hermes_cli.gateway import _strip_optional_systemd_directives
-        text = "RestartMaxDelaySec=300\n"
-        result = _strip_optional_systemd_directives(text)
-        assert result == ""
 
     def test_full_unit_comparison(self):
         """Simulate the full stale-check flow with an older systemd unit."""
@@ -191,6 +150,7 @@ WantedBy=default.target
 
         assert gw.systemd_unit_is_current(system=False) is True
 
+<<<<<<< HEAD
     def test_unit_with_different_restart_is_not_current(self, tmp_path, monkeypatch):
         """A unit with genuinely different config should still be outdated."""
         from hermes_cli import gateway as gw
@@ -262,6 +222,8 @@ WantedBy=default.target
         )
 
         assert gw.systemd_unit_is_current(system=False) is True
+=======
+>>>>>>> upstream/main
 
     def test_nonexistent_unit_is_not_current(self, tmp_path, monkeypatch):
         from hermes_cli import gateway as gw

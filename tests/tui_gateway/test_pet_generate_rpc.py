@@ -23,97 +23,6 @@ def test_pet_generate_requires_prompt():
     assert "error" in resp
 
 
-def test_pet_generate_rejects_invalid_reference_image():
-    resp = server._methods["pet.generate"](
-        "r_invalid_ref",
-        {"referenceImage": "data:image/svg+xml;base64,PHN2Zy8+"},
-    )
-    assert "error" in resp
-    assert "unsupported reference image type" in resp["error"]["message"]
-
-
-def test_pet_generate_rejects_oversized_reference_image(monkeypatch):
-    import base64
-
-    monkeypatch.setattr(server, "_PET_REFERENCE_MAX_BYTES", 8)
-    payload = base64.b64encode(b"0123456789").decode("ascii")
-    resp = server._methods["pet.generate"](
-        "r_big_ref",
-        {"referenceImage": f"data:image/png;base64,{payload}"},
-    )
-    assert "error" in resp
-    assert "too large" in resp["error"]["message"].lower()
-
-
-def test_pet_generate_returns_token_and_previews(monkeypatch, tmp_path):
-    import agent.pet.generate as gen
-
-    def fake_drafts(prompt, *, n=4, style="auto", reference_images=None, provider=None, on_draft=None, is_cancelled=None):
-        paths = []
-        for i in range(n):
-            p = tmp_path / f"d{i}.png"
-            _png(p)
-            paths.append(p)
-            if on_draft is not None:
-                on_draft(i, p)
-        return paths
-
-    monkeypatch.setattr(gen, "generate_base_drafts", fake_drafts)
-
-    resp = server._methods["pet.generate"]("r2", {"prompt": "a robot fox", "count": 4})
-    result = resp["result"]
-    assert result["ok"]
-    assert len(result["drafts"]) == 4
-    assert all(d["dataUri"].startswith("data:image/png;base64,") for d in result["drafts"])
-
-    # Drafts are staged on disk under the returned token.
-    staged = server._pet_gen_root() / result["token"] / "draft-0.png"
-    assert staged.is_file()
-
-
-def test_pet_cancel_unknown_token_is_noop():
-    resp = server._methods["pet.cancel"]("c0", {"token": "missing"})
-    assert resp["result"]["ok"] is True
-
-
-def test_pet_generate_cancel_stops_run(monkeypatch, tmp_path):
-    import agent.pet.generate as gen
-
-    seen: dict = {}
-
-    def cap_emit(event, sid, payload=None):
-        # Capture the token from the up-front init event so we can cancel it.
-        if event == "pet.generate.progress" and payload and payload.get("token") and not payload.get("dataUri"):
-            seen["token"] = payload["token"]
-
-    monkeypatch.setattr(server, "_emit", cap_emit)
-
-    def fake_drafts(prompt, *, n=4, style="auto", reference_images=None, provider=None, on_draft=None, is_cancelled=None):
-        # Simulate a Stop landing mid-run: the cooperative flag must read True.
-        server._pet_cancel_request(seen["token"])
-        assert is_cancelled() is True
-        return []  # bailed before producing anything
-
-    monkeypatch.setattr(gen, "generate_base_drafts", fake_drafts)
-
-    resp = server._methods["pet.generate"]("rc", {"prompt": "x", "count": 4})
-    assert "error" in resp
-    assert "cancel" in resp["error"]["message"].lower()
-    # The flag is released after the run so reusing the token isn't pre-cancelled.
-    assert server._pet_is_cancelled(seen["token"]) is False
-
-
-def test_pet_hatch_validates_params():
-    assert "error" in server._methods["pet.hatch"]("r1", {"name": "x"})  # missing token
-    assert "error" in server._methods["pet.hatch"]("r2", {"token": "abc"})  # missing name
-
-
-def test_pet_hatch_expired_draft():
-    resp = server._methods["pet.hatch"]("r3", {"token": "nope", "index": 0, "name": "Ghost"})
-    assert "error" in resp
-    assert "expired" in resp["error"]["message"]
-
-
 def _fake_drafts_factory(tmp_path):
     def fake_drafts(prompt, *, n=4, style="auto", reference_images=None, provider=None, on_draft=None, is_cancelled=None):
         paths = []
@@ -153,6 +62,7 @@ def _fake_hatch_factory(captured):
     return fake_hatch
 
 
+<<<<<<< HEAD
 def test_pet_generate_then_hatch_previews_without_activating(monkeypatch, tmp_path):
     import agent.pet.generate as gen
     from agent.pet import store
@@ -243,3 +153,5 @@ def test_pet_info_meta_avoids_full_payload(monkeypatch):
     assert result["displayName"] == "Meta Pet"
     assert result["scale"] == 0.7
     assert ":" in result["spritesheetRevision"]
+=======
+>>>>>>> upstream/main
