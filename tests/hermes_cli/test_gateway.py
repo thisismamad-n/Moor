@@ -149,26 +149,6 @@ def test_windows_gateway_start_diag_reports_detach_state(
     assert diag["breakaway"] is expected_breakaway
 
 
-<<<<<<< HEAD
-def test_run_gateway_refuses_root_in_official_docker(monkeypatch, tmp_path, capsys):
-    project_root = tmp_path / "opt" / "hermes"
-    (project_root / "docker").mkdir(parents=True)
-    (project_root / "docker" / "entrypoint.sh").write_text("#!/bin/sh\n")
-
-    monkeypatch.setattr(gateway, "PROJECT_ROOT", project_root)
-    monkeypatch.setattr(gateway.os, "geteuid", lambda: 0)
-    monkeypatch.delenv("HERMES_ALLOW_ROOT_GATEWAY", raising=False)
-    monkeypatch.setattr(gateway, "_is_official_docker_checkout", lambda: True)
-
-    with pytest.raises(SystemExit) as exc_info:
-        gateway.run_gateway()
-
-    assert exc_info.value.code == 1
-    out = capsys.readouterr().out
-    assert "Refusing to run the Moor gateway as root" in out
-    assert "/opt/hermes/docker/entrypoint.sh" in out
-=======
->>>>>>> upstream/main
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX PTY coverage")
@@ -304,23 +284,6 @@ def test_s6_runtime_snapshot_reports_supervised_service(monkeypatch, tmp_path):
     assert snapshot.gateway_pids == (123,)
 
 
-<<<<<<< HEAD
-def test_running_under_gateway_supervisor_markers(monkeypatch):
-    _clear_supervisor_markers(monkeypatch)
-    assert gateway._running_under_gateway_supervisor() is False
-
-    monkeypatch.setenv("XPC_SERVICE_NAME", "org.Moor inc..hermes.gateway")
-    assert gateway._running_under_gateway_supervisor() is True
-
-    monkeypatch.setenv("XPC_SERVICE_NAME", "0")
-    monkeypatch.setenv("INVOCATION_ID", "abc123")
-    assert gateway._running_under_gateway_supervisor() is True
-
-    monkeypatch.delenv("INVOCATION_ID", raising=False)
-    monkeypatch.setenv("HERMES_S6_SUPERVISED_CHILD", "1")
-    assert gateway._running_under_gateway_supervisor() is True
-=======
->>>>>>> upstream/main
 
 
 
@@ -485,39 +448,6 @@ def test_gateway_install_noninteractive_skips_legacy_unit_prompt(monkeypatch, tm
 
 
 
-<<<<<<< HEAD
-def test_reap_unsupervised_orphans_returns_false_when_none_found(monkeypatch):
-    monkeypatch.setattr(gateway, "supports_systemd_services", lambda: False)
-    monkeypatch.setattr(gateway, "find_gateway_pids", lambda exclude_pids=None: [])
-    killed = []
-    monkeypatch.setattr(gateway.os, "kill", lambda pid, sig: killed.append((pid, sig)))
-
-    assert gateway._reap_unsupervised_gateway_orphans() is False
-    assert killed == []
-
-
-def test_scan_gateway_pids_detects_windows_hermes_exe_case_variants(monkeypatch):
-    monkeypatch.setattr(gateway, "is_windows", lambda: True)
-    monkeypatch.setattr(gateway, "_get_ancestor_pids", lambda: set())
-    monkeypatch.setattr(gateway.shutil, "which", lambda name: "wmic.exe" if name == "wmic" else None)
-
-    def fake_run(cmd, **kwargs):
-        if cmd[:4] == ["wmic.exe", "process", "get", "ProcessId,CommandLine"]:
-            return SimpleNamespace(
-                returncode=0,
-                stdout=(
-                    "CommandLine=C:\\Program Files\\Moor\\Moor.EXE gateway run --replace\n"
-                    "ProcessId=2468\n\n"
-                ),
-                stderr="",
-            )
-        raise AssertionError(f"Unexpected command: {cmd}")
-
-    monkeypatch.setattr(gateway.subprocess, "run", fake_run)
-
-    assert gateway._scan_gateway_pids(set(), all_profiles=True) == [2468]
-=======
->>>>>>> upstream/main
 
 
 # ---------------------------------------------------------------------------
@@ -636,7 +566,7 @@ class TestReapUnsupervisedGatewayOrphansMacOS:
 
     Regression guard: without the ``is_macos()`` exclusion of
     ``_get_service_pids()``, the reaper would SIGTERM the launchd-supervised
-    gateway every time Moor Desktop opens (``hermes serve`` calls
+    gateway every time Hermes Desktop opens (``hermes serve`` calls
     ``_reap_unsupervised_gateway_orphans`` during startup).
     """
 
@@ -708,7 +638,7 @@ class TestReapUnsupervisedGatewayOrphansWindows:
 
     Regression guard: without the Windows exemption of the recorded healthy
     gateway PID (and its parent chain), the reaper would SIGTERM/SIGKILL a
-    Scheduled-Task-supervised gateway every time Moor Desktop opens
+    Scheduled-Task-supervised gateway every time Hermes Desktop opens
     (``hermes serve`` calls ``_reap_unsupervised_gateway_orphans`` during
     startup). The Scheduled-Task bootstrap's argv matches the gateway scan,
     so it is reaped as an "orphan" — and when the bootstrap dies, the

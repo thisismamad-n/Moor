@@ -35,7 +35,7 @@ import { enrichSelectedSshHost, selectSshHost } from './ssh-host-selection'
 type Mode = 'local' | 'remote' | 'cloud' | 'ssh'
 type AuthMode = 'oauth' | 'token'
 type ProbeStatus = 'idle' | 'probing' | 'done' | 'error'
-// Moor Cloud discovery lifecycle for the cloud-mode panel.
+// Hermes Cloud discovery lifecycle for the cloud-mode panel.
 type CloudDiscoverStatus = 'idle' | 'loading' | 'done' | 'error'
 
 interface GatewaySettingsState {
@@ -181,16 +181,12 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
     setConnectedCloudUrl(savedCloudConnectionUrl(config))
   }
 
-<<<<<<< HEAD
-  // --- Moor Cloud (cloud mode) state ---
-=======
   // When set, the plain-text opt-in dialog is open; `apply` remembers whether
   // the gated action was Save-for-restart (false) or Save-and-reconnect (true)
   // so confirm resumes the right one.
   const [plainTextConfirm, setPlainTextConfirm] = useState<null | { apply: boolean }>(null)
 
-  // --- Moor Cloud (cloud mode) state ---
->>>>>>> upstream/main
+  // --- Hermes Cloud (cloud mode) state ---
   // One portal session powers discovery + the silent per-agent cascade. These
   // track the cloud panel: whether we're signed in, the discovered agent list,
   // and which agent is mid-connect.
@@ -649,7 +645,7 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
     }
   }
 
-  // --- Moor Cloud handlers ---
+  // --- Hermes Cloud handlers ---
 
   // Pull the discovered agent list over the shared portal session. Tolerant of
   // a lapsed session: a needsCloudLogin error flips us back to signed-out.
@@ -1150,7 +1146,7 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
         </div>
       </div>
 
-      {/* Moor Cloud panel: one portal sign-in, then a discovered-agent picker
+      {/* Hermes Cloud panel: one portal sign-in, then a discovered-agent picker
           whose selection drives the silent per-agent cascade + a cloud
           connection. Replaces the URL/token form while in cloud mode. */}
       {state.mode === 'cloud' && !state.envOverride ? (
@@ -1243,7 +1239,7 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
                     <AlertCircle className="mt-0.5 size-4 shrink-0" />
                     <span>
                       {g.cloudNoAgents.before}
-                      <ExternalLink href="https://portal.Moor inc..com/agents" showExternalIcon={false}>
+                      <ExternalLink href="https://portal.nousresearch.com/agents" showExternalIcon={false}>
                         {g.cloudNoAgents.linkText}
                       </ExternalLink>
                       {g.cloudNoAgents.after}

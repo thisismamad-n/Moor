@@ -116,15 +116,9 @@ export function formatModelStatusLabel(
     parts.push('Fast')
   }
 
-<<<<<<< HEAD
-  // Always surface the effort (empty = Moor default of medium) so the
-  // current reasoning level is visible at a glance, not just when non-default.
-  parts.push(reasoningEffortLabel(options?.reasoningEffort ?? '') || 'Med')
-=======
   // Always surface the effort so the current reasoning level is visible at a
   // glance, not just when non-default.
   parts.push(reasoningEffortLabel(options?.reasoningEffort || options?.defaultEffort || DEFAULT_REASONING_EFFORT))
->>>>>>> upstream/main
 
   return `${name} · ${parts.join(' ')}`
 }

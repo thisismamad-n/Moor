@@ -90,12 +90,12 @@ def test_clean_text_for_capture_strips_injected_context():
 def test_format_prefetch_context_deduplicates_overlap():
     result = _format_prefetch_context(
         static_facts=["Jordan prefers short answers"],
-        dynamic_facts=["Jordan prefers short answers", "Uses Moor"],
-        search_results=[{"memory": "Uses Moor", "similarity": 0.9}],
+        dynamic_facts=["Jordan prefers short answers", "Uses Hermes"],
+        search_results=[{"memory": "Uses Hermes", "similarity": 0.9}],
         max_results=10,
     )
     assert result.count("Jordan prefers short answers") == 1
-    assert result.count("Uses Moor") == 1
+    assert result.count("Uses Hermes") == 1
     assert "<supermemory-context>" in result
 
 
@@ -103,7 +103,7 @@ def test_prefetch_includes_profile_on_first_turn(provider):
     provider._client.profile_response = {
         "static": ["Jordan prefers short answers"],
         "dynamic": ["Current project is Supermemory provider"],
-        "search_results": [{"memory": "Working on Moor memory provider", "similarity": 0.88}],
+        "search_results": [{"memory": "Working on Hermes memory provider", "similarity": 0.88}],
     }
     provider.on_turn_start(1, "start")
     result = provider.prefetch("what am I working on?")
@@ -112,21 +112,6 @@ def test_prefetch_includes_profile_on_first_turn(provider):
     assert "Relevant Memories" in result
 
 
-<<<<<<< HEAD
-def test_prefetch_skips_profile_between_frequency(provider):
-    provider._client.profile_response = {
-        "static": ["Jordan prefers short answers"],
-        "dynamic": ["Current project is Supermemory provider"],
-        "search_results": [{"memory": "Working on Moor memory provider", "similarity": 0.88}],
-    }
-    provider.on_turn_start(2, "next")
-    result = provider.prefetch("what am I working on?")
-    assert "Relevant Memories" in result
-    assert "User Profile (Persistent)" not in result
-
-
-=======
->>>>>>> upstream/main
 def test_sync_turn_buffers_short_messages(provider):
     # Trivial filtering is no longer applied at sync time — every non-empty turn
     # is buffered and only the full session is written at session boundaries.
@@ -157,7 +142,7 @@ def test_on_session_end_ingests_clean_messages(provider):
 
 
 def test_merge_metadata_stamps_sm_source():
-    # sm_source routes Moor writes into the "Moor" Space in the Supermemory
+    # sm_source routes Hermes writes into the "Hermes" Space in the Supermemory
     # app (functional routing, not telemetry) — must always be present.
     from plugins.memory.supermemory import _SupermemoryClient
 
@@ -425,55 +410,6 @@ def _stub_supermemory_importable(monkeypatch):
     monkeypatch.setattr(builtins, "__import__", fake_import)
 
 
-<<<<<<< HEAD
-def test_probe_supermemory_connection_success(monkeypatch, tmp_path):
-    _stub_supermemory_importable(monkeypatch)
-    monkeypatch.setattr("plugins.memory.supermemory._SupermemoryClient", FakeClient)
-
-    class CountingClient(FakeClient):
-        def get_profile(self, query=None, *, container_tag=None):
-            return {
-                "static": ["Prefers TypeScript"],
-                "dynamic": ["", "Working on Moor"],
-                "search_results": [],
-            }
-
-    monkeypatch.setattr("plugins.memory.supermemory._SupermemoryClient", CountingClient)
-    status = _probe_supermemory_connection("test-key", str(tmp_path))
-    assert status["ok"] is True
-    assert status["profile_facts"] == 2
-    assert status["auto_recall"] is True
-
-
-def test_probe_supermemory_connection_client_error(monkeypatch, tmp_path):
-    _stub_supermemory_importable(monkeypatch)
-
-    class BrokenClient(FakeClient):
-        def get_profile(self, query=None, *, container_tag=None):
-            raise RuntimeError("API unavailable")
-
-    monkeypatch.setattr("plugins.memory.supermemory._SupermemoryClient", BrokenClient)
-    status = _probe_supermemory_connection("test-key", str(tmp_path))
-    assert status["ok"] is False
-    assert "API unavailable" in status["error"]
-
-
-def test_get_status_config_returns_summary(monkeypatch, tmp_path):
-    _stub_supermemory_importable(monkeypatch)
-    monkeypatch.setenv("SUPERMEMORY_API_KEY", "test-key")
-    monkeypatch.setattr("plugins.memory.supermemory._SupermemoryClient", FakeClient)
-    monkeypatch.setattr(
-        "hermes_constants.get_hermes_home",
-        lambda: tmp_path,
-    )
-    result = SupermemoryMemoryProvider().get_status_config({})
-    assert "summary" in result
-    assert "✓ Connected" in result["summary"]
-    assert "container: hermes" in result["summary"]
-
-
-=======
->>>>>>> upstream/main
 def test_post_setup_writes_config_and_prints_summary(monkeypatch, tmp_path, capsys):
     config: dict = {"memory": {}}
     monkeypatch.setenv("SUPERMEMORY_API_KEY", "")

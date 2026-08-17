@@ -21,22 +21,8 @@ def test_cprint_falls_back_to_plain_print_when_prompt_toolkit_has_no_console(cap
 
 
 
-<<<<<<< HEAD
-    _banner._latest_release_cache = None
-    tag_url = ("v2026.4.23", "https://github.com/Moor inc./hermes-agent/releases/tag/v2026.4.23")
-=======
->>>>>>> upstream/main
 
 
-<<<<<<< HEAD
-    raw = buf.getvalue()
-    # The existing version label must still be present in the title
-    assert "Moor Agent v" in raw, "Version label missing from title"
-    # OSC-8 hyperlink escape sequence present with the release URL
-    assert "\x1b]8;" in raw, "OSC-8 hyperlink not emitted"
-    assert "releases/tag/v2026.4.23" in raw, "Release URL missing from banner output"
-=======
->>>>>>> upstream/main
 
 
 def test_build_welcome_banner_title_falls_back_when_no_tag():
@@ -65,7 +51,7 @@ def test_build_welcome_banner_title_falls_back_when_no_tag():
         )
 
     raw = buf.getvalue()
-    assert "Moor Agent v" in raw, "Version label missing from title"
+    assert "Hermes Agent v" in raw, "Version label missing from title"
     assert "\x1b]8;" not in raw, "OSC-8 hyperlink should not be emitted without a tag"
 
 

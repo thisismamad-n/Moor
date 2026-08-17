@@ -212,24 +212,6 @@ class TestClassifyApiError:
         assert result.reason == FailoverReason.billing
         assert result.retryable is False
 
-<<<<<<< HEAD
-    def test_402_out_of_funds_billing(self):
-        e = MockAPIError(
-            "Payment Required",
-            status_code=402,
-            body={
-                "status": 402,
-                "message": (
-                    "Your API key has run out of funds. Please go visit the "
-                    "portal to sort that out: https://portal.Moor inc..com"
-                ),
-            },
-        )
-        result = classify_api_error(e)
-        assert result.reason == FailoverReason.billing
-        assert result.retryable is False
-=======
->>>>>>> upstream/main
 
 
 
@@ -241,7 +223,7 @@ class TestClassifyApiError:
                 "status": 404,
                 "message": (
                     "Model 'gpt-5' is not available on the Free Tier. "
-                    "Upgrade at https://portal.Moor inc..com or pick a free model."
+                    "Upgrade at https://portal.nousresearch.com or pick a free model."
                 ),
             },
         )
@@ -259,7 +241,7 @@ class TestClassifyApiError:
                 "message": (
                     "Model 'openai/gpt-5.5-pro' requires available credits. "
                     "Your account balance is too low to use paid models — "
-                    "add credits at https://portal.Moor inc..com or pick a free model."
+                    "add credits at https://portal.nousresearch.com or pick a free model."
                 ),
             },
         )

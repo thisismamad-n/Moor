@@ -411,7 +411,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     modePref.assign(liveProfile(), next)
   }, [])
 
-  // Drain a backend-driven skin switch (Moor authoring/activating a skin from a
+  // Drain a backend-driven skin switch (Hermes authoring/activating a skin from a
   // prompt, or `/skin` on another surface). setTheme persists it per profile, so
   // the choice sticks like any manual pick.
   const pendingSkin = useStore($pendingSkinApply)
@@ -435,15 +435,3 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 }
 
 export const useTheme = (): ThemeContextValue => useContext(ThemeContext)
-<<<<<<< HEAD
-
-/** Sync the desktop skin with the active Moor backend theme on connect. */
-export function useSyncThemeFromBackend(backendThemeName: string | undefined, setTheme: (name: string) => void) {
-  useEffect(() => {
-    if (backendThemeName && BUILTIN_THEMES[backendThemeName]) {
-      setTheme(backendThemeName)
-    }
-  }, [backendThemeName, setTheme])
-}
-=======
->>>>>>> upstream/main

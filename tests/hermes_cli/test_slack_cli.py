@@ -116,53 +116,13 @@ class TestSlackManifestArgparse:
 class TestSlackFullManifest:
     """Generated full Slack app manifest used by `hermes slack manifest`."""
 
-<<<<<<< HEAD
-    def test_app_home_messages_are_writable(self):
-        manifest = _build_full_manifest("Moor", "Your Moor agent on Slack")
-=======
->>>>>>> upstream/main
 
 
-<<<<<<< HEAD
-    def test_private_channel_directory_scope_is_included(self):
-        manifest = _build_full_manifest("Moor", "Your Moor agent on Slack")
-=======
->>>>>>> upstream/main
 
 
-<<<<<<< HEAD
-    def test_group_dm_scopes_and_event_are_included(self):
-        """Group DMs (mpim) need message.mpim + mpim:history or Slack never
-        delivers them — the adapter classifies mpim as a DM and replies
-        ambiently, but only if the event reaches the bot at all."""
-        manifest = _build_full_manifest("Moor", "Your Moor agent on Slack")
-
-        bot_scopes = manifest["oauth_config"]["scopes"]["bot"]
-        bot_events = manifest["settings"]["event_subscriptions"]["bot_events"]
-
-        # The event is the load-bearing piece: without message.mpim Slack
-        # drops group-DM messages before the adapter sees them.
-        assert "message.mpim" in bot_events
-        # mpim:history is the scope message.mpim requires (per Slack docs);
-        # mpim:read mirrors im:read for conversations.info classification.
-        assert "mpim:history" in bot_scopes
-        assert "mpim:read" in bot_scopes
-
-    def test_group_dm_surface_present_without_assistant_mode(self):
-        """Dropping assistant mode must not strip the group-DM surface."""
-        manifest = _build_full_manifest(
-            "Moor", "Your Moor agent on Slack", include_assistant=False
-        )
-
-        bot_scopes = manifest["oauth_config"]["scopes"]["bot"]
-        bot_events = manifest["settings"]["event_subscriptions"]["bot_events"]
-        assert "message.mpim" in bot_events
-        assert "mpim:history" in bot_scopes
-=======
->>>>>>> upstream/main
 
     def test_assistant_features_remain_enabled(self):
-        manifest = _build_full_manifest("Moor", "Your Moor agent on Slack")
+        manifest = _build_full_manifest("Hermes", "Your Hermes agent on Slack")
 
         assert "assistant_view" in manifest["features"]
         assert "agent_view" not in manifest["features"]
@@ -170,49 +130,13 @@ class TestSlackFullManifest:
         bot_events = manifest["settings"]["event_subscriptions"]["bot_events"]
         assert "assistant_thread_started" in bot_events
 
-<<<<<<< HEAD
-    def test_no_assistant_omits_assistant_pieces(self):
-        manifest = _build_full_manifest(
-            "Moor", "Your Moor agent on Slack", include_assistant=False
-        )
-=======
->>>>>>> upstream/main
 
 
-<<<<<<< HEAD
-    def test_agent_view_uses_agent_manifest_surface(self):
-        manifest = _build_full_manifest(
-            "Moor",
-            "Your Moor agent on Slack",
-            messaging_experience="agent",
-        )
-
-        assert manifest["features"]["agent_view"] == {
-            "agent_description": "Chat with Moor in Slack Messages.",
-        }
-        assert "assistant_view" not in manifest["features"]
-        assert "assistant:write" in manifest["oauth_config"]["scopes"]["bot"]
-
-    def test_agent_view_uses_agent_event_subscriptions(self):
-        manifest = _build_full_manifest(
-            "Moor",
-            "Your Moor agent on Slack",
-            messaging_experience="agent",
-        )
-
-        bot_events = manifest["settings"]["event_subscriptions"]["bot_events"]
-        assert "app_home_opened" in bot_events
-        assert "app_context_changed" in bot_events
-        assert "message.im" in bot_events
-        assert "assistant_thread_started" not in bot_events
-        assert "assistant_thread_context_changed" not in bot_events
-=======
->>>>>>> upstream/main
 
     def test_no_assistant_preserves_core_surface(self):
         """Dropping assistant mode must NOT strip the regular messaging surface."""
         manifest = _build_full_manifest(
-            "Moor", "Your Moor agent on Slack", include_assistant=False
+            "Hermes", "Your Hermes agent on Slack", include_assistant=False
         )
 
         # Flat DM still needs the Messages tab writable.

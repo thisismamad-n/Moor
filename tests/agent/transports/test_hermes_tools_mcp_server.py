@@ -107,22 +107,6 @@ class TestModuleSurface:
             f"because codex has built-in equivalents: {leaked}"
         )
 
-<<<<<<< HEAD
-    def test_expected_hermes_specific_tools_listed(self):
-        """The Moor-specific tools should be present so users on the
-        codex runtime keep access to them."""
-        from agent.transports.hermes_tools_mcp_server import EXPOSED_TOOLS
-        for required in (
-            "web_search",
-            "web_extract",
-            "browser_navigate",
-            "vision_analyze",
-            "image_generate",
-            "skill_view",
-        ):
-            assert required in EXPOSED_TOOLS, f"missing {required!r}"
-=======
->>>>>>> upstream/main
 
 
 

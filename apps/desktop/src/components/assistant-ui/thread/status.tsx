@@ -247,23 +247,13 @@ export const StreamStallIndicator: FC = () => {
   }
 
   return (
-<<<<<<< HEAD
-    <StatusRow
-      className="mt-1.5"
-      data-slot="aui_stream-stall"
-      label={compacting ? COMPACTION_LABEL : 'Moor is thinking'}
-    >
-      <span aria-hidden="true" className="dither inline-block size-3 rounded-[2px] text-midground/80 animate-pulse" />
-      {compacting && <CompactionHint />}
-=======
-    <StatusRow data-slot="aui_stream-stall" label={hint || 'Moor is thinking'}>
+    <StatusRow data-slot="aui_stream-stall" label={hint || 'Hermes is thinking'}>
       <StatusPulse
         aria-hidden="true"
         className="dither inline-block size-3 rounded-[2px] text-midground/80"
         kind="opacity"
       />
       {hint && <HintText>{hint}</HintText>}
->>>>>>> upstream/main
       <ActivityTimerText seconds={elapsed} />
     </StatusRow>
   )

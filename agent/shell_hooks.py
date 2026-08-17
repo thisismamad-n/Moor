@@ -42,12 +42,12 @@ Wire protocol
 
     # Block a pre_tool_call (either shape accepted; normalised internally):
     {"decision": "block", "reason":  "Forbidden command"}   # Claude-Code-style
-    {"action":   "block", "message": "Forbidden command"}   # Moor-canonical
+    {"action":   "block", "message": "Forbidden command"}   # Hermes-canonical
 
     # Inject context for pre_llm_call:
     {"context": "Today is Friday"}
 
-    # Modify tool input for pre_tool_call (Moor-canonical):
+    # Modify tool input for pre_tool_call (Hermes-canonical):
     {"action": "modify", "args": {"new_string": "fixed content"}}
 
     # Modify tool input for pre_tool_call (Claude-Code-style):
@@ -770,10 +770,10 @@ def _block_message(primary: Any, secondary: Any) -> str:
 
 
 def _parse_response(event: str, stdout: str) -> Optional[Dict[str, Any]]:
-    """Translate stdout JSON into a Moor wire-shape dict.
+    """Translate stdout JSON into a Hermes wire-shape dict.
 
     For ``pre_tool_call`` the Claude-Code-style ``{"decision": "block",
-    "reason": "..."}`` payload is translated into the canonical Moor
+    "reason": "..."}`` payload is translated into the canonical Hermes
     ``{"action": "block", "message": "..."}`` shape expected by
     :func:`hermes_cli.plugins.get_pre_tool_call_block_message`.  This is
     the single most important correctness invariant in this module —
@@ -824,7 +824,7 @@ def _parse_response(event: str, stdout: str) -> Optional[Dict[str, Any]]:
         return None
 
     if event == "pre_verify":
-        # "continue" (Moor) / "block" (Claude-Code Stop: block the stop) both
+        # "continue" (Hermes) / "block" (Claude-Code Stop: block the stop) both
         # mean keep going; the message/reason is the follow-up for the model. A
         # continue with no message is a no-op — let the turn finish.
         action = str(data.get("action") or data.get("decision") or "").strip().lower()
@@ -958,7 +958,7 @@ def _prompt_and_record(
         return False
 
     print(
-        f"\n⚠ Moor is about to register a shell hook that will run a\n"
+        f"\n⚠ Hermes is about to register a shell hook that will run a\n"
         f"  command on your behalf.\n\n"
         f"    Event:   {event}\n"
         f"    Command: {command}\n\n"
@@ -1146,13 +1146,9 @@ def run_once(
     diverge silently from production behaviour.
 
     Returns the :func:`_spawn` diagnostic dict plus a ``parsed`` field
-<<<<<<< HEAD
-    holding the canonical Moor-wire-shape response."""
-=======
-    holding the canonical Moor-wire-shape response — including exit-code-2
+    holding the canonical Hermes-wire-shape response — including exit-code-2
     blocking and ``fail_closed`` semantics, so what ``hermes hooks test``
     prints is exactly what the dispatcher would receive."""
->>>>>>> upstream/main
     stdin_json = _serialize_payload(spec.event, kwargs)
     result = _spawn(spec, stdin_json)
     result["parsed"] = _evaluate_result(spec, result)

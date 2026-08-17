@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Moor Agent CLI - Interactive Terminal Interface
+Hermes Agent CLI - Interactive Terminal Interface
 
-A beautiful command-line interface for the Moor Agent, inspired by Claude Code.
+A beautiful command-line interface for the Hermes Agent, inspired by Claude Code.
 Features ASCII art branding, interactive REPL, toolset selection, and rich formatting.
 
 Usage:
@@ -449,7 +449,7 @@ def load_cli_config() -> Dict[str, Any]:
         "terminal": {
             "env_type": "local",
             "cwd": ".",  # "." is resolved to os.getcwd() at runtime
-            "timeout": 60,
+            "home_mode": "auto",
             "lifetime_seconds": 300,
             "docker_image": "nikolaik/python-nodejs:python3.11-nodejs20",
             "docker_forward_env": [],
@@ -480,29 +480,10 @@ def load_cli_config() -> Dict[str, Any]:
             "prefill_messages_file": "",
             "reasoning_effort": "",
             "service_tier": "",
-<<<<<<< HEAD
-            "personalities": {
-                "helpful": "You are a helpful, friendly AI assistant.",
-                "concise": "You are a concise assistant. Keep responses brief and to the point.",
-                "technical": "You are a technical expert. Provide detailed, accurate technical information.",
-                "creative": "You are a creative assistant. Think outside the box and offer innovative solutions.",
-                "teacher": "You are a patient teacher. Explain concepts clearly with examples.",
-                "kawaii": "You are a kawaii assistant! Use cute expressions like (◕‿◕), ★, ♪, and ~! Add sparkles and be super enthusiastic about everything! Every response should feel warm and adorable desu~! ヽ(>∀<☆)ノ",
-                "catgirl": "You are Neko-chan, an anime catgirl AI assistant, nya~! Add 'nya' and cat-like expressions to your speech. Use kaomoji like (=^･ω･^=) and ฅ^•ﻌ•^ฅ. Be playful and curious like a cat, nya~!",
-                "pirate": "Arrr! Ye be talkin' to Captain Moor, the most tech-savvy pirate to sail the digital seas! Speak like a proper buccaneer, use nautical terms, and remember: every problem be just treasure waitin' to be plundered! Yo ho ho!",
-                "shakespeare": "Hark! Thou speakest with an assistant most versed in the bardic arts. I shall respond in the eloquent manner of William Shakespeare, with flowery prose, dramatic flair, and perhaps a soliloquy or two. What light through yonder terminal breaks?",
-                "surfer": "Duuude! You're chatting with the chillest AI on the web, bro! Everything's gonna be totally rad. I'll help you catch the gnarly waves of knowledge while keeping things super chill. Cowabunga!",
-                "noir": "The rain hammered against the terminal like regrets on a guilty conscience. They call me Moor - I solve problems, find answers, dig up the truth that hides in the shadows of your codebase. In this city of silicon and secrets, everyone's got something to hide. What's your story, pal?",
-                "uwu": "hewwo! i'm your fwiendwy assistant uwu~ i wiww twy my best to hewp you! *nuzzles your code* OwO what's this? wet me take a wook! i pwomise to be vewy hewpful >w<",
-                "philosopher": "Greetings, seeker of wisdom. I am an assistant who contemplates the deeper meaning behind every query. Let us examine not just the 'how' but the 'why' of your questions. Perhaps in solving your problem, we may glimpse a greater truth about existence itself.",
-                "hype": "YOOO LET'S GOOOO!!! I am SO PUMPED to help you today! Every question is AMAZING and we're gonna CRUSH IT together! This is gonna be LEGENDARY! ARE YOU READY?! LET'S DO THIS!",
-            },
-=======
             # Built-in personalities live in hermes_cli.personality
             # (BUILTIN_PERSONALITIES) — the single owner. Entries here are
             # user-defined additions/overrides merged on top by name.
             "personalities": {},
->>>>>>> upstream/main
         },
 
         "display": {
@@ -522,8 +503,6 @@ def load_cli_config() -> Dict[str, Any]:
             "busy_input_mode": "interrupt",
             "persistent_output": True,
             "persistent_output_max_lines": 200,
-<<<<<<< HEAD
-=======
             # Clear terminal scrollback as well as the visible viewport when the
             # classic CLI performs a full redraw/resize recovery. Disabled by
             # default because some users prefer preserving terminal history;
@@ -533,7 +512,6 @@ def load_cli_config() -> Dict[str, Any]:
             # Print a one-line summary of resolved modal prompts (approval /
             # clarify) into scrollback so the decision survives the repaint.
             "persist_prompts": True,
->>>>>>> upstream/main
 
             "skin": "default",
         },
@@ -679,6 +657,7 @@ def load_cli_config() -> Dict[str, Any]:
         "degraded_mode": "TERMINAL_DEGRADED_MODE",
         "cwd": "TERMINAL_CWD",
         "timeout": "TERMINAL_TIMEOUT",
+        "home_mode": "TERMINAL_HOME_MODE",
         "lifetime_seconds": "TERMINAL_LIFETIME_SECONDS",
         "docker_image": "TERMINAL_DOCKER_IMAGE",
         "docker_forward_env": "TERMINAL_DOCKER_FORWARD_ENV",
@@ -1005,8 +984,6 @@ def _cleanup_all_browsers(*args, **kwargs):
 
 # Guard to prevent cleanup from running multiple times on exit
 _cleanup_done = False
-<<<<<<< HEAD
-=======
 _cleanup_in_progress = False
 _cli_wake_owner = None
 # One-shot CLI finalization runs before process cleanup so plugins can observe
@@ -1020,7 +997,6 @@ _single_query_finalize_attempted_session_ids: set[str | None] = set()
 # actively writing to (#88234).  The race made the handoff leg vanish from
 # session history and broke session_search recall for the handed-off session.
 _handed_off_session_ids: set[str | None] = set()
->>>>>>> upstream/main
 # Weak reference to the active AIAgent for memory provider shutdown at exit
 _active_agent_ref = None
 _deferred_agent_startup_done = False
@@ -1215,67 +1191,6 @@ def _run_cleanup(*, notify_session_finalize: bool = True):
     _cleanup_in_progress = True
 
     try:
-<<<<<<< HEAD
-        _cleanup_all_terminals()
-    except Exception:
-        pass
-    try:
-        _cleanup_all_browsers()
-    except Exception:
-        pass
-    try:
-        from tools.mcp_tool import shutdown_mcp_servers
-        shutdown_mcp_servers()
-    except BaseException:
-        pass
-    # Close cached auxiliary LLM clients (sync + async) so that
-    # AsyncHttpxClientWrapper.__del__ doesn't fire on a closed event loop
-    # and trigger prompt_toolkit's "Press ENTER to continue..." handler.
-    try:
-        from agent.auxiliary_client import shutdown_cached_clients
-        shutdown_cached_clients()
-    except Exception:
-        pass
-    # Shut down memory provider (on_session_end + shutdown_all) at actual
-    # session boundary — NOT per-turn inside run_conversation().
-    try:
-        from hermes_cli.plugins import invoke_hook as _invoke_hook
-        _invoke_hook(
-            "on_session_finalize",
-            session_id=_active_agent_ref.session_id if _active_agent_ref else None,
-            platform="cli",
-            reason="shutdown",
-        )
-    except Exception:
-        pass
-    try:
-        if _active_agent_ref and hasattr(_active_agent_ref, 'shutdown_memory_provider'):
-            # A /new shortly before exit leaves its end→switch boundary task
-            # (old-session extraction, LLM-bound) queued on the memory
-            # manager's serialized worker. shutdown_all()'s drain only waits
-            # ~5s and cancels queued tasks, so give pending work a bounded
-            # head start via the manager's own barrier — otherwise a
-            # "/new then quit" silently drops the old session's extraction.
-            # The 30s exit watchdog remains the hard backstop.
-            _mm = getattr(_active_agent_ref, '_memory_manager', None)
-            if _mm is not None and hasattr(_mm, 'flush_pending'):
-                try:
-                    _mm.flush_pending(timeout=10)
-                except Exception:
-                    pass
-            # Forward the agent's own transcript so memory providers'
-            # ``on_session_end`` hooks see the real conversation instead of
-            # an empty list (#15165). ``_session_messages`` is set on
-            # ``AIAgent.__init__`` and refreshed every turn via
-            # ``_persist_session``. Fall back to no-arg on test stubs /
-            # partially-initialised agents where the attribute is missing.
-            _session_msgs = getattr(_active_agent_ref, '_session_messages', None)
-            if isinstance(_session_msgs, list):
-                logger.info(
-                    "CLI cleanup calling memory shutdown for session %s with %d message(s)",
-                    getattr(_active_agent_ref, "session_id", None) or "<unknown>",
-                    len(_session_msgs),
-=======
         # Bound total shutdown time: if cleanup (or the interpreter's
         # thread-join teardown after it) wedges, force-exit instead of
         # leaving a zombie CLI holding the terminal for minutes.
@@ -1328,7 +1243,6 @@ def _run_cleanup(*, notify_session_finalize: bool = True):
                     session_id=cleanup_session_id,
                     platform="cli",
                     reason="shutdown",
->>>>>>> upstream/main
                 )
         try:
             if _active_agent_ref and hasattr(_active_agent_ref, 'shutdown_memory_provider'):
@@ -1371,8 +1285,6 @@ def _run_cleanup(*, notify_session_finalize: bool = True):
         _cleanup_in_progress = False
 
 
-<<<<<<< HEAD
-=======
 def _should_emit_cleanup_session_finalize(session_id: str | None) -> bool:
     # A session that was handed off to the gateway is now owned by the
     # gateway process.  The CLI must not finalize it on exit — that sets
@@ -1406,7 +1318,6 @@ def _notify_session_finalize(
         pass
 
 
->>>>>>> upstream/main
 def _emit_interrupted_session_end(cli, *, reason: str = "keyboard_interrupt") -> None:
     """Best-effort on_session_end hook for interrupted non-interactive runs."""
     agent = getattr(cli, "agent", None)
@@ -1447,8 +1358,6 @@ def _emit_interrupted_session_end(cli, *, reason: str = "keyboard_interrupt") ->
         pass
 
 
-<<<<<<< HEAD
-=======
 def _notify_single_query_session_finalize(cli, *, reason: str = "shutdown") -> None:
     agent = getattr(cli, "agent", None)
     session_id = getattr(agent, "session_id", None) or getattr(cli, "session_id", None)
@@ -1478,7 +1387,6 @@ def _finalize_single_query(cli) -> None:
         cli._release_active_session()
 
 
->>>>>>> upstream/main
 def _reset_terminal_input_modes_on_exit() -> None:
     """Best-effort: disable focus reporting + mouse tracking on TUI exit so they
     don't leak into the next shell session sharing the tab.
@@ -2897,7 +2805,7 @@ def _hex_to_ansi(hex_color: str, *, bold: bool = False) -> str:
 #   3. HERMES_TUI_BACKGROUND=#RRGGBB — explicit bg hint
 #   4. COLORFGBG env (set by xterm/Konsole/urxvt) — bg slot 7/15 = light
 #   5. OSC 11 query (\x1b]11;?\x1b\\) — ask the terminal directly
-#   6. Default: assume dark (matches the legacy Moor assumption)
+#   6. Default: assume dark (matches the legacy Hermes assumption)
 #
 # Cached after first call so we don't query the terminal repeatedly.
 _LIGHT_MODE_CACHE: bool | None = None
@@ -3046,7 +2954,7 @@ def _heal_cooked_mode_drift(fd: int) -> bool:
     prompt_toolkit's ``run_in_terminal`` / ``in_terminal`` wraps every
     "print above the prompt" in a ``cooked_mode()`` context: it flips the
     tty back to cooked (ICANON/ECHO/ISIG), runs the function, then restores
-    raw mode.  Moor schedules those windows cross-thread constantly — the
+    raw mode.  Hermes schedules those windows cross-thread constantly — the
     background self-review's ``💾`` summary, background process notification
     drains, curses pickers — and if a restore is ever lost (coroutine
     cancelled mid-window, racing chains, an external writer touching the
@@ -3327,7 +3235,7 @@ def _strip_markdown_syntax(text: str) -> str:
     plain = _rich_text_from_ansi(text or "").plain
     # Avoid stripping cron-style expressions like "* * * * *" as if they were
     # Markdown horizontal rules. CommonMark treats three or more "*" as an HR,
-    # but in Moor output it's common to display cron schedules verbatim.
+    # but in Hermes output it's common to display cron schedules verbatim.
     #
     # Keep the behavior for "-" / "_" HR markers, and only strip "*" HR lines
     # when there are exactly 3 asterisks (with optional whitespace).
@@ -3974,11 +3882,11 @@ def _hermes_call_output_screen_diff(
     size,
     previous_width,
 ):
-    """Call prompt_toolkit ``_output_screen_diff`` with Moor resize guards.
+    """Call prompt_toolkit ``_output_screen_diff`` with Hermes resize guards.
 
     1. Inflate ``previous_screen.height`` when the new screen is taller so pt
        skips the reserve-vertical-space cursor move that stamps chrome into
-       scrollback (pt #29 / Moor #26137).
+       scrollback (pt #29 / Hermes #26137).
     2. On AttributeError/TypeError from a corrupt previous paint buffer
        (classic after tmux attach with same width), retry once with
        ``previous_screen=None`` so pt first-paints cleanly instead of crashing
@@ -4428,8 +4336,6 @@ def _strip_leaked_terminal_responses(text: str) -> str:
     return cleaned
 
 
-<<<<<<< HEAD
-=======
 def _estimate_tui_input_height(
     lines: list[str] | tuple[str, ...],
     prompt_text: str,
@@ -4497,7 +4403,6 @@ def _status_bar_visible_from_display_config(display_config: object) -> bool:
     return statusbar_config is not False
 
 
->>>>>>> upstream/main
 def _collect_query_images(query: str | None, image_arg: str | None = None) -> tuple[str, list[Path]]:
     """Collect local image attachments for single-query CLI flows."""
     message = query or ""
@@ -4580,36 +4485,30 @@ class ChatConsole:
         """
         yield self
 
-# ASCII Art - MOOR-AGENT logo (full width, single line - requires ~95 char terminal)
-HERMES_AGENT_LOGO = """[bold #FFD700]0100            1101     01001111         01001111     010100100101     [/]
-[bold #FFD700]01001101    01001101 0100111101001111 0100111101001111 0101    00100101 [/]
-[bold #FFD700]01001101010011010100 0100        1111 0100        1111 0101    00100101 [/]
-[#FFBF00]0100    1101    0100 0100        1111 0100        1111 010100100101     [/]
-[#FFBF00]0100            1101 0100        1111 0100        1111 0101    00100101 [/]
-[#FFBF00]0100            1101 0100        1111 0100        1111 0101        0010 [/]
-[#CD7F32]0100            1101 0100        1111 0100        1111 0101        0010 [/]
-[#CD7F32]0100            1101 0100111101001111 0100111101001111 0101        0010 [/]
-[#CD7F32]0100            1101     01001111         01001111     0101        0010 [/]"""
+# ASCII Art - HERMES-AGENT logo (full width, single line - requires ~95 char terminal)
+HERMES_AGENT_LOGO = """[bold #FFD700]██╗  ██╗███████╗██████╗ ███╗   ███╗███████╗███████╗       █████╗  ██████╗ ███████╗███╗   ██╗████████╗[/]
+[bold #FFD700]██║  ██║██╔════╝██╔══██╗████╗ ████║██╔════╝██╔════╝      ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝[/]
+[#FFBF00]███████║█████╗  ██████╔╝██╔████╔██║█████╗  ███████╗█████╗███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║[/]
+[#FFBF00]██╔══██║██╔══╝  ██╔══██╗██║╚██╔╝██║██╔══╝  ╚════██║╚════╝██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║[/]
+[#CD7F32]██║  ██║███████╗██║  ██║██║ ╚═╝ ██║███████╗███████║      ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║[/]
+[#CD7F32]╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚══════╝      ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝[/]"""
 
-# ASCII Art - Moor Caduceus (compact, fits in left panel)
-HERMES_CADUCEUS = """[#CD7F32]⠎⠋⠈⠈⢀⢠⠤⠖⠚⠘⠁⠁⠉⠈⢈⡁⣁⢁⡉⣈⢈⡁⠁⠁⠉⠉⠈⠊⠢⠦⣠⡀⠈⠈⠉[/]
-[#CD7F32]⢀⣤⠔⠙⠁⠁⢀⢀⡤⠴⠆⠚⠙⠋⠈⠁⠉⠈⠁⠉⠈⠉⠉⠋⠓⠲⠦⢤⡀⡀⠀⠉⠙⠔⢄[/]
-[#CD7F32]⠋⠀⠀⣠⡤⠚⠋⠁⠀⢀⣀⣤⠤⠶⠖⠂⠚⠛⠚⠛⠒⠲⠶⠦⡤⣄⣀⠀⠈⠈⠓⢶⢄⠀⠀[/]
-[#FFBF00]⣀⡴⠛⠁⠀⢀⣠⠶⠚⠉⠁⠀⣀⣀⣤⣤⡤⠤⠤⢤⣤⣤⣄⣀⠀⠀⠉⠙⠳⢦⣄⠀⠀⠑⠷[/]
-[#FFBF00]⠏⠀⠀⣠⠞⠋⠀⢀⣠⡴⠞⠛⠉⠀⠀⣀⣀⣀⣀⣀⣀⡀⠀⠉⠉⠳⠶⣄⡀⠀⠉⠛⣤⡀⠀[/]
-[#FFBF00]⠀⣠⡞⠁⠀⢀⡴⠛⠁⠀⢀⣤⠶⠛⠋⠉⠉⠉⠉⠉⠉⠙⠛⠲⢦⣄⠀⠈⠙⢶⣄⠀⠀⠹⣦[/]
-[bold #FFD700]⣰⡏⠀⠀⣰⠟⠀⠀⣠⡾⠋⠀⢀⣠⡴⠶⠛⠛⠛⠛⠲⠶⣤⣀⠀⠉⠻⣦⡀⠀⠙⢷⡀⠀⠈[/]
-[bold #FFD700]⡟⠀⠀⢰⡟⠀⠀⣸⡏⠀⠀⣰⠟⠁⠀⣠⣤⠴⠶⣤⣄⡀⠈⠙⢷⡄⠀⠈⢷⡄⠀⠈⢷⡀⠀[/]
-[bold #FFD700]⡇⠀⠀⢸⡇⠀⠀⣿⠀⠀⠀⣿⠀⠀⢸⣏⠀⢀⡀⠀⠉⢿⡄⠀⠈⣿⠀⠀⠘⣧⠀⠀⢸⡇⠀[/]
-[#FFBF00]⣧⠀⠀⠸⣇⠀⠀⢹⣇⠀⠀⠻⣦⡀⠀⠙⠛⠛⠁⠀⣠⡾⠁⠀⢀⡿⠀⠀⢰⡟⠀⠀⢸⡇⠀[/]
-[#FFBF00]⢹⣆⠀⠀⠻⣆⠀⠀⠙⢦⣄⠀⠈⠛⠳⠶⠶⠶⠶⠞⠋⠀⢀⣠⠟⠁⠀⢠⡾⠁⠀⢀⡿⠁⠀[/]
-[#FFBF00]⠀⠹⢦⡀⠀⠙⠷⣄⡀⠀⠉⠛⠶⢤⣤⣀⣀⣀⣠⣤⡴⠶⠛⠁⠀⣀⡴⠟⠁⠀⣠⡟⠁⠀⢠[/]
-[#CD7F32]⣆⠀⠈⠹⢦⣄⠀⠀⠙⠳⢦⣤⣀⣀⠀⠀⠀⠀⠀⠀⣀⣀⣤⡴⠞⠋⠀⢀⣠⠾⠋⠀⠀⣤⠏[/]
-[#CD7F32]⠙⠳⣤⡀⠀⠈⠛⠶⣤⣀⡀⠀⠈⠉⠉⠛⠛⠛⠛⠉⠉⠉⠀⣀⣠⡤⠞⠋⠁⠀⣀⡴⠟⠁⠀[/]
-[#CD7F32]⣆⠀⠀⠙⠳⠦⣄⢀⠀⠉⠉⠋⠓⠲⠶⠶⠦⠶⠶⠶⠖⠛⠋⠉⠀⠀⣀⣤⡲⠛⠉⠀⢀⣠⠾[/]
-[#B8860B]⠉⠑⠶⢤⣀⠀⠀⠉⠙⠲⠔⠦⡠⣤⣠⣄⢀⣀⢠⣤⢠⡤⠢⠶⠚⠊⠉⠀⢀⢀⡤⠖⠋⠀⠀[/]
-[#B8860B]⠦⡄⡀⠀⠁⠙⠑⠆⢤⢠⡀⣀⣀⠀⠀⠀⠀⠀⠀⠀⢀⢀⡀⣠⢠⠄⠖⠑⠉⠁⠀⢀⢠⠤⠊[/]
-[#B8860B]⠀⠈⠈⠐⠐⠀⠀⠀⠀⠀⠀⠉⠈⠈⠁⠙⠘⠘⠁⠉⠈⠈⠁⠀⠀⠀⠀⠀⠐⠒⠃⠁⠁⠀⠀[/]"""
+# ASCII Art - Hermes Caduceus (compact, fits in left panel)
+HERMES_CADUCEUS = """[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡀⠀⣀⣀⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#CD7F32]⠀⠀⠀⠀⠀⠀⢀⣠⣴⣾⣿⣿⣇⠸⣿⣿⠇⣸⣿⣿⣷⣦⣄⡀⠀⠀⠀⠀⠀⠀[/]
+[#FFBF00]⠀⢀⣠⣴⣶⠿⠋⣩⡿⣿⡿⠻⣿⡇⢠⡄⢸⣿⠟⢿⣿⢿⣍⠙⠿⣶⣦⣄⡀⠀[/]
+[#FFBF00]⠀⠀⠉⠉⠁⠶⠟⠋⠀⠉⠀⢀⣈⣁⡈⢁⣈⣁⡀⠀⠉⠀⠙⠻⠶⠈⠉⠉⠀⠀[/]
+[#FFD700]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣴⣿⡿⠛⢁⡈⠛⢿⣿⣦⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#FFD700]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠿⣿⣦⣤⣈⠁⢠⣴⣿⠿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#FFBF00]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠻⢿⣿⣦⡉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#FFBF00]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⢷⣦⣈⠛⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣴⠦⠈⠙⠿⣦⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⣿⣤⡈⠁⢤⣿⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⠷⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⠑⢶⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠁⢰⡆⠈⡿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠳⠈⣡⠞⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]"""
 
 
 
@@ -4627,10 +4526,10 @@ def _build_compact_banner() -> str:
     dim_color = _skin.get_color("banner_dim", "#B8860B") if _skin else "#B8860B"
 
     if skin_name == "default":
-        line1 = "⚕ NOUS MOOR - AI Agent Framework"
-        tiny_line = "⚕ NOUS MOOR"
+        line1 = "⚕ NOUS HERMES - AI Agent Framework"
+        tiny_line = "⚕ NOUS HERMES"
     else:
-        agent_name = _skin.get_branding("agent_name", "Moor Agent") if _skin else "Moor Agent"
+        agent_name = _skin.get_branding("agent_name", "Hermes Agent") if _skin else "Hermes Agent"
         line1 = f"{agent_name} - AI Agent Framework"
         tiny_line = agent_name
 
@@ -4638,7 +4537,7 @@ def _build_compact_banner() -> str:
         from hermes_cli import __release_date__ as _release_date
         from hermes_cli import __version__ as _version
 
-        version_line = f"Moor Agent v{_version} ({_release_date})"
+        version_line = f"Hermes Agent v{_version} ({_release_date})"
     else:
         version_line = format_banner_version_label()
 
@@ -4879,7 +4778,7 @@ class _VoiceInputMessage:
 
 class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
     """
-    Interactive CLI for the Moor Agent.
+    Interactive CLI for the Hermes Agent.
     
     Provides a REPL interface with rich formatting, command history,
     and tool execution capabilities.
@@ -4902,7 +4801,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         ignore_rules: bool = False,
     ):
         """
-        Initialize the Moor CLI.
+        Initialize the Hermes CLI.
 
         Args:
             model: Model to use (default: from env or claude-sonnet)
@@ -5281,6 +5180,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         # frozen when the agent thread completes, displayed in the status bar.
         self._prompt_start_time: Optional[float] = None  # time.time() when turn started
         self._prompt_duration: float = 0.0  # frozen duration of last completed turn
+        self._last_turn_finished_at: Optional[float] = None  # time.time() when the last agent loop finished
         # Initialize SQLite session store early so /title works before first message
         self._session_db = None
         self._session_db_unavailable = False
@@ -5316,7 +5216,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
 
         # Opportunistic state.db maintenance — runs at most once per
         # min_interval_hours, tracked via state_meta in state.db itself so
-        # it's shared across all Moor processes for this HERMES_HOME.
+        # it's shared across all Hermes processes for this HERMES_HOME.
         # Never blocks startup on failure.
         _run_state_db_auto_maintenance(self._session_db)
 
@@ -5389,6 +5289,10 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         # the next submitted input, whether it's the selection or anything
         # else). See #34584.
         self._pending_resume_sessions = None
+        # One-shot agent seed set by a slash handler (e.g. /blueprint <name>)
+        # that wants its output run as the next agent turn. Consumed and cleared
+        # by the interactive loop immediately after process_command() returns.
+        self._pending_agent_seed = None
         self._secret_state = None
         self._secret_deadline = 0
         self._spinner_text: str = ""  # thinking spinner text for TUI
@@ -5632,7 +5536,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
 
         Terminals with focus tracking active (Ghostty, iTerm2, xterm builds,
         multiplexers that toggle DECSET 1004 upstream) emit ``\\x1b[I`` when
-        the Moor tab/window becomes visible again. Emulators can coalesce
+        the Hermes tab/window becomes visible again. Emulators can coalesce
         or drop hidden-tab output and repaint the surface while we're
         invisible, so on regain prompt_toolkit's incremental diff stacks on
         stale content — a second copy of the composer/prompt chrome next to
@@ -5745,9 +5649,12 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         startup UI and ``_replay_output_history`` cannot reconstruct it
         (the banner was never added to ``_OUTPUT_HISTORY``).
 
-        Instead we just reset prompt_toolkit's renderer cache so the next
-        incremental redraw starts from a clean slate, then let
-        ``original_on_resize`` recalculate layout for the new size.
+        Let prompt_toolkit's own resize path run with its renderer cursor
+        cache intact. Its Application._on_resize() starts with
+        renderer.erase(leave_alternate_screen=False), which needs the cached
+        cursor position to move back to the live prompt origin before
+        erase_down(). Resetting the renderer before that erase loses the
+        origin and can leave stale prompt glyphs after a narrow resize.
 
         We also flag ``_status_bar_suppressed_after_resize`` so the dynamic
         status bar and input separator rules stay hidden while the terminal
@@ -6091,6 +5998,19 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         emoji = "⏱" if live else "⏲"
         return f"{emoji} {time_str}"
 
+    @staticmethod
+    def _format_idle_since(last_finished_at: Optional[float], turn_live: bool) -> str:
+        """Format time since the last final agent response for the status bar.
+
+        Returns an empty string while a turn is live (the per-prompt elapsed
+        timer covers that case) or before the first turn has completed.
+        Compact read-out: ``✓ 42s`` / ``✓ 3m`` / ``✓ 1h 12m``.
+        """
+        if turn_live or last_finished_at is None:
+            return ""
+        idle = max(0.0, time.time() - last_finished_at)
+        return f"✓ {format_duration_compact(idle)}"
+
     def _get_status_bar_snapshot(self) -> Dict[str, Any]:
         # Prefer the agent's model name — it updates on fallback.
         # self.model reflects the originally configured model and never
@@ -6124,6 +6044,10 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                 getattr(self, "_prompt_start_time", None),
                 getattr(self, "_prompt_duration", 0.0),
                 live=getattr(self, "_prompt_start_time", None) is not None,
+            ),
+            "idle_since": self._format_idle_since(
+                getattr(self, "_last_turn_finished_at", None),
+                turn_live=getattr(self, "_prompt_start_time", None) is not None,
             ),
             "context_tokens": 0,
             "context_length": None,
@@ -6933,19 +6857,16 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             prompt_elapsed = snapshot.get("prompt_elapsed")
             if prompt_elapsed:
                 parts.append(prompt_elapsed)
-<<<<<<< HEAD
-=======
             idle_since = snapshot.get("idle_since")
             if idle_since:
                 parts.append(idle_since)
             if focus_label:
                 parts.append(focus_label)
->>>>>>> upstream/main
             if yolo_active:
                 parts.append("⚠ YOLO")
             return self._right_align_status_title(" │ ".join(parts), session_title, width)
         except Exception:
-            return f"⚕ {self.model if getattr(self, 'model', None) else 'Moor'}"
+            return f"⚕ {self.model if getattr(self, 'model', None) else 'Hermes'}"
 
     def _get_status_bar_fragments(self):
         if not self._status_bar_visible or getattr(self, '_model_picker_state', None):
@@ -7070,8 +6991,6 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                     if prompt_elapsed:
                         frags.append(("class:status-bar-dim", " │ "))
                         frags.append(("class:status-bar-dim", prompt_elapsed))
-<<<<<<< HEAD
-=======
                     # Position 8: idle time since the last final agent response
                     idle_since = snapshot.get("idle_since")
                     if idle_since:
@@ -7082,7 +7001,6 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                     if focus_label:
                         frags.append(("class:status-bar-dim", " │ "))
                         frags.append(("class:status-bar-strong", focus_label))
->>>>>>> upstream/main
                     if yolo_active:
                         frags.append(("class:status-bar-dim", " │ "))
                         frags.append(("class:status-bar-yolo", "⚠ YOLO"))
@@ -7751,10 +7669,10 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             try:
                 from hermes_cli.skin_engine import get_active_skin
                 _skin = get_active_skin()
-                label = _skin.get_branding("response_label", "⚕ Moor")
+                label = _skin.get_branding("response_label", "⚕ Hermes")
                 _text_hex = _skin.get_color("banner_text", "#FFF8DC")
             except Exception:
-                label = "⚕ Moor"
+                label = "⚕ Hermes"
                 _text_hex = "#FFF8DC"
             # Build a true-color ANSI escape for the response text color
             # so streamed content matches the Rich Panel appearance.
@@ -8369,7 +8287,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                 f"this is likely too low for agent use with tools.[/]"
             )
             self._console_print(
-                f"[dim]   Moor needs at least {MINIMUM_CONTEXT_LENGTH:,} tokens. Tool schemas + system prompt use a large fixed prefix.[/]"
+                f"[dim]   Hermes needs at least {MINIMUM_CONTEXT_LENGTH:,} tokens. Tool schemas + system prompt use a large fixed prefix.[/]"
             )
             base_url = getattr(self, "base_url", "") or ""
             from urllib.parse import urlparse as _urlparse
@@ -8392,15 +8310,15 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                     "[dim]   Fix: Set model.context_length in config.yaml, or increase your server's context setting[/]"
                 )
 
-        # Warn if the configured model is a Nous Moor LLM (not agentic)
+        # Warn if the configured model is a Nous Hermes LLM (not agentic)
         from hermes_cli.model_switch import is_nous_hermes_non_agentic
 
         model_name = getattr(self, "model", "") or ""
         if is_nous_hermes_non_agentic(model_name):
             self._console_print()
             self._console_print(
-                "[bold yellow]⚠  Nous Research Moor 3 & 4 models are NOT agentic and are not "
-                "designed for use with Moor Agent.[/]"
+                "[bold yellow]⚠  Nous Research Hermes 3 & 4 models are NOT agentic and are not "
+                "designed for use with Hermes Agent.[/]"
             )
             self._console_print(
                 "[dim]   They lack tool-calling capabilities required for agent workflows. "
@@ -9022,7 +8940,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         is_running = bool(getattr(self, "_agent_running", False))
 
         lines = [
-            "Moor CLI Status",
+            "Hermes CLI Status",
             "",
             f"Session ID: {self.session_id}",
             f"Path: {display_hermes_home()}",
@@ -9095,10 +9013,6 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                     f"{_escape(desc)} [dim]({skill_count} skills)[/]"
                 )
 
-<<<<<<< HEAD
-        _cprint(f"\n  {_DIM}Tip: Just type your message to chat with Moor!{_RST}")
-        _cprint(f"  {_DIM}Multi-line: Alt+Enter for a new line{_RST}")
-=======
         quick_commands = self.config.get("quick_commands", {})
         if quick_commands:
             _cprint(f"\n  ⚡ {_BOLD}Quick Commands{_RST} ({len(quick_commands)} configured):")
@@ -9108,9 +9022,8 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                     f"    [bold {_accent_hex()}]{('/' + name):<22}[/] [dim]-[/] {_escape(desc)}"
                 )
 
-        _cprint(f"\n  {_DIM}Tip: Just type your message to chat with Moor!{_RST}")
+        _cprint(f"\n  {_DIM}Tip: Just type your message to chat with Hermes!{_RST}")
         _cprint(f"  {_DIM}Multi-line: Ctrl+J, Alt+Enter, or \\+Enter for a new line{_RST}")
->>>>>>> upstream/main
         _cprint(f"  {_DIM}Draft editor: Ctrl+G (Alt+G in VSCode/Cursor){_RST}")
         if _is_termux_environment():
             _cprint(f"  {_DIM}Attach image: /image {_termux_example_image_path()} or start your prompt with a local image path{_RST}\n")
@@ -9259,22 +9172,19 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         if not self._session_db:
             return []
         try:
-            sessions = self._session_db.list_sessions_rich(
+            from hermes_cli.session_listing import query_session_listing
+
+            return query_session_listing(
+                self._session_db,
                 source="cli",
-<<<<<<< HEAD
-                exclude_sources=["tool"],
-                limit=limit,
-=======
                 current_session_id=self.session_id,
                 include_all_sources=False,
                 include_unnamed=True,
                 limit=limit,
                 exclude_sources=["kanban", "tool"],
->>>>>>> upstream/main
             )
         except Exception:
             return []
-        return [s for s in sessions if s.get("id") != self.session_id]
 
     def _show_recent_sessions(self, *, reason: str = "history", limit: int = 10) -> bool:
         """Render recent sessions inline from the active chat TUI.
@@ -9371,7 +9281,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                 )
                 continue
 
-            _cli_visible_print(f"\n  [Moor #{visible_index}]{_ts_suffix(msg)}")
+            _cli_visible_print(f"\n  [Hermes #{visible_index}]{_ts_suffix(msg)}")
             tool_calls = msg.get("tool_calls") or []
             if content_text:
                 preview = content_text[:preview_limit]
@@ -9524,6 +9434,9 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                 self._session_db.end_session(old_session_id, "new_session")
             except Exception:
                 pass
+            # Don't let immediately-rotated empty sessions pile up in
+            # /resume and `hermes sessions list` (gemini-cli#27770 port).
+            self._discard_session_if_empty(old_session_id)
 
         self.session_start = datetime.now()
         timestamp_str = self.session_start.strftime("%Y%m%d_%H%M%S")
@@ -10364,8 +10277,6 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         }
         self._invalidate(min_interval=0.0)
 
-<<<<<<< HEAD
-=======
     def _confirm_expensive_model_switch(self, result) -> bool:
         """Ask for explicit confirmation before applying costly model switches."""
         if not getattr(result, "success", False):
@@ -10386,7 +10297,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             return True
 
         choices = [
-            ("once", "Switch anyway", "Use this model for the current Moor session."),
+            ("once", "Switch anyway", "Use this model for the current Hermes session."),
             ("cancel", "Cancel", "Keep the current model."),
         ]
         raw = self._prompt_text_input_modal(
@@ -10411,7 +10322,6 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         except Exception as exc:
             _cprint(f"  ✗ Model selection failed: {exc}")
 
->>>>>>> upstream/main
     def _close_model_picker(self) -> None:
         self._model_picker_state = None
         self._restore_modal_input_snapshot()
@@ -10739,9 +10649,6 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                 # Capture before close — picker state is cleared on close.
                 _picker_custom_provs = state.get("custom_provs")
                 self._close_model_picker()
-<<<<<<< HEAD
-                self._apply_model_switch_result(result, persist_global)
-=======
                 if getattr(self, "_app", None):
                     threading.Thread(
                         target=self._confirm_and_apply_model_switch_result,
@@ -10752,7 +10659,6 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                     self._confirm_and_apply_model_switch_result(
                         result, persist_global, custom_providers=_picker_custom_provs
                     )
->>>>>>> upstream/main
                 return
             self._close_model_picker()
 
@@ -10935,6 +10841,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         if not self._confirm_expensive_model_switch(result):
             _cprint("  Model switch cancelled.")
             return
+
         # Apply to CLI state.
         # Update requested_provider so _ensure_runtime_credentials() doesn't
         # overwrite the switch on the next turn (it re-resolves from this).
@@ -11071,7 +10978,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
 
         Usage:
             /codex-runtime                       — show current state
-            /codex-runtime auto                  — Moor default (chat_completions)
+            /codex-runtime auto                  — Hermes default (chat_completions)
             /codex-runtime codex_app_server      — hand turns to codex subprocess
             /codex-runtime on / off              — synonyms for the above
         """
@@ -11253,7 +11160,6 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
 
 
     
-
 
 
 
@@ -11587,6 +11493,10 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             self.save_conversation(cmd_original)
         elif canonical == "cron":
             self._handle_cron_command(cmd_original)
+        elif canonical == "suggestions":
+            self._handle_suggestions_command(cmd_original)
+        elif canonical == "blueprint":
+            self._handle_blueprint_command(cmd_original)
         elif canonical == "curator":
             self._handle_curator_command(cmd_original)
         elif canonical == "kanban":
@@ -11680,24 +11590,66 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             self._handle_browser_command(cmd_original)
         elif canonical == "plugins":
             try:
-                from hermes_cli.plugins import get_plugin_manager
-                mgr = get_plugin_manager()
-                plugins = mgr.list_plugins()
-                if not plugins:
-                    print("No plugins installed.")
-                    print(f"Drop plugin directories into {display_hermes_home()}/plugins/ to get started.")
+                # Discover from disk (bundled + user), matching `hermes plugins
+                # list` — so installed-but-not-enabled plugins are visible here
+                # too. The plugin manager only knows about *loaded* plugins, so
+                # using it alone made freshly-installed, not-yet-enabled plugins
+                # look like "nothing installed".
+                from hermes_cli.plugins_cmd import (
+                    _discover_all_plugins,
+                    _get_disabled_set,
+                    _get_enabled_set,
+                    _plugin_status,
+                )
+
+                entries = _discover_all_plugins()
+                enabled = _get_enabled_set()
+                disabled = _get_disabled_set()
+
+                # `/plugins` is a quick glance — default to user-installed
+                # plugins (what the user actually added). Bundled provider/
+                # platform plugins are summarized on one line; the full
+                # catalog lives behind `hermes plugins list`.
+                user_entries = [e for e in entries if e[3] != "bundled"]
+                bundled_count = len(entries) - len(user_entries)
+
+                if not user_entries:
+                    print("No user plugins installed.")
+                    print("  Install one: hermes plugins install owner/repo")
+                    print(f"  Or drop a plugin directory into {display_hermes_home()}/plugins/")
+                    if bundled_count:
+                        print(f"  ({bundled_count} bundled plugins available — see: hermes plugins list)")
                 else:
-                    print(f"Plugins ({len(plugins)}):")
-                    for p in plugins:
-                        status = "✓" if p["enabled"] else "✗"
-                        version = f" v{p['version']}" if p["version"] else ""
-                        tools = f"{p['tools']} tools" if p["tools"] else ""
-                        hooks = f"{p['hooks']} hooks" if p["hooks"] else ""
-                        commands = f"{p['commands']} commands" if p.get("commands") else ""
-                        parts = [x for x in [tools, hooks, commands] if x]
-                        detail = f" ({', '.join(parts)})" if parts else ""
-                        error = f" — {p['error']}" if p["error"] else ""
-                        print(f"  {status} {p['name']}{version}{detail}{error}")
+                    # Loaded-plugin details (tools/hooks/commands counts, errors)
+                    # keyed by name, when available.
+                    loaded: dict = {}
+                    try:
+                        from hermes_cli.plugins import get_plugin_manager
+                        for p in get_plugin_manager().list_plugins():
+                            loaded[p["name"]] = p
+                    except Exception:
+                        loaded = {}
+
+                    print(f"User plugins ({len(user_entries)}):")
+                    for name, version, _desc, source, _dir, key in sorted(user_entries):
+                        state = _plugin_status(name, enabled, disabled, key=key)
+                        glyph = {"enabled": "✓", "disabled": "✗"}.get(state, "○")
+                        ver = f" v{version}" if version else ""
+                        info = loaded.get(name) or {}
+                        bits = []
+                        if info.get("tools"):
+                            bits.append(f"{info['tools']} tools")
+                        if info.get("hooks"):
+                            bits.append(f"{info['hooks']} hooks")
+                        if info.get("commands"):
+                            bits.append(f"{info['commands']} commands")
+                        detail = f" ({', '.join(bits)})" if bits else ""
+                        label = "" if state == "enabled" else f" [{state}]"
+                        error = f" — {info['error']}" if info.get("error") else ""
+                        print(f"  {glyph} {name}{ver}{label}{detail}{error}")
+                    if bundled_count:
+                        print(f"  (+{bundled_count} bundled — see: hermes plugins list)")
+                    print("  Enable/disable: hermes plugins enable/disable <name>")
             except Exception as e:
                 print(f"Plugin system error: {e}")
         elif canonical == "rollback":
@@ -12278,7 +12230,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         """Queue background notifications owned by this visible CLI session.
 
         ``process_registry`` restores durable delegation completions into every
-        process using the same Moor profile.  Always pass this CLI's stable
+        process using the same Hermes profile.  Always pass this CLI's stable
         session identity when draining so another window cannot claim and mark
         delivered a completion that belongs to this one.
         """
@@ -13091,731 +13043,6 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             # Console quietness is enforced by hermes_logging not
             # installing a console StreamHandler in non-verbose mode.
 
-<<<<<<< HEAD
-    def _print_nous_credits_block(self) -> bool:
-        """Print the Nous credits magnitudes + monthly-grant gauge when a Nous account
-        is logged in. Returns True if it printed anything.
-
-        Delegates to the shared ``agent.account_usage.nous_credits_lines`` helper —
-        the single source for the /usage credits block across CLI, gateway, and TUI.
-        It's agent-independent (a portal fetch gated on "a Nous account is logged in",
-        NOT the inference-provider string), so /usage shows the block even in the TUI
-        slash-worker subprocess that resumes WITHOUT a live agent. Fail-open and
-        wall-clock-bounded inside the helper; also honors HERMES_DEV_CREDITS_FIXTURE
-        for offline testing — same behavior as every other surface.
-        """
-        from agent.account_usage import nous_credits_lines
-
-        lines = nous_credits_lines()
-        if not lines:
-            return False
-        print()
-        for line in lines:
-            print(f"  {line}")
-        return True
-    def _show_credits(self):
-        """`/credits` — focused Nous credit balance + top-up handoff.
-
-        Interactive CLI: balance block + identity line + a 3-button panel
-        (Open top-up / Copy link / Cancel). Non-interactive contexts — the TUI
-        slash-worker subprocess and any place without a live prompt_toolkit app
-        (``self._app is None``) — render a text variant (balance + tappable
-        top-up URL), because the modal would try to read the RPC stdin and crash
-        the worker. The terminal never confirms or polls payment (billing phase
-        2a). Fail-open: a portal hiccup or logged-out account degrades to a clear
-        message, never a crash.
-        """
-        from agent.account_usage import build_credits_view
-
-        view = build_credits_view()
-
-        if not view.logged_in:
-            print()
-            _cprint(f"  💳 {_d('Not logged into Nous Portal.')}")
-            print("  Run `hermes portal` to log in, then /credits.")
-            return
-
-        print()
-        print("  💳 Nous credits")
-        print(f"  {'─' * 41}")
-        for line in view.balance_lines:
-            # Drop the helper's own "📈 Nous credits" header — we print our own.
-            if line.lstrip().startswith("📈"):
-                continue
-            print(f"  {line}")
-        print(f"  {'─' * 41}")
-        if view.identity_line:
-            print(f"  {view.identity_line}")
-
-        if not view.topup_url:
-            return
-
-        # Non-interactive (TUI slash-worker, piped, no live app): the
-        # prompt_toolkit modal can't run here — it would read the worker's
-        # JSON-RPC stdin and crash the command. Render the text variant: the
-        # tappable URL IS the affordance, same as the messaging surfaces.
-        if not getattr(self, "_app", None):
-            print()
-            print(f"  Top up: {view.topup_url}")
-            print("  Complete your top-up in the browser — credits will appear in /credits shortly.")
-            return
-
-        choices = [
-            ("open", "Open top-up in browser", "launch the portal billing page"),
-            ("copy", "Copy link", "copy the top-up URL to your clipboard"),
-            ("cancel", "Cancel", "do nothing"),
-        ]
-        raw = self._prompt_text_input_modal(
-            title="💳 Add credits?",
-            detail=f"Top-up page:\n{view.topup_url}",
-            choices=choices,
-        )
-        choice = self._normalize_slash_confirm_choice(raw, choices)
-
-        if choice == "open":
-            opened = False
-            try:
-                import webbrowser
-
-                opened = webbrowser.open(view.topup_url)
-            except Exception:
-                opened = False
-            if not opened:
-                print(f"  Open this URL to top up: {view.topup_url}")
-            print()
-            print("  Complete your top-up in the browser — credits will appear in /credits shortly.")
-        elif choice == "copy":
-            try:
-                self._write_osc52_clipboard(view.topup_url)
-                print(f"  📋 Copied: {view.topup_url}")
-            except Exception:
-                print(f"  Top-up URL: {view.topup_url}")
-        else:
-            print("  🟡 Cancelled. No credits added.")
-
-    # ------------------------------------------------------------------
-    # /billing — Phase 2b terminal billing (CLI surface, all 5 screens)
-    # ------------------------------------------------------------------
-
-    def _show_billing(self, command: str = "/billing"):
-        """`/billing` — terminal billing for Nous (one interactive modal).
-
-        ZERO sub-commands: any argument is ignored. Bare ``/billing`` always
-        opens the Overview (Screen 1), whose numbered menu is the *only* way to
-        reach the Buy / Auto-reload / Monthly-limit sub-screens. (Per the unified
-        UX spec §0.4 — ``/billing buy`` etc. are gone; we don't error on a stray
-        arg, we just open the menu.)
-
-        Interactive CLI uses the prompt_toolkit modal; non-interactive contexts
-        (TUI slash-worker / no live app) render text + the portal deep-link, never
-        prompting (the URL is the affordance), same discipline as ``_show_credits``.
-        All money is Decimal end-to-end; the terminal never collects card details.
-        """
-        from agent.billing_view import build_billing_state
-
-        state = build_billing_state()
-        if not state.logged_in:
-            print()
-            if state.error:
-                _msg = f"Couldn't load billing: {state.error}"
-                _cprint(f"  💳 {_d(_msg)}")
-            else:
-                _cprint(f"  💳 {_d('Not logged into Nous Portal.')}")
-                print("  Run `hermes portal` to log in, then /billing.")
-            return
-
-        # Any sub-arg is intentionally ignored — always open the menu.
-        self._billing_overview(state)
-
-    def _billing_portal_hint(self, state, *, reason: str = "") -> None:
-        """Print a portal deep-link line (the funnel for portal-only actions)."""
-        url = getattr(state, "portal_url", None)
-        if not url:
-            return
-        if reason:
-            print(f"  {reason}")
-        print(f"  Manage on portal: {url}")
-
-    def _billing_overview(self, state):
-        """Screen 1 — overview: balance, spend bar, role-gated action menu."""
-        from agent.billing_view import format_money
-
-        print()
-        _cprint(f"  💳 {_b('Usage credits')}")
-        print(f"  {'─' * 41}")
-
-        cap = state.monthly_cap
-        if cap is not None and cap.limit_usd is not None:
-            spent = format_money(cap.spent_this_month_usd)
-            limit = format_money(cap.limit_usd)
-            ceiling = " (default ceiling)" if cap.is_default_ceiling else ""
-            bar, pct = self._billing_spend_bar(
-                cap.spent_this_month_usd, cap.limit_usd
-            )
-            print(f"  {spent} of {limit} used{ceiling}   {bar} {pct}%")
-
-        print(f"  Balance: {format_money(state.balance_usd)}")
-
-        ar = state.auto_reload
-        if ar is not None:
-            if ar.enabled:
-                print(
-                    f"  Auto-reload: on — below {format_money(ar.threshold_usd)} "
-                    f"→ reload to {format_money(ar.reload_to_usd)}"
-                )
-            else:
-                print("  Auto-reload: off")
-
-        if state.org_name:
-            role = (state.role or "").title()
-            _org_line = f"Org: {state.org_name}{f' · {role}' if role else ''}"
-            _cprint(f"  {_d(_org_line)}")
-        print(f"  {'─' * 41}")
-
-        # Action gating: admin + kill-switch for charge/auto-reload; everyone gets portal.
-        if not state.is_admin:
-            _cprint(f"  {_d('Billing actions require an org admin/owner.')}")
-            self._billing_portal_hint(state)
-            return
-        if not state.cli_billing_enabled:
-            _cprint(f"  {_d('Terminal billing is turned off for this org.')}")
-            self._billing_portal_hint(state, reason="Enable it on the portal to buy credits here.")
-            return
-
-        # Optimistic funnel: no card on file → a charge will 403 no_payment_method.
-        # Surface that up front (with the portal link) but DON'T hide Buy — /state.card
-        # can't fully prove CLI-chargeability, so we advise rather than gate.
-        if state.card is None:
-            _cprint(
-                f"  {_d('No saved card for terminal charges yet — set one up on the portal first.')}"
-            )
-            self._billing_portal_hint(state)
-
-        # Non-interactive (slash-worker / no live app): no modal, no sub-command
-        # advertising — just the portal funnel (the URL is the affordance).
-        if not getattr(self, "_app", None):
-            self._billing_portal_hint(state)
-            return
-
-        choices = [
-            ("buy", "Buy credits", "purchase a one-time credit top-up"),
-            ("auto", "Adjust auto-reload", "configure automatic top-ups"),
-            ("limit", "Adjust monthly limit", "show the monthly spend cap (read-only)"),
-            ("portal", "Manage on portal", "open the billing page in your browser"),
-            ("cancel", "Cancel", "do nothing"),
-        ]
-        # The overview summary is already printed above; the modal only needs to
-        # present the action menu — repeating the title/balance reads as a dupe.
-        raw = self._prompt_text_input_modal(
-            title="💳 Choose an action", detail="",
-            choices=choices,
-        )
-        choice = self._normalize_slash_confirm_choice(raw, choices)
-        if choice == "buy":
-            self._billing_buy_flow(state)
-        elif choice == "auto":
-            self._billing_auto_reload_flow(state)
-        elif choice == "limit":
-            self._billing_limit_screen(state)
-        elif choice == "portal":
-            self._billing_open_portal(state)
-        else:
-            print("  🟡 Cancelled.")
-
-    def _billing_spend_bar(self, spent, limit, *, cells: int = 10):
-        """Render a 10-cell `█`/`░` spend bar + integer percent from spent/limit.
-
-        Returns ``(bar, pct)`` where ``bar`` is like ``[████░░░░░░]`` and ``pct``
-        is the spent/limit percentage clamped to 0..100. Box-drawing glyphs are
-        not SGR codes, so this is leak-safe even without ``_b()``/``_d()``.
-        """
-        from decimal import Decimal
-
-        try:
-            s = Decimal(str(spent)) if spent is not None else Decimal("0")
-            l = Decimal(str(limit)) if limit is not None else Decimal("0")
-        except Exception:
-            s, l = Decimal("0"), Decimal("0")
-        if l <= 0:
-            pct = 0
-        else:
-            pct = int((s / l) * 100)
-        pct = max(0, min(100, pct))
-        filled = int(round(pct / 100 * cells))
-        filled = max(0, min(cells, filled))
-        bar = ("█" * filled) + ("░" * (cells - filled))
-        return bar, pct
-
-    def _billing_open_portal(self, state):
-        url = getattr(state, "portal_url", None)
-        if not url:
-            print("  No portal URL available.")
-            return
-        opened = False
-        try:
-            import webbrowser
-
-            opened = webbrowser.open(url)
-        except Exception:
-            opened = False
-        if not opened:
-            print(f"  Open this URL: {url}")
-        print("  Complete billing changes in the browser.")
-
-    def _billing_require_admin(self, state) -> bool:
-        """Guard charge/auto-reload entry points; print + return False if blocked."""
-        if not state.is_admin:
-            print()
-            _cprint(f"  💳 {_d('Billing actions require an org admin/owner.')}")
-            self._billing_portal_hint(state)
-            return False
-        if not state.cli_billing_enabled:
-            print()
-            _cprint(f"  💳 {_d('Terminal billing is turned off for this org.')}")
-            self._billing_portal_hint(state, reason="Enable it on the portal first.")
-            return False
-        return True
-
-    def _billing_buy_flow(self, state):
-        """Screen 2 (preset select) → Screen 3 (confirm + charge + poll)."""
-        from agent.billing_view import format_money, validate_charge_amount
-
-        if not self._billing_require_admin(state):
-            return
-
-        # Screen 3 — preset selection.
-        if not getattr(self, "_app", None):
-            presets = ", ".join(format_money(p) for p in state.charge_presets)
-            print()
-            _cprint(f"  💳 {_b('Buy usage credits')}")
-            print(f"  Presets: {presets}")
-            print("  Run this in the interactive CLI to complete a purchase.")
-            self._billing_portal_hint(state)
-            return
-
-        preset_choices = []
-        for p in state.charge_presets:
-            preset_choices.append((str(p), format_money(p), "one-time credit purchase"))
-        preset_choices.append(("custom", "Custom amount…", "enter your own amount"))
-        preset_choices.append(("cancel", "Cancel", "do nothing"))
-
-        card = state.card
-        detail = f"Payment: {card.masked}" if card else "No saved card on file"
-        raw = self._prompt_text_input_modal(
-            title="💳 Buy usage credits", detail=detail, choices=preset_choices,
-        )
-        choice = self._normalize_slash_confirm_choice(raw, preset_choices)
-        if not choice or choice == "cancel":
-            print("  🟡 Cancelled. No credits added.")
-            return
-
-        from decimal import Decimal
-
-        if choice == "custom":
-            entered = self._prompt_text_input("  Amount (USD): ")
-            if entered is None:
-                # None = cancelled (e.g. slash-worker can't prompt off-thread).
-                print("  🟡 Cancelled. No credits added.")
-                return
-            v = validate_charge_amount(
-                entered or "", min_usd=state.min_usd, max_usd=state.max_usd
-            )
-            if not v.ok:
-                print(f"  🔴 {v.error}")
-                return
-            amount = v.amount
-        else:
-            try:
-                amount = Decimal(choice)
-            except Exception:
-                print("  🔴 Invalid selection.")
-                return
-
-        self._billing_confirm_and_charge(state, amount)
-
-    def _billing_confirm_and_charge(self, state, amount):
-        """Screen 3 — confirm total + consent, charge, then poll to settlement."""
-        from agent.billing_view import format_money, new_idempotency_key
-
-        card = state.card
-        print()
-        _cprint(f"  💳 {_b('Confirm purchase')}")
-        print(f"  {'─' * 41}")
-        print(f"  Total: {format_money(amount)}")
-        if card:
-            print(f"  Payment: {card.masked}")
-        print(f"  {'─' * 41}")
-        _consent = (
-            "By confirming, you allow Nous Research to charge your card."
-        )
-        _cprint(f"  {_d(_consent)}")
-
-        confirm_choices = [
-            ("pay", f"Pay {format_money(amount)} now", "submit the charge"),
-            ("cancel", "Go back", "do not charge"),
-        ]
-        if not getattr(self, "_app", None):
-            print("  Run in the interactive CLI to confirm a purchase.")
-            return
-        raw = self._prompt_text_input_modal(
-            title=f"💳 Pay {format_money(amount)}?",
-            detail=(card.masked if card else "no saved card"),
-            choices=confirm_choices,
-        )
-        choice = self._normalize_slash_confirm_choice(raw, confirm_choices)
-        if choice != "pay":
-            print("  🟡 Cancelled. No credits added.")
-            return
-
-        # Submit the charge with a fresh idempotency key (reused on retry).
-        from hermes_cli.nous_billing import (
-            BillingError,
-            BillingScopeRequired,
-            post_charge,
-        )
-
-        key = new_idempotency_key()
-        try:
-            result = post_charge(amount_usd=amount, idempotency_key=key)
-        except BillingScopeRequired:
-            self._billing_handle_scope_required(state)
-            return
-        except BillingError as exc:
-            self._billing_render_charge_error(state, exc)
-            return
-
-        charge_id = result.get("chargeId")
-        if not charge_id:
-            print("  🔴 No charge id returned; please check the portal.")
-            return
-        _cprint(f"  {_d('Charge submitted — confirming settlement…')}")
-        self._billing_poll_charge(state, charge_id, amount)
-
-    def _billing_poll_charge(self, state, charge_id, amount):
-        """Poll loop: 2s interval, 5-min cap, cancellable. settled = ledger truth."""
-        import time as _time
-
-        from agent.billing_view import format_money
-        from hermes_cli.nous_billing import (
-            BillingError,
-            BillingRateLimited,
-            get_charge_status,
-        )
-
-        deadline = _time.time() + 300  # 5-minute cap
-        interval = 2.0
-        while _time.time() < deadline:
-            try:
-                status = get_charge_status(charge_id)
-            except BillingRateLimited as exc:
-                # Retry-after, NOT a failure — back off and keep polling.
-                wait = exc.retry_after or 5
-                _time.sleep(min(wait, 30))
-                continue
-            except BillingError as exc:
-                print(f"  🔴 Could not check the charge: {exc}")
-                return
-
-            state_str = status.get("status")
-            if state_str == "settled":
-                amt = status.get("amountUsd")
-                from agent.billing_view import parse_money
-
-                shown = format_money(parse_money(amt)) if amt else format_money(amount)
-                print(f"  ✅ {shown} in credits added.")
-                return
-            if state_str == "failed":
-                self._billing_render_charge_failed(state, status.get("reason"))
-                return
-            # pending → wait and poll again
-            _time.sleep(interval)
-
-        # Past the cap with no terminal state = timeout (not an error).
-        print("  🟡 Still processing after 5 minutes — this is a timeout, not a "
-              "failure. Check /billing or the portal shortly.")
-        self._billing_portal_hint(state)
-
-    def _billing_render_charge_failed(self, state, reason):
-        """Branch the poll `failed` reasons to the right copy + portal funnel."""
-        reason = (reason or "").strip()
-        if reason == "authentication_required":
-            print("  🔴 Your bank requires verification (3DS). Complete it on the "
-                  "portal to finish this purchase.")
-        elif reason == "payment_method_expired":
-            print("  🔴 Your card has expired. Update it on the portal.")
-        elif reason == "card_declined":
-            print("  🔴 Your card was declined. Try another card on the portal.")
-        else:
-            print(f"  🔴 The charge didn't go through ({reason or 'processing_error'}).")
-        self._billing_portal_hint(state)
-
-    def _billing_render_charge_error(self, state, exc):
-        """Render a typed BillingError at submit time (pre-poll)."""
-        from hermes_cli.nous_billing import BillingRateLimited
-
-        code = getattr(exc, "error", None)
-        portal_url = getattr(exc, "portal_url", None) or getattr(state, "portal_url", None)
-        if code == "no_payment_method":
-            print("  💳 No saved card for terminal charges yet. Set one up on the "
-                  "portal (one-time credit buys don't save a reusable card).")
-        elif code == "cli_billing_disabled":
-            print("  🔴 Terminal billing is turned off for this org — an admin must enable it on the portal.")
-        elif code == "monthly_cap_exceeded":
-            remaining = (getattr(exc, "payload", {}) or {}).get("remainingUsd")
-            if remaining is not None:
-                print(f"  🔴 Monthly spend cap reached — ${remaining} headroom left.")
-            else:
-                print("  🔴 Monthly spend cap reached.")
-        elif isinstance(exc, BillingRateLimited):
-            wait = getattr(exc, "retry_after", None)
-            mins = f" (try again in ~{max(1, round(wait / 60))} min)" if wait else ""
-            print(f"  🟡 Too many charges right now{mins}. This isn't a payment failure.")
-        else:
-            print(f"  🔴 {exc}")
-        if portal_url:
-            print(f"  Portal: {portal_url}")
-
-    def _billing_handle_scope_required(self, state):
-        """403 insufficient_scope → lazy step-up re-auth (plan D-A)."""
-        print()
-        print("  💳 Terminal billing needs an extra permission (billing:manage).")
-        _scope_msg = (
-            "An org admin/owner must tick \"Allow terminal billing\" during "
-            "login."
-        )
-        _cprint(f"  {_d(_scope_msg)}")
-        if not getattr(self, "_app", None):
-            print("  Run `hermes portal` and approve terminal billing, then retry.")
-            return
-        confirm_choices = [
-            ("yes", "Re-authorize now", "open the portal to grant billing access"),
-            ("no", "Not now", "cancel"),
-        ]
-        raw = self._prompt_text_input_modal(
-            title="💳 Grant terminal billing access?",
-            detail="Opens the portal device-authorization page.",
-            choices=confirm_choices,
-        )
-        choice = self._normalize_slash_confirm_choice(raw, confirm_choices)
-        if choice != "yes":
-            print("  🟡 Cancelled.")
-            return
-        try:
-            from hermes_cli.auth import step_up_nous_billing_scope
-
-            granted = step_up_nous_billing_scope(open_browser=True)
-        except Exception as exc:
-            print(f"  🔴 Re-authorization failed: {exc}")
-            return
-        if granted:
-            print("  ✅ Billing permission granted.")
-            # Step-up only grants the billing:manage TOKEN scope; the ORG
-            # kill-switch (cli_billing_enabled) is a separate gate. Re-fetch
-            # /state so we don't over-promise when a charge would still hit
-            # cli_billing_disabled.
-            from agent.billing_view import build_billing_state
-
-            fresh = build_billing_state()
-            if fresh.logged_in and fresh.cli_billing_enabled:
-                print("  Run /billing buy again to continue.")
-            else:
-                print("  🟡 Permission granted, but terminal billing is still turned "
-                      "off for this org. Enable it in the portal, then run /billing again.")
-                self._billing_portal_hint(fresh)
-        else:
-            print("  🟡 Terminal billing was not granted (an admin must tick the box).")
-
-    def _billing_auto_reload_flow(self, state):
-        """Screen 4 — auto-reload config: threshold + reload-to → PATCH.
-
-        Prefills the current values from ``state.auto_reload``. Validates both
-        amounts (2dp, within bounds, ``reload_to > threshold``). When auto-reload
-        is already on, offers a "Turn off" path (PATCH ``enabled:false``).
-        """
-        from agent.billing_view import format_money, validate_charge_amount
-
-        if not self._billing_require_admin(state):
-            return
-
-        card = state.card
-        ar = state.auto_reload
-        currently_on = bool(ar and ar.enabled)
-
-        print()
-        _cprint(f"  💳 {_b('Auto-reload')}")
-        print(f"  {'─' * 41}")
-        _cprint(f"  {_d('Automatically buy more credits when your balance is low.')}")
-        if card:
-            print(f"  Card on file: {card.masked}")
-        else:
-            print("  No saved card — set one up on the portal first.")
-            self._billing_portal_hint(state)
-            return
-        if currently_on:
-            print(
-                f"  Currently: below {format_money(ar.threshold_usd)} → "
-                f"reload to {format_money(ar.reload_to_usd)}"
-            )
-
-        if not getattr(self, "_app", None):
-            print("  Run in the interactive CLI to configure auto-reload.")
-            self._billing_portal_hint(state)
-            return
-
-        # When already enabled, let the user turn it off without re-entering values.
-        if currently_on:
-            top_choices = [
-                ("edit", "Edit thresholds", "change when / how much to reload"),
-                ("off", "Turn off", "disable auto-reload"),
-                ("cancel", "Cancel", "do nothing"),
-            ]
-            raw = self._prompt_text_input_modal(
-                title="💳 Auto-reload",
-                detail=(
-                    f"On — below {format_money(ar.threshold_usd)} → "
-                    f"reload to {format_money(ar.reload_to_usd)}"
-                ),
-                choices=top_choices,
-            )
-            top = self._normalize_slash_confirm_choice(raw, top_choices)
-            if top == "off":
-                self._billing_auto_reload_disable(state)
-                return
-            if top != "edit":
-                print("  🟡 Cancelled.")
-                return
-
-        # Field 1 — threshold (prefilled when editing an existing config).
-        cur_thr = format_money(ar.threshold_usd) if currently_on else None
-        thr_prompt = "  When balance falls below (USD)"
-        thr_prompt += f" [{cur_thr}]: " if cur_thr else ": "
-        threshold_raw = self._prompt_text_input(thr_prompt)
-        if threshold_raw is None:
-            # None = cancelled (e.g. slash-worker can't prompt off-thread).
-            print("  🟡 Cancelled.")
-            return
-        if not (threshold_raw or "").strip() and currently_on:
-            threshold_amt = ar.threshold_usd  # keep current value on empty input
-        else:
-            tv = validate_charge_amount(
-                threshold_raw or "", min_usd=state.min_usd, max_usd=state.max_usd
-            )
-            if not tv.ok or tv.amount is None:
-                print(f"  🔴 {tv.error}")
-                return
-            threshold_amt = tv.amount
-
-        # Field 2 — reload-to (prefilled when editing an existing config).
-        cur_rel = format_money(ar.reload_to_usd) if currently_on else None
-        rel_prompt = "  Reload balance to (USD)"
-        rel_prompt += f" [{cur_rel}]: " if cur_rel else ": "
-        reload_raw = self._prompt_text_input(rel_prompt)
-        if reload_raw is None:
-            print("  🟡 Cancelled.")
-            return
-        if not (reload_raw or "").strip() and currently_on:
-            reload_amt = ar.reload_to_usd  # keep current value on empty input
-        else:
-            rv = validate_charge_amount(
-                reload_raw or "", min_usd=state.min_usd, max_usd=state.max_usd
-            )
-            if not rv.ok or rv.amount is None:
-                print(f"  🔴 {rv.error}")
-                return
-            reload_amt = rv.amount
-
-        if reload_amt is None or threshold_amt is None or reload_amt <= threshold_amt:
-            print("  🔴 Reload-to amount must be greater than the threshold.")
-            return
-
-        print()
-        _ar_consent = (
-            f"By confirming, you authorize Nous Research to charge {card.masked} "
-            f"whenever your balance reaches {format_money(threshold_amt)}. "
-            f"Turn off any time here or on the portal."
-        )
-        _cprint(f"  {_d(_ar_consent)}")
-        confirm_choices = [
-            ("agree", "Agree and turn on", "enable auto-reload"),
-            ("cancel", "Cancel", "do nothing"),
-        ]
-        raw = self._prompt_text_input_modal(
-            title="💳 Turn on auto-reload?",
-            detail=f"Below {format_money(threshold_amt)} → reload to {format_money(reload_amt)}",
-            choices=confirm_choices,
-        )
-        choice = self._normalize_slash_confirm_choice(raw, confirm_choices)
-        if choice != "agree":
-            print("  🟡 Cancelled.")
-            return
-
-        from hermes_cli.nous_billing import (
-            BillingError,
-            BillingScopeRequired,
-            patch_auto_top_up,
-        )
-
-        try:
-            patch_auto_top_up(
-                enabled=True, threshold=float(threshold_amt), top_up_amount=float(reload_amt)
-            )
-        except BillingScopeRequired:
-            self._billing_handle_scope_required(state)
-            return
-        except BillingError as exc:
-            self._billing_render_charge_error(state, exc)
-            return
-        print(f"  ✅ Auto-reload on: below {format_money(threshold_amt)} → "
-              f"reload to {format_money(reload_amt)}.")
-
-    def _billing_auto_reload_disable(self, state):
-        """Turn off auto-reload (PATCH ``enabled:false``).
-
-        The endpoint requires ``threshold``/``topUpAmount`` in the body even when
-        disabling, so we echo back the current values (falling back to 0).
-        """
-        from hermes_cli.nous_billing import (
-            BillingError,
-            BillingScopeRequired,
-            patch_auto_top_up,
-        )
-
-        ar = state.auto_reload
-        thr = float(ar.threshold_usd) if ar and ar.threshold_usd is not None else 0.0
-        rel = float(ar.reload_to_usd) if ar and ar.reload_to_usd is not None else 0.0
-        try:
-            patch_auto_top_up(enabled=False, threshold=thr, top_up_amount=rel)
-        except BillingScopeRequired:
-            self._billing_handle_scope_required(state)
-            return
-        except BillingError as exc:
-            self._billing_render_charge_error(state, exc)
-            return
-        print("  ✅ Auto-reload turned off.")
-
-    def _billing_limit_screen(self, state):
-        """Screen 5 — monthly spend limit (read-only; cap is portal-only)."""
-        from agent.billing_view import format_money
-
-        print()
-        _cprint(f"  💳 {_b('Monthly spend limit')}")
-        print(f"  {'─' * 41}")
-        cap = state.monthly_cap
-        if cap is None or cap.limit_usd is None:
-            _cprint(f"  {_d('No monthly cap visible (managed on the portal).')}")
-        else:
-            spent = format_money(cap.spent_this_month_usd)
-            limit = format_money(cap.limit_usd)
-            ceiling = " (default ceiling)" if cap.is_default_ceiling else ""
-            print(f"  {spent} of {limit} used this month{ceiling}")
-        _limit_note = (
-            "The monthly limit is set on the portal — the terminal shows "
-            "it read-only."
-        )
-        _cprint(f"  {_d(_limit_note)}")
-        self._billing_portal_hint(state)
-=======
->>>>>>> upstream/main
     def _show_insights(self, command: str = "/insights"):
         """Show usage insights and analytics from session history."""
         # Parse optional --days flag
@@ -13872,7 +13099,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
           re-sends the full input prefix, expensive on long-context /
           high-reasoning models).  This stops silent cache-breaking reloads
           when config.yaml is rewritten frequently by external tooling or
-          other Moor instances.
+          other Hermes instances.
         """
 
         import yaml as _yaml
@@ -15078,7 +14305,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                 # Fail-closed echo guard (#75780): a playback-phase capture
                 # has no acoustic echo cancellation, so speaker bleed alone
                 # can trip the barge trigger. If the transcript is a close
-                # match for what Moor just spoke, treat it as self-capture
+                # match for what Hermes just spoke, treat it as self-capture
                 # instead of queuing it as a user turn.
                 if getattr(self, "_voice_barge_phase", None) == "playback":
                     from tools.voice_mode import is_tts_echo
@@ -15252,7 +14479,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
 
         _cprint(f"\n{_DIM}Voice mode disabled.{_RST}")
 
-    # ── Wake word ("Hey Moor") ─────────────────────────────────────────
+    # ── Wake word ("Hey Hermes") ─────────────────────────────────────────
     #
     # An always-on hotword listener (tools/wake_word.py) that, on detecting
     # the wake phrase, starts a fresh session and captures one utterance via
@@ -15470,7 +14697,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         if state == "LISTENING" and audio_is_silent():
             _cprint(f"  {_ACCENT}⚠ Microphone delivers only silence — the listener can't hear anything.{_RST}")
             _cprint(f"  {_DIM}On macOS: System Settings > Privacy & Security > Microphone — allow your"
-                    f" terminal/Moor, then /wake off + /wake on.{_RST}")
+                    f" terminal/Hermes, then /wake off + /wake on.{_RST}")
         if not reqs["available"] and reqs.get("hint"):
             _cprint(f"  {_DIM}{reqs['hint']}{_RST}")
         if not owned:
@@ -15512,9 +14739,6 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         for line in reqs["details"].split("\n"):
             _cprint(f"    {line}")
 
-<<<<<<< HEAD
-    def _clarify_callback(self, question, choices):
-=======
     def _persist_prompt_summary(self, icon: str, label: str, detail: str, outcome: str) -> None:
         """Print a one-line scrollback summary of a resolved modal prompt.
 
@@ -15535,7 +14759,6 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         _cprint(f"\n{_DIM}{icon} {label}: {detail} → {outcome}{_RST}")
 
     def _clarify_callback(self, question, choices, multi_select=False):
->>>>>>> upstream/main
         """
         Platform callback for the clarify tool. Called from the agent thread.
 
@@ -15586,12 +14809,8 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         while True:
             try:
                 result = response_queue.get(timeout=1)
-<<<<<<< HEAD
-                self._clarify_deadline = 0
-=======
                 self._clarify_deadline = None
                 self._persist_prompt_summary("?", "Clarify", question, str(result))
->>>>>>> upstream/main
                 return result
             except queue.Empty:
                 # None deadline = unlimited: never auto-skip, just keep polling.
@@ -15714,6 +14933,16 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                     self._approval_state = None
                     self._approval_deadline = 0
                     self._paint_now()
+                    _outcome_labels = {
+                        "once": "allowed once",
+                        "session": "allowed for session",
+                        "always": "added to allowlist",
+                        "deny": "denied",
+                    }
+                    self._persist_prompt_summary(
+                        "⚠", "Approval", command,
+                        _outcome_labels.get(result, str(result)),
+                    )
                     return result
                 except queue.Empty:
                     remaining = self._approval_deadline - _time.monotonic()
@@ -15838,7 +15067,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         show_full = state.get("show_full", False)
 
         title = "⚠️  Dangerous Command"
-        cmd_display = command if show_full or len(command) <= 70 else command[:70] + '...'
+        cmd_display = command
         choice_labels = {
             "once": "Allow once",
             "session": "Allow for this session",
@@ -15862,6 +15091,11 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
 
         # Pre-wrap the mandatory content — command + choices must always render.
         cmd_wrapped = _wrap_panel_text(cmd_display, inner_text_width)
+        if not show_full and "view" in choices and len(cmd_wrapped) > 4:
+            cmd_wrapped = cmd_wrapped[:3] + _wrap_panel_text(
+                "… (choose Show full command)",
+                inner_text_width,
+            )
 
         # (choice_index, wrapped_line) so we can re-apply selected styling below
         choice_wrapped: list[tuple[int, str]] = []
@@ -15911,7 +15145,10 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         max_cmd_rows = max(1, available - chrome_rows - len(choice_wrapped))
         if len(cmd_wrapped) > max_cmd_rows:
             keep = max(1, max_cmd_rows - 1) if max_cmd_rows > 1 else 1
-            cmd_wrapped = cmd_wrapped[:keep] + ["… (command truncated — use /logs or /debug for full text)"]
+            cmd_wrapped = cmd_wrapped[:keep] + _wrap_panel_text(
+                "… (command truncated — use /logs or /debug for full text)",
+                inner_text_width,
+            )
 
         # Allocate any remaining rows to description. The extra -1 in full mode
         # accounts for the blank separator between choices and description.
@@ -16286,20 +15523,6 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                 text_queue = queue.Queue()
                 stop_event = threading.Event()
 
-<<<<<<< HEAD
-                def display_callback(sentence: str):
-                    """Called by TTS consumer when a sentence is ready to display + speak."""
-                    nonlocal _streaming_box_opened
-                    if not _streaming_box_opened:
-                        _streaming_box_opened = True
-                        w = self._scrollback_box_width(getattr(self.console, "width", 80))
-                        label = " ⚕ Moor "
-                        if self.show_timestamps:
-                            label = f"{label}{datetime.now().strftime(getattr(self, 'timestamp_format', '%H:%M'))} "
-                        fill = w - 2 - HermesCLI._status_bar_display_width(label)
-                        _cprint(f"\n{_ACCENT}╭─{label}{'─' * max(fill - 1, 0)}╮{_RST}")
-                    _cprint(f"{_STREAM_PAD}{sentence.rstrip()}")
-=======
                 # When token streaming is enabled (the common case), the
                 # CLI's _stream_delta already renders text token-by-token as
                 # the model generates it. Passing a display_callback here too
@@ -16314,14 +15537,13 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                         if not _streaming_box_opened:
                             _streaming_box_opened = True
                             w = self._scrollback_box_width(getattr(self.console, "width", 80))
-                            label = " ⚕ Moor "
+                            label = " ⚕ Hermes "
                             if self.show_timestamps:
                                 label = f"{label}{datetime.now().strftime(getattr(self, 'timestamp_format', '%H:%M'))} "
                             fill = w - 2 - HermesCLI._status_bar_display_width(label)
                             _cprint(f"\n{_ACCENT}╭─{label}{'─' * max(fill - 1, 0)}╮{_RST}")
                         _cprint(f"{_STREAM_PAD}{sentence.rstrip()}")
                     _tts_display_cb = display_callback
->>>>>>> upstream/main
 
                 tts_thread = threading.Thread(
                     target=stream_tts_to_speaker,
@@ -16597,6 +15819,9 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             if self._prompt_start_time is not None:
                 self._prompt_duration = max(0.0, time.time() - self._prompt_start_time)
                 self._prompt_start_time = None
+            # Record when this agent loop finished so the status bar can show
+            # idle time since the last final response.
+            self._last_turn_finished_at = time.time()
 
             # Proactively clean up async clients whose event loop is dead.
             # The agent thread may have created AsyncOpenAI clients bound
@@ -16744,11 +15969,11 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                 try:
                     from hermes_cli.skin_engine import get_active_skin
                     _skin = get_active_skin()
-                    label = _skin.get_branding("response_label", "⚕ Moor")
+                    label = _skin.get_branding("response_label", "⚕ Hermes")
                     _resp_color = _maybe_remap_for_light_mode(_skin.get_color("response_border", "#CD7F32"))
                     _resp_text = _maybe_remap_for_light_mode(_skin.get_color("banner_text", "#FFF8DC"))
                 except Exception:
-                    label = "⚕ Moor"
+                    label = "⚕ Hermes"
                     _resp_color = _maybe_remap_for_light_mode("#CD7F32")
                     _resp_text = _maybe_remap_for_light_mode("#FFF8DC")
 
@@ -17391,10 +16616,10 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         try:
             from hermes_cli.skin_engine import get_active_skin
             _welcome_skin = get_active_skin()
-            _welcome_text = _welcome_skin.get_branding("welcome", "Welcome to Moor Agent! Type your message or /help for commands.")
+            _welcome_text = _welcome_skin.get_branding("welcome", "Welcome to Hermes Agent! Type your message or /help for commands.")
             _welcome_color = _welcome_skin.get_color("banner_text", "#FFF8DC")
         except Exception:
-            _welcome_text = "Welcome to Moor Agent! Type your message or /help for commands."
+            _welcome_text = "Welcome to Hermes Agent! Type your message or /help for commands."
             _welcome_color = "#FFF8DC"
         self._console_print(f"[{_welcome_color}]{_welcome_text}[/]")
 
@@ -17449,7 +16674,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         except Exception:
             pass
         # First-time OpenClaw-residue banner — fires once if ~/.openclaw/ exists
-        # after an OpenClaw→Moor migration (especially migrations done by
+        # after an OpenClaw→Hermes migration (especially migrations done by
         # OpenClaw's own tool, which doesn't archive the source directory).
         try:
             from agent.onboarding import (
@@ -17957,23 +17182,12 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             def handle_ctrl_enter_newline(event):
                 """Ctrl+J inserts a newline for multi-line input.
 
-<<<<<<< HEAD
-                Windows Terminal (incl. WSL/SSH sessions through it) delivers
-                Ctrl+Enter as LF (c-j), distinct from plain Enter (c-m). This
-                binding makes Ctrl+Enter the equivalent of Alt+Enter on those
-                terminals, giving an Enter-involving newline keystroke
-                without requiring terminal settings changes. Ctrl+J (the raw
-                LF keystroke) also triggers this by virtue of being the same
-                key code — a harmless side effect since Ctrl+J has no
-                conflicting Moor binding. See issue #22379.
-=======
                 This is enabled by default to match Claude Code / Codex /
                 OpenCode behavior. On Windows Terminal and similar environments,
                 Ctrl+Enter is delivered as the same c-j key code, so this also
                 covers Ctrl+Enter there. Set display.cli_multiline_shortcuts:
                 false to restore legacy c-j submit behavior on unusual POSIX
                 PTYs where plain Enter arrives as LF.
->>>>>>> upstream/main
                 """
                 event.current_buffer.insert_text('\n')
 
@@ -18566,7 +17780,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             import signal as _sig
             from prompt_toolkit.application import run_in_terminal
             from hermes_cli.skin_engine import get_active_skin
-            agent_name = get_active_skin().get_branding("agent_name", "Moor Agent")
+            agent_name = get_active_skin().get_branding("agent_name", "Hermes Agent")
             msg = f"\n{agent_name} has been suspended. Run `fg` to bring {agent_name} back."
             def _suspend():
                 os.write(1, msg.encode())
@@ -18777,7 +17991,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                 # No image found — show a hint
                 pass  # silent when no image (avoid noise on accidental press)
 
-        # Dynamic prompt: shows Moor symbol when agent is working,
+        # Dynamic prompt: shows Hermes symbol when agent is working,
         # or answer prompt when clarify freetext mode is active.
         cli_ref = self
 
@@ -18826,26 +18040,17 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         def _input_height():
             try:
                 from prompt_toolkit.application import get_app
-                from prompt_toolkit.utils import get_cwidth
 
                 doc = input_area.buffer.document
-                prompt_width = max(2, get_cwidth(self._get_tui_prompt_text()))
                 try:
-                    available_width = get_app().output.get_size().columns - prompt_width
+                    terminal_columns = get_app().output.get_size().columns
                 except Exception:
-                    available_width = shutil.get_terminal_size((80, 24)).columns - prompt_width
-                if available_width < 10:
-                    available_width = 40
-                visual_lines = 0
-                for line in doc.lines:
-                    # Each logical line takes at least 1 visual row; long lines wrap.
-                    # Use prompt_toolkit's cell width so CJK wide characters count as 2.
-                    line_width = get_cwidth(line)
-                    if line_width <= 0:
-                        visual_lines += 1
-                    else:
-                        visual_lines += max(1, -(-line_width // available_width))  # ceil division
-                return min(max(visual_lines, 1), 8)
+                    terminal_columns = shutil.get_terminal_size((80, 24)).columns
+                return _estimate_tui_input_height(
+                    doc.lines,
+                    self._get_tui_prompt_text(),
+                    terminal_columns,
+                )
             except Exception:
                 return 1
 
@@ -19162,7 +18367,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                     else f"  {other_num_prefix}. Other (type your answer)"
                 )
             preview_lines.extend(_wrap_panel_text(other_label, 60, subsequent_indent="    "))
-            box_width = _panel_box_width("Moor needs your input", preview_lines)
+            box_width = _panel_box_width("Hermes needs your input", preview_lines)
             inner_text_width = max(8, box_width - 2)
 
             # Pre-wrap choices + Other option — these are mandatory.
@@ -19274,8 +18479,8 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             lines = []
             # Box top border
             lines.append(('class:clarify-border', '╭─ '))
-            lines.append(('class:clarify-title', 'Moor needs your input'))
-            lines.append(('class:clarify-border', ' ' + ('─' * max(0, box_width - len("Moor needs your input") - 3)) + '╮\n'))
+            lines.append(('class:clarify-title', 'Hermes needs your input'))
+            lines.append(('class:clarify-border', ' ' + ('─' * max(0, box_width - len("Hermes needs your input") - 3)) + '╮\n'))
             if not use_compact_chrome:
                 _append_blank_panel_line(lines, 'class:clarify-border', box_width)
 
@@ -19910,7 +19115,17 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                             # session. Without this guard a KeyboardInterrupt unwinds
                             # to the outer prompt_toolkit loop and the session dies.
                             _cprint("\n[dim]Command interrupted.[/dim]")
-                        continue
+                            continue
+                        # A slash handler may set a one-shot pending seed (e.g.
+                        # /blueprint <name>) to be run as the next agent turn.
+                        # If present, fall through to the chat path with the seed
+                        # as the user message instead of looping back to idle.
+                        _seed = getattr(self, "_pending_agent_seed", None)
+                        if _seed:
+                            self._pending_agent_seed = None
+                            user_input = _seed
+                        else:
+                            continue
                     
                     # Expand paste references back to full content
                     _paste_ref_re = re.compile(r'\[Pasted text #\d+: \d+ lines \u2192 (.+?)\]')
@@ -20040,7 +19255,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         process_thread = threading.Thread(target=process_loop, daemon=True)
         process_thread.start()
 
-        # Wake word ("Hey Moor") — start the always-on hotword listener if
+        # Wake word ("Hey Hermes") — start the always-on hotword listener if
         # enabled. Off-thread so a first-run engine install never blocks the
         # prompt; best-effort, so deps/mic/key gaps are surfaced, never fatal.
         def _wake_startup():
@@ -20327,6 +19542,15 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                     self._session_db.end_session(self.agent.session_id, "cli_close")
                 except (Exception, KeyboardInterrupt) as e:
                     logger.debug("Could not close session in DB: %s", e)
+                # Started-and-immediately-quit sessions never gained content;
+                # drop the empty row so /resume and `hermes sessions list`
+                # stay clean (gemini-cli#27770 port). No-op for resumed or
+                # titled sessions and anything with messages or children.
+                if not getattr(self, '_delete_session_on_exit', False):
+                    try:
+                        self._discard_session_if_empty(self.agent.session_id)
+                    except (Exception, KeyboardInterrupt) as e:
+                        logger.debug("Could not prune empty session: %s", e)
                 # /exit --delete: also remove the current session's transcripts
                 # and SQLite history. Ported from google-gemini/gemini-cli#19332.
                 if getattr(self, '_delete_session_on_exit', False):
@@ -20504,7 +19728,7 @@ def main(
     ignore_rules: bool = False,
 ):
     """
-    Moor Agent CLI - Interactive AI Assistant
+    Hermes Agent CLI - Interactive AI Assistant
     
     Args:
         query: Single query to execute (then exit). Alias: -q
@@ -20556,7 +19780,7 @@ def main(
     if gateway:
         import asyncio
         from gateway.run import start_gateway
-        print("Starting Moor Gateway (messaging platforms)...")
+        print("Starting Hermes Gateway (messaging platforms)...")
         asyncio.run(start_gateway())
         return
 
@@ -20658,9 +19882,21 @@ def main(
                 else:
                     toolsets_list.append(str(t))
     else:
-        # Use the shared resolver so MCP servers are included at runtime
-        from hermes_cli.tools_config import _get_platform_tools
-        toolsets_list = sorted(_get_platform_tools(CLI_CONFIG, "cli"))
+        # Coding posture (base Hermes): with no explicit --toolsets, collapse
+        # to the coding toolset (+ enabled MCP servers) when sitting in a code
+        # workspace. See agent/coding_context.py.
+        _coding = None
+        try:
+            from agent.coding_context import coding_selection
+            _coding = coding_selection(platform="cli", config=CLI_CONFIG)
+        except Exception:
+            _coding = None
+        if _coding is not None:
+            toolsets_list = _coding
+        else:
+            # Use the shared resolver so MCP servers are included at runtime
+            from hermes_cli.tools_config import _get_platform_tools
+            toolsets_list = sorted(_get_platform_tools(CLI_CONFIG, "cli"))
     
     parsed_skills = _parse_skills_argument(skills)
 
@@ -20944,7 +20180,7 @@ def main(
                         cli.agent.quiet_mode = True
                         cli.agent.suppress_status_output = True
                         # Suppress streaming display callbacks so stdout stays
-                        # machine-readable (no styled "Moor" box, no tool-gen
+                        # machine-readable (no styled "Hermes" box, no tool-gen
                         # status lines).  The response is printed once below.
                         cli.agent.stream_delta_callback = None
                         cli.agent.tool_gen_callback = None
@@ -21049,7 +20285,7 @@ def main(
                 cli.chat(query, images=single_query_images or None)
                 cli._print_exit_summary(clear_screen=False)
         finally:
-            cli._release_active_session()
+            _finalize_single_query(cli)
         return
     
     # Run interactive mode

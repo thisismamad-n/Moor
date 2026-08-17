@@ -82,33 +82,6 @@ def test_normalize_usage_openai_reads_top_level_anthropic_cache_fields():
 
 
 
-<<<<<<< HEAD
-def test_nous_portal_pricing_preserves_vendor_prefixed_model_ids(monkeypatch):
-    seen = {}
-
-    def _fake_fetch_endpoint_model_metadata(base_url, api_key=None):
-        seen["base_url"] = base_url
-        return {
-            "openai/gpt-5.5-pro": {
-                "pricing": {
-                    "prompt": "0.000025",
-                    "completion": "0.000125",
-                }
-            }
-        }
-
-    monkeypatch.setattr(
-        "agent.usage_pricing.fetch_endpoint_model_metadata",
-        _fake_fetch_endpoint_model_metadata,
-    )
-
-    entry = get_pricing_entry("openai/gpt-5.5-pro", provider="nous")
-
-    assert seen["base_url"] == "https://inference-api.Moor inc..com/v1"
-    assert float(entry.input_cost_per_million) == 25.0
-    assert float(entry.output_cost_per_million) == 125.0
-=======
->>>>>>> upstream/main
 
 
 def test_deepseek_v4_pro_pricing_entry_exists():
@@ -294,21 +267,6 @@ def test_fireworks_router_fast_tier_prices_distinctly():
 
 
 
-<<<<<<< HEAD
-def test_fireworks_rows_all_carry_cache_read_pricing():
-    """Invariant: Fireworks publishes cached-input rates for every serverless
-    model, and Moor prompt caching is active on Fireworks sessions — every
-    snapshot row must carry a cache_read rate cheaper than fresh input."""
-    from agent.usage_pricing import _OFFICIAL_DOCS_PRICING
-
-    fw_rows = [k for k in _OFFICIAL_DOCS_PRICING if k[0] == "fireworks"]
-    assert fw_rows, "expected at least one fireworks pricing row"
-    for key in fw_rows:
-        entry = _OFFICIAL_DOCS_PRICING[key]
-        assert entry.cache_read_cost_per_million is not None, key
-        assert entry.cache_read_cost_per_million < entry.input_cost_per_million, key
-=======
->>>>>>> upstream/main
 
 
 

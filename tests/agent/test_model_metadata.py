@@ -711,25 +711,6 @@ class TestNousPortalContextResolution:
         mm._endpoint_model_metadata_cache_time.clear()
 
 
-<<<<<<< HEAD
-        mock_portal.return_value = {
-            "qwen3.6-plus": {"context_length": 262_144},
-        }
-        mock_or.return_value = {
-            "qwen/qwen3.6-plus": {"context_length": 1_000_000},
-        }
-
-        ctx = mm.get_model_context_length(
-            model="qwen3.6-plus",
-            base_url="https://inference-api.Moor inc..com/v1",
-            api_key="fake-token",
-            provider="nous",
-        )
-        assert ctx == 262_144, (
-            f"Portal must override OR catalog; got {ctx} (OR leak?)"
-        )
-=======
->>>>>>> upstream/main
 
     @patch("agent.model_metadata.fetch_endpoint_model_metadata")
     def test_empty_model_never_fuzzy_matches_endpoint_catalog(self, mock_fetch):
@@ -742,35 +723,18 @@ class TestNousPortalContextResolution:
             "voyageai/voyage-code-4": {"context_length": 32_000},
             "x-ai/grok-4.6": {"context_length": 500_000},
         }
-<<<<<<< HEAD
-        mock_or.return_value = {}
-
-        base_url = "https://inference-api.Moor inc..com/v1"
-        ctx = mm.get_model_context_length(
-            model="qwen3.6-plus",
-            base_url=base_url,
-            api_key="fake",
-            provider="nous",
-        )
-        assert ctx == 262_144
-        persisted = yaml.safe_load(cache_file.read_text()).get("context_lengths", {})
-        assert persisted.get(f"qwen3.6-plus@{base_url}") == 262_144, (
-            "Portal-derived value should be persisted to disk"
-        )
-=======
         assert mm._resolve_endpoint_context_length(
-            "", "https://inference-api.Moor inc..com/v1"
+            "", "https://inference-api.nousresearch.com/v1"
         ) is None
         # Non-empty names still fuzzy-match.
         assert mm._resolve_endpoint_context_length(
-            "grok-4.6", "https://inference-api.Moor inc..com/v1"
+            "grok-4.6", "https://inference-api.nousresearch.com/v1"
         ) == 500_000
         # Single-model endpoints still resolve even with an empty name.
         mock_fetch.return_value = {"only-model": {"context_length": 131_072}}
         assert mm._resolve_endpoint_context_length(
             "", "http://localhost:8080/v1"
         ) == 131_072
->>>>>>> upstream/main
 
     @patch("agent.model_metadata.fetch_endpoint_model_metadata")
     @patch("agent.model_metadata.fetch_model_metadata")
@@ -791,7 +755,7 @@ class TestNousPortalContextResolution:
             "qwen/qwen3.6-plus": {"context_length": 1_000_000},
         }
 
-        base_url = "https://inference-api.Moor inc..com/v1"
+        base_url = "https://inference-api.nousresearch.com/v1"
         ctx = mm.get_model_context_length(
             model="qwen3.6-plus",
             base_url=base_url,
@@ -819,7 +783,7 @@ class TestNousPortalContextResolution:
         cache_file = tmp_path / "context_length_cache.yaml"
         monkeypatch.setattr(mm, "_get_context_cache_path", lambda: cache_file)
 
-        base_url = "https://inference-api.Moor inc..com/v1"
+        base_url = "https://inference-api.nousresearch.com/v1"
         stale_key = f"qwen3.6-plus@{base_url}"
         other_key = "other-model@https://api.openai.com/v1"
         cache_file.write_text(yaml.dump({"context_lengths": {
@@ -853,68 +817,6 @@ class TestNousPortalContextResolution:
         )
 
 
-<<<<<<< HEAD
-        base_url = "https://inference-api.Moor inc..com/v1"
-        existing_key = f"qwen3.6-plus@{base_url}"
-        cache_file.write_text(yaml.dump({"context_lengths": {
-            existing_key: 1_000_000,
-        }}))
-
-        mock_portal.return_value = {}  # portal unreachable
-        mock_or.return_value = {
-            "qwen/qwen3.6-plus": {"context_length": 1_000_000},
-        }
-
-        mm.get_model_context_length(
-            model="qwen3.6-plus",
-            base_url=base_url,
-            api_key="fake",
-            provider="nous",
-        )
-
-        remaining = yaml.safe_load(cache_file.read_text()).get("context_lengths", {})
-        assert remaining.get(existing_key) == 1_000_000, (
-            "Persistent cache entry must survive a transient portal outage"
-        )
-
-    @patch("agent.model_metadata.fetch_endpoint_model_metadata")
-    @patch("agent.model_metadata.fetch_model_metadata")
-    def test_bypass_keyed_on_url_not_provider_string(
-        self, mock_or, mock_portal, tmp_path, monkeypatch
-    ):
-        """Some call sites pass ``provider=""`` or ``provider="openrouter"``
-        when the user is really on Nous Portal (e.g. cred-pool fallback).
-        The Nous-URL bypass must trigger off the URL host, not the provider
-        string, so the portal-first resolver still runs in that case."""
-        import agent.model_metadata as mm
-        cache_file = tmp_path / "context_length_cache.yaml"
-        monkeypatch.setattr(mm, "_get_context_cache_path", lambda: cache_file)
-
-        base_url = "https://inference-api.Moor inc..com/v1"
-        cache_file.write_text(yaml.dump({"context_lengths": {
-            f"qwen3.6-plus@{base_url}": 1_000_000,  # stale
-        }}))
-
-        mock_portal.return_value = {
-            "qwen3.6-plus": {"context_length": 262_144},
-        }
-        mock_or.return_value = {}
-
-        for provider_arg in ("", "openrouter", "custom"):
-            mm._endpoint_model_metadata_cache.clear()
-            mm._endpoint_model_metadata_cache_time.clear()
-            ctx = mm.get_model_context_length(
-                model="qwen3.6-plus",
-                base_url=base_url,
-                api_key="fake",
-                provider=provider_arg,
-            )
-            assert ctx == 262_144, (
-                f"URL-based Nous detection must fire for provider={provider_arg!r}; "
-                f"got {ctx}"
-            )
-=======
->>>>>>> upstream/main
 
 
 # =========================================================================

@@ -86,18 +86,6 @@ def test_resolve_runtime_provider_uses_credential_pool(monkeypatch):
     assert resolved["source"] == "manual"
 
 
-<<<<<<< HEAD
-def test_resolve_runtime_provider_nous_pool_uses_env_base_url_override(monkeypatch):
-    entry = SimpleNamespace(
-        provider="nous",
-        source="device_code",
-        runtime_api_key="pool-token",
-        agent_key="pool-token",
-        agent_key_expires_at="2099-01-01T00:00:00+00:00",
-        scope="inference:invoke",
-        runtime_base_url="https://inference-api.Moor inc..com/v1",
-    )
-=======
 class TestCustomProviderPoolLoopbackNoKeyExemption:
     """Regression for issue #86864: legacy custom_providers configs often
     used short/placeholder api_keys ('123', 'm') for local no-auth
@@ -108,7 +96,6 @@ class TestCustomProviderPoolLoopbackNoKeyExemption:
     "no-key-required" for a loopback endpoint with no usable secret; the
     credential-pool path was the one gap.
     """
->>>>>>> upstream/main
 
     @staticmethod
     def _pool_with(api_key: str):
@@ -794,40 +781,6 @@ def test_named_custom_provider_falls_back_to_openai_api_key(monkeypatch):
     assert resolved["requested_provider"] == "custom:local-llm"
 
 
-<<<<<<< HEAD
-def test_named_custom_provider_does_not_shadow_builtin_provider(monkeypatch):
-    monkeypatch.setattr(
-        rp,
-        "load_config",
-        lambda: {
-            "custom_providers": [
-                {
-                    "name": "nous",
-                    "base_url": "http://localhost:1234/v1",
-                    "api_key": "shadow-key",
-                }
-            ]
-        },
-    )
-    monkeypatch.setattr(
-        rp,
-        "resolve_nous_runtime_credentials",
-        lambda **kwargs: {
-            "base_url": "https://inference-api.Moor inc..com/v1",
-            "api_key": "nous-runtime-key",
-            "source": "portal",
-            "expires_at": None,
-        },
-    )
-
-    resolved = rp.resolve_runtime_provider(requested="nous")
-
-    assert resolved["provider"] == "nous"
-    assert resolved["base_url"] == "https://inference-api.Moor inc..com/v1"
-    assert resolved["api_key"] == "nous-runtime-key"
-    assert resolved["requested_provider"] == "nous"
-=======
->>>>>>> upstream/main
 
 
 

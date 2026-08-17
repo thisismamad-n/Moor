@@ -1,5 +1,5 @@
 """
-Photon Spectrum (iMessage) platform adapter for Moor Agent.
+Photon Spectrum (iMessage) platform adapter for Hermes Agent.
 
 Both directions of traffic flow through a small supervised Node sidecar
 (see ``sidecar/index.mjs``) that runs the ``spectrum-ts`` SDK — the SDK is
@@ -51,7 +51,7 @@ else:
     try:
         import httpx
         HTTPX_AVAILABLE = True
-    except ImportError:  # pragma: no cover - httpx is already a Moor dep
+    except ImportError:  # pragma: no cover - httpx is already a Hermes dep
         HTTPX_AVAILABLE = False
         httpx = None
 
@@ -261,7 +261,7 @@ _PHOTON_RETRYABLE_PATTERNS = (
 
 # iMessage may emit the Open Graph preview art for a rich link as one or more
 # image attachments immediately after the URL/richlink message. Suppress those
-# artifacts so Moor sees the link once, not a follow-up "(attachment)" prompt.
+# artifacts so Hermes sees the link once, not a follow-up "(attachment)" prompt.
 _RICHLINK_PREVIEW_SUPPRESS_SECONDS = 30.0
 _RICHLINK_PREVIEW_ATTACHMENT_SUFFIX = ".pluginpayloadattachment"
 
@@ -614,7 +614,7 @@ def _richlink_candidate(text: str) -> Optional[str]:
 
     Keep this intentionally narrow: only exact http(s) URL messages become
     rich links. Prose containing URLs and Markdown links stay on the normal
-    markdown/text path so Moor does not drop labels or rewrite intent.
+    markdown/text path so Hermes does not drop labels or rewrite intent.
     """
     if not _markdown_enabled():
         return None
@@ -860,7 +860,7 @@ class PhotonAdapter(BasePlatformAdapter):
         """Compile group-mention wake words from config/env.
 
         ``raw`` is a list (config or env JSON), a string (env var: JSON
-        list, or comma/newline-separated), or None (use Moor defaults).
+        list, or comma/newline-separated), or None (use Hermes defaults).
         Mirrors the BlueBubbles implementation so both iMessage channels
         accept the same configuration shapes.
         """
@@ -1065,7 +1065,7 @@ class PhotonAdapter(BasePlatformAdapter):
         if client is None:
             return
         url = f"http://{self._sidecar_bind}:{self._sidecar_port}/inbound"
-        headers = {"X-Moor-Sidecar-Token": self._sidecar_token}
+        headers = {"X-Hermes-Sidecar-Token": self._sidecar_token}
         backoff = 1.0
         while self._inbound_running:
             try:
@@ -1506,7 +1506,7 @@ class PhotonAdapter(BasePlatformAdapter):
             )
         except (OSError, subprocess.TimeoutExpired):
             return False
-        # Checkout-agnostic: any Moor checkout's sidecar entry point.
+        # Checkout-agnostic: any Hermes checkout's sidecar entry point.
         return "photon/sidecar/index.mjs" in out.stdout
 
     @staticmethod
@@ -1534,7 +1534,7 @@ class PhotonAdapter(BasePlatformAdapter):
             async with httpx.AsyncClient(timeout=2.0, trust_env=False) as client:
                 await client.post(
                     f"http://{self._sidecar_bind}:{self._sidecar_port}/healthz",
-                    headers={"X-Moor-Sidecar-Token": self._sidecar_token},
+                    headers={"X-Hermes-Sidecar-Token": self._sidecar_token},
                 )
         except httpx.RequestError:
             return  # nothing listening — the normal case
@@ -1718,7 +1718,7 @@ class PhotonAdapter(BasePlatformAdapter):
                 try:
                     resp = await client.post(
                         f"http://{self._sidecar_bind}:{self._sidecar_port}/healthz",
-                        headers={"X-Moor-Sidecar-Token": self._sidecar_token},
+                        headers={"X-Hermes-Sidecar-Token": self._sidecar_token},
                     )
                     if resp.status_code == 200:
                         # Persist port/token/pid so out-of-process senders
@@ -1786,7 +1786,7 @@ class PhotonAdapter(BasePlatformAdapter):
                 try:
                     await self._http_client.post(
                         f"http://{self._sidecar_bind}:{self._sidecar_port}/shutdown",
-                        headers={"X-Moor-Sidecar-Token": self._sidecar_token},
+                        headers={"X-Hermes-Sidecar-Token": self._sidecar_token},
                         timeout=2.0,
                     )
                 except Exception:
@@ -1870,7 +1870,7 @@ class PhotonAdapter(BasePlatformAdapter):
         try:
             resp = await client.post(
                 url,
-                headers={"X-Moor-Sidecar-Token": self._sidecar_token},
+                headers={"X-Hermes-Sidecar-Token": self._sidecar_token},
                 timeout=self._probe_timeout,
             )
         except asyncio.CancelledError:
@@ -2594,7 +2594,7 @@ class PhotonAdapter(BasePlatformAdapter):
         to a plain audio attachment on platforms without voice notes),
         otherwise ``"attachment"``. spectrum-ts infers ``name`` and
         ``mimeType`` from the file extension; we only pass overrides when
-        Moor supplied them.
+        Hermes supplied them.
         """
         # Defense-in-depth: re-validate the path before handing it to the
         # Node sidecar. The gateway already filters MEDIA paths, but
@@ -2647,13 +2647,8 @@ class PhotonAdapter(BasePlatformAdapter):
         # send_message_tool).  The inbound streaming loop continues to use
         # _http_client directly — it always runs on the gateway's loop.
         url = f"http://{self._sidecar_bind}:{self._sidecar_port}{path}"
-<<<<<<< HEAD
-        headers = {"X-Moor-Sidecar-Token": self._sidecar_token}
-        async with httpx.AsyncClient(timeout=30.0) as client:
-=======
-        headers = {"X-Moor-Sidecar-Token": self._sidecar_token}
+        headers = {"X-Hermes-Sidecar-Token": self._sidecar_token}
         async with httpx.AsyncClient(timeout=30.0, trust_env=False) as client:
->>>>>>> upstream/main
             resp = await client.post(url, json=body, headers=headers)
         if resp.status_code != 200:
             raise _sidecar_error_from_response(path, resp.status_code, resp.text)
@@ -2824,14 +2819,14 @@ async def _standalone_send(
             return {
                 "error": (
                     "Photon standalone send requires a running sidecar. "
-                    "Start the Moor gateway (which spawns the sidecar and "
+                    "Start the Hermes gateway (which spawns the sidecar and "
                     "records its address under <hermes-home>/runtime/"
                     f"{_RUNTIME_RECORD_NAME}), or set PHOTON_SIDECAR_TOKEN "
                     "in this process's environment." + stale_hint
                 )
             }
     base = f"http://{_DEFAULT_SIDECAR_BIND}:{port}"
-    headers = {"X-Moor-Sidecar-Token": token}
+    headers = {"X-Hermes-Sidecar-Token": token}
     last_message_id: Optional[str] = None
     try:
         async with httpx.AsyncClient(timeout=30.0, trust_env=False) as client:
@@ -2906,7 +2901,7 @@ async def _standalone_send(
 # Plugin entry point
 
 def register(ctx) -> None:
-    """Called by the Moor plugin loader at startup."""
+    """Called by the Hermes plugin loader at startup."""
     # Local import to avoid argparse work at module load; reused for both the
     # gateway-setup hook and the `hermes photon` CLI command below.
     from . import cli as _cli

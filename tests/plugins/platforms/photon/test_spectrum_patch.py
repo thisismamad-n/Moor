@@ -1,9 +1,5 @@
-<<<<<<< HEAD
-"""Regression tests for Moor' Spectrum mixed text+attachment workaround."""
-=======
-"""Regression tests for Moor' Spectrum mixed text+attachment workaround."""
+"""Regression tests for Hermes' Spectrum mixed text+attachment workaround."""
 
->>>>>>> upstream/main
 from __future__ import annotations
 
 import json
@@ -94,15 +90,6 @@ def _write_sidecar_fixture(tmp_path: Path, *, sdk_available: bool) -> Path:
     return sidecar
 
 
-<<<<<<< HEAD
-def test_sidecar_labels_catchup_internal_errors_as_upstream_photon() -> None:
-    """Photon cloud stream failures should not look like local auth problems."""
-    index = Path("plugins/platforms/photon/sidecar/index.mjs").read_text(encoding="utf-8")
-    assert "function inboundStreamErrorMessage" in index
-    assert "EventService/CatchUpEvents" in index
-    assert "this is upstream of Moor" in index
-    assert "PHOTON_ALLOWED_USERS" in index
-=======
 def test_sidecar_patch_failure_still_reaches_health_endpoint(tmp_path: Path) -> None:
     """The compatibility patch is optional when the SDK itself remains usable."""
     sidecar = _write_sidecar_fixture(tmp_path, sdk_available=True)
@@ -118,7 +105,7 @@ def test_sidecar_patch_failure_still_reaches_health_endpoint(tmp_path: Path) -> 
     request = urllib.request.Request(
         f"http://127.0.0.1:{port}/healthz",
         data=b"{}",
-        headers={"X-Moor-Sidecar-Token": "test-token"},
+        headers={"X-Hermes-Sidecar-Token": "test-token"},
         method="POST",
     )
     try:
@@ -140,7 +127,6 @@ def test_sidecar_patch_failure_still_reaches_health_endpoint(tmp_path: Path) -> 
         _, stderr = proc.communicate(timeout=5)
 
     assert "forced patch failure" in stderr
->>>>>>> upstream/main
 
 
 def _tabify(src: str) -> str:

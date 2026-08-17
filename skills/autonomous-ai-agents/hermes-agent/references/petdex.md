@@ -1,27 +1,9 @@
-<<<<<<< HEAD:skills/productivity/petdex/SKILL.md
----
-name: petdex
-description: Install and select animated petdex mascots for Moor.
-version: 1.0.0
-author: Moor Agent
-license: MIT
-platforms: [linux, macos, windows]
-metadata:
-  hermes:
-    tags: [petdex, mascot, display, cli, tui, desktop]
-    category: productivity
-    homepage: https://petdex.dev
----
-
-# Petdex Skill
-=======
 # Petdex — Animated Pet Mascots
->>>>>>> upstream/main:skills/autonomous-ai-agents/hermes-agent/references/petdex.md
 
 Browse, install, and select animated "pet" mascots from the public
 [petdex](https://github.com/crafter-station/petdex) gallery. An installed pet
 reacts to agent activity (idle, running a tool, reviewing, error, done) across
-the Moor CLI, TUI, and desktop app. This skill drives the `hermes pets` CLI
+the Hermes CLI, TUI, and desktop app. This skill drives the `hermes pets` CLI
 and the `display.pet` config — it does not generate sprites.
 
 ## When to Use
@@ -33,7 +15,7 @@ and the `display.pet` config — it does not generate sprites.
 ## Prerequisites
 
 - Network access to `petdex.dev` for the gallery/manifest (read-only, no auth).
-- Pillow (a core Moor dependency) for sprite decoding — already installed.
+- Pillow (a core Hermes dependency) for sprite decoding — already installed.
 - For full-fidelity terminal rendering: a graphics-capable terminal (kitty,
   Ghostty, WezTerm, iTerm2, or sixel). Otherwise a truecolor Unicode
   half-block fallback is used automatically.
@@ -84,7 +66,7 @@ Under `display.pet` in `config.yaml`:
 
 - A pet only shows once one is installed AND selected (`enabled: true`).
 - Inside a pipe/redirect (no TTY) terminal rendering is disabled by design.
-- The petdex npm CLI installs to `~/.codex/pets`; Moor uses its own
+- The petdex npm CLI installs to `~/.codex/pets`; Hermes uses its own
   profile-scoped `<HERMES_HOME>/pets/` instead — install through `hermes pets`.
 
 ## Verification

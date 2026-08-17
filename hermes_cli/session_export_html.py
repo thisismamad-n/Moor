@@ -1,5 +1,5 @@
 """
-HTML Export generator for Moor sessions.
+HTML Export generator for Hermes sessions.
 Generates a standalone, beautiful HTML file with all messages embedded.
 Supports single and multi-session exports with a professional sidebar.
 No remote dependencies.
@@ -563,7 +563,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             {sessions_html}
             
             <footer>
-                Built with ☤ Moor Agent • Generated on {generated_at}
+                Built with ☤ Hermes Agent • Generated on {generated_at}
             </footer>
         </div>
     </div>
@@ -791,7 +791,7 @@ def generate_multi_session_html_export(sessions: List[Dict[str, Any]]) -> str:
         <aside class="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-brand">
-                    {ICON_HERMES} Moor History
+                    {ICON_HERMES} Hermes History
                 </div>
                 <div class="search-container">
                     {ICON_SEARCH}
@@ -809,13 +809,8 @@ def generate_multi_session_html_export(sessions: List[Dict[str, Any]]) -> str:
     for s in sessions:
         sid = str(s.get("id", "N/A"))
         escaped_sid = _escape_html(sid)
-<<<<<<< HEAD
-        title = s.get("title") or "Moor Session"
-        model = s.get("model", "Unknown")
-=======
-        title = s.get("title") or "Moor Session"
+        title = s.get("title") or "Hermes Session"
         model = s.get("model") or "Unknown"
->>>>>>> upstream/main
         started_at = _format_timestamp(s.get("started_at", 0))
         messages = s.get("messages", [])
         
@@ -861,11 +856,7 @@ def generate_multi_session_html_export(sessions: List[Dict[str, Any]]) -> str:
 
     script_nonce = secrets.token_urlsafe(16)
     return HTML_TEMPLATE.format(
-<<<<<<< HEAD
-        page_title="Moor Session Export" if is_multi else _escape_html(sessions[0].get("title", "Moor Session")),
-=======
-        page_title="Moor Session Export" if is_multi else _escape_html(sessions[0].get("title") or "Moor Session"),
->>>>>>> upstream/main
+        page_title="Hermes Session Export" if is_multi else _escape_html(sessions[0].get("title") or "Hermes Session"),
         sidebar_html=sidebar_html,
         sessions_html="\n".join(sessions_html_list),
         main_margin="var(--sidebar-width)" if is_multi else "0",

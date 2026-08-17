@@ -1,35 +1,19 @@
 # NeMo Relay Observability
 
-<<<<<<< HEAD
-Optional Moor observability plugin that maps Moor observer hooks to
-NeMo Relay scopes, LLM spans, tool spans, marks, ATOF, and ATIF.
-
-NeMo Relay is NVIDIA's runtime layer for agent execution boundaries. It does
-not replace Moor Agent's planner, tools, memory, model provider routing, or
-CLI UX. Instead, this plugin lets Moor emit NeMo Relay lifecycle events for
-the work Moor already owns: sessions, turns, provider/API calls, tool calls,
-approval prompts, and delegated subagents.
-=======
-Optional Moor observability plugin that configures exporters and maps
-Moor-specific observer hooks to NeMo Relay marks and ATIF state. Moor core
+Optional Hermes observability plugin that configures exporters and maps
+Hermes-specific observer hooks to NeMo Relay marks and ATIF state. Hermes core
 owns Relay session, turn, LLM, and tool execution scopes.
 
 NeMo Relay is NVIDIA's runtime layer for agent execution boundaries. It does
-not replace Moor Agent's planner, tools, memory, model provider routing, or
-CLI UX. Moor core emits NeMo Relay lifecycle events for provider and tool
+not replace Hermes Agent's planner, tools, memory, model provider routing, or
+CLI UX. Hermes core emits NeMo Relay lifecycle events for provider and tool
 execution, while this plugin enables rich exporters and observer marks for
 sessions, turns, approval prompts, and delegated subagents.
->>>>>>> upstream/main
 
-With this plugin enabled, Moor Agent can:
+With this plugin enabled, Hermes Agent can:
 
-<<<<<<< HEAD
-- Preserve Moor execution as NeMo Relay scopes, LLM spans, tool spans, and
-  mark events.
-=======
-- Export the Relay scopes and LLM/tool lifecycles emitted by Moor core.
-- Add Moor session, turn, approval, and subagent mark events.
->>>>>>> upstream/main
+- Export the Relay scopes and LLM/tool lifecycles emitted by Hermes core.
+- Add Hermes session, turn, approval, and subagent mark events.
 - Export raw lifecycle events as Agent Trajectory Observability Format (ATOF)
   JSONL for debugging and offline inspection.
 - Export Agent Trajectory Interchange Format (ATIF) trajectories for replay,
@@ -73,9 +57,9 @@ Runs started with `--ignore_user_config` skip the enabled-plugin state from
 `HERMES_HOME`, so local E2E tests should omit that flag unless the test harness
 loads `observability/nemo_relay` explicitly another way.
 
-`HERMES_HOME` is the Moor profile/config home used by both
+`HERMES_HOME` is the Hermes profile/config home used by both
 `hermes plugins enable ...` and the later `hermes chat ...` run. If unset,
-Moor uses the user's default home, usually `~/.hermes`. For isolated smoke
+Hermes uses the user's default home, usually `~/.hermes`. For isolated smoke
 tests, choose any writable temporary directory and use the same value for every
 command in that test:
 
@@ -97,7 +81,7 @@ uv run hermes chat --query 'Reply exactly ok' --provider custom --model qwen3.6:
 
 To ship the updated CLI into another environment, build and install a fresh
 wheel from this checkout. On platforms for which Relay publishes a native
-wheel, Moor installs its supported NeMo Relay runtime as a normal dependency:
+wheel, Hermes installs its supported NeMo Relay runtime as a normal dependency:
 
 ```bash
 uv build --wheel
@@ -107,7 +91,7 @@ hermes plugins enable observability/nemo_relay
 
 The plugin remains opt-in even though the runtime dependency is installed by
 default. Enabling this plugin controls rich observability and adaptive
-behavior; it does not control Moor shared client metrics.
+behavior; it does not control Hermes shared client metrics.
 
 ## Session-Span Segmentation (Continuous Sessions)
 
@@ -167,7 +151,7 @@ Optional overrides:
 ### NeMo Relay Component Config
 
 To initialize NeMo Relay from a component config, create a `plugins.toml` file
-and point Moor at it:
+and point Hermes at it:
 
 ```bash
 export HERMES_NEMO_RELAY_PLUGINS_TOML=.nemo-relay/plugins.toml
@@ -195,7 +179,7 @@ mode = "overwrite"
 enabled = true
 output_directory = ".nemo-relay/atif"
 filename_template = "trajectory-{session_id}.json"
-agent_name = "Moor Agent"
+agent_name = "Hermes Agent"
 agent_version = "local"
 ```
 
@@ -203,11 +187,11 @@ When `HERMES_NEMO_RELAY_PLUGINS_TOML` is set and initializes successfully, NeMo
 Relay owns exporter lifecycle through that config. The direct
 `HERMES_NEMO_RELAY_ATOF_*` fallback setup is skipped. If the same
 `plugins.toml` observability config enables `atif`, the direct
-`HERMES_NEMO_RELAY_ATIF_*` fallback setup is also skipped so Moor does not
+`HERMES_NEMO_RELAY_ATIF_*` fallback setup is also skipped so Hermes does not
 double-export trajectories on teardown. If `plugins.toml` initialization fails,
-Moor keeps the direct env-var fallbacks active for that run.
+Hermes keeps the direct env-var fallbacks active for that run.
 
-Moor core routes provider and tool execution through NeMo Relay managed APIs
+Hermes core routes provider and tool execution through NeMo Relay managed APIs
 regardless of whether this plugin is enabled. To install adaptive interceptors
 on those boundaries, include an adaptive component in the same `plugins.toml`:
 
@@ -220,20 +204,6 @@ enabled = true
 mode = "observe_only"
 ```
 
-<<<<<<< HEAD
-When the adaptive component is enabled and the installed NeMo Relay runtime
-exposes `llm.execute(...)` / `tools.execute(...)`, Moor routes LLM and tool
-execution through those middleware boundaries. The observer hooks still emit
-session, turn, approval, and subagent marks; the plugin skips its manual
-`llm.call` and `tools.call` spans for executions that are already managed by
-NeMo Relay. `tool_parallelism.mode = "observe_only"` keeps tool scheduling
-observational while still wrapping the real execution boundary.
-
-### Dynamic Plugins
-
-Moor feature-detects the dynamic-plugin activation API available in NeMo Relay
-0.6 and later. Configure native or worker plugins with Moor-owned
-=======
 The observer hooks emit session, turn, approval, and subagent marks. They do not
 create a second LLM or tool lifecycle. `tool_parallelism.mode = "observe_only"`
 keeps tool scheduling observational while still intercepting the core-managed
@@ -241,9 +211,8 @@ execution boundary.
 
 ### Dynamic Plugins
 
-Moor uses the dynamic-plugin activation API available in NeMo Relay 0.6 and
-later. Configure native or worker plugins with Moor-owned
->>>>>>> upstream/main
+Hermes uses the dynamic-plugin activation API available in NeMo Relay 0.6 and
+later. Configure native or worker plugins with Hermes-owned
 `[[dynamic_plugins]]` entries that match the Python binding's activation-spec
 fields:
 
@@ -279,36 +248,26 @@ Relative `manifest_ref` and `environment_ref` values resolve relative to the
 physical `plugins.toml` file.
 
 Relay's canonical gateway `[[plugins.dynamic]]` records are not interchangeable
-with this Moor-owned section. The gateway combines those records with
+with this Hermes-owned section. The gateway combines those records with
 separate lifecycle state for enablement, trust policy, and worker environments;
-the Python binding does not yet expose that resolver. Moor rejects
+the Python binding does not yet expose that resolver. Hermes rejects
 `[[plugins.dynamic]]` with an actionable diagnostic instead of silently
 ignoring it or bypassing lifecycle policy. Use `[[dynamic_plugins]]` until Relay
 exposes shared file-and-lifecycle resolution to embedding hosts.
 
-Moor activates these plugins before registering its managed LLM and tool
+Hermes activates these plugins before registering its managed LLM and tool
 execution middleware and retains the activation for the runtime lifetime.
 During shutdown it closes session exporters, flushes Relay subscribers, and
 then closes the activation so callbacks are removed before plugin code is
 unloaded.
 
-<<<<<<< HEAD
-NeMo Relay 0.5 does not expose dynamic activation through its Python binding.
-When dynamic plugin configuration is present with a binding that lacks the
-activation API, Moor logs an actionable warning and continues with the
-ordinary static component configuration, so ATOF and ATIF observability remain
-available. No dynamic plugin is loaded in that degraded mode.
-
-For the full generic Moor middleware contract, see
-=======
-For the full generic Moor middleware contract, see
->>>>>>> upstream/main
+For the full generic Hermes middleware contract, see
 [`docs/middleware/README.md`](../../../docs/middleware/README.md).
 
 ## Canonical Local Examples
 
 The observe-only examples in this section use the NeMo Relay runtime installed
-with Moor and a local Ollama model served through the OpenAI-compatible API.
+with Hermes and a local Ollama model served through the OpenAI-compatible API.
 
 ```bash
 export HERMES_HOME=/tmp/hermes-nemo-relay-docs/hermes-home
@@ -336,7 +295,7 @@ YAML
 
 ### Delegated Subagent Tool Call
 
-This run starts a parent Moor session, delegates to a child subagent, has the
+This run starts a parent Hermes session, delegates to a child subagent, has the
 child call `terminal`, and writes both ATOF and ATIF.
 
 ```bash
@@ -347,7 +306,7 @@ export HERMES_NEMO_RELAY_ATOF_MODE=overwrite
 export HERMES_NEMO_RELAY_ATIF_ENABLED=1
 export HERMES_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=/tmp/hermes-nemo-relay-docs/subagent/atif
 export HERMES_NEMO_RELAY_ATIF_FILENAME_TEMPLATE='nested-subagent-atif-{session_id}.json'
-export HERMES_NEMO_RELAY_ATIF_AGENT_NAME='Moor Agent E2E'
+export HERMES_NEMO_RELAY_ATIF_AGENT_NAME='Hermes Agent E2E'
 export HERMES_NEMO_RELAY_ATIF_AGENT_VERSION=docs-example
 export HERMES_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE=all
 
@@ -383,7 +342,7 @@ Sanitized ATIF excerpt:
 {
   "schema_version": "ATIF-v1.7",
   "session_id": "docs-parent-session",
-  "agent": {"name": "Moor Agent E2E", "version": "docs-example", "model_name": "qwen3.6:35b"},
+  "agent": {"name": "Hermes Agent E2E", "version": "docs-example", "model_name": "qwen3.6:35b"},
   "steps": [
     {
       "source": "agent",
@@ -417,7 +376,7 @@ Sanitized ATIF excerpt:
 ### Parallel Tool Calls
 
 This run asks the model to emit two `read_file` tool calls in the same assistant
-message. Moor dispatches the read-only tools as one batch, and NeMo Relay
+message. Hermes dispatches the read-only tools as one batch, and NeMo Relay
 records both tool invocations.
 
 ```bash
@@ -433,7 +392,7 @@ export HERMES_NEMO_RELAY_ATOF_MODE=overwrite
 export HERMES_NEMO_RELAY_ATIF_ENABLED=1
 export HERMES_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=/tmp/hermes-nemo-relay-docs/parallel/atif
 export HERMES_NEMO_RELAY_ATIF_FILENAME_TEMPLATE='parallel-tools-atif-{session_id}.json'
-export HERMES_NEMO_RELAY_ATIF_AGENT_NAME='Moor Agent E2E'
+export HERMES_NEMO_RELAY_ATIF_AGENT_NAME='Hermes Agent E2E'
 export HERMES_NEMO_RELAY_ATIF_AGENT_VERSION=docs-example
 
 hermes chat \
@@ -469,7 +428,7 @@ Sanitized ATIF excerpt:
 {
   "schema_version": "ATIF-v1.7",
   "session_id": "docs-parallel-session",
-  "agent": {"name": "Moor Agent E2E", "version": "docs-example", "model_name": "qwen3.6:35b"},
+  "agent": {"name": "Hermes Agent E2E", "version": "docs-example", "model_name": "qwen3.6:35b"},
   "steps": [
     {
       "source": "agent",
@@ -493,15 +452,9 @@ Sanitized ATIF excerpt:
 
 The plugin keeps NeMo Relay's native event model:
 
-<<<<<<< HEAD
-- Moor sessions map to `agent` scopes.
-- Moor API request hooks map to `llm` scope start/end events.
-- Moor tool hooks map to `tool` scope start/end events.
-=======
-- Moor sessions map to `agent` scopes.
-- Moor core managed provider calls map to `llm` scope start/end events.
-- Moor core managed tool calls map to `tool` scope start/end events.
->>>>>>> upstream/main
+- Hermes sessions map to `agent` scopes.
+- Hermes core managed provider calls map to `llm` scope start/end events.
+- Hermes core managed tool calls map to `tool` scope start/end events.
 - Turn, approval, subagent, and diagnostic fallback events map to `mark`
   events.
 
@@ -513,17 +466,11 @@ separate trajectories.
 
 ## Adaptive Execution Example
 
-<<<<<<< HEAD
-The `observability/nemo_relay` plugin uses Moor execution middleware to hand
-LLM and tool calls to NeMo Relay managed execution when an adaptive component is
-enabled.
-=======
-Moor core owns the LLM and tool boundaries and enters NeMo Relay managed
-execution while a Moor-managed Relay consumer is active. With no shared
-metrics subscriber or explicitly configured Relay plugin, Moor calls the
+Hermes core owns the LLM and tool boundaries and enters NeMo Relay managed
+execution while a Hermes-managed Relay consumer is active. With no shared
+metrics subscriber or explicitly configured Relay plugin, Hermes calls the
 provider or tool directly. The `observability/nemo_relay` plugin retains the
 managed path while its adaptive components are installed on those boundaries.
->>>>>>> upstream/main
 
 Minimal `plugins.toml`:
 
@@ -538,39 +485,22 @@ enabled = true
 mode = "observe_only"
 ```
 
-Enable it for Moor:
+Enable it for Hermes:
 
 ```bash
 export HERMES_NEMO_RELAY_PLUGINS_TOML=/tmp/hermes-middleware-test/plugins.toml
 ```
 
-<<<<<<< HEAD
-When the adaptive component is enabled and the installed NeMo Relay runtime
-exposes `llm.execute(...)` and `tools.execute(...)`, Moor routes execution
-through these boundaries:
-
-```text
-Moor provider call
-  -> llm_execution middleware
-    -> nemo_relay.llm.execute(...)
-      -> Moor provider adapter next_call(...)
-
-Moor tool call
-  -> tool_execution middleware
-    -> nemo_relay.tools.execute(...)
-      -> Moor tool dispatcher next_call(...)
-=======
 Execution follows these boundaries with or without an adaptive component:
 
 ```text
-Moor provider call
+Hermes provider call
   -> nemo_relay.llm.execute(...)
-    -> Moor provider adapter callback(...)
+    -> Hermes provider adapter callback(...)
 
-Moor tool call
+Hermes tool call
   -> nemo_relay.tools.execute(...)
-    -> Moor authorization and dispatch callback(...)
->>>>>>> upstream/main
+    -> Hermes authorization and dispatch callback(...)
 ```
 
 The plugin emits observer marks for sessions, turns, approvals, and subagents.
@@ -580,15 +510,9 @@ produces one Relay lifecycle.
 ### Local Adaptive E2E
 
 This example enables both NeMo Relay observability export and adaptive execution
-<<<<<<< HEAD
-middleware for a local Moor run. This path requires a NeMo Relay runtime that
-supports `[components.config.tool_parallelism]`, as provided by the supported
-0.x release range beginning with 0.5.
-=======
-middleware for a local Moor run. This path requires a NeMo Relay runtime that
+middleware for a local Hermes run. This path requires a NeMo Relay runtime that
 supports `[components.config.tool_parallelism]`, as provided by NeMo Relay 0.6
 and later.
->>>>>>> upstream/main
 
 ```bash
 export HERMES_HOME=/tmp/hermes-middleware-test/hermes-home
@@ -625,7 +549,7 @@ mode = "overwrite"
 enabled = true
 output_directory = "/tmp/hermes-middleware-test/atif"
 filename_template = "middleware-trajectory-{session_id}.json"
-agent_name = "Moor Middleware E2E"
+agent_name = "Hermes Middleware E2E"
 agent_version = "local"
 
 [[components]]
@@ -670,7 +594,7 @@ Expected ATIF shape:
   "schema_version": "ATIF-v1.7",
   "session_id": "middleware-demo-session",
   "agent": {
-    "name": "Moor Middleware E2E",
+    "name": "Hermes Middleware E2E",
     "version": "local",
     "model_name": "qwen3.6:35b"
   },

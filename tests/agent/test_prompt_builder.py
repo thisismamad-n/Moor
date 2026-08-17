@@ -442,7 +442,7 @@ class TestBuildContextFilesPrompt:
         with patch("pathlib.Path.home", return_value=fake_home):
             result = build_context_files_prompt(cwd=str(tmp_path))
         assert "Project Context" in result
-        assert "Moor Agent" in result
+        assert "Hermes Agent" in result
 
     def test_loads_agents_md(self, tmp_path):
         (tmp_path / "AGENTS.md").write_text("Use Ruff for linting.")
@@ -532,10 +532,10 @@ class TestBuildContextFilesPrompt:
         assert "Project Context" in result
 
     def test_hermes_md_still_wins_over_agents_override(self, tmp_path):
-        (tmp_path / ".hermes.md").write_text("Moor-first context.")
+        (tmp_path / ".hermes.md").write_text("Hermes-first context.")
         (tmp_path / "AGENTS.override.md").write_text("Override context.")
         result = build_context_files_prompt(cwd=str(tmp_path))
-        assert "Moor-first context" in result
+        assert "Hermes-first context" in result
         assert "Override context" not in result
 
     def test_skips_agents_md_in_install_tree_on_fallback(self, monkeypatch, tmp_path):
@@ -552,13 +552,6 @@ class TestBuildContextFilesPrompt:
         assert "Never give up" not in result
         assert result == ""
 
-<<<<<<< HEAD
-    def test_loads_agents_md_in_install_tree_when_explicit(self, monkeypatch, tmp_path):
-        # An EXPLICIT cwd pointing at the install tree is a deliberate user
-        # choice (developing Moor) — discovery must still run.
-        import agent.runtime_cwd as rt
-=======
->>>>>>> upstream/main
 
 
 
@@ -575,39 +568,15 @@ class TestBuildContextFilesPrompt:
 
 
 
-    # --- .hermes.md / MOOR.md discovery ---
-
-
-<<<<<<< HEAD
-    def test_loads_hermes_md_uppercase(self, tmp_path):
-        (tmp_path / "MOOR.md").write_text("Always use type hints.")
-        result = build_context_files_prompt(cwd=str(tmp_path))
-        assert "type hints" in result
-
-    def test_hermes_md_lowercase_takes_priority(self, tmp_path):
-        (tmp_path / ".hermes.md").write_text("From dotfile.")
-        (tmp_path / "MOOR.md").write_text("From uppercase.")
-        result = build_context_files_prompt(cwd=str(tmp_path))
-        assert "From dotfile" in result
-        assert "From uppercase" not in result
-=======
-
->>>>>>> upstream/main
+    # --- .hermes.md / HERMES.md discovery ---
 
 
 
 
 
-<<<<<<< HEAD
-    def test_hermes_md_beats_agents_md(self, tmp_path):
-        """When both exist, .hermes.md wins and AGENTS.md is not loaded."""
-        (tmp_path / "AGENTS.md").write_text("Agent guidelines here.")
-        (tmp_path / ".hermes.md").write_text("Moor project rules.")
-        result = build_context_files_prompt(cwd=str(tmp_path))
-        assert "Moor project rules" in result
-        assert "Agent guidelines" not in result
-=======
->>>>>>> upstream/main
+
+
+
 
 
 
@@ -635,20 +604,6 @@ class TestBuildContextFilesPrompt:
         assert "From lowercase" not in result
 
 
-<<<<<<< HEAD
-    def test_hermes_md_beats_all_others(self, tmp_path):
-        """When all four types exist, only .hermes.md is loaded."""
-        (tmp_path / ".hermes.md").write_text("Moor wins.")
-        (tmp_path / "AGENTS.md").write_text("Agents lose.")
-        (tmp_path / "CLAUDE.md").write_text("Claude loses.")
-        (tmp_path / ".cursorrules").write_text("Cursor loses.")
-        result = build_context_files_prompt(cwd=str(tmp_path))
-        assert "Moor wins" in result
-        assert "Agents lose" not in result
-        assert "Claude loses" not in result
-        assert "Cursor loses" not in result
-=======
->>>>>>> upstream/main
 
 
 
@@ -662,18 +617,7 @@ class TestFindHermesMd:
         (tmp_path / ".hermes.md").write_text("rules")
         assert _find_hermes_md(tmp_path) == tmp_path / ".hermes.md"
 
-<<<<<<< HEAD
-    def test_finds_uppercase(self, tmp_path):
-        (tmp_path / "MOOR.md").write_text("rules")
-        assert _find_hermes_md(tmp_path) == tmp_path / "MOOR.md"
 
-    def test_prefers_lowercase(self, tmp_path):
-        (tmp_path / ".hermes.md").write_text("lower")
-        (tmp_path / "MOOR.md").write_text("upper")
-        assert _find_hermes_md(tmp_path) == tmp_path / ".hermes.md"
-=======
-
->>>>>>> upstream/main
 
     def test_walks_to_git_root(self, tmp_path):
         (tmp_path / ".git").mkdir()

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Skills Hub — Source adapters and hub state management for the Moor Skills Hub.
+Skills Hub — Source adapters and hub state management for the Hermes Skills Hub.
 
 This is a library module (not an agent tool). It provides:
   - GitHubAuth: Shared GitHub API authentication (PAT, gh CLI, GitHub App)
@@ -3280,12 +3280,8 @@ class OptionalSkillSource(SkillSource):
     (search / install / inspect) and labelled "official" with "builtin" trust.
     """
 
-<<<<<<< HEAD
-    OFFICIAL_REPO = "Moor inc./hermes-agent"
-=======
-    OFFICIAL_REPO = "Moor inc./hermes-agent"
+    OFFICIAL_REPO = "NousResearch/hermes-agent"
     OPTIONAL_SKILLS_PREFIX = "optional-skills"
->>>>>>> upstream/main
 
     def __init__(self, auth: Optional[GitHubAuth] = None):
         from hermes_constants import get_optional_skills_dir
@@ -4168,10 +4164,10 @@ def check_for_skill_updates(
 
 
 # ---------------------------------------------------------------------------
-# Moor centralized index source
+# Hermes centralized index source
 # ---------------------------------------------------------------------------
 
-HERMES_INDEX_URL = "https://hermes-agent.Moor inc..com/docs/api/skills-index.json"
+HERMES_INDEX_URL = "https://hermes-agent.nousresearch.com/docs/api/skills-index.json"
 HERMES_INDEX_TTL = 6 * 3600  # 6 hours
 
 
@@ -4219,7 +4215,7 @@ def _load_hermes_index() -> Optional[dict]:
                 headers={"Accept-Encoding": accept_encoding},
             )
             if resp.status_code != 200:
-                logger.debug("Moor index fetch returned %d", resp.status_code)
+                logger.debug("Hermes index fetch returned %d", resp.status_code)
                 return _load_stale_index_cache()
             data = resp.json()
             break
@@ -4227,13 +4223,13 @@ def _load_hermes_index() -> Optional[dict]:
             # Content-Encoding decode failed — retry once uncompressed before
             # giving up on the network path entirely.
             logger.debug(
-                "Moor index decode failed (Accept-Encoding=%s): %s",
+                "Hermes index decode failed (Accept-Encoding=%s): %s",
                 accept_encoding,
                 e,
             )
             continue
         except (httpx.HTTPError, json.JSONDecodeError) as e:
-            logger.debug("Moor index fetch failed: %s", e)
+            logger.debug("Hermes index fetch failed: %s", e)
             return _load_stale_index_cache()
 
     if data is None:
@@ -4265,7 +4261,7 @@ def _load_stale_index_cache() -> Optional[dict]:
 
 
 class HermesIndexSource(SkillSource):
-    """Skill source backed by the centralized Moor Skills Index.
+    """Skill source backed by the centralized Hermes Skills Index.
 
     The index is a JSON catalog published to the docs site and rebuilt
     daily by CI.  It contains metadata + resolved GitHub paths for every

@@ -298,17 +298,6 @@ class TestScanSkillCommands:
 
     # -- core-command collision guard (#31204 / #53450) ---------------------
 
-<<<<<<< HEAD
-    def test_skill_collides_with_core_command_is_skipped(self, tmp_path):
-        """A skill whose auto-generated /command collides with a core Moor
-        command (e.g. 'skills') should be excluded from the slash-command map.
-        The skill remains loadable via /skill <name>."""
-        with patch("tools.skills_tool.SKILLS_DIR", tmp_path):
-            _make_skill(tmp_path, "skills")
-            result = scan_skill_commands()
-        assert "/skills" not in result
-=======
->>>>>>> upstream/main
 
 
 

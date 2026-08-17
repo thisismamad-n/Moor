@@ -52,13 +52,8 @@ def test_ambient_pool_source_does_not_count_as_explicit(tmp_path, monkeypatch):
     assert is_provider_explicitly_configured("copilot") is False
 
 
-<<<<<<< HEAD
-def test_explicit_pool_source_counts_as_explicit(tmp_path, monkeypatch):
-    """manual / device_code / PKCE pool entries reflect explicit Moor flows."""
-=======
 def test_returns_true_when_moa_reference_slot_uses_provider(tmp_path, monkeypatch):
     """MoA advisor slots are explicit provider selections for auth gating."""
->>>>>>> upstream/main
     monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
     _write_config(tmp_path, {
         "model": {"provider": "openai-codex", "default": "gpt-5.5"},

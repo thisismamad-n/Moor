@@ -478,26 +478,8 @@ export const ChatView = memo(function ChatView({
   const threadKey = selectedSessionId || activeSessionId || (isRoutedSessionView ? location.pathname : 'new')
 
   const modelOptionsQuery = useQuery<ModelOptionsResponse>({
-<<<<<<< HEAD
-    queryKey: ['model-options', activeSessionId || 'global'],
-    queryFn: () => {
-      if (!activeSessionId) {
-        return getGlobalModelOptions()
-      }
-
-      if (!gateway) {
-        throw new Error('Moor gateway unavailable')
-      }
-
-      return gateway.request<ModelOptionsResponse>('model.options', {
-        session_id: activeSessionId,
-        explicit_only: true
-      })
-    },
-=======
     queryKey: modelOptionsQueryKey(activeGatewayProfile, activeSessionId),
     queryFn: () => requestModelOptions({ gateway: gateway || undefined, sessionId: activeSessionId }),
->>>>>>> upstream/main
     enabled: gatewayOpen
   })
 

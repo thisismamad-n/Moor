@@ -246,7 +246,7 @@ def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-# Reject epoch values before 2000-01-01T00:00:00Z: nothing in Moor' lifetime
+# Reject epoch values before 2000-01-01T00:00:00Z: nothing in Hermes' lifetime
 # legitimately produced a gateway heartbeat last century, so anything older is
 # a corrupt or hand-edited state file (e.g. an accidental 0 / tiny int).
 _EPOCH_MIN_PLAUSIBLE = 946684800.0  # 2000-01-01T00:00:00Z
@@ -426,7 +426,7 @@ def _read_process_cmdline(pid: int) -> Optional[str]:
 
 
 def _gateway_command_subcommand(command: str | None) -> str | None:
-    """Return the Moor gateway lifecycle subcommand from a command line.
+    """Return the Hermes gateway lifecycle subcommand from a command line.
 
     Lifecycle decisions (is the gateway up? did restart relaunch it?) must not
     fire on loose substring matches.  The previous ``"... gateway" in cmdline``
@@ -440,7 +440,7 @@ def _gateway_command_subcommand(command: str | None) -> str | None:
 
     Tokenizes quote-aware (``shlex``) so quoted Windows paths with spaces
     (``"C:\\Program Files\\...\\hermes-gateway.exe"``) survive, and strips
-    ``--profile``/``-p`` selectors from anywhere in argv -- Moor's
+    ``--profile``/``-p`` selectors from anywhere in argv -- Hermes's
     ``_apply_profile_override`` removes them before argparse, so the profile
     flag (and a profile literally named ``gateway``) can legally appear on
     either side of the ``gateway`` subcommand.
@@ -512,14 +512,14 @@ def looks_like_gateway_runtime_command_line(command: str | None) -> bool:
     fallback executes ``run_gateway()`` in that same process, so its argv stays
     as ``gateway restart`` while it owns the webhook port and writes runtime
     state. Keep the public ``looks_like_gateway_command_line()`` strict, and
-    use this broader matcher only when validating Moor-owned runtime records
+    use this broader matcher only when validating Hermes-owned runtime records
     or no-supervisor cleanup scans.
     """
     return _gateway_command_subcommand(command) in {"run", "restart"}
 
 
 def _looks_like_gateway_process(pid: int) -> bool:
-    """Return True when the live PID still looks like the Moor gateway."""
+    """Return True when the live PID still looks like the Hermes gateway."""
     cmdline = _read_process_cmdline(pid)
     if not cmdline:
         return False
@@ -1751,23 +1751,6 @@ def _consume_pid_marker_for_self(
             pass
         return False
 
-<<<<<<< HEAD
-    # Cross-profile guard (#29092): reject markers written by a gateway
-    # running under a different HERMES_HOME. When two profile gateway
-    # services share the same default ~/.hermes (HERMES_HOME not set
-    # distinctly), the marker path resolves to the same file for both. A
-    # --replace from profile B could land in profile A's marker, match on
-    # PID + start_time by coincidence of a shared PID namespace, and make
-    # profile A exit 0 — only to be revived by systemd Restart=always,
-    # which then races the replacer again, flapping indefinitely. The
-    # field is absent in markers written by older Moor versions; treat
-    # absent as "same home" so old markers and single-profile setups are
-    # unaffected. Leave a mismatched marker in place so the correct
-    # profile can still consume it.
-    replacer_home = record.get("replacer_hermes_home")
-    if replacer_home is not None and replacer_home != str(_get_process_hermes_home()):
-        return False
-=======
     # Cross-profile guard (#29092): new markers explicitly name the verified
     # TARGET home.  That permits a deliberate cross-HERMES_HOME --replace while
     # ensuring a marker accidentally written into another profile's directory
@@ -1786,7 +1769,6 @@ def _consume_pid_marker_for_self(
             replacer_home, our_home
         ):
             return False
->>>>>>> upstream/main
 
     our_pid = os.getpid()
     our_start_time = _get_process_start_time(our_pid)

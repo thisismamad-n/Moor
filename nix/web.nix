@@ -1,22 +1,8 @@
-<<<<<<< HEAD
-# nix/web.nix — Moor Web Dashboard (Vite/React) frontend build
-{ pkgs, hermesNpmLib, ... }:
-let
-  # @hermes/shared ships as a file: workspace dep of web, so its source
-  # must be in the filtered src tree too.
-  npm = hermesNpmLib.mkNpmPassthru {
-    dirs = [
-      "web"
-      "apps/shared"
-    ];
-  };
-=======
-# nix/web.nix — Moor Web Dashboard (Vite/React) frontend build
+# nix/web.nix — Hermes Web Dashboard (Vite/React) frontend build
 { hermesNpmLib, ... }:
 hermesNpmLib.buildNpmPackage {
   dirs = [
     "web"
->>>>>>> upstream/main
 
     # @hermes/shared ships as a file: workspace dep of web, so its source
     # must be in the filtered src tree too.

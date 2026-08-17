@@ -45,16 +45,6 @@ class TestResolveContextCwd:
 
 
 
-<<<<<<< HEAD
-    def test_returns_install_tree_when_explicitly_configured(self, monkeypatch):
-        # An EXPLICITLY configured install-tree cwd is honored verbatim — the
-        # Moor source tree is a legitimate workspace when the user is
-        # developing Moor. Only the fallback path (cwd=None → os.getcwd())
-        # is policed, in build_context_files_prompt (#64590).
-        monkeypatch.setenv("TERMINAL_CWD", str(rt._PACKAGE_ROOT))
-        assert resolve_context_cwd() == rt._PACKAGE_ROOT
-=======
->>>>>>> upstream/main
 
     def test_expands_leading_tilde(self, monkeypatch):
         monkeypatch.setenv("TERMINAL_CWD", "~")

@@ -1,7 +1,7 @@
 /**
  * bootstrap-runner.ts
  *
- * Drives apps/desktop's first-launch install of Moor Agent by spawning
+ * Drives apps/desktop's first-launch install of Hermes Agent by spawning
  * scripts/install.ps1 stage-by-stage and streaming progress events back to
  * the renderer.
  *
@@ -233,11 +233,7 @@ function downloadInstallScript(ref, destPath) {
   // ref so local builds can still bootstrap without pretending the all-zero
   // placeholder is a real GitHub commit.
   const scriptName = installScriptName()
-<<<<<<< HEAD
-  const url = `https://raw.githubusercontent.com/Moor inc./hermes-agent/${commit}/scripts/${scriptName}`
-=======
-  const url = `https://raw.githubusercontent.com/Moor inc./hermes-agent/${ref}/scripts/${scriptName}`
->>>>>>> upstream/main
+  const url = `https://raw.githubusercontent.com/NousResearch/hermes-agent/${ref}/scripts/${scriptName}`
 
   return new Promise((resolve, reject) => {
     fs.mkdirSync(path.dirname(destPath), { recursive: true })

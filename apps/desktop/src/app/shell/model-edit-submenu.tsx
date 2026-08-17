@@ -12,11 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import { useI18n } from '@/i18n'
 import { isThinkingEnabled, REASONING_EFFORTS, resolveReasoningEffort } from '@/lib/reasoning-effort'
 
-<<<<<<< HEAD
-// Moor' real reasoning levels (see VALID_REASONING_EFFORTS); `none` is owned
-=======
-// Moor' real reasoning levels live in lib/reasoning-effort; `none` is owned
->>>>>>> upstream/main
+// Hermes' real reasoning levels live in lib/reasoning-effort; `none` is owned
 // by the Thinking toggle, not the radio.
 
 /** How "fast" is achieved for a given model — two different mechanisms:
@@ -181,22 +177,3 @@ function ModelEditSubmenuBody({
     </>
   )
 }
-<<<<<<< HEAD
-
-function isThinkingEnabled(effort: string): boolean {
-  // Empty = Moor default (medium) = on; only an explicit "none" is off.
-  return normalize(effort || 'medium') !== 'none'
-}
-
-function normalizeEffort(effort: string): string {
-  const value = normalize(effort || 'medium')
-
-  // Thinking off → no effort selected in the radio group.
-  if (value === 'none') {
-    return ''
-  }
-
-  return EFFORT_OPTIONS.some(option => option.value === value) ? value : 'medium'
-}
-=======
->>>>>>> upstream/main

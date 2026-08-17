@@ -286,22 +286,6 @@ class TestDeveloperRoleSwap:
 
 
 
-<<<<<<< HEAD
-    def test_developer_role_via_nous_portal(self, monkeypatch):
-        agent = _make_agent(
-            monkeypatch,
-            "nous",
-            base_url="https://inference-api.Moor inc..com/v1",
-            model="gpt-5",
-        )
-        messages = [
-            {"role": "system", "content": "You are helpful."},
-            {"role": "user", "content": "hi"},
-        ]
-        kwargs = agent._build_api_kwargs(messages)
-        assert kwargs["messages"][0]["role"] == "developer"
-=======
->>>>>>> upstream/main
 
 
 class TestBuildApiKwargsChatCompletionsServiceTier:
@@ -375,7 +359,7 @@ class TestBuildApiKwargsNousPortal:
         agent = _make_agent(
             monkeypatch,
             "nous",
-            base_url="https://inference-api.Moor inc..com/v1",
+            base_url="https://inference-api.nousresearch.com/v1",
             model="gpt-5",
         )
         messages = [{"role": "user", "content": "hi"}]
@@ -387,7 +371,7 @@ class TestBuildApiKwargsNousPortal:
         agent = _make_agent(
             monkeypatch,
             "nous",
-            base_url="https://inference-api.Moor inc..com/v1",
+            base_url="https://inference-api.nousresearch.com/v1",
             model="gpt-5",
         )
         messages = [{"role": "user", "content": "hi"}]

@@ -1,7 +1,7 @@
 """Auto-installation of LSP server binaries.
 
 Tries to install missing servers using whatever package manager is
-appropriate.  All installs go to a Moor-owned bin staging dir,
+appropriate.  All installs go to a Hermes-owned bin staging dir,
 ``<HERMES_HOME>/lsp/bin/``, so we don't pollute the user's global
 toolchain.
 
@@ -123,18 +123,10 @@ def _is_windows() -> bool:
 
 
 def hermes_lsp_bin_dir() -> Path:
-<<<<<<< HEAD
-    """Return the Moor-owned bin staging dir for LSP servers."""
-    home = os.environ.get("HERMES_HOME")
-    if home is None:
-        home = os.path.join(os.path.expanduser("~"), ".hermes")
-    p = Path(home) / "lsp" / "bin"
-=======
-    """Return the Moor-owned bin staging dir for LSP servers."""
+    """Return the Hermes-owned bin staging dir for LSP servers."""
     from hermes_constants import get_hermes_home
 
     p = get_hermes_home() / "lsp" / "bin"
->>>>>>> upstream/main
     p.mkdir(parents=True, exist_ok=True)
     return p
 
@@ -259,7 +251,7 @@ def _install_npm(
     needs ``typescript`` next to it; intelephense ships standalone).
     """
     # Managed npm first: $HERMES_HOME/node is not on an arbitrary process's
-    # PATH, so a bare which() misses the Node that Moor installed and
+    # PATH, so a bare which() misses the Node that Hermes installed and
     # reports "npm not on PATH" on a machine that has a perfectly good one.
     npm = find_node_executable("npm")
     if npm is None:

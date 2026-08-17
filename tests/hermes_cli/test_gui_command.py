@@ -84,17 +84,10 @@ def _make_packaged_executable(root: Path, monkeypatch) -> Path:
     to include it.
     """
     desktop_dir = root / "apps" / "desktop"
-<<<<<<< HEAD
-    if platform == "darwin":
-        exe = desktop_dir / "release" / "mac-arm64" / "Moor.app" / "Contents" / "MacOS" / "Moor"
-    elif platform == "win32":
-        exe = desktop_dir / "release" / "win-unpacked" / "Moor.exe"
-=======
     if sys.platform == "darwin":
-        exe = desktop_dir / "release" / "mac-arm64" / "Moor.app" / "Contents" / "MacOS" / "Moor"
+        exe = desktop_dir / "release" / "mac-arm64" / "Hermes.app" / "Contents" / "MacOS" / "Hermes"
     elif sys.platform == "win32":
-        exe = desktop_dir / "release" / "win-unpacked" / "Moor.exe"
->>>>>>> upstream/main
+        exe = desktop_dir / "release" / "win-unpacked" / "Hermes.exe"
     else:
         exe = desktop_dir / "release" / "linux-unpacked" / "hermes"
     exe.parent.mkdir(parents=True, exist_ok=True)
@@ -142,7 +135,7 @@ def test_gui_installs_packages_and_launches_desktop_app(tmp_path, monkeypatch):
 def test_gui_install_env_prepends_managed_node_on_bare_path(tmp_path, monkeypatch):
     """Regression: npm's child scripts (electron-winstaller's select-7z-arch.js)
     shell out to bare ``node``. When Desktop is launched from the updater chain
-    the parent PATH is stripped, so the install env MUST carry the Moor-managed
+    the parent PATH is stripped, so the install env MUST carry the Hermes-managed
     Node ahead of that bare PATH or the install dies with ``node: not found``.
     """
     import os
@@ -253,7 +246,7 @@ def test_gui_does_not_retry_after_packaged_executable_exists(tmp_path, monkeypat
     Electron-download problem the cache purge + mirror retries exist to repair.
 
     Regression for #40187: a late failure such as macOS code signing leaves
-    Moor.app/Contents/MacOS/Moor in place. Re-downloading Electron can't
+    Hermes.app/Contents/MacOS/Hermes in place. Re-downloading Electron can't
     repair a signing failure, so the destructive purge + slow mirror retry must
     be skipped — we fail directly instead of grinding through an identical retry.
     """
@@ -404,19 +397,19 @@ def _write_info_plist(bundle: Path, identifier: str) -> None:
 
 
 def _make_signable_app(desktop_dir: Path) -> Path:
-    """Build a fake packaged Moor.app with the pieces the signer must find."""
+    """Build a fake packaged Hermes.app with the pieces the signer must find."""
     ent_dir = desktop_dir / "electron"
     ent_dir.mkdir(parents=True, exist_ok=True)
     (ent_dir / "entitlements.mac.plist").write_text("<plist/>", encoding="utf-8")
     (ent_dir / "entitlements.mac.inherit.plist").write_text("<plist/>", encoding="utf-8")
 
-    app = desktop_dir / "release" / "mac-arm64" / "Moor.app"
-    _write_info_plist(app, "com.Moor inc..hermes")
+    app = desktop_dir / "release" / "mac-arm64" / "Hermes.app"
+    _write_info_plist(app, "com.nousresearch.hermes")
     (app / "Contents" / "MacOS").mkdir(parents=True)
-    (app / "Contents" / "MacOS" / "Moor").write_text("", encoding="utf-8")
+    (app / "Contents" / "MacOS" / "Hermes").write_text("", encoding="utf-8")
 
-    helper = app / "Contents" / "Frameworks" / "Moor Helper.app"
-    _write_info_plist(helper, "com.Moor inc..hermes.helper")
+    helper = app / "Contents" / "Frameworks" / "Hermes Helper.app"
+    _write_info_plist(helper, "com.nousresearch.hermes.helper")
 
     native_dir = app / "Contents" / "Resources" / "app.asar.unpacked" / "node_modules" / "pty"
     native_dir.mkdir(parents=True)
@@ -443,7 +436,7 @@ def test_desktop_macos_local_codesign_signs_native_binaries(tmp_path, monkeypatc
     """The standalone Mach-O pass must actually find files inside the bundle.
 
     Regression: an absolute-path parts check always matches the outer
-    Moor.app component, silently skipping every .node/.dylib/crashpad
+    Hermes.app component, silently skipping every .node/.dylib/crashpad
     binary — codesign then rejects the outer signature (nested code unsigned).
     """
     desktop_dir = tmp_path / "apps" / "desktop"
@@ -457,42 +450,6 @@ def test_desktop_macos_local_codesign_signs_native_binaries(tmp_path, monkeypatc
     assert str(app / "Contents" / "Frameworks" / "chrome_crashpad_handler") in signed
 
 
-<<<<<<< HEAD
-def test_stop_desktop_build_lock_terminates_only_release_procs(tmp_path, monkeypatch):
-    desktop_dir = tmp_path / "apps" / "desktop"
-    release = desktop_dir / "release" / "win-unpacked"
-    release.mkdir(parents=True)
-    locker_exe = release / "Moor.exe"
-    locker_exe.write_text("", encoding="utf-8")
-    other_exe = tmp_path / "elsewhere" / "Moor.exe"
-    other_exe.parent.mkdir(parents=True)
-    other_exe.write_text("", encoding="utf-8")
-
-    monkeypatch.setattr(cli_main.sys, "platform", "win32")
-    monkeypatch.setattr(cli_main.os, "getpid", lambda: 999)
-
-    locker = _FakeProc(101, str(locker_exe))
-    unrelated = _FakeProc(102, str(other_exe))
-    selfish = _FakeProc(999, str(locker_exe))  # our own PID — never killed
-    no_exe = _FakeProc(103, None)
-
-    captured = {}
-
-    def _wait(procs, timeout=None):
-        captured["waited"] = list(procs)
-        return procs, []
-
-    with patch("psutil.process_iter", return_value=[locker, unrelated, selfish, no_exe]), \
-         patch("psutil.wait_procs", side_effect=_wait):
-        stopped = cli_main._stop_desktop_processes_locking_build(desktop_dir)
-
-    assert stopped == [101]
-    assert locker.terminated is True
-    assert unrelated.terminated is False
-    assert selfish.terminated is False
-    assert captured["waited"] == [locker]
-=======
->>>>>>> upstream/main
 
 
 @pytest.mark.macos_only

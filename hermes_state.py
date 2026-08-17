@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SQLite State Store for Moor Agent.
+SQLite State Store for Hermes Agent.
 
 Provides persistent session storage with FTS5 full-text search, replacing
 the per-session JSONL file approach. Stores session metadata, full message
@@ -437,7 +437,7 @@ _STATE_DB_GUARD_EXTRA_DENY_ROOTS: Tuple[Path, ...] = ()
 
 
 def _real_platform_state_root() -> Optional[Path]:
-    """Resolve the REAL platform-default Moor root for the guard.
+    """Resolve the REAL platform-default Hermes root for the guard.
 
     Deliberately avoids ``Path.home()`` / ``hermes_constants``: tests
     routinely monkeypatch ``Path.home`` to a tempdir, and ``hermes_state``
@@ -466,7 +466,7 @@ def _real_platform_state_root() -> Optional[Path]:
 #: redirects ``HERMES_HOME`` to the per-session tmp isolation root.  Its
 #: value is that isolation root.  Unlike ``PYTEST_*`` (owned by pytest, and
 #: routinely scrubbed by tests that rebuild a child environment), this marker
-#: is OURS: it declares "this process tree is running under Moor test
+#: is OURS: it declares "this process tree is running under Hermes test
 #: isolation", and it inherits into subprocess children by default — so a
 #: child that received the patched ``HERMES_HOME`` also received the marker,
 #: and a child that resolves a production DB while carrying it is, by
@@ -577,7 +577,7 @@ def _production_state_roots() -> List[Path]:
 
 
 def _is_production_state_db(resolved: Path, root: Path) -> bool:
-    """True when *resolved* is a DB file of the real Moor home *root*.
+    """True when *resolved* is a DB file of the real Hermes home *root*.
 
     Matches files directly in the root (``<root>/state.db``) and profile
     homes (``<root>/profiles/<name>/state.db``).  Deliberately does NOT
@@ -619,7 +619,7 @@ def _ensure_test_isolation(db_path: Path) -> None:
         if _is_production_state_db(resolved, root):
             raise RuntimeError(
                 "live-system guard: test attempted to open production "
-                f"state.db at {resolved} (under real Moor root {root}). "
+                f"state.db at {resolved} (under real Hermes root {root}). "
                 "Tests must run against a temporary HERMES_HOME — pass an "
                 "explicit tmp db_path or let the hermetic conftest redirect "
                 "HERMES_HOME. If this test genuinely needs the live "
@@ -1360,7 +1360,7 @@ def _wal_reset_repair_hint() -> str:
         method = detect_install_method(get_project_root())
         cmd = recommended_update_command_for_method(method)
         if method in {"git", "unknown"}:
-            return f"Moor-managed installs can repair the embedded runtime with `{cmd}`"
+            return f"Hermes-managed installs can repair the embedded runtime with `{cmd}`"
         if method == "docker":
             return f"update the container image with `{cmd}`"
         # nix/nixos
@@ -1369,7 +1369,7 @@ def _wal_reset_repair_hint() -> str:
         pass
     return (
         "install a Python build bundled with SQLite 3.51.3+ "
-        "(or backports 3.50.7 / 3.44.6) and restart Moor"
+        "(or backports 3.50.7 / 3.44.6) and restart Hermes"
     )
 
 
@@ -1398,7 +1398,7 @@ def _log_wal_reset_bug_once(
         )
     else:
         action = "using journal_mode=DELETE instead of enabling WAL"
-    # Check whether this is a Moor-managed install (uv-managed venv)
+    # Check whether this is a Hermes-managed install (uv-managed venv)
     # so the warning doesn't promise a repair path that doesn't exist
     # for git/pip/system Python installs (#75153).
     repair_hint = _wal_reset_repair_hint()
@@ -1715,7 +1715,7 @@ def _claim_repair_attempt(db_path: Path) -> bool:
 
 # Cross-process serialisation for the schema-surgery paths below.  The
 # ``_repair_attempt_lock`` above is a ``threading.Lock`` — it only covers
-# threads inside ONE interpreter, yet a normal Moor host runs several
+# threads inside ONE interpreter, yet a normal Hermes host runs several
 # independent processes against the same ``state.db``: the gateway service,
 # the Desktop app's own ``hermes serve`` backend, interactive CLI sessions,
 # and the TUI slash worker.  Two of those hitting a malformed DB at once each
@@ -2062,8 +2062,8 @@ def preflight_db_writability(
     transactions. This preflight:
 
     - **Repairs** permissions with ``chmod u+rw`` when the file lives inside
-      the Moor home tree (``get_hermes_home()``) — the safe repair scope:
-      Moor owns those files, and the OS makes ``chmod`` fail on files the
+      the Hermes home tree (``get_hermes_home()``) — the safe repair scope:
+      Hermes owns those files, and the OS makes ``chmod`` fail on files the
       user doesn't own, which bounds the repair exactly.
     - **Fails fast with an actionable error** naming the exact file and the
       exact ``chmod`` command for anything else (root-owned files, read-only
@@ -2119,7 +2119,7 @@ def preflight_db_writability(
         )
         raise sqlite3.OperationalError(
             f"{db_label} is not writable: {kind} {p} is read-only for this "
-            f"user. Moor needs read-write access to open the database. "
+            f"user. Hermes needs read-write access to open the database. "
             f"Fix with: chmod u+rw{'x' if is_dir else ''} '{p}'"
             f" (files owned by another user may need sudo/chown).{wal_note}"
         )
@@ -3109,7 +3109,7 @@ class SessionDB(SessionSearchMixin, SessionSchemaMixin, SessionPortabilityMixin)
     # writers and avoids the convoy.
     #
     # Patience is TIME-based, not attempt-based.  A shared state.db is
-    # legitimately held for multi-second stretches by sibling Moor
+    # legitimately held for multi-second stretches by sibling Hermes
     # processes: a TRUNCATE checkpoint at close on a large WAL, VACUUM after
     # an auto-prune, offline recovery, or an older still-running process
     # whose FTS maintenance predates the bounded-merge protocol (every
@@ -4059,7 +4059,7 @@ class SessionDB(SessionSearchMixin, SessionSchemaMixin, SessionPortabilityMixin)
                     # Patience exhausted — say what actually happened so the
                     # surfaced error doesn't read as disk/permission damage.
                     raise sqlite3.OperationalError(
-                        f"database is locked (another Moor process held the "
+                        f"database is locked (another Hermes process held the "
                         f"state.db write lock for over {patience_s:.0f}s — "
                         "likely a long maintenance operation such as VACUUM, "
                         "a large WAL checkpoint, or an older pre-update "
@@ -11044,487 +11044,6 @@ class SessionDB(SessionSearchMixin, SessionSchemaMixin, SessionPortabilityMixin)
     # Search
     # =========================================================================
 
-<<<<<<< HEAD
-    @staticmethod
-    def _sanitize_fts5_query(query: str) -> str:
-        """Sanitize user input for safe use in FTS5 MATCH queries.
-
-        FTS5 has its own query syntax where characters like ``"``, ``(``, ``)``,
-        ``+``, ``*``, ``{``, ``}``, the column-filter operator ``:`` and bare
-        boolean operators (``AND``, ``OR``, ``NOT``) have special meaning.
-        Passing raw user input directly to MATCH can cause
-        ``sqlite3.OperationalError``.
-
-        Strategy:
-        - Preserve properly paired quoted phrases (``"exact phrase"``)
-        - Strip unmatched FTS5-special characters that would cause errors
-        - Wrap unquoted hyphenated and dotted terms in quotes so FTS5
-          matches them as exact phrases instead of splitting on the
-          hyphen/dot (e.g. ``chat-send``, ``P2.2``, ``my-app.config.ts``)
-        """
-        # Cap user-controlled FTS input before any regex processing. Search
-        # queries do not need to be arbitrarily large, and bounding them keeps
-        # sanitizer/runtime behavior predictable under adversarial input.
-        query = query[:MAX_FTS5_QUERY_CHARS]
-
-        # Step 1: Extract balanced double-quoted phrases and protect them
-        # from further processing via numbered placeholders. Do this with a
-        # single linear scan rather than a regex so pathological quote runs
-        # cannot induce backtracking.
-        _quoted_parts: list = []
-        pieces: list[str] = []
-        i = 0
-        while i < len(query):
-            ch = query[i]
-            if ch != '"':
-                pieces.append(ch)
-                i += 1
-                continue
-            end = query.find('"', i + 1)
-            if end == -1:
-                # Unmatched quote: replace with whitespace like the old
-                # sanitizer's special-char stripping step.
-                pieces.append(" ")
-                i += 1
-                continue
-            _quoted_parts.append(query[i:end + 1])
-            pieces.append(f"\x00Q{len(_quoted_parts) - 1}\x00")
-            i = end + 1
-
-        sanitized = "".join(pieces)
-
-        # Step 2: Strip remaining (unmatched) FTS5-special characters.  ``:`` is
-        # FTS5's column-filter operator (``col:term``); since the FTS table has a
-        # single ``content`` column, an unquoted colon query like ``TODO: fix``
-        # parses as ``column:term`` and raises "no such column" — swallowed at
-        # the execute site into zero results.  Strip it like the others.
-        sanitized = re.sub(r'[+{}():\"^]', " ", sanitized)
-
-        # Step 3: Collapse repeated * (e.g. "***") into a single one,
-        # and remove leading * (prefix-only needs at least one char before *)
-        sanitized = re.sub(r"\*+", "*", sanitized)
-        sanitized = re.sub(r"(^|\s)\*", r"\1", sanitized)
-
-        # Step 4: Remove dangling boolean operators at start/end that would
-        # cause syntax errors (e.g. "hello AND" or "OR world")
-        sanitized = re.sub(r"(?i)^(AND|OR|NOT)\b\s*", "", sanitized.strip())
-        sanitized = re.sub(r"(?i)\s+(AND|OR|NOT)\s*$", "", sanitized.strip())
-
-        # Step 5: Wrap unquoted dotted and/or hyphenated terms in double
-        # quotes.  FTS5's tokenizer splits on dots and hyphens, turning
-        # ``chat-send`` into ``chat AND send`` and ``P2.2`` into ``p2 AND 2``.
-        # Quoting preserves phrase semantics.  A single pass avoids the
-        # double-quoting bug that would occur if dotted, hyphenated and underscored
-        # patterns were applied sequentially (e.g. ``my-app.config``).
-        sanitized = re.sub(r"\b(\w+(?:[._-]\w+)+)\b", r'"\1"', sanitized)
-
-        # Step 6: Restore preserved quoted phrases
-        for i, quoted in enumerate(_quoted_parts):
-            sanitized = sanitized.replace(f"\x00Q{i}\x00", quoted)
-
-        return sanitized.strip()
-
-
-    @staticmethod
-    def _is_cjk_codepoint(cp: int) -> bool:
-        return (0x4E00 <= cp <= 0x9FFF or    # CJK Unified Ideographs
-                0x3400 <= cp <= 0x4DBF or    # CJK Extension A
-                0x20000 <= cp <= 0x2A6DF or  # CJK Extension B
-                0x3000 <= cp <= 0x303F or    # CJK Symbols
-                0x3040 <= cp <= 0x309F or    # Hiragana
-                0x30A0 <= cp <= 0x30FF or    # Katakana
-                0xAC00 <= cp <= 0xD7AF)      # Hangul Syllables
-
-    @staticmethod
-    def _contains_cjk(text: str) -> bool:
-        """Check if text contains CJK (Chinese, Japanese, Korean) characters."""
-        for ch in text:
-            cp = ord(ch)
-            if (0x4E00 <= cp <= 0x9FFF or    # CJK Unified Ideographs
-                0x3400 <= cp <= 0x4DBF or    # CJK Extension A
-                0x20000 <= cp <= 0x2A6DF or  # CJK Extension B
-                0x3000 <= cp <= 0x303F or    # CJK Symbols
-                0x3040 <= cp <= 0x309F or    # Hiragana
-                0x30A0 <= cp <= 0x30FF or    # Katakana
-                0xAC00 <= cp <= 0xD7AF):     # Hangul Syllables
-                return True
-        return False
-
-    @classmethod
-    def _count_cjk(cls, text: str) -> int:
-        """Count CJK characters in text."""
-        return sum(1 for ch in text if cls._is_cjk_codepoint(ord(ch)))
-
-    def search_messages(
-        self,
-        query: str,
-        source_filter: List[str] = None,
-        exclude_sources: List[str] = None,
-        role_filter: List[str] = None,
-        limit: int = 20,
-        offset: int = 0,
-        sort: str = None,
-        include_inactive: bool = False,
-    ) -> List[Dict[str, Any]]:
-        """
-        Full-text search across session messages using FTS5.
-
-        Supports FTS5 query syntax:
-          - Simple keywords: "docker deployment"
-          - Phrases: '"exact phrase"'
-          - Boolean: "docker OR kubernetes", "python NOT java"
-          - Prefix: "deploy*"
-
-        Returns matching messages with session metadata, content snippet,
-        and surrounding context (1 message before and after the match).
-
-        ``sort`` controls temporal ordering:
-          - ``None`` (default): FTS5 BM25 relevance only. Time-neutral.
-          - ``"newest"``: order by message timestamp DESC, then by rank.
-          - ``"oldest"``: order by message timestamp ASC, then by rank.
-
-        The short-CJK LIKE fallback already orders by timestamp DESC and
-        ignores ``sort``. The trigram CJK path honours ``sort`` like the main
-        FTS5 path.
-
-        Rewound (``active=0``, ``compacted=0``) rows are excluded by default —
-        the user took those back. Compaction-archived rows (``active=0``,
-        ``compacted=1``) ARE included by default: they were summarized away from
-        the live context but remain part of the conversation's record, so the
-        pre-compaction transcript stays discoverable after in-place compaction
-        (#38763). Pass ``include_inactive=True`` to search every row regardless.
-        """
-        if not self._fts_enabled:
-            return []
-
-        if not query or not query.strip():
-            return []
-
-        query = self._sanitize_fts5_query(query)
-        if not query:
-            return []
-
-        # Normalise sort. Anything not in the allowed set falls back to None
-        # (FTS5 rank-only) so callers can pass through user input without
-        # validation.
-        if isinstance(sort, str):
-            sort_norm = sort.strip().lower()
-            if sort_norm not in ("newest", "oldest"):
-                sort_norm = None
-        else:
-            sort_norm = None
-
-        # ORDER BY shared across the main FTS5 path and trigram CJK path.
-        # With sort set, timestamp is primary and rank is the tiebreaker.
-        if sort_norm == "newest":
-            order_by_sql = "ORDER BY m.timestamp DESC, rank"
-        elif sort_norm == "oldest":
-            order_by_sql = "ORDER BY m.timestamp ASC, rank"
-        else:
-            order_by_sql = "ORDER BY rank"
-
-        # Build WHERE clauses dynamically
-        where_clauses = ["messages_fts MATCH ?"]
-        params: list = [query]
-        if not include_inactive:
-            # Live rows (active=1) AND compaction-archived rows (compacted=1)
-            # are discoverable; only rewind/undo rows (active=0, compacted=0)
-            # are hidden. See archive_and_compact() / #38763.
-            where_clauses.append("(m.active = 1 OR m.compacted = 1)")
-
-        if source_filter is not None:
-            source_placeholders = ",".join("?" for _ in source_filter)
-            where_clauses.append(f"s.source IN ({source_placeholders})")
-            params.extend(source_filter)
-
-        if exclude_sources is not None:
-            exclude_placeholders = ",".join("?" for _ in exclude_sources)
-            where_clauses.append(f"s.source NOT IN ({exclude_placeholders})")
-            params.extend(exclude_sources)
-
-        if role_filter:
-            role_placeholders = ",".join("?" for _ in role_filter)
-            where_clauses.append(f"m.role IN ({role_placeholders})")
-            params.extend(role_filter)
-
-        where_sql = " AND ".join(where_clauses)
-        params.extend([limit, offset])
-
-        sql = f"""
-            SELECT
-                m.id,
-                m.session_id,
-                m.role,
-                snippet(messages_fts, 0, '>>>', '<<<', '...', 40) AS snippet,
-                m.content,
-                m.timestamp,
-                m.tool_name,
-                s.source,
-                s.model,
-                s.started_at AS session_started
-            FROM messages_fts
-            JOIN messages m ON m.id = messages_fts.rowid
-            JOIN sessions s ON s.id = m.session_id
-            WHERE {where_sql}
-            {order_by_sql}
-            LIMIT ? OFFSET ?
-        """
-
-        # CJK queries bypass the unicode61 FTS5 table.  The default tokenizer
-        # splits CJK characters into individual tokens, so "大别山项目" becomes
-        # "大 AND 别 AND 山 AND 项 AND 目" — producing false positives and
-        # missing exact phrase matches.
-        #
-        # For queries with 3+ CJK characters, we use the trigram FTS5 table
-        # (indexed substring matching with ranking and snippets).  For shorter
-        # CJK queries (1-2 chars), trigram can't match (it needs ≥9 UTF-8
-        # bytes = 3 CJK chars), so we fall back to LIKE.
-        is_cjk = self._contains_cjk(query)
-        if is_cjk:
-            raw_query = query.strip('"').strip()
-            cjk_count = self._count_cjk(raw_query)
-
-            # Per-token CJK length check (#20494): trigram needs >=3 CJK chars
-            # per token. A query like "广西 OR 桂林 OR 漓江" has cjk_count=6
-            # (>=3) but each individual token is only 2 chars — trigram returns 0.
-            # Route to LIKE when any non-operator CJK token is <3 CJK chars.
-            _tokens_for_check = [
-                t for t in raw_query.split()
-                if t.upper() not in {"AND", "OR", "NOT"} and self._contains_cjk(t)
-            ]
-            _any_short_cjk = any(
-                self._count_cjk(t) < 3 for t in _tokens_for_check
-            )
-
-            _trigram_succeeded = False
-            if cjk_count >= 3 and not _any_short_cjk and self._trigram_available:
-                # Trigram FTS5 path — quote each non-operator token to handle
-                # FTS5 special chars (%, *, etc.) while preserving boolean
-                # operators (AND, OR, NOT) for multi-term queries.
-                tokens = raw_query.split()
-                parts = []
-                for tok in tokens:
-                    if tok.upper() in {"AND", "OR", "NOT"}:
-                        parts.append(tok)
-                    else:
-                        parts.append('"' + tok.replace('"', '""') + '"')
-                trigram_query = " ".join(parts)
-                tri_where = ["messages_fts_trigram MATCH ?"]
-                tri_params: list = [trigram_query]
-                if not include_inactive:
-                    tri_where.append("(m.active = 1 OR m.compacted = 1)")
-                if source_filter is not None:
-                    tri_where.append(f"s.source IN ({','.join('?' for _ in source_filter)})")
-                    tri_params.extend(source_filter)
-                if exclude_sources is not None:
-                    tri_where.append(f"s.source NOT IN ({','.join('?' for _ in exclude_sources)})")
-                    tri_params.extend(exclude_sources)
-                if role_filter:
-                    tri_where.append(f"m.role IN ({','.join('?' for _ in role_filter)})")
-                    tri_params.extend(role_filter)
-                tri_sql = f"""
-                    SELECT
-                        m.id,
-                        m.session_id,
-                        m.role,
-                        snippet(messages_fts_trigram, 0, '>>>', '<<<', '...', 40) AS snippet,
-                        m.content,
-                        m.timestamp,
-                        m.tool_name,
-                        s.source,
-                        s.model,
-                        s.started_at AS session_started
-                    FROM messages_fts_trigram
-                    JOIN messages m ON m.id = messages_fts_trigram.rowid
-                    JOIN sessions s ON s.id = m.session_id
-                    WHERE {' AND '.join(tri_where)}
-                    {order_by_sql}
-                    LIMIT ? OFFSET ?
-                """
-                tri_params.extend([limit, offset])
-                with self._lock:
-                    try:
-                        tri_cursor = self._conn.execute(tri_sql, tri_params)
-                    except sqlite3.OperationalError:
-                        # Trigram query failed at runtime — fall through to LIKE.
-                        pass
-                    else:
-                        matches = [dict(row) for row in tri_cursor.fetchall()]
-                        _trigram_succeeded = True
-            if not _trigram_succeeded:
-                # Short / mixed CJK query, trigram unavailable, or trigram
-                # <3 CJK chars. Fall back to LIKE substring search.
-                # For multi-token OR queries (e.g. "广西 OR 桂林 OR 漓江"),
-                # build one LIKE condition per non-operator token so each term
-                # is matched independently (#20494).
-                non_op_tokens = [
-                    t for t in raw_query.split()
-                    if t.upper() not in {"AND", "OR", "NOT"}
-                ] or [raw_query]
-                token_clauses = []
-                like_params: list = []
-                for tok in non_op_tokens:
-                    esc = tok.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-                    token_clauses.append(
-                        "(m.content LIKE ? ESCAPE '\\' OR m.tool_name LIKE ? ESCAPE '\\' OR m.tool_calls LIKE ? ESCAPE '\\')"
-                    )
-                    like_params += [f"%{esc}%", f"%{esc}%", f"%{esc}%"]
-                like_where = [f"({' OR '.join(token_clauses)})"]
-                if source_filter is not None:
-                    like_where.append(f"s.source IN ({','.join('?' for _ in source_filter)})")
-                    like_params.extend(source_filter)
-                if exclude_sources is not None:
-                    like_where.append(f"s.source NOT IN ({','.join('?' for _ in exclude_sources)})")
-                    like_params.extend(exclude_sources)
-                if role_filter:
-                    like_where.append(f"m.role IN ({','.join('?' for _ in role_filter)})")
-                    like_params.extend(role_filter)
-                like_sql = f"""
-                    SELECT m.id, m.session_id, m.role,
-                           substr(m.content,
-                                  max(1, instr(m.content, ?) - 40),
-                                  120) AS snippet,
-                           m.content, m.timestamp, m.tool_name,
-                           s.source, s.model, s.started_at AS session_started
-                    FROM messages m
-                    JOIN sessions s ON s.id = m.session_id
-                    WHERE {' AND '.join(like_where)}
-                    ORDER BY m.timestamp DESC
-                    LIMIT ? OFFSET ?
-                """
-                like_params.extend([limit, offset])
-                # instr() for snippet uses first search token
-                like_params = [non_op_tokens[0]] + like_params
-                with self._lock:
-                    like_cursor = self._conn.execute(like_sql, like_params)
-                    matches = [dict(row) for row in like_cursor.fetchall()]
-        else:
-            with self._lock:
-                try:
-                    cursor = self._conn.execute(sql, params)
-                except sqlite3.OperationalError:
-                    # FTS5 query syntax error despite sanitization — return empty
-                    return []
-                else:
-                    matches = [dict(row) for row in cursor.fetchall()]
-
-        # Add surrounding context (1 message before + after each match).
-        # Done outside the lock so we don't hold it across N sequential queries.
-        for match in matches:
-            try:
-                with self._lock:
-                    ctx_cursor = self._conn.execute(
-                        """WITH target AS (
-                               SELECT session_id, timestamp, id
-                               FROM messages
-                               WHERE id = ?
-                           )
-                           SELECT role, content
-                           FROM (
-                               SELECT m.id, m.timestamp, m.role, m.content
-                               FROM messages m
-                               JOIN target t ON t.session_id = m.session_id
-                               WHERE (m.timestamp < t.timestamp)
-                                  OR (m.timestamp = t.timestamp AND m.id < t.id)
-                               ORDER BY m.timestamp DESC, m.id DESC
-                               LIMIT 1
-                           )
-                           UNION ALL
-                           SELECT role, content
-                           FROM messages
-                           WHERE id = ?
-                           UNION ALL
-                           SELECT role, content
-                           FROM (
-                               SELECT m.id, m.timestamp, m.role, m.content
-                               FROM messages m
-                               JOIN target t ON t.session_id = m.session_id
-                               WHERE (m.timestamp > t.timestamp)
-                                  OR (m.timestamp = t.timestamp AND m.id > t.id)
-                               ORDER BY m.timestamp ASC, m.id ASC
-                               LIMIT 1
-                           )""",
-                        (match["id"], match["id"]),
-                    )
-                    context_msgs = []
-                    for r in ctx_cursor.fetchall():
-                        raw = r["content"]
-                        decoded = self._decode_content(raw)
-                        # Multimodal context: render a compact text-only
-                        # summary for search previews.
-                        if isinstance(decoded, list):
-                            text_parts = [
-                                p.get("text", "") for p in decoded
-                                if isinstance(p, dict) and p.get("type") == "text"
-                            ]
-                            text = " ".join(t for t in text_parts if t).strip()
-                            preview = text or "[multimodal content]"
-                        elif isinstance(decoded, str):
-                            preview = decoded
-                        else:
-                            preview = ""
-                        context_msgs.append(
-                            {"role": r["role"], "content": preview[:200]}
-                        )
-                match["context"] = context_msgs
-            except Exception:
-                match["context"] = []
-
-        # Remove full content from result (snippet is enough, saves tokens)
-        for match in matches:
-            match.pop("content", None)
-
-        return matches
-
-    def search_sessions_by_id(
-        self,
-        query: str,
-        limit: int = 20,
-        include_archived: bool = True,
-    ) -> List[Dict[str, Any]]:
-        """Search surfaced sessions by exact/prefix/substring session id.
-
-        Desktop search uses this alongside FTS message search so users can paste
-        a session id from logs, CLI output, or another Moor surface and jump
-        straight to that conversation.  Matching also checks ``_lineage_root_id``
-        for projected compression-chain tips, so an old root id still resolves to
-        the live continuation row.
-        """
-        needle = (query or "").strip().lower()
-        if not needle or limit <= 0:
-            return []
-
-        # SQL-bounded: list_sessions_rich pushes the id LIKE filter into the
-        # query (matching the row's own id AND any id in its forward
-        # compression chain), so we only materialize matching rows instead of
-        # scanning every session. Fetch a small multiple of `limit` so the
-        # in-Python exact/prefix/substring ranking below has enough candidates
-        # to order, then truncate.
-        candidates = self.list_sessions_rich(
-            limit=max(limit * 4, limit),
-            offset=0,
-            include_archived=include_archived,
-            order_by_last_active=True,
-            id_query=needle,
-        )
-
-        def score(row: Dict[str, Any]) -> int:
-            ids = [str(row.get("id") or ""), str(row.get("_lineage_root_id") or "")]
-            normalized = [value.lower() for value in ids if value]
-            if any(value == needle for value in normalized):
-                return 0
-            if any(value.startswith(needle) for value in normalized):
-                return 1
-            return 2
-
-        ranked = sorted(
-            enumerate(candidates),
-            key=lambda item: (score(item[1]), item[0]),
-        )
-        return [row for _, row in ranked[:limit]]
-
-=======
->>>>>>> upstream/main
     def search_sessions(
         self,
         source: str = None,
@@ -12713,7 +12232,7 @@ class SessionDB(SessionSearchMixin, SessionSchemaMixin, SessionPortabilityMixin)
         """Create Telegram DM topic-mode tables on explicit /topic opt-in.
 
         This migration is deliberately not part of automatic SessionDB startup
-        reconciliation. Operators must be able to upgrade Moor, keep the old
+        reconciliation. Operators must be able to upgrade Hermes, keep the old
         Telegram bot behavior running, and only mutate topic-mode state when the
         user executes /topic to opt into the feature.
 
@@ -13061,9 +12580,9 @@ class SessionDB(SessionSearchMixin, SessionSchemaMixin, SessionPortabilityMixin)
         session_id: str,
         managed_mode: str = "auto",
     ) -> None:
-        """Bind one Telegram DM topic thread to one Moor session.
+        """Bind one Telegram DM topic thread to one Hermes session.
 
-        A Moor session may only be linked to one Telegram topic in MVP.
+        A Hermes session may only be linked to one Telegram topic in MVP.
         Rebinding the same topic to the same session is idempotent; trying to
         link the same session to a different topic raises ValueError.
         """
@@ -13116,7 +12635,7 @@ class SessionDB(SessionSearchMixin, SessionSchemaMixin, SessionPortabilityMixin)
         self._execute_write(_do)
 
     def is_telegram_session_linked_to_topic(self, *, session_id: str) -> bool:
-        """Return True if a Moor session is already bound to any Telegram DM topic.
+        """Return True if a Hermes session is already bound to any Telegram DM topic.
 
         Read-only: does NOT trigger the telegram-topic migration. If the
         topic-mode tables have not been created yet (i.e. nobody has run

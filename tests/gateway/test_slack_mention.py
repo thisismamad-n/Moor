@@ -590,47 +590,6 @@ def _blockkit_mention_event(bot_user_id=BOT_USER_ID, flat_text="Release notifica
     }
 
 
-<<<<<<< HEAD
-def test_mention_patterns_case_insensitive():
-    adapter = _make_adapter(mention_patterns=["hey hermes"])
-    assert adapter._slack_message_matches_mention_patterns("HEY MOOR!") is True
-
-
-def test_mention_patterns_single_string():
-    adapter = _make_adapter(mention_patterns="^hermes")
-    assert adapter._slack_message_matches_mention_patterns("hermes do this") is True
-    assert adapter._slack_message_matches_mention_patterns("ok hermes") is False
-
-
-def test_mention_patterns_invalid_regex_skipped_without_crash():
-    # An invalid pattern is dropped; valid siblings still work.
-    adapter = _make_adapter(mention_patterns=["(unclosed", "hey hermes"])
-    assert adapter._slack_message_matches_mention_patterns("hey hermes") is True
-
-
-def test_mention_patterns_env_var_fallback(monkeypatch):
-    monkeypatch.setenv("SLACK_MENTION_PATTERNS", '["hey hermes", "hermes,"]')
-    adapter = _make_adapter()  # no config value -> falls back to env
-    assert adapter._slack_message_matches_mention_patterns("hey hermes") is True
-
-
-def test_mention_patterns_env_var_csv_fallback_splits_patterns(monkeypatch):
-    monkeypatch.setenv("SLACK_MENTION_PATTERNS", "hey hermes,hermes,")
-    adapter = _make_adapter()  # no config value -> falls back to env
-
-    patterns = adapter._slack_mention_patterns()
-
-    assert [pattern.pattern for pattern in patterns] == ["hey hermes", "hermes"]
-    assert adapter._slack_message_matches_mention_patterns("hey hermes") is True
-
-
-def test_mention_patterns_trigger_in_channel_without_literal_mention():
-    """A wake word triggers the bot in a channel even with require_mention on."""
-    adapter = _make_adapter(require_mention=True, mention_patterns=["hey hermes"])
-    assert _would_process(adapter, text="hey hermes what's the status") is True
-    # Unrelated channel chatter is still ignored.
-    assert _would_process(adapter, text="lunch anyone?") is False
-=======
 def test_mention_detection_text_ignores_quoted_blockkit_mention():
     """A mention inside rich_text_quote (forwarded content) must NOT count."""
     event = {
@@ -657,4 +616,3 @@ def test_mention_detection_text_ignores_quoted_blockkit_mention():
         ],
     }
     assert f"<@{BOT_USER_ID}>" not in _slack_mention_detection_text(event)
->>>>>>> upstream/main

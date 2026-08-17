@@ -302,18 +302,7 @@ def test_build_gemini_request_preserves_explicit_max_tokens_without_thinking():
     assert "thinkingConfig" not in request["generationConfig"]
 
 
-<<<<<<< HEAD
-def test_max_tokens_none_defaults_to_gemini_output_ceiling():
-    """max_tokens=None must send the model's full output ceiling, not omit it.
-
-    Gemini's native generateContent applies a low internal default when
-    maxOutputTokens is absent, truncating tool calls mid-stream. Moor passes
-    None to mean "unlimited", so the adapter must translate that to the
-    published 65,535 ceiling rather than leaving the field unset.
-    """
-=======
 def test_build_gemini_request_raises_max_output_when_thinking_is_enabled():
->>>>>>> upstream/main
     from agent.gemini_native_adapter import (
         GEMINI_DEFAULT_MAX_OUTPUT_TOKENS,
         build_gemini_request,

@@ -416,53 +416,7 @@ export const LIGHT_SEEDS: ThemeSeeds = {
 }
 
 export const DARK_THEME: Theme = {
-<<<<<<< HEAD
-  color: {
-    primary: '#00FFFF',
-    accent: '#00BFFF',
-    border: '#1E90FF',
-    text: '#E0FFFF',
-    muted: '#4682B4',
-    // Bumped from the old `#B8860B` darkgoldenrod (~53% luminance) which
-    // read as barely-visible on dark terminals for long body text.  The
-    // new value sits ~60% luminance — readable without losing the "muted /
-    // secondary" semantic.  Field labels still use `label` (65%) which
-    // stays brighter so hierarchy holds.
-    completionBg: '#0f172a',
-    completionCurrentBg: '#1e293b',
-    completionMetaBg: '#0f172a',
-    completionMetaCurrentBg: '#1e293b',
-
-    label: '#00BFFF',
-    ok: '#4caf50',
-    error: '#ef5350',
-    warn: '#ffa726',
-
-    prompt: '#E0FFFF',
-    // sessionLabel/sessionBorder intentionally track the `dim` value — they
-    // are "same role, same colour" by design.  fromSkin's banner_dim fallback
-    // relies on this pairing (#11300).
-    sessionLabel: '#4682B4',
-    sessionBorder: '#4682B4',
-
-    statusBg: '#0f172a',
-    statusFg: '#C0C0C0',
-    statusGood: '#8FBC8F',
-    statusWarn: '#00BFFF',
-    statusBad: '#FF8C00',
-    statusCritical: '#FF6B6B',
-    selectionBg: '#1e293b',
-
-    diffAdded: 'rgb(220,255,220)',
-    diffRemoved: 'rgb(255,220,220)',
-    diffAddedWord: 'rgb(36,138,61)',
-    diffRemovedWord: 'rgb(207,34,46)',
-    shellDollar: '#00BFFF'
-  },
-
-=======
   color: buildPalette(DARK_SEEDS, false),
->>>>>>> upstream/main
   brand: BRAND,
   bannerLogo: '',
   bannerHero: ''

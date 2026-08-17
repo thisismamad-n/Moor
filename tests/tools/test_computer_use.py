@@ -785,7 +785,7 @@ class TestLazyMcpInstall:
 
         state = {
             "ready": False,
-            "reason": "Moor computer use requires cua-driver 0.20.0 or newer",
+            "reason": "Hermes computer use requires cua-driver 0.20.0 or newer",
         }
         with patch.object(
                  cua_backend,
@@ -823,7 +823,7 @@ class TestContractAutoRepair:
     """An installed-but-incompatible driver is repaired automatically, once.
 
     The 0.20 runtime-contract gate fails closed; when the failure is an old
-    installed driver (a state Moor' own version-floor bump created),
+    installed driver (a state Hermes' own version-floor bump created),
     start() runs the standard install/repair path once instead of failing
     every computer_use call until the user runs the CLI by hand.
     """
@@ -833,7 +833,7 @@ class TestContractAutoRepair:
             "ready": False,
             "binary": "/usr/local/bin/cua-driver",
             "version": "0.19.3",
-            "reason": "Moor computer use requires cua-driver 0.20.0 or newer",
+            "reason": "Hermes computer use requires cua-driver 0.20.0 or newer",
         }
 
     def test_start_auto_repairs_incompatible_driver(self, monkeypatch):
@@ -1553,7 +1553,7 @@ class TestCuaEnvironmentScrubbing:
     def test_cua_session_sanitizes_provider_env_vars(self):
         """_CuaDriverSession lifecycle must sanitize sensitive env vars.
 
-        The cua-driver MCP subprocess should not inherit Moor-managed
+        The cua-driver MCP subprocess should not inherit Hermes-managed
         credentials or other sensitive environment variables — only
         runtime-required vars. Regression test for issue #37878.
 
@@ -1671,7 +1671,7 @@ class TestCuaCliFallbackResolution:
 
 
 class TestClickButtonPassthrough:
-    """Surface 5 (Moor inc./hermes-agent#47072) — `middle_click` must
+    """Surface 5 (NousResearch/hermes-agent#47072) — `middle_click` must
     actually reach cua-driver as a middle button, not silently degrade to
     left. Pre-fix, the backend's `click()` chose the tool by name
     (`button == "right"` → `right_click`, everything else → `click` with
@@ -1847,7 +1847,7 @@ class TestZIndexSorting:
         assert desktop["z_index"] == 0
 
 class TestImageMimeTypePropagation:
-    """Surface 7 (Moor inc./hermes-agent#47072): trycua/cua#1961 made
+    """Surface 7 (NousResearch/hermes-agent#47072): trycua/cua#1961 made
     `mimeType` part of every MCP image-part response, so the wrapper no
     longer has to sniff PNG vs JPEG by inspecting the first base64 bytes
     (`/9j/` for JPEG / `iVBOR` for PNG). The sniff is preserved as a
@@ -1893,10 +1893,10 @@ class TestImageMimeTypePropagation:
             )
 
 class TestMcpInvocationResolution:
-    """Surface 8 (Moor inc./hermes-agent#47072): instead of hardcoding
+    """Surface 8 (NousResearch/hermes-agent#47072): instead of hardcoding
     `["mcp"]` as the cua-driver subcommand, we ask the driver via its
     `manifest` JSON (trycua/cua#1961) so a future rename or relocation of
-    the MCP subcommand doesn't require a Moor patch.
+    the MCP subcommand doesn't require a Hermes patch.
 
     The discovery hop must NEVER prevent the wrapper from starting — every
     failure mode (no manifest verb, non-zero exit, junk JSON, missing
@@ -1936,23 +1936,6 @@ class TestMcpInvocationResolution:
         assert cmd == "/opt/cua-driver"
         assert args == ["mcp"]
 
-<<<<<<< HEAD
-    def test_future_renamed_subcommand_is_honored(self):
-        """The whole point: a future cua-driver that exposes `mcp-stdio`
-        instead of `mcp` keeps working without a Moor patch."""
-        from unittest.mock import patch
-        from tools.computer_use.cua_backend import _resolve_mcp_invocation
-
-        manifest = (
-            '{"mcp_invocation":'
-            '{"command":"cua-driver","args":["mcp-stdio","--strict"]}}'
-        )
-        with patch("subprocess.run", new=self._fake_run(stdout=manifest)):
-            cmd, args = _resolve_mcp_invocation("cua-driver")
-        assert args == ["mcp-stdio", "--strict"]
-
-=======
->>>>>>> upstream/main
     def test_falls_back_when_manifest_missing_command(self):
         """If the manifest knows the args but not the command, keep our
         resolved driver path (so HERMES_CUA_DRIVER_CMD still wins)."""
@@ -1982,7 +1965,7 @@ class TestMcpInvocationResolution:
 
 
 class TestStructuredElementsConsumption:
-    """Surface 2 (Moor inc./hermes-agent#47072): trycua/cua#1961 made
+    """Surface 2 (NousResearch/hermes-agent#47072): trycua/cua#1961 made
     `structuredContent.elements` part of every `get_window_state` MCP
     response. The wrapper used to parse the markdown AX tree with a
     regex — lossy because bounds always came back (0,0,0,0). The
@@ -2058,7 +2041,7 @@ class TestStructuredElementsConsumption:
         assert cap.elements == []
 
 class TestCapabilityDiscovery:
-    """Surface 4 (Moor inc./hermes-agent#47072): the wrapper learns
+    """Surface 4 (NousResearch/hermes-agent#47072): the wrapper learns
     what cua-driver supports from the per-tool `capabilities[]` array on
     `tools/list` (trycua/cua#1961) instead of name-checking. The infra
     here is consumed by other surfaces (e.g. Surface 6 only carries
@@ -2098,7 +2081,7 @@ class TestCapabilityDiscovery:
 
 
 class TestElementTokenAttachment:
-    """Surface 6 (Moor inc./hermes-agent#47072): trycua/cua#1961 added
+    """Surface 6 (NousResearch/hermes-agent#47072): trycua/cua#1961 added
     an opaque `element_token` alongside `element_index` so the wrapper
     can carry per-snapshot handles instead of relying on raw indices that
     silently re-resolve when the snapshot is superseded.
@@ -2193,7 +2176,7 @@ class TestElementTokenAttachment:
 
 
 class TestSessionLifecycle:
-    """Surface gap (audit June 2026): Moor never declared a cua-driver
+    """Surface gap (audit June 2026): Hermes never declared a cua-driver
     session, so the agent-cursor overlay was inert and per-run state
     (config overrides, recording ownership, cursor identity) was shared
     across concurrent runs. Wired now: backend.start() calls
@@ -2216,23 +2199,6 @@ class TestSessionLifecycle:
         backend._active_window_id = 7
         return backend
 
-<<<<<<< HEAD
-    def test_session_id_format(self):
-        from tools.computer_use.cua_backend import CuaDriverBackend
-        backend = CuaDriverBackend()
-        # hermes-{12 hex chars} — short enough to surface in logs
-        # without being a privacy hazard, unique enough for concurrent runs.
-        assert backend._session_id.startswith("hermes-")
-        assert len(backend._session_id) == 7 + 12
-
-    def test_session_id_unique_per_backend(self):
-        from tools.computer_use.cua_backend import CuaDriverBackend
-        a = CuaDriverBackend()._session_id
-        b = CuaDriverBackend()._session_id
-        assert a != b, "each Moor run should mint its own session id"
-
-=======
->>>>>>> upstream/main
     def test_start_invokes_start_session_with_run_id(self):
         from unittest.mock import MagicMock, patch
         from tools.computer_use.cua_backend import CuaDriverBackend

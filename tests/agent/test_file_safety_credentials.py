@@ -1,6 +1,6 @@
 """Tests for HERMES_HOME credential-file read blocking in file_safety.
 
-Regression for https://github.com/Moor inc./hermes-agent/issues/17656 —
+Regression for https://github.com/NousResearch/hermes-agent/issues/17656 —
 ``read_file`` was previously only sandboxed against ``HERMES_HOME`` itself,
 which left ``auth.json`` and ``.anthropic_oauth.json`` (plaintext provider
 keys + OAuth tokens) readable by the agent. A prompt-injection reaching
@@ -63,17 +63,6 @@ def test_subdirectory_named_auth_json_not_blocked(fake_home):
     assert get_read_block_error(str(nested)) is None
 
 
-<<<<<<< HEAD
-def test_skills_hub_block_still_applies(fake_home):
-    """Regression guard: the original skills/.hub deny must keep working."""
-    from agent.file_safety import get_read_block_error
-
-    hub_file = _create(fake_home, "skills/.hub/manifest.json")
-    err = get_read_block_error(str(hub_file))
-    assert err is not None
-    assert "internal Moor cache file" in err
-=======
->>>>>>> upstream/main
 
 
 
@@ -204,7 +193,7 @@ def test_webhook_subscriptions_blocked(fake_home):
 def test_identically_named_hermes_files_outside_home_not_blocked(
     fake_home, tmp_path
 ):
-    """Moor-specific filenames (``auth.json``, ``mcp-tokens/``, ``google_oauth.json``)
+    """Hermes-specific filenames (``auth.json``, ``mcp-tokens/``, ``google_oauth.json``)
     outside HERMES_HOME must remain readable — the gate is per-location for
     those, not per-filename. ``.env`` is the exception: it's blocked anywhere
     on disk (see test_project_local_env_blocked) because the basename always

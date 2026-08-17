@@ -47,7 +47,7 @@ RestartSteps=5
         )
         # What the installed unit looks like on older systemd (directives stripped)
         installed = """[Unit]
-Description=Moor Gateway
+Description=Hermes Gateway
 After=network-online.target
 
 [Service]
@@ -63,7 +63,7 @@ WantedBy=default.target
 """
         # What generate_systemd_unit produces (with the directives)
         expected = """[Unit]
-Description=Moor Gateway
+Description=Hermes Gateway
 After=network-online.target
 
 [Service]
@@ -127,7 +127,7 @@ RestartPreventExitStatus=78
         from hermes_cli import gateway as gw
 
         installed = """[Unit]
-Description=Moor Gateway
+Description=Hermes Gateway
 
 [Service]
 Type=simple
@@ -150,80 +150,6 @@ WantedBy=default.target
 
         assert gw.systemd_unit_is_current(system=False) is True
 
-<<<<<<< HEAD
-    def test_unit_with_different_restart_is_not_current(self, tmp_path, monkeypatch):
-        """A unit with genuinely different config should still be outdated."""
-        from hermes_cli import gateway as gw
-
-        installed = """[Unit]
-Description=Moor Gateway
-
-[Service]
-Type=simple
-ExecStart=/usr/bin/python gateway run
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=default.target
-"""
-        expected = """[Unit]
-Description=Moor Gateway
-
-[Service]
-Type=simple
-ExecStart=/usr/bin/python gateway run
-Restart=always
-RestartSec=5
-RestartMaxDelaySec=300
-RestartSteps=5
-
-[Install]
-WantedBy=default.target
-"""
-        unit_file = tmp_path / "hermes-gateway.service"
-        unit_file.write_text(installed)
-
-        monkeypatch.setattr(gw, "get_systemd_unit_path", lambda system=False: unit_file)
-        monkeypatch.setattr(
-            gw,
-            "generate_systemd_unit",
-            lambda system=False, run_as_user=None: expected,
-        )
-
-        assert gw.systemd_unit_is_current(system=False) is False
-
-    def test_unit_with_optional_directives_is_current(self, tmp_path, monkeypatch):
-        """Installed unit WITH the optional directives should also be current."""
-        from hermes_cli import gateway as gw
-
-        unit_text = """[Unit]
-Description=Moor Gateway
-
-[Service]
-Type=simple
-ExecStart=/usr/bin/python gateway run
-Restart=always
-RestartSec=5
-RestartMaxDelaySec=300
-RestartSteps=5
-
-[Install]
-WantedBy=default.target
-"""
-        unit_file = tmp_path / "hermes-gateway.service"
-        unit_file.write_text(unit_text)
-
-        monkeypatch.setattr(gw, "get_systemd_unit_path", lambda system=False: unit_file)
-        monkeypatch.setattr(
-            gw,
-            "generate_systemd_unit",
-            lambda system=False, run_as_user=None: unit_text,
-        )
-
-        assert gw.systemd_unit_is_current(system=False) is True
-=======
->>>>>>> upstream/main
 
     def test_nonexistent_unit_is_not_current(self, tmp_path, monkeypatch):
         from hermes_cli import gateway as gw

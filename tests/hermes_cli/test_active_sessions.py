@@ -36,47 +36,6 @@ def test_resolve_max_concurrent_sessions_values(caplog):
     )
 
 
-<<<<<<< HEAD
-def test_active_session_lease_blocks_until_release(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    cfg = {"max_concurrent_sessions": 1}
-
-    lease, message = active_sessions.try_acquire_active_session(
-        session_id="session-1",
-        surface="cli",
-        config=cfg,
-    )
-
-    assert message is None
-    assert lease is not None
-
-    blocked_lease, blocked_message = active_sessions.try_acquire_active_session(
-        session_id="session-2",
-        surface="tui",
-        config=cfg,
-    )
-
-    assert blocked_lease is None
-    assert blocked_message == (
-        "Moor is at the active session limit (1/1). "
-        "Try again when another session finishes."
-    )
-
-    lease.release()
-
-    next_lease, next_message = active_sessions.try_acquire_active_session(
-        session_id="session-3",
-        surface="gateway:telegram",
-        config=cfg,
-    )
-
-    assert next_message is None
-    assert next_lease is not None
-    next_lease.release()
-    assert active_sessions.active_session_registry_snapshot() == []
-=======
->>>>>>> upstream/main
 
 
 

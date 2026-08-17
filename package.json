@@ -27,19 +27,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Moor inc./Moor-Agent.git"
+    "url": "git+https://github.com/NousResearch/Hermes-Agent.git"
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Moor inc./Moor-Agent/issues"
+    "url": "https://github.com/NousResearch/Hermes-Agent/issues"
   },
-<<<<<<< HEAD
-  "homepage": "https://github.com/Moor inc./Moor-Agent#readme",
-  "dependencies": {
-    "@streamdown/math": "^1.0.2",
-    "agent-browser": "^0.26.0"
-=======
-  "homepage": "https://github.com/Moor inc./Moor-Agent#readme",
+  "homepage": "https://github.com/NousResearch/Hermes-Agent#readme",
   "devDependencies": {
     "@eslint/js": "9.39.5",
     "typescript-eslint": "8.64.0",
@@ -47,7 +41,6 @@
     "eslint-plugin-react-hooks": "7.1.1",
     "eslint-plugin-unused-imports": "4.4.1",
     "globals": "17.7.0"
->>>>>>> upstream/main
   },
   "overrides": {
     "lodash": "4.18.1",

@@ -45,10 +45,10 @@ def _bounded_prompt_cache_key(value: Any) -> Optional[str]:
     return f"pck_{digest}"
 
 
-# Wire-name used when Moor keeps client-side web_search on xAI Responses.
+# Wire-name used when Hermes keeps client-side web_search on xAI Responses.
 # A function literally named ``web_search`` collides with Grok's native
 # server-side tool (incomplete hang or HTTP 400 duplicate names); this alias
-# avoids that while still dispatching through Moor's configured provider
+# avoids that while still dispatching through Hermes's configured provider
 # (Firecrawl / Tavily / …). Mapped back to ``web_search`` in normalize_response.
 _XAI_CLIENT_WEB_SEARCH_ALIAS = "hermes_web_search"
 
@@ -434,7 +434,7 @@ class ResponsesApiTransport(ProviderTransport):
             from agent.model_metadata import is_grok_46_family
 
             # Grok 4.6 accepts xhigh as a wire value; older Grok models top
-            # out at high. max/ultra are Moor ladder aliases for "this
+            # out at high. max/ultra are Hermes ladder aliases for "this
             # model's ceiling", so they clamp to the strongest level the
             # model actually accepts — xhigh on grok-4.6, high elsewhere —
             # never one rung below it (#87279).
@@ -447,13 +447,13 @@ class ResponsesApiTransport(ProviderTransport):
             # Actual Computer relays to SGLang/vLLM backends that accept only
             # none/low/medium/high/max for reasoning effort — a forwarded
             # xhigh/ultra fails with a wrapped HTTP 400 ("Expecting value:
-            # line 1 column 1"). Clamp Moor' wider set to the supported one.
+            # line 1 column 1"). Clamp Hermes' wider set to the supported one.
             _effort_clamp.update({"xhigh": "high", "ultra": "max"})
         reasoning_effort = _effort_clamp.get(reasoning_effort, reasoning_effort)
 
         response_tools = _responses_tools(tools)
 
-        # xAI server-side web search vs Moor web providers.
+        # xAI server-side web search vs Hermes web providers.
         #
         # grok models on xAI's /v1/responses surface have a *native*,
         # server-executed web search.  A client-side function literally named
@@ -462,35 +462,6 @@ class ResponsesApiTransport(ProviderTransport):
         # dispatches but never reconciles → incomplete turn + 3 retries.
         # Verified live against grok-composer-2.5-fast (2026-06); see #48108.
         #
-<<<<<<< HEAD
-        # Fix: when the agent HAS a client-side ``web_search`` function (i.e.
-        # the user enabled the web toolset), declare xAI's native
-        # ``web_search`` built-in instead so the search actually runs to
-        # completion server-side and the model streams a real answer.  The
-        # Responses API rejects two tools sharing the name ``web_search``
-        # (HTTP 400 "Duplicate tool names"), so we drop the client-side
-        # ``web_search`` function for the xAI path and let the native tool
-        # satisfy it.  All other client-side tools (read_file, terminal,
-        # web_extract, MCP tools, …) are untouched and continue to dispatch
-        # through Moor's agent loop.
-        #
-        # Scope: we ONLY swap in the native built-in when the client
-        # ``web_search`` was actually present.  We do NOT force-enable Grok
-        # server-side search on turns where the user never had web enabled —
-        # that would silently route around Moor's web-provider config and
-        # tool-trace/citation plumbing for every xai-oauth turn.  The swap is
-        # a 1:1 replacement of an already-requested capability, not an
-        # additive grant.
-        #
-        # NOTE: for the swapped case this routes ``web_search`` to Grok's
-        # native search engine for xAI sessions instead of Moor's
-        # configured web provider (Tavily/etc.), and those results bypass
-        # Moor's tool-trace / citation plumbing (they arrive baked into the
-        # model's answer rather than as a tool result the loop observes).
-        # Scoped to ``is_xai_responses`` deliberately; narrow to specific
-        # models if a future grok variant should keep the client-side
-        # function.
-=======
         # Two modes, chosen by the user's web-search backend config:
         #
         # 1. **Native** (active/configured backend is ``xai``, or resolution
@@ -498,11 +469,10 @@ class ResponsesApiTransport(ProviderTransport):
         #    xAI's built-in instead. 1:1 swap only when client ``web_search``
         #    was already present — never an additive grant.
         # 2. **Client** (Firecrawl / Tavily / Exa / … configured or resolved):
-        #    keep Moor dispatch so ``web.backend`` / ``web.search_backend``
+        #    keep Hermes dispatch so ``web.backend`` / ``web.search_backend``
         #    is honored, but rename the wire tool to
         #    ``hermes_web_search`` so Grok cannot hijack the name. The alias
         #    is mapped back to ``web_search`` in ``normalize_response``.
->>>>>>> upstream/main
         if is_xai_responses and response_tools:
             has_client_web_search = any(
                 isinstance(t, dict) and t.get("name") == "web_search"
@@ -746,7 +716,7 @@ class ResponsesApiTransport(ProviderTransport):
                 if hasattr(tc, "response_item_id") and tc.response_item_id:
                     provider_data["response_item_id"] = tc.response_item_id
                 name = tc.function.name if hasattr(tc, "function") else getattr(tc, "name", "")
-                # Undo the xAI client-path wire alias so Moor dispatches
+                # Undo the xAI client-path wire alias so Hermes dispatches
                 # the real ``web_search`` tool (Firecrawl / etc.).
                 if name == _XAI_CLIENT_WEB_SEARCH_ALIAS:
                     name = "web_search"

@@ -1,6 +1,6 @@
 """OpenAI-compatible facade over Google AI Studio's native Gemini API.
 
-Moor keeps ``api_mode='chat_completions'`` for the ``gemini`` provider so the
+Hermes keeps ``api_mode='chat_completions'`` for the ``gemini`` provider so the
 main agent loop can keep using its existing OpenAI-shaped message flow.
 This adapter is the transport shim that converts those OpenAI-style
 ``messages[]`` / ``tools[]`` requests into Gemini's native
@@ -8,7 +8,7 @@ This adapter is the transport shim that converts those OpenAI-style
 
 Why this exists
 ---------------
-Google's OpenAI-compatible endpoint has been brittle for Moor's multi-turn
+Google's OpenAI-compatible endpoint has been brittle for Hermes's multi-turn
 agent/tool loop (auth churn, tool-call replay quirks, thought-signature
 requirements).  The native Gemini API is the canonical path and avoids the
 OpenAI-compat layer entirely.
@@ -106,7 +106,7 @@ def probe_gemini_tier(
 
     Returns one of:
 
-    - ``"free"``    -- key is on the free tier (unusable with Moor)
+    - ``"free"``    -- key is on the free tier (unusable with Hermes)
     - ``"paid"``    -- key is on a paid tier
     - ``"unknown"`` -- probe failed; callers should proceed without blocking.
     """
@@ -180,13 +180,8 @@ def is_free_tier_quota_error(error_message: str) -> bool:
 
 
 _FREE_TIER_GUIDANCE = (
-<<<<<<< HEAD
-    "\n\nYour Google API key is on the free tier (<= 250 requests/day for "
-    "gemini-2.5-flash). Moor typically makes 3-10 API calls per user turn, "
-=======
     "\n\nYour Google API key is on the free tier (a few hundred requests/day "
-    "for Gemini Flash models). Moor typically makes 3-10 API calls per user turn, "
->>>>>>> upstream/main
+    "for Gemini Flash models). Hermes typically makes 3-10 API calls per user turn, "
     "so the free tier is exhausted in a handful of messages and cannot sustain "
     "an agent session. Enable billing on your Google Cloud project and "
     "regenerate the key in a billing-enabled project: "
@@ -231,7 +226,7 @@ _STANDARD_KEY_GUIDANCE = (
 
 
 class GeminiAPIError(Exception):
-    """Error shape compatible with Moor retry/error classification."""
+    """Error shape compatible with Hermes retry/error classification."""
 
     def __init__(
         self,
@@ -569,7 +564,7 @@ def _thinking_requests_output_headroom(thinking_config: Any) -> bool:
     """Return True when Gemini will spend output tokens on thinking.
 
     Gemini bills thought tokens against ``maxOutputTokens``. A global
-    Moor ``max_tokens`` of 4096/16384 is enough for visible text, but
+    Hermes ``max_tokens`` of 4096/16384 is enough for visible text, but
     Ultra/high thinking can consume the entire budget and leave
     ``finishReason=MAX_TOKENS`` with no complete answer. Continuations
     then abort after 4 retries.
@@ -639,26 +634,9 @@ def build_gemini_request(
     generation_config: Dict[str, Any] = {}
     if temperature is not None:
         generation_config["temperature"] = temperature
-<<<<<<< HEAD
-    if max_tokens is not None:
-        generation_config["maxOutputTokens"] = max_tokens
-    else:
-        # Gemini's native generateContent does NOT treat an omitted
-        # maxOutputTokens as "use the model's full output budget" — it applies
-        # a low internal default and the model stops early with
-        # finishReason=MAX_TOKENS, truncating tool calls mid-stream (Moor
-        # then retries 3× and refuses the incomplete call). Every current
-        # Gemini text model (2.5 + 3.x, flash / flash-lite / pro) caps at
-        # 65,535 output tokens, so default to that ceiling when the caller
-        # passes None ("unlimited"). See the OpenAI-compat path where omitting
-        # the field genuinely means full budget — that assumption does not
-        # hold on the native API.
-        generation_config["maxOutputTokens"] = GEMINI_DEFAULT_MAX_OUTPUT_TOKENS
-=======
     generation_config["maxOutputTokens"] = _effective_gemini_max_output_tokens(
         max_tokens, thinking_config
     )
->>>>>>> upstream/main
     if top_p is not None:
         generation_config["topP"] = top_p
     if stop:
@@ -1114,7 +1092,7 @@ class GeminiNativeClient:
             "Content-Type": "application/json",
             "Accept": "application/json",
             "x-goog-api-key": self.api_key,
-            # Include Moor client context following Gemini's partner
+            # Include Hermes client context following Gemini's partner
             # integration guidance.
             # See https://ai.google.dev/gemini-api/docs/partner-integration
             "User-Agent": f"hermes-agent/{_HERMES_VERSION} (gemini-native)",

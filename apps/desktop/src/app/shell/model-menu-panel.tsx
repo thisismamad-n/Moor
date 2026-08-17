@@ -107,13 +107,6 @@ export function ModelMenuPanel({ gateway, onSelectModel, profile = 'default', re
     }
   }
 
-<<<<<<< HEAD
-  // Selecting a model row restores that model's remembered preset onto the
-  // session (effort/fast), gated by capability. Unset → Moor defaults.
-  const selectFamily = async (family: ModelFamily, provider: ModelOptionProvider) => {
-    const caps = provider.capabilities?.[family.id]
-    const preset = modelPresets[modelPresetKey(provider.slug, family.id)] ?? {}
-=======
   // Push a reasoning change onto the session that owns it, with rollback.
   const patchReasoning = async (next: string, previous: string, provider: string, model: string) => {
     if (touchesPrimary) {
@@ -122,7 +115,6 @@ export function ModelMenuPanel({ gateway, onSelectModel, profile = 'default', re
     } else if (activeSessionId) {
       sessionTileDelegate()?.updateSession(activeSessionId, state => ({ ...state, reasoningEffort: next }))
     }
->>>>>>> upstream/main
 
     // Preset-only without a session: the gateway's `config.set` falls back to
     // global config when none matches — so don't reach it (preset + optimistic
@@ -242,158 +234,11 @@ export function ModelMenuPanel({ gateway, onSelectModel, profile = 'default', re
           <Codicon className={cn(refreshing && 'animate-spin')} name="sync" size="0.75rem" />
           {copy.refreshModels}
         </DropdownMenuItem>
-<<<<<<< HEAD
-      ) : groups.length === 0 && moaPresets.length === 0 ? (
-        <DropdownMenuItem className={dropdownMenuRow} disabled>
-          {copy.noModels}
-        </DropdownMenuItem>
-      ) : (
-        <div className="max-h-[max(150px,30dvh)] overflow-y-auto py-0.5">
-          {groups.map(group => (
-            <DropdownMenuGroup className="py-0.5" key={group.provider.slug}>
-              <DropdownMenuLabel className={dropdownMenuSectionLabel}>{group.provider.name}</DropdownMenuLabel>
-              {group.families.map(family => {
-                // The active id may be the base or its -fast sibling; either
-                // way this one family row represents both.
-                const activeId =
-                  group.provider.slug === optionsProvider &&
-                  (optionsModel === family.id || optionsModel === family.fastId)
-                    ? optionsModel
-                    : null
-
-                const isCurrent = activeId !== null
-                const name = modelDisplayParts(family.id).name
-                // Capabilities are looked up against the active/base id; the
-                // -fast variant carries the same param support as its base.
-                const caps = group.provider.capabilities?.[family.id]
-
-                // Effective settings for this row: live session state when it's
-                // the active model, otherwise its remembered preset (Moor
-                // defaults when unset). Row label AND submenu read from these so
-                // they never disagree.
-                const preset = modelPresets[modelPresetKey(group.provider.slug, family.id)] ?? {}
-                const effEffort = isCurrent ? currentReasoningEffort : (preset.effort ?? '')
-                const effFast = isCurrent ? currentFastMode : (preset.fast ?? false)
-
-                const fastControl = resolveFastControl(
-                  activeId ?? family.id,
-                  group.provider.models ?? [],
-                  caps?.fast ?? false,
-                  effFast
-                )
-
-                const meta = [
-                  fastControl.kind !== 'none' && fastControl.on ? copy.fast : null,
-                  (caps?.reasoning ?? true) ? reasoningEffortLabel(effEffort) || copy.medium : null
-                ]
-                  .filter(Boolean)
-                  .join(' ')
-
-                // Every row is a hover-Edit submenu trigger. Activating it
-                // (pointer or keyboard) switches to the family's base model and
-                // restores its preset; the Fast toggle inside swaps to the -fast
-                // sibling (or flips the speed param). The sub-trigger has no
-                // `onSelect`, so wire both click and Enter/Space for keyboard parity.
-                // Clicking the row commits the model and closes the picker; the
-                // edit submenu (reasoning/fast) is reached by HOVER, so you can
-                // still tweak those without the click dismissing everything.
-                const activate = () => {
-                  if (!isCurrent) {
-                    void selectFamily(family, group.provider)
-                  }
-
-                  closeMenu()
-                }
-
-                return (
-                  <DropdownMenuSub key={`${group.provider.slug}:${family.id}`}>
-                    <DropdownMenuSubTrigger
-                      className={dropdownMenuRow}
-                      hideChevron
-                      onClick={activate}
-                      onKeyDown={event => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          activate()
-                        }
-                      }}
-                    >
-                      <span className="min-w-0 flex-1 truncate">
-                        {name}
-                        {meta ? <span className="text-(--ui-text-tertiary)"> {meta}</span> : null}
-                      </span>
-                      {isCurrent ? <Codicon className="ml-auto text-foreground" name="check" size="0.75rem" /> : null}
-                    </DropdownMenuSubTrigger>
-                    <ModelEditSubmenu
-                      effort={effEffort}
-                      fastControl={fastControl}
-                      isActive={isCurrent}
-                      model={family.id}
-                      onSelectModel={nextModel => switchTo(nextModel, group.provider.slug)}
-                      provider={group.provider.slug}
-                      reasoning={caps?.reasoning ?? true}
-                      requestGateway={requestGateway}
-                    />
-                  </DropdownMenuSub>
-                )
-              })}
-            </DropdownMenuGroup>
-          ))}
-        </div>
-      )}
-
-      <DropdownMenuSeparator className="mx-0" />
-
-      {moaPresets.length > 0 ? (
-        <>
-          <DropdownMenuLabel className={dropdownMenuSectionLabel}>MoA presets</DropdownMenuLabel>
-          {moaPresets.map(preset => {
-            const isCurrentMoa = optionsProvider === 'moa' && optionsModel === preset
-
-            return (
-              <DropdownMenuItem
-                className={dropdownMenuRow}
-                key={`moa:${preset}`}
-                onSelect={event => {
-                  event.preventDefault()
-                  void selectMoaPreset(preset)
-                }}
-              >
-                <span className="min-w-0 flex-1 truncate">MoA: {preset}</span>
-                {isCurrentMoa ? <Codicon className="ml-auto text-foreground" name="check" size="0.75rem" /> : null}
-              </DropdownMenuItem>
-            )
-          })}
-          <DropdownMenuSeparator className="mx-0" />
-        </>
-      ) : null}
-
-      <DropdownMenuItem
-        className={cn(dropdownMenuRow, 'text-(--ui-text-tertiary)')}
-        disabled={refreshing}
-        onSelect={event => {
-          event.preventDefault()
-          void refreshModels()
-        }}
-      >
-        <Codicon className={cn(refreshing && 'animate-spin')} name="sync" size="0.75rem" />
-        {copy.refreshModels}
-      </DropdownMenuItem>
-
-      <DropdownMenuItem
-        className={cn(dropdownMenuRow, 'text-(--ui-text-tertiary)')}
-        onSelect={() => setModelVisibilityOpen(true)}
-      >
-        <Codicon name="settings-gear" size="0.75rem" />
-        {copy.editModels}
-      </DropdownMenuItem>
-    </>
-=======
       }
       gateway={gateway}
       includeMoa
       profile={profile}
       sessionId={activeSessionId}
     />
->>>>>>> upstream/main
   )
 }

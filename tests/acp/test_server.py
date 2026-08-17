@@ -115,29 +115,6 @@ class TestInitialize:
         assert terminal["type"] == "terminal"
         assert terminal["args"] == ["--setup"]
 
-<<<<<<< HEAD
-    @pytest.mark.asyncio
-    async def test_initialize_advertises_terminal_setup_auth_when_no_provider(self, agent, monkeypatch):
-        monkeypatch.setattr("acp_adapter.auth.detect_provider", lambda: None)
-        monkeypatch.setattr("acp_adapter.server.detect_provider", lambda: None)
-
-        resp = await agent.initialize(protocol_version=1)
-        payloads = [method.model_dump(by_alias=True, exclude_none=True) for method in resp.auth_methods]
-
-        assert payloads == [
-            {
-                "args": ["--setup"],
-                "description": (
-                    "Open Moor' interactive model/provider setup in a terminal. "
-                    "Use this when Moor has not been configured on this machine yet."
-                ),
-                "id": TERMINAL_SETUP_AUTH_METHOD_ID,
-                "name": "Configure Moor provider",
-                "type": "terminal",
-            }
-        ]
-=======
->>>>>>> upstream/main
 
 
 # ---------------------------------------------------------------------------

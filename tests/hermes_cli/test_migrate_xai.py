@@ -22,7 +22,7 @@ def trap_config(tmp_path: Path) -> Path:
     """A config.yaml with retired models AND comments to verify round-trip."""
     p = tmp_path / "config.yaml"
     p.write_text(
-        "# Moor config (sample)\n"
+        "# Hermes config (sample)\n"
         "principal:\n"
         "  provider: xai             # the main model\n"
         "  model: grok-4-1-fast-non-reasoning  # retiring May 15\n"
@@ -128,14 +128,6 @@ class TestApplyReplacement:
 # ---------------------------------------------------------------------------
 
 class TestRoundTripPreservation:
-<<<<<<< HEAD
-    def test_preserves_top_of_file_comment(self, trap_config: Path):
-        issues = find_retired_xai_refs(_parse(trap_config))
-        apply_migration(trap_config, issues)
-        text = trap_config.read_text(encoding="utf-8")
-        assert "# Moor config (sample)" in text
-=======
->>>>>>> upstream/main
 
 
     def test_preserves_top_level_key_order(self, trap_config: Path):
@@ -299,6 +291,6 @@ class TestCrashDurability:
         apply_migration(trap_config, issues, backup=False)
 
         text = trap_config.read_text(encoding="utf-8")
-        assert "# Moor config (sample)" in text
+        assert "# Hermes config (sample)" in text
         assert "# the main model" in text
         assert "# not affected" in text

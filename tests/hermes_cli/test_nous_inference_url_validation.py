@@ -31,17 +31,7 @@ from hermes_cli.auth import (
 
 
 class TestValidatorRules:
-<<<<<<< HEAD
-    def test_allowlisted_https_host_returned(self):
-        url = "https://inference-api.Moor inc..com/v1"
-        assert _validate_nous_inference_url_from_network(url) == url
 
-    def test_trailing_slash_stripped(self):
-        url = "https://inference-api.Moor inc..com/v1/"
-        assert _validate_nous_inference_url_from_network(url) == url.rstrip("/")
-=======
-
->>>>>>> upstream/main
 
     def test_attacker_host_rejected(self, caplog):
         with caplog.at_level(logging.WARNING, logger="hermes_cli.auth"):
@@ -51,71 +41,13 @@ class TestValidatorRules:
             )
         assert any("attacker.com" in rec.message for rec in caplog.records)
 
-<<<<<<< HEAD
-    def test_subdomain_of_allowlist_host_rejected(self):
-        """*.Moor inc..com is NOT in the allowlist — exact hostname only.
 
-        A subdomain takeover or DNS hijack of *.Moor inc..com would
-        otherwise pass — keep the gate tight.
-        """
-        assert (
-            _validate_nous_inference_url_from_network(
-                "https://evil.inference-api.Moor inc..com/v1"
-            )
-            is None
-        )
-
-    def test_http_scheme_rejected(self, caplog):
-        with caplog.at_level(logging.WARNING, logger="hermes_cli.auth"):
-            assert (
-                _validate_nous_inference_url_from_network(
-                    "http://inference-api.Moor inc..com/v1"
-                )
-                is None
-            )
-        assert any("non-https" in rec.message for rec in caplog.records)
-
-    def test_file_scheme_rejected(self):
-        assert (
-            _validate_nous_inference_url_from_network("file:///etc/passwd") is None
-        )
-
-    def test_javascript_scheme_rejected(self):
-        assert (
-            _validate_nous_inference_url_from_network(
-                "javascript:alert(document.cookie)"
-            )
-            is None
-        )
-
-    def test_empty_string_rejected(self):
-        assert _validate_nous_inference_url_from_network("") is None
-
-    def test_whitespace_only_rejected(self):
-        assert _validate_nous_inference_url_from_network("   ") is None
-
-    def test_none_rejected(self):
-        assert _validate_nous_inference_url_from_network(None) is None
-
-    def test_non_string_rejected(self):
-        assert _validate_nous_inference_url_from_network(12345) is None  # type: ignore[arg-type]
-        assert _validate_nous_inference_url_from_network({"url": "x"}) is None  # type: ignore[arg-type]
-
-    def test_malformed_url_rejected(self):
-        """Even garbled input must fall back safely, not raise."""
-        assert (
-            _validate_nous_inference_url_from_network("not://a real url at all")
-            is None
-        )
-=======
-
->>>>>>> upstream/main
 
     def test_default_inference_url_is_in_allowlist(self):
         """Sanity check: DEFAULT_NOUS_INFERENCE_URL must itself validate.
 
         If anyone retargets the default away from
-        ``inference-api.Moor inc..com``, they MUST update the allowlist
+        ``inference-api.nousresearch.com``, they MUST update the allowlist
         in the same change — otherwise the allowlist would reject the
         Portal's own legitimate default and break every install.
         """
@@ -218,7 +150,7 @@ class TestEnvOverrideNotGated:
 
 class TestHealsPoisonedStoredValue:
     """A stored inference_base_url that is NOT in the allowlist (e.g. a
-    stale ``stg-inference-api.Moor inc..com`` persisted before the
+    stale ``stg-inference-api.nousresearch.com`` persisted before the
     allowlist existed) must be HEALED back to the production default on
     the next refresh — not silently retained.
 
@@ -233,7 +165,7 @@ class TestHealsPoisonedStoredValue:
     def test_refresh_resets_rejected_url_to_default(self, monkeypatch):
         import hermes_cli.auth as auth
 
-        poisoned = "https://stg-inference-api.Moor inc..com/v1"
+        poisoned = "https://stg-inference-api.nousresearch.com/v1"
         state = {
             "access_token": "tok",
             "refresh_token": "rtok",
@@ -266,38 +198,6 @@ class TestHealsPoisonedStoredValue:
             f"got {result['inference_base_url']!r}"
         )
 
-<<<<<<< HEAD
-    def test_refresh_keeps_valid_url(self, monkeypatch):
-        """A legitimate allowlisted URL from the Portal is preserved."""
-        import hermes_cli.auth as auth
-
-        good = "https://inference-api.Moor inc..com/v1"
-        state = {
-            "access_token": "tok",
-            "refresh_token": "rtok",
-            "client_id": "hermes-cli",
-            "portal_base_url": auth.DEFAULT_NOUS_PORTAL_URL,
-            "inference_base_url": good,
-        }
-        monkeypatch.setattr(auth, "_nous_invoke_jwt_status", lambda *a, **k: "needs_refresh")
-        monkeypatch.setattr(
-            auth,
-            "_refresh_access_token",
-            lambda **k: {
-                "access_token": "newtok",
-                "refresh_token": "newrtok",
-                "expires_in": 3600,
-                "inference_base_url": good,
-            },
-        )
-        monkeypatch.setattr(auth, "_assert_nous_inference_jwt_usable", lambda *a, **k: None)
-        monkeypatch.setattr(auth, "_select_nous_invoke_jwt", lambda *a, **k: None)
-
-        result = auth.refresh_nous_oauth_from_state(state, force_refresh=True)
-        assert result["inference_base_url"] == good
-
-=======
->>>>>>> upstream/main
 
 class TestEnvOverrideWins:
     """``NOUS_INFERENCE_BASE_URL`` must win over the stored value for the
@@ -314,7 +214,7 @@ class TestEnvOverrideWins:
     override is a runtime overlay, never written to auth.json).
     """
 
-    STAGING = "https://stg-inference-api.Moor inc..com/v1"
+    STAGING = "https://stg-inference-api.nousresearch.com/v1"
 
     def _patch_no_refresh(self, monkeypatch, auth, state):
         import contextlib

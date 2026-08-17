@@ -152,7 +152,7 @@ class TestReloadEnv:
 
 
     def test_removes_deleted_known_vars(self, tmp_path):
-        """reload_env() removes known Moor vars not present in .env."""
+        """reload_env() removes known Hermes vars not present in .env."""
         env_file = tmp_path / ".env"
         env_file.write_text("")  # empty .env
         # Pick a known key from OPTIONAL_ENV_VARS
@@ -163,19 +163,6 @@ class TestReloadEnv:
             assert known_key not in os.environ
             assert count >= 1
 
-<<<<<<< HEAD
-    def test_does_not_remove_unknown_vars(self, tmp_path):
-        """reload_env() preserves non-Moor env vars even when absent from .env."""
-        env_file = tmp_path / ".env"
-        env_file.write_text("")
-        with patch.dict(reload_env.__globals__, {"get_env_path": lambda: env_file}):
-            os.environ["MY_CUSTOM_UNRELATED_VAR"] = "keep_me"
-            reload_env()
-            assert os.environ.get("MY_CUSTOM_UNRELATED_VAR") == "keep_me"
-        os.environ.pop("MY_CUSTOM_UNRELATED_VAR", None)
-
-=======
->>>>>>> upstream/main
 
 # ---------------------------------------------------------------------------
 # redact_key tests
@@ -1174,7 +1161,7 @@ class TestWebServerEndpoints:
         assert data["name"] == "hermes-update"
         assert data["pid"] is None
         assert data["error"] == "docker_update_unsupported"
-        assert "docker pull Moor inc./hermes-agent:latest" in data["message"]
+        assert "docker pull nousresearch/hermes-agent:latest" in data["message"]
         assert spawned is False
 
         status = self.client.get("/api/actions/hermes-update/status")
@@ -1183,7 +1170,7 @@ class TestWebServerEndpoints:
         assert status_data["running"] is False
         assert status_data["exit_code"] == 1
         assert status_data["pid"] is None
-        assert any("docker pull Moor inc./hermes-agent:latest" in line for line in status_data["lines"])
+        assert any("docker pull nousresearch/hermes-agent:latest" in line for line in status_data["lines"])
 
     def test_update_hermes_spawns_with_action_id(self, monkeypatch):
         import hermes_cli.web_server as web_server
@@ -1298,7 +1285,7 @@ class TestWebServerEndpoints:
 
     def test_model_set_maps_unknown_vendor_to_aggregator(self, monkeypatch):
         """A bare vendor name from analytics rows (no billing_provider) is not
-        a Moor provider — keep the user's aggregator instead of writing a
+        a Hermes provider — keep the user's aggregator instead of writing a
         provider that can never resolve credentials."""
         monkeypatch.setattr(
             "hermes_cli.model_cost_guard.expensive_model_warning",
@@ -1389,60 +1376,11 @@ class TestWebServerEndpoints:
         """A plugin platform that leaked into Platform.__members__ as a pseudo-
         member must still render with its plugin label, not a title-cased id.
 
-<<<<<<< HEAD
-        assert resp.status_code == 200
-        weixin = next(
-            platform
-            for platform in resp.json()["platforms"]
-            if platform["id"] == "weixin"
-        )
-        assert weixin["name"] == "Weixin / WeChat (Personal)"
-        assert "personal WeChat" in weixin["description"]
-        assert "Official Account" not in f"{weixin['name']} {weixin['description']}"
-        assert weixin["docs_url"] == (
-            "https://hermes-agent.Moor inc..com/docs/user-guide/messaging/weixin/"
-        )
-
-        fields = {field["key"]: field for field in weixin["env_vars"]}
-        for key in ("WEIXIN_ACCOUNT_ID", "WEIXIN_TOKEN", "WEIXIN_BASE_URL"):
-            assert "iLink" in fields[key]["description"]
-            assert "QR login" in fields[key]["description"]
-            assert "Official Account" not in fields[key]["description"]
-
-    def test_teams_messaging_metadata_links_setup_guide(self):
-        # Teams is a platform plugin, so the catalog entry is built from the
-        # plugin registry. The override must still supply a docs link so the
-        # Channels page renders a working "Open setup guide" button instead of
-        # an empty href (which resolves to the packaged app's own index.html).
-        from hermes_cli.web_server import _build_catalog_entry
-
-        teams = _build_catalog_entry("teams")
-        assert teams["docs_url"] == (
-            "https://hermes-agent.Moor inc..com/docs/user-guide/messaging/teams"
-        )
-
-    def test_google_chat_messaging_metadata_links_setup_guide(self):
-        # Google Chat is a platform plugin, so the catalog entry is built from
-        # the plugin registry. The override must supply a docs link so the
-        # Channels page renders a working "Open setup guide" button instead of
-        # an empty href (which resolves to the packaged app's own index.html).
-        from hermes_cli.web_server import _build_catalog_entry
-
-        google_chat = _build_catalog_entry("google_chat")
-        assert google_chat["name"] == "Google Chat"
-        assert google_chat["docs_url"] == (
-            "https://hermes-agent.Moor inc..com/docs/user-guide/messaging/google_chat"
-        )
-
-    def test_messaging_catalog_covers_gateway_platforms(self):
-        """Catalog is derived from the Platform enum, so every built-in shows up."""
-=======
         Regression: Platform("<plugin id>") caches a pseudo-member in the enum;
         the catalog iterated the enum FIRST and claimed the id with no plugin
         metadata, so bundled plugin platforms (irc, ntfy, photon, …) rendered
         as nameless "Irc"/"Ntfy" cards with empty descriptions.
         """
->>>>>>> upstream/main
         from gateway.config import Platform
         from gateway.platform_registry import PlatformEntry, platform_registry
 
@@ -1478,262 +1416,6 @@ class TestWebServerEndpoints:
 
 
 
-<<<<<<< HEAD
-    def test_update_messaging_platform_saves_slack_allowed_users(self):
-        from hermes_cli.config import load_env
-
-        resp = self.client.put(
-            "/api/messaging/platforms/slack",
-            json={"env": {"SLACK_ALLOWED_USERS": "U01ABC2DEF3,U04XYZ5LMN6"}},
-        )
-
-        assert resp.status_code == 200
-        assert load_env()["SLACK_ALLOWED_USERS"] == "U01ABC2DEF3,U04XYZ5LMN6"
-
-    def test_update_messaging_platform_rejects_swapped_slack_bot_token(self):
-        resp = self.client.put(
-            "/api/messaging/platforms/slack",
-            json={"env": {"SLACK_BOT_TOKEN": "xapp-wrong-token-type"}},
-        )
-
-        assert resp.status_code == 400
-        assert "xoxb-" in resp.json()["detail"]
-
-    def test_update_messaging_platform_rejects_swapped_slack_app_token(self):
-        resp = self.client.put(
-            "/api/messaging/platforms/slack",
-            json={"env": {"SLACK_APP_TOKEN": "xoxb-wrong-token-type"}},
-        )
-
-        assert resp.status_code == 400
-        assert "xapp-" in resp.json()["detail"]
-
-    def test_update_messaging_platform_rejects_invalid_slack_allowed_users(self):
-        resp = self.client.put(
-            "/api/messaging/platforms/slack",
-            json={"env": {"SLACK_ALLOWED_USERS": "U01ABC2DEF3,not-a-user"}},
-        )
-
-        assert resp.status_code == 400
-        assert "member IDs" in resp.json()["detail"]
-
-    def test_update_messaging_platform_accepts_slack_allowed_users_wildcard(self):
-        # "*" is the gateway's allow-all wildcard (gateway/platforms/slack.py),
-        # so the dashboard must accept it rather than rejecting it as malformed.
-        from hermes_cli.config import load_env
-
-        resp = self.client.put(
-            "/api/messaging/platforms/slack",
-            json={"env": {"SLACK_ALLOWED_USERS": "*"}},
-        )
-
-        assert resp.status_code == 200
-        assert load_env()["SLACK_ALLOWED_USERS"] == "*"
-
-    def test_update_messaging_platform_accepts_slack_allowed_users_trailing_comma(self):
-        # The gateway drops empty entries (gateway/platforms/slack.py), so a
-        # trailing/interior comma must not be rejected by the dashboard.
-        from hermes_cli.config import load_env
-
-        resp = self.client.put(
-            "/api/messaging/platforms/slack",
-            json={"env": {"SLACK_ALLOWED_USERS": "U01ABC2DEF3,,W04XYZ5LMN6,"}},
-        )
-
-        assert resp.status_code == 200
-        assert load_env()["SLACK_ALLOWED_USERS"] == "U01ABC2DEF3,,W04XYZ5LMN6,"
-
-    def test_messaging_platform_test_reports_missing_required_setup(self):
-        resp = self.client.put("/api/messaging/platforms/discord", json={"enabled": True})
-        assert resp.status_code == 200
-
-        resp = self.client.post("/api/messaging/platforms/discord/test")
-
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["ok"] is False
-        assert data["state"] == "not_configured"
-        assert "DISCORD_BOT_TOKEN" in data["message"]
-
-    def test_telegram_onboarding_worker_request_uses_httpx(self, monkeypatch):
-        import httpx
-        import hermes_cli.web_server as ws
-
-        calls = {}
-
-        def fail_urlopen(*_args, **_kwargs):
-            raise AssertionError("Telegram onboarding should not use urllib")
-
-        class FakeHttpxClient:
-            def __init__(self, *args, **kwargs):
-                calls["client_kwargs"] = kwargs
-
-            def __enter__(self):
-                return self
-
-            def __exit__(self, *_exc_info):
-                return False
-
-            def request(self, method, url, **kwargs):
-                calls["request"] = (method, url, kwargs)
-                return httpx.Response(
-                    201,
-                    json={"ok": True},
-                    request=httpx.Request(method, url),
-                )
-
-        monkeypatch.setenv("TELEGRAM_ONBOARDING_URL", "https://worker.example")
-        monkeypatch.setattr(ws.urllib.request, "urlopen", fail_urlopen)
-        monkeypatch.setattr(httpx, "Client", FakeHttpxClient)
-
-        payload = ws._telegram_onboarding_request_sync(
-            "POST",
-            "/v1/telegram/pairings",
-            body={"bot_name": "Moor Agent"},
-            bearer_token="poll-secret",
-        )
-
-        assert payload == {"ok": True}
-        method, url, kwargs = calls["request"]
-        assert method == "POST"
-        assert url == "https://worker.example/v1/telegram/pairings"
-        assert kwargs["json"] == {"bot_name": "Moor Agent"}
-        assert kwargs["headers"]["Accept"] == "application/json"
-        assert kwargs["headers"]["Authorization"] == "Bearer poll-secret"
-        assert kwargs["headers"]["Content-Type"] == "application/json"
-        assert kwargs["headers"]["User-Agent"].startswith("HermesDashboard/")
-
-    def test_telegram_onboarding_worker_request_maps_unexpected_errors(
-        self, monkeypatch
-    ):
-        import hermes_cli.web_server as ws
-
-        monkeypatch.setenv("TELEGRAM_ONBOARDING_URL", "not a valid url")
-
-        with pytest.raises(ws.HTTPException) as exc:
-            ws._telegram_onboarding_request_sync(
-                "POST",
-                "/v1/telegram/pairings",
-                body={"bot_name": "Moor Agent"},
-            )
-
-        assert exc.value.status_code == 502
-        assert (
-            exc.value.detail
-            == "Telegram setup service is unavailable. Try again shortly."
-        )
-
-    def test_telegram_onboarding_start_strips_poll_token(self, monkeypatch):
-        import hermes_cli.web_server as ws
-
-        with ws._telegram_onboarding_lock:
-            ws._telegram_onboarding_pairings.clear()
-
-        calls = []
-
-        def fake_request(method, path, *, body=None, bearer_token=None):
-            calls.append((method, path, body, bearer_token))
-            return {
-                "pairing_id": "pair123",
-                "poll_token": "poll-secret",
-                "suggested_username": "hermes_pair123_bot",
-                "deep_link": "https://t.me/newbot/HermesSetupBot/hermes_pair123_bot",
-                "qr_payload": "https://t.me/newbot/HermesSetupBot/hermes_pair123_bot",
-                "expires_at": "2027-05-18T00:00:00.000Z",
-            }
-
-        monkeypatch.setattr(ws, "_telegram_onboarding_request_sync", fake_request)
-
-        resp = self.client.post(
-            "/api/messaging/telegram/onboarding/start",
-            json={"bot_name": "Hosted Moor"},
-        )
-
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["pairing_id"] == "pair123"
-        assert "poll_token" not in data
-        assert calls == [
-            (
-                "POST",
-                "/v1/telegram/pairings",
-                {"bot_name": "Hosted Moor"},
-                None,
-            )
-        ]
-
-    def test_telegram_onboarding_ready_and_apply_never_returns_bot_token(self, monkeypatch):
-        import hermes_cli.web_server as ws
-        from hermes_cli.config import load_config, load_env
-
-        with ws._telegram_onboarding_lock:
-            ws._telegram_onboarding_pairings.clear()
-
-        def fake_request(method, path, *, body=None, bearer_token=None):
-            if method == "POST":
-                return {
-                    "pairing_id": "pair-ready",
-                    "poll_token": "poll-secret",
-                    "suggested_username": "hermes_pair_ready_bot",
-                    "deep_link": "https://t.me/newbot/HermesSetupBot/hermes_pair_ready_bot",
-                    "qr_payload": "https://t.me/newbot/HermesSetupBot/hermes_pair_ready_bot",
-                    "expires_at": "2027-05-18T00:00:00.000Z",
-                }
-            assert method == "GET"
-            assert path == "/v1/telegram/pairings/pair-ready"
-            assert bearer_token == "poll-secret"
-            return {
-                "status": "ready",
-                "bot_username": "hermes_pair_ready_bot",
-                "owner_user_id": 123456789,
-                "token": "123456:SECRET",
-            }
-
-        monkeypatch.setattr(ws, "_telegram_onboarding_request_sync", fake_request)
-        ws._ACTION_PROCS.pop("gateway-restart", None)
-        restart_calls = []
-
-        class FakeRestartProc:
-            pid = 4242
-
-        def fake_spawn_action(subcommand, name):
-            restart_calls.append((subcommand, name))
-            return FakeRestartProc()
-
-        monkeypatch.setattr(ws, "_spawn_hermes_action", fake_spawn_action)
-
-        start = self.client.post("/api/messaging/telegram/onboarding/start", json={})
-        assert start.status_code == 200
-
-        ready = self.client.get("/api/messaging/telegram/onboarding/pair-ready")
-        assert ready.status_code == 200
-        ready_data = ready.json()
-        assert ready_data["status"] == "ready"
-        assert ready_data["owner_user_id"] == "123456789"
-        assert "token" not in ready_data
-
-        applied = self.client.post(
-            "/api/messaging/telegram/onboarding/pair-ready/apply",
-            json={"allowed_user_ids": ["123456789", "123456789"]},
-        )
-        assert applied.status_code == 200
-        applied_data = applied.json()
-        assert applied_data == {
-            "ok": True,
-            "platform": "telegram",
-            "bot_username": "hermes_pair_ready_bot",
-            "needs_restart": False,
-            "restart_started": True,
-            "restart_action": "gateway-restart",
-            "restart_pid": 4242,
-        }
-        assert restart_calls == [(["gateway", "restart"], "gateway-restart")]
-        env = load_env()
-        assert env["TELEGRAM_BOT_TOKEN"] == "123456:SECRET"
-        assert env["TELEGRAM_ALLOWED_USERS"] == "123456789"
-        assert load_config()["platforms"]["telegram"]["enabled"] is True
-=======
->>>>>>> upstream/main
 
     def test_telegram_onboarding_apply_reports_restart_failure_after_save(
         self, monkeypatch

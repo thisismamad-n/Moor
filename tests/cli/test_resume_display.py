@@ -129,7 +129,7 @@ class TestDisplayResumedHistory:
         output = self._capture_display(cli)
 
         assert "You:" in output
-        assert "Moor:" in output
+        assert "Hermes:" in output
         assert "What is Python?" in output
         assert "Python is a high-level programming language." in output
         assert "How do I install it?" in output
@@ -186,56 +186,6 @@ class TestDisplayResumedHistory:
 
 
 
-<<<<<<< HEAD
-            assert "Previous Conversation" in output
-            assert len(cli_mod._OUTPUT_HISTORY) == 1
-            assert callable(cli_mod._OUTPUT_HISTORY[0])
-        finally:
-            cli_mod._configure_output_history(True, 200)
-
-    def test_assistant_with_no_content_no_tools_skipped(self):
-        """Assistant messages with no visible output (e.g. pure reasoning)
-        are skipped in the recap."""
-        cli = _make_cli()
-        cli.conversation_history = [
-            {"role": "user", "content": "Hello"},
-            {"role": "assistant", "content": None},
-        ]
-        output = self._capture_display(cli)
-
-        # The assistant entry should be skipped, only the user message shown
-        assert "You:" in output
-        assert "Moor:" not in output
-
-    def test_only_system_messages_no_output(self):
-        cli = _make_cli()
-        cli.conversation_history = [
-            {"role": "system", "content": "You are helpful."},
-        ]
-        output = self._capture_display(cli)
-
-        assert output.strip() == ""
-
-    def test_reasoning_scratchpad_stripped(self):
-        """<REASONING_SCRATCHPAD> blocks should be stripped from display."""
-        cli = _make_cli()
-        cli.conversation_history = [
-            {"role": "user", "content": "Think about this"},
-            {
-                "role": "assistant",
-                "content": (
-                    "<REASONING_SCRATCHPAD>\nLet me think step by step.\n"
-                    "</REASONING_SCRATCHPAD>\n\nThe answer is 42."
-                ),
-            },
-        ]
-        output = self._capture_display(cli)
-
-        assert "REASONING_SCRATCHPAD" not in output
-        assert "Let me think step by step" not in output
-        assert "The answer is 42" in output
-=======
->>>>>>> upstream/main
 
     def test_pure_reasoning_message_skipped(self):
         """Assistant messages that are only reasoning should be skipped."""

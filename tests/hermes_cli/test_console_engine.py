@@ -471,7 +471,7 @@ def test_repl_runs_non_interactive_lines_without_prompts(_isolate_hermes_home):
     )
 
     assert code == 0
-    assert "Moor Console" in stdout.getvalue()
+    assert "Hermes Console" in stdout.getvalue()
     assert "hermes>" not in stdout.getvalue()
     assert stderr.getvalue() == ""
 
@@ -514,10 +514,6 @@ _ORPHAN_STORE_STATUS = {
 }
 
 
-<<<<<<< HEAD
-    assert result.returncode == 0
-    assert "Moor Console" in result.stdout
-=======
 def _patch_checkpoint_manager(monkeypatch, prune_calls: list) -> None:
     """Report one orphan project and record the resulting prune call."""
     import tools.checkpoint_manager as ckpt_mgr
@@ -590,4 +586,3 @@ def test_console_checkpoints_prune_succeeds_without_a_tty(
     assert "Aborted." not in result.output
     assert len(prune_calls) == 1
     assert prune_calls[0]["orphan_allowlist"] is None
->>>>>>> upstream/main

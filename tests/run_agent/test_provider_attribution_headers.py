@@ -24,8 +24,8 @@ def test_openrouter_base_url_applies_or_headers(mock_openai):
     agent._apply_client_headers_for_base_url("https://openrouter.ai/api/v1")
 
     headers = agent._client_kwargs["default_headers"]
-    assert headers["HTTP-Referer"] == "https://hermes-agent.Moor inc..com"
-    assert headers["X-Title"] == "Moor Agent"
+    assert headers["HTTP-Referer"] == "https://hermes-agent.nousresearch.com"
+    assert headers["X-Title"] == "Hermes Agent"
 
 
 @patch("run_agent.OpenAI")
@@ -43,8 +43,8 @@ def test_ai_gateway_base_url_applies_attribution_headers(mock_openai):
     agent._apply_client_headers_for_base_url("https://ai-gateway.vercel.sh/v1")
 
     headers = agent._client_kwargs["default_headers"]
-    assert headers["HTTP-Referer"] == "https://hermes-agent.Moor inc..com"
-    assert headers["X-Title"] == "Moor Agent"
+    assert headers["HTTP-Referer"] == "https://hermes-agent.nousresearch.com"
+    assert headers["X-Title"] == "Hermes Agent"
     assert headers["User-Agent"].startswith("HermesAgent/")
 
 
@@ -106,8 +106,8 @@ def test_fireworks_applies_attribution_via_profile_fallback(mock_openai):
     agent._apply_client_headers_for_base_url("https://api.fireworks.ai/inference/v1")
 
     headers = agent._client_kwargs["default_headers"]
-    assert headers["HTTP-Referer"] == "https://hermes-agent.Moor inc..com"
-    assert headers["X-Title"] == "Moor Agent"
+    assert headers["HTTP-Referer"] == "https://hermes-agent.nousresearch.com"
+    assert headers["X-Title"] == "Hermes Agent"
     assert headers["User-Agent"].startswith("HermesAgent/")
 
 
@@ -115,7 +115,7 @@ def test_fireworks_applies_attribution_via_profile_fallback(mock_openai):
 def test_opencode_go_applies_attribution_via_profile_fallback(mock_openai):
     """OpenCode (Zen/Go) attributes traffic by header like OpenRouter does.
     Without profile.default_headers the relay only sees the OpenAI SDK's
-    generic User-Agent and Moor Agent traffic shows up unattributed."""
+    generic User-Agent and Hermes Agent traffic shows up unattributed."""
     mock_openai.return_value = MagicMock()
     agent = AIAgent(
         api_key="test-key",
@@ -130,8 +130,8 @@ def test_opencode_go_applies_attribution_via_profile_fallback(mock_openai):
     agent._apply_client_headers_for_base_url("https://opencode.ai/zen/go/v1")
 
     headers = agent._client_kwargs["default_headers"]
-    assert headers["HTTP-Referer"] == "https://hermes-agent.Moor inc..com"
-    assert headers["X-Title"] == "Moor Agent"
+    assert headers["HTTP-Referer"] == "https://hermes-agent.nousresearch.com"
+    assert headers["X-Title"] == "Hermes Agent"
     assert headers["User-Agent"].startswith("HermesAgent/")
 
 
@@ -151,8 +151,8 @@ def test_opencode_zen_applies_attribution_via_profile_fallback(mock_openai):
     agent._apply_client_headers_for_base_url("https://opencode.ai/zen/v1")
 
     headers = agent._client_kwargs["default_headers"]
-    assert headers["HTTP-Referer"] == "https://hermes-agent.Moor inc..com"
-    assert headers["X-Title"] == "Moor Agent"
+    assert headers["HTTP-Referer"] == "https://hermes-agent.nousresearch.com"
+    assert headers["X-Title"] == "Hermes Agent"
     assert headers["User-Agent"].startswith("HermesAgent/")
 
 
@@ -212,7 +212,7 @@ def test_openrouter_headers_include_response_cache_when_enabled(mock_openai):
         agent._apply_client_headers_for_base_url("https://openrouter.ai/api/v1")
 
     headers = agent._client_kwargs["default_headers"]
-    assert headers["HTTP-Referer"] == "https://hermes-agent.Moor inc..com"
+    assert headers["HTTP-Referer"] == "https://hermes-agent.nousresearch.com"
     assert headers["X-OpenRouter-Cache"] == "true"
     assert headers["X-OpenRouter-Cache-TTL"] == "600"
 
@@ -249,52 +249,8 @@ def test_user_default_headers_override_sdk_user_agent(mock_openai):
     assert headers["X-Extra"] == "1"
 
 
-<<<<<<< HEAD
-@patch("run_agent.OpenAI")
-def test_user_default_headers_win_over_provider_defaults(mock_openai):
-    """User headers take precedence but leave untouched provider defaults intact."""
-    mock_openai.return_value = MagicMock()
-    agent = AIAgent(
-        api_key="test-key",
-        base_url="https://openrouter.ai/api/v1",
-        model="test/model",
-        quiet_mode=True,
-        skip_context_files=True,
-        skip_memory=True,
-    )
-
-    with patch("hermes_cli.config.load_config", return_value={
-        "model": {"default_headers": {"X-Title": "MyApp"}},
-    }):
-        agent._apply_client_headers_for_base_url("https://openrouter.ai/api/v1")
-
-    headers = agent._client_kwargs["default_headers"]
-    assert headers["X-Title"] == "MyApp"  # user override wins
-    assert headers["HTTP-Referer"] == "https://hermes-agent.Moor inc..com"  # default preserved
 
 
-@patch("run_agent.OpenAI")
-def test_no_user_default_headers_leaves_provider_defaults_untouched(mock_openai):
-    mock_openai.return_value = MagicMock()
-    agent = AIAgent(
-        api_key="test-key",
-        base_url="https://openrouter.ai/api/v1",
-        model="test/model",
-        quiet_mode=True,
-        skip_context_files=True,
-        skip_memory=True,
-    )
-
-    with patch("hermes_cli.config.load_config", return_value={"model": {}}):
-        agent._apply_client_headers_for_base_url("https://openrouter.ai/api/v1")
-
-    headers = agent._client_kwargs["default_headers"]
-    assert headers["HTTP-Referer"] == "https://hermes-agent.Moor inc..com"
-    assert "User-Agent" not in headers  # nothing injected when unconfigured
-=======
-
-
->>>>>>> upstream/main
 
 
 
@@ -320,7 +276,7 @@ def test_openrouter_headers_no_cache_when_disabled(mock_openai):
         agent._apply_client_headers_for_base_url("https://openrouter.ai/api/v1")
 
     headers = agent._client_kwargs["default_headers"]
-    assert headers["HTTP-Referer"] == "https://hermes-agent.Moor inc..com"
+    assert headers["HTTP-Referer"] == "https://hermes-agent.nousresearch.com"
     assert "X-OpenRouter-Cache" not in headers
     assert "X-OpenRouter-Cache-TTL" not in headers
 

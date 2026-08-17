@@ -30,8 +30,8 @@ class TestDoctorPlatformHints:
 
         hint = doctor._sqlite_upgrade_hint()
 
-        assert "docker pull Moor inc./hermes-agent:latest" in hint
-        assert "recreate all Moor containers" in hint
+        assert "docker pull nousresearch/hermes-agent:latest" in hint
+        assert "recreate all Hermes containers" in hint
         assert "hermes update" not in hint
 
     def test_sqlite_upgrade_hint_keeps_git_runtime_repair(self):
@@ -1432,23 +1432,6 @@ class TestDoctorDeprecatedConfigAndEnv:
         ):
             monkeypatch.delenv(k, raising=False)
 
-<<<<<<< HEAD
-    # The workspace vulnerability is still reported ...
-    assert "web workspace" in out
-    # ... but the remediation must NOT use the npm-crashing per-workspace form
-    # (`npm audit fix --workspace web` / `--workspace ui-tui`).
-    assert "npm audit fix --workspace web" not in out
-    assert "npm audit fix --workspace ui-tui" not in out
-    # ... and it must not point at the root-level form either: npm can crash
-    # there too with `isDescendantOf` on this monorepo tree.
-    assert "npm audit fix" not in out
-    # ... and explains the workspace advisories are build-time tooling whose
-    # manual remediation may hit a known npm arborist crash, so the user isn't
-    # left thinking a crashing command means a broken Moor install.
-    assert "build-time tooling" in out
-    assert "known npm bug" in out
-    assert "lockfile bump" in out
-=======
         fake_model_tools = types.SimpleNamespace(
             check_tool_availability=lambda *a, **kw: (_ for _ in ()).throw(SystemExit(0)),
             TOOLSET_REQUIREMENTS={},
@@ -1474,4 +1457,3 @@ class TestDoctorDeprecatedConfigAndEnv:
         assert "Deprecated: delegation.max_async_children" in out
         assert "Deprecated: HERMES_TOOL_PROGRESS_MODE" in out
         assert "⚠" in out or "Deprecated" in out
->>>>>>> upstream/main

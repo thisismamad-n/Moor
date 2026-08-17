@@ -217,133 +217,6 @@ class TestBackup:
 
 
 
-<<<<<<< HEAD
-        with zipfile.ZipFile(out_zip, "r") as zf:
-            names = zf.namelist()
-            agent_files = [n for n in names if "hermes-agent" in n]
-            assert agent_files == [], f"hermes-agent files leaked into backup: {agent_files}"
-
-    def test_excludes_dependency_and_cache_trees(self, tmp_path, monkeypatch):
-        """A plugin venv / site-packages / pip cache under HERMES_HOME must be
-        pruned by the walk, while real data (skills, config) is preserved.
-        This is the regression guard for the ballooning-backup bug."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        _make_hermes_tree(hermes_home)
-
-        # Simulate the heavy regeneratable trees that ballooned the backup.
-        venv_pkg = hermes_home / "plugins" / "heavy" / ".venv" / "lib" / "site-packages" / "dep"
-        venv_pkg.mkdir(parents=True)
-        (venv_pkg / "__init__.py").write_text("# dep\n")
-        pip_cache = hermes_home / ".cache" / "uv" / "wheels"
-        pip_cache.mkdir(parents=True)
-        (pip_cache / "abc.whl").write_bytes(b"\x00")
-
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-        monkeypatch.setattr(Path, "home", lambda: tmp_path)
-
-        out_zip = tmp_path / "backup.zip"
-        from hermes_cli.backup import run_backup
-        run_backup(Namespace(output=str(out_zip)))
-
-        with zipfile.ZipFile(out_zip, "r") as zf:
-            names = zf.namelist()
-        leaked = [n for n in names if ".venv" in n or "site-packages" in n or ".cache" in n]
-        assert leaked == [], f"regeneratable trees leaked into backup: {leaked}"
-        # Real data still present.
-        assert "skills/my-skill/SKILL.md" in names
-        assert "config.yaml" in names
-
-    def test_includes_nested_hermes_agent_in_skills(self, tmp_path, monkeypatch):
-        """Backup includes skills/.../hermes-agent/ but NOT root hermes-agent/."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        _make_hermes_tree(hermes_home)
-
-        # Add a nested hermes-agent directory inside skills (like the real layout)
-        nested = hermes_home / "skills" / "autonomous-ai-agents" / "hermes-agent"
-        nested.mkdir(parents=True)
-        (nested / "SKILL.md").write_text("# Moor Agent Skill\n")
-        (nested / "sub").mkdir()
-        (nested / "sub" / "item.txt").write_text("nested content\n")
-
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-        monkeypatch.setattr(Path, "home", lambda: tmp_path)
-
-        out_zip = tmp_path / "backup.zip"
-        args = Namespace(output=str(out_zip))
-
-        from hermes_cli.backup import run_backup
-        run_backup(args)
-
-        with zipfile.ZipFile(out_zip, "r") as zf:
-            names = zf.namelist()
-            # Root hermes-agent must be excluded
-            root_agent = [n for n in names if n.startswith("hermes-agent/")]
-            assert root_agent == [], f"root hermes-agent leaked: {root_agent}"
-            # Nested skill hermes-agent must be included
-            assert "skills/autonomous-ai-agents/hermes-agent/SKILL.md" in names
-            assert "skills/autonomous-ai-agents/hermes-agent/sub/item.txt" in names
-
-    def test_excludes_pycache(self, tmp_path, monkeypatch):
-        """Backup does NOT include __pycache__ dirs."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        _make_hermes_tree(hermes_home)
-
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-        monkeypatch.setattr(Path, "home", lambda: tmp_path)
-
-        out_zip = tmp_path / "backup.zip"
-        args = Namespace(output=str(out_zip))
-
-        from hermes_cli.backup import run_backup
-        run_backup(args)
-
-        with zipfile.ZipFile(out_zip, "r") as zf:
-            names = zf.namelist()
-            pycache_files = [n for n in names if "__pycache__" in n]
-            assert pycache_files == []
-
-    def test_excludes_pid_files(self, tmp_path, monkeypatch):
-        """Backup does NOT include PID files."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        _make_hermes_tree(hermes_home)
-
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-        monkeypatch.setattr(Path, "home", lambda: tmp_path)
-
-        out_zip = tmp_path / "backup.zip"
-        args = Namespace(output=str(out_zip))
-
-        from hermes_cli.backup import run_backup
-        run_backup(args)
-
-        with zipfile.ZipFile(out_zip, "r") as zf:
-            names = zf.namelist()
-            pid_files = [n for n in names if n.endswith(".pid")]
-            assert pid_files == []
-
-    def test_default_output_path(self, tmp_path, monkeypatch):
-        """When no output path given, zip goes to ~/hermes-backup-*.zip."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text("model: test\n")
-
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-        monkeypatch.setattr(Path, "home", lambda: tmp_path)
-
-        args = Namespace(output=None)
-
-        from hermes_cli.backup import run_backup
-        run_backup(args)
-
-        # Should exist in home dir
-        zips = list(tmp_path.glob("hermes-backup-*.zip"))
-        assert len(zips) == 1
-=======
->>>>>>> upstream/main
 
     def test_skips_symlinked_files(self, tmp_path, monkeypatch):
         """Backup must not dereference symlinks and leak files outside HERMES_HOME."""
@@ -380,7 +253,7 @@ class TestValidateBackupZip:
                 zf.writestr(name, "dummy")
 
     def test_state_db_passes(self, tmp_path):
-        """A zip containing state.db is accepted as a valid Moor backup."""
+        """A zip containing state.db is accepted as a valid Hermes backup."""
         from hermes_cli.backup import _validate_backup_zip
         zip_path = tmp_path / "backup.zip"
         self._make_zip(zip_path, ["state.db", "sessions/abc.json"])
@@ -475,7 +348,7 @@ class TestImport:
         run_import(Namespace(zipfile=str(zip_path), force=True))
 
         out = capsys.readouterr().out
-        assert "Done. Your Moor configuration has been restored." in out
+        assert "Done. Your Hermes configuration has been restored." in out
         assert "hermes gateway install" in out
 
 
@@ -1665,7 +1538,7 @@ class TestPreMigrationBackup:
 
 
     def test_restorable_with_hermes_import(self, hermes_home, tmp_path):
-        """The zip produced by pre-migration backup must be a valid Moor
+        """The zip produced by pre-migration backup must be a valid Hermes
         backup — `hermes import` should accept it."""
         from hermes_cli.backup import create_pre_migration_backup, _validate_backup_zip
         out = create_pre_migration_backup(hermes_home=hermes_home)

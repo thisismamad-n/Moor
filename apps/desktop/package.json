@@ -230,20 +230,12 @@
       "entitlements": "electron/entitlements.mac.plist",
       "entitlementsInherit": "electron/entitlements.mac.inherit.plist",
       "extendInfo": {
-<<<<<<< HEAD
-        "CFBundleDisplayName": "Moor",
-        "CFBundleExecutable": "Moor",
-        "CFBundleName": "Moor",
-        "NSAudioCaptureUsageDescription": "Moor uses audio capture for voice conversations.",
-        "NSMicrophoneUsageDescription": "Moor uses the microphone for voice input and voice conversations."
-=======
         "CFBundleDisplayName": "Moor",
         "CFBundleExecutable": "Moor",
         "CFBundleName": "Moor",
         "NSAudioCaptureUsageDescription": "Moor uses audio capture for voice conversations.",
         "NSCameraUsageDescription": "Moor uses the camera when a plugin or feature you enable requests it.",
         "NSMicrophoneUsageDescription": "Moor uses the microphone for voice input and voice conversations."
->>>>>>> upstream/main
       },
       "gatekeeperAssess": false,
       "hardenedRuntime": true,

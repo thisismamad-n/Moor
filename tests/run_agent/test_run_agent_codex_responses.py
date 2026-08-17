@@ -264,7 +264,7 @@ class _FakeCreateStream:
 def _codex_request_kwargs():
     return {
         "model": "gpt-5-codex",
-        "instructions": "You are Moor.",
+        "instructions": "You are Hermes.",
         "input": [{"role": "user", "content": "Ping"}],
         "tools": None,
         "store": False,
@@ -304,13 +304,13 @@ def test_build_api_kwargs_codex(monkeypatch):
     agent = _build_agent(monkeypatch)
     kwargs = agent._build_api_kwargs(
         [
-            {"role": "system", "content": "You are Moor."},
+            {"role": "system", "content": "You are Hermes."},
             {"role": "user", "content": "Ping"},
         ]
     )
 
     assert kwargs["model"] == "gpt-5-codex"
-    assert kwargs["instructions"] == "You are Moor."
+    assert kwargs["instructions"] == "You are Hermes."
     assert kwargs["store"] is False
     assert isinstance(kwargs["input"], list)
     assert kwargs["input"][0]["role"] == "user"
@@ -343,20 +343,6 @@ def test_build_api_kwargs_mantle_sets_extended_prompt_cache_retention(monkeypatc
         max_iterations=1,
         skip_context_files=True,
         skip_memory=True,
-<<<<<<< HEAD
-        reasoning_config={"enabled": True, "effort": "minimal"},
-    )
-    agent._cleanup_task_resources = lambda task_id: None
-    agent._persist_session = lambda messages, history=None: None
-    agent._save_trajectory = lambda messages, user_message, completed: None
-
-    kwargs = agent._build_api_kwargs(
-        [
-            {"role": "system", "content": "You are Moor."},
-            {"role": "user", "content": "Ping"},
-        ]
-=======
->>>>>>> upstream/main
     )
 
     kwargs = agent._build_api_kwargs([{"role": "user", "content": "Ping"}])
@@ -370,7 +356,7 @@ def _azure_reasoning_item():
 
 def _azure_post_tool_messages():
     return [
-        {"role": "system", "content": "You are Moor."},
+        {"role": "system", "content": "You are Hermes."},
         {"role": "user", "content": "Create a marker"},
         {
             "role": "assistant",
@@ -419,7 +405,7 @@ def test_build_api_kwargs_azure_foundry_non_tool_preserves_reasoning(monkeypatch
     agent = _build_azure_foundry_agent(monkeypatch)
 
     messages = [
-        {"role": "system", "content": "You are Moor."},
+        {"role": "system", "content": "You are Hermes."},
         {"role": "user", "content": "Explain recursion"},
         {
             "role": "assistant",
@@ -818,106 +804,6 @@ def test_run_codex_stream_returns_terminal_response_when_post_terminal_drain_fai
         "finalization" in record.message for record in caplog.records
     )
 
-<<<<<<< HEAD
-    def _fake_create(**kwargs):
-        return _FakeCreateStream([
-            SimpleNamespace(type="response.created"),
-            failed_event,
-        ])
-
-    agent.client = SimpleNamespace(
-        responses=SimpleNamespace(create=_fake_create),
-    )
-
-    response = agent._run_codex_stream(_codex_request_kwargs())
-    assert response.status == "failed"
-    assert response.error == error_payload
-
-
-def test_run_codex_stream_parses_create_stream_events(monkeypatch):
-    """The primary path consumes ``responses.create(stream=True)`` events directly."""
-    agent = _build_agent(monkeypatch)
-    calls = {"create": 0}
-    create_stream = _FakeCreateStream(
-        [
-            SimpleNamespace(type="response.created"),
-            SimpleNamespace(type="response.in_progress"),
-            SimpleNamespace(type="response.completed", response=_codex_message_response("streamed create ok")),
-        ]
-    )
-
-    def _fake_create(**kwargs):
-        calls["create"] += 1
-        assert kwargs.get("stream") is True
-        return create_stream
-
-    agent.client = SimpleNamespace(
-        responses=SimpleNamespace(create=_fake_create),
-    )
-
-    response = agent._run_codex_stream(_codex_request_kwargs())
-    assert calls["create"] == 1
-    assert create_stream.closed is True
-    # The wire's response.completed.response.output is a list with the message item,
-    # but the event-driven path reconstructs from response.output_item.done.
-    # _codex_message_response returns a SimpleNamespace whose .output is a list of
-    # items — we don't read those directly, we read the items via output_item.done,
-    # but this fixture doesn't emit output_item.done. So the consumer assembles a
-    # message from streamed text deltas if present, or returns the items it has.
-    # For backward compatibility with the helper that builds _codex_message_response,
-    # we just assert status is completed and id propagated.
-    assert response.status == "completed"
-
-
-def test_run_codex_stream_ignores_completed_response_with_null_output(monkeypatch):
-    """Regression: Codex may send response.completed.response.output=null.
-
-    The SDK's high-level ``responses.stream(...)`` helper used to reconstruct
-    the final Response from that terminal field and raised ``TypeError:
-    'NoneType' object is not iterable``. The Moor runtime consumes raw
-    ``response.output_item.done`` events instead, so a null terminal ``output``
-    must not affect the returned assistant/function-call items.
-    """
-    agent = _build_agent(monkeypatch)
-    output_item = SimpleNamespace(
-        type="message",
-        status="completed",
-        content=[SimpleNamespace(type="output_text", text="terminal output was null")],
-    )
-    create_stream = _FakeCreateStream(
-        [
-            SimpleNamespace(type="response.created"),
-            SimpleNamespace(type="response.output_item.done", item=output_item),
-            SimpleNamespace(
-                type="response.completed",
-                response=SimpleNamespace(
-                    id="resp_null_output",
-                    status="completed",
-                    output=None,
-                    usage=SimpleNamespace(input_tokens=7, output_tokens=4, total_tokens=11),
-                ),
-            ),
-        ]
-    )
-
-    def _fake_create(**kwargs):
-        assert kwargs.get("stream") is True
-        return create_stream
-
-    agent.client = SimpleNamespace(
-        responses=SimpleNamespace(create=_fake_create),
-    )
-
-    response = agent._run_codex_stream(_codex_request_kwargs())
-    assert response is not None
-    assert create_stream.closed is True
-    assert response.id == "resp_null_output"
-    assert response.status == "completed"
-    assert response.output == [output_item]
-    assert response.usage.total_tokens == 11
-
-=======
->>>>>>> upstream/main
 
 def test_run_conversation_codex_plain_text(monkeypatch):
     agent = _build_agent(monkeypatch)
@@ -1182,7 +1068,7 @@ def test_build_api_kwargs_xai_oauth_sends_cache_key_via_extra_body(monkeypatch):
     agent = _build_xai_oauth_agent(monkeypatch)
     kwargs = agent._build_api_kwargs(
         [
-            {"role": "system", "content": "You are Moor."},
+            {"role": "system", "content": "You are Hermes."},
             {"role": "user", "content": "Ping"},
         ]
     )
@@ -1464,7 +1350,7 @@ def test_preflight_codex_api_kwargs_strips_optional_function_call_id(monkeypatch
     preflight = _preflight_codex_api_kwargs(
         {
             "model": "gpt-5-codex",
-            "instructions": "You are Moor.",
+            "instructions": "You are Hermes.",
             "input": [
                 {"role": "user", "content": "hi"},
                 {
@@ -1493,7 +1379,7 @@ def test_preflight_codex_api_kwargs_rejects_function_call_output_without_call_id
         _preflight_codex_api_kwargs(
             {
                 "model": "gpt-5-codex",
-                "instructions": "You are Moor.",
+                "instructions": "You are Hermes.",
                 "input": [{"type": "function_call_output", "output": "{}"}],
                 "tools": [],
                 "store": False,
@@ -1592,7 +1478,7 @@ def test_run_conversation_compresses_mid_turn_before_output_budget_exhaustion(mo
         compress_calls.append(approx_tokens)
         return [
             {"role": "user", "content": "[summary of prior tool-heavy work]"},
-        ], "You are Moor."
+        ], "You are Hermes."
 
     monkeypatch.setattr(agent, "_execute_tool_calls", _fake_execute_tool_calls)
     monkeypatch.setattr(agent, "_compress_context", _fake_compress_context)
@@ -1657,7 +1543,7 @@ def test_mid_turn_compaction_does_not_double_persist_in_place_rows(monkeypatch, 
         compacted = [{"role": "user", "content": "[summary of prior tool-heavy work]"}]
         agent._session_db.archive_and_compact(agent.session_id, compacted)
         agent._flushed_db_message_ids = set()
-        return compacted, "You are Moor."
+        return compacted, "You are Hermes."
 
     monkeypatch.setattr(agent, "_execute_tool_calls", _fake_execute_tool_calls)
     monkeypatch.setattr(agent, "_compress_context", _fake_compress_context)
@@ -2054,28 +1940,6 @@ def _codex_reasoning_only_response(*, encrypted_content="enc_abc123", summary_te
 
 
 
-<<<<<<< HEAD
-def test_normalize_codex_response_reasoning_only_completed_is_stop_for_other_backends(monkeypatch):
-    """Reasoning-only with status='completed' should be 'stop' for non-Codex backends.
-
-    When response.status == "completed" and no items are queued/in_progress,
-    reasoning alone is a valid final state for non-Codex backends. Forcing
-    "incomplete" here causes multi-minute stalls (3 retries x up to 240s each).
-    See https://github.com/Moor inc./hermes-agent/issues/64434
-    """
-    agent = _build_agent(monkeypatch)
-    from agent.codex_responses_adapter import _normalize_codex_response
-    response = _codex_reasoning_only_response()
-    assistant_message, finish_reason = _normalize_codex_response(
-        response, issuer_kind="other:example-relay"
-    )
-
-    assert finish_reason == "stop"
-    assert assistant_message.content == ""
-    assert assistant_message.codex_reasoning_items is not None
-    assert len(assistant_message.codex_reasoning_items) == 1
-=======
->>>>>>> upstream/main
 
 
 

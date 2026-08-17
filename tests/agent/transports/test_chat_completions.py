@@ -85,7 +85,7 @@ class TestChatCompletionsBasic:
         assert transport.convert_messages(msgs) is msgs
 
     def test_convert_messages_strips_internal_scaffolding_markers(self, transport):
-        """Moor-internal ``_``-prefixed markers must never reach the wire.
+        """Hermes-internal ``_``-prefixed markers must never reach the wire.
 
         The empty-response recovery path appends synthetic messages tagged
         with ``_empty_recovery_synthetic``; permissive providers ignore the
@@ -279,88 +279,7 @@ class TestChatCompletionsBuildKwargs:
             messages=[{"role": "user", "content": "Hi"}],
             provider_profile=profile,
             provider_name="gemini",
-<<<<<<< HEAD
-            base_url="https://generativelanguage.googleapis.com/v1beta",
-            reasoning_config={"enabled": False},
-        )
-        assert kw["extra_body"]["thinking_config"] == {
-            "includeThoughts": False,
-        }
-
-    def test_gemini_openai_compat_xhigh_clamps_to_high(self, transport):
-        msgs = [{"role": "user", "content": "Hi"}]
-        kw = transport.build_kwargs(
-            model="gemini-3-flash-preview",
-            messages=msgs,
-            provider_name="gemini",
-            base_url="https://generativelanguage.googleapis.com/v1beta/openai",
-            reasoning_config={"enabled": True, "effort": "xhigh"},
-        )
-        assert kw["extra_body"]["extra_body"]["google"]["thinking_config"]["thinking_level"] == "high"
-
-    def test_gemini_flash_minimal_clamps_to_low(self, transport):
-        # Gemini 3 Flash documents low/medium/high; "minimal" isn't accepted,
-        # so clamp it down to "low" rather than forwarding it verbatim.
-        msgs = [{"role": "user", "content": "Hi"}]
-        kw = transport.build_kwargs(
-            model="gemini-3-flash-preview",
-            messages=msgs,
-            provider_name="gemini",
-            base_url="https://generativelanguage.googleapis.com/v1beta/openai",
-            reasoning_config={"enabled": True, "effort": "minimal"},
-        )
-        assert kw["extra_body"]["extra_body"]["google"]["thinking_config"] == {
-            "include_thoughts": True,
-            "thinking_level": "low",
-        }
-
-    def test_gemma_does_not_receive_thinking_config(self, transport):
-        # The `gemini` provider also serves Gemma (e.g. `gemma-4-31b-it`),
-        # but Gemma rejects `thinking_config` with HTTP 400 (#17426). Even
-        # when Moor has reasoning enabled, the field must be omitted for
-        # non-Gemini models on this provider.
-        msgs = [{"role": "user", "content": "Hi"}]
-        kw = transport.build_kwargs(
-            model="gemma-4-31b-it",
-            messages=msgs,
-            provider_name="gemini",
-            reasoning_config={"enabled": True, "effort": "high"},
-        )
-        assert "thinking_config" not in kw.get("extra_body", {})
-
-    def test_gemma_disabled_reasoning_still_omits_thinking_config(self, transport):
-        # The `Unknown name 'thinking_config': Cannot find field` rejection
-        # fires even on `{"includeThoughts": False}` — the entire field must
-        # be absent, not just disabled. (#17426)
-        msgs = [{"role": "user", "content": "Hi"}]
-        kw = transport.build_kwargs(
-            model="gemma-4-31b-it",
-            messages=msgs,
-            provider_name="gemini",
-            reasoning_config={"enabled": False},
-        )
-        assert "thinking_config" not in kw.get("extra_body", {})
-
-    def test_google_prefixed_gemma_also_omits_thinking_config(self, transport):
-        # OpenRouter-style `google/gemma-...` IDs hit the same provider path
-        # and must also omit `thinking_config`. The existing `google/`
-        # prefix-stripping must not accidentally classify Gemma as Gemini.
-        msgs = [{"role": "user", "content": "Hi"}]
-        kw = transport.build_kwargs(
-            model="google/gemma-4-31b-it",
-            messages=msgs,
-            provider_name="gemini",
-            reasoning_config={"enabled": True, "effort": "medium"},
-        )
-        assert "thinking_config" not in kw.get("extra_body", {})
-
-    def test_max_tokens_with_fn(self, transport):
-        msgs = [{"role": "user", "content": "Hi"}]
-        kw = transport.build_kwargs(
-            model="gpt-4o", messages=msgs,
-=======
             base_url=profile.base_url,
->>>>>>> upstream/main
             max_tokens=4096,
             max_tokens_param_fn=lambda n: {"max_tokens": n},
         )
@@ -649,7 +568,7 @@ class TestChatCompletionsGeminiNativeExtraBodyStrip:
             [{"role": "user", "content": "hi"}],
             None,
             provider_profile=self._nous_profile(),
-            base_url="https://inference.Moor inc..com/v1",
+            base_url="https://inference.nousresearch.com/v1",
             session_id="s1",
             max_tokens=None,
         )

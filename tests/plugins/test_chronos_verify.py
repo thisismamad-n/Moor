@@ -36,7 +36,7 @@ def _mint(priv, claims):
 
 
 AUD = "agent:inst-123"
-ISS = "https://portal.Moor inc..com"
+ISS = "https://portal.nousresearch.com"
 
 
 def _base_claims(**over):
@@ -144,13 +144,8 @@ def test_jwks_url_path_resolves_key(rsa_keys, monkeypatch):
         key = pub
 
     class FakeJWKClient:
-<<<<<<< HEAD
-        def __init__(self, url):
-            assert url == "https://portal.Moor inc..com/.well-known/jwks.json"
-=======
         def __init__(self, url, **kwargs):
-            assert url == "https://portal.Moor inc..com/.well-known/jwks.json"
->>>>>>> upstream/main
+            assert url == "https://portal.nousresearch.com/.well-known/jwks.json"
 
         def get_signing_key_from_jwt(self, tok):
             return FakeKey()
@@ -160,7 +155,7 @@ def test_jwks_url_path_resolves_key(rsa_keys, monkeypatch):
     monkeypatch.setattr(verify_mod, "_JWK_CLIENTS", {})
     claims = verify_nas_fire_token(
         token=token, expected_audience=AUD,
-        jwks_or_key="https://portal.Moor inc..com/.well-known/jwks.json",
+        jwks_or_key="https://portal.nousresearch.com/.well-known/jwks.json",
         issuer=ISS,
     )
     assert claims is not None and claims["purpose"] == "cron_fire"
@@ -172,12 +167,7 @@ def test_jwks_client_sends_explicit_http_headers(monkeypatch):
     the dashboard-auth nous/self_hosted providers)."""
     from plugins.cron_providers.chronos import verify as verify_mod
 
-<<<<<<< HEAD
-    priv, pub = rsa_keys
-    url = "https://portal.Moor inc..com/.well-known/jwks.json"
-=======
     captured = {}
->>>>>>> upstream/main
 
     class FakeJWKClient:
         def __init__(self, url, **kwargs):
@@ -187,7 +177,7 @@ def test_jwks_client_sends_explicit_http_headers(monkeypatch):
     monkeypatch.setattr("jwt.PyJWKClient", FakeJWKClient)
     monkeypatch.setattr(verify_mod, "_JWK_CLIENTS", {})
 
-    url = "https://portal.Moor inc..com/.well-known/jwks.json"
+    url = "https://portal.nousresearch.com/.well-known/jwks.json"
     verify_mod._get_jwk_client(url)
 
     assert captured["url"] == url

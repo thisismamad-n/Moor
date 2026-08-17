@@ -327,121 +327,16 @@ def test_post_setup_existing_profile_picker_validates_and_links_saved_profile(tm
     assert "OTHER_KEY=keep" in env_text
 
 
-<<<<<<< HEAD
-def test_post_setup_create_remote_user_profile_can_mirror_to_openviking_store(tmp_path, monkeypatch):
-    _clear_openviking_env(monkeypatch)
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    monkeypatch.setattr(openviking_module.Path, "home", staticmethod(lambda: tmp_path))
-    _allow_setup_validation(monkeypatch)
-
-    from hermes_cli import memory_setup
-
-    choices = iter([1, 0, 1])
-    monkeypatch.setattr(memory_setup, "_curses_select", lambda *args, **kwargs: next(choices))
-    monkeypatch.setattr(
-        memory_setup,
-        "_prompt",
-        _prompt_from_values({
-            "OpenViking server URL": "https://openviking.example",
-            "OpenViking user API key": "user-secret",
-            "Moor peer ID in OpenViking": "hermes",
-            "OpenViking profile name": "VPS",
-        }),
-    )
-    config = {"memory": {}}
-
-    OpenVikingMemoryProvider().post_setup(str(hermes_home), config)
-
-    mirrored_path = tmp_path / ".openviking" / "ovcli.conf.VPS"
-    assert mirrored_path.exists()
-    assert json.loads(mirrored_path.read_text(encoding="utf-8")) == {
-        "url": "https://openviking.example",
-        "api_key": "user-secret",
-        "actor_peer_id": "hermes",
-    }
-    assert config["memory"]["provider"] == "openviking"
-    assert config["memory"]["openviking"] == {
-        "use_ovcli_config": True,
-        "ovcli_config_path": str(mirrored_path),
-    }
-    env_path = hermes_home / ".env"
-    if env_path.exists():
-        assert "OPENVIKING_" not in env_path.read_text(encoding="utf-8")
-
-
-def test_post_setup_create_remote_user_can_keep_hermes_only(tmp_path, monkeypatch):
-    _clear_openviking_env(monkeypatch)
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    _allow_setup_validation(monkeypatch)
-
-    from hermes_cli import memory_setup
-
-    choices = iter([1, 0, 0])
-    monkeypatch.setattr(memory_setup, "_curses_select", lambda *args, **kwargs: next(choices))
-    monkeypatch.setattr(
-        memory_setup,
-        "_prompt",
-        _prompt_from_values({
-            "OpenViking server URL": "https://openviking.example",
-            "OpenViking user API key": "user-secret",
-            "Moor peer ID in OpenViking": "agent",
-        }),
-    )
-    config = {"memory": {}}
-
-    OpenVikingMemoryProvider().post_setup(str(hermes_home), config)
-
-    assert config["memory"]["provider"] == "openviking"
-    assert config["memory"]["openviking"] == {"use_ovcli_config": False}
-    env_text = (hermes_home / ".env").read_text(encoding="utf-8")
-    assert "OPENVIKING_ENDPOINT=https://openviking.example" in env_text
-    assert "OPENVIKING_API_KEY=user-secret" in env_text
-    assert "OPENVIKING_AGENT=agent" in env_text
-    assert not (tmp_path / "home" / ".openviking").exists()
-
-
-def test_post_setup_create_openviking_service_validates_after_api_key(tmp_path, monkeypatch):
-    _clear_openviking_env(monkeypatch)
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-
-    from hermes_cli import memory_setup
-
-    validation_calls = []
-
-    def validate_values(values, *, require_api_key=False):
-        validation_calls.append((dict(values), require_api_key))
-        return True, "", "user"
-
-=======
 def test_local_setup_recommends_user_api_key_before_unauthenticated_mode(monkeypatch):
->>>>>>> upstream/main
     monkeypatch.setattr(
         openviking_module,
         "_validate_openviking_reachability",
         lambda endpoint: (True, ""),
     )
     monkeypatch.setattr(
-<<<<<<< HEAD
-        memory_setup,
-        "_prompt",
-        _prompt_from_values(
-            {
-                "OpenViking API key": "service-secret",
-                "Moor peer ID in OpenViking": "agent",
-            },
-            forbidden={"OpenViking server URL", "OpenViking user API key", "OpenViking root API key"},
-        ),
-=======
         openviking_module,
         "_validate_openviking_setup_values",
         lambda values, *, require_api_key=False: (True, "", "user"),
->>>>>>> upstream/main
     )
     credential_menu = {}
 
@@ -451,163 +346,6 @@ def test_local_setup_recommends_user_api_key_before_unauthenticated_mode(monkeyp
         credential_menu["default"] = default
         return 0
 
-<<<<<<< HEAD
-    assert validation_calls == [(
-        {
-            "endpoint": "https://api.vikingdb.cn-beijing.volces.com/openviking",
-            "api_key": "service-secret",
-            "root_api_key": "",
-            "account": "",
-            "user": "",
-            "agent": "agent",
-            "api_key_type": "user",
-        },
-        True,
-    )]
-    env_text = (hermes_home / ".env").read_text(encoding="utf-8")
-    assert "OPENVIKING_ENDPOINT=https://api.vikingdb.cn-beijing.volces.com/openviking" in env_text
-    assert "OPENVIKING_API_KEY=service-secret" in env_text
-    assert "OPENVIKING_AGENT=agent" in env_text
-
-
-def test_post_setup_remote_blank_api_key_cancels_without_saving(tmp_path, monkeypatch):
-    _clear_openviking_env(monkeypatch)
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    monkeypatch.setattr(openviking_module, "_validate_openviking_reachability", lambda endpoint: (True, ""))
-
-    from hermes_cli import config as hermes_config
-    from hermes_cli import memory_setup
-
-    save_config = MagicMock()
-    monkeypatch.setattr(hermes_config, "save_config", save_config)
-    choices = iter([1, 0, 1])
-    monkeypatch.setattr(memory_setup, "_curses_select", lambda *args, **kwargs: next(choices))
-    monkeypatch.setattr(
-        memory_setup,
-        "_prompt",
-        _prompt_from_values({
-            "OpenViking server URL": "https://openviking.example",
-            "OpenViking user API key": "",
-        }),
-    )
-    config = {"memory": {"provider": "builtin"}}
-
-    OpenVikingMemoryProvider().post_setup(str(hermes_home), config)
-
-    save_config.assert_not_called()
-    assert config == {"memory": {"provider": "builtin"}}
-    assert not (hermes_home / ".env").exists()
-
-
-def test_post_setup_user_key_path_can_route_detected_root_key_to_root_setup(tmp_path, monkeypatch):
-    _clear_openviking_env(monkeypatch)
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-
-    from hermes_cli import memory_setup
-
-    def validate_values(values, *, require_api_key=False):
-        assert values["api_key"] == "root-secret"
-        return True, "", "root"
-
-    monkeypatch.setattr(openviking_module, "_validate_openviking_reachability", lambda endpoint: (True, ""))
-    monkeypatch.setattr(openviking_module, "_validate_openviking_setup_values", validate_values)
-    choices = iter([1, 0, 0, 0])
-    monkeypatch.setattr(memory_setup, "_curses_select", lambda *args, **kwargs: next(choices))
-    prompt_events = []
-
-    def fake_prompt(label, default=None, secret=False):
-        if label == "OpenViking root API key":
-            raise AssertionError("OpenViking root API key should not be re-prompted")
-        prompt_events.append(label)
-        values = {
-            "OpenViking server URL": "https://openviking.example",
-            "OpenViking user API key": "root-secret",
-            "OpenViking account": "acct",
-            "OpenViking user": "alice",
-            "Moor peer ID in OpenViking": "agent",
-        }
-        return values.get(label, default or "")
-
-    monkeypatch.setattr(memory_setup, "_prompt", fake_prompt)
-    config = {"memory": {}}
-
-    OpenVikingMemoryProvider().post_setup(str(hermes_home), config)
-
-    assert prompt_events.count("Moor peer ID in OpenViking") == 1
-    env_text = (hermes_home / ".env").read_text(encoding="utf-8")
-    assert "OPENVIKING_API_KEY=root-secret" in env_text
-    assert "OPENVIKING_ACCOUNT=acct" in env_text
-    assert "OPENVIKING_USER=alice" in env_text
-    assert "OPENVIKING_AGENT=agent" in env_text
-
-
-def test_post_setup_root_key_path_can_route_detected_user_key_to_user_setup(tmp_path, monkeypatch):
-    _clear_openviking_env(monkeypatch)
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-
-    from hermes_cli import memory_setup
-
-    def validate_values(values, *, require_api_key=False):
-        assert values["api_key"] == "user-secret"
-        return True, "", "user"
-
-    monkeypatch.setattr(openviking_module, "_validate_openviking_reachability", lambda endpoint: (True, ""))
-    monkeypatch.setattr(openviking_module, "_validate_openviking_setup_values", validate_values)
-    choices = iter([1, 1, 0, 0])
-    monkeypatch.setattr(memory_setup, "_curses_select", lambda *args, **kwargs: next(choices))
-    monkeypatch.setattr(
-        memory_setup,
-        "_prompt",
-        _prompt_from_values(
-            {
-                "OpenViking server URL": "https://openviking.example",
-                "OpenViking root API key": "user-secret",
-                "Moor peer ID in OpenViking": "agent",
-            },
-            forbidden={"OpenViking user API key", "OpenViking account", "OpenViking user"},
-        ),
-    )
-    config = {"memory": {}}
-
-    OpenVikingMemoryProvider().post_setup(str(hermes_home), config)
-
-    env_text = (hermes_home / ".env").read_text(encoding="utf-8")
-    assert "OPENVIKING_API_KEY=user-secret" in env_text
-    assert "OPENVIKING_AGENT=agent" in env_text
-    assert "OPENVIKING_ACCOUNT" not in env_text
-    assert "OPENVIKING_USER" not in env_text
-
-
-def test_manual_root_key_flow_prints_validation_progress(monkeypatch, capsys):
-    _clear_openviking_env(monkeypatch)
-
-    monkeypatch.setattr(openviking_module, "_validate_openviking_reachability", lambda endpoint: (True, ""))
-
-    validate_calls = []
-
-    def validate_values(values, *, require_api_key=False):
-        validate_calls.append(dict(values))
-        return True, "", "root"
-
-    monkeypatch.setattr(openviking_module, "_validate_openviking_setup_values", validate_values)
-    choices = iter([1])
-
-    values = openviking_module._prompt_manual_connection_values(
-        _prompt_from_values({
-            "OpenViking server URL": "https://openviking.example",
-            "OpenViking root API key": "root-secret",
-            "OpenViking account": "acct",
-            "OpenViking user": "alice",
-            "Moor peer ID in OpenViking": "agent",
-        }),
-        lambda *args, **kwargs: next(choices),
-=======
     def prompt(label, default=None, secret=False):
         if label == "OpenViking server URL":
             return default
@@ -621,7 +359,6 @@ def test_manual_root_key_flow_prints_validation_progress(monkeypatch, capsys):
     values = openviking_module._prompt_manual_connection_values(
         prompt,
         select,
->>>>>>> upstream/main
         -1,
     )
 
@@ -656,10 +393,10 @@ def test_start_local_openviking_server_uses_endpoint_host_and_port(monkeypatch):
 
 
 def test_start_local_openviking_server_strips_pythonpath_from_child_env(monkeypatch):
-    """The spawned server must not inherit Moor's PYTHONPATH (#78153).
+    """The spawned server must not inherit Hermes's PYTHONPATH (#78153).
 
-    Inheriting it makes openviking-server import packages from the Moor
-    venv instead of its own, and on Windows locks Moor venv DLLs so the
+    Inheriting it makes openviking-server import packages from the Hermes
+    venv instead of its own, and on Windows locks Hermes venv DLLs so the
     venv cannot be rebuilt during `hermes update`.
     """
     popen_calls = []
@@ -826,14 +563,9 @@ def test_https_local_endpoint_is_not_runtime_autostart_eligible(monkeypatch):
 
     assert provider._client is None
     assert warnings == [
-<<<<<<< HEAD
-        "Remote OpenViking server at https://localhost:1934 is not reachable; "
-        "OpenViking memory disabled for this Moor run. "
-=======
         "Remote OpenViking server at https://localhost:1934 is not reachable. "
-        "OpenViking memory is temporarily unavailable; Moor will retry on a later access or when "
+        "OpenViking memory is temporarily unavailable; Hermes will retry on a later access or when "
         "the config changes. "
->>>>>>> upstream/main
         "Check the configured endpoint and network connectivity."
     ]
 
@@ -865,14 +597,9 @@ def test_runtime_does_not_autostart_when_local_server_reports_unhealthy(monkeypa
 
     assert provider._client is None
     assert warnings == [
-<<<<<<< HEAD
-        "OpenViking server at http://localhost:1934 responded but reported unhealthy status. "
-        "OpenViking memory disabled for this Moor run."
-=======
         "Service at http://localhost:1934 responded but reported unhealthy OpenViking status. "
-        "OpenViking memory is temporarily unavailable; Moor will retry on a later access "
+        "OpenViking memory is temporarily unavailable; Hermes will retry on a later access "
         "or when the config changes."
->>>>>>> upstream/main
     ]
 
 
@@ -952,273 +679,6 @@ def test_initialize_autostarts_local_openviking_in_background_when_runtime_healt
     assert any("starting in the background" in message for message in statuses)
 
 
-<<<<<<< HEAD
-def test_runtime_openviking_waiter_attaches_client_after_health_recovers(monkeypatch):
-    _clear_openviking_env(monkeypatch)
-    wait_calls = []
-
-    class FakeVikingClient:
-        def __init__(self, endpoint, api_key="", account="", user="", agent=""):
-            self.endpoint = endpoint
-            self.api_key = api_key
-            self.account = account
-            self.user = user
-            self.agent = agent
-
-        def health(self):
-            return True
-
-    monkeypatch.setattr(openviking_module, "_VikingClient", FakeVikingClient)
-    monkeypatch.setattr(
-        openviking_module,
-        "_wait_for_openviking_health",
-        lambda endpoint, **kwargs: wait_calls.append((endpoint, kwargs)) or True,
-    )
-
-    provider = OpenVikingMemoryProvider()
-    provider._endpoint = "http://127.0.0.1:1934"
-    provider._api_key = "secret"
-    provider._account = "acct"
-    provider._user = "alice"
-    provider._agent = "hermes"
-    statuses = []
-
-    provider._finish_runtime_openviking_start(
-        status_callback=statuses.append,
-        warning_callback=None,
-    )
-
-    assert provider._client is not None
-    assert provider._client.endpoint == "http://127.0.0.1:1934"
-    assert provider._client.api_key == "secret"
-    assert wait_calls == [(
-        "http://127.0.0.1:1934",
-        {"timeout_seconds": openviking_module._LOCAL_OPENVIKING_AUTOSTART_TIMEOUT},
-    )]
-    assert any("OpenViking memory is active" in message for message in statuses)
-
-
-def test_runtime_openviking_waiter_warns_when_background_start_times_out(monkeypatch):
-    _clear_openviking_env(monkeypatch)
-    monkeypatch.setattr(
-        openviking_module,
-        "_wait_for_openviking_health",
-        lambda endpoint, **kwargs: False,
-    )
-    monkeypatch.setattr(
-        openviking_module,
-        "_VikingClient",
-        MagicMock(side_effect=AssertionError("client should not be rebuilt before health recovers")),
-    )
-
-    provider = OpenVikingMemoryProvider()
-    provider._endpoint = "http://127.0.0.1:1934"
-    warnings = []
-
-    provider._finish_runtime_openviking_start(
-        status_callback=None,
-        warning_callback=warnings.append,
-    )
-
-    assert provider._client is None
-    assert warnings == [
-        "Local OpenViking server at http://127.0.0.1:1934 is not reachable. "
-        "Tried to start openviking-server, but it did not become reachable "
-        "within 60 seconds. OpenViking memory disabled for this Moor run."
-    ]
-
-
-def test_initialize_does_not_autostart_remote_openviking(monkeypatch, caplog):
-    _clear_openviking_env(monkeypatch)
-    monkeypatch.setenv("OPENVIKING_ENDPOINT", "https://openviking.example")
-
-    class FakeVikingClient:
-        def __init__(self, endpoint, api_key="", account="", user="", agent=""):
-            assert endpoint == "https://openviking.example"
-
-        def health(self):
-            return False
-
-    monkeypatch.setattr(openviking_module, "_VikingClient", FakeVikingClient)
-    monkeypatch.setattr(
-        openviking_module,
-        "_start_local_openviking_server",
-        MagicMock(side_effect=AssertionError("remote endpoint should not auto-start")),
-    )
-    monkeypatch.setattr(
-        openviking_module,
-        "_wait_for_openviking_health",
-        MagicMock(side_effect=AssertionError("remote endpoint should not wait")),
-    )
-
-    with caplog.at_level("WARNING", logger=openviking_module.__name__):
-        provider = OpenVikingMemoryProvider()
-        provider.initialize("session-1")
-
-    assert provider._client is None
-    assert "Remote OpenViking server at https://openviking.example is not reachable" in caplog.text
-
-
-def test_initialize_warns_clearly_when_local_runtime_autostart_fails(monkeypatch, caplog):
-    _clear_openviking_env(monkeypatch)
-    monkeypatch.setenv("OPENVIKING_ENDPOINT", "http://localhost:1934")
-
-    class FakeVikingClient:
-        def __init__(self, endpoint, api_key="", account="", user="", agent=""):
-            assert endpoint == "http://localhost:1934"
-
-        def health(self):
-            return False
-
-    monkeypatch.setattr(openviking_module, "_VikingClient", FakeVikingClient)
-    monkeypatch.setattr(
-        openviking_module,
-        "_start_local_openviking_server",
-        lambda endpoint: (False, "openviking-server was not found on PATH."),
-    )
-    monkeypatch.setattr(
-        openviking_module,
-        "_wait_for_openviking_health",
-        MagicMock(side_effect=AssertionError("should not wait when server did not start")),
-    )
-
-    with caplog.at_level("WARNING", logger=openviking_module.__name__):
-        provider = OpenVikingMemoryProvider()
-        provider.initialize("session-1")
-
-    assert provider._client is None
-    assert "Local OpenViking server at http://localhost:1934 is not reachable" in caplog.text
-    assert "openviking-server was not found on PATH" in caplog.text
-
-
-def test_initialize_emits_cli_warning_when_local_runtime_autostart_fails(monkeypatch):
-    _clear_openviking_env(monkeypatch)
-    monkeypatch.setenv("OPENVIKING_ENDPOINT", "http://localhost:1934")
-
-    class FakeVikingClient:
-        def __init__(self, endpoint, api_key="", account="", user="", agent=""):
-            assert endpoint == "http://localhost:1934"
-
-        def health(self):
-            return False
-
-    warnings = []
-    monkeypatch.setattr(openviking_module, "_VikingClient", FakeVikingClient)
-    monkeypatch.setattr(
-        openviking_module,
-        "_start_local_openviking_server",
-        lambda endpoint: (False, "openviking-server was not found on PATH."),
-    )
-
-    provider = OpenVikingMemoryProvider()
-    provider.initialize("session-1", platform="cli", warning_callback=warnings.append)
-
-    assert provider._client is None
-    assert warnings == [
-        "Local OpenViking server at http://localhost:1934 is not reachable. "
-        "openviking-server was not found on PATH. "
-        "OpenViking memory disabled for this Moor run."
-    ]
-
-
-def test_initialize_does_not_emit_cli_warning_when_callback_absent(monkeypatch):
-    _clear_openviking_env(monkeypatch)
-    monkeypatch.setenv("OPENVIKING_ENDPOINT", "http://localhost:1934")
-
-    class FakeVikingClient:
-        def __init__(self, endpoint, api_key="", account="", user="", agent=""):
-            assert endpoint == "http://localhost:1934"
-
-        def health(self):
-            return False
-
-    monkeypatch.setattr(openviking_module, "_VikingClient", FakeVikingClient)
-    monkeypatch.setattr(
-        openviking_module,
-        "_start_local_openviking_server",
-        lambda endpoint: (False, "openviking-server was not found on PATH."),
-    )
-
-    provider = OpenVikingMemoryProvider()
-    provider.initialize("session-1", platform="gateway")
-
-    assert provider._client is None
-
-
-def test_post_setup_local_server_down_can_offer_autostart(tmp_path, monkeypatch):
-    _clear_openviking_env(monkeypatch)
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    monkeypatch.setattr(openviking_module, "_validate_openviking_setup_values", lambda values, *, require_api_key=False: (True, "", None))
-
-    from hermes_cli import memory_setup
-
-    reachability_calls = []
-
-    def validate_reachability(endpoint):
-        reachability_calls.append(endpoint)
-        return False, "OpenViking server is not reachable." if len(reachability_calls) == 1 else ""
-
-    started = []
-    monkeypatch.setattr(openviking_module, "_validate_openviking_reachability", validate_reachability)
-    monkeypatch.setattr(openviking_module, "_start_local_openviking_server", lambda endpoint: (started.append(endpoint) or True, "started"))
-    monkeypatch.setattr(openviking_module, "_wait_for_openviking_health", lambda endpoint, **kwargs: True)
-    choices = iter([1, 0, 0, 0])
-    monkeypatch.setattr(memory_setup, "_curses_select", lambda *args, **kwargs: next(choices))
-    monkeypatch.setattr(
-        memory_setup,
-        "_prompt",
-        _prompt_from_values({
-            "OpenViking server URL": "localhost",
-            "Moor peer ID in OpenViking": "agent",
-        }),
-    )
-    config = {"memory": {}}
-
-    OpenVikingMemoryProvider().post_setup(str(hermes_home), config)
-
-    assert started == ["http://localhost:1933"]
-    assert reachability_calls == ["http://localhost:1933"]
-    env_text = (hermes_home / ".env").read_text(encoding="utf-8")
-    assert "OPENVIKING_ENDPOINT=http://localhost:1933" in env_text
-    assert "OPENVIKING_API_KEY" not in env_text
-
-
-def test_post_setup_invalid_env_profile_can_create_new_config(tmp_path, monkeypatch):
-    _clear_openviking_env(monkeypatch)
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir()
-    ovcli_path = tmp_path / "broken" / "ovcli.conf"
-    ovcli_path.parent.mkdir()
-    ovcli_path.write_text("{", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    monkeypatch.setenv("OPENVIKING_CLI_CONFIG_FILE", str(ovcli_path))
-    _allow_setup_validation(monkeypatch)
-
-    from hermes_cli import memory_setup
-
-    choices = iter([1, 0, 0])
-    monkeypatch.setattr(memory_setup, "_curses_select", lambda *args, **kwargs: next(choices))
-    monkeypatch.setattr(
-        memory_setup,
-        "_prompt",
-        _prompt_from_values({
-            "OpenViking server URL": "https://openviking.example",
-            "OpenViking user API key": "user-secret",
-            "Moor peer ID in OpenViking": "agent",
-        }),
-    )
-    config = {"memory": {}}
-
-    OpenVikingMemoryProvider().post_setup(str(hermes_home), config)
-
-    assert ovcli_path.read_text(encoding="utf-8") == "{"
-    assert config["memory"]["openviking"] == {"use_ovcli_config": False}
-
-
-=======
->>>>>>> upstream/main
 def test_tool_search_sorts_by_raw_score_across_buckets():
     provider = OpenVikingMemoryProvider()
     provider._client = MagicMock()
@@ -2288,7 +1748,7 @@ class TestOpenVikingEnvWriter:
         _write_env_vars(env, {"OPENAI_API_KEY": "new"})
 
         lines = [l for l in env.read_text(encoding="utf-8-sig").splitlines() if l]
-        # The stale value must be gone, not left as a duplicate. Moor and
+        # The stale value must be gone, not left as a duplicate. Hermes and
         # python-dotenv use the last occurrence, but the file must have one value.
         assert lines.count("OPENAI_API_KEY=new") == 1
         assert not any(l.endswith("=old") for l in lines)

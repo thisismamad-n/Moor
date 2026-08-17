@@ -108,11 +108,11 @@ class TestFallbackChainInit:
             "fallback_providers": [
                 {"provider": "openrouter", "model": "anthropic/claude-sonnet-4.6"},
             ],
-            "fallback_model": {"provider": "nous", "model": "Moor-4"},
+            "fallback_model": {"provider": "nous", "model": "Hermes-4"},
         })
         assert cli._fallback_model == [
             {"provider": "openrouter", "model": "anthropic/claude-sonnet-4.6"},
-            {"provider": "nous", "model": "Moor-4"},
+            {"provider": "nous", "model": "Hermes-4"},
         ]
 
 
@@ -298,46 +298,16 @@ class TestHistoryDisplay:
         output = capsys.readouterr().out
 
         assert "[You #1]" in output
-        assert "[Moor #2]" in output
+        assert "[Hermes #2]" in output
         assert "(requested 2 tool calls)" in output
         assert "[Tools]" in output
         assert "(2 tool messages hidden)" in output
-        assert "[Moor #3]" in output
+        assert "[Hermes #3]" in output
         assert "[You #4]" in output
         assert "[You #5]" not in output
         assert "A" * 250 in output
         assert "A" * 250 + "..." not in output
 
-<<<<<<< HEAD
-    def test_history_shows_recent_sessions_when_current_chat_is_empty(self, capsys):
-        cli = _make_cli()
-        cli.session_id = "current"
-        cli._session_db = MagicMock()
-        cli._session_db.list_sessions_rich.return_value = [
-            {
-                "id": "current",
-                "title": "Current",
-                "preview": "Current preview",
-                "last_active": 0,
-            },
-            {
-                "id": "20260401_201329_d85961",
-                "title": "Checking Running Moor Agent",
-                "preview": "check running gateways for hermes agent",
-                "last_active": 0,
-            },
-        ]
-
-        cli.show_history()
-        output = capsys.readouterr().out
-
-        assert "No messages in the current chat yet" in output
-        assert "Checking Running Moor Agent" in output
-        assert "20260401_201329_d85961" in output
-        assert "/resume" in output
-        assert "Current preview" not in output
-=======
->>>>>>> upstream/main
 
     def test_resume_without_target_lists_recent_sessions(self, capsys):
         cli = _make_cli()
@@ -352,7 +322,7 @@ class TestHistoryDisplay:
             },
             {
                 "id": "20260401_201329_d85961",
-                "title": "Checking Running Moor Agent",
+                "title": "Checking Running Hermes Agent",
                 "preview": "check running gateways for hermes agent",
                 "last_active": 0,
             },
@@ -362,7 +332,7 @@ class TestHistoryDisplay:
         output = capsys.readouterr().out
 
         assert "Recent sessions" in output
-        assert "Checking Running Moor Agent" in output
+        assert "Checking Running Hermes Agent" in output
         assert "Use /resume" in output
         assert "session title" in output
 
@@ -382,7 +352,7 @@ class TestHistoryDisplay:
         cli._session_db.list_sessions_rich.return_value = [
             {
                 "id": "20260401_201329_d85961",
-                "title": "Checking Running Moor Agent",
+                "title": "Checking Running Hermes Agent",
                 "preview": "check running gateways for hermes agent",
                 "last_active": 0,
             },
@@ -395,32 +365,9 @@ class TestHistoryDisplay:
 
         assert "Unknown command" not in output
         assert "Recent sessions" in output
-        assert "Checking Running Moor Agent" in output
+        assert "Checking Running Hermes Agent" in output
         assert "20260401_201329_d85961" in output
 
-<<<<<<< HEAD
-    def test_sessions_list_subcommand_lists_recent_sessions(self, capsys):
-        """/sessions list is an explicit alias for the no-arg list view."""
-        cli = _make_cli()
-        cli.session_id = "current"
-        cli._session_db = MagicMock()
-        cli._session_db.list_sessions_rich.return_value = [
-            {
-                "id": "20260401_201329_d85961",
-                "title": "Checking Running Moor Agent",
-                "preview": "check running gateways for hermes agent",
-                "last_active": 0,
-            },
-        ]
-
-        cli.process_command("/sessions list")
-        output = capsys.readouterr().out
-
-        assert "Unknown command" not in output
-        assert "Recent sessions" in output
-        assert "Checking Running Moor Agent" in output
-=======
->>>>>>> upstream/main
 
     def test_sessions_with_target_delegates_to_resume(self):
         """/sessions <id_or_title> behaves identically to /resume <id_or_title>.
@@ -431,10 +378,10 @@ class TestHistoryDisplay:
         """
         cli = _make_cli()
         with patch.object(cli, "_handle_resume_command") as mock_resume:
-            cli.process_command("/sessions Checking Running Moor Agent")
+            cli.process_command("/sessions Checking Running Hermes Agent")
 
         mock_resume.assert_called_once_with(
-            "/resume Checking Running Moor Agent"
+            "/resume Checking Running Hermes Agent"
         )
 
 

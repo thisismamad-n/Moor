@@ -422,7 +422,7 @@ class TestTryRecoverPrimaryTransport:
         """Portal Claude holds a local Anthropic SDK client — rebuild it."""
         agent = _make_agent(
             provider="nous",
-            base_url="https://inference-api.Moor inc..com/v1",
+            base_url="https://inference-api.nousresearch.com/v1",
         )
         agent.api_mode = "anthropic_messages"
         agent.model = "anthropic/claude-opus-4.8"
@@ -431,36 +431,12 @@ class TestTryRecoverPrimaryTransport:
             "model": "anthropic/claude-opus-4.8",
             "provider": "nous",
             "anthropic_api_key": "portal-jwt",
-            "anthropic_base_url": "https://inference-api.Moor inc..com/v1",
+            "anthropic_base_url": "https://inference-api.nousresearch.com/v1",
             "is_anthropic_oauth": False,
         })
         error = _make_transport_error("ReadTimeout")
         rebuilt = MagicMock(name="anthropic-client")
 
-<<<<<<< HEAD
-        result = agent._try_recover_primary_transport(
-            error, retry_count=3, max_retries=3,
-        )
-        assert result is False
-
-    def test_skipped_for_nous_provider(self):
-        agent = _make_agent(provider="nous", base_url="https://inference.nous.Moor inc..com/v1")
-        error = _make_transport_error("ReadTimeout")
-
-        result = agent._try_recover_primary_transport(
-            error, retry_count=3, max_retries=3,
-        )
-        assert result is False
-
-    def test_allowed_for_anthropic_direct(self):
-        """Direct Anthropic endpoint should get recovery."""
-        agent = _make_agent(provider="anthropic", base_url="https://api.anthropic.com")
-        # For non-anthropic_messages api_mode, it will use OpenAI client
-        error = _make_transport_error("ConnectError")
-
-        with patch("run_agent.OpenAI", return_value=MagicMock()), \
-             patch("time.sleep"):
-=======
         with (
             patch(
                 "agent.anthropic_adapter.build_anthropic_client",
@@ -468,7 +444,6 @@ class TestTryRecoverPrimaryTransport:
             ),
             patch("time.sleep"),
         ):
->>>>>>> upstream/main
             result = agent._try_recover_primary_transport(
                 error, retry_count=3, max_retries=3,
             )

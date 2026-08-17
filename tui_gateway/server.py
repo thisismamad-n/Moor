@@ -370,9 +370,9 @@ _detached_ws_transport = _DropTransport()
 
 
 def _prepend_tool_paths(env: dict[str, str]) -> dict[str, str]:
-    """Prepend Moor' managed bin, the venv bin dir, and the user-local
+    """Prepend Hermes' managed bin, the venv bin dir, and the user-local
     bin dir to PATH so slash_worker child processes can resolve
-    Moor-managed CLIs (browser-use, uvx, uv) even when the parent
+    Hermes-managed CLIs (browser-use, uvx, uv) even when the parent
     gateway was launched with a minimal PATH (e.g. by the
     Desktop/Dashboard app). Managed bin leads, matching the managed-first
     resolution policy for the Browser Use CLI."""
@@ -415,7 +415,7 @@ class _SlashWorker:
         self._closed = False
         from hermes_cli._subprocess_compat import windows_hide_flags
 
-        # slash_worker runs the Moor agent → needs provider credentials.
+        # slash_worker runs the Hermes agent → needs provider credentials.
         # Tier-1 secrets (gateway/GitHub/infra) are still stripped (#29157).
         # Global-remote / multi-profile sessions: the worker must resolve
         # config/skills/state against the session's profile home, not the
@@ -429,8 +429,8 @@ class _SlashWorker:
             inherit_profile_home=False,  # base already carries the HOME contract
             extra={"HERMES_HOME": str(profile_home)} if profile_home else None,
         )
-        # Prepend the Moor venv bin dir and the user-local bin dir to PATH so
-        # slash_worker child processes can resolve Moor-managed CLIs
+        # Prepend the Hermes venv bin dir and the user-local bin dir to PATH so
+        # slash_worker child processes can resolve Hermes-managed CLIs
         # (browser-use, uvx) even when the parent gateway was launched with a
         # minimal PATH (e.g. by the Desktop/Dashboard app). See #83845.
         env = _prepend_tool_paths(env)
@@ -3796,7 +3796,7 @@ _skin_watcher_started = False
 
 def _ensure_skin_watcher() -> None:
     """Watch cheap on-disk signatures and broadcast change events — so a skin
-    Moor activates, a pet ``/pet`` adopts, a cron the scheduler fires, or a
+    Hermes activates, a pet ``/pet`` adopts, a cron the scheduler fires, or a
     messaging turn another process writes goes live on every surface within a
     couple seconds, on its own, with no client-side poll in the loop.
     Idempotent; started at gateway.ready. (Named for its original skin-only
@@ -4468,7 +4468,7 @@ def _gui_surface_toolsets(platform: str) -> set[str]:
     driving a local, SSH, URL, or cloud backend, and only the local/SSH spawn
     paths run with ``HERMES_DESKTOP=1``. Keying GUI capability off that env var
     silently stripped every pane/browser tool from URL and cloud gateways while
-    the same backend told the model it was "chatting inside the Moor desktop
+    the same backend told the model it was "chatting inside the Hermes desktop
     app". See the surface-capability rule in AGENTS.md.
     """
     surfaces = {"project"}
@@ -4487,7 +4487,7 @@ def _load_enabled_toolsets(platform: str | None = None) -> list[str] | None:
     cfg = None
     fallback_notice = None
 
-    # Coding posture (base Moor): with no explicit pin, collapse to the
+    # Coding posture (base Hermes): with no explicit pin, collapse to the
     # coding toolset (+ enabled MCP servers) when sitting in a code workspace.
     # The desktop app and `hermes --tui` both land here. See
     # agent/coding_context.py. No config is loaded yet at this point, so we let
@@ -6207,7 +6207,7 @@ def _agent_cbs(sid: str) -> dict:
         ),
         # read_window_below tool (desktop GUI): the renderer asks its main
         # process (which owns native window enumeration) which OS window sits
-        # directly underneath the Moor window, and answers
+        # directly underneath the Hermes window, and answers
         # window.read.respond with the serialized metadata.
         "read_window_below_callback": lambda: _block(
             "window.read.request",
@@ -8965,7 +8965,7 @@ def _pet_active_selection():
 def _pet_state_rows(spritesheet) -> list[str]:
     """Row taxonomy for the concrete active pet sheet.
 
-    Moor has to support both the legacy 8-row petdex atlas and the current
+    Hermes has to support both the legacy 8-row petdex atlas and the current
     Codex/petdex 9-row atlas. The desktop canvas gets this list and indexes it
     with the same `PetState` names the Python renderer uses.
     """
@@ -9326,158 +9326,6 @@ def _serialize_subscription_state(state) -> dict:
     def _s(value):
         return None if value is None else str(value)
 
-<<<<<<< HEAD
-    charge_id = params.get("charge_id")
-    if not charge_id:
-        return _ok(rid, {"ok": False, "error": "invalid_charge_id", "message": "charge_id is required"})
-    try:
-        result = get_charge_status(charge_id)
-        return _ok(
-            rid,
-            {
-                "ok": True,
-                "status": result.get("status"),
-                "amount_usd": result.get("amountUsd"),
-                "settled_at": result.get("settledAt"),
-                "reason": result.get("reason"),
-            },
-        )
-    except BillingError as exc:
-        return _ok(rid, _serialize_billing_error(exc))
-    except Exception as exc:
-        return _ok(rid, {"ok": False, "error": "error", "message": str(exc)})
-
-
-@method("billing.auto_reload")
-def _(rid, params: dict) -> dict:
-    """PATCH /api/billing/auto-top-up → {ok:true} or typed error (Screen 2).
-
-    params: {enabled: bool, threshold: number, top_up_amount: number}.
-    """
-    from hermes_cli.nous_billing import BillingError, patch_auto_top_up
-
-    try:
-        enabled = bool(params.get("enabled"))
-        threshold = params.get("threshold")
-        top_up_amount = params.get("top_up_amount")
-        if threshold is None or top_up_amount is None:
-            return _ok(rid, {"ok": False, "error": "invalid_request", "message": "threshold and top_up_amount are required"})
-        patch_auto_top_up(enabled=enabled, threshold=threshold, top_up_amount=top_up_amount)
-        return _ok(rid, {"ok": True})
-    except BillingError as exc:
-        return _ok(rid, _serialize_billing_error(exc))
-    except Exception as exc:
-        return _ok(rid, {"ok": False, "error": "error", "message": str(exc)})
-
-
-@method("billing.step_up")
-def _(rid, params: dict) -> dict:
-    """Run the lazy billing:manage step-up device flow → {ok, granted}.
-
-    Triggered by the TUI after a billing call returns error=insufficient_scope.
-    Returns granted:false when the server silently downscopes (non-admin / unticked).
-
-    Runs on the thread pool (in _LONG_HANDLERS): the device flow blocks for the
-    whole device-code lifetime (minutes), so it must not stall the main stdin loop.
-    The verification URL/code reach the TUI via an out-of-band ``billing.step_up.
-    verification`` event (a plain print would be dropped by the JSON-RPC stdout
-    pipe), and the browser is opened TUI-side via openExternalUrl — never with the
-    gateway's headless webbrowser.open (hence open_browser=False).
-    """
-    sid = params.get("session_id") or ""
-    try:
-        from hermes_cli.auth import step_up_nous_billing_scope
-
-        def _on_verification(url: str, code: str) -> None:
-            _emit(
-                "billing.step_up.verification",
-                sid,
-                {"verification_url": url, "user_code": code},
-            )
-
-        granted = step_up_nous_billing_scope(
-            open_browser=False, on_verification=_on_verification
-        )
-        return _ok(rid, {"ok": True, "granted": bool(granted)})
-    except Exception as exc:
-        return _ok(rid, {"ok": False, "error": "error", "message": str(exc), "granted": False})
-
-
-@method("session.status")
-def _(rid, params: dict) -> dict:
-    session, err = _sess_nowait(params, rid)
-    if err:
-        return err
-
-    from hermes_constants import display_hermes_home
-
-    key = session.get("session_key") or params.get("session_id") or ""
-    agent = session.get("agent")
-    meta = {}
-    db = _get_db()
-    if db and key:
-        try:
-            meta = db.get_session(key) or {}
-        except Exception:
-            meta = {}
-
-    def _dt(value, fallback: datetime | None = None) -> datetime:
-        if value:
-            try:
-                return datetime.fromtimestamp(float(value))
-            except Exception:
-                pass
-        return fallback or datetime.now()
-
-    created = _dt(meta.get("started_at"))
-    updated = created
-    for field in ("updated_at", "last_updated_at", "last_activity_at"):
-        if meta.get(field):
-            updated = _dt(meta.get(field), created)
-            break
-
-    mirror = _metadata_mirror(session)
-    usage = _session_usage_snapshot(session)
-    provider = getattr(agent, "provider", None) or mirror.get("provider") or "unknown"
-    model = getattr(agent, "model", None) or mirror.get("model") or "(unknown)"
-    lines = [
-        "Moor TUI Status",
-        "",
-        f"Session ID: {key}",
-        f"Path: {display_hermes_home()}",
-    ]
-    title = (meta.get("title") or "").strip()
-    if title:
-        lines.append(f"Title: {title}")
-    lines.extend(
-        [
-            f"Model: {model} ({provider})",
-            f"Created: {created.strftime('%Y-%m-%d %H:%M')}",
-            f"Last Activity: {updated.strftime('%Y-%m-%d %H:%M')}",
-            f"Tokens: {int(usage.get('total') or 0):,}",
-            f"Agent Running: {'Yes' if session.get('running') else 'No'}",
-        ]
-    )
-    return _ok(rid, {"output": "\n".join(lines)})
-
-
-@method("session.history")
-def _(rid, params: dict) -> dict:
-    session, err = _sess_nowait(params, rid)
-    if err:
-        return err
-    history = list(session.get("history", []))
-    db = _get_db()
-    if db is not None and session.get("session_key"):
-        try:
-            history = db.get_messages_as_conversation(
-                session["session_key"], include_ancestors=True
-            )
-        except Exception:
-            pass
-    return _ok(
-        rid,
-=======
     current = None
     if state.current is not None:
         c = state.current
@@ -9497,7 +9345,6 @@ def _(rid, params: dict) -> dict:
     # Selectable catalog for the in-terminal tier picker; price is pre-formatted
     # ($X / $X.YY) so the TUI renders it directly.
     tiers = [
->>>>>>> upstream/main
         {
             "tier_id": t.tier_id,
             "name": t.name,
@@ -9531,370 +9378,6 @@ def _(rid, params: dict) -> dict:
     }
 
 
-<<<<<<< HEAD
-@method("session.undo")
-def _(rid, params: dict) -> dict:
-    session, err = _sess(params, rid)
-    if err:
-        return err
-    # Reject during an in-flight turn.  If we mutated history while
-    # the agent thread is running, prompt.submit's post-run history
-    # write would either clobber the undo (version matches) or
-    # silently drop the agent's output (version mismatch, see below).
-    # Neither is what the user wants — make them /interrupt first.
-    if session.get("running"):
-        return _err(
-            rid, 4009, "session busy — /interrupt the current turn before /undo"
-        )
-    removed = 0
-    with session["history_lock"]:
-        history = session.get("history", [])
-        while history and history[-1].get("role") in {"assistant", "tool"}:
-            history.pop()
-            removed += 1
-        if history and history[-1].get("role") == "user":
-            history.pop()
-            removed += 1
-        if removed:
-            session["history_version"] = int(session.get("history_version", 0)) + 1
-    return _ok(rid, {"removed": removed})
-
-
-@method("session.compress")
-def _(rid, params: dict) -> dict:
-    session, err = _sess_nowait(params, rid)
-    if err:
-        return err
-    if _session_uses_compute_host(session):
-        sid = str(params.get("session_id") or "")
-        focus_topic = str(params.get("focus_topic", "") or "").strip()
-        command = "/compress" + (f" {focus_topic}" if focus_topic else "")
-        try:
-            ack = _send_compute_host_control(
-                sid,
-                route_name="session.compress",
-                command=command,
-                wait=True,
-            )
-        except Exception as exc:
-            return _err(rid, 5019, f"compute-host compress failed: {exc}")
-        if ack.get("type") in {"control.error", "error"}:
-            return _err(rid, 4009, str(ack.get("message") or "compute-host compress failed"))
-        _apply_compute_host_metadata_mirror(session, ack)
-        return _ok(rid, {"status": "compressed", "turn_isolation": True, "host_ack": ack})
-    session, err = _sess(params, rid)
-    if err:
-        return err
-    if session.get("running"):
-        return _err(
-            rid, 4009, "session busy — /interrupt the current turn before /compress"
-        )
-    sid = params.get("session_id", "")
-    focus_topic = str(params.get("focus_topic", "") or "").strip()
-    try:
-        from agent.manual_compression_feedback import summarize_manual_compression
-        from agent.model_metadata import estimate_request_tokens_rough
-
-        with session["history_lock"]:
-            before_messages = list(session.get("history", []))
-            history_version = int(session.get("history_version", 0))
-        before_count = len(before_messages)
-        _agent = session["agent"]
-        _sys_prompt = getattr(_agent, "_cached_system_prompt", "") or ""
-        _tools = getattr(_agent, "tools", None) or None
-        before_tokens = (
-            estimate_request_tokens_rough(
-                before_messages, system_prompt=_sys_prompt, tools=_tools
-            )
-            if before_count
-            else 0
-        )
-
-        if before_count >= 4:
-            focus_suffix = f', focus: "{focus_topic}"' if focus_topic else ""
-            _status_update(
-                sid,
-                "compressing",
-                f"⠋ compressing {before_count} messages "
-                f"(~{before_tokens:,} tok){focus_suffix}…",
-            )
-
-        try:
-            removed, usage = _compress_session_history(
-                session,
-                focus_topic,
-                approx_tokens=before_tokens,
-                before_messages=before_messages,
-                history_version=history_version,
-            )
-            with session["history_lock"]:
-                messages = list(session.get("history", []))
-            after_count = len(messages)
-            # Re-read system prompt + tools after compression — _compress_context
-            # may have rebuilt the system prompt (_cached_system_prompt=None).
-            _sys_prompt_after = (
-                getattr(_agent, "_cached_system_prompt", "") or _sys_prompt
-            )
-            _tools_after = getattr(_agent, "tools", None) or _tools
-            after_tokens = (
-                estimate_request_tokens_rough(
-                    messages,
-                    system_prompt=_sys_prompt_after,
-                    tools=_tools_after,
-                )
-                if after_count
-                else 0
-            )
-            agent = session["agent"]
-            _sync_session_key_after_compress(sid, session)
-            summary = summarize_manual_compression(
-                before_messages,
-                messages,
-                before_tokens,
-                after_tokens,
-                compression_state=getattr(agent, "context_compressor", None),
-            )
-            info = _session_info(agent, session)
-            _emit("session.info", sid, info)
-            return _ok(
-                rid,
-                {
-                    "status": "aborted" if summary["aborted"] else "compressed",
-                    "removed": removed,
-                    "before_messages": before_count,
-                    "after_messages": after_count,
-                    "before_tokens": before_tokens,
-                    "after_tokens": after_tokens,
-                    "summary": summary,
-                    "usage": usage,
-                    "info": info,
-                    "messages": messages,
-                },
-            )
-        finally:
-            # Always clear the pinned compressing status so the bar
-            # reverts to neutral whether compaction succeeded, was a
-            # no-op, or raised.
-            _status_update(sid, "ready")
-    except Exception as e:
-        return _err(rid, 5005, str(e))
-
-
-@method("session.save")
-def _(rid, params: dict) -> dict:
-    session, err = _sess(params, rid)
-    if err:
-        return err
-
-    agent = session["agent"]
-    # Mirror the classic CLI /save: snapshot under the Moor profile home
-    # (~/.hermes/sessions/saved/) rather than the project/workspace CWD, and
-    # include the system prompt so the export matches the dashboard save.
-    saved_dir = get_hermes_home() / "sessions" / "saved"
-    try:
-        saved_dir.mkdir(parents=True, exist_ok=True)
-    except Exception as e:
-        return _err(rid, 5011, f"failed to create save directory {saved_dir}: {e}")
-
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    path = saved_dir / f"hermes_conversation_{timestamp}.json"
-
-    with session["history_lock"]:
-        messages = list(session.get("history", []))
-
-    session_id = getattr(agent, "session_id", None) or session.get("session_key") or ""
-    # Prefer the agent's session_start datetime (matches the classic CLI export);
-    # fall back to the gateway session's created_at timestamp.
-    agent_start = getattr(agent, "session_start", None)
-    if isinstance(agent_start, datetime):
-        session_start = agent_start.isoformat()
-    else:
-        created_at = session.get("created_at")
-        session_start = (
-            datetime.fromtimestamp(created_at).isoformat()
-            if isinstance(created_at, (int, float))
-            else ""
-        )
-
-    try:
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(
-                {
-                    "model": getattr(agent, "model", ""),
-                    "session_id": session_id,
-                    "session_start": session_start,
-                    "system_prompt": getattr(agent, "_cached_system_prompt", "") or "",
-                    "messages": messages,
-                },
-                f,
-                indent=2,
-                ensure_ascii=False,
-            )
-        return _ok(rid, {"file": str(path)})
-    except Exception as e:
-        return _err(rid, 5011, str(e))
-
-
-@method("session.close")
-def _(rid, params: dict) -> dict:
-    sid = params.get("session_id", "")
-    # Serialize against the WS-orphan reaper (which also pops under
-    # _session_resume_lock) so a disconnect-reap and an explicit close can't
-    # both tear the same session down. _close_session_by_id is the single
-    # idempotent teardown path (pop + _teardown_session) and returns False
-    # when the session is already gone.
-    with _session_resume_lock:
-        return _ok(rid, {"closed": _close_session_by_id(sid, end_reason="tui_close")})
-
-
-@method("session.branch")
-def _(rid, params: dict) -> dict:
-    session, err = _sess(params, rid)
-    if err:
-        return err
-    db = _get_db()
-    if db is None:
-        return _db_unavailable_error(rid, code=5008)
-    old_key = session["session_key"]
-    with session["history_lock"]:
-        history = [dict(msg) for msg in session.get("history", [])]
-    if not history:
-        return _err(rid, 4008, "nothing to branch — send a message first")
-    new_key = _new_session_key()
-    new_sid = uuid.uuid4().hex[:8]
-    source = _session_source(session)
-    lease, limit_message = _claim_active_session_slot(
-        new_key, live_session_id=new_sid, surface=source
-    )
-    if limit_message is not None:
-        return _err(rid, 4090, limit_message)
-    branch_name = params.get("name", "")
-    try:
-        if branch_name:
-            title = branch_name
-        else:
-            current = db.get_session_title(old_key) or "branch"
-            title = (
-                db.get_next_title_in_lineage(current)
-                if hasattr(db, "get_next_title_in_lineage")
-                else f"{current} (branch)"
-            )
-        db.create_session(
-            new_key,
-            source=source,
-            model=_resolve_model(),
-            # Stable _branched_from marker so list_sessions_rich() keeps the
-            # branch visible in /resume and /sessions. The TUI branch leaves
-            # the parent live (no end_reason='branched'), so the legacy
-            # end_reason heuristic never matches it — the marker is the only
-            # thing that surfaces TUI branches. See issue #20856.
-            model_config={"_branched_from": old_key},
-            parent_session_id=old_key,
-            cwd=_session_cwd(session),
-        )
-        for msg in history:
-            db.append_message(
-                session_id=new_key,
-                role=msg.get("role", "user"),
-                content=msg.get("content"),
-            )
-        db.set_session_title(new_key, title)
-    except Exception as e:
-        if lease is not None:
-            lease.release()
-        return _err(rid, 5008, f"branch failed: {e}")
-    try:
-        tokens = _set_session_context(new_key)
-        try:
-            agent = _make_agent(
-                new_sid,
-                new_key,
-                session_id=new_key,
-                platform_override=source,
-            )
-        finally:
-            _clear_session_context(tokens)
-        _init_session(
-            new_sid,
-            new_key,
-            agent,
-            list(history),
-            cols=session.get("cols", 80),
-            source=source,
-        )
-        if new_sid in _sessions:
-            _sessions[new_sid]["active_session_lease"] = lease
-    except Exception as e:
-        if lease is not None:
-            lease.release()
-        return _err(rid, 5000, f"agent init failed on branch: {e}")
-    return _ok(rid, {"session_id": new_sid, "title": title, "parent": old_key})
-
-
-@method("session.interrupt")
-def _(rid, params: dict) -> dict:
-    session, err = _sess_nowait(params, rid)
-    if err:
-        return err
-    if _session_uses_compute_host(session):
-        sid = str(params.get("session_id") or "")
-        if session.get("running"):
-            try:
-                _get_compute_host_supervisor().interrupt(sid, request_id=f"interrupt-{rid}")
-            except Exception as exc:
-                return _err(rid, 5019, f"compute-host interrupt failed: {exc}")
-        with session["history_lock"]:
-            session["_turn_cancel_requested"] = True
-            session["queued_prompt"] = None
-        _clear_pending(sid)
-        try:
-            from tools.approval import resolve_gateway_approval
-
-            resolve_gateway_approval(session["session_key"], "deny", resolve_all=True)
-        except Exception:
-            pass
-        return _ok(rid, {"status": "interrupted", "turn_isolation": True})
-    session, err = _sess(params, rid)
-    if err:
-        return err
-    # Safety net: if the turn's run thread is already gone but `running` stayed
-    # stuck (a crash/desync that skipped the run loop's `finally`), force-clear it
-    # so the session can't be permanently bricked at 4009 "session busy" — every
-    # send/restore/resume would otherwise reject until a full backend restart.
-    # Always tell the agent to interrupt when the session claims a run is active:
-    # stale flags are cleared below, and fresh turns clear the interrupt flag at
-    # entry. This keeps a stale/missing thread handle from making Stop a no-op.
-    run_thread = session.get("_run_thread")
-    run_thread_alive = run_thread is not None and run_thread.is_alive()
-    should_interrupt = bool(session.get("running"))
-    if should_interrupt and hasattr(session["agent"], "interrupt"):
-        session["agent"].interrupt()
-    with session["history_lock"]:
-        session["_turn_cancel_requested"] = True
-        session["queued_prompt"] = None
-    if not run_thread_alive:
-        with session["history_lock"]:
-            if session.get("running"):
-                session["running"] = False
-                _clear_inflight_turn(session)
-
-    # Stop = stop the TURN (cooperative interrupt above also kills the in-flight
-    # foreground subprocess). Background processes the agent started (dev servers,
-    # watchers) are intentionally left running — kill those individually with the
-    # "x" on the task row (process.kill). Don't reap them here.
-    # Scope the pending-prompt release to THIS session.  A global
-    # _clear_pending() would collaterally cancel clarify/sudo/secret
-    # prompts on unrelated sessions sharing the same tui_gateway
-    # process, silently resolving them to empty strings.
-    _clear_pending(params.get("session_id", ""))
-    try:
-        from tools.approval import resolve_gateway_approval
-
-        resolve_gateway_approval(session["session_key"], "deny", resolve_all=True)
-    except Exception:
-        pass
-    return _ok(rid, {"status": "interrupted"})
-=======
 def _serialize_subscription_preview(p) -> dict:
     """Serialize a SubscriptionChangePreview for the wire (Decimal → string)."""
     return {
@@ -9911,7 +9394,6 @@ def _serialize_subscription_preview(p) -> dict:
         "amount_due_now_cents": p.amount_due_now_cents,
         "effective_at": p.effective_at,
     }
->>>>>>> upstream/main
 
 
 # ── Delegation: subagent tree observability + controls ───────────────
@@ -12220,282 +11702,6 @@ def _stage_session_file_attachment(
     return target.resolve(), True
 
 
-<<<<<<< HEAD
-@method("file.attach")
-def _(rid, params: dict) -> dict:
-    """Stage a non-image file attachment into the session workspace.
-
-    The image/PDF path renders to vision tiles; this one keeps the file as a
-    readable artifact and returns a workspace-relative ``@file:`` ref so the
-    agent's file tools (and ``agent.context_references``) can read it. Solves the
-    remote-gateway case where the desktop passes a path that only exists on the
-    CLIENT's disk: the client uploads ``data_url`` bytes and we materialize the
-    file on the gateway.
-
-    Params:
-      session_id (str, required)
-      path (str): client/host path of the file (used for naming + local-mode
-        gateway-visible resolution).
-      data_url (str): ``data:<mime>;base64,<b64>`` upload of the file bytes,
-        required when the path isn't visible to the gateway.
-      name (str, optional): preferred filename.
-    """
-    session, err = _sess(params, rid)
-    if err:
-        return err
-    raw = str(params.get("path", "") or "").strip()
-    data_url = str(params.get("data_url", "") or "").strip()
-    name = str(params.get("name", "") or "").strip()
-    if not raw and not data_url:
-        return _err(rid, 4015, "path or data_url required")
-    try:
-        stored_path, uploaded = _stage_session_file_attachment(
-            session, raw_path=raw, data_url=data_url, name=name
-        )
-        ref_path = _attachment_ref_path(session, stored_path)
-        return _ok(
-            rid,
-            {
-                "attached": True,
-                "name": stored_path.name,
-                "path": str(stored_path),
-                "ref_path": ref_path,
-                "ref_text": f"@file:{_format_ref_value(ref_path)}",
-                "uploaded": uploaded,
-            },
-        )
-    except Exception as e:
-        return _err(rid, 5028, str(e))
-
-
-@method("image.detach")
-def _(rid, params: dict) -> dict:
-    session, err = _sess(params, rid)
-    if err:
-        return err
-    raw = str(params.get("path", "") or "").strip()
-    if not raw:
-        return _err(rid, 4015, "path required")
-    images = session.setdefault("attached_images", [])
-    before = len(images)
-    session["attached_images"] = [path for path in images if path != raw]
-    return _ok(
-        rid,
-        {
-            "detached": len(session["attached_images"]) != before,
-            "count": len(session["attached_images"]),
-        },
-    )
-
-
-@method("input.detect_drop")
-def _(rid, params: dict) -> dict:
-    session, err = _sess_nowait(params, rid)
-    if err:
-        return err
-    try:
-        from cli import _detect_file_drop
-
-        raw = str(params.get("text", "") or "")
-        dropped = _detect_file_drop(raw)
-        if not dropped:
-            return _ok(rid, {"matched": False})
-
-        drop_path = dropped["path"]
-        remainder = dropped["remainder"]
-        if dropped["is_image"]:
-            session.setdefault("attached_images", []).append(str(drop_path))
-            text = remainder or f"[User attached image: {drop_path.name}]"
-            return _ok(
-                rid,
-                {
-                    "matched": True,
-                    "is_image": True,
-                    "path": str(drop_path),
-                    "count": len(session["attached_images"]),
-                    "text": text,
-                    **_image_meta(drop_path),
-                },
-            )
-
-        text = f"[User attached file: {drop_path}]" + (
-            f"\n{remainder}" if remainder else ""
-        )
-        return _ok(
-            rid,
-            {
-                "matched": True,
-                "is_image": False,
-                "path": str(drop_path),
-                "name": drop_path.name,
-                "text": text,
-            },
-        )
-    except Exception as e:
-        return _err(rid, 5027, str(e))
-
-
-@method("prompt.background")
-def _(rid, params: dict) -> dict:
-    session, err = _sess(params, rid)
-    if err:
-        return err
-    text, parent = params.get("text", ""), params.get("session_id", "")
-    if not text:
-        return _err(rid, 4012, "text required")
-    task_id = f"bg_{uuid.uuid4().hex[:6]}"
-
-    def run():
-        session_tokens = _set_session_context(task_id, cwd=_session_cwd(session))
-        try:
-            from run_agent import AIAgent
-
-            result = AIAgent(
-                **_background_agent_kwargs(session["agent"], task_id)
-            ).run_conversation(
-                user_message=text,
-                task_id=task_id,
-            )
-            _emit(
-                "background.complete",
-                parent,
-                {
-                    "task_id": task_id,
-                    "text": (
-                        result.get("final_response", str(result))
-                        if isinstance(result, dict)
-                        else str(result)
-                    ),
-                },
-            )
-        except Exception as e:
-            _emit(
-                "background.complete",
-                parent,
-                {"task_id": task_id, "text": f"error: {e}"},
-            )
-        finally:
-            _clear_session_context(session_tokens)
-
-    threading.Thread(target=run, daemon=True).start()
-    return _ok(rid, {"task_id": task_id})
-
-
-@method("preview.restart")
-def _(rid, params: dict) -> dict:
-    session, err = _sess(params, rid)
-    if err:
-        return err
-
-    url = str(params.get("url") or "").strip()
-    cwd = str(params.get("cwd") or "").strip()
-    context = str(params.get("context") or "").strip()
-
-    if not url:
-        return _err(rid, 4012, "url required")
-
-    task_id = f"preview_{uuid.uuid4().hex[:6]}"
-    parent = params.get("session_id", "")
-    parent_history = _preview_restart_history(session)
-    has_history = bool(parent_history)
-    prompt = "\n".join(
-        line
-        for line in [
-            "The desktop preview pane cannot load a local server URL.",
-            "",
-            f"Preview URL: {url}",
-            f"Current working directory: {cwd or '(unknown)'}",
-            "",
-            f"Preview console:\n{context}" if context else "",
-            "" if context else "",
-            (
-                "The conversation history above is from the user's main session — including the commands you (the assistant) previously ran to start servers, edit files, or check ports. Use it to figure out exactly which server should be running at this Preview URL. The user did not start a brand new task; recover what they had working."
-                if has_history
-                else None
-            ),
-            "Restart exactly the app intended for the Preview URL, not Moor Desktop itself.",
-            "The Preview URL and port are the target. Preserve that target unless you conclude it is impossible.",
-            "If the prior conversation shows a specific command that bound this URL/port, prefer re-running THAT exact command (in the same cwd) over guessing a new one.",
-            "First inspect what process, if any, owns the Preview URL port. If a stale server exists, inspect its cwd and prefer that cwd over the Moor/Desktop process cwd.",
-            "The Current working directory is only a hint. Do not assume it is the preview app root when the port owner or files indicate another root.",
-            "If the console shows a module-script MIME error for src/main.tsx or similar, a static server is serving source files. Do not restart python -m http.server or any dumb static server for that app.",
-            "For module-script MIME failures, inspect package.json/vite config in the candidate app root and start the real dev server/bundler (for example npm/pnpm/yarn dev) so module transforms happen.",
-            "Before declaring success, verify the Preview URL responds with the intended app, not Moor Desktop. If it serves Moor/Desktop UI or another unrelated app, stop that process and report failure.",
-            "Do not modify files. Do not ask the user unless blocked.",
-            "Prefer existing project scripts or commands when they are clear.",
-            "If a stale process owns the needed port, handle it safely.",
-            "Start long-running servers detached/in the background, then return immediately.",
-            "Do not run a foreground dev server command that blocks this background task.",
-            "Keep the final response short: what command/server was started, or why it could not be restarted.",
-        ]
-        if line
-    )
-
-    # Normalize defensively: a malformed client path (embedded NUL, etc.) must
-    # not blow up the whole restart — treat it as "no validated cwd".
-    try:
-        preview_cwd = os.path.abspath(os.path.expanduser(cwd)) if cwd else ""
-        if preview_cwd and not os.path.isdir(preview_cwd):
-            preview_cwd = ""
-    except Exception:
-        preview_cwd = ""
-
-    def run():
-        # Pin the validated preview cwd, else the parent workspace — never an
-        # invalid client path, which would silently fall back to the launch dir.
-        session_tokens = _set_session_context(task_id, cwd=(preview_cwd or _session_cwd(session)))
-        try:
-            from run_agent import AIAgent
-            from tools.terminal_tool import register_task_env_overrides
-
-            if preview_cwd:
-                register_task_env_overrides(task_id, {"cwd": preview_cwd})
-
-            history_note = (
-                f" (with {len(parent_history)} parent-session messages of context)"
-                if parent_history
-                else ""
-            )
-            _emit(
-                "preview.restart.progress",
-                parent,
-                {"task_id": task_id, "text": f"Starting hidden restart agent{history_note}"},
-            )
-            result = AIAgent(
-                **_ephemeral_preview_agent_kwargs(session["agent"], task_id),
-                **_preview_restart_callbacks(parent, task_id),
-            ).run_conversation(
-                user_message=prompt,
-                task_id=task_id,
-                conversation_history=parent_history or None,
-            )
-            text = (
-                result.get("final_response", str(result))
-                if isinstance(result, dict)
-                else str(result)
-            )
-            _emit("preview.restart.complete", parent, {"task_id": task_id, "text": text})
-        except Exception as e:
-            _emit(
-                "preview.restart.complete",
-                parent,
-                {"task_id": task_id, "text": f"error: {e}"},
-            )
-        finally:
-            try:
-                from tools.terminal_tool import clear_task_env_overrides
-
-                clear_task_env_overrides(task_id)
-            except Exception:
-                pass
-            _clear_session_context(session_tokens)
-
-    threading.Thread(target=run, daemon=True).start()
-    return _ok(rid, {"task_id": task_id})
-
-
-=======
->>>>>>> upstream/main
 # ── Methods: respond ─────────────────────────────────────────────────
 
 
@@ -13561,7 +12767,7 @@ def _discover_repos_payload(
                 # NOTE: `last_seen` is when the disk scan last saw the directory,
                 # not when the user last worked in it. Folding it into
                 # `last_active` stamped every scanned repo with the scan time —
-                # i.e. "just now" — so a git checkout with zero Moor sessions
+                # i.e. "just now" — so a git checkout with zero Hermes sessions
                 # outranked the repos the user actually works in. Activity stays
                 # session-derived; a repo with no sessions has no activity.
 
@@ -13733,303 +12939,6 @@ def _build_project_tree(
     return tree, active_id
 
 
-<<<<<<< HEAD
-@method("projects.tree")
-def _(rid, params: dict) -> dict:
-    """Authoritative project overview: project -> repo -> lane structure with
-    counts + a few preview sessions per project, plus the flat set of session
-    ids claimed by any project (so the desktop excludes them from flat Recents).
-    Lanes carry no session rows here; drill-in uses ``projects.project_sessions``.
-    """
-    try:
-        db = _get_db()
-        if db is None:
-            return _ok(rid, {"projects": [], "active_id": None, "scoped_session_ids": []})
-
-        tree, active_id = _build_project_tree(
-            db,
-            preview_limit=int(params.get("preview_limit") or 3),
-            hydrate=False,
-            session_limit=int(params.get("session_limit") or 2000),
-            include_discovered=True,
-        )
-        return _ok(
-            rid,
-            {"projects": tree["projects"], "active_id": active_id, "scoped_session_ids": tree["scoped_session_ids"]},
-        )
-    except Exception as e:
-        return _err(rid, 5061, str(e))
-
-
-@method("projects.project_sessions")
-def _(rid, params: dict) -> dict:
-    """Fully hydrated lanes (repo -> lane -> session rows) for one project,
-    built from the same authoritative grouping as ``projects.tree`` so ids and
-    membership match exactly. Used when the user enters a project."""
-    try:
-        project_id = str(params.get("project_id") or "")
-        if not project_id:
-            return _err(rid, 5063, "project_id required")
-
-        db = _get_db()
-        if db is None:
-            return _ok(rid, {"project": None})
-
-        # Drill-in only needs the entered project (which has sessions), so skip
-        # the zero-session discovery tier entirely.
-        tree, _active = _build_project_tree(
-            db, preview_limit=0, hydrate=True, session_limit=int(params.get("session_limit") or 5000),
-            include_discovered=False,
-        )
-        proj = next((p for p in tree["projects"] if p["id"] == project_id), None)
-        return _ok(rid, {"project": proj})
-    except Exception as e:
-        return _err(rid, 5061, str(e))
-
-
-@method("config.get")
-def _(rid, params: dict) -> dict:
-    key = params.get("key", "")
-    if key == "provider":
-        try:
-            from hermes_cli.models import list_available_providers, normalize_provider
-
-            model = _resolve_model()
-            parts = model.split("/", 1)
-            return _ok(
-                rid,
-                {
-                    "model": model,
-                    "provider": (
-                        normalize_provider(parts[0]) if len(parts) > 1 else "unknown"
-                    ),
-                    "providers": list_available_providers(),
-                },
-            )
-        except Exception as e:
-            return _err(rid, 5013, str(e))
-    if key == "profile":
-        from hermes_constants import display_hermes_home
-
-        return _ok(rid, {"home": str(_hermes_home), "display": display_hermes_home()})
-    if key == "project":
-        cfg_terminal = _load_cfg().get("terminal") or {}
-        raw = str(params.get("cwd", "") or cfg_terminal.get("cwd", "") or "").strip()
-        cwd = _completion_cwd({"cwd": raw} if raw else {})
-        return _ok(rid, {"cwd": cwd, "branch": _git_branch_for_cwd(cwd)})
-    if key == "full":
-        return _ok(rid, {"config": _load_cfg()})
-    if key == "prompt":
-        return _ok(rid, {"prompt": _load_cfg().get("custom_prompt", "")})
-    if key == "skin":
-        return _ok(
-            rid, {"value": (_load_cfg().get("display") or {}).get("skin", "default")}
-        )
-    if key == "indicator":
-        # Normalize so a hand-edited config.yaml with stray casing or
-        # an unknown value reads back the SAME value the TUI actually
-        # rendered (frontend's `normalizeIndicatorStyle` falls back to
-        # `_INDICATOR_DEFAULT` for the same inputs).  Otherwise
-        # `/indicator` would print one thing while the UI shows another.
-        raw = (_load_cfg().get("display") or {}).get("tui_status_indicator", "")
-        norm = str(raw).strip().lower()
-        return _ok(
-            rid,
-            {"value": norm if norm in _INDICATOR_STYLES else _INDICATOR_DEFAULT},
-        )
-    if key == "personality":
-        return _ok(
-            rid,
-            {"value": (_load_cfg().get("display") or {}).get("personality") or "none"},
-        )
-    if key == "reasoning":
-        cfg = _load_cfg()
-        effort = ""
-        # Prefer the session's live value — `config.set reasoning` is
-        # session-scoped, so the global key may not reflect this chat.
-        session = _sessions.get(params.get("session_id", ""))
-        live = getattr((session or {}).get("agent"), "reasoning_config", None)
-        if live is None and session is not None:
-            live = session.get("create_reasoning_override")
-        if isinstance(live, dict):
-            if live.get("enabled") is False:
-                effort = "none"
-            else:
-                effort = str(live.get("effort", "") or "")
-        if not effort:
-            raw_effort = (cfg.get("agent") or {}).get("reasoning_effort", "")
-            if raw_effort is False:
-                # YAML `reasoning_effort: false`/`off`/`no` — thinking
-                # disabled, not "unset, show the medium default".
-                effort = "none"
-            else:
-                effort = str(raw_effort or "medium")
-        display = (
-            "show"
-            if bool((cfg.get("display") or {}).get("show_reasoning", True))
-            else "hide"
-        )
-        return _ok(rid, {"value": effort, "display": display})
-    if key == "fast":
-        # Prefer the session's live/pinned value — `config.set fast` is
-        # session-scoped, so the global key may not reflect this chat. A
-        # pre-build session keeps its pin in create_service_tier_override.
-        session = _sessions.get(params.get("session_id", ""))
-        tier = None
-        if session is not None:
-            agent = session.get("agent")
-            if agent is not None:
-                tier = getattr(agent, "service_tier", None)
-            elif session.get("create_service_tier_override") is not None:
-                tier = session["create_service_tier_override"]
-        if tier is None:
-            tier = _load_service_tier()
-        return _ok(rid, {"value": "fast" if tier == "priority" else "normal"})
-    if key == "busy":
-        return _ok(rid, {"value": _load_busy_input_mode()})
-    if key in {"approval_mode", "approvals.mode"}:
-        try:
-            return _ok(rid, {"value": _load_approval_mode()})
-        except Exception as e:
-            return _err(rid, 5001, str(e))
-    if key == "details_mode":
-        allowed_dm = frozenset({"hidden", "collapsed", "expanded"})
-        raw = (
-            str(
-                (_load_cfg().get("display") or {}).get("details_mode", "collapsed")
-                or "collapsed"
-            )
-            .strip()
-            .lower()
-        )
-        nv = raw if raw in allowed_dm else "collapsed"
-        return _ok(rid, {"value": nv})
-    if key == "thinking_mode":
-        allowed_tm = frozenset({"collapsed", "truncated", "full"})
-        cfg = _load_cfg()
-        raw = (
-            str((cfg.get("display") or {}).get("thinking_mode", "") or "")
-            .strip()
-            .lower()
-        )
-        if raw in allowed_tm:
-            nv = raw
-        else:
-            dm = (
-                str(
-                    (cfg.get("display") or {}).get("details_mode", "collapsed")
-                    or "collapsed"
-                )
-                .strip()
-                .lower()
-            )
-            nv = "full" if dm == "expanded" else "collapsed"
-        return _ok(rid, {"value": nv})
-    if key == "compact":
-        on = bool((_load_cfg().get("display") or {}).get("tui_compact", False))
-        return _ok(rid, {"value": "on" if on else "off"})
-    if key == "statusbar":
-        display = _load_cfg().get("display")
-        raw = (
-            display.get("tui_statusbar", "top") if isinstance(display, dict) else "top"
-        )
-        return _ok(rid, {"value": _coerce_statusbar(raw)})
-    if key == "mouse":
-        display = _load_cfg().get("display")
-        return _ok(rid, {"value": _display_mouse_tracking(display)})
-    if key == "mtime":
-        cfg_path = _hermes_home / "config.yaml"
-        try:
-            return _ok(
-                rid, {"mtime": cfg_path.stat().st_mtime if cfg_path.exists() else 0}
-            )
-        except Exception:
-            return _ok(rid, {"mtime": 0})
-    return _err(rid, 4002, f"unknown config key: {key}")
-
-
-@method("setup.status")
-def _(rid, params: dict) -> dict:
-    try:
-        from hermes_cli.main import _has_any_provider_configured
-
-        return _ok(rid, {"provider_configured": bool(_has_any_provider_configured())})
-    except Exception as e:
-        return _err(rid, 5016, str(e))
-
-
-@method("setup.runtime_check")
-def _(rid, params: dict) -> dict:
-    """Strict provider check: does the configured/default model actually resolve to a usable runtime?
-
-    Unlike setup.status (which returns True if ANY provider auth state is
-    discoverable, including indirect fallbacks like ``gh auth token`` for
-    Copilot), this runs the same resolve_runtime_provider() call the agent
-    uses on session creation. It returns ok=False with the auth error message
-    when the user's configured model cannot actually be served, so UIs can
-    surface onboarding before the user submits a doomed prompt.
-    """
-    try:
-        from hermes_cli.runtime_provider import resolve_runtime_provider
-        from hermes_cli.auth import has_usable_secret
-        from hermes_cli.main import _has_any_provider_configured
-
-        requested = str(params.get("provider") or "").strip() or None
-        runtime = resolve_runtime_provider(requested=requested)
-        provider_configured = bool(_has_any_provider_configured())
-        provider = runtime.get("provider") or "provider"
-        source = str(runtime.get("source") or "")
-        if not provider_configured and provider == "bedrock" and source in {
-            "iam-role",
-            "aws-sdk-default-chain",
-        }:
-            return _ok(
-                rid,
-                {
-                    "ok": False,
-                    "provider": provider,
-                    "model": runtime.get("model"),
-                    "source": source,
-                    "error": "No Moor provider is configured.",
-                },
-            )
-
-        api_key = runtime.get("api_key")
-        api_key_text = "" if callable(api_key) else str(api_key or "").strip()
-        credential_ok = (
-            callable(api_key)
-            or api_key_text in {"aws-sdk", "no-key-required"}
-            or has_usable_secret(api_key_text)
-            or bool(runtime.get("command"))
-        )
-
-        if not credential_ok:
-            return _ok(
-                rid,
-                {
-                    "ok": False,
-                    "provider": provider,
-                    "model": runtime.get("model"),
-                    "source": runtime.get("source"),
-                    "error": f"No usable credentials found for {provider}.",
-                },
-            )
-
-        return _ok(
-            rid,
-            {
-                "ok": True,
-                "provider": runtime.get("provider"),
-                "model": runtime.get("model"),
-                "source": runtime.get("source"),
-            },
-        )
-    except Exception as e:
-        return _ok(rid, {"ok": False, "error": str(e)})
-
-
-=======
->>>>>>> upstream/main
 # ── Methods: tools & system ──────────────────────────────────────────
 
 
@@ -14218,7 +13127,7 @@ def _rank_slash_completions(
     ``usage``/``origin_of`` are the callables :func:`_skill_usage_lookup`
     returns. Registry commands keep their existing order — only the skill
     block is reordered, most-used first and A-Z within a tie, so the handful
-    of skills someone invokes daily lead the ones that shipped with Moor
+    of skills someone invokes daily lead the ones that shipped with Hermes
     and were never opened.
 
     ``score_of`` (optional) is the fuzzy-match scorer from
@@ -14702,7 +13611,7 @@ def _format_live_history_output(session: dict) -> str:
     lines = ["Conversation History", "────────────────────────────────────────"]
     for idx, message in enumerate(messages, start=1):
         role = str(message.get("role") or "unknown")
-        label = "You" if role == "user" else "Moor" if role == "assistant" else role.title()
+        label = "You" if role == "user" else "Hermes" if role == "assistant" else role.title()
         text = str(message.get("text") or message.get("context") or "").strip()
         if len(text) > 400:
             text = f"{text[:400]}..."
@@ -15398,7 +14307,7 @@ def _voice_record_key() -> str:
     return str(record_key) if isinstance(record_key, str) and record_key else "ctrl+b"
 
 
-# ── Wake word ("Hey Moor") ──────────────────────────────────────────────
+# ── Wake word ("Hey Hermes") ──────────────────────────────────────────────
 # The detector is process-global (one mic), like voice. The first eligible
 # transport to call wake.start owns it until stop, disconnect, or stream failure.
 # On detection we emit wake.detected; the client opens a new session and starts

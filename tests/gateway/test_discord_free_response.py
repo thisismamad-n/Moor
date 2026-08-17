@@ -58,7 +58,7 @@ class FakeDMChannel:
 
 
 class FakeTextChannel:
-    def __init__(self, channel_id: int = 1, name: str = "general", guild_name: str = "Moor Server"):
+    def __init__(self, channel_id: int = 1, name: str = "general", guild_name: str = "Hermes Server"):
         self.id = channel_id
         self.name = name
         self.guild = SimpleNamespace(name=guild_name)
@@ -72,7 +72,7 @@ class FakeTextChannel:
 
 
 class FakeForumChannel:
-    def __init__(self, channel_id: int = 1, name: str = "support-forum", guild_name: str = "Moor Server"):
+    def __init__(self, channel_id: int = 1, name: str = "support-forum", guild_name: str = "Hermes Server"):
         self.id = channel_id
         self.name = name
         self.guild = SimpleNamespace(name=guild_name)
@@ -81,7 +81,7 @@ class FakeForumChannel:
 
 
 class FakeThread:
-    def __init__(self, channel_id: int = 1, name: str = "thread", parent=None, guild_name: str = "Moor Server"):
+    def __init__(self, channel_id: int = 1, name: str = "thread", parent=None, guild_name: str = "Hermes Server"):
         self.id = channel_id
         self.name = name
         self.parent = parent
@@ -205,125 +205,6 @@ async def test_discord_free_response_in_server_channels(adapter, monkeypatch):
 
 
 @pytest.mark.asyncio
-<<<<<<< HEAD
-async def test_discord_free_response_in_threads(adapter, monkeypatch):
-    monkeypatch.setenv("DISCORD_REQUIRE_MENTION", "false")
-    monkeypatch.delenv("DISCORD_FREE_RESPONSE_CHANNELS", raising=False)
-
-    thread = FakeThread(channel_id=456, name="Ghost reader skill")
-    message = make_message(channel=thread, content="hello from thread")
-
-    await adapter._handle_message(message)
-
-    adapter.handle_message.assert_awaited_once()
-    event = adapter.handle_message.await_args.args[0]
-    assert event.text == "hello from thread"
-    assert event.source.chat_id == "456"
-    assert event.source.thread_id == "456"
-    assert event.source.chat_type == "thread"
-
-
-@pytest.mark.asyncio
-async def test_discord_forum_threads_are_handled_as_threads(adapter, monkeypatch):
-    monkeypatch.setenv("DISCORD_REQUIRE_MENTION", "false")
-    monkeypatch.delenv("DISCORD_FREE_RESPONSE_CHANNELS", raising=False)
-
-    forum = FakeForumChannel(channel_id=222, name="support-forum")
-    thread = FakeThread(channel_id=456, name="Can Moor reply here?", parent=forum)
-    message = make_message(channel=thread, content="hello from forum post")
-
-    await adapter._handle_message(message)
-
-    adapter.handle_message.assert_awaited_once()
-    event = adapter.handle_message.await_args.args[0]
-    assert event.text == "hello from forum post"
-    assert event.source.chat_id == "456"
-    assert event.source.thread_id == "456"
-    assert event.source.chat_type == "thread"
-    assert event.source.chat_name == "Moor Server / support-forum / Can Moor reply here?"
-
-
-@pytest.mark.asyncio
-async def test_discord_can_still_require_mentions_when_enabled(adapter, monkeypatch):
-    monkeypatch.setenv("DISCORD_REQUIRE_MENTION", "true")
-    monkeypatch.delenv("DISCORD_FREE_RESPONSE_CHANNELS", raising=False)
-
-    message = make_message(channel=FakeTextChannel(channel_id=789), content="ignored without mention")
-
-    await adapter._handle_message(message)
-
-    adapter.handle_message.assert_not_awaited()
-
-
-@pytest.mark.asyncio
-async def test_discord_free_response_channel_overrides_mention_requirement(adapter, monkeypatch):
-    monkeypatch.setenv("DISCORD_REQUIRE_MENTION", "true")
-    monkeypatch.setenv("DISCORD_FREE_RESPONSE_CHANNELS", "789,999")
-
-    message = make_message(channel=FakeTextChannel(channel_id=789), content="allowed without mention")
-
-    await adapter._handle_message(message)
-
-    adapter.handle_message.assert_awaited_once()
-    event = adapter.handle_message.await_args.args[0]
-    assert event.text == "allowed without mention"
-
-
-@pytest.mark.asyncio
-async def test_discord_free_response_channel_can_come_from_config_extra(adapter, monkeypatch):
-    monkeypatch.delenv("DISCORD_REQUIRE_MENTION", raising=False)
-    monkeypatch.delenv("DISCORD_FREE_RESPONSE_CHANNELS", raising=False)
-    adapter.config.extra["free_response_channels"] = ["789", "999"]
-
-    message = make_message(channel=FakeTextChannel(channel_id=789), content="allowed from config")
-
-    await adapter._handle_message(message)
-
-    adapter.handle_message.assert_awaited_once()
-    event = adapter.handle_message.await_args.args[0]
-    assert event.text == "allowed from config"
-
-
-def test_discord_free_response_channels_bare_int(adapter, monkeypatch):
-    # YAML `discord.free_response_channels: 1491973769726791812` (single bare
-    # integer) is loaded as an int and previously fell through the
-    # isinstance(str) branch in _discord_free_response_channels, silently
-    # returning an empty set.  Scalar → str coercion makes single-channel
-    # config work without having to quote the ID in YAML.
-    monkeypatch.delenv("DISCORD_FREE_RESPONSE_CHANNELS", raising=False)
-    adapter.config.extra["free_response_channels"] = 1491973769726791812
-
-    assert adapter._discord_free_response_channels() == {"1491973769726791812"}
-
-
-def test_discord_free_response_channels_int_list(adapter, monkeypatch):
-    # YAML list form with bare numeric entries — each element should be coerced.
-    monkeypatch.delenv("DISCORD_FREE_RESPONSE_CHANNELS", raising=False)
-    adapter.config.extra["free_response_channels"] = [1491973769726791812, 99999]
-
-    assert adapter._discord_free_response_channels() == {"1491973769726791812", "99999"}
-
-
-@pytest.mark.asyncio
-async def test_discord_forum_parent_in_free_response_list_allows_forum_thread(adapter, monkeypatch):
-    monkeypatch.setenv("DISCORD_REQUIRE_MENTION", "true")
-    monkeypatch.setenv("DISCORD_FREE_RESPONSE_CHANNELS", "222")
-
-    forum = FakeForumChannel(channel_id=222, name="support-forum")
-    thread = FakeThread(channel_id=333, name="Forum topic", parent=forum)
-    message = make_message(channel=thread, content="allowed from forum thread")
-
-    await adapter._handle_message(message)
-
-    adapter.handle_message.assert_awaited_once()
-    event = adapter.handle_message.await_args.args[0]
-    assert event.text == "allowed from forum thread"
-    assert event.source.chat_id == "333"
-
-
-@pytest.mark.asyncio
-=======
->>>>>>> upstream/main
 async def test_discord_accepts_and_strips_bot_mentions_when_required(adapter, monkeypatch):
     monkeypatch.setenv("DISCORD_REQUIRE_MENTION", "true")
     monkeypatch.delenv("DISCORD_FREE_RESPONSE_CHANNELS", raising=False)
@@ -926,7 +807,7 @@ async def test_discord_reply_in_free_channel_triggers_backfill(adapter, monkeypa
     monkeypatch.setenv("DISCORD_AUTO_THREAD", "false")
     adapter.config.extra["history_backfill"] = True
     adapter._fetch_channel_context = AsyncMock(
-        return_value="[Context around the replied-to message]\n[Moor [bot]] earlier answer"
+        return_value="[Context around the replied-to message]\n[Hermes [bot]] earlier answer"
     )
 
     message = make_message(channel=FakeTextChannel(channel_id=321), content="what about edge cases?")
@@ -942,7 +823,7 @@ async def test_discord_reply_in_free_channel_triggers_backfill(adapter, monkeypa
 
     event = adapter.handle_message.await_args.args[0]
     assert event.channel_context == (
-        "[Context around the replied-to message]\n[Moor [bot]] earlier answer"
+        "[Context around the replied-to message]\n[Hermes [bot]] earlier answer"
     )
 
 

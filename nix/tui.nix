@@ -1,24 +1,10 @@
-<<<<<<< HEAD
-# nix/tui.nix — Moor TUI (Ink/React) compiled with tsc and bundled
-{ pkgs, hermesNpmLib, ... }:
-let
-  npm = hermesNpmLib.mkNpmPassthru { dirs = [ "ui-tui" ]; };
-
-  packageJson = builtins.fromJSON (builtins.readFile (npm.src + "/ui-tui/package.json"));
-  version = packageJson.version;
-in
-pkgs.buildNpmPackage (npm // {
-  pname = "hermes-tui";
-  inherit version;
-=======
-# nix/tui.nix — Moor TUI (Ink/React) compiled with tsc and bundled
+# nix/tui.nix — Hermes TUI (Ink/React) compiled with tsc and bundled
 { hermesNpmLib, ... }:
 hermesNpmLib.buildNpmPackage {
   dirs = [
     "ui-tui"
     "apps/shared"
   ];
->>>>>>> upstream/main
 
   doCheck = false;
 

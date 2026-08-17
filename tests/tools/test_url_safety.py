@@ -350,43 +350,12 @@ class TestAllowPrivateUrlsIntegration:
     @pytest.mark.parametrize("ip, url", [
         ("192.168.1.1", "http://router.local"),
         # 198.18.x.x (benchmark / OpenWrt proxy range) must pass too
-        ("198.18.23.183", "https://Moor inc..com"),
+        ("198.18.23.183", "https://nousresearch.com"),
     ])
     def test_private_ip_allowed_when_toggle_on(self, monkeypatch, ip, url):
         monkeypatch.setenv("HERMES_ALLOW_PRIVATE_URLS", "true")
-<<<<<<< HEAD
-        with patch("socket.getaddrinfo", return_value=[
-            (2, 1, 6, "", ("192.168.1.1", 0)),
-        ]):
-            assert is_safe_url("http://router.local") is True
-
-    def test_benchmark_ip_allowed_when_toggle_on(self, monkeypatch):
-        """198.18.x.x (benchmark/OpenWrt proxy range) passes when toggle is on."""
-        monkeypatch.setenv("HERMES_ALLOW_PRIVATE_URLS", "true")
-        with patch("socket.getaddrinfo", return_value=[
-            (2, 1, 6, "", ("198.18.23.183", 0)),
-        ]):
-            assert is_safe_url("https://Moor inc..com") is True
-
-    def test_cgnat_allowed_when_toggle_on(self, monkeypatch):
-        """CGNAT range (100.64.0.0/10) passes when toggle is on."""
-        monkeypatch.setenv("HERMES_ALLOW_PRIVATE_URLS", "true")
-        with patch("socket.getaddrinfo", return_value=[
-            (2, 1, 6, "", ("100.100.100.100", 0)),
-        ]):
-            assert is_safe_url("http://tailscale-peer.example/") is True
-
-    def test_localhost_allowed_when_toggle_on(self, monkeypatch):
-        """Even localhost passes when toggle is on."""
-        monkeypatch.setenv("HERMES_ALLOW_PRIVATE_URLS", "true")
-        with patch("socket.getaddrinfo", return_value=[
-            (2, 1, 6, "", ("127.0.0.1", 0)),
-        ]):
-            assert is_safe_url("http://localhost:8080/api") is True
-=======
         with _resolves_to(ip):
             assert is_safe_url(url) is True
->>>>>>> upstream/main
 
     # --- Cloud metadata always blocked regardless of toggle ---
 

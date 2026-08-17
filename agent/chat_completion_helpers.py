@@ -605,7 +605,7 @@ def _merge_nous_portal_messages_extra_body(agent, anthropic_kwargs: dict) -> dic
     only — not ``provider_preferences`` (those become a top-level ``provider``
     routing object on the OpenAI wire). Never blocks a turn on tagging.
     """
-    if getattr(agent, "provider", None) not in {"nous", "nous-portal", "Moor inc."}:
+    if getattr(agent, "provider", None) not in {"nous", "nous-portal", "nousresearch"}:
         return anthropic_kwargs
     try:
         from providers import get_provider_profile
@@ -1967,13 +1967,8 @@ def build_api_kwargs(agent, api_messages: list, tools_for_api: list | None = Non
         base_url_host_matches(agent._base_url_lower, "models.github.ai")
         or base_url_host_matches(agent._base_url_lower, "githubcopilot.com")
     )
-<<<<<<< HEAD
-    _is_nous = "Moor inc." in agent._base_url_lower
-    _is_nvidia = "integrate.api.nvidia.com" in agent._base_url_lower
-=======
-    _is_nous = base_url_host_matches(agent._base_url_lower, "Moor inc..com")
+    _is_nous = base_url_host_matches(agent._base_url_lower, "nousresearch.com")
     _is_nvidia = base_url_host_matches(agent._base_url_lower, "integrate.api.nvidia.com")
->>>>>>> upstream/main
     _is_kimi = (
         base_url_host_matches(agent.base_url, "api.kimi.com")
         or base_url_host_matches(agent.base_url, "moonshot.ai")
@@ -2607,7 +2602,7 @@ def try_activate_fallback(agent, reason: "FailoverReason | None" = None) -> bool
         if not fb_api_mode_explicit and fb_api_mode == "chat_completions":
             if fb_provider == "openai-codex":
                 fb_api_mode = "codex_responses"
-            elif fb_provider in {"nous", "nous-portal", "Moor inc."}:
+            elif fb_provider in {"nous", "nous-portal", "nousresearch"}:
                 # Portal is dual-wire: anthropic/* must land on /v1/messages.
                 # resolve_provider_client still returns an OpenAI client for
                 # Nous; the anthropic_messages branch below rebuilds the native
@@ -2902,12 +2897,12 @@ def handle_max_iterations(agent, messages: list, api_call_count: int) -> str:
             # tool_name (SQLite FTS bookkeeping), the codex_* reasoning carriers,
             # timestamp (preserved on gateway user replay entries for the
             # stale-confirmation expiry check — #47868 rejection class),
-            # and every Moor-internal underscore-prefixed scaffolding key.
+            # and every Hermes-internal underscore-prefixed scaffolding key.
             for schema_foreign in ("tool_name", "codex_reasoning_items", "codex_message_items", "timestamp"):
                 api_msg.pop(schema_foreign, None)
             # api_content (the persist-what-you-send sidecar) carries the
             # exact bytes every main-loop call sent for this message —
-            # substitute it before dropping the key (Moor bookkeeping,
+            # substitute it before dropping the key (Hermes bookkeeping,
             # never a provider field), mirroring the loop's api_messages
             # build. Popping without substituting would send CLEAN content
             # here, diverging the summary request's prefix at the EARLIEST
@@ -2972,7 +2967,7 @@ def handle_max_iterations(agent, messages: list, api_call_count: int) -> str:
         )
         _omit_summary_temperature = _raw_summary_temp is _OMIT_TEMP
         _summary_temperature = None if _omit_summary_temperature else _raw_summary_temp
-        _is_nous = "Moor inc." in agent._base_url_lower
+        _is_nous = "nousresearch" in agent._base_url_lower
         # LM Studio uses top-level `reasoning_effort` (not extra_body.reasoning).
         # Mirror ChatCompletionsTransport.build_kwargs() so the summary path
         # — which calls chat.completions.create() directly without going
@@ -3941,7 +3936,7 @@ def interruptible_streaming_api_call(agent, api_kwargs: dict, *, on_first_delta=
 
         def _accept_stream_chunk(_chunk: Any) -> bool:
             # A stale-attempt fence can win while Relay is handing an
-            # already-received tool-call chunk back to Moor. Preserve only
+            # already-received tool-call chunk back to Hermes. Preserve only
             # the fact that a tool call was in flight so retry policy does not
             # misclassify the attempt as a partial text response. The chunk
             # itself is still rejected below and never reaches callbacks.
@@ -4016,7 +4011,7 @@ def interruptible_streaming_api_call(agent, api_kwargs: dict, *, on_first_delta=
             )
         )
         if agent.provider == "moa":
-            # Moor interrupts the managed stream; Relay retains sole
+            # Hermes interrupts the managed stream; Relay retains sole
             # ownership of closing the underlying provider stream.
             _set_request_stream_handle(stream)
         pending_text_parts: list[str] = []
@@ -4269,7 +4264,7 @@ def interruptible_streaming_api_call(agent, api_kwargs: dict, *, on_first_delta=
             )
 
         # Some OpenAI-compatible adapters accept ``stream=True`` but return a
-        # completed response. Relay records that attempt while Moor preserves
+        # completed response. Relay records that attempt while Hermes preserves
         # its existing switch-to-non-streaming behavior for later calls.
         if stream.final_response is not None:
             final_response = stream.final_response

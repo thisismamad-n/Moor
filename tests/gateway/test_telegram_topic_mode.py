@@ -1,7 +1,7 @@
 """Tests for Telegram private-chat topic-mode routing.
 
 Topic mode makes the root Telegram DM a system lobby while user-created
-Telegram topics act as independent Moor session lanes.
+Telegram topics act as independent Hermes session lanes.
 """
 
 from datetime import datetime
@@ -314,57 +314,12 @@ async def test_group_new_keeps_existing_reset_semantics_when_dm_topic_mode_enabl
 
     result = await runner._handle_message(_make_group_event("/new", thread_id="555"))
 
-    assert "Started a new Moor session in this topic" not in result
+    assert "Started a new Hermes session in this topic" not in result
     assert "parallel work" not in result
     runner.session_store.reset_session.assert_called_once_with(group_key)
 
 
 @pytest.mark.asyncio
-<<<<<<< HEAD
-async def test_new_inside_telegram_topic_resets_current_topic_with_parallel_tip(monkeypatch):
-    import gateway.run as gateway_run
-
-    runner = _make_runner()
-    runner._telegram_topic_mode_enabled = lambda source: True
-    topic_source = _make_source(thread_id="17585")
-    topic_key = build_session_key(topic_source)
-    old_entry = SessionEntry(
-        session_key=topic_key,
-        session_id="old-topic-session",
-        created_at=datetime.now(),
-        updated_at=datetime.now(),
-        platform=Platform.TELEGRAM,
-        chat_type="dm",
-        origin=topic_source,
-    )
-    new_entry = SessionEntry(
-        session_key=topic_key,
-        session_id="new-topic-session",
-        created_at=datetime.now(),
-        updated_at=datetime.now(),
-        platform=Platform.TELEGRAM,
-        chat_type="dm",
-        origin=topic_source,
-    )
-    runner.session_store._entries = {topic_key: old_entry}
-    runner.session_store.reset_session.return_value = new_entry
-    runner._agent_cache_lock = None
-
-    monkeypatch.setattr(
-        gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "***"}
-    )
-
-    result = await runner._handle_message(_make_event("/new", thread_id="17585"))
-
-    assert "Started a new Moor session in this topic" in result
-    assert "parallel work" in result
-    assert "All Messages" in result
-    runner.session_store.reset_session.assert_called_once_with(topic_key)
-
-
-@pytest.mark.asyncio
-=======
->>>>>>> upstream/main
 async def test_new_inside_telegram_topic_rewrites_binding_to_new_session(tmp_path, monkeypatch):
     """Regression: /new inside a topic must rewrite the binding table.
 
@@ -563,158 +518,6 @@ async def test_topic_root_command_lists_unlinked_sessions_for_restore(tmp_path, 
 
 
 @pytest.mark.asyncio
-<<<<<<< HEAD
-async def test_topic_root_command_handles_no_unlinked_sessions(tmp_path, monkeypatch):
-    import gateway.run as gateway_run
-
-    session_db = SessionDB(db_path=tmp_path / "state.db")
-    runner = _make_runner(session_db=session_db)
-    runner._run_agent = AsyncMock(
-        side_effect=AssertionError("root /topic status must not enter the agent loop")
-    )
-
-    monkeypatch.setattr(
-        gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "***"}
-    )
-
-    result = await runner._handle_message(_make_event("/topic"))
-
-    assert "Telegram multi-session topics are enabled" in result
-    assert "No previous unlinked Telegram sessions found" in result
-    assert "All Messages" in result
-    runner._run_agent.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_topic_command_inside_bound_topic_shows_current_session(tmp_path, monkeypatch):
-    import gateway.run as gateway_run
-
-    session_db = SessionDB(db_path=tmp_path / "state.db")
-    session_db.create_session(
-        session_id="sess-topic",
-        source="telegram",
-        user_id="208214988",
-    )
-    session_db.set_session_title("sess-topic", "Research notes")
-    session_db.bind_telegram_topic(
-        chat_id="208214988",
-        thread_id="17585",
-        user_id="208214988",
-        session_key="telegram:dm:208214988:thread:17585",
-        session_id="sess-topic",
-    )
-    runner = _make_runner(session_db=session_db)
-    runner._run_agent = AsyncMock(
-        side_effect=AssertionError("/topic status must not enter the agent loop")
-    )
-
-    monkeypatch.setattr(
-        gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "***"}
-    )
-
-    result = await runner._handle_message(_make_event("/topic", thread_id="17585"))
-
-    assert "This topic is linked to" in result
-    assert "Research notes" in result
-    assert "sess-topic" in result
-    assert "Use /new to replace" in result
-    runner._run_agent.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_topic_restore_inside_topic_binds_old_session_and_returns_last_assistant_message(
-    tmp_path, monkeypatch
-):
-    import gateway.run as gateway_run
-
-    session_db = SessionDB(db_path=tmp_path / "state.db")
-    session_db.enable_telegram_topic_mode(chat_id="208214988", user_id="208214988")
-    session_db.create_session(
-        session_id="old-session",
-        source="telegram",
-        user_id="208214988",
-    )
-    session_db.set_session_title("old-session", "Research notes")
-    session_db.append_message("old-session", "user", "summarize this")
-    session_db.append_message("old-session", "assistant", "Here is the summary.")
-    runner = _make_runner(session_db=session_db)
-    runner._run_agent = AsyncMock(
-        side_effect=AssertionError("/topic restore must not enter the agent loop")
-    )
-
-    monkeypatch.setattr(
-        gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "***"}
-    )
-
-    result = await runner._handle_message(_make_event("/topic old-session", thread_id="17585"))
-
-    assert "Session restored: Research notes" in result
-    assert "Last Moor message:" in result
-    assert "Here is the summary." in result
-    binding = session_db.get_telegram_topic_binding(chat_id="208214988", thread_id="17585")
-    assert binding is not None
-    assert binding["session_id"] == "old-session"
-    assert binding["user_id"] == "208214988"
-    assert binding["session_key"] == build_session_key(_make_source(thread_id="17585"))
-    runner._run_agent.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_topic_restore_refuses_session_owned_by_another_telegram_user(tmp_path, monkeypatch):
-    import gateway.run as gateway_run
-
-    session_db = SessionDB(db_path=tmp_path / "state.db")
-    session_db.enable_telegram_topic_mode(chat_id="208214988", user_id="208214988")
-    session_db.create_session(
-        session_id="other-session",
-        source="telegram",
-        user_id="someone-else",
-    )
-    runner = _make_runner(session_db=session_db)
-
-    monkeypatch.setattr(
-        gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "***"}
-    )
-
-    result = await runner._handle_message(_make_event("/topic other-session", thread_id="17585"))
-
-    assert "does not belong to this Telegram user" in result
-    assert session_db.get_telegram_topic_binding(chat_id="208214988", thread_id="17585") is None
-
-
-@pytest.mark.asyncio
-async def test_topic_restore_refuses_already_linked_session(tmp_path, monkeypatch):
-    import gateway.run as gateway_run
-
-    session_db = SessionDB(db_path=tmp_path / "state.db")
-    session_db.enable_telegram_topic_mode(chat_id="208214988", user_id="208214988")
-    session_db.create_session(
-        session_id="linked-session",
-        source="telegram",
-        user_id="208214988",
-    )
-    session_db.bind_telegram_topic(
-        chat_id="208214988",
-        thread_id="11111",
-        user_id="208214988",
-        session_key="agent:main:telegram:dm:208214988:11111",
-        session_id="linked-session",
-    )
-    runner = _make_runner(session_db=session_db)
-
-    monkeypatch.setattr(
-        gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "***"}
-    )
-
-    result = await runner._handle_message(_make_event("/topic linked-session", thread_id="17585"))
-
-    assert "already linked to another Telegram topic" in result
-    assert session_db.get_telegram_topic_binding(chat_id="208214988", thread_id="17585") is None
-
-
-@pytest.mark.asyncio
-=======
->>>>>>> upstream/main
 async def test_first_message_inside_topic_records_topic_binding(tmp_path, monkeypatch):
     import gateway.run as gateway_run
 
@@ -790,45 +593,6 @@ async def test_handoff_to_telegram_dm_topic_uses_dm_lane_not_generic_thread(tmp_
 
 
 @pytest.mark.asyncio
-<<<<<<< HEAD
-async def test_topic_root_command_creates_and_pins_system_topic(tmp_path, monkeypatch):
-    import gateway.run as gateway_run
-
-    session_db = SessionDB(db_path=tmp_path / "state.db")
-    runner = _make_runner(session_db=session_db)
-    adapter = runner.adapters[Platform.TELEGRAM]
-    adapter._create_dm_topic.return_value = 4242
-    adapter.send.return_value = SimpleNamespace(success=True, message_id="777")
-    bot = AsyncMock()
-    bot.get_me.return_value = {
-        "has_topics_enabled": True,
-        "allows_users_to_create_topics": True,
-    }
-    adapter._bot = bot
-
-    monkeypatch.setattr(
-        gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "***"}
-    )
-
-    result = await runner._handle_message(_make_event("/topic"))
-
-    assert "Telegram multi-session topics are enabled" in result
-    adapter._create_dm_topic.assert_awaited_once_with(208214988, "System")
-    adapter.send.assert_awaited_once_with(
-        "208214988",
-        "System topic for Moor commands and status.",
-        metadata={"thread_id": "4242"},
-    )
-    bot.pin_chat_message.assert_awaited_once_with(
-        chat_id=208214988,
-        message_id=777,
-        disable_notification=True,
-    )
-
-
-@pytest.mark.asyncio
-=======
->>>>>>> upstream/main
 async def test_auto_generated_title_renames_bound_telegram_topic(tmp_path):
     db = SessionDB(db_path=tmp_path / "state.db")
     db.apply_telegram_topic_migration()

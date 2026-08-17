@@ -3,7 +3,7 @@
 A *secret source* resolves credentials from an external secret manager
 (Bitwarden Secrets Manager, 1Password, an OS keystore, a user script, ...)
 into environment-variable-shaped values at process startup, AFTER
-``~/.hermes/.env`` has loaded and BEFORE the rest of Moor reads
+``~/.hermes/.env`` has loaded and BEFORE the rest of Hermes reads
 ``os.environ``.
 
 Scope of the contract (deliberate, please do not widen):
@@ -257,15 +257,11 @@ class SecretSource(ABC):
 _ENV_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 # ANSI CSI/OSC escape sequences — helper-CLI stderr often carries color
-<<<<<<< HEAD
-# codes that must not reach Moor' own startup output.
-=======
-# codes that must not reach Moor' own startup output.
+# codes that must not reach Hermes' own startup output.
 # NOTE: intentionally NOT migrated to tools.ansi_strip.strip_ansi — the
 # optional terminator here (``(?:\x07|\x1b\\)?``) also strips *unterminated*
 # OSC sequences (common when a CLI is killed mid-write), which strip_ansi
 # leaves untouched. strip_ansi is not a superset of this regex.
->>>>>>> upstream/main
 _ANSI_RE = re.compile(r"\x1b(?:\[[0-9;?]*[ -/]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\)?)")
 
 
@@ -295,9 +291,9 @@ def run_secret_cli(
     * The child gets ``PATH``/``HOME``/locale basics plus only the env
       vars named in ``allow_env`` (auth/session vars) and ``extra_env``
       — never a copy of the full post-dotenv ``os.environ``, which by
-      this point holds every credential Moor knows about.
+      this point holds every credential Hermes knows about.
     * ``NO_COLOR=1`` is set and stderr/stdout are ANSI-scrubbed so
-      helper diagnostics can't smuggle escape sequences into Moor
+      helper diagnostics can't smuggle escape sequences into Hermes
       output.
     * stdin is ``/dev/null`` so a helper that decides to prompt fails
       fast instead of hanging startup.

@@ -512,7 +512,7 @@ class TestHasAnyProviderConfigured:
 
 
     def test_claude_code_creds_ignored_on_fresh_install(self, monkeypatch, tmp_path):
-        """Claude Code credentials should NOT skip the wizard when Moor is unconfigured."""
+        """Claude Code credentials should NOT skip the wizard when Hermes is unconfigured."""
         from hermes_cli import config as config_module
         from hermes_cli.auth import PROVIDER_REGISTRY
         hermes_home = tmp_path / ".hermes"
@@ -574,13 +574,7 @@ class TestHasAnyProviderConfigured:
         for var in _all_vars:
             monkeypatch.delenv(var, raising=False)
 
-<<<<<<< HEAD
-    def test_claude_code_creds_counted_when_hermes_configured(self, monkeypatch, tmp_path):
-        """Claude Code credentials should count when Moor has been explicitly configured."""
-        import yaml
-=======
     def _setup_home(self, monkeypatch, tmp_path):
->>>>>>> upstream/main
         from hermes_cli import config as config_module
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()

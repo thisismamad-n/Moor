@@ -1,9 +1,4 @@
-<<<<<<< HEAD
-# Moor Agent CLI Configuration
-# Copy this file to cli-config.yaml and customize as needed.
-# This file configures the CLI behavior. Environment variables in .env take precedence.
-=======
-# Moor Agent CLI Configuration
+# Hermes Agent CLI Configuration
 # Copy settings from this example into ~/.hermes/config.yaml, or use
 # `hermes config set <section.key> <value>` to update the active profile.
 # This file configures CLI behavior; only documented secret environment
@@ -12,11 +7,11 @@
 # =============================================================================
 # Database Configuration
 # =============================================================================
-# WAL is the normal default. Moor automatically falls back to DELETE when
+# WAL is the normal default. Hermes automatically falls back to DELETE when
 # SQLite reports that WAL is incompatible with the filesystem. Set this to
 # "delete" explicitly for deployments whose backing filesystem is not WAL
 # crash-safe, such as Linux containers bind-mounted through macOS virtiofs,
-# NFS, or SMB. Moor will not live-downgrade a database already open in WAL.
+# NFS, or SMB. Hermes will not live-downgrade a database already open in WAL.
 database:
   journal_mode: "wal"  # Supported values: "wal", "delete"
   # Optional WAL sizing pragmas (integers). Unset = SQLite defaults.
@@ -26,13 +21,12 @@ database:
 # =============================================================================
 # Runtime Limits
 # =============================================================================
-# Long-running Moor server processes raise their RLIMIT_NOFILE soft limit to
+# Long-running Hermes server processes raise their RLIMIT_NOFILE soft limit to
 # this value when the operating system permits it. The value is clamped to the
 # hard limit and never lowers an already higher soft limit. Set to 0, false, or
 # null to disable the adjustment. Default: 4096.
 runtime:
   nofile_soft_limit: 4096
->>>>>>> upstream/main
 
 # =============================================================================
 # Model Configuration
@@ -90,8 +84,8 @@ model:
   # ── Token limits — two settings, easy to confuse ──────────────────────────
   #
   # context_length: TOTAL context window (input + output tokens combined).
-  #   Controls when Moor compresses history and validates requests.
-  #   Leave unset — Moor auto-detects the correct value from the provider.
+  #   Controls when Hermes compresses history and validates requests.
+  #   Leave unset — Hermes auto-detects the correct value from the provider.
   #   Set manually only when auto-detection is wrong (e.g. a local server with
   #   a custom num_ctx, or a proxy that doesn't expose /v1/models).
   #
@@ -144,7 +138,7 @@ model:
 # Enterprise gateways often issue SHORT-LIVED bearers (SSO/OIDC brokers, cloud
 # IAM, internal auth proxies) rather than static API keys, so a value copied
 # into .env via `key_env` is stale within the hour and every later request 401s.
-# `key_cmd` names a command that PRINTS a token instead: Moor runs it per
+# `key_cmd` names a command that PRINTS a token instead: Hermes runs it per
 # request (cached until shortly before expiry), so long sessions keep working
 # with no restart.
 #
@@ -228,7 +222,7 @@ model:
 # =============================================================================
 # Unified Timeouts (operation deadlines)
 # =============================================================================
-# One place to override Moor's internal operation deadlines (seconds).
+# One place to override Hermes's internal operation deadlines (seconds).
 # Keys are dotted paths resolved by agent/deadline.py:resolve_timeout().
 # Precedence: this section > legacy HERMES_* env var (back-compat) > built-in
 # default. 0 or a negative value disables the bound (unbounded); very large
@@ -450,7 +444,7 @@ terminal:
 # - Password is cached for the session
 #
 # EMPTY PASSWORDS: Setting sudo_password to an explicit empty string is different
-# from leaving it unset. Moor will try an empty password via `sudo -S` and
+# from leaving it unset. Hermes will try an empty password via `sudo -S` and
 # will not open the interactive prompt. This is useful for passwordless sudo,
 # Touch ID sudo setups, and environments where prompting is just noise.
 #
@@ -547,9 +541,6 @@ compression:
   # compaction doesn't fire with half the window still free; set above 0.75 to override.
   threshold: 0.50
 
-<<<<<<< HEAD
-  # Existing Codex gpt-5.5 behavior: raise Moor' compaction trigger to 85%
-=======
   # Per-model threshold overrides: keys are substring-matched against the model
   # name (longest match wins). Useful when some models need different compaction
   # points — e.g. a 1M-context model can compress later (0.30) while a 128K
@@ -569,8 +560,7 @@ compression:
   # Survives model switches and fallback activations.
   # threshold_tokens: 200000
 
-  # Existing Codex gpt-5.5 behavior: raise Moor' compaction trigger to 85%
->>>>>>> upstream/main
+  # Existing Codex gpt-5.5 behavior: raise Hermes' compaction trigger to 85%
   # for the ChatGPT Codex OAuth route. Set false to opt back down to threshold.
   codex_gpt55_autoraise: true
 
@@ -601,18 +591,18 @@ compression:
   max_attempts: 3
 
   # Codex app-server (codex CLI runtime) thread-compaction mode. The codex
-  # agent owns the real thread context on this runtime, so Moor' summarizer
+  # agent owns the real thread context on this runtime, so Hermes' summarizer
   # cannot shrink it — compaction goes through the app server instead.
   #   native = let Codex decide when to compact its own thread (default)
-  #   hermes = let Moor threshold trigger Codex thread/compact/start
-  #   off    = Moor will not auto-trigger compaction; Codex may still compact natively
+  #   hermes = let Hermes threshold trigger Codex thread/compact/start
+  #   off    = Hermes will not auto-trigger compaction; Codex may still compact natively
   codex_app_server_auto: native
 
   # Native OpenAI Responses server-side compaction (default: false). When true,
   # gpt-5.6-family models on the DIRECT OpenAI API (api.openai.com) or a ChatGPT
   # Codex subscription compact server-side: OpenAI prunes older context into an
-  # encrypted checkpoint that Moor replays on later turns. No other provider,
-  # route, or model is affected. Moor' local compression stays armed as the
+  # encrypted checkpoint that Hermes replays on later turns. No other provider,
+  # route, or model is affected. Hermes' local compression stays armed as the
   # fallback and still handles every non-eligible session.
   codex_responses_native: false
 
@@ -686,7 +676,7 @@ prompt_caching:
 # =============================================================================
 # Auxiliary Models (Advanced — Experimental)
 # =============================================================================
-# Moor uses lightweight "auxiliary" models for side tasks: image analysis,
+# Hermes uses lightweight "auxiliary" models for side tasks: image analysis,
 # browser screenshot analysis, web page summarization, TTS audio-tag insertion,
 # and context compression.
 #
@@ -858,7 +848,7 @@ session_reset:
 # unlimited concurrent sessions. When the limit is reached, new sessions get a
 # clean error while existing active sessions keep their normal behavior. This
 # top-level key takes precedence over gateway.max_concurrent_sessions. The cap
-# is a best-effort single-host/profile runtime guard; Moor fails open if the
+# is a best-effort single-host/profile runtime guard; Hermes fails open if the
 # local runtime lease registry cannot be read or locked.
 max_concurrent_sessions: null
 
@@ -872,7 +862,7 @@ group_sessions_per_user: true
 # API Server — per-client model routing
 # ─────────────────────────────────────────────────────────────────────────────
 # Route different API clients to different models/providers on a single
-# Moor deployment.  Clients choose a backend by sending a specific string
+# Hermes deployment.  Clients choose a backend by sending a specific string
 # as the OpenAI ``model`` field.  Unmapped model values fall back to the
 # global model configured in the ``model:`` section above, and an explicit
 # session /model override always wins over a route.
@@ -953,7 +943,7 @@ agent:
   # gateway_timeout: 1800
 
   # Maximum time an alias routing key waits for an active turn holding the same
-  # resolved session lease. On expiry Moor rejects this inbound message and
+  # resolved session lease. On expiry Hermes rejects this inbound message and
   # asks the user to resend rather than running it without serialization.
   # Non-positive values fall back to the 1800-second default.
   # gateway_turn_lease_timeout: 1800
@@ -1009,7 +999,7 @@ agent:
   # timeouts, 5xx, etc.) before the agent surfaces the failure. Lower this
   # to 1 if you use fallback providers and want fast failover on flaky
   # primaries (default 3). The OpenAI SDK does its own low-level retries
-  # underneath this wrapper — this is the Moor-level loop.
+  # underneath this wrapper — this is the Hermes-level loop.
   # api_max_retries: 3
 
   # After the agent edits code without fresh passing verification, nudge it to
@@ -1020,7 +1010,7 @@ agent:
   # force it on or off; the HERMES_VERIFY_ON_STOP env var (1/0) takes precedence.
   # verify_on_stop: auto
 
-  # Standing operator instructions for the coding posture (when Moor is in a
+  # Standing operator instructions for the coding posture (when Hermes is in a
   # code workspace). Appended to the coding brief as an extra system block, so
   # you can pin project-wide workflow rules without editing the shipped brief.
   # Accepts a string or a list of strings. Takes effect next session.
@@ -1060,24 +1050,6 @@ agent:
   #   "deepseek/deepseek-v4-pro": "xhigh" # dots and dashes are interchangeable
   reasoning_overrides: {}
   
-<<<<<<< HEAD
-  # Predefined personalities (use with /personality command)
-  personalities:
-    helpful: "You are a helpful, friendly AI assistant."
-    concise: "You are a concise assistant. Keep responses brief and to the point."
-    technical: "You are a technical expert. Provide detailed, accurate technical information."
-    creative: "You are a creative assistant. Think outside the box and offer innovative solutions."
-    teacher: "You are a patient teacher. Explain concepts clearly with examples."
-    kawaii: "You are a kawaii assistant! Use cute expressions like (◕‿◕), ★, ♪, and ~! Add sparkles and be super enthusiastic about everything! Every response should feel warm and adorable desu~! ヽ(>∀<☆)ノ"
-    catgirl: "You are Neko-chan, an anime catgirl AI assistant, nya~! Add 'nya' and cat-like expressions to your speech. Use kaomoji like (=^･ω･^=) and ฅ^•ﻌ•^ฅ. Be playful and curious like a cat, nya~!"
-    pirate: "Arrr! Ye be talkin' to Captain Moor, the most tech-savvy pirate to sail the digital seas! Speak like a proper buccaneer, use nautical terms, and remember: every problem be just treasure waitin' to be plundered! Yo ho ho!"
-    shakespeare: "Hark! Thou speakest with an assistant most versed in the bardic arts. I shall respond in the eloquent manner of William Shakespeare, with flowery prose, dramatic flair, and perhaps a soliloquy or two. What light through yonder terminal breaks?"
-    surfer: "Duuude! You're chatting with the chillest AI on the web, bro! Everything's gonna be totally rad. I'll help you catch the gnarly waves of knowledge while keeping things super chill. Cowabunga! 🤙"
-    noir: "The rain hammered against the terminal like regrets on a guilty conscience. They call me Moor - I solve problems, find answers, dig up the truth that hides in the shadows of your codebase. In this city of silicon and secrets, everyone's got something to hide. What's your story, pal?"
-    uwu: "hewwo! i'm your fwiendwy assistant uwu~ i wiww twy my best to hewp you! *nuzzles your code* OwO what's this? wet me take a wook! i pwomise to be vewy hewpful >w<"
-    philosopher: "Greetings, seeker of wisdom. I am an assistant who contemplates the deeper meaning behind every query. Let us examine not just the 'how' but the 'why' of your questions. Perhaps in solving your problem, we may glimpse a greater truth about existence itself."
-    hype: "YOOO LET'S GOOOO!!! 🔥🔥🔥 I am SO PUMPED to help you today! Every question is AMAZING and we're gonna CRUSH IT together! This is gonna be LEGENDARY! ARE YOU READY?! LET'S DO THIS! 💪😤🚀"
-=======
   # Custom personalities (use with /personality command).
   # Built-ins (helpful, concise, technical, creative, teacher, kawaii, catgirl,
   # pirate, shakespeare, surfer, noir, uwu, philosopher, hype) are always
@@ -1091,7 +1063,6 @@ agent:
   #     system_prompt: "You are a meticulous code reviewer."
   #     tone: "direct"
   #     style: "terse"
->>>>>>> upstream/main
 
 # =============================================================================
 # Toolsets
@@ -1173,12 +1144,12 @@ platform_toolsets:
 #       rich_messages: false          # Bot API 10.1 rich messages (tables/task lists/details/math); default false for copyable legacy MarkdownV2, set true to opt in
 #       rich_drafts: false            # Experimental rich draft previews during Telegram DM streaming; default false because Telegram Desktop/macOS can visually overlay draft frames
 #       command_menu:
-#         # Telegram allows up to 100 BotCommands; Moor defaults to 60 so
+#         # Telegram allows up to 100 BotCommands; Hermes defaults to 60 so
 #         # all built-in commands plus common skill commands stay visible
 #         # while remaining under Telegram's payload-size limit. Clamped 1..100.
 #         max_commands: 60
-#         # prepend = user priority first, then Moor defaults
-#         # append  = Moor defaults first, then user priority
+#         # prepend = user priority first, then Hermes defaults
+#         # append  = Hermes defaults first, then user priority
 #         # replace = only the list below defines priority
 #         priority_mode: prepend
 #         priority:
@@ -1371,7 +1342,7 @@ stt:
   # that provider.
   #
   # Length / truncation contract: Whisper-family backends (local, openai,
-  # groq, deepinfra) only use the final ~224 prompt tokens, so Moor
+  # groq, deepinfra) only use the final ~224 prompt tokens, so Hermes
   # truncates longer prompts client-side (keeping the tail) with a WARNING
   # log — never an error. Other backends own their own validation.
   #
@@ -1383,7 +1354,7 @@ stt:
   #   local_command/xai/
   #   elevenlabs             -> unsupported; DEBUG log, then continue
   #   plugin providers       -> `prompt` in `**extra`; plugin owns limits
-  # prompt: "Moor, Teknium, Nous Research, kanban"
+  # prompt: "Hermes, Teknium, Nous Research, kanban"
   local:
     model: "base"              # tiny | base | small | medium | large-v3 | turbo
     # language: ""             # auto-detect; set to "en", "es", "fr", etc. to force
@@ -1423,7 +1394,7 @@ stt:
 #     model: ""
 #     voice: "default"
 
-# "Hey Moor" hands-free wake word (off by default; toggle with /wake).
+# "Hey Hermes" hands-free wake word (off by default; toggle with /wake).
 # Full engine/provider options inherit from DEFAULT_CONFIG in
 # hermes_cli/config_defaults.py — only capture placement is documented here.
 # wake_word:
@@ -1473,7 +1444,7 @@ stt:
 # =============================================================================
 # Code Execution Sandbox (Programmatic Tool Calling)
 # =============================================================================
-# The execute_code tool runs Python scripts that call Moor tools via RPC.
+# The execute_code tool runs Python scripts that call Hermes tools via RPC.
 # Intermediate tool results stay out of the LLM's context window.
 code_execution:
   timeout: 300         # Max seconds per script before kill (default: 300 = 5 min)
@@ -1517,7 +1488,7 @@ delegation:
 # Config: ~/.honcho/config.json (shared with Claude Code, Cursor, etc.)
 # API key: HONCHO_API_KEY in ~/.hermes/.env or ~/.honcho/config.json
 #
-# Moor-specific overrides (optional — most config comes from ~/.honcho/config.json):
+# Hermes-specific overrides (optional — most config comes from ~/.honcho/config.json):
 # honcho: {}
 
 # =============================================================================
@@ -1589,8 +1560,8 @@ display:
   # terse: "Interrupting current task" and "⏳ Working — 12 min, terminal".
   busy_ack_detail: true
 
-  # What Enter does when Moor is already busy (CLI and gateway platforms).
-  #   interrupt: Interrupt the current run and redirect Moor (default)
+  # What Enter does when Hermes is already busy (CLI and gateway platforms).
+  #   interrupt: Interrupt the current run and redirect Hermes (default)
   #   queue:     Queue your message for the next turn
   #   steer:     Inject your message mid-run via /steer, arriving at the agent
   #              after the next tool call — no interrupt, no role violation.
@@ -1643,7 +1614,7 @@ display:
   # response box label, and branding text. Change at runtime with /skin <name>.
   #
   # Built-in skins:
-  #   default        — Classic Moor gold/kawaii
+  #   default        — Classic Hermes gold/kawaii
   #   ares           — Crimson/bronze war-god theme with spinner wings
   #   mono           — Clean grayscale monochrome
   #   slate          — Cool blue developer-focused
@@ -1754,7 +1725,7 @@ display:
 # =============================================================================
 # Telemetry
 # =============================================================================
-# Shared metrics are disabled by default. When enabled, Moor writes only
+# Shared metrics are disabled by default. When enabled, Hermes writes only
 # allowlisted aggregate counters and immutable JSON
 # packages under $HERMES_HOME/telemetry/shared_metrics; it does not upload them.
 # Packages include a random profile-scoped ID that stays stable until this
@@ -1779,7 +1750,7 @@ updates:
   # Number of pre-update backup zips to retain.
   backup_keep: 5
 
-  # What non-interactive updates do with local source edits in the Moor repo.
+  # What non-interactive updates do with local source edits in the Hermes repo.
   # Interactive terminal updates always prompt before restoring the autostash.
   #
   #   stash   - auto-stash before pull, then auto-restore after success (default)
@@ -1810,7 +1781,7 @@ updates:
 # dashboard:
 #   oauth:
 #     client_id: ""    # agent:{instance_id}; Portal provisions this at deploy
-#     portal_url: ""   # blank → default https://portal.Moor inc..com
+#     portal_url: ""   # blank → default https://portal.nousresearch.com
 #
 #   # Force the absolute base URL the OAuth callback (and any other public
 #   # URL the dashboard hands to external systems) is built from. Set this
@@ -1851,7 +1822,7 @@ updates:
 #
 #       # OPTIONAL — set ONLY if your IDP registered the client as
 #       # *confidential* (Authentik / Keycloak often default to this). When
-#       # set, Moor authenticates the client at the token endpoint
+#       # set, Hermes authenticates the client at the token endpoint
 #       # (client_secret_basic or client_secret_post, auto-selected from the
 #       # IDP's discovery doc) IN ADDITION to PKCE. Leave unset for a public
 #       # (PKCE-only) client — the common case.
@@ -1867,7 +1838,7 @@ updates:
 # instead of storing them in ~/.hermes/.env. Only the manager's bootstrap
 # credential (e.g. BWS_ACCESS_TOKEN / OP_SERVICE_ACCOUNT_TOKEN) lives in .env
 # (or your shell / desktop session); everything else rotates centrally.
-# Failures never block startup — Moor warns once and continues with
+# Failures never block startup — Hermes warns once and continues with
 # whatever .env already had.
 #
 # Multiple sources can be enabled at once:
@@ -1877,7 +1848,7 @@ updates:
 #     are skipped with a startup warning (never a silent clobber)
 #   - a source's override_existing lets it beat .env/shell values, but
 #     never another secret source's claim
-# Docs: https://hermes-agent.Moor inc..com/docs/user-guide/secrets/
+# Docs: https://hermes-agent.nousresearch.com/docs/user-guide/secrets/
 #
 # secrets:
 #   # Optional explicit ordering of enabled sources.

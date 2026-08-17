@@ -349,7 +349,7 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
 
     Joined into a single string by :func:`build_system_prompt` and
     cached on ``agent._cached_system_prompt`` for the lifetime of the
-    AIAgent.  Moor never re-renders parts of this string mid-
+    AIAgent.  Hermes never re-renders parts of this string mid-
     session — that's the only way to keep upstream prompt caches
     warm across turns.
     """
@@ -389,7 +389,7 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
         # Fallback to hardcoded identity
         stable_parts.append(DEFAULT_AGENT_IDENTITY)
 
-    # Pointer to the hermes-agent skill + docs for user questions about Moor itself.
+    # Pointer to the hermes-agent skill + docs for user questions about Hermes itself.
     stable_parts.append(HERMES_AGENT_HELP_GUIDANCE)
 
     # Universal task-completion / no-fabrication guidance.  Applied to ALL
@@ -537,21 +537,13 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
     if _env_hints:
         stable_parts.append(_env_hints)
 
-<<<<<<< HEAD
-    # Coding posture (base Moor, any interactive coding surface in a code
-    # workspace — see agent/coding_context.py). The operating brief + the live
-    # git/workspace snapshot are built once here and cached for the session;
-    # the snapshot is never re-probed per turn (that would break the prompt
-    # cache), so the brief tells the model to re-check git before relying on it.
-=======
-    # Coding posture (base Moor, any interactive coding surface in a code
+    # Coding posture (base Hermes, any interactive coding surface in a code
     # workspace — see agent/coding_context.py). Keep the operating brief in
     # the cross-session-stable prefix, while placing the live git/workspace
     # snapshot behind its own cache boundary. The post-snapshot blocks must
     # stay in their historical position after the workspace snapshot.
     coding_workspace_parts: List[str] = []
     coding_trailing_parts: List[str] = []
->>>>>>> upstream/main
     if agent.valid_tool_names:
         try:
             from agent.coding_context import coding_system_prompt_parts
@@ -592,9 +584,6 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
             # Probe failure must never block prompt build.
             pass
 
-<<<<<<< HEAD
-    # Active-profile hint — names the Moor profile the agent is running
-=======
     # Bot Mode teammate protocol — injected ONLY into a bot's canonical
     # "Bot Chat" session (the conversation teammate bots message into via
     # `hermes -p <bot> chat --in ~ -c "Bot Chat"` and the desktop pins), on
@@ -632,8 +621,7 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
         except Exception:
             pass
 
-    # Active-profile hint — names the Moor profile the agent is running
->>>>>>> upstream/main
+    # Active-profile hint — names the Hermes profile the agent is running
     # under so it doesn't conflate ~/.hermes/skills/ (default profile) with
     # ~/.hermes/profiles/<active>/skills/ (this profile's). Deterministic
     # for the lifetime of the agent — profile name doesn't change
@@ -668,28 +656,15 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
     else:
         _home_str = _root_str = str(get_hermes_home())
     if active_profile == "default":
-<<<<<<< HEAD
-        stable_parts.append(
-            "Active Moor profile: default. Other profiles (if any) live "
-            "under ~/.hermes/profiles/<name>/. Each profile has its own "
-=======
         post_workspace_parts.append(
-            "Active Moor profile: default. Other profiles (if any) live "
+            "Active Hermes profile: default. Other profiles (if any) live "
             "under " + _root_str + "/profiles/<name>/. Each profile has its own "
->>>>>>> upstream/main
             "skills/, plugins/, cron/, and memories/ that affect a different "
             "session than this one. Do not modify another profile's "
             "skills/plugins/cron/memories unless the user explicitly directs "
             "you to."
         )
     else:
-<<<<<<< HEAD
-        stable_parts.append(
-            f"Active Moor profile: {active_profile}. This session reads "
-            f"and writes ~/.hermes/profiles/{active_profile}/. The default "
-            f"profile's data lives at ~/.hermes/skills/, ~/.hermes/plugins/, "
-            f"~/.hermes/cron/, ~/.hermes/memories/ — those belong to a "
-=======
         # A non-default name is only ever returned when the resolved home is
         # ALREADY <root>/profiles/<name> — that is exactly how both
         # _profile_name_for_home() and _resolve_active_profile_name() derive
@@ -700,11 +675,10 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
         profile_home = _home_str
         default_root = get_default_hermes_root()
         post_workspace_parts.append(
-            f"Active Moor profile: {active_profile}. This session reads "
+            f"Active Hermes profile: {active_profile}. This session reads "
             f"and writes {profile_home}/. The default "
             f"profile's data lives at {default_root}/skills/, {default_root}/plugins/, "
             f"{default_root}/cron/, {default_root}/memories/ — those belong to a "
->>>>>>> upstream/main
             f"different session run from a different shell. Do NOT modify "
             f"another profile's skills/plugins/cron/memories unless the user "
             f"explicitly directs you to. The cross-profile write guard will "
@@ -777,7 +751,7 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
         #
         # allow_install_tree_fallback: for cli/tui the launch dir IS the
         # user's shell cwd, so an in-tree fallback is a deliberate choice
-        # (developing Moor). Every other surface (desktop chat panel,
+        # (developing Hermes). Every other surface (desktop chat panel,
         # gateway daemons) self-spawns into the install tree, where the
         # fallback would inject this repo's contributor AGENTS.md (#64590).
         context_files_prompt = _r.build_context_files_prompt(
@@ -898,19 +872,12 @@ def build_system_prompt(agent: Any, system_message: Optional[str] = None) -> str
 
     Layers are ordered cache-friendly: stable identity/guidance first,
     then session-stable context files, then per-call volatile content
-<<<<<<< HEAD
-    (memory, USER profile, timestamp).  The whole string is treated as
-    one cached block — Moor never rebuilds or reinjects parts of it
-    mid-session, which is the only way to keep upstream prompt caches
-    warm across turns.
-=======
     (skills index, memory, USER profile, timestamp). For explicit
     cache_control backends the whole string is one cached block. For
     implicit longest-prefix backends the order is what matters: the
     content most likely to change is rendered last, so when the prompt is
     rebuilt (on compaction/restore) the unchanged stable scaffold ahead of
     the change stays in the reused prefix.
->>>>>>> upstream/main
     """
     parts = build_system_prompt_parts(agent, system_message=system_message)
     joined = "\n\n".join(p for p in (parts["stable"], parts["context"], parts["volatile"]) if p)

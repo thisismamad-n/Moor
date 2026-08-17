@@ -158,7 +158,7 @@ class TestDispatchMessage(unittest.TestCase):
         msg_data = {
             "uid": b"1",
             "sender_addr": "hermes@test.com",
-            "sender_name": "Moor",
+            "sender_name": "Hermes",
             "subject": "Test",
             "message_id": "<msg1@test.com>",
             "in_reply_to": "",
@@ -382,41 +382,6 @@ class TestThreadContext(unittest.TestCase):
             self.assertEqual(send_call["References"], "<original@test.com>")
             self.assertIn("Date", send_call)
 
-<<<<<<< HEAD
-    def test_reply_does_not_double_re(self):
-        """If subject already has Re:, don't add another."""
-        adapter = self._make_adapter()
-        adapter._thread_context["user@test.com"] = {
-            "subject": "Re: Project question",
-            "message_id": "<reply@test.com>",
-        }
-
-        with patch("smtplib.SMTP") as mock_smtp:
-            mock_server = MagicMock()
-            mock_smtp.return_value = mock_server
-
-            adapter._send_email("user@test.com", "Follow up.", None)
-
-            send_call = mock_server.send_message.call_args[0][0]
-            self.assertEqual(send_call["Subject"], "Re: Project question")
-            self.assertFalse(send_call["Subject"].startswith("Re: Re:"))
-
-    def test_no_thread_context_uses_default_subject(self):
-        """Without thread context, subject should be 'Re: Moor Agent'."""
-        adapter = self._make_adapter()
-
-        with patch("smtplib.SMTP") as mock_smtp:
-            mock_server = MagicMock()
-            mock_smtp.return_value = mock_server
-
-            adapter._send_email("newuser@test.com", "Hello!", None)
-
-            send_call = mock_server.send_message.call_args[0][0]
-            self.assertEqual(send_call["Subject"], "Re: Moor Agent")
-            self.assertIn("Date", send_call)
-
-=======
->>>>>>> upstream/main
 
 class TestSendMethods(unittest.TestCase):
     """Test email send methods."""
@@ -433,58 +398,6 @@ class TestSendMethods(unittest.TestCase):
             adapter = EmailAdapter(PlatformConfig(enabled=True))
         return adapter
 
-<<<<<<< HEAD
-    def test_send_calls_smtp(self):
-        """send() should use SMTP to deliver email."""
-        import asyncio
-        adapter = self._make_adapter()
-
-        with patch("smtplib.SMTP") as mock_smtp:
-            mock_server = MagicMock()
-            mock_smtp.return_value = mock_server
-
-            result = asyncio.run(
-                adapter.send("user@test.com", "Hello from Moor!")
-            )
-
-            self.assertTrue(result.success)
-            mock_server.starttls.assert_called_once()
-            mock_server.login.assert_called_once_with("hermes@test.com", "secret")
-            mock_server.send_message.assert_called_once()
-            mock_server.quit.assert_called_once()
-
-    def test_send_failure_returns_error(self):
-        """SMTP failure should return SendResult with error."""
-        import asyncio
-        adapter = self._make_adapter()
-
-        with patch("smtplib.SMTP") as mock_smtp:
-            mock_smtp.side_effect = Exception("Connection refused")
-
-            result = asyncio.run(
-                adapter.send("user@test.com", "Hello")
-            )
-
-            self.assertFalse(result.success)
-            self.assertIn("Connection refused", result.error)
-
-    def test_send_image_includes_url(self):
-        """send_image should include image URL in email body."""
-        import asyncio
-        adapter = self._make_adapter()
-
-        adapter.send = AsyncMock(return_value=SendResult(success=True))
-
-        asyncio.run(
-            adapter.send_image("user@test.com", "https://img.com/photo.jpg", "My photo")
-        )
-
-        call_args = adapter.send.call_args
-        body = call_args[0][1]
-        self.assertIn("https://img.com/photo.jpg", body)
-        self.assertIn("My photo", body)
-=======
->>>>>>> upstream/main
 
     def test_send_document_with_attachment(self):
         """send_document should send email with file attachment."""
@@ -915,7 +828,7 @@ class TestSendEmailStandalone(unittest.TestCase):
             _, kwargs = mock_server.starttls.call_args
             self.assertIsInstance(kwargs["context"], ssl.SSLContext)
             send_call = mock_server.send_message.call_args[0][0]
-            self.assertEqual(send_call["Subject"], "Moor Agent")
+            self.assertEqual(send_call["Subject"], "Hermes Agent")
             self.assertIn("Date", send_call)
             self.assertEqual(send_call["To"], "user@test.com")
             self.assertEqual(send_call["From"], "hermes@test.com")

@@ -435,7 +435,7 @@ def test_normalize_env_dict_filters_invalid_keys():
 def test_security_args_include_setuid_setgid_for_privdrop(monkeypatch):
     """The default (run_as_host_user=False) invocation must include SETUID and
     SETGID caps so the image's init can drop from root to a non-root user
-    (e.g. via ``s6-setuidgid`` in the bundled Moor image, or ``gosu``/``su``
+    (e.g. via ``s6-setuidgid`` in the bundled Hermes image, or ``gosu``/``su``
     in user-provided images).
 
     Without these caps the privilege-drop helper fails with
@@ -557,29 +557,6 @@ def test_run_command_tags_hermes_agent_label(monkeypatch):
     )
 
 
-<<<<<<< HEAD
-def test_run_command_tags_task_and_profile_labels(monkeypatch):
-    """task_id and the active profile name are surfaced as labels so future
-    cross-process reuse logic can filter to a specific (task, profile) pair
-    without parsing container names. Profile resolution uses the helper that
-    returns ``"default"`` for the root Moor home."""
-    monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")
-    monkeypatch.setattr(docker_env, "_get_active_profile_name", lambda: "research-bot")
-    calls = _mock_subprocess_run(monkeypatch)
-
-    _make_dummy_env(task_id="kanban-42")
-
-    labels = _labels_in_run_args(_run_args_from_calls(calls))
-    assert "hermes-task-id=kanban-42" in labels, (
-        f"hermes-task-id=kanban-42 missing; got: {sorted(labels)}"
-    )
-    assert "hermes-profile=research-bot" in labels, (
-        f"hermes-profile=research-bot missing; got: {sorted(labels)}"
-    )
-
-
-=======
->>>>>>> upstream/main
 def test_label_sanitizer_rejects_invalid_characters():
     """Docker label values must be alnum + ``_.-`` and ≤63 chars. Profile or
     task names containing slashes, colons, or unicode would otherwise emit
@@ -684,7 +661,7 @@ def _mock_subprocess_run_with_reuse(monkeypatch, ps_state: str | None,
 def test_reuse_attaches_to_running_container_without_docker_run(monkeypatch):
     """When a labeled container is already ``running``, the reuse probe
     must pick it up and skip ``docker run`` entirely. Regression for the
-    issue #20561 root cause: every Moor process spawning a new container
+    issue #20561 root cause: every Hermes process spawning a new container
     despite docs claiming "ONE long-lived container shared across sessions"."""
     monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")
     monkeypatch.setattr(docker_env, "_get_active_profile_name", lambda: "default")
@@ -753,7 +730,7 @@ def test_egress_enabled_does_not_reuse_pre_egress_container(monkeypatch):
 
 
 def test_extra_args_proxy_override_refuses_under_egress(monkeypatch):
-    """docker_extra_args are appended after Moor args, so egress enforcement
+    """docker_extra_args are appended after Hermes args, so egress enforcement
     must reject critical overrides before Docker sees them."""
 
     monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")
@@ -774,7 +751,7 @@ def test_extra_args_proxy_override_refuses_under_egress(monkeypatch):
 
 def test_reuse_starts_stopped_container_before_attaching(monkeypatch):
     """A labeled container in ``exited`` state must be restarted via
-    ``docker start`` before the new Moor process uses it. Without this
+    ``docker start`` before the new Hermes process uses it. Without this
     step, ``docker exec`` against a stopped container errors out and the
     first agent command fails opaquely."""
     monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")
@@ -935,7 +912,7 @@ def test_cleanup_with_persist_is_noop_for_container(monkeypatch):
     processes inside the container (npm watchers, pytest watchers, etc.).
 
     Resource reclamation in this mode happens via the orphan reaper on next
-    Moor startup, not on graceful exit. Issue #20561 — the first iteration
+    Hermes startup, not on graceful exit. Issue #20561 — the first iteration
     of this PR did docker stop here, which Ben caught as contradicting the
     "ONE long-lived container" semantics."""
     monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")
@@ -1172,115 +1149,6 @@ def test_reap_orphan_returns_zero_when_no_matches(monkeypatch):
     assert not rms, "no rm calls expected when ps returns empty"
 
 
-<<<<<<< HEAD
-def test_reap_orphan_removes_stale_exited_container(monkeypatch):
-    """An Exited container older than max_age_seconds must be removed.
-    This is the core repair path for issue #20561 — without the reaper,
-    SIGKILL'd Moor processes leak containers permanently."""
-    old = _now_iso(offset_seconds=900)  # 15 minutes ago
-    calls = _reaper_run_mock(
-        monkeypatch, ps_ids=["old-cid"], inspect_responses={"old-cid": old},
-    )
-
-    removed = docker_env.reap_orphan_containers(
-        max_age_seconds=600, profile_filter="default", docker_exe="/usr/bin/docker",
-    )
-
-    assert removed == 1
-    rms = [c for c in calls if isinstance(c[0], list) and c[0][1:2] == ["rm"]]
-    assert len(rms) == 1
-    assert "old-cid" in rms[0][0], f"expected rm of old-cid, got {rms[0][0]}"
-
-
-def test_reap_orphan_spares_recently_exited_container(monkeypatch):
-    """A container exited within max_age_seconds must NOT be reaped — that
-    container belongs to a Moor process that just finished and may be
-    about to be replaced. Conservative window prevents racing sibling
-    processes."""
-    recent = _now_iso(offset_seconds=60)  # 1 minute ago
-    calls = _reaper_run_mock(
-        monkeypatch, ps_ids=["recent-cid"], inspect_responses={"recent-cid": recent},
-    )
-
-    removed = docker_env.reap_orphan_containers(
-        max_age_seconds=600, profile_filter="default", docker_exe="/usr/bin/docker",
-    )
-
-    assert removed == 0
-    rms = [c for c in calls if isinstance(c[0], list) and c[0][1:2] == ["rm"]]
-    assert not rms, f"recent container must not be reaped, got rm calls: {rms}"
-
-
-def test_reap_orphan_scopes_to_profile_filter_via_label(monkeypatch):
-    """The reaper must pass ``--filter label=hermes-profile=<profile>`` to
-    docker ps so it never sweeps another profile's containers. A research
-    profile must not tear down the default profile's stragglers."""
-    calls = _reaper_run_mock(monkeypatch, ps_ids=[], inspect_responses={})
-
-    docker_env.reap_orphan_containers(
-        max_age_seconds=600, profile_filter="research-bot", docker_exe="/usr/bin/docker",
-    )
-
-    ps_calls = [c for c in calls if isinstance(c[0], list) and c[0][1:2] == ["ps"]]
-    assert ps_calls, "expected at least one docker ps call"
-    flat = " ".join(ps_calls[0][0])
-    assert "label=hermes-profile=research-bot" in flat, (
-        f"profile filter not applied to docker ps; got args: {ps_calls[0][0]}"
-    )
-    assert "label=hermes-agent=1" in flat, (
-        f"hermes-agent label filter must also be applied; got: {ps_calls[0][0]}"
-    )
-    assert "status=exited" in flat, (
-        "must filter to exited containers only — running containers may "
-        "belong to a sibling Moor process and must NEVER be reaped"
-    )
-
-
-def test_reap_orphan_skips_container_with_unparseable_finished_at(monkeypatch):
-    """If docker inspect returns the zero-value ``0001-01-01T00:00:00Z`` (no
-    FinishedAt yet) or an unparseable timestamp, the reaper must leave the
-    container alone. Defensive — never reap a container whose age we can't
-    determine."""
-    calls = _reaper_run_mock(
-        monkeypatch,
-        ps_ids=["never-finished", "garbage-ts"],
-        inspect_responses={
-            "never-finished": "0001-01-01T00:00:00Z",
-            "garbage-ts": "not-a-timestamp",
-        },
-    )
-
-    removed = docker_env.reap_orphan_containers(
-        max_age_seconds=600, profile_filter="default", docker_exe="/usr/bin/docker",
-    )
-
-    assert removed == 0
-    rms = [c for c in calls if isinstance(c[0], list) and c[0][1:2] == ["rm"]]
-    assert not rms, (
-        f"reaper must NOT remove containers with unparseable FinishedAt; got: {rms}"
-    )
-
-
-def test_reap_orphan_handles_docker_ps_failure_gracefully(monkeypatch):
-    """If docker ps itself fails (daemon down, permission denied), the
-    reaper returns 0 without crashing. The reaper is best-effort plumbing,
-    not a critical path — it must never block container creation."""
-    def _failing_ps(cmd, **kwargs):
-        if isinstance(cmd, list) and len(cmd) >= 2 and cmd[1] == "ps":
-            return subprocess.CompletedProcess(cmd, 1, stdout="", stderr="Cannot connect to daemon")
-        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
-
-    monkeypatch.setattr(docker_env.subprocess, "run", _failing_ps)
-
-    # Must not raise
-    removed = docker_env.reap_orphan_containers(
-        max_age_seconds=600, profile_filter="default", docker_exe="/usr/bin/docker",
-    )
-    assert removed == 0
-
-
-=======
->>>>>>> upstream/main
 def test_reap_orphan_continues_after_individual_rm_failure(monkeypatch):
     """If ``docker rm -f`` fails on one container (already removed by a
     concurrent process, container locked, etc.), the reaper must log and

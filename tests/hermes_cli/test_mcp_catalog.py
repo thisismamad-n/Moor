@@ -459,26 +459,6 @@ class TestCatalogDiagnostics:
         invalid = [d for d in diags if d[1] == "invalid"]
         assert len(invalid) == 1
 
-<<<<<<< HEAD
-    def test_picker_surfaces_future_manifest_warning(self, catalog_dir, capsys, monkeypatch):
-        """The text-dump path should print a warning line for future-manifest
-        entries so users running headless or after `hermes setup` know to update."""
-        body = _basic_manifest()
-        body["manifest_version"] = 999
-        _write_manifest(catalog_dir, "futuristic", body)
-        _write_manifest(catalog_dir, "demo", _basic_manifest())
-
-        import sys as _sys
-        monkeypatch.setattr(_sys.stdin, "isatty", lambda: False)
-        from hermes_cli.mcp_picker import show_catalog
-
-        show_catalog()
-        out = capsys.readouterr().out
-        assert "futuristic" in out
-        assert "requires a newer Moor" in out
-
-=======
->>>>>>> upstream/main
 
 # ---------------------------------------------------------------------------
 # Picker — custom (non-catalog) MCP rows
@@ -646,7 +626,7 @@ class TestShippedCatalog:
 
     def test_all_shipped_manifests_are_version_locked(self, monkeypatch):
         """Contract: catalog entries follow the same supply-chain rules as
-        pyproject dependencies — everything Moor fetches/launches is pinned
+        pyproject dependencies — everything Hermes fetches/launches is pinned
         to an exact version.
 
         - git installs must pin a full 40-char commit SHA (branches and tags

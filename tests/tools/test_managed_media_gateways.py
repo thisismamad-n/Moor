@@ -208,7 +208,7 @@ def test_openai_tts_uses_managed_audio_gateway_when_direct_key_absent(monkeypatc
     _install_fake_openai_module(captured)
     monkeypatch.delenv("VOICE_TOOLS_OPENAI_KEY", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    monkeypatch.setenv("TOOL_GATEWAY_DOMAIN", "Moor inc..com")
+    monkeypatch.setenv("TOOL_GATEWAY_DOMAIN", "nousresearch.com")
     monkeypatch.setenv("TOOL_GATEWAY_USER_TOKEN", "nous-token")
 
     tts_tool = _load_tool_module("tools.tts_tool", "tts_tool.py")
@@ -217,63 +217,20 @@ def test_openai_tts_uses_managed_audio_gateway_when_direct_key_absent(monkeypatc
     tts_tool._generate_openai_tts("hello world", str(output_path), {"openai": {}})
 
     assert captured["api_key"] == "nous-token"
-    assert captured["base_url"] == "https://openai-audio-gateway.Moor inc..com/v1"
+    assert captured["base_url"] == "https://openai-audio-gateway.nousresearch.com/v1"
     assert captured["speech_kwargs"]["model"] == "gpt-4o-mini-tts"
     assert captured["speech_kwargs"]["extra_headers"] == {"x-idempotency-key": "tts-call-123"}
     assert captured["stream_to_file"] == str(output_path)
     assert captured["close_calls"] == 1
 
 
-<<<<<<< HEAD
-def test_openai_tts_coerces_direct_only_model_on_managed_gateway(monkeypatch, tmp_path):
-    """A tts.openai.model valid only for direct OpenAI (e.g. tts-1-hd) must be
-    coerced to a managed-supported model, else the gateway 400s with
-    'Unsupported managed OpenAI speech model'."""
-    captured = {}
-    _install_fake_tools_package()
-    _install_fake_openai_module(captured)
-    monkeypatch.delenv("VOICE_TOOLS_OPENAI_KEY", raising=False)
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    monkeypatch.setenv("TOOL_GATEWAY_DOMAIN", "Moor inc..com")
-    monkeypatch.setenv("TOOL_GATEWAY_USER_TOKEN", "nous-token")
-
-    tts_tool = _load_tool_module("tools.tts_tool", "tts_tool.py")
-    output_path = tmp_path / "speech.mp3"
-    tts_tool._generate_openai_tts(
-        "hello world", str(output_path), {"openai": {"model": "tts-1-hd"}}
-    )
-
-    assert captured["base_url"] == "https://openai-audio-gateway.Moor inc..com/v1"
-    assert captured["speech_kwargs"]["model"] == "gpt-4o-mini-tts"
-
-
-def test_openai_tts_keeps_direct_only_model_with_direct_key(monkeypatch, tmp_path):
-    """With a direct key, the user's tts-1-hd is honored (not coerced)."""
-    captured = {}
-    _install_fake_tools_package()
-    _install_fake_openai_module(captured)
-    monkeypatch.setenv("OPENAI_API_KEY", "openai-direct-key")
-    monkeypatch.delenv("VOICE_TOOLS_OPENAI_KEY", raising=False)
-
-    tts_tool = _load_tool_module("tools.tts_tool", "tts_tool.py")
-    output_path = tmp_path / "speech.mp3"
-    tts_tool._generate_openai_tts(
-        "hello world", str(output_path), {"openai": {"model": "tts-1-hd"}}
-    )
-
-    assert captured["base_url"] == "https://api.openai.com/v1"
-    assert captured["speech_kwargs"]["model"] == "tts-1-hd"
-
-
-=======
->>>>>>> upstream/main
 def test_openai_tts_accepts_openai_api_key_as_direct_fallback(monkeypatch, tmp_path):
     captured = {}
     _install_fake_tools_package()
     _install_fake_openai_module(captured)
     monkeypatch.delenv("VOICE_TOOLS_OPENAI_KEY", raising=False)
     monkeypatch.setenv("OPENAI_API_KEY", "openai-direct-key")
-    monkeypatch.setenv("TOOL_GATEWAY_DOMAIN", "Moor inc..com")
+    monkeypatch.setenv("TOOL_GATEWAY_DOMAIN", "nousresearch.com")
     monkeypatch.setenv("TOOL_GATEWAY_USER_TOKEN", "nous-token")
 
     tts_tool = _load_tool_module("tools.tts_tool", "tts_tool.py")
@@ -293,7 +250,7 @@ def test_transcription_uses_model_specific_response_formats(monkeypatch, tmp_pat
     (tmp_path / "config.yaml").write_text("stt:\n  provider: openai\n")
     monkeypatch.delenv("VOICE_TOOLS_OPENAI_KEY", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    monkeypatch.setenv("TOOL_GATEWAY_DOMAIN", "Moor inc..com")
+    monkeypatch.setenv("TOOL_GATEWAY_DOMAIN", "nousresearch.com")
     monkeypatch.setenv("TOOL_GATEWAY_USER_TOKEN", "nous-token")
 
     transcription_tools = _load_tool_module(
@@ -306,7 +263,7 @@ def test_transcription_uses_model_specific_response_formats(monkeypatch, tmp_pat
 
     whisper_result = transcription_tools.transcribe_audio(str(audio_path), model="whisper-1")
     assert whisper_result["success"] is True
-    assert whisper_capture["base_url"] == "https://openai-audio-gateway.Moor inc..com/v1"
+    assert whisper_capture["base_url"] == "https://openai-audio-gateway.nousresearch.com/v1"
     assert whisper_capture["transcription_kwargs"]["response_format"] == "text"
     assert whisper_capture["close_calls"] == 1
 

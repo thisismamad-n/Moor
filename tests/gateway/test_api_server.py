@@ -870,12 +870,8 @@ class TestCapabilitiesEndpoint:
             assert data["features"]["chat_completions"] is True
             assert data["features"]["run_status"] is True
             assert data["features"]["run_events_sse"] is True
-<<<<<<< HEAD
-            assert data["features"]["session_continuity_header"] == "X-Moor-Session-Id"
-=======
             assert data["features"]["model_options"] is True
-            assert data["features"]["session_continuity_header"] == "X-Moor-Session-Id"
->>>>>>> upstream/main
+            assert data["features"]["session_continuity_header"] == "X-Hermes-Session-Id"
             assert data["endpoints"]["run_status"]["path"] == "/v1/runs/{run_id}"
             assert data["endpoints"]["model_options"] == {"method": "GET", "path": "/api/model/options"}
             assert data["endpoints"]["skills"] == {"method": "GET", "path": "/v1/skills"}
@@ -2145,38 +2141,6 @@ class TestChatCompletionsAgentIncomplete:
     finish_reason='length' (with the partial text), or 502 with an OpenAI
     error envelope (no usable text). Issue #22496."""
 
-<<<<<<< HEAD
-    @pytest.mark.asyncio
-    async def test_truncation_with_partial_text_uses_length_finish_reason(self, adapter):
-        """Partial text + truncation marker → finish_reason='length', 200 OK,
-        plus hermes extras + headers."""
-        mock_result = {
-            "final_response": "Here is part one of the answer",
-            "completed": False,
-            "partial": True,
-            "error": "Response truncated due to output length limit",
-            "messages": [],
-            "api_calls": 1,
-        }
-        app = _create_app(adapter)
-        async with TestClient(TestServer(app)) as cli:
-            with patch.object(adapter, "_run_agent", new_callable=AsyncMock) as mock_run:
-                mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
-                resp = await cli.post(
-                    "/v1/chat/completions",
-                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "tell me everything"}]},
-                )
-            assert resp.status == 200
-            data = await resp.json()
-            assert data["choices"][0]["finish_reason"] == "length"
-            assert data["choices"][0]["message"]["content"] == "Here is part one of the answer"
-            assert data["hermes"]["partial"] is True
-            assert data["hermes"]["completed"] is False
-            assert data["hermes"]["error_code"] == "output_truncated"
-            assert resp.headers.get("X-Moor-Completed") == "false"
-            assert resp.headers.get("X-Moor-Partial") == "true"
-=======
->>>>>>> upstream/main
 
     @pytest.mark.asyncio
     async def test_hard_failure_redacts_secret_like_error_text(self, adapter):
@@ -2203,74 +2167,10 @@ class TestChatCompletionsAgentIncomplete:
             data = await resp.json()
             body = json.dumps(data)
             assert raw_secret not in body
-            assert raw_secret not in resp.headers.get("X-Moor-Error", "")
+            assert raw_secret not in resp.headers.get("X-Hermes-Error", "")
             assert "OPENAI_API_KEY=" in body
             assert data["error"]["hermes"]["failed"] is True
 
-<<<<<<< HEAD
-    @pytest.mark.asyncio
-    async def test_failure_with_no_text_returns_502_error_envelope(self, adapter):
-        """No usable assistant text + failure → 502 with OpenAI error envelope.
-
-        Pre-fix behavior: the failure string ('Response remained truncated...')
-        was substituted into message.content with finish_reason='stop',
-        making API clients think the agent had answered.
-        """
-        mock_result = {
-            "final_response": None,
-            "completed": False,
-            "partial": True,
-            "failed": True,
-            "error": "Response remained truncated after 3 continuation attempts",
-            "messages": [],
-            "api_calls": 1,
-        }
-        app = _create_app(adapter)
-        async with TestClient(TestServer(app)) as cli:
-            with patch.object(adapter, "_run_agent", new_callable=AsyncMock) as mock_run:
-                mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
-                resp = await cli.post(
-                    "/v1/chat/completions",
-                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "x"}]},
-                )
-            # Hard fail: SDK clients will raise on this status
-            assert resp.status == 502
-            data = await resp.json()
-            assert data["error"]["code"] == "agent_incomplete"
-            assert "truncated" in data["error"]["message"].lower()
-            assert data["error"]["hermes"]["partial"] is True
-            assert data["error"]["hermes"]["failed"] is True
-            assert resp.headers.get("X-Moor-Completed") == "false"
-
-    @pytest.mark.asyncio
-    async def test_normal_completion_unchanged(self, adapter):
-        """Sanity: a completed-True result still returns finish_reason='stop'
-        and no hermes extras (preserves the existing happy-path contract)."""
-        mock_result = {
-            "final_response": "All good.",
-            "completed": True,
-            "partial": False,
-            "failed": False,
-            "messages": [],
-            "api_calls": 1,
-        }
-        app = _create_app(adapter)
-        async with TestClient(TestServer(app)) as cli:
-            with patch.object(adapter, "_run_agent", new_callable=AsyncMock) as mock_run:
-                mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
-                resp = await cli.post(
-                    "/v1/chat/completions",
-                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hi"}]},
-                )
-            assert resp.status == 200
-            data = await resp.json()
-            assert data["choices"][0]["finish_reason"] == "stop"
-            assert data["choices"][0]["message"]["content"] == "All good."
-            assert "hermes" not in data
-            assert "X-Moor-Completed" not in resp.headers
-
-=======
->>>>>>> upstream/main
 
 # ---------------------------------------------------------------------------
 # CORS
@@ -2405,59 +2305,16 @@ class TestConversationParameter:
 
 
 # ---------------------------------------------------------------------------
-# X-Moor-Session-Id header (session continuity)
+# X-Hermes-Session-Id header (session continuity)
 # ---------------------------------------------------------------------------
 
 
 class TestSessionIdHeader:
-<<<<<<< HEAD
-    @pytest.mark.asyncio
-    async def test_new_session_response_includes_session_id_header(self, adapter):
-        """Without X-Moor-Session-Id, a new session is created and returned in the header."""
-        mock_result = {"final_response": "Hello!", "messages": [], "api_calls": 1}
-        app = _create_app(adapter)
-        async with TestClient(TestServer(app)) as cli:
-            with patch.object(adapter, "_run_agent", new_callable=AsyncMock) as mock_run:
-                mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
-                resp = await cli.post(
-                    "/v1/chat/completions",
-                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "Hi"}]},
-                )
-            assert resp.status == 200
-            assert resp.headers.get("X-Moor-Session-Id") is not None
 
-    @pytest.mark.asyncio
-    async def test_provided_session_id_is_used_and_echoed(self, auth_adapter):
-        """When X-Moor-Session-Id is provided, it's passed to the agent and echoed in the response."""
-        mock_result = {"final_response": "Continuing!", "messages": [], "api_calls": 1}
-        mock_db = MagicMock()
-        mock_db.get_messages_as_conversation.return_value = [
-            {"role": "user", "content": "previous message"},
-            {"role": "assistant", "content": "previous reply"},
-        ]
-        auth_adapter._session_db = mock_db
-        app = _create_app(auth_adapter)
-        async with TestClient(TestServer(app)) as cli:
-            with patch.object(auth_adapter, "_run_agent", new_callable=AsyncMock) as mock_run:
-                mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
-
-                resp = await cli.post(
-                    "/v1/chat/completions",
-                    headers={"X-Moor-Session-Id": "my-session-123", "Authorization": "Bearer sk-secret"},
-                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "Continue"}]},
-                )
-
-            assert resp.status == 200
-            assert resp.headers.get("X-Moor-Session-Id") == "my-session-123"
-            call_kwargs = mock_run.call_args.kwargs
-            assert call_kwargs["session_id"] == "my-session-123"
-=======
-
->>>>>>> upstream/main
 
     @pytest.mark.asyncio
     async def test_traversal_session_id_header_rejected(self, auth_adapter):
-        """Security (#5958): a path-traversal X-Moor-Session-Id must be
+        """Security (#5958): a path-traversal X-Hermes-Session-Id must be
         rejected with 400 so it can't reach the filesystem artifact paths
         (session snapshot / request dump) and escape the sessions dir."""
         app = _create_app(auth_adapter)
@@ -2466,7 +2323,7 @@ class TestSessionIdHeader:
                 for bad in ("../../../../etc/pwned", "/abs/path", "..\\win"):
                     resp = await cli.post(
                         "/v1/chat/completions",
-                        headers={"X-Moor-Session-Id": bad, "Authorization": "Bearer sk-secret"},
+                        headers={"X-Hermes-Session-Id": bad, "Authorization": "Bearer sk-secret"},
                         json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hi"}]},
                     )
                     assert resp.status == 400, f"{bad!r} should be rejected"
@@ -2475,7 +2332,7 @@ class TestSessionIdHeader:
 
     @pytest.mark.asyncio
     async def test_provided_session_id_loads_history_from_db(self, auth_adapter):
-        """When X-Moor-Session-Id is provided, history comes from SessionDB not request body."""
+        """When X-Hermes-Session-Id is provided, history comes from SessionDB not request body."""
         mock_result = {"final_response": "OK", "messages": [], "api_calls": 1}
         db_history = [
             {"role": "user", "content": "stored message 1"},
@@ -2491,7 +2348,7 @@ class TestSessionIdHeader:
 
                 resp = await cli.post(
                     "/v1/chat/completions",
-                    headers={"X-Moor-Session-Id": "existing-session", "Authorization": "Bearer sk-secret"},
+                    headers={"X-Hermes-Session-Id": "existing-session", "Authorization": "Bearer sk-secret"},
                     # Request body has different history — should be ignored
                     json={
                         "model": "hermes-agent",
@@ -2509,35 +2366,9 @@ class TestSessionIdHeader:
             assert call_kwargs["conversation_history"] == db_history
             assert call_kwargs["user_message"] == "new question"
 
-<<<<<<< HEAD
-    @pytest.mark.asyncio
-    async def test_db_failure_falls_back_to_empty_history(self, auth_adapter):
-        """If SessionDB raises, history falls back to empty and request still succeeds."""
-        mock_result = {"final_response": "OK", "messages": [], "api_calls": 1}
-        # Simulate DB failure: _session_db is None and SessionDB() constructor raises
-        auth_adapter._session_db = None
-        app = _create_app(auth_adapter)
-        async with TestClient(TestServer(app)) as cli:
-            with patch.object(auth_adapter, "_run_agent", new_callable=AsyncMock) as mock_run, \
-                 patch("hermes_state.SessionDB", side_effect=Exception("DB unavailable")):
-                mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
-
-                resp = await cli.post(
-                    "/v1/chat/completions",
-                    headers={"X-Moor-Session-Id": "some-session", "Authorization": "Bearer sk-secret"},
-                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "Hi"}]},
-                )
-
-            assert resp.status == 200
-            call_kwargs = mock_run.call_args.kwargs
-            assert call_kwargs["conversation_history"] == []
-            assert call_kwargs["session_id"] == "some-session"
-
-=======
->>>>>>> upstream/main
 
 # ---------------------------------------------------------------------------
-# X-Moor-Session-Key header (long-term memory scoping)
+# X-Hermes-Session-Key header (long-term memory scoping)
 # ---------------------------------------------------------------------------
 
 
@@ -2549,115 +2380,6 @@ class TestSessionKeyHeader:
     gateway's session_key / session_id split.
     """
 
-<<<<<<< HEAD
-    @pytest.mark.asyncio
-    async def test_session_key_passed_to_agent_and_echoed(self, auth_adapter):
-        """X-Moor-Session-Key reaches _run_agent as gateway_session_key and is echoed back."""
-        mock_result = {"final_response": "ok", "messages": [], "api_calls": 1}
-        app = _create_app(auth_adapter)
-        async with TestClient(TestServer(app)) as cli:
-            with patch.object(auth_adapter, "_run_agent", new_callable=AsyncMock) as mock_run:
-                mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
-                resp = await cli.post(
-                    "/v1/chat/completions",
-                    headers={
-                        "X-Moor-Session-Key": "webui:user-42",
-                        "Authorization": "Bearer sk-secret",
-                    },
-                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hi"}]},
-                )
-            assert resp.status == 200
-            assert resp.headers.get("X-Moor-Session-Key") == "webui:user-42"
-            call_kwargs = mock_run.call_args.kwargs
-            assert call_kwargs["gateway_session_key"] == "webui:user-42"
-
-    @pytest.mark.asyncio
-    async def test_session_key_independent_of_session_id(self, auth_adapter):
-        """Both headers coexist: key scopes memory, id scopes transcript."""
-        mock_result = {"final_response": "ok", "messages": [], "api_calls": 1}
-        mock_db = MagicMock()
-        mock_db.get_messages_as_conversation.return_value = []
-        auth_adapter._session_db = mock_db
-        app = _create_app(auth_adapter)
-        async with TestClient(TestServer(app)) as cli:
-            with patch.object(auth_adapter, "_run_agent", new_callable=AsyncMock) as mock_run:
-                mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
-                resp = await cli.post(
-                    "/v1/chat/completions",
-                    headers={
-                        "X-Moor-Session-Key": "channel-abc",
-                        "X-Moor-Session-Id": "transcript-xyz",
-                        "Authorization": "Bearer sk-secret",
-                    },
-                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hi"}]},
-                )
-            assert resp.status == 200
-            assert resp.headers.get("X-Moor-Session-Key") == "channel-abc"
-            assert resp.headers.get("X-Moor-Session-Id") == "transcript-xyz"
-            call_kwargs = mock_run.call_args.kwargs
-            assert call_kwargs["gateway_session_key"] == "channel-abc"
-            assert call_kwargs["session_id"] == "transcript-xyz"
-
-    @pytest.mark.asyncio
-    async def test_session_key_absent_yields_none(self, auth_adapter):
-        """Omitting the header passes gateway_session_key=None and doesn't echo."""
-        mock_result = {"final_response": "ok", "messages": [], "api_calls": 1}
-        app = _create_app(auth_adapter)
-        async with TestClient(TestServer(app)) as cli:
-            with patch.object(auth_adapter, "_run_agent", new_callable=AsyncMock) as mock_run:
-                mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
-                resp = await cli.post(
-                    "/v1/chat/completions",
-                    headers={"Authorization": "Bearer sk-secret"},
-                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hi"}]},
-                )
-            assert resp.status == 200
-            assert "X-Moor-Session-Key" not in resp.headers
-            call_kwargs = mock_run.call_args.kwargs
-            assert call_kwargs["gateway_session_key"] is None
-
-    @pytest.mark.asyncio
-    async def test_session_key_rejected_without_api_key(self, adapter):
-        """Without API_SERVER_KEY, accepting a caller-supplied memory scope is unsafe — reject with 403."""
-        app = _create_app(adapter)
-        async with TestClient(TestServer(app)) as cli:
-            resp = await cli.post(
-                "/v1/chat/completions",
-                headers={"X-Moor-Session-Key": "whatever"},
-                json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hi"}]},
-            )
-            assert resp.status == 403
-
-    @pytest.mark.asyncio
-    async def test_session_key_rejects_control_chars(self, auth_adapter):
-        """Header injection via \\r\\n must be rejected by the server-side validator.
-
-        Note: aiohttp client refuses to SEND a header containing CR/LF
-        (that check fires before the request leaves the client), so we
-        can't reach this code path through TestClient.  Test the helper
-        directly instead with a raw request that bypasses client-side
-        validation.
-        """
-        mock_request = MagicMock()
-        mock_request.headers = {"X-Moor-Session-Key": "bad\rvalue"}
-        key, err = auth_adapter._parse_session_key_header(mock_request)
-        assert key is None
-        assert err is not None
-        assert err.status == 400
-
-    @pytest.mark.asyncio
-    async def test_session_key_rejects_oversized(self, auth_adapter):
-        """Session keys longer than the cap are rejected."""
-        app = _create_app(auth_adapter)
-        async with TestClient(TestServer(app)) as cli:
-            resp = await cli.post(
-                "/v1/chat/completions",
-                headers={"X-Moor-Session-Key": "x" * 1000, "Authorization": "Bearer sk-secret"},
-                json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hi"}]},
-            )
-            assert resp.status == 400
-=======
->>>>>>> upstream/main
 
     @pytest.mark.asyncio
     async def test_session_key_threads_into_create_agent(self, auth_adapter):
@@ -2679,7 +2401,7 @@ class TestSessionKeyHeader:
                 resp = await cli.post(
                     "/v1/chat/completions",
                     headers={
-                        "X-Moor-Session-Key": "agent:main:webui:dm:user-7",
+                        "X-Hermes-Session-Key": "agent:main:webui:dm:user-7",
                         "Authorization": "Bearer sk-secret",
                     },
                     json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hi"}]},
@@ -2690,7 +2412,7 @@ class TestSessionKeyHeader:
 
     @pytest.mark.asyncio
     async def test_responses_endpoint_accepts_session_key(self, auth_adapter):
-        """Responses API honors the same X-Moor-Session-Key contract."""
+        """Responses API honors the same X-Hermes-Session-Key contract."""
         mock_result = {"final_response": "ok", "messages": [], "api_calls": 1}
         app = _create_app(auth_adapter)
         async with TestClient(TestServer(app)) as cli:
@@ -2699,13 +2421,13 @@ class TestSessionKeyHeader:
                 resp = await cli.post(
                     "/v1/responses",
                     headers={
-                        "X-Moor-Session-Key": "webui:chan-1",
+                        "X-Hermes-Session-Key": "webui:chan-1",
                         "Authorization": "Bearer sk-secret",
                     },
                     json={"model": "hermes-agent", "input": "hello", "store": False},
                 )
             assert resp.status == 200
-            assert resp.headers.get("X-Moor-Session-Key") == "webui:chan-1"
+            assert resp.headers.get("X-Hermes-Session-Key") == "webui:chan-1"
             call_kwargs = mock_run.call_args.kwargs
             assert call_kwargs["gateway_session_key"] == "webui:chan-1"
 
@@ -2717,7 +2439,7 @@ class TestSessionKeyHeader:
             resp = await cli.get("/v1/capabilities")
             assert resp.status == 200
             data = await resp.json()
-            assert data["features"]["session_key_header"] == "X-Moor-Session-Key"
+            assert data["features"]["session_key_header"] == "X-Hermes-Session-Key"
 
 
 # ---------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 """
-Moor Plugin System
+Hermes Plugin System
 ====================
 
 Discovers, loads, and manages plugins from four sources:
@@ -124,7 +124,7 @@ def _install_plugin_debug_handler(force: bool = False) -> None:
     """When HERMES_PLUGINS_DEBUG is on, tee plugin logs to stderr at DEBUG.
 
     Idempotent: only attaches the handler once per process unless ``force``
-    is passed. Does not touch the root logger or other Moor loggers.
+    is passed. Does not touch the root logger or other Hermes loggers.
     """
     global _DEBUG_HANDLER_INSTALLED, _PLUGINS_DEBUG
     if force:
@@ -178,7 +178,7 @@ VALID_HOOKS: Set[str] = {
     #   {"action": "continue", "message": "<follow-up instruction>"}
     # The Claude-Code Stop shape {"decision": "block", "reason": "..."} (block
     # the stop == keep going) is accepted too. Anything else lets the turn
-    # finish. Moor' shipped guidance lives in the evidence-based
+    # finish. Hermes' shipped guidance lives in the evidence-based
     # verification-stop nudge; this hook is for user/plugin policy and is
     # bounded by agent.max_verify_nudges.
     "pre_verify",
@@ -554,7 +554,7 @@ def _serialized_replacement(method):
 
 @contextmanager
 def _plugin_home_scope(home: Path):
-    """Bind discovery and loading to the manager's immutable Moor home."""
+    """Bind discovery and loading to the manager's immutable Hermes home."""
     token = set_hermes_home_override(home)
     try:
         yield
@@ -661,7 +661,7 @@ _KNOWN_MANIFEST_FIELDS: Set[str] = {
     "capabilities", "emits", "listens", "hermes", "depends",
 }
 
-# Highest manifest schema version this Moor understands.
+# Highest manifest schema version this Hermes understands.
 SUPPORTED_MANIFEST_VERSION = 2
 
 _CONFIG_SCHEMA_TYPES: Dict[str, tuple] = {
@@ -700,7 +700,7 @@ def _parse_manifest_v2_fields(data: Mapping, key: str) -> Dict[str, Any]:
         mv = 1
     if mv > SUPPORTED_MANIFEST_VERSION:
         logger.warning(
-            "Plugin %s: manifest_version %d is newer than this Moor "
+            "Plugin %s: manifest_version %d is newer than this Hermes "
             "supports (%d); loading anyway and ignoring unknown fields",
             key, mv, SUPPORTED_MANIFEST_VERSION,
         )
@@ -1084,7 +1084,7 @@ class PluginManifest:
     # loads (plugins can probe availability via ``ctx.has_plugin``). Load
     # ORDER honors these edges: if A requires B, B registers first.
     requires_plugins: List[Dict[str, Any]] = field(default_factory=list)
-    # Declared pip dependencies. VALIDATED AND SURFACED ONLY — Moor never
+    # Declared pip dependencies. VALIDATED AND SURFACED ONLY — Hermes never
     # auto-installs these (isolation design for the install seam is a
     # deferred follow-up; see #64165 round-2 review and #15220).
     python_dependencies: List[str] = field(default_factory=list)
@@ -1216,7 +1216,7 @@ def _plugin_relative_segments(key: str) -> tuple[str, ...]:
     """Validate and split a plugin-relative settings key.
 
     The public API accepts only relative keys (``endpoint`` or
-    ``retry.policy``).  Full Moor paths, traversal syntax, and the security-
+    ``retry.policy``).  Full Hermes paths, traversal syntax, and the security-
     sensitive core roots called out in #64227 are rejected before any config
     read occurs.
     """
@@ -1488,7 +1488,7 @@ class PluginContext:
         # The lock covers the merge read plus atomic save, preventing sibling
         # plugin writes from racing between those two steps.
         # Serialize bridge-to-bridge writes across processes as well as
-        # threads. Other Moor config writers still retain their existing
+        # threads. Other Hermes config writers still retain their existing
         # atomic-replace semantics; this lock specifically prevents two
         # plugin read/merge/write transactions from dropping siblings.
         with _locked_plugin_state(config_mod.get_config_path()):
@@ -1600,7 +1600,7 @@ class PluginContext:
 
     @property
     def profile_name(self) -> str:
-        """Return the active Moor profile name (e.g. ``"default"``).
+        """Return the active Hermes profile name (e.g. ``"default"``).
 
         Derived from ``HERMES_HOME`` via
         :func:`hermes_cli.profiles.get_active_profile_name`, so it works in
@@ -1935,7 +1935,7 @@ class PluginContext:
     def _tool_override_allowed(self, tool_name: str) -> bool:
         """Return True if this plugin is configured to override built-in tools.
 
-        Bundled plugins (shipped with Moor core) are trusted by default —
+        Bundled plugins (shipped with Hermes core) are trusted by default —
         an override there is a deliberate maintainer choice, not a third-party
         plugin trying to elevate privilege. For every other source, the
         canonical check is :func:`plugin_capability_granted` with the
@@ -2584,30 +2584,18 @@ class PluginContext:
         ``source`` must be an instance of
         :class:`agent.secret_sources.base.SecretSource`.  Registered
         sources run during ``load_hermes_dotenv()`` startup — after
-        ``~/.hermes/.env`` loads, before Moor reads credentials — when
+        ``~/.hermes/.env`` loads, before Hermes reads credentials — when
         their ``secrets.<source.name>`` config section is enabled.  The
         orchestrator (``agent.secret_sources.registry.apply_all``) owns
         ordering, mapped-vs-bulk precedence, conflict warnings, and
         provenance; the source only fetches.
 
-<<<<<<< HEAD
-        NOTE ON TIMING: plugin discovery happens later in startup than
-        the first ``load_hermes_dotenv()`` call, so a plugin-registered
-        source is not consulted by the initial env load of the process
-        that discovers it.  It IS consulted by every subsequently
-        spawned Moor process (gateway children, cron sessions,
-        subagents), and immediately after a
-        ``reset_secret_source_cache()`` re-pull.  Plugin sources are
-        therefore best for supplying credentials to the running fleet;
-        the bundled sources cover first-process bootstrap.
-=======
         NOTE ON TIMING: ``load_hermes_dotenv()`` usually runs at import
         *before* plugin discovery.  After discovery completes, the plugin
         manager re-pulls enabled plugin secret sources (``reset_secret_source_cache``
         + ``load_hermes_dotenv``) so the first process sees them (#64177).
         Child processes that load env after plugins still work without that
         re-pull.  Failed re-pulls never block startup.
->>>>>>> upstream/main
 
         Contract requirements (rejected with a warning otherwise):
         inherit from ``SecretSource``, ``api_version`` matching
@@ -2883,7 +2871,7 @@ class PluginContext:
     ) -> PluginRegistration:
         """Register a Slack Block Kit action handler from a plugin.
 
-        Moor' Slack adapter wires registered handlers into its
+        Hermes' Slack adapter wires registered handlers into its
         ``slack_bolt.AsyncApp`` at connect time. The callback is invoked
         when a user clicks a button (or interacts with another Block Kit
         action element) whose ``action_id`` matches.
@@ -3970,7 +3958,7 @@ class PluginManager:
             # gateway platform. Instead we register a cheap deferred loader in
             # the platform_registry keyed on the platform name; the real module
             # is imported only when the gateway / cron / setup / send_message
-            # path actually asks for that platform. Every platform Moor ships
+            # path actually asks for that platform. Every platform Hermes ships
             # remains available out of the box — it just loads on first use.
             if manifest.source == "bundled" and manifest.kind == "platform":
                 self._register_deferred_platform(manifest)
@@ -4376,7 +4364,7 @@ class PluginManager:
         directory plugins: memory providers (``exclusive``) and model
         providers (``model-provider``) have their own discovery systems,
         so importing them here registers nothing and only pays the
-        module's import cost in every Moor process (e.g. a pip
+        module's import cost in every Hermes process (e.g. a pip
         memory-provider plugin pulling in onnxruntime via fastembed —
         ~60 MB RSS on startup).
 
@@ -4658,7 +4646,7 @@ class PluginManager:
     def _warn_python_dependencies(self, manifest: PluginManifest) -> None:
         """Surface declared pip dependencies (#64165).
 
-        python_dependencies is a declaration seam ONLY: Moor validates and
+        python_dependencies is a declaration seam ONLY: Hermes validates and
         prints the requirements with an install hint but NEVER auto-installs
         them. The isolation design (constraints installs vs. vendored dirs
         vs. conflict-detection-and-refusal) is an explicitly deferred
@@ -4683,7 +4671,7 @@ class PluginManager:
         if missing:
             logger.warning(
                 "Plugin %s declares Python dependencies that are not "
-                "installed: %s. Moor does not install plugin dependencies "
+                "installed: %s. Hermes does not install plugin dependencies "
                 "automatically; install them yourself, e.g.: pip install %s",
                 key, ", ".join(missing),
                 " ".join(f"'{m}'" for m in missing),
@@ -4992,7 +4980,7 @@ class PluginManager:
 
         # Evict any stale sys.modules entries for this slug before
         # (re-)importing. A same-slug module may already be cached here
-        # from a different Moor home (profile switch reusing a slug
+        # from a different Hermes home (profile switch reusing a slug
         # like "hermes-lcm") or from an earlier force=True reload in the
         # same home. Replacing only sys.modules[module_name] below is not
         # enough: the plugin's own relative imports (`from . import foo`)
@@ -5546,7 +5534,7 @@ class PluginManager:
 # keeps working — ``get_plugin_manager()`` still reads/writes this name.
 _plugin_manager: Optional[PluginManager] = None
 
-# Keyed cache: resolved Moor home -> PluginManager. Moor supports
+# Keyed cache: resolved Hermes home -> PluginManager. Hermes supports
 # multiple profiles via different HERMES_HOME directories, and a single
 # long-lived process (gateway multiplexer, test session, embedder) can
 # switch between them via ``set_hermes_home_override()`` — which is a
@@ -5566,9 +5554,9 @@ def _plugin_home_key() -> Path:
     Plugins are discovered from ``get_hermes_home() / "plugins"`` and some
     plugins (notably context engines such as hermes-lcm) capture that home
     at registration time for profile-scoped storage. A long-lived process
-    can temporarily switch Moor home (env var *or* the context-local
+    can temporarily switch Hermes home (env var *or* the context-local
     ``set_hermes_home_override()``) while serving another profile, so the
-    plugin manager must be scoped to the active Moor home instead of
+    plugin manager must be scoped to the active Hermes home instead of
     being one process-wide singleton.
     """
     try:
@@ -5611,7 +5599,7 @@ def _clear_plugin_submodules(manager: Optional[PluginManager]) -> None:
 
 
 def get_plugin_manager() -> PluginManager:
-    """Return the plugin manager for the active Moor profile/home.
+    """Return the plugin manager for the active Hermes profile/home.
 
     Managers are cached per resolved home so repeated calls within the
     same profile reuse discovery state (normal performance), while a

@@ -634,47 +634,6 @@ class TestMediaDeliveryDefaultMode:
 
         assert BasePlatformAdapter.validate_media_delivery_path(str(secret)) is None
 
-<<<<<<< HEAD
-    def test_denylist_blocks_hermes_config_in_active_profile(self, tmp_path, monkeypatch):
-        """The active profile config stays blocked in default mode."""
-        self._patch_roots(monkeypatch)
-
-        fake_home = tmp_path / "home"
-        hermes_dir = fake_home / ".hermes"
-        hermes_dir.mkdir(parents=True)
-        config_file = hermes_dir / "config.yaml"
-        config_file.write_text("model:\n  provider: openai\n")
-        monkeypatch.setenv("HOME", str(fake_home))
-        monkeypatch.setattr(
-            "gateway.platforms.base._HERMES_HOME",
-            hermes_dir,
-        )
-
-        assert BasePlatformAdapter.validate_media_delivery_path(str(config_file)) is None
-
-    def test_denylist_blocks_shared_hermes_root_config_for_profiles(self, tmp_path, monkeypatch):
-        """Profile-mode gateways must still block the shared Moor root config."""
-        self._patch_roots(monkeypatch)
-
-        fake_home = tmp_path / "home"
-        profile_home = fake_home / ".hermes" / "profiles" / "work"
-        profile_home.mkdir(parents=True)
-        hermes_root = fake_home / ".hermes"
-        config_file = hermes_root / "config.yaml"
-        config_file.write_text("profiles:\n  active: work\n")
-        monkeypatch.setenv("HOME", str(fake_home))
-        monkeypatch.setattr(
-            "gateway.platforms.base._HERMES_HOME",
-            profile_home,
-        )
-        monkeypatch.setattr(
-            "gateway.platforms.base._HERMES_ROOT",
-            hermes_root,
-        )
-
-        assert BasePlatformAdapter.validate_media_delivery_path(str(config_file)) is None
-=======
->>>>>>> upstream/main
 
     def test_denylist_blocks_google_token_default_mode(self, tmp_path, monkeypatch):
         """Integration credentials at the HERMES_HOME root (google_token.json)
@@ -1221,7 +1180,7 @@ class _CapturingAdapter(BasePlatformAdapter):
 
     The four media-send fallbacks (send_voice, send_video, send_document,
     send_image_file) historically forwarded their *_path argument into the
-    chat text. That argument is a host filesystem path inside the Moor
+    chat text. That argument is a host filesystem path inside the Hermes
     cache, so any subclass that fell back to super() — like the Telegram
     adapter on a rejected video — would leak the host's directory layout
     into the user's chat.

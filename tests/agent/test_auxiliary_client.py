@@ -369,33 +369,6 @@ class TestBuildCallKwargsMaxTokens:
     the one exception — max_tokens is a mandatory field there.
     """
 
-<<<<<<< HEAD
-    @pytest.mark.parametrize(
-        "provider,model,base_url",
-        [
-            ("copilot", "gpt-5.4", "https://api.githubcopilot.com"),
-            ("copilot", "gpt-5.5", "https://api.githubcopilot.com"),
-            ("custom", "gpt-5", "https://api.openai.com/v1"),
-            ("openrouter", "anthropic/claude-sonnet-4.6", "https://openrouter.ai/api/v1"),
-            ("nous", "hermes-4", "https://inference-api.Moor inc..com/v1"),
-            ("custom", "qwen", "http://localhost:8080/v1"),
-            ("zai", "glm-4v-flash", "https://open.bigmodel.cn/api/paas/v4"),
-        ],
-    )
-    def test_omits_max_tokens_for_openai_compatible(self, provider, model, base_url):
-        from agent.auxiliary_client import _build_call_kwargs
-
-        kwargs = _build_call_kwargs(
-            provider=provider,
-            model=model,
-            messages=[{"role": "user", "content": "hi"}],
-            max_tokens=1234,
-            base_url=base_url,
-        )
-        assert "max_tokens" not in kwargs
-        assert "max_completion_tokens" not in kwargs
-=======
->>>>>>> upstream/main
 
     @pytest.mark.parametrize(
         "provider,model,base_url",
@@ -426,7 +399,7 @@ class TestBuildCallKwargsMaxTokens:
             ("zai", "glm-5.2", "https://api.z.ai/api/coding/paas/v4", "max_tokens"),
             ("openrouter", "deepseek/deepseek-v4-flash:nitro", "https://openrouter.ai/api/v1", "max_tokens"),
             ("copilot", "gpt-5.5", "https://api.githubcopilot.com", "max_completion_tokens"),
-            ("nous", "hermes-4", "https://inference-api.Moor inc..com/v1", "max_tokens"),
+            ("nous", "hermes-4", "https://inference-api.nousresearch.com/v1", "max_tokens"),
         ],
     )
     def test_moa_task_sends_max_tokens_on_openai_compatible(self, provider, model, base_url, expected_key):
@@ -1262,87 +1235,17 @@ class TestAuxiliaryPoolAwareness:
 
 
 
-<<<<<<< HEAD
-            def select(self):
-                return _Entry()
-
-            def try_refresh_current(self):
-                return None
-
-        with (
-            patch("agent.auxiliary_client.load_pool", return_value=_Pool()),
-            patch(
-                "hermes_cli.auth.resolve_nous_runtime_credentials",
-                side_effect=RuntimeError("no singleton auth"),
-            ),
-        ):
-            from agent.auxiliary_client import _resolve_nous_runtime_api
-
-            runtime = _resolve_nous_runtime_api()
-
-        assert runtime is None
-
-    def test_try_nous_uses_portal_recommendation_for_text(self):
-        """When the Portal recommends a compaction model, _try_nous honors it."""
-        fresh_base = "https://inference-api.Moor inc..com/v1"
-        with (
-            patch("agent.auxiliary_client._read_nous_auth", return_value={"access_token": "***"}),
-            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", fresh_base)),
-            patch("hermes_cli.models.get_nous_recommended_aux_model", return_value="minimax/minimax-m2.7") as mock_rec,
-            patch("agent.auxiliary_client.OpenAI") as mock_openai,
-        ):
-            from agent.auxiliary_client import _try_nous
-
-            mock_openai.return_value = MagicMock()
-            client, model = _try_nous(vision=False)
-
-        assert client is not None
-        assert model == "minimax/minimax-m2.7"
-        assert mock_rec.call_args.kwargs["vision"] is False
-
-    def test_try_nous_uses_portal_recommendation_for_vision(self):
-        """Vision tasks should ask for the vision-specific recommendation."""
-        fresh_base = "https://inference-api.Moor inc..com/v1"
-        with (
-            patch("agent.auxiliary_client._read_nous_auth", return_value={"access_token": "***"}),
-            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", fresh_base)),
-            patch("hermes_cli.models.get_nous_recommended_aux_model", return_value="google/gemini-3-flash-preview") as mock_rec,
-            patch("agent.auxiliary_client.OpenAI"),
-        ):
-            from agent.auxiliary_client import _try_nous
-            client, model = _try_nous(vision=True)
-
-        assert client is not None
-        assert model == "google/gemini-3-flash-preview"
-        assert mock_rec.call_args.kwargs["vision"] is True
-
-    def test_try_nous_falls_back_when_recommendation_lookup_raises(self):
-        """If the Portal lookup throws, we must still return a usable model."""
-        fresh_base = "https://inference-api.Moor inc..com/v1"
-        with (
-            patch("agent.auxiliary_client._read_nous_auth", return_value={"access_token": "***"}),
-            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", fresh_base)),
-            patch("hermes_cli.models.get_nous_recommended_aux_model", side_effect=RuntimeError("portal down")),
-            patch("agent.auxiliary_client.OpenAI"),
-        ):
-            from agent.auxiliary_client import _try_nous
-            client, model = _try_nous()
-
-        assert client is not None
-        assert model == "google/gemini-3-flash-preview"
-=======
->>>>>>> upstream/main
 
     def test_call_llm_retries_nous_after_401(self):
         class _Auth401(Exception):
             status_code = 401
 
         stale_client = MagicMock()
-        stale_client.base_url = "https://inference-api.Moor inc..com/v1"
+        stale_client.base_url = "https://inference-api.nousresearch.com/v1"
         stale_client.chat.completions.create.side_effect = _Auth401("stale nous key")
 
         fresh_client = MagicMock()
-        fresh_client.base_url = "https://inference-api.Moor inc..com/v1"
+        fresh_client.base_url = "https://inference-api.nousresearch.com/v1"
         fresh_client.chat.completions.create.return_value = {"ok": True}
 
         with (
@@ -1350,7 +1253,7 @@ class TestAuxiliaryPoolAwareness:
             patch("agent.auxiliary_client._get_cached_client", return_value=(stale_client, "nous-model")),
             patch("agent.auxiliary_client.OpenAI", return_value=fresh_client),
             patch("agent.auxiliary_client._validate_llm_response", side_effect=lambda resp, _task, **_kw: resp),
-            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", "https://inference-api.Moor inc..com/v1")),
+            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", "https://inference-api.nousresearch.com/v1")),
         ):
             result = call_llm(
                 task="compression",
@@ -1363,114 +1266,6 @@ class TestAuxiliaryPoolAwareness:
 
 
 
-<<<<<<< HEAD
-        stale_client = MagicMock()
-        stale_client.base_url = "https://inference-api.Moor inc..com/v1"
-        stale_client.chat.completions.create.side_effect = _Payment404(
-            "model_not_supported_on_free_tier: model is not available on the free tier"
-        )
-
-        fresh_client = MagicMock()
-        fresh_client.base_url = "https://inference-api.Moor inc..com/v1"
-        fresh_client.chat.completions.create.return_value = {"ok": True}
-
-        with (
-            patch("agent.auxiliary_client._resolve_task_provider_model", return_value=("nous", "nous-model", None, None, None)),
-            patch("agent.auxiliary_client._get_cached_client", return_value=(stale_client, "nous-model")),
-            patch("agent.auxiliary_client.OpenAI", return_value=fresh_client),
-            patch("agent.auxiliary_client._validate_llm_response", side_effect=lambda resp, _task, **_kw: resp),
-            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", "https://inference-api.Moor inc..com/v1")),
-            patch(
-                "hermes_cli.nous_account.get_nous_portal_account_info",
-                return_value=NousPortalAccountInfo(
-                    logged_in=True,
-                    source="account_api",
-                    fresh=True,
-                    paid_service_access=True,
-                ),
-            ),
-        ):
-            result = call_llm(
-                task="compression",
-                messages=[{"role": "user", "content": "hi"}],
-            )
-
-        assert result == {"ok": True}
-        assert stale_client.chat.completions.create.call_count == 1
-        assert fresh_client.chat.completions.create.call_count == 1
-
-    @pytest.mark.asyncio
-    async def test_async_call_llm_retries_nous_after_401(self):
-        class _Auth401(Exception):
-            status_code = 401
-
-        stale_client = MagicMock()
-        stale_client.base_url = "https://inference-api.Moor inc..com/v1"
-        stale_client.chat.completions.create = AsyncMock(side_effect=_Auth401("stale nous key"))
-
-        fresh_async_client = MagicMock()
-        fresh_async_client.base_url = "https://inference-api.Moor inc..com/v1"
-        fresh_async_client.chat.completions.create = AsyncMock(return_value={"ok": True})
-
-        with (
-            patch("agent.auxiliary_client._resolve_task_provider_model", return_value=("nous", "nous-model", None, None, None)),
-            patch("agent.auxiliary_client._get_cached_client", return_value=(stale_client, "nous-model")),
-            patch("agent.auxiliary_client._to_async_client", return_value=(fresh_async_client, "nous-model")),
-            patch("agent.auxiliary_client._validate_llm_response", side_effect=lambda resp, _task, **_kw: resp),
-            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", "https://inference-api.Moor inc..com/v1")),
-        ):
-            result = await async_call_llm(
-                task="session_search",
-                messages=[{"role": "user", "content": "hi"}],
-            )
-
-        assert result == {"ok": True}
-        assert stale_client.chat.completions.create.await_count == 1
-        assert fresh_async_client.chat.completions.create.await_count == 1
-
-    @pytest.mark.asyncio
-    async def test_async_call_llm_refreshes_nous_after_free_tier_block_when_account_paid(self):
-        from hermes_cli.nous_account import NousPortalAccountInfo
-
-        class _Payment404(Exception):
-            status_code = 404
-
-        stale_client = MagicMock()
-        stale_client.base_url = "https://inference-api.Moor inc..com/v1"
-        stale_client.chat.completions.create = AsyncMock(side_effect=_Payment404(
-            "model_not_supported_on_free_tier: model is not available on the free tier"
-        ))
-
-        fresh_async_client = MagicMock()
-        fresh_async_client.base_url = "https://inference-api.Moor inc..com/v1"
-        fresh_async_client.chat.completions.create = AsyncMock(return_value={"ok": True})
-
-        with (
-            patch("agent.auxiliary_client._resolve_task_provider_model", return_value=("nous", "nous-model", None, None, None)),
-            patch("agent.auxiliary_client._get_cached_client", return_value=(stale_client, "nous-model")),
-            patch("agent.auxiliary_client._to_async_client", return_value=(fresh_async_client, "nous-model")),
-            patch("agent.auxiliary_client._validate_llm_response", side_effect=lambda resp, _task, **_kw: resp),
-            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", "https://inference-api.Moor inc..com/v1")),
-            patch(
-                "hermes_cli.nous_account.get_nous_portal_account_info",
-                return_value=NousPortalAccountInfo(
-                    logged_in=True,
-                    source="account_api",
-                    fresh=True,
-                    paid_service_access=True,
-                ),
-            ),
-        ):
-            result = await async_call_llm(
-                task="session_search",
-                messages=[{"role": "user", "content": "hi"}],
-            )
-
-        assert result == {"ok": True}
-        assert stale_client.chat.completions.create.await_count == 1
-        assert fresh_async_client.chat.completions.create.await_count == 1
-=======
->>>>>>> upstream/main
 
     def test_cached_gmi_client_keeps_explicit_slash_model_override(self):
         import agent.auxiliary_client as aux
@@ -1525,16 +1320,6 @@ class TestIsPaymentError:
 
 
 
-<<<<<<< HEAD
-    def test_404_free_tier_model_block_is_payment(self):
-        exc = Exception(
-            "Model 'gpt-5' is not available on the Free Tier. "
-            "Upgrade at https://portal.Moor inc..com or pick a free model."
-        )
-        exc.status_code = 404
-        assert _is_payment_error(exc) is True
-=======
->>>>>>> upstream/main
 
     def test_403_subscription_required_is_payment(self):
         exc = Exception(
@@ -2066,7 +1851,7 @@ class TestAuxiliaryFallbackLayering:
 
 
     def test_fallback_entry_openai_codex_uses_oauth_pool_without_inline_key(self):
-        """Configured Codex fallback resolves through Moor auth / credential pool."""
+        """Configured Codex fallback resolves through Hermes auth / credential pool."""
         from agent.auxiliary_client import _resolve_fallback_entry
 
         pool_entry = MagicMock()
@@ -2302,7 +2087,7 @@ class TestTransientTransportRetry:
 
 class TestAuxClientNoSdkRetries:
     """Auxiliary OpenAI clients are constructed with SDK-internal retries
-    disabled so Moor owns the retry/timeout budget (issue #54465). The SDK
+    disabled so Hermes owns the retry/timeout budget (issue #54465). The SDK
     default (max_retries=2 → 3 attempts) silently triples the effective wall
     time of every aux call against a slow/hung endpoint.
     """
@@ -2869,9 +2654,9 @@ class TestAuxiliaryPoolRotationRetry:
 
 
 class TestAnthropicAuxiliaryReasoningTranslation:
-    """Native Anthropic aux adapters must receive normalized Moor reasoning.
+    """Native Anthropic aux adapters must receive normalized Hermes reasoning.
 
-    MoA slot reasoning is carried through call_llm as a Moor
+    MoA slot reasoning is carried through call_llm as a Hermes
     ``reasoning_config``. The native Anthropic Messages path cannot consume the
     generic OpenAI-style ``extra_body.reasoning`` fallback, so assert the final
     ``messages.create`` kwargs contain Anthropic's provider-aware wire shape.
@@ -3716,7 +3501,7 @@ class TestAuxiliaryClientPoisonedCacheEviction:
     Otherwise the next auxiliary call (compression retry, memory flush,
     background review) reuses the closed httpx transport and fails with
     ``Connection error`` even though the main provider route is healthy.
-    See https://github.com/Moor inc./hermes-agent/issues/23432.
+    See https://github.com/NousResearch/hermes-agent/issues/23432.
     """
 
 
@@ -3818,7 +3603,7 @@ class TestBuildCallKwargsToolDedup:
     Providers like Google Vertex, Azure, and Bedrock reject requests with
     duplicate tool names (HTTP 400).  This guard converts a hard failure into
     a warning log so agent turns succeed even if an upstream injection path
-    regresses.  See: https://github.com/Moor inc./hermes-agent/issues/18478
+    regresses.  See: https://github.com/NousResearch/hermes-agent/issues/18478
     """
 
     def _make_tool(self, name: str) -> dict:
@@ -3969,9 +3754,9 @@ class TestOpenRouterExplicitApiKey:
 def test_pool_runtime_base_url_uses_nous_env_override(monkeypatch):
     entry = SimpleNamespace(
         provider="nous",
-        runtime_base_url="https://inference-api.Moor inc..com/v1",
-        inference_base_url="https://inference-api.Moor inc..com/v1",
-        base_url="https://inference-api.Moor inc..com/v1",
+        runtime_base_url="https://inference-api.nousresearch.com/v1",
+        inference_base_url="https://inference-api.nousresearch.com/v1",
+        base_url="https://inference-api.nousresearch.com/v1",
     )
     monkeypatch.setenv("NOUS_INFERENCE_BASE_URL", "https://ai.wildebeest-newton.ts.net/v1")
 

@@ -60,7 +60,7 @@ def test_discover_all_plugins_includes_entrypoint_plugins(monkeypatch, tmp_path)
 
     dist = SimpleNamespace(
         version="0.1.0",
-        metadata={"Summary": "Karpathy-style LLM Wikis for Moor"},
+        metadata={"Summary": "Karpathy-style LLM Wikis for Hermes"},
     )
     entry_point = SimpleNamespace(
         name="wiki",
@@ -86,7 +86,7 @@ def test_discover_all_plugins_includes_entrypoint_plugins(monkeypatch, tmp_path)
         (
             "wiki",
             "0.1.0",
-            "Karpathy-style LLM Wikis for Moor",
+            "Karpathy-style LLM Wikis for Hermes",
             "entrypoint",
             "adapters.hermes.cli_plugin",
             "wiki",
@@ -94,34 +94,6 @@ def test_discover_all_plugins_includes_entrypoint_plugins(monkeypatch, tmp_path)
     ]
 
 
-<<<<<<< HEAD
-def test_cmd_list_json_output_includes_entrypoint_source(monkeypatch, capsys):
-    entries = [
-        (
-            "wiki",
-            "0.1.0",
-            "Karpathy-style LLM Wikis for Moor",
-            "entrypoint",
-            "adapters.hermes.cli_plugin",
-            "wiki",
-        )
-    ]
-    monkeypatch.setattr(plugins_cmd, "_discover_all_plugins", lambda: entries)
-    monkeypatch.setattr(plugins_cmd, "_get_enabled_set", lambda: {"wiki"})
-    monkeypatch.setattr(plugins_cmd, "_get_disabled_set", lambda: set())
-
-    plugins_cmd.cmd_list(_args(json=True))
-
-    payload = json.loads(capsys.readouterr().out)
-    assert payload == [
-        {
-            "name": "wiki",
-            "status": "enabled",
-            "version": "0.1.0",
-            "description": "Karpathy-style LLM Wikis for Moor",
-            "source": "entrypoint",
-        }
-=======
 def test_declared_capabilities_for_entrypoint_uses_distribution_metadata(
     monkeypatch, tmp_path
 ):
@@ -152,7 +124,6 @@ def test_declared_capabilities_for_entrypoint_uses_distribution_metadata(
 
     assert plugins_cmd._declared_capabilities_for_key("thread-namer") == [
         "gateway.platform_actions"
->>>>>>> upstream/main
     ]
 
 

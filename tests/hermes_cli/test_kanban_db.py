@@ -503,159 +503,6 @@ def test_delete_task_removes_task_and_cascades(kanban_home):
 
 
 
-<<<<<<< HEAD
-def test_dispatch_skips_unassigned(kanban_home):
-    with kb.connect() as conn:
-        t = kb.create_task(conn, title="floater")
-        res = kb.dispatch_once(conn, dry_run=True)
-    assert t in res.skipped_unassigned
-    assert t not in res.skipped_nonspawnable
-    assert not res.spawned
-
-
-def test_dispatch_skips_nonspawnable_into_separate_bucket(kanban_home, monkeypatch):
-    """Tasks whose assignee fails profile_exists() must NOT land in
-    ``skipped_unassigned`` (which is operator-actionable) — they go in
-    the dedicated ``skipped_nonspawnable`` bucket so health telemetry
-    can suppress false-positive "stuck" warnings."""
-    from hermes_cli import profiles
-    monkeypatch.setattr(profiles, "profile_exists", lambda name: False)
-    with kb.connect() as conn:
-        t = kb.create_task(conn, title="for-terminal", assignee="orion-cc")
-        res = kb.dispatch_once(conn, dry_run=True)
-    assert t in res.skipped_nonspawnable
-    assert t not in res.skipped_unassigned
-    assert not res.spawned
-
-
-def test_has_spawnable_ready_false_when_only_terminal_lanes(kanban_home, monkeypatch):
-    """``has_spawnable_ready`` returns False when every ready task is
-    assigned to a control-plane lane — used by gateway/CLI dispatchers
-    to silence the stuck-warn while terminals still have queued work."""
-    from hermes_cli import profiles
-    monkeypatch.setattr(profiles, "profile_exists", lambda name: False)
-    with kb.connect() as conn:
-        kb.create_task(conn, title="t1", assignee="orion-cc")
-        kb.create_task(conn, title="t2", assignee="orion-research")
-        assert kb.has_spawnable_ready(conn) is False
-
-
-def test_has_spawnable_ready_true_when_real_profile_present(kanban_home, monkeypatch):
-    """``has_spawnable_ready`` returns True as soon as ANY ready task
-    has an assignee that maps to a real Moor profile — preserves the
-    real "stuck" signal when a daily/agent task is queued."""
-    from hermes_cli import profiles
-    monkeypatch.setattr(
-        profiles, "profile_exists", lambda name: name == "daily"
-    )
-    with kb.connect() as conn:
-        kb.create_task(conn, title="terminal-task", assignee="orion-cc")
-        kb.create_task(conn, title="hermes-task", assignee="daily")
-        assert kb.has_spawnable_ready(conn) is True
-
-
-def test_has_spawnable_ready_false_on_empty_queue(kanban_home):
-    """Empty queue is the trivial false case — no ready tasks at all."""
-    with kb.connect() as conn:
-        assert kb.has_spawnable_ready(conn) is False
-
-
-def test_dispatch_promotes_ready_and_spawns(kanban_home, all_assignees_spawnable):
-    spawns = []
-
-    def fake_spawn(task, workspace):
-        spawns.append((task.id, task.assignee, workspace))
-
-    with kb.connect() as conn:
-        p = kb.create_task(conn, title="p", assignee="alice")
-        c = kb.create_task(conn, title="c", assignee="bob", parents=[p])
-        # Finish parent outside dispatch; promotion happens inside.
-        kb.complete_task(conn, p)
-        res = kb.dispatch_once(conn, spawn_fn=fake_spawn)
-    # Spawned c (a was already done when dispatch was called).
-    assert len(spawns) == 1
-    assert spawns[0][0] == c
-    assert spawns[0][1] == "bob"
-    # c is now running
-    with kb.connect() as conn:
-        assert kb.get_task(conn, c).status == "running"
-
-
-def test_dispatch_spawn_failure_releases_claim(kanban_home, all_assignees_spawnable):
-    def boom(task, workspace):
-        raise RuntimeError("spawn failed")
-
-    with kb.connect() as conn:
-        t = kb.create_task(conn, title="boom", assignee="alice")
-        kb.dispatch_once(conn, spawn_fn=boom)
-        # Must return to ready so the next tick can retry.
-        assert kb.get_task(conn, t).status == "ready"
-        assert kb.get_task(conn, t).claim_lock is None
-
-
-def test_dispatch_max_spawn_counts_existing_running_tasks(
-    kanban_home, all_assignees_spawnable
-):
-    """max_spawn is a live concurrency cap, not a per-tick spawn cap.
-
-    Without counting tasks already in ``running``, every dispatcher tick can
-    launch up to ``max_spawn`` more workers while previous workers are still
-    alive. Long-running boards then accumulate unbounded worker subprocesses.
-    """
-    spawns = []
-
-    def fake_spawn(task, workspace):
-        spawns.append(task.id)
-
-    with kb.connect() as conn:
-        running_a = kb.create_task(conn, title="running-a", assignee="alice")
-        running_b = kb.create_task(conn, title="running-b", assignee="bob")
-        ready = kb.create_task(conn, title="ready", assignee="carol")
-        kb.claim_task(conn, running_a)
-        kb.claim_task(conn, running_b)
-
-        res = kb.dispatch_once(conn, spawn_fn=fake_spawn, max_spawn=2)
-
-        assert res.spawned == []
-        assert spawns == []
-        assert kb.get_task(conn, ready).status == "ready"
-
-
-def test_dispatch_max_spawn_fills_remaining_capacity(
-    kanban_home, all_assignees_spawnable
-):
-    """When below cap, dispatch only fills available worker slots."""
-    spawns = []
-
-    def fake_spawn(task, workspace):
-        spawns.append(task.id)
-
-    with kb.connect() as conn:
-        running = kb.create_task(conn, title="running", assignee="alice")
-        ready_a = kb.create_task(conn, title="ready-a", assignee="bob")
-        ready_b = kb.create_task(conn, title="ready-b", assignee="carol")
-        kb.claim_task(conn, running)
-
-        res = kb.dispatch_once(conn, spawn_fn=fake_spawn, max_spawn=2)
-
-        assert len(res.spawned) == 1
-        assert spawns == [ready_a]
-        assert kb.get_task(conn, ready_a).status == "running"
-        assert kb.get_task(conn, ready_b).status == "ready"
-
-
-def test_dispatch_reclaims_stale_before_spawning(kanban_home):
-    with kb.connect() as conn:
-        t = kb.create_task(conn, title="x", assignee="alice")
-        kb.claim_task(conn, t)
-        conn.execute(
-            "UPDATE tasks SET claim_expires = ? WHERE id = ?",
-            (int(time.time()) - 1, t),
-        )
-        res = kb.dispatch_once(conn, dry_run=True)
-    assert res.reclaimed == 1
-=======
->>>>>>> upstream/main
 
 
 # ---------------------------------------------------------------------------
@@ -727,20 +574,6 @@ def test_worktree_workspace_explicit_target_materializes_linked_worktree(kanban_
 # Scratch cleanup containment (#28818)
 # ---------------------------------------------------------------------------
 
-<<<<<<< HEAD
-def test_cleanup_workspace_removes_managed_scratch_dir(kanban_home):
-    """A scratch workspace under the kanban workspaces root is removed."""
-    with kb.connect() as conn:
-        t = kb.create_task(conn, title="scratchy")
-        task = kb.get_task(conn, t)
-        assert task is not None
-        ws = kb.resolve_workspace(task)
-        kb.set_workspace_path(conn, t, ws)
-        assert ws.is_dir()
-        kb.complete_task(conn, t, result="ok")
-    assert not ws.exists(), "Moor-managed scratch dir should be cleaned up"
-=======
->>>>>>> upstream/main
 
 
 def test_complete_task_persists_scratch_artifacts_before_cleanup(kanban_home):
@@ -822,13 +655,13 @@ def test_dir_child_completion_unblocks_deferred_scratch_parent(kanban_home, tmp_
 
 
 def test_is_managed_scratch_path_rejects_kanban_metadata_subtrees(kanban_home):
-    """Moor' own DB/metadata/log subtrees under ``<kanban_home>/kanban`` are NOT managed.
+    """Hermes' own DB/metadata/log subtrees under ``<kanban_home>/kanban`` are NOT managed.
 
     Regression guard for the Copilot finding on #28819: a scratch task whose
     ``workspace_path`` was mis-set to the kanban home, the logs dir, or a
     board's metadata dir (i.e. the board root itself, not its ``workspaces/``
     child) must be refused. Without this, the containment check would happily
-    ``shutil.rmtree`` Moor' DB/metadata/logs on task completion.
+    ``shutil.rmtree`` Hermes' DB/metadata/logs on task completion.
     """
     kanban_root = kanban_home / "kanban"
     kanban_root.mkdir(parents=True, exist_ok=True)
@@ -1350,7 +1183,7 @@ def test_resolve_hermes_argv_module_actually_runs():
         f"`{' '.join(argv)} --version` failed (rc={r.returncode}); "
         f"stderr={r.stderr[:200]!r}"
     )
-    assert "Moor Agent" in r.stdout, f"unexpected output: {r.stdout[:200]!r}"
+    assert "Hermes Agent" in r.stdout, f"unexpected output: {r.stdout[:200]!r}"
 
 
 # ---------------------------------------------------------------------------

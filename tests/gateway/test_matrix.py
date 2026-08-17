@@ -462,7 +462,7 @@ class TestMatrixReplyFallbackStripping:
 # ---------------------------------------------------------------------------
 
 class TestMatrixBangCommandAlias:
-    """Matrix clients may reserve /commands, so Moor supports !commands."""
+    """Matrix clients may reserve /commands, so Hermes supports !commands."""
 
     def setup_method(self):
         self.adapter = _make_adapter()
@@ -1700,7 +1700,7 @@ class TestMatrixEncryptedEventHandler:
         # Verify inbound event handlers were registered as sync-awaited
         # callbacks. mautrix only returns waited handler tasks from
         # handle_sync(), so background-only handlers leave _dispatch_sync()
-        # without a completion point for Moor' Matrix intake.
+        # without a completion point for Hermes' Matrix intake.
         handler_calls = mock_client.add_event_handler.call_args_list
         waited_types = {
             str(call.args[0])
@@ -2256,27 +2256,6 @@ class TestMatrixSystemBridgeFilter:
         assert self.adapter._is_system_or_bridge_sender("") is True
         assert self.adapter._is_system_or_bridge_sender("   ") is True
 
-<<<<<<< HEAD
-    def test_regular_user_is_not_bridge(self):
-        assert self.adapter._is_system_or_bridge_sender(
-            "@alice:example.org"
-        ) is False
-        # A user whose localpart merely CONTAINS an underscore is not a
-        # bridge — the convention is a LEADING underscore.
-        assert self.adapter._is_system_or_bridge_sender(
-            "@alice_smith:example.org"
-        ) is False
-
-    def test_bot_account_is_not_bridge(self):
-        # The Moor bot itself (no leading underscore) must not be
-        # classified as a bridge — that filter is a pairing guard, not
-        # a self-filter.
-        assert self.adapter._is_system_or_bridge_sender(
-            "@daemon:nerdworks.casa"
-        ) is False
-
-=======
->>>>>>> upstream/main
 
 class TestMatrixOnRoomMessageFilter:
     """End-to-end coverage of _on_room_message drop conditions."""

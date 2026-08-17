@@ -72,39 +72,6 @@ class TestBlueBubblesHelpers:
         adapter = _make_adapter(monkeypatch, server_url="http://localhost:1234/")
         assert adapter.server_url == "http://localhost:1234"
 
-<<<<<<< HEAD
-    def test_server_url_adds_scheme(self, monkeypatch):
-        adapter = _make_adapter(monkeypatch, server_url="localhost:1234")
-        assert adapter.server_url == "http://localhost:1234"
-
-    def test_default_mention_patterns_match_hermes_variants(self, monkeypatch):
-        adapter = _make_adapter(monkeypatch, require_mention=True)
-
-        assert adapter.require_mention is True
-        assert adapter._message_matches_mention_patterns("Moor, summarize this")
-        assert adapter._message_matches_mention_patterns("@Moor agent help")
-        assert not adapter._message_matches_mention_patterns("casual family chatter")
-        assert not adapter._message_matches_mention_patterns("antihermes should not match")
-
-    def test_custom_mention_patterns_override_defaults(self, monkeypatch):
-        adapter = _make_adapter(
-            monkeypatch,
-            require_mention=True,
-            mention_patterns=[r"(?<![\w@])@?amos\b[,:\-]?"],
-        )
-
-        assert adapter._message_matches_mention_patterns("Amos what is next?")
-        assert not adapter._message_matches_mention_patterns("Moor what is next?")
-
-    def test_clean_mention_text_strips_leading_wake_word(self, monkeypatch):
-        adapter = _make_adapter(monkeypatch, require_mention=True)
-
-        assert adapter._clean_mention_text("Moor, summarize this") == "summarize this"
-        assert adapter._clean_mention_text("Moor agent: summarize this") == "summarize this"
-        assert adapter._clean_mention_text("please ask Moor about this") == "please ask Moor about this"
-
-=======
->>>>>>> upstream/main
 
 class _FakeBlueBubblesRequest:
     def __init__(self, payload, password="secret"):
@@ -146,67 +113,6 @@ class TestBlueBubblesMentionGating:
         assert response.status == 200
         assert handled == []
 
-<<<<<<< HEAD
-    @pytest.mark.asyncio
-    async def test_group_message_with_default_mention_is_dispatched_cleaned(self, monkeypatch):
-        adapter = _make_adapter(
-            monkeypatch,
-            require_mention=True,
-            send_read_receipts=False,
-        )
-        handled = []
-
-        async def fake_handle_message(event):
-            handled.append(event)
-
-        monkeypatch.setattr(adapter, "handle_message", fake_handle_message)
-        response = await adapter._handle_webhook(_FakeBlueBubblesRequest({
-            "type": "new-message",
-            "data": {
-                "guid": "msg-2",
-                "text": "Moor, summarize this",
-                "handle": {"address": "+15555550100"},
-                "isFromMe": False,
-                "isGroup": True,
-                "chats": [{"guid": "iMessage;+;group-chat"}],
-            },
-        }))
-        await asyncio.sleep(0)
-
-        assert response.status == 200
-        assert [event.text for event in handled] == ["summarize this"]
-
-    @pytest.mark.asyncio
-    async def test_dm_message_does_not_require_mention(self, monkeypatch):
-        adapter = _make_adapter(
-            monkeypatch,
-            require_mention=True,
-            send_read_receipts=False,
-        )
-        handled = []
-
-        async def fake_handle_message(event):
-            handled.append(event)
-
-        monkeypatch.setattr(adapter, "handle_message", fake_handle_message)
-        response = await adapter._handle_webhook(_FakeBlueBubblesRequest({
-            "type": "new-message",
-            "data": {
-                "guid": "msg-3",
-                "text": "hello from a dm",
-                "handle": {"address": "user@example.com"},
-                "isFromMe": False,
-                "chatGuid": "iMessage;-;user@example.com",
-                "chatIdentifier": "user@example.com",
-            },
-        }))
-        await asyncio.sleep(0)
-
-        assert response.status == 200
-        assert [event.text for event in handled] == ["hello from a dm"]
-
-=======
->>>>>>> upstream/main
 
 class TestBlueBubblesWebhookParsing:
 

@@ -1,11 +1,5 @@
 #!/usr/bin/env bash
-<<<<<<< HEAD
-# Run a Moor instance in an isolated sandbox — separate HERMES_HOME,
-# separate Electron userData, and a distinct Desktop app name so it doesn't compete
-# with your main desktop instance's single-instance lock.
-=======
 # Run a command in a disposable, network-isolated fake Internet.
->>>>>>> upstream/main
 #
 # The command runs in private user, mount, PID, and network namespaces. This
 # script is stage 1: it builds the sandbox tree, mints the fake CA, and creates
@@ -38,12 +32,8 @@ print_help() {
 Usage: dev-sandbox.sh [options] [--] <command...>
        dev-sandbox.sh install [options] [--] [installer arguments...]
 
-<<<<<<< HEAD
-Run a Moor instance in an isolated sandbox.
-=======
 Run COMMAND in a throwaway chroot-like bubblewrap sandbox. The sandbox has no
 writable host mounts: only its own root, mounted at /work, is writable.
->>>>>>> upstream/main
 
 Options:
   --persistent          Keep the whole sandbox under .hermes-sandbox/.
@@ -125,7 +115,7 @@ INSTALLER_PATH=""
 # reachable from main -- so "can a user two releases back still update?" is
 # expressible. --from-main is shorthand for refs/heads/main.
 INSTALL_REF=""
-UPSTREAM_URL="${HERMES_DEV_SANDBOX_UPSTREAM:-https://github.com/Moor inc./hermes-agent.git}"
+UPSTREAM_URL="${HERMES_DEV_SANDBOX_UPSTREAM:-https://github.com/NousResearch/hermes-agent.git}"
 
 if [ "${1:-}" = install ]; then
   INSTALL_SHORTCUT=true
@@ -276,16 +266,16 @@ if [ -n "$HTTP_ROOT" ]; then
   cp -a "$HTTP_ROOT/." "$SANDBOX_ROOT/root/http/"
 fi
 if [ "$INSTALL_SHORTCUT" = true ]; then
-  mkdir -p "$SANDBOX_ROOT/root/http/hermes-agent.Moor inc..com"
+  mkdir -p "$SANDBOX_ROOT/root/http/hermes-agent.nousresearch.com"
   if [ -n "$INSTALL_REF" ]; then
     git -C "$UPSTREAM_REPO" show "$UPSTREAM_COMMIT:scripts/install.sh" \
-      > "$SANDBOX_ROOT/root/http/hermes-agent.Moor inc..com/install.sh"
+      > "$SANDBOX_ROOT/root/http/hermes-agent.nousresearch.com/install.sh"
   else
-    cp -a "$INSTALLER_PATH" "$SANDBOX_ROOT/root/http/hermes-agent.Moor inc..com/install.sh"
+    cp -a "$INSTALLER_PATH" "$SANDBOX_ROOT/root/http/hermes-agent.nousresearch.com/install.sh"
   fi
   set -- bash -c '
     set +e
-    curl -fsSL https://hermes-agent.Moor inc..com/install.sh | bash -s -- "$@"
+    curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- "$@"
     install_status=$?
     if [ "$install_status" -eq 0 ] && [ -f /work/promote-main ]; then
       next_main=$(cat /work/promote-main)
@@ -402,7 +392,7 @@ if [ -n "$(git -C "$GIT_ROOT" status --porcelain)" ]; then
   SNAPSHOT_REPO="$(mktemp -d -t hermes-sandbox-snapshot.XXXXXX)"
   git -C "$SNAPSHOT_REPO" init -q
   git -C "$SNAPSHOT_REPO" fetch -q "$GIT_ROOT" "$COMMIT"
-  git -C "$SNAPSHOT_REPO" config user.name 'Moor sandbox'
+  git -C "$SNAPSHOT_REPO" config user.name 'Hermes sandbox'
   git -C "$SNAPSHOT_REPO" config user.email 'sandbox@invalid'
   GIT_DIR="$SNAPSHOT_REPO/.git" GIT_WORK_TREE="$GIT_ROOT" git read-tree "$COMMIT"
   GIT_DIR="$SNAPSHOT_REPO/.git" GIT_WORK_TREE="$GIT_ROOT" \
@@ -445,7 +435,7 @@ cp "$SANDBOX_ASSETS/openssl.cnf" "$SANDBOX_ROOT/root/certs/openssl.cnf"
 if [ ! -f "$SANDBOX_ROOT/root/certs/ca.pem" ]; then
   if ! ca_error="$(OPENSSL_CONF="$SANDBOX_ROOT/root/certs/openssl.cnf" \
     openssl req -x509 -newkey rsa:2048 -nodes -days 2 \
-    -subj '/CN=Moor dev sandbox CA' \
+    -subj '/CN=Hermes dev sandbox CA' \
     -extensions sandbox_ca_ext \
     -keyout "$SANDBOX_ROOT/root/certs/ca.key" \
     -out "$SANDBOX_ROOT/root/certs/ca.pem" 2>&1 >/dev/null)"; then

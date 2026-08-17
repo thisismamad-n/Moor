@@ -151,7 +151,7 @@ LEGACY_SUMMARY_PREFIX = "[CONTEXT SUMMARY]:"
 # Metadata key added to context compression summary messages so that frontends
 # (CLI, Desktop, gateway, TUI) can distinguish them from real assistant/user
 # messages and filter or render them appropriately without content-prefix
-# heuristics. See https://github.com/Moor inc./hermes-agent/issues/38389
+# heuristics. See https://github.com/NousResearch/hermes-agent/issues/38389
 #
 # Underscore-prefixed ON PURPOSE: the wire sanitizers
 # (agent/transports/chat_completions.py convert_messages and the summary-path
@@ -715,7 +715,7 @@ def _reinject_pruned_skill_markers(summary: str, skill_names: list[str]) -> str:
 # disposable bulk), (b) demotion of old tool results to stubs that carry a
 # RECOVERY POINTER instead of deleting content outright, and (c) a
 # deterministic recovery footer naming the exact session_search call that
-# re-accesses the compacted region. Moor already persists every
+# re-accesses the compacted region. Hermes already persists every
 # pre-compaction message in state.db — session_search makes compaction
 # lossy-but-recoverable, which none of the scouted competitors have at
 # runtime.
@@ -807,7 +807,7 @@ def _build_verbatim_user_section(turns: List[Dict[str, Any]]) -> str:
 def _build_recovery_footer(session_id: str, region_len: int) -> str:
     """Deterministic pointer to the compacted region in session history.
 
-    Moor persists every pre-compaction message in state.db; session_search
+    Hermes persists every pre-compaction message in state.db; session_search
     reaches it. The footer makes that re-access path explicit so the model
     treats compaction as deferred retrieval, not loss.
     """
@@ -3137,15 +3137,7 @@ class ContextCompressor(ContextEngine):
         """Return True when a high rough preflight estimate is known-noisy.
 
         ``estimate_request_tokens_rough(..., tools=...)`` intentionally
-<<<<<<< HEAD
-        overestimates schema-heavy requests so Moor compresses before a
-        provider rejects the payload. After a successful compressed API call,
-        though, provider ``prompt_tokens`` are a better signal than repeating
-        compaction from the same rough schema overhead. Defer only while the
-        rough estimate has grown modestly since a request the provider proved
-        fit under the threshold.
-=======
-        overestimates so Moor compresses before a provider rejects the
+        overestimates so Hermes compresses before a provider rejects the
         payload — but the margin is not a fixed percentage: CJK text is
         counted at ~1.7x its o200k cost and Responses-mode reasoning replay
         blobs at several times their billed cost, so heavy sessions can show
@@ -3179,7 +3171,6 @@ class ContextCompressor(ContextEngine):
         the loop's own pre-API pressure check re-runs this projection with
         the aligned basis before every provider call, so a prologue
         over-defer never skips a needed compaction.
->>>>>>> upstream/main
         """
         if rough_tokens < self.threshold_tokens:
             return False

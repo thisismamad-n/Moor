@@ -510,7 +510,7 @@ class TestSessionJsonSnapshotOptIn:
 
     def test_traversal_session_id_cannot_escape_logs_dir(self, agent, tmp_path):
         # Security regression (#5958): a traversal-shaped session ID (which can
-        # originate from the untrusted X-Moor-Session-Id API header) must not
+        # originate from the untrusted X-Hermes-Session-Id API header) must not
         # redirect the session snapshot outside the sessions directory.
         agent._session_json_enabled = True
         agent.logs_dir = tmp_path
@@ -1372,16 +1372,6 @@ class TestBuildApiKwargs:
         assert "reasoning" not in kwargs.get("extra_body", {})
 
 
-<<<<<<< HEAD
-    def test_reasoning_sent_for_nous_route(self, agent):
-        agent.provider = "nous"
-        agent.base_url = "https://inference-api.Moor inc..com/v1"
-        agent.model = "minimax/minimax-m2.5"
-        messages = [{"role": "user", "content": "hi"}]
-        kwargs = agent._build_api_kwargs(messages)
-        assert kwargs["extra_body"]["reasoning"]["effort"] == "medium"
-=======
->>>>>>> upstream/main
 
     def test_reasoning_sent_for_copilot_gpt5(self, agent):
         """Copilot/GitHub Models: GPT-5 reasoning goes in extra_body.reasoning."""
@@ -2253,7 +2243,7 @@ class TestConcurrentToolExecution:
         assert outcome.result == "ok"
         assert dispatched == [{"command": "true"}]
         assert duplicate_errors == [
-            "Moor tool execution callback invoked more than once"
+            "Hermes tool execution callback invoked more than once"
         ]
         assert outcome.blocked is False
 
@@ -2315,7 +2305,7 @@ class TestConcurrentToolExecution:
 
         assert outcome.result == "ok"
         assert dispatched == [{"command": "true"}]
-        assert errors == ["Moor tool execution callback invoked more than once"]
+        assert errors == ["Hermes tool execution callback invoked more than once"]
         assert outcome.blocked is False
 
 
@@ -2955,7 +2945,7 @@ class TestRunConversation:
         assert "Ollama loaded `qwen3.5:9b` with only 4,096 tokens" in result["final_response"]
         assert "model.ollama_num_ctx: 65536" in result["final_response"]
         assert not agent.client.chat.completions.create.called
-        assert "Ollama runtime context too small for Moor tool use" in caplog.text
+        assert "Ollama runtime context too small for Hermes tool use" in caplog.text
         assert "runtime_context=4096" in caplog.text
 
     def test_tool_calls_then_stop(self, agent):
@@ -4894,7 +4884,7 @@ class TestNousCredentialRefresh:
             captured.update(kwargs)
             return {
                 "api_key": "new-nous-key",
-                "base_url": "https://inference-api.Moor inc..com/v1",
+                "base_url": "https://inference-api.nousresearch.com/v1",
             }
 
         def _fake_openai(**kwargs):
@@ -4930,7 +4920,7 @@ class TestNousCredentialRefresh:
         assert captured["force_refresh"] is True
         assert rebuilt["kwargs"]["api_key"] == "new-nous-key"
         assert (
-            rebuilt["kwargs"]["base_url"] == "https://inference-api.Moor inc..com/v1"
+            rebuilt["kwargs"]["base_url"] == "https://inference-api.nousresearch.com/v1"
         )
         assert "default_headers" not in rebuilt["kwargs"]
         assert isinstance(agent.client, _RebuiltClient)
@@ -4949,9 +4939,9 @@ class TestNousCredentialRefresh:
         agent.api_mode = "anthropic_messages"
         agent.model = "anthropic/claude-opus-4.8"
         agent.api_key = "stale-nous-key"
-        agent.base_url = "https://inference-api.Moor inc..com/v1"
+        agent.base_url = "https://inference-api.nousresearch.com/v1"
         agent._anthropic_api_key = "stale-nous-key"
-        agent._anthropic_base_url = "https://inference-api.Moor inc..com/v1"
+        agent._anthropic_base_url = "https://inference-api.nousresearch.com/v1"
         agent._client_kwargs = {}
         agent.client = None
 
@@ -4965,7 +4955,7 @@ class TestNousCredentialRefresh:
             captured.update(kwargs)
             return {
                 "api_key": "fresh-portal-jwt",
-                "base_url": "https://inference-api.Moor inc..com/v1",
+                "base_url": "https://inference-api.nousresearch.com/v1",
             }
 
         def _fake_rebuild():
@@ -4987,10 +4977,10 @@ class TestNousCredentialRefresh:
         assert ok is True
         assert captured["force_refresh"] is True
         assert agent.api_key == "fresh-portal-jwt"
-        assert agent.base_url == "https://inference-api.Moor inc..com/v1"
+        assert agent.base_url == "https://inference-api.nousresearch.com/v1"
         assert agent._anthropic_api_key == "fresh-portal-jwt"
         assert agent._anthropic_base_url == (
-            "https://inference-api.Moor inc..com/v1"
+            "https://inference-api.nousresearch.com/v1"
         )
         assert rebuild_calls["count"] == 1
         assert isinstance(agent._anthropic_client, _RebuiltAnthropic)
@@ -5166,7 +5156,7 @@ class TestGpt5ApiModeRouting:
     def test_nous_gpt5_stays_on_chat_completions(self, agent):
         """Nous serves gpt-5.x on /chat/completions — must not upgrade to codex_responses."""
         agent.provider = "nous"
-        agent.base_url = "https://inference-api.Moor inc..com/v1"
+        agent.base_url = "https://inference-api.nousresearch.com/v1"
         agent.api_mode = "chat_completions"
         agent.model = "openai/gpt-5.5"
         if (
@@ -5261,37 +5251,8 @@ class TestSystemPromptStability:
         # Should have built fresh, not queried the DB
         mock_db.get_session.assert_not_called()
         assert agent._cached_system_prompt is not None
-        assert "Moor Agent" in agent._cached_system_prompt
+        assert "Hermes Agent" in agent._cached_system_prompt
 
-<<<<<<< HEAD
-    def test_fresh_build_when_db_has_no_prompt(self, agent):
-        """If the session DB has no stored prompt, build fresh even with history."""
-        mock_db = MagicMock()
-        mock_db.get_session.return_value = {"system_prompt": ""}
-        agent._session_db = mock_db
-
-        agent._cached_system_prompt = None
-        conversation_history = [{"role": "user", "content": "hi"}]
-
-        if agent._cached_system_prompt is None:
-            stored_prompt = None
-            if conversation_history and agent._session_db:
-                try:
-                    session_row = agent._session_db.get_session(agent.session_id)
-                    if session_row:
-                        stored_prompt = session_row.get("system_prompt") or None
-                except Exception:
-                    pass
-
-            if stored_prompt:
-                agent._cached_system_prompt = stored_prompt
-            else:
-                agent._cached_system_prompt = agent._build_system_prompt()
-
-        # Empty string is falsy, so should fall through to fresh build
-        assert "Moor Agent" in agent._cached_system_prompt
-=======
->>>>>>> upstream/main
 
 class TestBudgetPressure:
     """Budget exhaustion grace call system."""

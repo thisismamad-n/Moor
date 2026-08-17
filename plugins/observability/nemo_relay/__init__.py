@@ -1,4 +1,4 @@
-"""nemo_relay — optional Moor plugin for NeMo Relay observability."""
+"""nemo_relay — optional Hermes plugin for NeMo Relay observability."""
 
 from __future__ import annotations
 
@@ -59,7 +59,7 @@ class _Settings:
     atif_output_directory: str = ""
     atif_filename_template: str = "hermes-atif-{session_id}.json"
     atif_subagent_export_mode: str = "embedded"
-    atif_agent_name: str = "Moor Agent"
+    atif_agent_name: str = "Hermes Agent"
     atif_agent_version: str = "unknown"
     atif_model_name: str = "unknown"
     # Wall-clock budget for one session's ATIF export (serialize + write).
@@ -97,7 +97,7 @@ class _ProcessPluginConfiguration:
                     return True, self._activation
                 logger.warning(
                     "NeMo Relay plugin configuration is already active for another "
-                    "Moor profile; keeping the existing process-global configuration "
+                    "Hermes profile; keeping the existing process-global configuration "
                     "and using direct observability for this profile."
                 )
                 return False, None
@@ -390,7 +390,7 @@ class _Runtime:
             metadata=rich_metadata,
         )
         if relay_session is None:
-            raise RuntimeError("Moor core Relay session is unavailable")
+            raise RuntimeError("Hermes core Relay session is unavailable")
         state.relay_session = relay_session
         state.handle = relay_session.handle
         if subagent_context is not None:
@@ -406,7 +406,7 @@ class _Runtime:
         **kwargs: Any,
     ) -> Any:
         if state.relay_session is None:
-            raise RuntimeError("Moor core Relay session is unavailable")
+            raise RuntimeError("Hermes core Relay session is unavailable")
         try:
             return self.host.run_in_session(
                 state.relay_session,
@@ -637,155 +637,12 @@ class _Runtime:
                 self.subagent_contexts.pop(child_session_id, None)
         self.mark("hermes.subagent.stop", kwargs)
 
-<<<<<<< HEAD
-    def managed_llm_enabled(self) -> bool:
-        return (
-            (self.settings.adaptive_enabled or self._plugin_activation is not None)
-            and callable(getattr(getattr(self.nemo_relay, "llm", None), "execute", None))
-            and callable(getattr(self.nemo_relay, "LLMRequest", None))
-        )
-
-    def managed_tool_enabled(self) -> bool:
-        return (
-            (self.settings.adaptive_enabled or self._plugin_activation is not None)
-            and callable(getattr(getattr(self.nemo_relay, "tools", None), "execute", None))
-        )
-
-    def _run_managed_with_downstream_preservation(
-        self,
-        next_call: Callable[[Any], Any],
-        normalize_payload: Callable[[Any], Any],
-        shape_response: Callable[[Any], Any],
-        make_managed_execute: Callable[[Callable[[Any], Any]], Any],
-        *,
-        preserve_raw_response: bool,
-    ) -> Any:
-        # NeMo Relay's native managed execution may wrap a failing callback as an
-        # internal runtime error, hiding the real downstream provider/tool
-        # exception. Capture the original here and re-raise it after managed
-        # execution so Moor retry classification still sees it. The LLM and tool
-        # paths share this scaffolding; they differ only in payload normalization,
-        # response shaping, and the Relay call itself.
-        raw_response: dict[str, Any] = {"set": False, "value": None, "normalized": None}
-        callback_error: Exception | None = None
-        downstream_error: BaseException | None = None
-
-        def _impl(next_payload: Any) -> Any:
-            nonlocal callback_error, downstream_error
-            try:
-                raw = next_call(normalize_payload(next_payload))
-            except Exception as exc:
-                callback_error = exc
-                downstream_error = _original_downstream_error(exc)
-                raise
-            raw_response["set"] = True
-            raw_response["value"] = raw
-            raw_response["normalized"] = shape_response(raw)
-            return raw_response["normalized"]
-
-        try:
-            managed_result = _resolve_awaitable(make_managed_execute(_impl))
-        except Exception as exc:
-            if downstream_error is not None and _is_relay_wrapped_callback_error(exc, callback_error):
-                raise downstream_error
-            raise
-        if (
-            preserve_raw_response
-            and raw_response["set"]
-            and _json_semantically_equal(managed_result, raw_response["normalized"])
-        ):
-            return raw_response["value"]
-        return managed_result
-
-    def execute_llm(self, kwargs: dict[str, Any]) -> Any:
-        state = self.ensure_session(kwargs)
-        request_body = _jsonable(kwargs.get("request") or {})
-        request = self.nemo_relay.LLMRequest({}, request_body)
-        next_call = kwargs.get("next_call")
-        if not callable(next_call):
-            return request_body
-
-        def _normalize(next_request: Any) -> Any:
-            next_body = getattr(next_request, "content", next_request)
-            return next_body if isinstance(next_body, dict) else request_body
-
-        def _make_managed(impl: Callable[[Any], Any]) -> Any:
-            async def _managed_execute() -> Any:
-                result = self.nemo_relay.llm.execute(
-                    _relay_llm_surface(kwargs),
-                    request,
-                    impl,
-                    handle=state.handle,
-                    data=_jsonable(
-                        {
-                            "turn_id": kwargs.get("turn_id"),
-                            "api_request_id": kwargs.get("api_request_id"),
-                            "api_call_count": kwargs.get("api_call_count"),
-                            "mode": self.settings.adaptive_mode,
-                        }
-                    ),
-                    metadata=_metadata(kwargs),
-                    model_name=str(kwargs.get("model") or ""),
-                )
-                if inspect.isawaitable(result):
-                    return await result
-                return result
-
-            return _managed_execute()
-
-        return self._run_managed_with_downstream_preservation(
-            next_call, _normalize, _llm_response_payload, _make_managed, preserve_raw_response=True
-        )
-
-    def execute_tool(self, kwargs: dict[str, Any]) -> Any:
-        state = self.ensure_session(kwargs)
-        tool_name = str(kwargs.get("tool_name") or "tool")
-        args = _jsonable(kwargs.get("args") or {})
-        next_call = kwargs.get("next_call")
-        if not callable(next_call):
-            return args
-
-        def _normalize(next_args: Any) -> Any:
-            return next_args if isinstance(next_args, dict) else args
-
-        def _make_managed(impl: Callable[[Any], Any]) -> Any:
-            async def _managed_execute() -> Any:
-                result = self.nemo_relay.tools.execute(
-                    tool_name,
-                    args,
-                    impl,
-                    handle=state.handle,
-                    data=_jsonable(
-                        {
-                            "turn_id": kwargs.get("turn_id"),
-                            "api_request_id": kwargs.get("api_request_id"),
-                            "tool_call_id": kwargs.get("tool_call_id"),
-                            "mode": self.settings.adaptive_mode,
-                        }
-                    ),
-                    metadata=_metadata(kwargs),
-                )
-                if inspect.isawaitable(result):
-                    return await result
-                return result
-
-            return _managed_execute()
-
-        return self._run_managed_with_downstream_preservation(
-            next_call, _normalize, _jsonable, _make_managed, preserve_raw_response=False
-        )
-
-
-def register(ctx) -> None:
-    # Activate dynamic plugins before Moor installs the managed execution
-=======
 def register(ctx) -> None:
     relay_runtime.SESSION_COORDINATOR.register_session_initializer(
         _SESSION_INITIALIZER_NAME,
         _prepare_core_session,
     )
-    # Activate dynamic plugins before Moor installs the managed execution
->>>>>>> upstream/main
+    # Activate dynamic plugins before Hermes installs the managed execution
     # boundaries that invoke their interceptors.
     if _load_settings().dynamic_plugins:
         _get_runtime()
@@ -892,7 +749,7 @@ def _get_runtime(
         try:
             resolved_host = host or relay_runtime.get_runtime(profile_key=profile_key)
             if resolved_host is None:
-                raise RuntimeError("Moor core Relay runtime is unavailable")
+                raise RuntimeError("Hermes core Relay runtime is unavailable")
             runtime = _Runtime(
                 nemo_relay=resolved_host.relay,
                 settings=_load_settings(),
@@ -921,7 +778,7 @@ def _load_settings() -> _Settings:
         atif_output_directory=_env("HERMES_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY"),
         atif_filename_template=_env("HERMES_NEMO_RELAY_ATIF_FILENAME_TEMPLATE") or "hermes-atif-{session_id}.json",
         atif_subagent_export_mode=_atif_subagent_export_mode(),
-        atif_agent_name=_env("HERMES_NEMO_RELAY_ATIF_AGENT_NAME") or "Moor Agent",
+        atif_agent_name=_env("HERMES_NEMO_RELAY_ATIF_AGENT_NAME") or "Hermes Agent",
         atif_agent_version=_env("HERMES_NEMO_RELAY_ATIF_AGENT_VERSION") or "unknown",
         atif_model_name=_env("HERMES_NEMO_RELAY_ATIF_MODEL_NAME") or "unknown",
         atif_export_timeout_s=_env_float(
@@ -970,9 +827,9 @@ def _dynamic_plugin_specs(
             return []
         if plugins_section:
             logger.error(
-                "Moor cannot activate Relay gateway [[plugins.dynamic]] records because "
+                "Hermes cannot activate Relay gateway [[plugins.dynamic]] records because "
                 "the Python binding does not expose the CLI lifecycle resolver for "
-                "enablement, trust policy, and worker environments. Use Moor-owned "
+                "enablement, trust policy, and worker environments. Use Hermes-owned "
                 "[[dynamic_plugins]] activation specs instead; no dynamic plugins will be "
                 "activated. Continuing with static observability only."
             )
@@ -1231,103 +1088,6 @@ def _jsonable(value: Any) -> Any:
         return str(value)
 
 
-<<<<<<< HEAD
-def _json_semantically_equal(left: Any, right: Any) -> bool:
-    """Compare JSON-compatible values without conflating booleans and numbers."""
-    try:
-        options = {"ensure_ascii": False, "sort_keys": True, "separators": (",", ":")}
-        return json.dumps(_jsonable(left), **options) == json.dumps(_jsonable(right), **options)
-    except (TypeError, ValueError):
-        return False
-
-
-def _value(obj: Any, key: str, default: Any = None) -> Any:
-    if isinstance(obj, dict):
-        return obj.get(key, default)
-    return getattr(obj, key, default)
-
-
-def _original_downstream_error(exc: Exception) -> BaseException:
-    # Moor wraps downstream execution failures in a local/private exception
-    # class, so detect the wrapper by shape instead of importing it here.
-    original = getattr(exc, "original", None)
-    if exc.__class__.__name__ == "_DownstreamExecutionError" and isinstance(original, BaseException):
-        return original
-    return exc
-
-
-def _is_relay_wrapped_callback_error(exc: Exception, callback_error: Exception | None) -> bool:
-    # NeMo Relay re-wraps a failing callback as ``RuntimeError("internal error:
-    # <ClassName>: <message>")``. Match by prefix rather than exact equality so a
-    # trailing traceback/suffix in a future Relay version doesn't silently defeat
-    # the unwrap; the class-name + message prefix still discriminates the real
-    # downstream failure from unrelated Relay-internal errors. If Relay drops the
-    # leading ``internal error:`` shape entirely, this returns False and Moor
-    # falls back to surfacing Relay's error (the pre-fix behavior) rather than
-    # masking it.
-    if callback_error is None or not isinstance(exc, RuntimeError):
-        return False
-    expected = f"internal error: {callback_error.__class__.__name__}: {callback_error}"
-    return str(exc).startswith(expected)
-
-
-def _llm_response_payload(response: Any) -> Any:
-    """Return the LLM response shape NeMo Relay's ATIF conversion expects."""
-    payload = _jsonable(response)
-    if isinstance(payload, dict) and "assistant_message" in payload:
-        return payload
-
-    choices = _value(response, "choices")
-    if choices is None and isinstance(payload, dict):
-        choices = payload.get("choices")
-    first_choice = choices[0] if isinstance(choices, list) and choices else None
-    message = _value(first_choice, "message")
-    finish_reason = _value(first_choice, "finish_reason")
-
-    assistant_message: dict[str, Any] = {"role": "assistant", "content": ""}
-    if message is not None:
-        assistant_message["role"] = _value(message, "role", "assistant") or "assistant"
-        content = _value(message, "content")
-        if content is not None:
-            assistant_message["content"] = _jsonable(content)
-        tool_calls = _tool_calls_payload(_value(message, "tool_calls"))
-        if tool_calls:
-            assistant_message["tool_calls"] = tool_calls
-        reasoning = _value(message, "reasoning_content")
-        if reasoning is not None:
-            assistant_message["reasoning_content"] = _jsonable(reasoning)
-    elif isinstance(payload, dict):
-        assistant_message["content"] = payload.get("content") or payload.get("output_text") or ""
-
-    return {
-        "model": _value(response, "model", payload.get("model") if isinstance(payload, dict) else None),
-        "assistant_message": assistant_message,
-        "finish_reason": finish_reason,
-        "usage": _jsonable(_value(response, "usage", payload.get("usage") if isinstance(payload, dict) else None)),
-    }
-
-
-def _tool_calls_payload(tool_calls: Any) -> list[dict[str, Any]]:
-    if not isinstance(tool_calls, list):
-        return []
-    normalized: list[dict[str, Any]] = []
-    for call in tool_calls:
-        function = _value(call, "function")
-        normalized.append(
-            {
-                "id": _value(call, "id"),
-                "type": _value(call, "type", "function") or "function",
-                "function": {
-                    "name": _value(function, "name"),
-                    "arguments": _value(function, "arguments"),
-                },
-            }
-        )
-    return normalized
-
-
-=======
->>>>>>> upstream/main
 def _safe(fn) -> None:
     try:
         fn()

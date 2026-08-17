@@ -13,7 +13,7 @@ or a linked OpenViking CLI config:
   OPENVIKING_API_KEY   — API key (required for authenticated servers)
   OPENVIKING_ACCOUNT   — Tenant account for local/trusted mode (default: default)
   OPENVIKING_USER      — Tenant user for local/trusted mode (default: default)
-  OPENVIKING_AGENT     — Moor peer ID in OpenViking (default: hermes)
+  OPENVIKING_AGENT     — Hermes peer ID in OpenViking (default: hermes)
 
 Capabilities:
   - Automatic memory extraction on session commit (6 categories)
@@ -65,7 +65,7 @@ logger = logging.getLogger(__name__)
 _DEFAULT_ENDPOINT = "http://127.0.0.1:1933"
 _OPENVIKING_SERVICE_ENDPOINT = "https://api.vikingdb.cn-beijing.volces.com/openviking"
 _DEFAULT_AGENT = "hermes"
-_AGENT_PROMPT_LABEL = "Moor peer ID in OpenViking"
+_AGENT_PROMPT_LABEL = "Hermes peer ID in OpenViking"
 _OVCLI_CONFIG_ENV = "OPENVIKING_CLI_CONFIG_FILE"
 _OVCLI_DEFAULT_RELATIVE_PATH = ".openviking/ovcli.conf"
 _OVCLI_SAVED_PREFIX = "ovcli.conf."
@@ -218,7 +218,7 @@ def _format_openviking_exception(error: Exception) -> str:
 
 
 def _derive_openviking_user_text(content: Any) -> str:
-    """Strip Moor slash-skill scaffolding before sending content to OpenViking.
+    """Strip Hermes slash-skill scaffolding before sending content to OpenViking.
 
     Defense-in-depth: MemoryManager already strips skill scaffolding for the
     whole provider fan-out (see ``MemoryManager._strip_skill_scaffolding``), so
@@ -927,7 +927,7 @@ def _normalize_openviking_url(url: str) -> str:
     # Local / LAN self-host remains allowed; reject cloud-metadata and other
     # always-blocked floors so a poisoned endpoint cannot SSRF via memory sync.
     # Never silently replace an explicitly unsafe endpoint with localhost: that
-    # could attach Moor to an unrelated deployment and forward credentials to
+    # could attach Hermes to an unrelated deployment and forward credentials to
     # a destination the user did not configure.
     try:
         check_url = candidate
@@ -941,7 +941,7 @@ def _normalize_openviking_url(url: str) -> str:
     except Exception as exc:
         logger.debug("OpenViking endpoint safety validation failed", exc_info=True)
         raise _OpenVikingEndpointError(
-            "OpenViking endpoint safety validation failed; Moor refused the connection."
+            "OpenViking endpoint safety validation failed; Hermes refused the connection."
         ) from exc
 
     return candidate
@@ -1536,7 +1536,7 @@ def _start_local_openviking_server(endpoint: str) -> tuple[str, str]:
         listener = _describe_local_port_listener(host, port)
         return (
             _LOCAL_SERVER_OCCUPIED,
-            f"Port {host}:{port} is occupied by {listener}. Moor did not start "
+            f"Port {host}:{port} is occupied by {listener}. Hermes did not start "
             "openviking-server because the listener has not passed OpenViking's /health check.",
         )
     server_cmd = shutil.which("openviking-server")
@@ -1549,12 +1549,12 @@ def _start_local_openviking_server(endpoint: str) -> tuple[str, str]:
     try:
         log_path.parent.mkdir(parents=True, exist_ok=True)
         # Do not let the server child inherit this process's PYTHONPATH.
-        # The Moor Desktop backend can include the Moor venv's
+        # The Hermes Desktop backend can include the Hermes venv's
         # site-packages in PYTHONPATH. If inherited, openviking-server would
-        # import aiohttp and friends from the Moor venv instead of its own
+        # import aiohttp and friends from the Hermes venv instead of its own
         # (its venv's site-packages are shadowed because PYTHONPATH precedes
         # them) —
-        # and on Windows the loaded DLLs then lock the Moor venv,
+        # and on Windows the loaded DLLs then lock the Hermes venv,
         # aborting `hermes update` with access-denied on .pyd files.
         # Strip PYTHONPATH so the server resolves packages from its own
         # venv. (#78153)
@@ -1671,12 +1671,8 @@ def _runtime_openviking_timeout_message(endpoint: str) -> str:
         f"Local OpenViking server at {endpoint} is not reachable. "
         "Tried to start openviking-server, but it did not become reachable "
         f"within {_LOCAL_OPENVIKING_AUTOSTART_TIMEOUT:.0f} seconds. "
-<<<<<<< HEAD
-        "OpenViking memory disabled for this Moor run."
-=======
-        "OpenViking memory is temporarily unavailable; Moor will retry on a later access or when "
+        "OpenViking memory is temporarily unavailable; Hermes will retry on a later access or when "
         "the config changes."
->>>>>>> upstream/main
     )
 
 
@@ -2057,7 +2053,7 @@ def _print_openviking_ready(message: str, path: Optional[Path] = None) -> None:
     print(f"  {message}")
     if path is not None:
         print(f"  Config file: {path}")
-    print("  Start a new Moor session to activate.\n")
+    print("  Start a new Hermes session to activate.\n")
 
 
 def _run_existing_profile_setup(
@@ -2175,7 +2171,7 @@ def _run_create_profile_setup(
     save_choice = select(
         "  Save OpenViking config",
         [
-            ("Keep in Moor only", "write values only to Moor .env"),
+            ("Keep in Hermes only", "write values only to Hermes .env"),
             ("Mirror to OpenViking store", "write ~/.openviking/ovcli.conf.<name> and link it"),
         ],
         default=1,
@@ -2208,7 +2204,7 @@ def _run_create_profile_setup(
         env_path=env_path,
         values=values,
     )
-    _print_openviking_ready("Connection saved to Moor .env.")
+    _print_openviking_ready("Connection saved to Hermes .env.")
     return True
 
 
@@ -2343,7 +2339,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
             {
                 "key": "agent",
                 "description": (
-                    "Moor peer ID in OpenViking, sent as the actor peer and "
+                    "Hermes peer ID in OpenViking, sent as the actor peer and "
                     "used for peer-scoped memories"
                 ),
                 "default": "hermes",
@@ -2596,27 +2592,10 @@ class OpenVikingMemoryProvider(MemoryProvider):
             )
             return
 
-<<<<<<< HEAD
-        try:
-            client = _VikingClient(
-                endpoint,
-                self._api_key,
-                account=self._account,
-                user=self._user,
-                agent=self._agent,
-            )
-            if not client.health():
-                _emit_runtime_warning(
-                    f"OpenViking server at {endpoint} is still not reachable after auto-start; "
-                    "OpenViking memory disabled for this Moor run.",
-                    warning_callback,
-                )
-=======
         warning_message = ""
         status_message = ""
         with self._client_refresh_lock:
             if self._shutting_down or self._endpoint != endpoint:
->>>>>>> upstream/main
                 return
             try:
                 client = _VikingClient(
@@ -2632,7 +2611,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
                 if not healthy:
                     warning_message = (
                         f"OpenViking server at {endpoint} is still not reachable after auto-start. "
-                        "OpenViking memory is temporarily unavailable; Moor will retry on a later access or when "
+                        "OpenViking memory is temporarily unavailable; Hermes will retry on a later access or when "
                         "the config changes."
                     )
                 else:
@@ -2651,18 +2630,13 @@ class OpenVikingMemoryProvider(MemoryProvider):
             except Exception as e:
                 warning_message = (
                     f"OpenViking server at {endpoint} could not be attached after auto-start: {e}. "
-                    "OpenViking memory is temporarily unavailable; Moor will retry on a later access or when "
+                    "OpenViking memory is temporarily unavailable; Hermes will retry on a later access or when "
                     "the config changes."
                 )
 
         if warning_message:
             _emit_runtime_warning(
-<<<<<<< HEAD
-                f"OpenViking server at {endpoint} could not be attached after auto-start: {e}. "
-                "OpenViking memory disabled for this Moor run.",
-=======
                 warning_message,
->>>>>>> upstream/main
                 warning_callback,
             )
             return
@@ -2681,14 +2655,9 @@ class OpenVikingMemoryProvider(MemoryProvider):
         endpoint = self._endpoint
         if not _is_local_openviking_url(endpoint):
             _emit_runtime_warning(
-<<<<<<< HEAD
-                f"Remote OpenViking server at {endpoint} is not reachable; "
-                "OpenViking memory disabled for this Moor run. "
-=======
                 f"Remote OpenViking server at {endpoint} is not reachable. "
-                "OpenViking memory is temporarily unavailable; Moor will retry on a later access or when "
+                "OpenViking memory is temporarily unavailable; Hermes will retry on a later access or when "
                 "the config changes. "
->>>>>>> upstream/main
                 "Check the configured endpoint and network connectivity.",
                 warning_callback,
             )
@@ -2713,7 +2682,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
                 self._runtime_start_pending = False
                 warning_message = (
                     f"Local OpenViking server at {endpoint} is not reachable. {start_message} "
-                    "OpenViking memory is temporarily unavailable; Moor will retry on a later access or when "
+                    "OpenViking memory is temporarily unavailable; Hermes will retry on a later access or when "
                     "the config changes."
                 )
                 self._client = None
@@ -2726,12 +2695,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
 
         if warning_message:
             _emit_runtime_warning(
-<<<<<<< HEAD
-                f"Local OpenViking server at {endpoint} is not reachable. {start_message} "
-                "OpenViking memory disabled for this Moor run.",
-=======
                 warning_message,
->>>>>>> upstream/main
                 warning_callback,
             )
             return
@@ -2804,23 +2768,6 @@ class OpenVikingMemoryProvider(MemoryProvider):
                 "correct the endpoint and reload the configuration.",
                 warning_callback,
             )
-<<<<<<< HEAD
-            health_state, health_message = _classify_runtime_openviking_health(self._client, self._endpoint)
-            if health_state == "unreachable":
-                self._handle_runtime_openviking_unreachable(
-                    status_callback=status_callback,
-                    warning_callback=warning_callback,
-                )
-            elif health_state != "healthy":
-                _emit_runtime_warning(
-                    f"{health_message} OpenViking memory disabled for this Moor run.",
-                    warning_callback,
-                )
-                self._client = None
-        except ImportError:
-            logger.warning("httpx not installed — OpenViking plugin disabled")
-=======
->>>>>>> upstream/main
             self._client = None
         else:
             try:
@@ -2840,7 +2787,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
                 elif health_state != "healthy":
                     _emit_runtime_warning(
                         f"{health_message} OpenViking memory is temporarily unavailable; "
-                        "Moor will retry on a later access or when the config changes.",
+                        "Hermes will retry on a later access or when the config changes.",
                         warning_callback,
                     )
                     self._client = None
@@ -2964,7 +2911,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
         self._failed_refresh = (settings_key, time.monotonic())
         if health_state == "responded":
             logger.warning(
-                "%s OpenViking memory is temporarily unavailable; Moor will retry on a "
+                "%s OpenViking memory is temporarily unavailable; Hermes will retry on a "
                 "later access (after cooldown) or when the config changes.",
                 health_message,
             )
@@ -4320,7 +4267,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
         user_content: str,
         assistant_content: str,
     ) -> List[Dict[str, Any]]:
-        """Slice the completed turn out of Moor' full canonical transcript."""
+        """Slice the completed turn out of Hermes' full canonical transcript."""
         if not messages:
             return []
 
@@ -4439,7 +4386,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
         *,
         assistant_peer_id: str = "",
     ) -> List[Dict[str, Any]]:
-        """Convert Moor canonical messages into OpenViking batch payloads."""
+        """Convert Hermes canonical messages into OpenViking batch payloads."""
         assistant_peer_id = str(assistant_peer_id or "").strip()
         tool_calls_by_id: Dict[str, Dict[str, Any]] = {}
         completed_tool_ids: set[str] = set()

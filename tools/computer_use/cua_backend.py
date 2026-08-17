@@ -104,7 +104,7 @@ def _action_result_from(
     ``structuredContent`` (or any individual field) leaves the corresponding
     ActionResult attribute ``None``, so callers and tests see unchanged
     behavior on old drivers. See the action response shape in
-    cua-driver's mcp-tool-notes and Moor inc./hermes-agent#67052.
+    cua-driver's mcp-tool-notes and NousResearch/hermes-agent#67052.
     """
     sc = structured if isinstance(structured, dict) else {}
 
@@ -213,18 +213,8 @@ _NON_APP_WINDOW_TITLE_PREFIXES = (
 _CUA_TELEMETRY_ENV_VAR = "CUA_DRIVER_RS_TELEMETRY_ENABLED"
 
 
-<<<<<<< HEAD
-def _cua_telemetry_disabled() -> bool:
-    """True when Moor should disable cua-driver telemetry for this user.
-
-    Reads ``computer_use.cua_telemetry`` from config.yaml. Default is False
-    (telemetry off). Any failure to read config fails SAFE — toward the
-    privacy-preserving default of telemetry disabled.
-    """
-=======
 def _computer_use_cfg() -> Dict[str, Any]:
     """The ``computer_use`` config block, or ``{}`` when config is unreadable."""
->>>>>>> upstream/main
     try:
         from hermes_cli.config import load_config
 
@@ -234,7 +224,7 @@ def _computer_use_cfg() -> Dict[str, Any]:
 
 
 def _cua_no_overlay() -> bool:
-    """True when Moor should pass ``--no-overlay`` to cua-driver.
+    """True when Hermes should pass ``--no-overlay`` to cua-driver.
 
     Reads ``computer_use.no_overlay``. Default ``None`` (auto-detect):
     disable the overlay where idle CPU burn is a known failure mode —
@@ -264,7 +254,7 @@ def _cua_no_overlay() -> bool:
 
 
 def _cua_telemetry_disabled() -> bool:
-    """True when Moor should disable cua-driver telemetry for this user.
+    """True when Hermes should disable cua-driver telemetry for this user.
 
     Reads ``computer_use.cua_telemetry`` (default False → telemetry off).
     Unreadable config falls SAFE toward disabling telemetry.
@@ -279,7 +269,7 @@ def _cua_configured_permission_mode() -> str:
     Reads ``computer_use.permission_mode`` (default ``standard``).  Only
     ``standard`` and ``bounded`` are honored here — ``unrestricted`` is
     deliberately NOT a config value: it stays tied to the explicit
-    per-session Moor YOLO toggle so a stale config line can never
+    per-session Hermes YOLO toggle so a stale config line can never
     silently bypass approvals. Unknown values fall closed to ``standard``.
     """
     raw = str(_computer_use_cfg().get("permission_mode", "standard") or "").strip().lower()
@@ -303,7 +293,7 @@ def _cua_grant_existing_profile() -> bool:
     """True when the user pre-authorized existing-profile browser attachment.
 
     Reads ``computer_use.grant_existing_profile`` (default False). This is
-    cua-driver's trusted-launcher grant. Moor passes
+    cua-driver's trusted-launcher grant. Hermes passes
     ``--grant existing-profile`` when it launches the standard-mode runtime.
     On macOS it also selects a private socket so the newly configured
     CuaDriver.app runtime cannot collide with an already-running default
@@ -558,10 +548,10 @@ def _select_capture_target(
 
 
 def _wsl_windows_path_to_posix(path: str) -> str:
-    """Translate a Windows absolute manifest command when Moor runs in WSL.
+    """Translate a Windows absolute manifest command when Hermes runs in WSL.
 
     Windows cua-driver manifests can report ``C:\\Users\\...\\cua-driver.exe``
-    even though the Moor process uses POSIX subprocess spawning inside WSL.
+    even though the Hermes process uses POSIX subprocess spawning inside WSL.
     The same file is reachable through DrvFS as ``/mnt/c/Users/...``.
     Non-Windows paths and non-WSL hosts are returned unchanged.
     """
@@ -585,11 +575,11 @@ class _EmbeddedCuaDaemon:
     """Private host-owned daemon for a non-standard permission mode.
 
     Cua Driver permission mode is immutable after daemon startup.  Reusing the
-    machine-wide daemon would therefore let one Moor session's YOLO choice
+    machine-wide daemon would therefore let one Hermes session's YOLO choice
     affect another session.  A private embedded daemon gives the requesting
     session its own socket, process, and launch-time authorization:
 
-    * ``unrestricted`` — explicit Moor YOLO; launch-time risk
+    * ``unrestricted`` — explicit Hermes YOLO; launch-time risk
       acknowledgement via ``--dangerously-bypass-approvals``.
     * ``bounded`` — a user-reviewed capability manifest
       (``computer_use.capability_manifest`` in config.yaml) approved at
@@ -809,12 +799,12 @@ def _resolve_mcp_invocation(
 ) -> Tuple[str, List[str]]:
     """Return ``(command, args)`` that spawn cua-driver's stdio MCP server.
 
-    Surface 8 of Moor inc./hermes-agent#47072: instead of hardcoding
+    Surface 8 of NousResearch/hermes-agent#47072: instead of hardcoding
     ``["mcp"]`` we ask the driver itself via ``cua-driver manifest``
     (trycua/cua#1961). The manifest carries a stable ``mcp_invocation``
     pointer with both ``command`` and ``args``, so a future cua-driver
     that renames or relocates the subcommand keeps working without a
-    Moor patch.
+    Hermes patch.
 
     Falls back to ``(driver_cmd, ["mcp"])`` for older drivers that don't
     expose ``manifest``, or any indeterminate failure — the wrapper must
@@ -861,7 +851,7 @@ def _resolve_mcp_invocation(
         # The driver knows the subcommand but didn't surface its own path.
         # Keep our resolved driver_cmd; the args are still authoritative.
         return driver_cmd, _mcp_args_with_overlay_flag(args, driver_cmd=driver_cmd)
-    # A Windows-installed cua-driver can hand a WSL-hosted Moor an absolute
+    # A Windows-installed cua-driver can hand a WSL-hosted Hermes an absolute
     # ``C:\...`` command; translate it to its DrvFS ``/mnt/<drive>/...`` form
     # BEFORE the path-separator check (backslash is not a separator on POSIX,
     # so the raw Windows string would otherwise be discarded here).
@@ -966,7 +956,7 @@ def _candidate_cua_driver_commands(override: Optional[str] = None) -> List[str]:
     Desktop apps launched from Finder/Dock often inherit a narrow PATH that
     omits user-local install directories. The upstream cua-driver installer
     commonly places the binary under ``~/.local/bin`` on POSIX systems, so a
-    Moor Desktop/TUI session can otherwise filter out the `computer_use`
+    Hermes Desktop/TUI session can otherwise filter out the `computer_use`
     tool even though `hermes computer-use doctor` succeeds from a login shell.
     """
     configured = (override if override is not None else os.environ.get(_CUA_DRIVER_CMD_ENV, "")).strip()
@@ -984,7 +974,7 @@ def _candidate_cua_driver_commands(override: Optional[str] = None) -> List[str]:
         candidates.extend([
             # Official cua-driver installer location on Windows. Freshly
             # installed sessions inherit a stale PATH, so PATH lookup alone
-            # misses it until every Moor process is restarted.
+            # misses it until every Hermes process is restarted.
             os.path.join(
                 local_app_data, "Programs", "Cua", "cua-driver", "bin", "cua-driver.exe"
             ),
@@ -1040,7 +1030,7 @@ _CUA_DRIVER_RUNTIME_CONTRACT_ARGS = {
 
 
 def cua_driver_runtime_contract_status(binary: Optional[str] = None) -> Dict[str, Any]:
-    """Report whether a local driver can host Moor' 0.20 integration."""
+    """Report whether a local driver can host Hermes' 0.20 integration."""
     resolved = binary or resolve_cua_driver_cmd()
     if not resolved:
         return {
@@ -1108,7 +1098,7 @@ def cua_driver_runtime_contract_status(binary: Optional[str] = None) -> Dict[str
             "ready": False,
             "binary": resolved,
             "version": raw_version,
-            "reason": "Moor computer use requires cua-driver 0.20.0 or newer",
+            "reason": "Hermes computer use requires cua-driver 0.20.0 or newer",
         }
 
     invocation = manifest.get("mcp_invocation")
@@ -1342,7 +1332,7 @@ def _parse_elements_from_tree(markdown: str) -> List[UIElement]:
 
 
 def _parse_elements_from_structured(raw_elements: List[Dict[str, Any]]) -> List[UIElement]:
-    """Surface 2 of Moor inc./hermes-agent#47072: read the canonical
+    """Surface 2 of NousResearch/hermes-agent#47072: read the canonical
     ``structuredContent.elements`` array cua-driver-rs emits on every
     ``get_window_state`` response (trycua/cua#1961).
 
@@ -1545,7 +1535,7 @@ class _CuaDriverSession:
         self._session = None
         self._lock = threading.Lock()
         self._started = False
-        # Surface 4 of Moor inc./hermes-agent#47072: per-tool
+        # Surface 4 of NousResearch/hermes-agent#47072: per-tool
         # capability-token sets, populated from `tools/list` at session
         # init. Keys are tool names (e.g. "click", "get_window_state");
         # values are sets of capability strings (e.g.
@@ -1628,13 +1618,8 @@ class _CuaDriverSession:
                 command=command,
                 args=args,
                 # Apply the telemetry policy first (default: disabled), then
-<<<<<<< HEAD
-                # sanitize Moor-managed secrets out of the child env.
-                env=_sanitize_subprocess_env(cua_driver_child_env()),
-=======
-                # sanitize Moor-managed secrets out of the child env.
+                # sanitize Hermes-managed secrets out of the child env.
                 env=_sanitize_subprocess_env(child_env),
->>>>>>> upstream/main
             )
 
             async with stdio_client(params) as (read, write):
@@ -2127,7 +2112,7 @@ class _CuaDriverSession:
                 # "daemon is not running" is a PERMANENT condition for this
                 # invocation (`cua-driver call` requires the machine-wide
                 # daemon socket, which Linux installs typically never start —
-                # Moor talks to the direct `cua-driver mcp` runtime
+                # Hermes talks to the direct `cua-driver mcp` runtime
                 # instead). Retrying with backoff burns ~3.5s of sleeps per
                 # fallback for an outcome that cannot change; fail fast so
                 # callers surface a diagnosable error immediately.
@@ -2230,7 +2215,7 @@ class _CuaDriverSession:
     def _unknown_transport_outcome(name: str, exc: Exception) -> Dict[str, Any]:
         message = (
             f"cua-driver transport failed during {name}; the action outcome is "
-            "unknown, so Moor did not replay it. Take fresh state before "
+            "unknown, so Hermes did not replay it. Take fresh state before "
             "deciding whether to act again."
         )
         return {
@@ -2324,7 +2309,7 @@ def _extract_tool_result(mcp_result: Any) -> Dict[str, Any]:
 
     `image_mime_types` is the explicit `mimeType` cua-driver emits on every
     image part as of trycua/cua#1961 (Surface 7 of
-    Moor inc./hermes-agent#47072). Each entry corresponds index-for-index
+    NousResearch/hermes-agent#47072). Each entry corresponds index-for-index
     with `images`; an empty string entry signals the part carried no
     mimeType (older cua-driver build), and the caller should fall back to
     base64-prefix sniffing.
@@ -2560,7 +2545,7 @@ class CuaDriverBackend(ComputerUseBackend):
         # Exact identity for capture_after. App names may be generic on Linux
         # (for example, multiple unrelated Qt windows can say Qt6Application).
         self._last_target: Optional[Dict[str, Optional[int]]] = None
-        # Surface 6 of Moor inc./hermes-agent#47072: per-snapshot
+        # Surface 6 of NousResearch/hermes-agent#47072: per-snapshot
         # `element_index -> element_token` map populated on capture().
         # Action tools (click/scroll/set_value/...) attach the matching
         # token alongside `element_index` so cua-driver detects "stale"
@@ -2568,40 +2553,20 @@ class CuaDriverBackend(ComputerUseBackend):
         # element. Cleared whenever a fresh capture overwrites the
         # snapshot context.
         self._snapshot_tokens: Dict[int, str] = {}
-<<<<<<< HEAD
-        # Per-instance cua-driver session id. cua-driver's MCP server
-        # instructions ask every consumer to declare a stable session
-        # at the start of a run (start_session) and tear it down at
-        # the end (end_session). Doing so:
-        #   - Gets a distinct agent-cursor color per Moor run, with
-        #     overlay rendering visualising where actions land
-        #     (without moving the real OS cursor).
-        #   - Isolates per-session config + recording ownership so
-        #     concurrent Moor runs / subagents don't step on each
-        #     other.
-        # We mint a UUID4-based id once per CuaDriverBackend instance —
-        # one Moor run = one backend = one session — and pass it as
-        # `session` on every cua-driver tool call. Sessions are an
-        # additive feature on the cua-driver side: when our id is
-        # unknown to the driver (older builds), the tool calls
-        # degrade to the anonymous / unsynced path documented in the
-        # MCP server instructions.
-=======
         # Per-instance public cua-driver session label. The MCP transport owns
         # the private lifecycle and releases it when the connection closes.
         # start_session/end_session attach this stable label to cursor,
         # recording, and config state within that lifecycle. Doing so:
-        #   - Gets a distinct agent-cursor color per Moor run, with
+        #   - Gets a distinct agent-cursor color per Hermes run, with
         #     overlay rendering visualising where actions land
         #     (without moving the real OS cursor).
         #   - Gives config and recording state a stable owner label inside the
         #     transport-private lifecycle.
         # We mint a UUID4-based id once per CuaDriverBackend instance —
-        # one Moor run = one backend = one label — and pass it as
+        # one Hermes run = one backend = one label — and pass it as
         # `session` on every cua-driver tool call. Labels are an
         # part of the required Cua Driver 0.20 runtime contract checked at
         # backend startup.
->>>>>>> upstream/main
         self._session_id: str = f"hermes-{uuid.uuid4().hex[:12]}"
         self._typed_browser = CuaTypedBrowserRoute(
             session_id=self._session_id,
@@ -2633,7 +2598,7 @@ class CuaDriverBackend(ComputerUseBackend):
     def start(self) -> None:
         contract = cua_driver_runtime_contract_status()
         if not contract.get("ready"):
-            # An installed-but-incompatible driver (e.g. predating a Moor
+            # An installed-but-incompatible driver (e.g. predating a Hermes
             # version-floor bump) is a state we created — repair it once
             # automatically instead of failing every computer_use call.
             contract = _maybe_repair_runtime_contract(contract)
@@ -2649,7 +2614,7 @@ class CuaDriverBackend(ComputerUseBackend):
             raise RuntimeError(f"cua-driver is not ready: {reason}. {repair}")
         _maybe_nudge_update()
         # The MCP client SDK (`mcp`) is an optional dependency (the
-        # `computer-use` / `mcp` extras), not part of Moor' minimal core.
+        # `computer-use` / `mcp` extras), not part of Hermes' minimal core.
         # Lazy-install it on first use — the same pattern every other optional
         # backend uses — so users never hit an opaque `No module named 'mcp'`
         # at invoke time. Auto-install is gated by `security.allow_lazy_installs`
@@ -2906,7 +2871,7 @@ class CuaDriverBackend(ComputerUseBackend):
         `get_window_state` (ax/som) or `screenshot` (vision).
         """
         # Step 1: enumerate on-screen windows to find target pid/window_id.
-        # Surface 3 of Moor inc./hermes-agent#47072: read the canonical
+        # Surface 3 of NousResearch/hermes-agent#47072: read the canonical
         # `structuredContent.windows` array directly. Pre-fix the wrapper
         # also kept a text-line regex (`_WINDOW_LINE_RE`) as a fallback for
         # cua-driver builds that predated structuredContent; the supersede
@@ -3181,14 +3146,7 @@ class CuaDriverBackend(ComputerUseBackend):
             text = gws_out["data"] if isinstance(gws_out["data"], str) else ""
             summary, tree = _split_tree_text(text)
 
-<<<<<<< HEAD
-            # Parse element count from summary e.g. "✅ AppName — 42 elements, turn 3..."
-            m = re.search(r'(\d+)\s+elements?', summary)
-
-            # Surface 2 of Moor inc./hermes-agent#47072: prefer the
-=======
-            # Surface 2 of Moor inc./hermes-agent#47072: prefer the
->>>>>>> upstream/main
+            # Surface 2 of NousResearch/hermes-agent#47072: prefer the
             # canonical structuredContent.elements array (trycua/cua#1961).
             # Falls back to markdown regex parsing for cua-driver builds
             # that didn't carry the structured shape — those bounds come
@@ -3259,7 +3217,7 @@ class CuaDriverBackend(ComputerUseBackend):
         ``foreground_unsupported`` result instead of silently downgrading to
         background (which would land the input somewhere the model didn't
         expect). Returns an ActionResult to short-circuit on refusal, or None
-        to proceed. See Moor inc./hermes-agent#67052 phase B.
+        to proceed. See NousResearch/hermes-agent#67052 phase B.
         """
         if not delivery_mode or delivery_mode == "background":
             return None
@@ -3356,7 +3314,7 @@ class CuaDriverBackend(ComputerUseBackend):
 
         # Choose tool by click_count only — single-vs-double — and pass the
         # button through to `click`'s `button` enum (Surface 5 of
-        # Moor inc./hermes-agent#47072). cua-driver-rs gained an explicit
+        # NousResearch/hermes-agent#47072). cua-driver-rs gained an explicit
         # `button: "left"|"right"|"middle"` arg on `click` in trycua/cua#1961
         # which rejects unknown buttons; before that, `middle` was silently
         # mapped to a left-click via name-routing through `right_click`.
@@ -3571,7 +3529,7 @@ class CuaDriverBackend(ComputerUseBackend):
         process.
 
         The default remains non-disruptive. ``raise_window=True`` is explicit,
-        separately approved by the Moor adapter, and uses cua-driver's
+        separately approved by the Hermes adapter, and uses cua-driver's
         standalone ``bring_to_front`` tool rather than an action property.
         """
         try:

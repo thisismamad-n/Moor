@@ -117,13 +117,6 @@ def test_session_slot_is_claimed_on_first_turn_not_on_create(monkeypatch, tmp_pa
         # surfaces that share this cap.
         first = server._methods["session.create"]("r1", {"cols": 80})
         second = server._methods["session.create"]("r2", {"cols": 80})
-<<<<<<< HEAD
-        assert second["error"]["message"] == (
-            "Moor is at the active session limit (1/1). "
-            "Try again when another session finishes."
-        )
-        assert list(server._sessions) == [sid]
-=======
         assert "result" in first and "result" in second
         sid = first["result"]["session_id"]
         other = second["result"]["session_id"]
@@ -136,7 +129,6 @@ def test_session_slot_is_claimed_on_first_turn_not_on_create(monkeypatch, tmp_pa
 
         blocked = server._ensure_active_session_slot(other, server._sessions[other])
         assert "active session limit (1/1)" in blocked
->>>>>>> upstream/main
 
         closed = server._methods["session.close"]("r3", {"session_id": sid})
         assert closed["result"]["closed"] is True
@@ -9903,7 +9895,7 @@ def test_session_status_reads_live_gateway_agent(monkeypatch):
         server._sessions.pop("sid", None)
 
     out = resp["result"]["output"]
-    assert "Moor TUI Status" in out
+    assert "Hermes TUI Status" in out
     assert "Session ID: session-key" in out
     assert "Title: Live TUI" in out
     assert "Model: live-model (live-provider)" in out
@@ -16098,7 +16090,7 @@ def test_notification_poller_requeues_when_busy(monkeypatch):
 
 
 def test_session_save_writes_under_hermes_home_with_system_prompt(monkeypatch, tmp_path):
-    """TUI /save (session.save RPC) must snapshot under the Moor profile
+    """TUI /save (session.save RPC) must snapshot under the Hermes profile
     home — not the project/workspace CWD — and include the system prompt,
     mirroring the classic CLI /save and the dashboard save export.
 
@@ -16120,7 +16112,7 @@ def test_session_save_writes_under_hermes_home_with_system_prompt(monkeypatch, t
         model="hermes-test",
         session_id="20260101_120000_abc123",
         session_start=datetime(2026, 1, 1, 12, 0, 0),
-        _cached_system_prompt="You are Moor.",
+        _cached_system_prompt="You are Hermes.",
     )
     history = [
         {"role": "user", "content": "hi"},
@@ -16152,7 +16144,7 @@ def test_session_save_writes_under_hermes_home_with_system_prompt(monkeypatch, t
     assert payload["model"] == "hermes-test"
     assert payload["session_id"] == "20260101_120000_abc123"
     assert payload["session_start"] == "2026-01-01T12:00:00"
-    assert payload["system_prompt"] == "You are Moor."
+    assert payload["system_prompt"] == "You are Hermes."
     assert payload["messages"] == history
 
 
@@ -18298,7 +18290,7 @@ def test_build_persist_message_quotes_paths_containing_spaces(tmp_path):
     with a space parses as a truncated ref with the tail left as loose text.
     Desktop composer images live in the app's userData dir, which on macOS is
     ``~/Library/Application Support/...`` — a space every time."""
-    img_dir = tmp_path / "Application Support" / "Moor" / "composer-images"
+    img_dir = tmp_path / "Application Support" / "Hermes" / "composer-images"
     img_dir.mkdir(parents=True)
     img = img_dir / "cat.png"
     img.write_bytes(b"png")

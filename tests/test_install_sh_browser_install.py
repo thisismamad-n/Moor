@@ -1,6 +1,6 @@
 """Regression tests for install.sh browser setup.
 
-Browser automation is optional. The installer should not leave Moor
+Browser automation is optional. The installer should not leave Hermes
 half-installed just because Playwright's managed Chromium download hangs on an
 unsupported distribution.
 """
@@ -12,23 +12,6 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 INSTALL_SH = REPO_ROOT / "scripts" / "install.sh"
 
 
-<<<<<<< HEAD
-def test_install_script_does_not_autodetect_system_browser_on_path() -> None:
-    """The installer must not scan PATH/well-known locations for a browser.
-
-    Auto-detection silently bound the install to whatever ``command -v
-    chromium`` resolved to — most damagingly a Snap Chromium, whose sandbox
-    blocks agent-browser's control socket and hangs every browser_navigate. The
-    fallback was dropped in favor of always using the bundled Playwright
-    Chromium, so the old PATH-scan and "use the system browser" path are gone.
-    """
-    text = INSTALL_SH.read_text()
-
-    assert "find_system_browser()" in text
-    assert "google-chrome google-chrome-stable chromium chromium-browser chrome" not in text
-    assert "Skipping Playwright browser download; Moor will use the system browser." not in text
-=======
->>>>>>> upstream/main
 
 
 def test_install_script_honors_explicit_browser_override_only() -> None:

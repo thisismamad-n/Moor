@@ -49,27 +49,6 @@ def test_show_status_reports_vercel_backend_contract(monkeypatch, capsys, tmp_pa
     import hermes_cli.auth as auth_mod
     import hermes_cli.gateway as gateway_mod
 
-<<<<<<< HEAD
-    monkeypatch.setattr(status_mod, "get_env_path", lambda: tmp_path / ".env", raising=False)
-    monkeypatch.setattr(status_mod, "get_hermes_home", lambda: tmp_path, raising=False)
-    monkeypatch.setattr(status_mod, "load_config", lambda: {"model": "gpt-5.4"}, raising=False)
-    monkeypatch.setattr(status_mod, "resolve_requested_provider", lambda requested=None: "openai-codex", raising=False)
-    monkeypatch.setattr(status_mod, "resolve_provider", lambda requested=None, **kwargs: "openai-codex", raising=False)
-    monkeypatch.setattr(status_mod, "provider_label", lambda provider: "OpenAI Codex", raising=False)
-    monkeypatch.setattr(
-        auth_mod,
-        "get_nous_auth_status",
-        lambda: {
-            "logged_in": False,
-            "portal_base_url": "https://portal.Moor inc..com",
-            "access_expires_at": "2026-04-20T01:00:51+00:00",
-            "agent_key_expires_at": "2026-04-20T04:54:24+00:00",
-            "has_refresh_token": True,
-            "error": "Refresh session has been revoked",
-        },
-        raising=False,
-    )
-=======
     monkeypatch.setenv("HERMES_HOME", str(tmp_path))
     monkeypatch.setenv("TERMINAL_ENV", "vercel_sandbox")
     monkeypatch.setenv("TERMINAL_VERCEL_RUNTIME", "python3.13")
@@ -78,7 +57,6 @@ def test_show_status_reports_vercel_backend_contract(monkeypatch, capsys, tmp_pa
     monkeypatch.setattr(status_mod.importlib.util, "find_spec", lambda name: object() if name == "vercel" else None)
     monkeypatch.setattr(status_mod, "load_config", lambda: {"terminal": {"backend": "vercel_sandbox"}}, raising=False)
     monkeypatch.setattr(auth_mod, "get_nous_auth_status", lambda: {}, raising=False)
->>>>>>> upstream/main
     monkeypatch.setattr(auth_mod, "get_codex_auth_status", lambda: {}, raising=False)
     monkeypatch.setattr(auth_mod, "get_qwen_auth_status", lambda: {}, raising=False)
     monkeypatch.setattr(auth_mod, "get_xai_oauth_auth_status", lambda: {}, raising=False)

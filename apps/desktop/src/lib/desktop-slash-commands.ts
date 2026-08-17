@@ -62,7 +62,7 @@ export type DesktopActionId =
 /** A command fulfilled by opening a desktop overlay picker. */
 export type DesktopPickerId = 'model' | 'session'
 
-/** Why a known Moor command has no desktop UI surface. */
+/** Why a known Hermes command has no desktop UI surface. */
 export type DesktopUnavailableReason = 'advanced' | 'messaging' | 'settings' | 'terminal'
 
 /**
@@ -181,12 +181,7 @@ const DESKTOP_COMMAND_SPECS: readonly DesktopCommandSpec[] = [
     surface: action('handoff'),
     argumentMode: 'options'
   },
-<<<<<<< HEAD
-  { name: '/profile', description: 'Switch the active Moor profile', surface: action('profile') },
-  { name: '/skin', description: 'Switch desktop theme or cycle to the next one', surface: action('skin'), args: true },
-  { name: '/title', description: 'Rename the current session', surface: action('title') },
-=======
-  { name: '/profile', description: 'Switch the active Moor profile', surface: action('profile') },
+  { name: '/profile', description: 'Switch the active Hermes profile', surface: action('profile') },
   {
     name: '/skin',
     description: 'Switch desktop theme or cycle to the next one',
@@ -194,7 +189,6 @@ const DESKTOP_COMMAND_SPECS: readonly DesktopCommandSpec[] = [
     argumentMode: 'options'
   },
   { name: '/title', description: 'Rename the current session', surface: action('title'), argumentMode: 'text' },
->>>>>>> upstream/main
   { name: '/help', description: 'Show desktop slash commands', aliases: ['/commands'], surface: action('help') },
   {
     name: '/browser',
@@ -331,7 +325,7 @@ const DESKTOP_COMMAND_SPECS: readonly DesktopCommandSpec[] = [
   },
   { name: '/undo', description: 'Remove the last user/assistant exchange', surface: exec() },
   { name: '/usage', description: 'Show token usage for this session', surface: exec() },
-  { name: '/version', description: 'Show Moor Agent version', surface: exec() },
+  { name: '/version', description: 'Show Hermes Agent version', surface: exec() },
 
   // No desktop surface, but carry an alias (underscore spelling variants).
   { name: '/reload-mcp', aliases: ['/reload_mcp'], surface: unavailable('advanced') },
@@ -431,7 +425,7 @@ function isKnownHermesSlashCommand(command: string): boolean {
 
 /**
  * An "extension" command is anything the backend surfaces that is NOT one of
- * Moor' built-in slash commands — i.e. skill commands (`/gif-search`,
+ * Hermes' built-in slash commands — i.e. skill commands (`/gif-search`,
  * `/codex`, …) and user-defined quick commands. These are user-activated, so
  * they appear in the desktop slash palette and execute when typed.
  */
@@ -559,7 +553,7 @@ export function desktopSkinSlashCompletions(
  * skills someone reaches for daily under a hundred they have never opened.
  *
  * `pruneUnusedBuiltins` additionally drops bundled skills with no recorded
- * activity — the ones that ship with Moor and were never asked for. It is
+ * activity — the ones that ship with Hermes and were never asked for. It is
  * for BROWSING (a bare `/`) only: typing a query is a search, and a search
  * must never hide a match.
  *

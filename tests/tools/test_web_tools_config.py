@@ -73,95 +73,17 @@ class TestFirecrawlClientConfig:
 
     def test_tool_gateway_domain_builds_firecrawl_gateway_origin(self):
         """Shared gateway domain should derive the Firecrawl vendor hostname."""
-        with patch.dict(os.environ, {"TOOL_GATEWAY_DOMAIN": "Moor inc..com"}):
+        with patch.dict(os.environ, {"TOOL_GATEWAY_DOMAIN": "nousresearch.com"}):
             with patch("tools.web_tools._read_nous_access_token", return_value="nous-token"):
                 with patch("tools.web_tools.Firecrawl") as mock_fc:
                     from tools.web_tools import _get_firecrawl_client
                     result = _get_firecrawl_client()
                     mock_fc.assert_called_once_with(
                         api_key="nous-token",
-                        api_url="https://firecrawl-gateway.Moor inc..com",
+                        api_url="https://firecrawl-gateway.nousresearch.com",
                     )
                     assert result is mock_fc.return_value
 
-<<<<<<< HEAD
-    def test_tool_gateway_scheme_can_switch_derived_gateway_origin_to_http(self):
-        """Shared gateway scheme should allow local plain-http vendor hosts."""
-        with patch.dict(os.environ, {
-            "TOOL_GATEWAY_DOMAIN": "Moor inc..com",
-            "TOOL_GATEWAY_SCHEME": "http",
-        }):
-            with patch("tools.web_tools._read_nous_access_token", return_value="nous-token"):
-                with patch("tools.web_tools.Firecrawl") as mock_fc:
-                    from tools.web_tools import _get_firecrawl_client
-                    result = _get_firecrawl_client()
-                    mock_fc.assert_called_once_with(
-                        api_key="nous-token",
-                        api_url="http://firecrawl-gateway.Moor inc..com",
-                    )
-                    assert result is mock_fc.return_value
-
-    def test_invalid_tool_gateway_scheme_raises(self):
-        """Unexpected shared gateway schemes should fail fast."""
-        with patch.dict(os.environ, {
-            "TOOL_GATEWAY_DOMAIN": "Moor inc..com",
-            "TOOL_GATEWAY_SCHEME": "ftp",
-        }):
-            with patch("tools.web_tools._read_nous_access_token", return_value="nous-token"):
-                from tools.web_tools import _get_firecrawl_client
-                with pytest.raises(ValueError, match="TOOL_GATEWAY_SCHEME"):
-                    _get_firecrawl_client()
-
-    def test_explicit_firecrawl_gateway_url_takes_precedence(self):
-        """An explicit Firecrawl gateway origin should override the shared domain."""
-        with patch.dict(os.environ, {
-            "FIRECRAWL_GATEWAY_URL": "https://firecrawl-gateway.localhost:3009/",
-            "TOOL_GATEWAY_DOMAIN": "Moor inc..com",
-        }):
-            with patch("tools.web_tools._read_nous_access_token", return_value="nous-token"):
-                with patch("tools.web_tools.Firecrawl") as mock_fc:
-                    from tools.web_tools import _get_firecrawl_client
-                    _get_firecrawl_client()
-                    mock_fc.assert_called_once_with(
-                        api_key="nous-token",
-                        api_url="https://firecrawl-gateway.localhost:3009",
-                    )
-
-    def test_default_gateway_domain_targets_nous_production_origin(self):
-        """Default gateway origin should point at the Firecrawl vendor hostname."""
-        with patch("tools.web_tools._read_nous_access_token", return_value="nous-token"):
-            with patch("tools.web_tools.Firecrawl") as mock_fc:
-                from tools.web_tools import _get_firecrawl_client
-                _get_firecrawl_client()
-                mock_fc.assert_called_once_with(
-                    api_key="nous-token",
-                    api_url="https://firecrawl-gateway.Moor inc..com",
-                )
-
-    def test_nous_auth_token_respects_hermes_home_override(self, tmp_path):
-        """Auth lookup should read from HERMES_HOME/auth.json, not ~/.hermes/auth.json."""
-        real_home = tmp_path / "real-home"
-        (real_home / ".hermes").mkdir(parents=True)
-
-        hermes_home = tmp_path / "hermes-home"
-        hermes_home.mkdir()
-        (hermes_home / "auth.json").write_text(json.dumps({
-            "providers": {
-                "nous": {
-                    "access_token": "nous-token",
-                }
-            }
-        }))
-
-        with patch.dict(os.environ, {
-            "HOME": str(real_home),
-            "HERMES_HOME": str(hermes_home),
-        }, clear=False):
-            import tools.web_tools
-            importlib.reload(tools.web_tools)
-            assert tools.web_tools._read_nous_access_token() == "nous-token"
-=======
->>>>>>> upstream/main
 
     # ── Singleton caching ────────────────────────────────────────────
 

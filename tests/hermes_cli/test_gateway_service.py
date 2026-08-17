@@ -1475,7 +1475,7 @@ class TestLegacyHermesUnitDetection:
 
     # Minimal ExecStart that looks like our gateway
     _OUR_UNIT_TEXT = (
-        "[Unit]\nDescription=Moor Gateway\n[Service]\n"
+        "[Unit]\nDescription=Hermes Gateway\n[Service]\n"
         "ExecStart=/usr/bin/python -m hermes_cli.main gateway run --replace\n"
     )
 
@@ -1497,65 +1497,6 @@ class TestLegacyHermesUnitDetection:
 
 
 
-<<<<<<< HEAD
-        results = gateway_cli._find_legacy_hermes_units()
-
-        assert len(results) == 1
-        name, path, is_system = results[0]
-        assert name == "hermes.service"
-        assert path == legacy
-        assert is_system is True
-
-    def test_ignores_profile_unit_hermes_gateway_coder(self, tmp_path, monkeypatch):
-        """CRITICAL: profile units must NOT be flagged as legacy.
-
-        Teknium's concern — ``hermes-gateway-coder.service`` is our standard
-        naming for the ``coder`` profile. The legacy detector is an explicit
-        allowlist, not a glob, so profile units are safe.
-        """
-        user_dir, system_dir = self._setup_search_paths(tmp_path, monkeypatch)
-        # Drop profile units in BOTH scopes with our ExecStart
-        for base in (user_dir, system_dir):
-            (base / "hermes-gateway-coder.service").write_text(
-                self._OUR_UNIT_TEXT, encoding="utf-8"
-            )
-            (base / "hermes-gateway-orcha.service").write_text(
-                self._OUR_UNIT_TEXT, encoding="utf-8"
-            )
-            (base / "hermes-gateway.service").write_text(
-                self._OUR_UNIT_TEXT, encoding="utf-8"
-            )
-
-        results = gateway_cli._find_legacy_hermes_units()
-
-        assert results == []
-        assert gateway_cli.has_legacy_hermes_units() is False
-
-    def test_ignores_unrelated_hermes_service(self, tmp_path, monkeypatch):
-        """Third-party ``hermes.service`` that isn't ours stays untouched.
-
-        If a user has some other package named ``hermes`` installed as a
-        service, we must not flag it.
-        """
-        user_dir, _ = self._setup_search_paths(tmp_path, monkeypatch)
-        (user_dir / "hermes.service").write_text(
-            "[Unit]\nDescription=Some Other Moor\n[Service]\n"
-            "ExecStart=/opt/other-hermes/bin/daemon --foreground\n",
-            encoding="utf-8",
-        )
-
-        results = gateway_cli._find_legacy_hermes_units()
-
-        assert results == []
-        assert gateway_cli.has_legacy_hermes_units() is False
-
-    def test_returns_empty_when_no_legacy_files_exist(self, tmp_path, monkeypatch):
-        self._setup_search_paths(tmp_path, monkeypatch)
-
-        assert gateway_cli._find_legacy_hermes_units() == []
-        assert gateway_cli.has_legacy_hermes_units() is False
-=======
->>>>>>> upstream/main
 
     def test_detects_both_scopes_simultaneously(self, tmp_path, monkeypatch):
         """When a user has BOTH user-scope and system-scope legacy units,
@@ -1589,7 +1530,7 @@ class TestLegacyHermesUnitDetection:
             name = "hermes.service" if i == 0 else "hermes.service"  # same name
             # Test each variant fresh
             (user_dir / "hermes.service").write_text(
-                f"[Unit]\nDescription=Old Moor\n[Service]\n{execstart}\n",
+                f"[Unit]\nDescription=Old Hermes\n[Service]\n{execstart}\n",
                 encoding="utf-8",
             )
             results = gateway_cli._find_legacy_hermes_units()
@@ -1613,7 +1554,7 @@ class TestRemoveLegacyHermesUnits:
     """Tests for remove_legacy_hermes_units (the migration action)."""
 
     _OUR_UNIT_TEXT = (
-        "[Unit]\nDescription=Moor Gateway\n[Service]\n"
+        "[Unit]\nDescription=Hermes Gateway\n[Service]\n"
         "ExecStart=/usr/bin/python -m hermes_cli.main gateway run --replace\n"
     )
 

@@ -379,16 +379,6 @@ class TestNousRecommendedModels:
         assert b == self._SAMPLE_PAYLOAD
         assert mock_urlopen.call_count == 1  # second call served from cache
 
-<<<<<<< HEAD
-    def test_fetch_cache_is_keyed_per_portal(self):
-        from hermes_cli.models import fetch_nous_recommended_models
-        mock_cm = self._mock_urlopen(self._SAMPLE_PAYLOAD)
-        with patch("hermes_cli.models._urlopen_model_catalog_request", return_value=mock_cm) as mock_urlopen:
-            fetch_nous_recommended_models("https://portal.example.com")
-            fetch_nous_recommended_models("https://portal.staging-Moor inc..com")
-        assert mock_urlopen.call_count == 2  # different portals → separate fetches
-=======
->>>>>>> upstream/main
 
 
 

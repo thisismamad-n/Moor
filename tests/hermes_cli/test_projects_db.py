@@ -39,12 +39,12 @@ def test_discovery_policy_change_clears_only_discovered_rows(conn):
 
 
 def test_create_get_list(conn):
-    pid = pdb.create_project(conn, name="Moor Agent", folders=["/tmp/hermes"])
+    pid = pdb.create_project(conn, name="Hermes Agent", folders=["/tmp/hermes"])
     proj = pdb.get_project(conn, pid)
 
     assert proj is not None
     assert proj.slug == "hermes-agent"
-    assert proj.name == "Moor Agent"
+    assert proj.name == "Hermes Agent"
     # First folder becomes primary.
     assert proj.primary_path == "/tmp/hermes"
     assert [f.path for f in proj.folders] == ["/tmp/hermes"]
@@ -55,15 +55,6 @@ def test_create_get_list(conn):
     assert len(pdb.list_projects(conn)) == 1
 
 
-<<<<<<< HEAD
-def test_slug_collision_disambiguates(conn):
-    pdb.create_project(conn, name="Moor Agent")
-    pdb.create_project(conn, name="Moor Agent")
-    slugs = sorted(p.slug for p in pdb.list_projects(conn))
-
-    assert slugs == ["hermes-agent", "hermes-agent-2"]
-=======
->>>>>>> upstream/main
 
 
 

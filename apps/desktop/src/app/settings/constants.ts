@@ -46,8 +46,8 @@ export const PROVIDER_GROUPS: ProviderPrefix[] = [
   {
     prefix: 'NOUS_',
     name: 'Nous Portal',
-    description: 'Hosted Moor & Nous-trained models',
-    docsUrl: 'https://portal.Moor inc..com',
+    description: 'Hosted Hermes & Nous-trained models',
+    docsUrl: 'https://portal.nousresearch.com',
     priority: 0
   },
   {
@@ -548,19 +548,15 @@ export const FIELD_DESCRIPTIONS: Record<string, string> = defineFieldCopy({
     personality: 'Default assistant style for new sessions.',
     showReasoning: 'Show reasoning sections when the backend provides them.'
   },
-<<<<<<< HEAD
-  timezone: 'Used when Moor needs local time context. Blank uses the system timezone.',
-=======
   desktop: {
     repoScanEnabled: 'Scan local folders for Git repositories to show in Projects.',
     repoScanRoots: 'Folders to scan. Leave empty to scan your home directory.',
     repoScanExcludePaths: 'Folders and their descendants to skip during repository discovery.'
   },
   timezone: 'IANA timezone identifier. Blank uses the system timezone.',
->>>>>>> upstream/main
   agent: {
     imageInputMode: 'Controls how image attachments are sent to the model.',
-    maxTurns: 'Upper bound for tool-calling turns before Moor stops a run.'
+    maxTurns: 'Upper bound for tool-calling turns before Hermes stops a run.'
   },
   terminal: {
     cwd: 'Default project folder for tool and terminal work.',
@@ -574,9 +570,9 @@ export const FIELD_DESCRIPTIONS: Record<string, string> = defineFieldCopy({
   codeExecution: {
     mode: 'How strictly code execution is scoped to the current project.'
   },
-  fileReadMaxChars: 'Maximum characters Moor can read from one file request.',
+  fileReadMaxChars: 'Maximum characters Hermes can read from one file request.',
   approvals: {
-    mode: 'How Moor handles commands that need explicit approval.',
+    mode: 'How Hermes handles commands that need explicit approval.',
     timeout: 'How long approval prompts wait before timing out.'
   },
   security: {
@@ -621,7 +617,7 @@ export const FIELD_DESCRIPTIONS: Record<string, string> = defineFieldCopy({
   },
   updates: {
     nonInteractiveLocalChanges:
-      'When Moor updates itself from the app (no terminal prompt), keep local source edits (stash) or throw them away (discard). Terminal updates always ask.'
+      'When Hermes updates itself from the app (no terminal prompt), keep local source edits (stash) or throw them away (discard). Terminal updates always ask.'
   }
 })
 
