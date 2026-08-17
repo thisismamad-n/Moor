@@ -142,7 +142,7 @@ OpenAI Responses API format. Supports server-side conversation state via `previo
 }
 ```
 
-Tool calls in the `output` array were already executed server-side by the Hermes agent — they are replayed with `"status": "completed"` for structured tool UI, never as pending calls for the client to execute.
+Tool calls in the `output` array were already executed server-side by the Moor agent — they are replayed with `"status": "completed"` for structured tool UI, never as pending calls for the client to execute.
 
 **Inline image input:** `input[].content` can contain `input_text` and `input_image` parts. Both remote URLs and `data:image/...` URLs are supported:
 
@@ -201,12 +201,12 @@ Delete a stored response.
 Lists the agent as an available model. The advertised model name defaults to the [profile](/user-guide/profiles) name (or `hermes-agent` for the default profile). Required by most frontends for model discovery.
 
 `/v1/models` is intentionally the cheap OpenAI-compat surface. It does **not**
-enumerate every authenticated provider/model combination Hermes can route to,
+enumerate every authenticated provider/model combination Moor can route to,
 and it does not do pricing or capability enrichment.
 
 ### GET /api/model/options
 
-Hermes-aware clients can request the same curated provider/model inventory used
+Moor-aware clients can request the same curated provider/model inventory used
 by the dashboard and TUI. This route uses the API server's normal bearer
 authentication and returns provider rows, model capability hints, and pricing
 metadata that do not belong in the OpenAI-compatible `/v1/models` response:
@@ -221,7 +221,7 @@ That payload is the same substrate the dashboard Models page and the TUI
 `model.options` RPC use. It returns authenticated providers, curated model
 lists, per-model pricing, and model capability hints.
 
-Normal opens are intentionally conservative for custom providers: Hermes probes
+Normal opens are intentionally conservative for custom providers: Moor probes
 only the **currently selected** custom endpoint so a stale or offline saved
 endpoint does not block the picker. An explicit refresh flips to full probing
 and busts the provider model cache:
@@ -234,7 +234,7 @@ curl \
 
 Use `/v1/models` when an OpenAI-compatible client only needs a model name to
 send back in chat/responses requests. Use `/api/model/options` when an
-authenticated UI needs the richer Hermes-specific picker metadata.
+authenticated UI needs the richer Moor-specific picker metadata.
 
 ### GET /v1/capabilities
 
@@ -261,11 +261,11 @@ Use this endpoint when integrating dashboards, browser UIs, or control planes so
 
 ## Per-request model selection
 
-Authenticated clients can override Hermes' default model selection per request
+Authenticated clients can override Moor' default model selection per request
 by sending:
 
 - `model` — the target model id for this turn
-- `provider` — the Hermes provider slug to resolve credentials/runtime for this turn
+- `provider` — the Moor provider slug to resolve credentials/runtime for this turn
 - `model_options` — request-scoped reasoning / service-tier controls
 
 The same request fields are accepted on:
@@ -286,7 +286,7 @@ Precedence is deterministic:
 
 `model_options` stays request-scoped regardless of which model/provider wins.
 If a request sends a `provider` that conflicts with a configured `model_routes`
-alias, Hermes rejects the request with `400` instead of silently remixing route
+alias, Moor rejects the request with `400` instead of silently remixing route
 credentials with another provider.
 
 **Bare `model` values on the OpenAI-compatible endpoints are opt-in.** Generic
@@ -302,7 +302,7 @@ gateway:
       direct_model_requests: true
 ```
 
-Requests that include an explicit `provider` — and the Hermes-native
+Requests that include an explicit `provider` — and the Moor-native
 `/v1/runs` and session-chat endpoints — always honor the requested model
 regardless of this flag.
 
@@ -660,7 +660,7 @@ In Open WebUI, add each as a separate connection. The model dropdown shows `alic
 - **Response storage** — stored responses (for `previous_response_id`) are persisted in SQLite and survive gateway restarts. Max 100 stored responses (LRU eviction).
 - **No file upload** — inline images are supported on both `/v1/chat/completions` and `/v1/responses`, but uploaded files (`file`, `input_file`, `file_id`) and non-image document inputs are not supported through the API.
 - **Simple OpenAI clients still see an alias** — `/v1/models` advertises the
-  stable Hermes alias (`hermes-agent` or the active profile name). Richer
+  stable Moor alias (`hermes-agent` or the active profile name). Richer
   clients can send explicit `provider` / `model_options` overrides on requests.
 
 ## Proxy Mode

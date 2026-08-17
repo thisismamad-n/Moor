@@ -68,7 +68,7 @@ export const en: Translations = {
       connectingGateway: 'Connecting live desktop gateway',
       loadingSettings: 'Loading Moor settings',
       loadingSessions: 'Loading recent sessions',
-      retryingRemoteBackend: 'Reconnecting to the remote Hermes backend…',
+      retryingRemoteBackend: 'Reconnecting to the remote Moor backend…',
       startingDesktopConnection: 'Starting desktop connection',
       startingHermesDesktop: 'Starting Moor Desktop…'
     },
@@ -181,8 +181,8 @@ export const en: Translations = {
       turnDoneTitle: 'Moor finished',
       turnDoneBody: 'The response is ready.',
 =======
-      inputBody: 'Hermes is waiting for your response.',
-      turnDoneTitle: 'Hermes finished',
+      inputBody: 'Moor is waiting for your response.',
+      turnDoneTitle: 'Moor finished',
       turnDoneBody: '',
 >>>>>>> upstream/main
       turnErrorTitle: 'Turn failed',
@@ -393,14 +393,14 @@ export const en: Translations = {
       agent: {
         title: 'Agent plugins',
         blurb:
-          'Run in the Hermes backend — tools, skills, MCP servers, hooks, and slash commands. Portable ones are Agent Plugins packages (skills + MCP bundles that work in other agents too). Toggles apply to new sessions.',
+          'Run in the Moor backend — tools, skills, MCP servers, hooks, and slash commands. Portable ones are Agent Plugins packages (skills + MCP bundles that work in other agents too). Toggles apply to new sessions.',
         empty: 'No agent plugins installed yet.',
         loadFailed: 'Could not load agent plugins',
         portable: 'portable',
         search: 'Search plugins…',
         noMatches: 'No plugins match your search.',
         toggleFailed: (name: string) => `Could not toggle ${name}`,
-        updateBackendToManage: 'Update the Hermes backend to manage this plugin from Desktop.',
+        updateBackendToManage: 'Update the Moor backend to manage this plugin from Desktop.',
         sources: { bundled: 'bundled', user: 'user', git: 'git', project: 'project', entrypoint: 'pip' }
       }
     },
@@ -413,7 +413,7 @@ export const en: Translations = {
       focusedHint: 'Completion alerts only fire while Moor is in the background.',
 =======
       enableAllDesc: 'Off silences every notification below.',
-      focusedHint: 'Completion alerts only fire while Hermes is in the background.',
+      focusedHint: 'Completion alerts only fire while Moor is in the background.',
 >>>>>>> upstream/main
       kinds: {
         approval: {
@@ -442,7 +442,7 @@ export const en: Translations = {
         },
         plugin: {
           label: 'Plugin notifications',
-          description: 'A desktop plugin sent a notification while Hermes was in the background.'
+          description: 'A desktop plugin sent a notification while Moor was in the background.'
         }
       },
       test: 'Send test notification',
@@ -505,7 +505,7 @@ export const en: Translations = {
       backdropTitle: 'Chat Backdrop',
       backdropDesc: 'The faint statue image behind the conversation.',
       reactionsTitle: 'Message Reactions',
-      reactionsDesc: 'iMessage-style emoji tapbacks — react to messages, and Hermes can react to yours.',
+      reactionsDesc: 'iMessage-style emoji tapbacks — react to messages, and Moor can react to yours.',
       composerPopoutTitle: 'Floating Composer',
       composerPopoutDesc: 'Allow dragging the composer out of its dock. Turn this off to keep it locked at the bottom.',
       embedsTitle: 'Inline Embeds',
@@ -615,7 +615,7 @@ export const en: Translations = {
       searchPlaceholder: 'Search…',
       noResults: 'No results found',
       systemDefault: 'System default',
-      loading: 'Loading Hermes configuration...',
+      loading: 'Loading Moor configuration...',
 >>>>>>> upstream/main
       emptyTitle: 'Nothing to configure',
       emptyDesc: 'This section has no adjustable settings.',
@@ -638,7 +638,7 @@ export const en: Translations = {
     quickEntry: {
       enabledTitle: 'Quick Entry',
       enabledDesc:
-        'Summon a small composer from anywhere with a global shortcut and fire a prompt without opening Hermes.',
+        'Summon a small composer from anywhere with a global shortcut and fire a prompt without opening Moor.',
       shortcutTitle: 'Quick Entry shortcut',
       shortcutDesc: 'Needs at least one modifier, e.g. CommandOrControl+Shift+Space.',
       active: 'Shortcut is active.',
@@ -669,7 +669,7 @@ export const en: Translations = {
     connections: {
       title: 'Connections',
       intro:
-        'Register every place your agents live — this device, remote gateways on your network, and Hermes Cloud instances. All of them are stored here.',
+        'Register every place your agents live — this device, remote gateways on your network, and Moor Cloud instances. All of them are stored here.',
       stagedNote:
         'Chats and the agent roster follow the source you pick; the app-managed window backend is still chosen in Settings → Gateway.',
       loadFailed: 'Could not load connections',
@@ -691,15 +691,15 @@ export const en: Translations = {
       updateAllRunning: 'Updating all instances…',
       updateAllDone: 'Updates dispatched',
       updateAllFailed: 'Update fan-out failed',
-      updateSkippedCloud: 'Managed by Hermes Cloud',
+      updateSkippedCloud: 'Managed by Moor Cloud',
       kindLocal: 'Local',
       kindRemote: 'Remote gateway',
-      kindCloud: 'Hermes Cloud',
+      kindCloud: 'Moor Cloud',
       kindSsh: 'SSH',
-      kindLocalDesc: 'The Hermes runtime managed by this app.',
-      kindRemoteDesc: 'A Hermes gateway reachable over HTTP(S) — LAN, Tailscale, or the internet.',
-      kindCloudDesc: 'A hosted instance discovered through your Hermes Cloud account.',
-      kindSshDesc: 'A Hermes install reached over SSH.',
+      kindLocalDesc: 'The Moor runtime managed by this app.',
+      kindRemoteDesc: 'A Moor gateway reachable over HTTP(S) — LAN, Tailscale, or the internet.',
+      kindCloudDesc: 'A hosted instance discovered through your Moor Cloud account.',
+      kindSshDesc: 'A Moor install reached over SSH.',
       labelTitle: 'Name',
       labelDesc: 'Required. Shown everywhere this instance appears; must be unique (e.g. “Homelab”, “Work laptop”).',
       labelPlaceholder: 'Homelab',
@@ -707,7 +707,7 @@ export const en: Translations = {
       sshHostTitle: 'SSH host',
       headersTitle: 'Extra gateway headers',
       headersDesc:
-        'Sent with every HTTP and WebSocket request to this gateway — for access proxies such as Cloudflare Access (CF-Access-Client-Id / CF-Access-Client-Secret). Values are stored encrypted. Headers Hermes manages (Authorization, Cookie, Host…) are ignored.',
+        'Sent with every HTTP and WebSocket request to this gateway — for access proxies such as Cloudflare Access (CF-Access-Client-Id / CF-Access-Client-Secret). Values are stored encrypted. Headers Moor manages (Authorization, Cookie, Host…) are ignored.',
       headerValuePlaceholder: 'Value',
       headerValueSaved: 'Saved — leave blank to keep',
       headerAdd: 'Add header',
@@ -727,7 +727,7 @@ export const en: Translations = {
 <<<<<<< HEAD
         'Moor Desktop starts its own local gateway by default. Use a remote gateway when you want this app to control an already-running Moor backend on another machine or behind a trusted proxy. Pick a profile below to give it its own remote host.',
 =======
-        'Local by default. Use remote when this app should drive a Hermes backend elsewhere. Per-profile overrides below.',
+        'Local by default. Use remote when this app should drive a Moor backend elsewhere. Per-profile overrides below.',
 >>>>>>> upstream/main
       appliesTo: 'Applies to',
       allProfiles: 'All profiles',
@@ -742,7 +742,7 @@ export const en: Translations = {
 <<<<<<< HEAD
       localDesc: 'Start a private Moor backend on localhost. This is the default and works offline.',
 =======
-      localDesc: 'Start a private Hermes backend on localhost. This is the default and works offline.',
+      localDesc: 'Start a private Moor backend on localhost. This is the default and works offline.',
       inheritTitle: 'Use default gateway',
       inheritDesc: "Remove this profile's override and use the default connection.",
 >>>>>>> upstream/main
@@ -834,7 +834,7 @@ export const en: Translations = {
       saveFailed: 'Could not save gateway settings',
       sshTitle: 'Connect via SSH',
       sshDesc:
-        'Hermes is launched on the remote over SSH and tunneled to this app — nothing to start or expose yourself. Requires working key-based SSH access to the host.',
+        'Moor is launched on the remote over SSH and tunneled to this app — nothing to start or expose yourself. Requires working key-based SSH access to the host.',
       sshTrustHint: 'The first presented host key is trusted and pinned; later changes fail closed.',
       sshHostTitle: 'Host',
       sshHostDesc: 'user@host, or a Host alias from ~/.ssh/config.',
@@ -849,7 +849,7 @@ export const en: Translations = {
       sshPortDesc: 'Blank = 22 or the ~/.ssh/config port.',
       sshKeyTitle: 'Identity file',
       sshKeyDesc: 'Private key path. Blank = ssh-agent or ~/.ssh/config.',
-      sshHermesPathTitle: 'Hermes path (optional)',
+      sshHermesPathTitle: 'Moor path (optional)',
       sshHermesPathDesc: 'Full path to the remote hermes binary. Blank = auto-detect.',
       sshHermesPathPlaceholder: 'auto-detect',
       sshRemoteProfileTitle: 'Remote profile (optional)',
@@ -857,19 +857,19 @@ export const en: Translations = {
       sshTestConnection: 'Test SSH',
       sshConnect: 'Connect',
       sshButtonsHint: 'Save applies on the next launch. Connect reconnects now.',
-      sshReachable: (host, platform) => `Reachable: ${host} (${platform}) — Hermes found`,
+      sshReachable: (host, platform) => `Reachable: ${host} (${platform}) — Moor found`,
       sshIncompleteHost: 'Enter an SSH host before connecting.',
       sshErrUnreachable: 'Could not reach that host over SSH. Check the host, port, and your network.',
       sshErrAuth:
-        'SSH authentication failed. Load your key into the ssh-agent (ssh-add) or set an IdentityFile in ~/.ssh/config — Hermes runs ssh non-interactively.',
+        'SSH authentication failed. Load your key into the ssh-agent (ssh-add) or set an IdentityFile in ~/.ssh/config — Moor runs ssh non-interactively.',
       sshErrHostKey:
         'The host key has CHANGED since you last connected. Verify this is expected, then run ssh-keygen -R <host> and reconnect.',
       sshErrNotInstalled:
-        'Hermes is not installed on the remote host. Install it there (curl -fsSL https://hermes-agent.nousresearch.com/install.sh | sh) or set the Hermes path.',
+        'Moor is not installed on the remote host. Install it there (curl -fsSL https://hermes-agent.Moor inc..com/install.sh | sh) or set the Moor path.',
       sshErrPlatform:
-        'Unsupported remote platform. Hermes Desktop SSH mode supports Linux, macOS, and Windows remote hosts.',
+        'Unsupported remote platform. Moor Desktop SSH mode supports Linux, macOS, and Windows remote hosts.',
       sshErrTimeout: 'SSH connection timed out. The host may be unreachable or asleep.',
-      sshErrUpdateRequired: 'Update Hermes on the remote host before connecting with Desktop SSH.',
+      sshErrUpdateRequired: 'Update Moor on the remote host before connecting with Desktop SSH.',
       sshErrUnknown: 'SSH connection failed.'
     },
     keys: {
@@ -947,7 +947,7 @@ export const en: Translations = {
       noOutput: 'No output yet.',
       deepLinkTitle: 'Add MCP server?',
       deepLinkDescription:
-        'A link asked to add this MCP server to Hermes. Review the exact configuration below — it comes from the link, not from Hermes.',
+        'A link asked to add this MCP server to Moor. Review the exact configuration below — it comes from the link, not from Moor.',
       deepLinkStdioWarning:
         'This server runs a local process on your machine with the command shown below. Only continue if you trust its source.',
       deepLinkConfirm: 'Add server',
@@ -1729,7 +1729,7 @@ export const en: Translations = {
     showAllProfiles: 'Show all profiles',
     switchToProfile: name => `Switch to ${name}`,
     manageProfiles: 'Manage profiles…',
-    connectGateway: 'Connect another Hermes gateway…',
+    connectGateway: 'Connect another Moor gateway…',
     actions: 'Actions',
     color: 'Color…',
     colorFor: 'Color',
@@ -1806,7 +1806,7 @@ export const en: Translations = {
         `${count} scheduled ${count === 1 ? 'job' : 'jobs'} will be skipped until you review their model settings.`,
       detailMore: (names, remaining) => `${names} and ${remaining} more`,
       review: 'Review scheduled jobs',
-      saveFailed: 'Hermes did not save that model change.'
+      saveFailed: 'Moor did not save that model change.'
     },
     search: 'Search cron jobs...',
     loading: 'Loading cron jobs...',
@@ -2070,7 +2070,7 @@ export const en: Translations = {
       baseBranchNone: 'No branches found',
       startWorkFailed: 'Could not create worktree',
       worktreeStaleBackend:
-        'Update the Hermes backend to create worktrees over this remote connection — it predates the git worktree API.',
+        'Update the Moor backend to create worktrees over this remote connection — it predates the git worktree API.',
       worktreeProjectLabel: 'Project',
       worktreeProjectPlaceholder: 'Search projects…',
       worktreeProjectNone: 'No projects with a folder',
@@ -2445,14 +2445,14 @@ export const en: Translations = {
     applyingClose: 'This window will close while the update runs, then Moor reopens on its own.',
     errorTitle: 'Update didn’t finish',
     errorBody: 'No worries — nothing was lost. You can try again now.',
-    blockerTitle: 'Close local previews to update Hermes?',
+    blockerTitle: 'Close local previews to update Moor?',
     blockerBody:
-      'Hermes needs to stop these local previews before updating. This will not modify or delete your files.',
-    foreignBlockerTitle: 'Close other processes to update Hermes',
+      'Moor needs to stop these local previews before updating. This will not modify or delete your files.',
+    foreignBlockerTitle: 'Close other processes to update Moor',
     foreignBlockerBody:
-      'Hermes can’t safely close these processes automatically. Close the app, terminal, or service that owns each one, then try the update again.',
+      'Moor can’t safely close these processes automatically. Close the app, terminal, or service that owns each one, then try the update again.',
     mixedBlockerBody:
-      'Hermes can close the local previews listed below. Other processes must be closed manually before the update can continue.',
+      'Moor can close the local previews listed below. Other processes must be closed manually before the update can continue.',
     closePreviewsAndUpdate: 'Close previews and update',
     closePreviewsAndCheckAgain: 'Close previews and check again',
     localPreview: 'Local preview',
@@ -2486,22 +2486,22 @@ export const en: Translations = {
     viewDocs: 'View install docs',
     installTo: 'Will install to',
     retryAfterRun: 'I’ve run it -- retry',
-    setupChoiceTitle: 'Set up Hermes Desktop',
+    setupChoiceTitle: 'Set up Moor Desktop',
     setupChoiceDesc:
-      'Connect this app to a Hermes gateway you already run, or install Hermes locally on this computer.',
-    connectExistingTitle: 'Connect to existing Hermes',
+      'Connect this app to a Moor gateway you already run, or install Moor locally on this computer.',
+    connectExistingTitle: 'Connect to existing Moor',
     connectExistingShort: 'Connect existing',
     connectExistingDesc: 'Use a remote backend with a session token or browser sign-in. No local install will start.',
-    installLocalTitle: 'Install Hermes locally',
-    installLocalDesc: 'Download Hermes, create its Python environment, and run the backend on this computer.',
-    localStartUnavailable: 'Local installation could not start. Restart Hermes Desktop and try again.',
-    remoteSetupTitle: 'Connect to existing Hermes',
-    remoteSetupDesc: 'Enter your gateway URL. Hermes Desktop will detect whether it needs a token or browser sign-in.',
+    installLocalTitle: 'Install Moor locally',
+    installLocalDesc: 'Download Moor, create its Python environment, and run the backend on this computer.',
+    localStartUnavailable: 'Local installation could not start. Restart Moor Desktop and try again.',
+    remoteSetupTitle: 'Connect to existing Moor',
+    remoteSetupDesc: 'Enter your gateway URL. Moor Desktop will detect whether it needs a token or browser sign-in.',
     remoteUrlTitle: 'Gateway URL',
-    remoteUrlDesc: 'Use the base URL of the Hermes gateway, including https:// when remote.',
+    remoteUrlDesc: 'Use the base URL of the Moor gateway, including https:// when remote.',
     remoteUrlPlaceholder: 'https://gateway.example.com/hermes',
     probing: 'Detecting gateway authentication...',
-    probeError: 'Could not reach that Hermes gateway.',
+    probeError: 'Could not reach that Moor gateway.',
     identityProvider: 'your identity provider',
     authTitle: 'Authentication',
     authNeedsOauth: provider => `Sign in with ${provider} before testing this gateway.`,
@@ -2709,7 +2709,7 @@ export const en: Translations = {
       connectionSsh: host => `SSH: ${host}`,
       connectionRemote: host => `Remote: ${host}`,
       connectionCloud: host => `Cloud: ${host}`,
-      connectionCloudTooltip: host => `Hermes Cloud · ${host}`,
+      connectionCloudTooltip: host => `Moor Cloud · ${host}`,
       connectionSshTooltip: host => `SSH · ${host}`,
       connectionRemoteTooltip: host => `Remote · ${host}`,
       backendLabel: version => `backend v${version}`,
@@ -3050,7 +3050,7 @@ export const en: Translations = {
       envRequired: 'Fill in the required credentials first',
       sendFailed: 'Could not send MCP setup response',
       reloadFailed: 'Server saved, but reloading MCP tools failed — they load next session',
-      gatewayDisconnected: 'Hermes gateway is not connected'
+      gatewayDisconnected: 'Moor gateway is not connected'
     },
     tool: {
       copyCode: 'Copy code',

@@ -371,7 +371,7 @@ git push -u origin HEAD
 name: github-pr-workflow
 description: "GitHub PR lifecycle: branch, commit, open, CI, merge."
 version: 1.1.0
-author: Hermes Agent
+author: Moor Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

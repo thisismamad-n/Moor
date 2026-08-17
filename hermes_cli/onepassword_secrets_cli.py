@@ -351,7 +351,7 @@ def cmd_token(args: argparse.Namespace) -> int:
     op_src.clear_caches()
     console.print(
         f"[green]✓[/green] stored in {get_env_path()} as {token_env}.  "
-        "Takes effect on the next Hermes invocation."
+        "Takes effect on the next Moor invocation."
     )
     if not op_cfg.get("enabled"):
         console.print(

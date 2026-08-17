@@ -410,7 +410,7 @@ def _warn_context_length_fallback(model: str, base_url: str) -> None:
         model, base_url or "default", f"{DEFAULT_FALLBACK_CONTEXT:,}",
     )
 
-# Minimum context length required to run Hermes Agent.  Models with fewer
+# Minimum context length required to run Moor Agent.  Models with fewer
 >>>>>>> upstream/main
 # tokens cannot maintain enough working memory for tool-calling workflows.
 # Sessions, model switches, and cron jobs should reject models below this.

@@ -73,7 +73,7 @@ class ActionResult:
 
     Beyond the transport-level ``ok`` flag, this carries cua-driver's
     structured action verdict so the model can follow the documented
-    verify → escalate ladder (NousResearch/hermes-agent#67052). ``ok`` stays
+    verify → escalate ladder (Moor inc./hermes-agent#67052). ``ok`` stays
     tool/transport success only — it is NOT the semantic verdict. Read
     ``effect`` / ``escalation`` to decide the next rung. All structured
     fields are optional and additive: an older driver that omits

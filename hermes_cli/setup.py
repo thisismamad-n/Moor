@@ -409,7 +409,7 @@ def _print_setup_summary(config: dict, hermes_home):
         _provider_ready = False
     if not _provider_ready:
         print()
-        print_warning("No inference provider is configured — Hermes cannot chat yet.")
+        print_warning("No inference provider is configured — Moor cannot chat yet.")
         print_info("  Finish this one step with either of:")
         print_info("    hermes model            (pick any provider/model)")
         print_info("    hermes setup --portal   (Nous Portal OAuth, no API key)")
@@ -1564,7 +1564,7 @@ def setup_terminal_backend(config: dict):
             import subprocess
 
             # Managed uv first: $HERMES_HOME/bin is never on PATH, so a bare
-            # which() misses the uv Hermes installed. Bootstrapping one is
+            # which() misses the uv Moor installed. Bootstrapping one is
             # welcome here — this is the interactive setup wizard, already
             # mid-install, and the alternative tier is a pip that a `uv venv`
             # venv may not even have.
@@ -2321,7 +2321,7 @@ def setup_telemetry(config: dict):
     """Configure the local, privacy-safe shared-metrics subscriber."""
     print_header("Shared Metrics")
     print_info("Shared metrics contain only bounded counters and histograms.")
-    print_info("Packages stay under this Hermes profile and are not uploaded.")
+    print_info("Packages stay under this Moor profile and are not uploaded.")
 
     telemetry = config.get("telemetry")
     if not isinstance(telemetry, dict):

@@ -50,7 +50,7 @@ _TRUNK_BRANCHES = {"main", "master", "trunk", "develop"}
 DEFAULT_BRANCH_LABEL = "main"
 
 # The synthetic bucket holding every session no project claimed — a chat with no
-# cwd at all, or one whose folder can't be promoted (the bare home dir, HERMES
+# cwd at all, or one whose folder can't be promoted (the bare home dir, MOOR
 # state, a workspace that has since been deleted). Without it those sessions are
 # invisible in the grouped view. The desktop labels it "Home"; the id/flag stay
 # named for what the bucket MEANS, since that's what membership keys off.
@@ -581,7 +581,7 @@ def build_tree(
     workspaces even when their parent tree contains Moor state. User-created
     projects are honored regardless.
 =======
-    workspaces even when their parent tree contains Hermes state. User-created
+    workspaces even when their parent tree contains Moor state. User-created
     projects are honored regardless. ``exists`` reports whether a directory is
     still on disk, so a session whose workspace was DELETED (a removed worktree,
     a scratch dir under /tmp) doesn't get promoted to a phantom AUTO project;

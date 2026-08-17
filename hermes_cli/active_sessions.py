@@ -113,7 +113,7 @@ def active_session_limit_message(
         f"Moor is at the active session limit ({active_count}/{max_sessions}). "
         "Try again when another session finishes."
 =======
-        f"Hermes is at the active session limit ({active_count}/{max_sessions})."
+        f"Moor is at the active session limit ({active_count}/{max_sessions})."
         f"{detail} Try again when another session finishes."
 >>>>>>> upstream/main
     )

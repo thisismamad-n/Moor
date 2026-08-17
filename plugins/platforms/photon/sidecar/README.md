@@ -54,17 +54,17 @@ outbound code path is already isolated behind a single helper
 =======
 # Photon sidecar
 
-Small Node helper that bridges Hermes Agent to Photon's Spectrum SDK
-(`spectrum-ts`).  Hermes is Python; Photon has no public HTTP
+Small Node helper that bridges Moor Agent to Photon's Spectrum SDK
+(`spectrum-ts`).  Moor is Python; Photon has no public HTTP
 send-message endpoint today; replies therefore go through this sidecar.
 
 The sidecar:
 
 - runs `Spectrum({ projectId, projectSecret, providers: [imessage.config()] })`
 - exposes a loopback-only HTTP control channel for the Python adapter
-  to push send/typing requests (auth via `X-Hermes-Sidecar-Token`)
+  to push send/typing requests (auth via `X-Moor-Sidecar-Token`)
 - drains the inbound message stream so `spectrum-ts` keeps its
-  reconnect/heartbeat machinery alive and Hermes can receive inbound messages
+  reconnect/heartbeat machinery alive and Moor can receive inbound messages
   over the adapter's loopback `GET /inbound` stream
 
 ## Install
@@ -74,7 +74,7 @@ cd plugins/platforms/photon/sidecar
 npm install
 ```
 
-The Hermes plugin's `hermes photon setup` command runs `npm install`
+The Moor plugin's `hermes photon setup` command runs `npm install`
 here automatically.
 
 ## Run standalone
@@ -94,7 +94,7 @@ it by hand.
 ## Why a sidecar at all?
 
 Photon's Spectrum send path is exposed through the TypeScript SDK's
-`Space.send(...)` API. Hermes is Python, so replies go through this sidecar
+`Space.send(...)` API. Moor is Python, so replies go through this sidecar
 until Photon ships a public HTTP send endpoint.
 
 When Photon ships an HTTP send endpoint, the plan is to retire this

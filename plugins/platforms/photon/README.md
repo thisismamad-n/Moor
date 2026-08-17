@@ -43,7 +43,7 @@ talks to it over loopback.
 =======
   to the sidecar (`/send`, `/send-richlink`, `/send-attachment`, `/typing`,
   `/react`, `/unreact`), authenticated with a shared
-  `X-Hermes-Sidecar-Token`.
+  `X-Moor-Sidecar-Token`.
 >>>>>>> upstream/main
 
 ## First-time setup
@@ -144,11 +144,11 @@ All env vars are documented in `plugin.yaml`. The most important:
   Media larger than `PHOTON_MAX_INLINE_ATTACHMENT_BYTES` (default 20 MB), or
   any byte read that fails, falls back to a text marker (`[Photon attachment
   received: …]` or `[Photon voice received: …]`) so the agent still knows
-  something arrived. If Spectrum emits a `richlink` content object, Hermes
+  something arrived. If Spectrum emits a `richlink` content object, Moor
   preserves its URL plus any title/summary metadata Spectrum already exposed;
   current Spectrum versions may still deliver ordinary inbound links as plain
   `text`. iMessage may also emit rich-link preview artwork as
-  `.pluginPayloadAttachment` images immediately after the URL; Hermes coalesces
+  `.pluginPayloadAttachment` images immediately after the URL; Moor coalesces
   those artifacts so the agent receives one link message instead of a follow-up
   `(attachment)` prompt.
 - **Outbound attachments are supported.** Images, voice notes, video, and
@@ -168,7 +168,7 @@ All env vars are documented in `plugin.yaml`. The most important:
   restart is best-effort — the live reaction handle is lost, so a stale
   tapback heals when the next reaction replaces it. Group spaces stay
   reachable across restarts via spectrum-ts' `space.get(id)`.
-- **Native polls are supported.** Hermes posts poll content through
+- **Native polls are supported.** Moor posts poll content through
   `spectrum-ts`' `poll(...)` builder via the sidecar's `/send-poll` endpoint.
 - **Message effects are supported.** Text can be sent with native iMessage
   bubble/screen effects through `spectrum-ts`' iMessage `effect(...)` builder
@@ -180,7 +180,7 @@ All env vars are documented in `plugin.yaml`. The most important:
   `/healthz` readiness check, `0600`, removed on stop/failed start). Also
   note that shared/free-tier Photon lines cannot INITIATE conversations
   with numbers that never texted the line — that's Photon-side policy, not
-  a Hermes limitation.
+  a Moor limitation.
 
 ## Upgrading spectrum-ts
 

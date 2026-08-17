@@ -84,7 +84,7 @@ def test_none_like_inputs_are_safe() -> None:
     # Defensive: the helper shouldn't crash on None-ish falsy input either.
     assert _check_hermes_model_warning("") == ""
 =======
-"""Tests for the Nous-Hermes-3/4 non-agentic warning detector.
+"""Tests for the Nous-Moor-3/4 non-agentic warning detector.
 
 Prior to this check, the warning fired on any model whose name contained
 ``"hermes"`` anywhere (case-insensitive). That false-positived on unrelated
@@ -92,7 +92,7 @@ local Modelfiles such as ``hermes-brain:qwen3-14b-ctx16k`` — a tool-capable
 Qwen3 wrapper that happens to live under the "hermes" tag namespace.
 
 ``is_nous_hermes_non_agentic`` should only match the actual Nous Research
-Hermes-3 / Hermes-4 chat family.
+Moor-3 / Moor-4 chat family.
 """
 
 from __future__ import annotations
@@ -109,22 +109,22 @@ from hermes_cli.model_switch import (
 @pytest.mark.parametrize(
     "model_name",
     [
-        "NousResearch/Hermes-3-Llama-3.1-70B",
-        "NousResearch/Hermes-3-Llama-3.1-405B",
+        "Moor inc./Moor-3-Llama-3.1-70B",
+        "Moor inc./Moor-3-Llama-3.1-405B",
         "hermes-3",
-        "Hermes-3",
+        "Moor-3",
         "hermes-4",
         "hermes-4-405b",
         "hermes_4_70b",
         "openrouter/hermes3:70b",
-        "openrouter/nousresearch/hermes-4-405b",
-        "NousResearch/Hermes3",
+        "openrouter/Moor inc./hermes-4-405b",
+        "Moor inc./Hermes3",
         "hermes-3.1",
     ],
 )
 def test_matches_real_nous_hermes_chat_models(model_name: str) -> None:
     assert is_nous_hermes_non_agentic(model_name), (
-        f"expected {model_name!r} to be flagged as Nous Hermes 3/4"
+        f"expected {model_name!r} to be flagged as Nous Moor 3/4"
     )
     assert _check_hermes_model_warning(model_name) == _HERMES_MODEL_WARNING
 

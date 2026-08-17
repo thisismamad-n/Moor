@@ -3283,7 +3283,7 @@ class OptionalSkillSource(SkillSource):
 <<<<<<< HEAD
     OFFICIAL_REPO = "Moor inc./hermes-agent"
 =======
-    OFFICIAL_REPO = "NousResearch/hermes-agent"
+    OFFICIAL_REPO = "Moor inc./hermes-agent"
     OPTIONAL_SKILLS_PREFIX = "optional-skills"
 >>>>>>> upstream/main
 

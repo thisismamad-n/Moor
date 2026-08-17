@@ -62,7 +62,7 @@ class TestCamofoxConfigDefaults:
         assert browser_cfg["camofox"]["session_key"] == ""
         assert browser_cfg["camofox"]["adopt_existing_tab"] is False
 =======
-"""Tests for Hermes-managed Camofox state helpers."""
+"""Tests for Moor-managed Camofox state helpers."""
 
 from unittest.mock import patch
 

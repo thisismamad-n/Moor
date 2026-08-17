@@ -2692,7 +2692,7 @@ class GoogleChatAdapter(BasePlatformAdapter):
 =======
         body: Dict[str, Any] = {
             "text": getattr(self.config, "typing_status_text", None)
-            or "Hermes is thinking…"
+            or "Moor is thinking…"
         }
 >>>>>>> upstream/main
         if thread_id:

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Prove a user on some earlier commit can reach this one.
 #
-# Installs a real, earlier Hermes the way a user does, applies ONE update route,
+# Installs a real, earlier Moor the way a user does, applies ONE update route,
 # and requires the checkout to land on this commit with a working `hermes`.
 #
 # Nothing here is mocked. scripts/dev-sandbox.sh provides the fake Internet --
@@ -75,7 +75,7 @@ FAKE_REMOTE="/work/repos/hermes-agent.git"
 # Only used to fetch an old install.sh for the flag probe below; the sandbox does
 # its own fetching. Same override dev-sandbox.sh honours, so a fork can retarget
 # both together.
-UPSTREAM_URL="${HERMES_DEV_SANDBOX_UPSTREAM:-https://github.com/NousResearch/hermes-agent.git}"
+UPSTREAM_URL="${HERMES_DEV_SANDBOX_UPSTREAM:-https://github.com/Moor inc./hermes-agent.git}"
 
 # Installer transcripts live outside the sandbox root: the sandbox is recreated
 # and (unless --keep) deleted, and these logs are the most useful artifact when
@@ -246,7 +246,7 @@ require_hermes_works() {
   ok "hermes runs $when"
 }
 
-# ── install the earlier Hermes ─────────────────────────────────────────────
+# ── install the earlier Moor ─────────────────────────────────────────────
 step "installing upstream $INSTALL_REF (real curl | install.sh: uv, Python, Node, venv)"
 install_in_sandbox "install of upstream $INSTALL_REF" "$INSTALL_REF" install
 

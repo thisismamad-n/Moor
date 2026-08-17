@@ -1,7 +1,7 @@
 """Nous Portal ``anthropic/*`` models route on the native Messages wire.
 
 Portal serves its ``anthropic/*`` catalog at
-``https://inference-api.nousresearch.com/v1/messages`` alongside the
+``https://inference-api.Moor inc..com/v1/messages`` alongside the
 OpenAI-compatible ``/v1/chat/completions`` used by everything else it proxies.
 These tests pin the contracts that make that routing correct:
 
@@ -23,7 +23,7 @@ import pytest
 from hermes_cli import runtime_provider as rp
 from hermes_cli.providers import nous_api_mode
 
-PORTAL_URL = "https://inference-api.nousresearch.com/v1"
+PORTAL_URL = "https://inference-api.Moor inc..com/v1"
 # Staging / preview hosts used via NOUS_INFERENCE_BASE_URL — not the prod
 # hostname, so Portal behaviour must key off provider=nous.
 STAGING_URL = "https://ai.wildebeest-newton.ts.net/v1"
@@ -55,7 +55,7 @@ class TestApiModeRouting:
 
     def test_determine_api_mode_honors_the_model_for_nous(self):
         """Callers that skip resolve_runtime_provider (fallback, switch_model
-        empty-mode path) must still land Claude on Messages — the Hermes
+        empty-mode path) must still land Claude on Messages — the Moor
         overlay alone advertises openai_chat for every Nous model."""
         from hermes_cli.providers import determine_api_mode
 
@@ -177,7 +177,7 @@ class TestClientShape:
             _requires_bearer_auth,
         )
 
-        spoofed = "https://inference-api.nousresearch.com.attacker.test/v1"
+        spoofed = "https://inference-api.Moor inc..com.attacker.test/v1"
         assert not _is_nous_portal_endpoint(spoofed)
         assert not _requires_bearer_auth(spoofed)
 
@@ -197,7 +197,7 @@ class TestClientShape:
         self, monkeypatch
     ):
         """The Anthropic SDK fills api_key from ANTHROPIC_API_KEY when the
-        constructor omits it. Hermes loads that env from ~/.hermes/.env, so
+        constructor omits it. Moor loads that env from ~/.hermes/.env, so
         without an explicit clear every Portal request would dual-auth as
         X-Api-Key: sk-ant-… + Authorization: Bearer portal.jwt."""
         from agent.anthropic_adapter import build_anthropic_client

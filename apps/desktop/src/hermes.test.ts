@@ -42,7 +42,7 @@ const emptySessionsResponse = {
 <<<<<<< HEAD
 describe('Moor REST session helpers', () => {
 =======
-describe('Hermes REST helpers', () => {
+describe('Moor REST helpers', () => {
 >>>>>>> upstream/main
   let api: ReturnType<typeof vi.fn>
 

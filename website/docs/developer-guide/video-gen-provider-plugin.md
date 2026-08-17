@@ -234,7 +234,7 @@ Drop a smoke test under `tests/plugins/video_gen/test_<name>_plugin.py`. The xAI
 ---
 sidebar_position: 12
 title: "Video Generation Provider Plugins"
-description: "How to build a video-generation backend plugin for Hermes Agent"
+description: "How to build a video-generation backend plugin for Moor Agent"
 ---
 
 # Building a Video Generation Provider Plugin
@@ -256,7 +256,7 @@ Edit and extend are intentionally out of scope. Most backends don't support them
 
 ## How discovery works
 
-Hermes scans for video-gen backends in three places:
+Moor scans for video-gen backends in three places:
 
 1. **Bundled** — `<repo>/plugins/video_gen/<name>/` (auto-loaded with `kind: backend`)
 2. **User** — `~/.hermes/plugins/video_gen/<name>/` (opt-in via `plugins.enabled`)

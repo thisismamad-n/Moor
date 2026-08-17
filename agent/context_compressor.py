@@ -715,7 +715,7 @@ def _reinject_pruned_skill_markers(summary: str, skill_names: list[str]) -> str:
 # disposable bulk), (b) demotion of old tool results to stubs that carry a
 # RECOVERY POINTER instead of deleting content outright, and (c) a
 # deterministic recovery footer naming the exact session_search call that
-# re-accesses the compacted region. Hermes already persists every
+# re-accesses the compacted region. Moor already persists every
 # pre-compaction message in state.db — session_search makes compaction
 # lossy-but-recoverable, which none of the scouted competitors have at
 # runtime.
@@ -807,7 +807,7 @@ def _build_verbatim_user_section(turns: List[Dict[str, Any]]) -> str:
 def _build_recovery_footer(session_id: str, region_len: int) -> str:
     """Deterministic pointer to the compacted region in session history.
 
-    Hermes persists every pre-compaction message in state.db; session_search
+    Moor persists every pre-compaction message in state.db; session_search
     reaches it. The footer makes that re-access path explicit so the model
     treats compaction as deferred retrieval, not loss.
     """
@@ -3145,7 +3145,7 @@ class ContextCompressor(ContextEngine):
         rough estimate has grown modestly since a request the provider proved
         fit under the threshold.
 =======
-        overestimates so Hermes compresses before a provider rejects the
+        overestimates so Moor compresses before a provider rejects the
         payload — but the margin is not a fixed percentage: CJK text is
         counted at ~1.7x its o200k cost and Responses-mode reasoning replay
         blobs at several times their billed cost, so heavy sessions can show

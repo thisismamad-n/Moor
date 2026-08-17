@@ -41,7 +41,7 @@ Non-dispatch gateways still deliver messages for their own platform adapters
 =======
 # Multi-gateway deployment
 
-Hermes supports multiple gateway processes running concurrently — one per profile
+Moor supports multiple gateway processes running concurrently — one per profile
 (default, writer, admin, coder, researcher). Each gateway opens its own connection
 to platform APIs and delivers messages for its profile's subscribers.
 

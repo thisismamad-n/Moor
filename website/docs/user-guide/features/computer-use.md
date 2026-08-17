@@ -18,7 +18,7 @@ about.
 
 ## How it works
 
-The built-in `computer_use` toolset is the recommended Hermes integration. It
+The built-in `computer_use` toolset is the recommended Moor integration. It
 speaks MCP over stdio to
 [`cua-driver`](https://github.com/trycua/cua), an open-source background
 computer-use driver. Each platform uses the appropriate accessibility +
@@ -41,7 +41,7 @@ no-foreground invariant, click-dispatch internals — see
 
 ## Enabling
 
-**Fresh installs already have the driver.** The Hermes installer
+**Fresh installs already have the driver.** The Moor installer
 (`install.sh` / `install.ps1`) pre-installs `cua-driver` (best-effort;
 pass `--skip-computer-use` / `-SkipComputerUse` to opt out), so enabling
 Computer Use is just a config flip:
@@ -62,21 +62,21 @@ This fetches and runs the upstream cua-driver installer — `install.sh`
 on macOS/Linux, `install.ps1` on Windows. Use `hermes computer-use
 status` to verify the install.
 
-Already have cua-driver? Hermes reuses it when it supports the 0.20 runtime
+Already have cua-driver? Moor reuses it when it supports the 0.20 runtime
 contract. During setup, toolset enablement, `hermes update`, and the first
-`computer_use` call of a session, Hermes checks the local version and
+`computer_use` call of a session, Moor checks the local version and
 manifest. It repairs an old or incomplete standard installation through
 the upstream installer (at most once per session at runtime). A binary
 selected with `HERMES_CUA_DRIVER_CMD` stays
-under your control, so Hermes reports the incompatibility and leaves it
+under your control, so Moor reports the incompatibility and leaves it
 unchanged.
 
 If you install Cua Driver first, `cua-driver skills install` installs Cua's
-skill pack under `~/.cua-driver/skills/cua-driver`. Hermes autodetection is a
-planned cua-driver follow-up, so currently point Hermes at that directory or
+skill pack under `~/.cua-driver/skills/cua-driver`. Moor autodetection is a
+planned cua-driver follow-up, so currently point Moor at that directory or
 symlink it into your skill space. You can also register raw Cua MCP tools as a
 custom MCP server, but that is an alternative for users who need the low-level
-interface. The built-in toolset provides Hermes actions, configuration,
+interface. The built-in toolset provides Moor actions, configuration,
 approvals, and diagnostics.
 
 After installing, regardless of which path you took, grant the
@@ -87,7 +87,7 @@ platform-appropriate prereqs:
 <<<<<<< HEAD
 | **macOS** | System Settings → Privacy & Security → **Accessibility** + **Screen Recording** → allow your terminal (or Moor app). `hermes computer-use doctor` will tell you which permission is missing. |
 =======
-| **macOS** | System Settings → Privacy & Security → **Accessibility** + **Screen Recording**. Grant the identity named by `hermes computer-use doctor`. Standard mode uses CuaDriver.app; bounded and unrestricted modes use the Hermes host identity. |
+| **macOS** | System Settings → Privacy & Security → **Accessibility** + **Screen Recording**. Grant the identity named by `hermes computer-use doctor`. Standard mode uses CuaDriver.app; bounded and unrestricted modes use the Moor host identity. |
 >>>>>>> upstream/main
 | **Windows** | None at install time. If you're driving over SSH (not RDP / console), you need the autostart pattern — see [cua.ai/docs/how-to-guides/driver/windows-ssh](https://cua.ai/docs/how-to-guides/driver/windows-ssh) for the Session 0 ↔ Session 1+ proxy. |
 | **Linux** | A reachable display server: `DISPLAY` set for X11, or `XDG_SESSION_TYPE=wayland`. Wayland sessions need an XWayland bridge for capture. AT-SPI must be on (default on GNOME/KDE/Xfce). |
@@ -102,15 +102,15 @@ or add `computer_use` to your enabled toolsets in `~/.hermes/config.yaml`.
 
 ## Permission modes and logged-in browser profiles
 
-Hermes maps its existing approval UX onto cua-driver's immutable runtime
+Moor maps its existing approval UX onto cua-driver's immutable runtime
 modes. Permission mode, capability manifest approval, and the existing-profile
 grant are launch settings. They cannot change after the runtime starts:
 
-| Hermes session | cua-driver mode | Human intervention | `existing_profile` |
+| Moor session | cua-driver mode | Human intervention | `existing_profile` |
 |---|---|---|---|
-| Manual or smart approvals (default) | `standard` | Normal Hermes approvals; Cua stops at its protected boundary | Refuses unless `computer_use.grant_existing_profile: true` (one-time config opt-in) |
+| Manual or smart approvals (default) | `standard` | Normal Moor approvals; Cua stops at its protected boundary | Refuses unless `computer_use.grant_existing_profile: true` (one-time config opt-in) |
 | `computer_use.permission_mode: bounded` + reviewed manifest | private `bounded` daemon | You review and approve the capability manifest once, at launch | Allowed only within the manifest's declared profiles/origins/tools; everything else fails closed |
-| `--yolo`, `/yolo`, or `approvals.mode: off` | private `unrestricted` daemon | One explicit Hermes risk acceptance; no runtime Cua prompts | Refuses unless `computer_use.grant_existing_profile: true`; YOLO does not substitute for this grant |
+| `--yolo`, `/yolo`, or `approvals.mode: off` | private `unrestricted` daemon | One explicit Moor risk acceptance; no runtime Cua prompts | Refuses unless `computer_use.grant_existing_profile: true`; YOLO does not substitute for this grant |
 
 ### Attaching to your signed-in browser
 
@@ -125,7 +125,7 @@ computer_use:
   grant_existing_profile: true
 ```
 
-Hermes then launches the cua-driver runtime with the trusted-launcher grant
+Moor then launches the cua-driver runtime with the trusted-launcher grant
 (`--grant existing-profile`), and
 `cua_browser_prepare` with an existing profile succeeds against the exact
 `(pid, window_id)` the agent proves. Leave it `false` (the default) and
@@ -147,7 +147,7 @@ computer_use:
 The manifest names the apps, browser profile kinds, allowed origins, and
 typed tools the session may use (see the
 [cua-driver permission modes reference](https://cua.ai/docs/reference/cua-driver/permission-modes)
-for the format). Hermes launches a private runtime with
+for the format). Moor launches a private runtime with
 `--capability-manifest ... --approve-capability-manifest`; anything outside
 the manifest fails closed inside cua-driver. A missing or unreadable manifest
 fails loudly at session start rather than silently downgrading. Session YOLO
@@ -156,13 +156,13 @@ still overrides bounded for that one session.
 Each MCP transport owns a private lifecycle session inside its runtime. A
 public session name is only a label for cursor identity and session-scoped
 state. It does not select, share, or keep a runtime alive. Turning `/yolo` off,
-resetting or closing the Hermes session, cancellation cleanup, or process exit
-closes that transport session. Hermes also stops private runtimes that it
-launched for bounded, unrestricted, or existing-profile access. One Hermes
+resetting or closing the Moor session, cancellation cleanup, or process exit
+closes that transport session. Moor also stops private runtimes that it
+launched for bounded, unrestricted, or existing-profile access. One Moor
 conversation cannot change another runtime's mode or grants. On macOS, a
 standard runtime with an existing-profile grant uses a fresh CuaDriver.app
 daemon on a private socket. Bounded and unrestricted modes use a private
-embedded service under the Hermes host identity.
+embedded service under the Moor host identity.
 
 `smart` approval remains `standard`: an LLM classification cannot stand in for
 a reviewed manifest or a launch-time grant.
@@ -223,7 +223,7 @@ identity is keyed to that session, so concurrent runs / subagents each
 get their own cursor without stepping on each other.
 =======
 OS cursor never moves. The overlay shows where the agent is acting. Each
-Hermes run declares a public cua-driver **session name** (something like
+Moor run declares a public cua-driver **session name** (something like
 `hermes-3a7b9c14d2e8`). The name labels cursor identity and related state, so
 concurrent runs and subagents get distinct cursors. The MCP transport owns the
 private lifecycle session inside the runtime; the public name does not.
@@ -246,8 +246,8 @@ platform-specific deep dives, recording semantics, browser page
 interaction — point your agent harness at the cua-driver skill pack
 the cua-driver team ships and maintains directly:
 =======
-Hermes keeps its wrapper skill (`skills/autonomous-ai-agents/computer-use/SKILL.md`)
-focused on the Hermes-side `computer_use` workflow and action vocabulary. For
+Moor keeps its wrapper skill (`skills/autonomous-ai-agents/computer-use/SKILL.md`)
+focused on the Moor-side `computer_use` workflow and action vocabulary. For
 platform details, recording semantics, browser page interaction, and other
 deep Cua behavior, install the skill pack that the cua-driver team ships and
 maintains directly:
@@ -257,8 +257,8 @@ maintains directly:
 cua-driver skills install
 ```
 
-The command installs the pack under `~/.cua-driver/skills/cua-driver`. Hermes
-autodetection is a planned cua-driver follow-up, so currently point Hermes at
+The command installs the pack under `~/.cua-driver/skills/cua-driver`. Moor
+autodetection is a planned cua-driver follow-up, so currently point Moor at
 that directory or symlink it into your skill space. The wrapper remains the
 workflow layer and points to Cua's installed skill for driver behavior. The
 pack contains:
@@ -529,9 +529,9 @@ HERMES_CUA_DRIVER_CMD=/path/to/cua/libs/cua-driver/rust/target/debug/cua-driver
   surface works through the stdio child. On Windows SSH sessions, the
   autostart pattern IS needed — see the Limitations section.
 =======
-- **Hermes spawns a `cua-driver mcp` stdio proxy.** In a normal session the
+- **Moor spawns a `cua-driver mcp` stdio proxy.** In a normal session the
   proxy connects to (and may start) the standard machine daemon. In explicit
-  Hermes YOLO, Hermes instead owns a private `cua-driver serve --embedded`
+  Moor YOLO, Moor instead owns a private `cua-driver serve --embedded`
   child and points the proxy at its private socket or named pipe. The Windows
   autostart/UIAccess pattern still matters for interactive Session 1+ input
   from SSH — see the Limitations section.
@@ -591,8 +591,8 @@ autostart pattern — see
 - **Moor-side skill** — `skills/computer-use/SKILL.md` — teaches the
   Moor `computer_use` action vocabulary; this is what the agent loads.
 =======
-- **Hermes-side skill** — `skills/autonomous-ai-agents/computer-use/SKILL.md` — teaches the
-  Hermes `computer_use` action vocabulary; this is what the agent loads.
+- **Moor-side skill** — `skills/autonomous-ai-agents/computer-use/SKILL.md` — teaches the
+  Moor `computer_use` action vocabulary; this is what the agent loads.
 >>>>>>> upstream/main
 - **cua-driver skill pack** — for platform-specific deep dives
   (macOS no-foreground contract, Windows UIA + Session 0, Linux AT-SPI
@@ -603,8 +603,8 @@ autostart pattern — see
   install` autodetects Moor (planned follow-up), this happens
   automatically on install.
 =======
-  `LINUX.md` / `RECORDING.md` / `WEB_APPS.md`. Hermes autodetection is a
-  planned follow-up; currently point Hermes at the installed pack directory
+  `LINUX.md` / `RECORDING.md` / `WEB_APPS.md`. Moor autodetection is a
+  planned follow-up; currently point Moor at the installed pack directory
   or symlink it into your skill space.
 >>>>>>> upstream/main
 - **cua.ai/docs** — the cua-driver project's documentation:

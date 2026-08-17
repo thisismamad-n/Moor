@@ -437,7 +437,7 @@ _STATE_DB_GUARD_EXTRA_DENY_ROOTS: Tuple[Path, ...] = ()
 
 
 def _real_platform_state_root() -> Optional[Path]:
-    """Resolve the REAL platform-default Hermes root for the guard.
+    """Resolve the REAL platform-default Moor root for the guard.
 
     Deliberately avoids ``Path.home()`` / ``hermes_constants``: tests
     routinely monkeypatch ``Path.home`` to a tempdir, and ``hermes_state``
@@ -466,7 +466,7 @@ def _real_platform_state_root() -> Optional[Path]:
 #: redirects ``HERMES_HOME`` to the per-session tmp isolation root.  Its
 #: value is that isolation root.  Unlike ``PYTEST_*`` (owned by pytest, and
 #: routinely scrubbed by tests that rebuild a child environment), this marker
-#: is OURS: it declares "this process tree is running under Hermes test
+#: is OURS: it declares "this process tree is running under Moor test
 #: isolation", and it inherits into subprocess children by default — so a
 #: child that received the patched ``HERMES_HOME`` also received the marker,
 #: and a child that resolves a production DB while carrying it is, by
@@ -577,7 +577,7 @@ def _production_state_roots() -> List[Path]:
 
 
 def _is_production_state_db(resolved: Path, root: Path) -> bool:
-    """True when *resolved* is a DB file of the real Hermes home *root*.
+    """True when *resolved* is a DB file of the real Moor home *root*.
 
     Matches files directly in the root (``<root>/state.db``) and profile
     homes (``<root>/profiles/<name>/state.db``).  Deliberately does NOT
@@ -619,7 +619,7 @@ def _ensure_test_isolation(db_path: Path) -> None:
         if _is_production_state_db(resolved, root):
             raise RuntimeError(
                 "live-system guard: test attempted to open production "
-                f"state.db at {resolved} (under real Hermes root {root}). "
+                f"state.db at {resolved} (under real Moor root {root}). "
                 "Tests must run against a temporary HERMES_HOME — pass an "
                 "explicit tmp db_path or let the hermetic conftest redirect "
                 "HERMES_HOME. If this test genuinely needs the live "
@@ -1360,7 +1360,7 @@ def _wal_reset_repair_hint() -> str:
         method = detect_install_method(get_project_root())
         cmd = recommended_update_command_for_method(method)
         if method in {"git", "unknown"}:
-            return f"Hermes-managed installs can repair the embedded runtime with `{cmd}`"
+            return f"Moor-managed installs can repair the embedded runtime with `{cmd}`"
         if method == "docker":
             return f"update the container image with `{cmd}`"
         # nix/nixos
@@ -1369,7 +1369,7 @@ def _wal_reset_repair_hint() -> str:
         pass
     return (
         "install a Python build bundled with SQLite 3.51.3+ "
-        "(or backports 3.50.7 / 3.44.6) and restart Hermes"
+        "(or backports 3.50.7 / 3.44.6) and restart Moor"
     )
 
 
@@ -1398,7 +1398,7 @@ def _log_wal_reset_bug_once(
         )
     else:
         action = "using journal_mode=DELETE instead of enabling WAL"
-    # Check whether this is a Hermes-managed install (uv-managed venv)
+    # Check whether this is a Moor-managed install (uv-managed venv)
     # so the warning doesn't promise a repair path that doesn't exist
     # for git/pip/system Python installs (#75153).
     repair_hint = _wal_reset_repair_hint()
@@ -1715,7 +1715,7 @@ def _claim_repair_attempt(db_path: Path) -> bool:
 
 # Cross-process serialisation for the schema-surgery paths below.  The
 # ``_repair_attempt_lock`` above is a ``threading.Lock`` — it only covers
-# threads inside ONE interpreter, yet a normal Hermes host runs several
+# threads inside ONE interpreter, yet a normal Moor host runs several
 # independent processes against the same ``state.db``: the gateway service,
 # the Desktop app's own ``hermes serve`` backend, interactive CLI sessions,
 # and the TUI slash worker.  Two of those hitting a malformed DB at once each
@@ -2062,8 +2062,8 @@ def preflight_db_writability(
     transactions. This preflight:
 
     - **Repairs** permissions with ``chmod u+rw`` when the file lives inside
-      the Hermes home tree (``get_hermes_home()``) — the safe repair scope:
-      Hermes owns those files, and the OS makes ``chmod`` fail on files the
+      the Moor home tree (``get_hermes_home()``) — the safe repair scope:
+      Moor owns those files, and the OS makes ``chmod`` fail on files the
       user doesn't own, which bounds the repair exactly.
     - **Fails fast with an actionable error** naming the exact file and the
       exact ``chmod`` command for anything else (root-owned files, read-only
@@ -2119,7 +2119,7 @@ def preflight_db_writability(
         )
         raise sqlite3.OperationalError(
             f"{db_label} is not writable: {kind} {p} is read-only for this "
-            f"user. Hermes needs read-write access to open the database. "
+            f"user. Moor needs read-write access to open the database. "
             f"Fix with: chmod u+rw{'x' if is_dir else ''} '{p}'"
             f" (files owned by another user may need sudo/chown).{wal_note}"
         )
@@ -3109,7 +3109,7 @@ class SessionDB(SessionSearchMixin, SessionSchemaMixin, SessionPortabilityMixin)
     # writers and avoids the convoy.
     #
     # Patience is TIME-based, not attempt-based.  A shared state.db is
-    # legitimately held for multi-second stretches by sibling Hermes
+    # legitimately held for multi-second stretches by sibling Moor
     # processes: a TRUNCATE checkpoint at close on a large WAL, VACUUM after
     # an auto-prune, offline recovery, or an older still-running process
     # whose FTS maintenance predates the bounded-merge protocol (every
@@ -4059,7 +4059,7 @@ class SessionDB(SessionSearchMixin, SessionSchemaMixin, SessionPortabilityMixin)
                     # Patience exhausted — say what actually happened so the
                     # surfaced error doesn't read as disk/permission damage.
                     raise sqlite3.OperationalError(
-                        f"database is locked (another Hermes process held the "
+                        f"database is locked (another Moor process held the "
                         f"state.db write lock for over {patience_s:.0f}s — "
                         "likely a long maintenance operation such as VACUUM, "
                         "a large WAL checkpoint, or an older pre-update "

@@ -800,7 +800,7 @@ check_git() {
 # proceed to a `npm ci` that then dies with EBADENGINE, and a gate stricter than
 # the manifest replaces a working user toolchain for nothing. Returns 0 when the
 # given `node --version` string clears the floor; anything below it is replaced
-# with the Hermes-managed Node $NODE_VERSION.
+# with the Moor-managed Node $NODE_VERSION.
 >>>>>>> upstream/main
 node_satisfies_build() {
     local ver="${1#v}"
@@ -859,7 +859,7 @@ check_node() {
             return 0
         fi
         log_warn "npm $(npm --version) cannot honor this repo's .npmrc (npm 11.10-11.16 ignore"
-        log_warn "min-release-age-exclude) — installing Hermes-managed Node $NODE_VERSION instead..."
+        log_warn "min-release-age-exclude) — installing Moor-managed Node $NODE_VERSION instead..."
         install_node
         return
     fi
@@ -868,7 +868,7 @@ check_node() {
     # Prefer a Moor-managed Node from a previous run over a too-old system one.
     if [ -x "$HERMES_HOME/node/bin/node" ] && node_satisfies_build "$("$HERMES_HOME/node/bin/node" --version)"; then
 =======
-    # Prefer a Hermes-managed Node from a previous run over a too-old system one.
+    # Prefer a Moor-managed Node from a previous run over a too-old system one.
     if [ -x "$HERMES_HOME/node/bin/node" ] && [ -x "$HERMES_HOME/node/bin/npm" ] \
         && node_satisfies_build "$("$HERMES_HOME/node/bin/node" --version)"; then
 >>>>>>> upstream/main
@@ -883,9 +883,9 @@ check_node() {
         log_warn "Node.js $(node --version) is too old for the desktop build (need ^20.19 or >=22.12) — installing Moor-managed Node $NODE_VERSION LTS..."
 =======
     if command -v node &> /dev/null && ! command -v npm &> /dev/null; then
-        log_warn "node found but npm is not on PATH (stray node symlink?) — installing Hermes-managed Node $NODE_VERSION LTS..."
+        log_warn "node found but npm is not on PATH (stray node symlink?) — installing Moor-managed Node $NODE_VERSION LTS..."
     elif command -v node &> /dev/null; then
-        log_warn "Node.js $(node --version) is too old (Hermes requires Node >=26) — installing Hermes-managed Node $NODE_VERSION..."
+        log_warn "Node.js $(node --version) is too old (Moor requires Node >=26) — installing Moor-managed Node $NODE_VERSION..."
 >>>>>>> upstream/main
     elif [ "$DISTRO" = "termux" ]; then
         log_info "Node.js not found — installing Node.js via pkg..."
@@ -1764,7 +1764,7 @@ setup_path() {
 
     # Verify the interpreter and the checked-in entrypoint needed by the launcher.
     if [ ! -x "$HERMES_BIN" ] || { [ "$USE_VENV" = true ] && [ ! -f "$HERMES_ENTRYPOINT" ]; }; then
-        log_warn "Hermes launcher prerequisites not found"
+        log_warn "Moor launcher prerequisites not found"
         log_info "This usually means the Python package install didn't complete successfully."
         if [ "$DISTRO" = "termux" ]; then
             log_info "Try: cd $INSTALL_DIR && python -m pip install -e '.[termux-all]' -c constraints-termux.txt"
@@ -1835,7 +1835,7 @@ EOF
     # Also expose `hermes-acp`. ACP hosts (Zed, JetBrains, Buzz) resolve the
     # agent by command name on the login-shell PATH, and the `hermes-acp`
     # console script lives inside the venv, which is not on that PATH. Without
-    # this launcher those hosts report Hermes as not installed. (#21454 applies
+    # this launcher those hosts report Moor as not installed. (#21454 applies
     # here too: clear the path first so `cat >` cannot follow an old symlink
     # into the venv and overwrite the console script.)
     rm -f "$command_link_dir/hermes-acp"
@@ -2500,7 +2500,7 @@ install_browser_use_cli() {
         log_info "Skipping Browser Use CLI install (uv unavailable)"
         return 0
     fi
-    # MANAGED-FIRST: only Hermes' managed copy short-circuits. A browser-use
+    # MANAGED-FIRST: only Moor' managed copy short-circuits. A browser-use
     # on the user's PATH is a side install — resolution prefers the managed
     # copy, so it must be provisioned regardless.
     if [ -x "$HERMES_HOME/bin/browser-use" ]; then
@@ -2509,7 +2509,7 @@ install_browser_use_cli() {
     fi
 
     log_info "Installing Browser Use CLI (default browser backend)..."
-    # UV_TOOL_BIN_DIR keeps the binary inside Hermes' managed bin dir, where
+    # UV_TOOL_BIN_DIR keeps the binary inside Moor' managed bin dir, where
     # the browser tool resolves it — no reliance on the user's PATH.
     if run_with_timeout 600 env UV_NO_CONFIG=1 UV_TOOL_BIN_DIR="$HERMES_HOME/bin" \
         "$UV_CMD" tool install browser-use >/dev/null 2>&1; then
@@ -2584,9 +2584,9 @@ install_computer_use_driver() {
 
     log_info "Installing Computer Use driver (cua-driver)..."
     # Same upstream installer `hermes computer-use install` runs; time-boxed
-    # so a stalled GitHub download can't hang the Hermes install. The
+    # so a stalled GitHub download can't hang the Moor install. The
     # upstream installer serializes with its own lock (600s stale window),
-    # so give it a ceiling above that — matching Hermes'
+    # so give it a ceiling above that — matching Moor'
     # _CUA_INSTALLER_TIMEOUT (660s).
     local cua_log
     cua_log="$(mktemp)"
@@ -2734,7 +2734,7 @@ maybe_start_gateway() {
 }
 
 write_bootstrap_marker() {
-    # Writes $INSTALL_DIR/.hermes-bootstrap-complete, which tells the Hermes
+    # Writes $INSTALL_DIR/.hermes-bootstrap-complete, which tells the Moor
     # desktop app (apps/desktop/electron/main.ts) and the macOS launcher fast
     # path (apps/bootstrap-installer) "a real install finished here -- don't
     # re-run first-run bootstrap."
@@ -3172,7 +3172,7 @@ install_desktop() {
 <<<<<<< HEAD
     # floor (^20.19 || >=22.12) and prepends the Moor-managed Node to PATH, so
 =======
-    # floor (Node >=26) and prepends the Hermes-managed Node to PATH, so
+    # floor (Node >=26) and prepends the Moor-managed Node to PATH, so
 >>>>>>> upstream/main
     # the build never runs on a too-old system Node — the cause of the opaque
     # "Build desktop app … exit code 1" failure (Vite crashes on old Node).

@@ -131,7 +131,7 @@ def _build_full_manifest(
 
     display_information = {
         "name": bot_name[:35],
-        "description": (bot_description or "Your Hermes agent on Slack")[:140],
+        "description": (bot_description or "Your Moor agent on Slack")[:140],
         "background_color": "#1a1a2e",
     }
     if long_description is not None:
@@ -195,8 +195,8 @@ def slack_manifest_command(args) -> int:
     name = getattr(args, "name", None) or "Moor"
     description = getattr(args, "description", None) or "Your Moor agent on Slack"
 =======
-    name = getattr(args, "name", None) or "Hermes"
-    description = getattr(args, "description", None) or "Your Hermes agent on Slack"
+    name = getattr(args, "name", None) or "Moor"
+    description = getattr(args, "description", None) or "Your Moor agent on Slack"
     long_description = getattr(args, "long_description", None)
     long_description_file = getattr(args, "long_description_file", None)
     if getattr(args, "slashes_only", False) and (

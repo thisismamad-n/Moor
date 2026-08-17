@@ -97,7 +97,7 @@ class _ProcessPluginConfiguration:
                     return True, self._activation
                 logger.warning(
                     "NeMo Relay plugin configuration is already active for another "
-                    "Hermes profile; keeping the existing process-global configuration "
+                    "Moor profile; keeping the existing process-global configuration "
                     "and using direct observability for this profile."
                 )
                 return False, None
@@ -390,7 +390,7 @@ class _Runtime:
             metadata=rich_metadata,
         )
         if relay_session is None:
-            raise RuntimeError("Hermes core Relay session is unavailable")
+            raise RuntimeError("Moor core Relay session is unavailable")
         state.relay_session = relay_session
         state.handle = relay_session.handle
         if subagent_context is not None:
@@ -406,7 +406,7 @@ class _Runtime:
         **kwargs: Any,
     ) -> Any:
         if state.relay_session is None:
-            raise RuntimeError("Hermes core Relay session is unavailable")
+            raise RuntimeError("Moor core Relay session is unavailable")
         try:
             return self.host.run_in_session(
                 state.relay_session,
@@ -784,7 +784,7 @@ def register(ctx) -> None:
         _SESSION_INITIALIZER_NAME,
         _prepare_core_session,
     )
-    # Activate dynamic plugins before Hermes installs the managed execution
+    # Activate dynamic plugins before Moor installs the managed execution
 >>>>>>> upstream/main
     # boundaries that invoke their interceptors.
     if _load_settings().dynamic_plugins:
@@ -892,7 +892,7 @@ def _get_runtime(
         try:
             resolved_host = host or relay_runtime.get_runtime(profile_key=profile_key)
             if resolved_host is None:
-                raise RuntimeError("Hermes core Relay runtime is unavailable")
+                raise RuntimeError("Moor core Relay runtime is unavailable")
             runtime = _Runtime(
                 nemo_relay=resolved_host.relay,
                 settings=_load_settings(),

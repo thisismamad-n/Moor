@@ -9,7 +9,7 @@ description: "How to build a secret-manager backend plugin for Moor Agent"
 <<<<<<< HEAD
 Secret sources resolve provider credentials from an external secret manager (a vault, a password manager, an OS keystore, a custom script) into environment variables at process startup — after `~/.hermes/.env` loads, before Moor reads credentials. Bitwarden and 1Password ship in-tree; **every other backend is a plugin**. This guide covers building one.
 =======
-Secret sources resolve provider credentials from an external secret manager (a vault, a password manager, an OS keystore, a custom script) into environment variables at process startup — after `~/.hermes/.env` loads, before Hermes reads credentials. Bitwarden, 1Password, and a generic command-helper source ship in-tree; **every other backend is a plugin**. This guide covers building one.
+Secret sources resolve provider credentials from an external secret manager (a vault, a password manager, an OS keystore, a custom script) into environment variables at process startup — after `~/.hermes/.env` loads, before Moor reads credentials. Bitwarden, 1Password, and a generic command-helper source ship in-tree; **every other backend is a plugin**. This guide covers building one.
 >>>>>>> upstream/main
 
 :::tip
@@ -19,7 +19,7 @@ The bundled set is deliberately closed, same policy as [memory providers](/devel
 ## First-process bootstrap timing
 
 `load_hermes_dotenv()` often runs at import time **before** plugins register.
-Hermes then re-pulls secrets after plugin discovery when any **enabled**
+Moor then re-pulls secrets after plugin discovery when any **enabled**
 plugin secret source is configured. Enablement uses the source's
 `is_enabled(cfg)` contract; the standard form is
 `secrets.<name>.enabled: true`, while custom activation remains supported.
@@ -150,7 +150,7 @@ Registration is rejected (with a log warning, never a crash) for: non-`SecretSou
 <<<<<<< HEAD
 Plugin discovery runs later in startup than the first `load_hermes_dotenv()` call, so a plugin source is not consulted by the very first env load of the process that discovers it. It IS consulted by every subsequently spawned Moor process (gateway children, cron sessions, subagents). Bundled sources cover first-process bootstrap.
 =======
-Plugin discovery runs later in startup than the first `load_hermes_dotenv()` call. Immediately after discovery, Hermes re-pulls enabled plugin secret sources (`reset_secret_source_cache()` + `load_hermes_dotenv()`), so the discovering process *does* pick them up — see [First-process bootstrap timing](#first-process-bootstrap-timing) above (#64177). The re-pull is fail-open and skipped when no plugin source is enabled. Any code that reads `os.environ` during the plugin module's import or `register(ctx)` still runs before the re-pull and cannot depend on credentials supplied by that same source; keep credentialed work inside `fetch()`. Gateway, cron, and subagent processes perform the same discovery/re-pull sequence.
+Plugin discovery runs later in startup than the first `load_hermes_dotenv()` call. Immediately after discovery, Moor re-pulls enabled plugin secret sources (`reset_secret_source_cache()` + `load_hermes_dotenv()`), so the discovering process *does* pick them up — see [First-process bootstrap timing](#first-process-bootstrap-timing) above (#64177). The re-pull is fail-open and skipped when no plugin source is enabled. Any code that reads `os.environ` during the plugin module's import or `register(ctx)` still runs before the re-pull and cannot depend on credentials supplied by that same source; keep credentialed work inside `fetch()`. Gateway, cron, and subagent processes perform the same discovery/re-pull sequence.
 >>>>>>> upstream/main
 :::
 

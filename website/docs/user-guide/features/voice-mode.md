@@ -11,7 +11,7 @@ Moor Agent supports full voice interaction across CLI and messaging platforms. T
 <<<<<<< HEAD
 If you want a practical setup walkthrough with recommended configurations and real usage patterns, see [Use Voice Mode with Moor](/guides/use-voice-mode-with-hermes).
 =======
-If you want a practical setup walkthrough with recommended configurations and real usage patterns, see [Use Voice Mode with Hermes](../../guides/use-voice-mode-with-hermes.md).
+If you want a practical setup walkthrough with recommended configurations and real usage patterns, see [Use Voice Mode with Moor](../../guides/use-voice-mode-with-hermes.md).
 
 For hands-free session start — saying "hey hermes" (or any phrase) to open a fresh voice session on the CLI, TUI, or desktop app — see [Wake Word](/user-guide/features/wake-word).
 >>>>>>> upstream/main

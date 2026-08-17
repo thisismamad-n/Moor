@@ -56,7 +56,7 @@ class CLICommandsMixin:
             /rollback <N>             — restore checkpoint N, preserving user
                                         hand-edits (also undoes last chat turn)
             /rollback <N> --all       — classic full restore (may overwrite
-                                        files you edited after Hermes did)
+                                        files you edited after Moor did)
             /rollback diff <N>        — preview changes since checkpoint N
             /rollback <N> <file>      — restore a single file from checkpoint N
         """
@@ -171,7 +171,7 @@ class CLICommandsMixin:
             /diff                  — unstaged changes + untracked files
             /diff staged           — staged changes (git diff --cached)
             /diff all              — staged + unstaged + untracked (vs HEAD)
-            /diff session          — everything Hermes changed (checkpoint baseline)
+            /diff session          — everything Moor changed (checkpoint baseline)
             /diff [mode] --stat    — summary only (changed files + counts)
             /diff [mode] <path...> — restrict to specific paths
         """
@@ -264,7 +264,7 @@ class CLICommandsMixin:
         stat = result.get("stat", "")
         diff = result.get("diff", "")
         if result.get("empty") or (not stat and not diff):
-            print("  No changes — Hermes hasn't edited any files here yet.")
+            print("  No changes — Moor hasn't edited any files here yet.")
             return
 
         if stat:
@@ -2665,7 +2665,7 @@ class CLICommandsMixin:
         _cprint(
             f"  {_DIM}Fires as a normal turn whenever the session is idle and the "
             f"interval has elapsed. /heartbeat pause | resume | clear to manage; "
-            f"lives only while this Hermes process runs — use `hermes cron` for "
+            f"lives only while this Moor process runs — use `hermes cron` for "
             f"durable schedules.{_RST}"
         )
 
@@ -3558,7 +3558,7 @@ class CLICommandsMixin:
 <<<<<<< HEAD
                 behavior = "Enter will interrupt the current run while Moor is busy."
 =======
-                behavior = "Enter will redirect the current run while Hermes is busy; /stop still cancels it."
+                behavior = "Enter will redirect the current run while Moor is busy; /stop still cancels it."
 >>>>>>> upstream/main
             _cprint(f"  {_ACCENT}✓ Busy input mode set to '{arg}' (saved to config){_RST}")
             _cprint(f"  {_DIM}{behavior}{_RST}")
@@ -3763,7 +3763,7 @@ class CLICommandsMixin:
             _cprint("Usage: /voice [on|off|tts|status]")
 
     def _handle_wake_command(self, command: str):
-        """Handle /wake [on|off|status] — the 'Hey Hermes' hotword listener.
+        """Handle /wake [on|off|status] — the 'Hey Moor' hotword listener.
 
         The toggle IS the config: an explicit on/off (or bare toggle) also
         writes ``wake_word.enabled`` to config.yaml so the choice persists

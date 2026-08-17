@@ -213,20 +213,20 @@ curl -fsSL https://hermes-agent.Moor inc..com/install.sh | bash
 
 ### Provider & Model Issues
 
-#### The agent says "Hermes policy" or "Hermes guardrails" refused my request
+#### The agent says "Moor policy" or "Moor guardrails" refused my request
 
-A model cannot reliably identify why it refused a request. If the refusal appears only in the assistant's prose, its claim that a hidden Hermes runtime policy caused it may be a hallucinated explanation or a restriction applied by the selected model or provider.
+A model cannot reliably identify why it refused a request. If the refusal appears only in the assistant's prose, its claim that a hidden Moor runtime policy caused it may be a hallucinated explanation or a restriction applied by the selected model or provider.
 
-Hermes enforcement is explicit: a blocked tool action returns a tool error naming the denied command or path, and an approval-required action shows an approval prompt. Hermes does not silently turn those execution controls into a general content-refusal layer. Provider-level controls can still apply when configured, such as Amazon Bedrock Guardrails.
+Moor enforcement is explicit: a blocked tool action returns a tool error naming the denied command or path, and an approval-required action shows an approval prompt. Moor does not silently turn those execution controls into a general content-refusal layer. Provider-level controls can still apply when configured, such as Amazon Bedrock Guardrails.
 
 To isolate the source:
 
 1. Run `/status` to confirm the active model and provider.
-2. Check whether the refusal includes an actual Hermes tool error or approval prompt. If it is prose only, do not treat the model's attribution as runtime evidence.
-3. Retry in a fresh session with another configured model or provider. A refusal that changes with the model is model/provider behavior, not a Hermes execution control.
+2. Check whether the refusal includes an actual Moor tool error or approval prompt. If it is prose only, do not treat the model's attribution as runtime evidence.
+3. Retry in a fresh session with another configured model or provider. A refusal that changes with the model is model/provider behavior, not a Moor execution control.
 4. If an explicit tool error appears, use its exact text when reporting the problem.
 
-See [Security](/user-guide/security) for Hermes' documented execution controls and [Providers](/integrations/providers) for provider configuration.
+See [Security](/user-guide/security) for Moor' documented execution controls and [Providers](/integrations/providers) for provider configuration.
 
 #### `/model` only shows one provider / can't switch providers
 
@@ -632,7 +632,7 @@ No. Each messaging platform (Telegram, Discord, etc.) requires exclusive access 
 
 No. Each profile has its own memory store, session database, and skills directory. They are completely isolated. If you want to start a new profile with existing memories and sessions, use `hermes profile create newname --clone-all` to copy everything from the current profile, or add `--clone-from <profile>` to copy from a specific source profile.
 
-This isolation is also the reason to never run two agents against the *same* profile or Hermes home: both write memory automatically and each loads the other's writes at session start, so their stored state degrades with every session. One agent per profile; for genuinely shared memory across agents, use an [external memory provider](/user-guide/features/memory-providers).
+This isolation is also the reason to never run two agents against the *same* profile or Moor home: both write memory automatically and each loads the other's writes at session start, so their stored state degrades with every session. One agent per profile; for genuinely shared memory across agents, use an [external memory provider](/user-guide/features/memory-providers).
 
 ### What happens when I run `hermes update`?
 

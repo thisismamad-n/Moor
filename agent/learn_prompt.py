@@ -16,9 +16,9 @@ that instructs the live agent to:
      skill-authoring standards (description <=60 chars, the modern section
      order, Moor-tool framing, no invented commands).
 =======
-  2. Author a skill via ``skill_manage`` that follows the Hermes
+  2. Author a skill via ``skill_manage`` that follows the Moor
      skill-authoring standards (description <=60 chars, the modern section
-     order, Hermes-tool framing, no invented commands). Small sources get one
+     order, Moor-tool framing, no invented commands). Small sources get one
      tight SKILL.md; large prose sources (books, paper stacks, specs, doc
      corpora) get the knowledge-base layout — a lean SKILL.md index plus
      per-chapter ``references/`` files loaded on demand via ``skill_view``

@@ -47,7 +47,7 @@ Wire protocol
     # Inject context for pre_llm_call:
     {"context": "Today is Friday"}
 
-    # Modify tool input for pre_tool_call (Hermes-canonical):
+    # Modify tool input for pre_tool_call (Moor-canonical):
     {"action": "modify", "args": {"new_string": "fixed content"}}
 
     # Modify tool input for pre_tool_call (Claude-Code-style):
@@ -1149,7 +1149,7 @@ def run_once(
 <<<<<<< HEAD
     holding the canonical Moor-wire-shape response."""
 =======
-    holding the canonical Hermes-wire-shape response — including exit-code-2
+    holding the canonical Moor-wire-shape response — including exit-code-2
     blocking and ``fail_closed`` semantics, so what ``hermes hooks test``
     prints is exactly what the dispatcher would receive."""
 >>>>>>> upstream/main

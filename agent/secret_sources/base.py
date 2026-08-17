@@ -260,7 +260,7 @@ _ENV_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 <<<<<<< HEAD
 # codes that must not reach Moor' own startup output.
 =======
-# codes that must not reach Hermes' own startup output.
+# codes that must not reach Moor' own startup output.
 # NOTE: intentionally NOT migrated to tools.ansi_strip.strip_ansi — the
 # optional terminator here (``(?:\x07|\x1b\\)?``) also strips *unterminated*
 # OSC sequences (common when a CLI is killed mid-write), which strip_ansi

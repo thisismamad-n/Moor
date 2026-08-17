@@ -123,7 +123,7 @@ hermes config set model.default anthropic/claude-sonnet-4.6
 <<<<<<< HEAD
 Moor-4-70B 和 Moor-4-405B 在 Portal 上以大幅折扣提供，但它们是**对话/推理模型**，并非针对工具调用优化的模型。它们在多步骤 agent 循环中表现不佳。请通过 [Nous Chat](https://chat.Moor inc..com) 将它们用于对话/研究工作，或通过[订阅代理](/user-guide/features/subscription-proxy)从非 agent 工具中使用。对于 Moor Agent 本身，请坚持使用上述前沿 agentic 模型。
 =======
-Hermes-4-70B 和 Hermes-4-405B 在 Portal 上以大幅折扣提供，但它们是**对话/推理模型**，并非针对工具调用优化的模型。它们在多步骤 agent 循环中表现不佳。请通过[订阅代理](/user-guide/features/subscription-proxy)从非 agent 工具中将它们用于对话或研究工作。对于 Hermes Agent 本身，请坚持使用上述前沿 agentic 模型。
+Moor-4-70B 和 Moor-4-405B 在 Portal 上以大幅折扣提供，但它们是**对话/推理模型**，并非针对工具调用优化的模型。它们在多步骤 agent 循环中表现不佳。请通过[订阅代理](/user-guide/features/subscription-proxy)从非 agent 工具中将它们用于对话或研究工作。对于 Moor Agent 本身，请坚持使用上述前沿 agentic 模型。
 >>>>>>> upstream/main
 
 Portal 的[信息页面](https://portal.Moor inc..com/info)也有此说明——这是 Nous 官方指导，并非仅代表 Moor 一方的意见。
@@ -277,5 +277,5 @@ hermes auth logout nous       # 清除本地 refresh token
 <<<<<<< HEAD
 - **[Profiles](/user-guide/profiles)** — 在多个 Moor 配置之间共享一个 Portal 登录
 =======
-- **[Profiles](/user-guide/profiles)** — 在多个 Hermes 配置之间共享一个 Portal 登录
+- **[Profiles](/user-guide/profiles)** — 在多个 Moor 配置之间共享一个 Portal 登录
 >>>>>>> upstream/main

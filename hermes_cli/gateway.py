@@ -3244,7 +3244,7 @@ def _append_node_dir_for_service(
 ) -> None:
     """Add the Node directory a generated service unit should use to *path_entries*.
 
-    The Hermes-managed Node under ``$HERMES_HOME/node`` goes first when it
+    The Moor-managed Node under ``$HERMES_HOME/node`` goes first when it
     exists. A bare ``shutil.which("node")`` cannot be trusted on its own here:
     a service unit is written once and then survives reboots, so resolving a
     system Node that happens to be ahead on the installing shell's PATH bakes
@@ -3252,7 +3252,7 @@ def _append_node_dir_for_service(
     backend spawn was fixed for. Managed dirs are profile-scoped, so each
     profile's unit still names its own Node.
 
-    *hermes_root* is the Hermes home the unit will run against. System units
+    *hermes_root* is the Moor home the unit will run against. System units
     installed via sudo MUST pass the **target user's** home: probing the
     default (the calling user's — root's — tree) would bake root's Node into
     the target user's unit. The probe swallows OSError: an unreadable
@@ -3277,7 +3277,7 @@ def _append_node_dir_for_service(
             path_entries.append(entry)
 
     # Ambient PATH lookup is a fallback, not an additional rung. Once the
-    # target Hermes home provides managed Node, consulting the invoker's PATH
+    # target Moor home provides managed Node, consulting the invoker's PATH
     # makes a system unit differ between sudo/root and its service user.
     if managed_node_present:
         return
@@ -3308,7 +3308,7 @@ def generate_systemd_unit(system: bool = False, run_as_user: str | None = None) 
     path_entries = _build_service_path_dirs()
     if not system:
         # System units append the managed Node dirs later, once the TARGET
-        # user's Hermes home is known — probing here would stat the calling
+        # user's Moor home is known — probing here would stat the calling
         # (sudo → root's) tree and bake the wrong user's Node into the unit.
         _append_node_dir_for_service(path_entries)
 

@@ -168,7 +168,7 @@ class TestUsageAccountSection:
         runner._session_db = AsyncSessionDB(MagicMock())
         runner._session_db._db.get_session.return_value = {
             "billing_provider": "nous",
-            "billing_base_url": "https://inference-api.nousresearch.com/v1/",
+            "billing_base_url": "https://inference-api.Moor inc..com/v1/",
         }
         runner._session_db._db.get_dominant_session_model_route.return_value = {
             "model": "z-ai/glm-5.2",

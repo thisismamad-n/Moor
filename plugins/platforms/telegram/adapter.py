@@ -604,7 +604,7 @@ _INITIAL_POLLING_PROGRESS_TIMEOUT = 60.0
 # whole reconnect ladder (the tracked _polling_error_task never completes, so
 # every escalation path stays gated behind its in-flight guard). Bound the drain
 # so the ladder always advances toward the fatal-restart escalation. Matches
-# _UPDATER_STOP_TIMEOUT. Refs: NousResearch/hermes-agent#66377
+# _UPDATER_STOP_TIMEOUT. Refs: Moor inc./hermes-agent#66377
 _DRAIN_TIMEOUT = 15.0
 # Cause-agnostic wedged-recovery watchdog (#66377). Every recovery path (the
 # reconnect ladder's re-entry, the pending-update probe, PTB's error callback)
@@ -1569,10 +1569,10 @@ class TelegramAdapter(BasePlatformAdapter):
         ``telegram_dm_topic_reply_fallback``. Live replies send the private
         topic thread id together with a reply anchor. Synthetic/resumed sends
         without an anchor (loop wakeups, background-process notifications,
-        queued follow-ups after a gateway restart) prefer the Hermes topic's
+        queued follow-ups after a gateway restart) prefer the Moor topic's
         ``message_thread_id`` so they stay in the active topic lane (#87051);
         ``direct_messages_topic_id`` is only used when no topic thread
-        resolves, since the native DM-topic id does not match the Hermes
+        resolves, since the native DM-topic id does not match the Moor
         topic lane and can render the message in a different chat lane.
 
         When ``reply_to_mode`` is ``"off"``, the reply anchor is suppressed for
@@ -1587,7 +1587,7 @@ class TelegramAdapter(BasePlatformAdapter):
             if reply_to_message_id is None:
                 # Anchor-less synthetic sends (loop wakeups, watch
                 # notifications, restart-resumed follow-ups) must stay in the
-                # active topic lane: prefer the Hermes topic thread id when it
+                # active topic lane: prefer the Moor topic thread id when it
                 # resolves (#87051). Routing via direct_messages_topic_id here
                 # sent these to a different lane than the topic the session
                 # runs in.
@@ -9394,7 +9394,7 @@ class TelegramAdapter(BasePlatformAdapter):
 <<<<<<< HEAD
         # unread in the Moor inbox (#52363).
 =======
-        # unread in the Hermes inbox (#52363).
+        # unread in the Moor inbox (#52363).
         #
         # Telegram stamps our CURRENT @username on those own-messages and on
         # reply_to_message, so learn the live handle here — before any mention

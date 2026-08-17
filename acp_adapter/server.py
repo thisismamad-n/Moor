@@ -699,7 +699,7 @@ class HermesACPAgent(acp.Agent):
     def _build_model_state(self, state: SessionState) -> SessionModelState | None:
         """Return authenticated providers and their models for ACP clients.
 
-        The shared Hermes inventory is also used by ``hermes model``, the TUI,
+        The shared Moor inventory is also used by ``hermes model``, the TUI,
         and the dashboard. Keeping ACP on that substrate prevents its selector
         from silently collapsing to the current provider's curated list.
         """
@@ -1864,7 +1864,7 @@ class HermesACPAgent(acp.Agent):
                 # ``cwd`` pins the logical working directory for this context,
                 # which is what the system prompt's "Current working directory"
                 # line reports (agent/prompt_builder.py -> resolve_agent_cwd).
-                # Without it the prompt advertises the global Hermes workspace
+                # Without it the prompt advertises the global Moor workspace
                 # while the tools are rooted at the client's project, so the
                 # model emits absolute paths under ~/.hermes/workspace and the
                 # edit silently lands outside the editor's workspace.
@@ -2138,7 +2138,7 @@ class HermesACPAgent(acp.Agent):
         # contextvars.copy_context() that pins the session cwd for the agent
         # call. ``/compress`` and ``/model`` reach code that REBUILDS the
         # system prompt (agent._build_system_prompt -> resolve_agent_cwd), so
-        # an unpinned handler bakes the Hermes install tree into the session's
+        # an unpinned handler bakes the Moor install tree into the session's
         # cached prompt — persisted, and therefore poisoning every later turn
         # even though the turn itself is pinned. Pin inside a fresh context so
         # the write can't leak into other concurrent ACP sessions and needs no

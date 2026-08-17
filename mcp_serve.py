@@ -625,7 +625,7 @@ def create_mcp_server(event_bridge: Optional[EventBridge] = None) -> "FastMCP":
     """Create and return the Moor MCP server with all tools registered."""
 =======
 def create_mcp_server(event_bridge: Optional[EventBridge] = None) -> "MCPServer":
-    """Create and return the Hermes MCP server with all tools registered."""
+    """Create and return the Moor MCP server with all tools registered."""
 >>>>>>> upstream/main
     if not _MCP_SERVER_AVAILABLE:
         raise ImportError(

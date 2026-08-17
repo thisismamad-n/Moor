@@ -130,7 +130,7 @@ You should see the new inbox address returned.
 name: agentmail
 description: "Give the agent its own inbox: send and receive email."
 version: 1.0.0
-author: teyrebaz33, Hermes Agent
+author: teyrebaz33, Moor Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
@@ -175,7 +175,7 @@ mcp_servers:
       AGENTMAIL_API_KEY: "am_your_key_here"
 ```
 
-### 3. Restart Hermes
+### 3. Restart Moor
 ```bash
 hermes
 ```

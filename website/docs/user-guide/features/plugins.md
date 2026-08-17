@@ -91,9 +91,9 @@ Drop both files into `~/.hermes/plugins/hello-world/`, restart Moor, and the mod
 <<<<<<< HEAD
 Project-local plugins under `./.hermes/plugins/` are disabled by default. Enable them only for trusted repositories by setting `HERMES_ENABLE_PROJECT_PLUGINS=true` before starting Moor.
 =======
-The model-facing tool description belongs in `schema["description"]`. The optional `ctx.register_tool(description=...)` value is separate `ToolEntry` registry metadata: when omitted, it defaults to the schema description, but Hermes does not copy it back into a schema that lacks `description`. Prefer defining the text once in the schema. If you provide both values, keep them synchronized; the model sees the schema value.
+The model-facing tool description belongs in `schema["description"]`. The optional `ctx.register_tool(description=...)` value is separate `ToolEntry` registry metadata: when omitted, it defaults to the schema description, but Moor does not copy it back into a schema that lacks `description`. Prefer defining the text once in the schema. If you provide both values, keep them synchronized; the model sees the schema value.
 
-Project-local plugins under `./.hermes/plugins/` are disabled by default. Enable them only for trusted repositories by setting `HERMES_ENABLE_PROJECT_PLUGINS=true` before starting Hermes.
+Project-local plugins under `./.hermes/plugins/` are disabled by default. Enable them only for trusted repositories by setting `HERMES_ENABLE_PROJECT_PLUGINS=true` before starting Moor.
 >>>>>>> upstream/main
 
 ## What plugins can do
@@ -179,7 +179,7 @@ abbreviated SHAs are not accepted):
 hermes plugins install owner/repo --ref 0123456789abcdef0123456789abcdef01234567
 ```
 
-Hermes checks out the commit detached, verifies that `HEAD` exactly matches the
+Moor checks out the commit detached, verifies that `HEAD` exactly matches the
 requested SHA, and records the canonical source, installed revision, and pin
 status in the current profile. `hermes plugins update` refuses to move a pinned
 plugin; choose a new exact commit explicitly with
@@ -206,7 +206,7 @@ In short: **bundled "always-works" infrastructure loads automatically; third-par
 ### Approval transports
 
 An approval transport changes **where a human sees and answers** an existing
-Hermes tool-approval request. It does not decide whether a command needs
+Moor tool-approval request. It does not decide whether a command needs
 approval and it is not an authorization-policy API.
 
 ```python
@@ -221,7 +221,7 @@ def register(ctx):
     ctx.register_approval_transport("my-ui", present)
 ```
 
-`present` may be synchronous or async. Hermes runs it on a bounded worker and
+`present` may be synchronous or async. Moor runs it on a bounded worker and
 enforces the canonical `approvals.timeout` even if the plugin does not. The
 request is immutable and contains redacted display text, its host presentation
 class (`cli` or `gateway`), the host timeout, allowed choices, and an opaque
@@ -247,10 +247,10 @@ security:
 Transport exceptions, timeouts, unavailable registrations, invalid choices,
 and stale responses deny by default. To deliberately show the prompt on the
 ordinary CLI/TUI/gateway/ACP surface when the selected transport fails, set
-`transport_fallback: builtin`. Without that exact opt-in, Hermes never
+`transport_fallback: builtin`. Without that exact opt-in, Moor never
 materializes the prompt on another surface.
 
-Hermes still owns hardline blocks, sudo-stdin protection, user deny rules,
+Moor still owns hardline blocks, sudo-stdin protection, user deny rules,
 request binding, allowed scopes, persistence, hooks, and final authorization.
 Hardline commands are blocked before any transport callback. There is
 intentionally **no plugin approval policy, auto-allow callback, or required
@@ -404,7 +404,7 @@ set — existing configs keep working unchanged.
 Capabilities are a **consent and audit layer**, not isolation. Plugins run as
 regular in-process Python: a malicious plugin can ignore every gate here.
 Granting a capability is a statement of trust in the plugin author — it is
-not a code audit, and Hermes has not reviewed the plugin's code. Only install
+not a code audit, and Moor has not reviewed the plugin's code. Only install
 plugins from sources you trust.
 :::
 
@@ -482,11 +482,11 @@ index and keep working exactly as before. An explicit `--ref <sha>` always
 overrides the index pin.
 
 **How the index is fetched.** The index lives at a canonical URL
-(`https://raw.githubusercontent.com/NousResearch/hermes-plugin-index/main/index.json`,
+(`https://raw.githubusercontent.com/Moor inc./hermes-plugin-index/main/index.json`,
 overridable via `hermes config set plugins.index_url <url>`). Fetches are
 cached under `~/.hermes/cache/plugin_index.json` for 24 hours; when the
 remote is unreachable the stale cache is used, and when there is no cache at
-all a bundled seed copy ships with Hermes — so search works fully offline.
+all a bundled seed copy ships with Moor — so search works fully offline.
 
 **Index entry format.** Each entry is a JSON object:
 
@@ -494,12 +494,12 @@ all a bundled seed copy ships with Hermes — so search works fully offline.
 {
   "name": "hermes-media-studio",
   "description": "Generative media workspace plugin.",
-  "author": "NousResearch",
+  "author": "Moor inc.",
   "tags": ["media", "image-gen"],
-  "repo": "NousResearch/hermes-media-studio",
+  "repo": "Moor inc./hermes-media-studio",
   "ref": "<40-char commit SHA>",
   "subdir": null,
-  "homepage": "https://github.com/NousResearch/hermes-media-studio",
+  "homepage": "https://github.com/Moor inc./hermes-media-studio",
   "capabilities": ["tools", "dashboard"],
   "api_version": 1,
   "added_at": "2026-08-12"
@@ -512,7 +512,7 @@ SHA, and optional `subdir` supports monorepos. The bundled seed file
 
 **Submitting a plugin.** The index is maintained as a plain JSON file —
 submit a pull request to the
-[hermes-plugin-index](https://github.com/NousResearch/hermes-plugin-index)
+[hermes-plugin-index](https://github.com/Moor inc./hermes-plugin-index)
 repository adding your entry (name, description, author, tags, `owner/repo`,
 and a pinned commit SHA). Review covers the entry's *metadata* only.
 
@@ -695,11 +695,11 @@ In CLI mode:
 In gateway mode:
 
 - `session_key` is required and must identify an existing gateway session. It is the stable routing key, not the CLI session ID.
-- Hermes reuses that session's stored platform, chat, thread, profile, and conversation history. Plugins cannot supply a new chat route through this API.
-- Hermes rechecks the stored route against the gateway's current authorisation rules before dispatch.
-- Routes that relied only on an adapter-time or upstream authorisation decision are rejected unless Hermes can revalidate them from current core allowlists, pairing, or explicit allow-all configuration.
+- Moor reuses that session's stored platform, chat, thread, profile, and conversation history. Plugins cannot supply a new chat route through this API.
+- Moor rechecks the stored route against the gateway's current authorisation rules before dispatch.
+- Routes that relied only on an adapter-time or upstream authorisation decision are rejected unless Moor can revalidate them from current core allowlists, pairing, or explicit allow-all configuration.
 - Injected text is always conversational input. It cannot invoke slash commands, approve tools, or resolve pending confirmation and clarification prompts.
-- The route and conversation are pinned while dispatch is pending. Hermes drops the request if topic recovery changes the route or the session rotates before handling starts.
+- The route and conversation are pinned while dispatch is pending. Moor drops the request if topic recovery changes the route or the session rotates before handling starts.
 - The request enters the platform adapter's normal message path. Active sessions use the existing busy-session queue rather than starting a competing turn.
 - Returns `True` when the live gateway accepts the request for asynchronous dispatch. This does not confirm that the agent turn or platform delivery has completed.
 - Returns `False` when `session_key` is omitted, the permission is not granted, or no live gateway can accept the request. Unknown or unroutable session keys discovered after asynchronous acceptance are written to the gateway log.
@@ -716,7 +716,7 @@ plugins:
 ```
 
 :::warning
-Only grant gateway injection to plugins you trust. Hermes checks this host API permission and restricts it to existing session routes, but Python plugins run in-process and this setting is not a sandbox.
+Only grant gateway injection to plugins you trust. Moor checks this host API permission and restricts it to existing session routes, but Python plugins run in-process and this setting is not a sandbox.
 :::
 
 :::note
@@ -725,7 +725,7 @@ This plugin API does not expose a public HTTP endpoint or CLI command for extern
 
 ## Calling MCP servers from plugins
 
-`ctx.call_mcp()` lets a plugin call a tool on one of the user's configured MCP servers — synchronously, from any hook or tool handler — routing through Hermes' existing native MCP client (same connections, trust-tier gates, circuit breaker, and reconnect logic as model-invoked MCP tools; never a parallel client).
+`ctx.call_mcp()` lets a plugin call a tool on one of the user's configured MCP servers — synchronously, from any hook or tool handler — routing through Moor' existing native MCP client (same connections, trust-tier gates, circuit breaker, and reconnect logic as model-invoked MCP tools; never a parallel client).
 
 ```python
 result = ctx.call_mcp(

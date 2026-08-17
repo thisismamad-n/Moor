@@ -1108,7 +1108,7 @@ class TestHandleUpdateCommand:
         # start_new_session=True should be in kwargs
         call_kwargs = mock_popen.call_args[1]
         assert call_kwargs.get("start_new_session") is True
-        assert "Starting Hermes update" in result
+        assert "Starting Moor update" in result
 
 
 # ---------------------------------------------------------------------------
@@ -1158,7 +1158,7 @@ class TestUpdateCommandPlatformGate:
 
         # The gate must NOT have rejected us — anything other than the
         # ``platform_not_messaging`` rejection string is acceptable here.
-        # Later steps may legitimately return success ("Starting Hermes
+        # Later steps may legitimately return success ("Starting Moor
         # update…") or fail for environment reasons.
         assert "only available from messaging platforms" not in result
 
@@ -1420,7 +1420,7 @@ class TestSendUpdateNotification:
         assert "ok before" in sent_text
         assert "invalid byte" in sent_text
         assert "continued after" in sent_text
-        assert "Hermes update finished" in sent_text
+        assert "Moor update finished" in sent_text
         assert not pending_path.exists()
         assert not output_path.exists()
         assert not exit_code_path.exists()
@@ -1470,6 +1470,6 @@ class TestWatchUpdateProgress:
         sent = "\n".join(call.args[1] for call in mock_adapter.send.call_args_list)
         assert "ok before" in sent
         assert "continued after" in sent
-        assert "Hermes update finished" in sent
+        assert "Moor update finished" in sent
         assert not (hermes_home / ".update_pending.json").exists()
 >>>>>>> upstream/main

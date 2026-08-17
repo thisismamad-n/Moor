@@ -122,14 +122,14 @@ Setup, headers (`X-Moor-Session-Id`, `X-Moor-Session-Key`), and frontend wiring:
 ### Model catalog surfaces
 
 The OpenAI-compatible API intentionally keeps `GET /v1/models` minimal: it is
-the compatibility endpoint frontends expect, not the full Hermes provider/model
+the compatibility endpoint frontends expect, not the full Moor provider/model
 picker catalog.
 
-If an external control plane needs Hermes' curated provider rows, per-model
+If an external control plane needs Moor' curated provider rows, per-model
 pricing, or capability hints, use one of the authenticated picker surfaces:
 
 - API server REST: `GET /api/model/options` with the API-server bearer key
-- Dashboard backend REST: `GET /api/model/options` with `X-Hermes-Session-Token`
+- Dashboard backend REST: `GET /api/model/options` with `X-Moor-Session-Token`
 - TUI gateway RPC: `model.options`
 
 Those surfaces share the same payload builder and the same custom-provider
@@ -141,9 +141,9 @@ probe policy:
   cache and probe all saved custom providers so live catalogs repopulate fully.
 
 Use `/v1/models` for OpenAI-client compatibility. Use `/api/model/options` or
-`model.options` when you are building a Hermes-aware model picker.
+`model.options` when you are building a Moor-aware model picker.
 
-`POST /v1/runs/{id}/steer` is the HTTP equivalent of Hermes `/steer`: it does not create a new user turn or immediately rewrite the assistant output already in flight. Instead, the text is appended to the live run and becomes visible to the agent after the next tool boundary, so it can course-correct without discarding the current tool-calling loop.
+`POST /v1/runs/{id}/steer` is the HTTP equivalent of Moor `/steer`: it does not create a new user turn or immediately rewrite the assistant output already in flight. Instead, the text is appended to the live run and becomes visible to the agent after the next tool boundary, so it can course-correct without discarding the current tool-calling loop.
 
 `/v1/runs/{id}/steer` is only accepted while the run status is `running`. Queued, approval-paused, stopping, cancelled, failed, and completed runs return `409 run_not_accepting_steer`, even if the server still retains internal agent references during cooperative shutdown.
 

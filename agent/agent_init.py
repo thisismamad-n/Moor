@@ -74,7 +74,7 @@ def _warn_memory_provider_unavailable(name: str, reason: str = "") -> None:
     log for itself. Without this warning a provider whose credentials/config are
     missing is silently dropped — the user has ``memory.provider`` set but gets
     no memory and no diagnostic. A common trigger is systemd/gateway services
-    not inheriting ``~/.hermes/.env``. See NousResearch/hermes-agent#2765.
+    not inheriting ``~/.hermes/.env``. See Moor inc./hermes-agent#2765.
 
     ``reason`` is the provider's ``unavailable_reason()`` — a provider-specific,
     actionable hint (e.g. which package to install). Because an unavailable
@@ -699,7 +699,7 @@ def init_agent(
         # AWS Bedrock — auto-detect from provider name or base URL
         # (bedrock-runtime.<region>.amazonaws.com).
         agent.api_mode = "bedrock_converse"
-    elif agent.provider in {"nous", "nous-portal", "nousresearch"}:
+    elif agent.provider in {"nous", "nous-portal", "Moor inc."}:
         # Portal is dual-wire: anthropic/* → Messages, everything else →
         # chat_completions. Callers that already pass api_mode win above;
         # this covers direct AIAgent construction without a resolved runtime.

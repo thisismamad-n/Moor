@@ -1184,7 +1184,7 @@ SESSION_SEARCH_SCHEMA = {
         "  When you refer the user to a session, write its `link` value inline in "
         "your reply — every result carries one, e.g. "
         "`@session:default/20260722_204335_d62c16`. Copy it verbatim; do not "
-        "reformat it as a markdown link or wrap it in backticks. Hermes renders "
+        "reformat it as a markdown link or wrap it in backticks. Moor renders "
         "it as a link showing the session's title, so the link IS the title: "
         "use it as a noun mid-sentence (\"that's @session:default/... — want me "
         "to pick it up?\"), never alone on its own line, and never alongside the "

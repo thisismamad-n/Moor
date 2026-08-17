@@ -460,7 +460,7 @@ class HermesTokenStorage:
 =======
         if OAuthToken is None and not _ensure_sdk_loaded():
             return None
-        # Hermes records an absolute wall-clock ``expires_at`` alongside the
+        # Moor records an absolute wall-clock ``expires_at`` alongside the
 >>>>>>> upstream/main
         # SDK's serialized token (see ``set_tokens``). On read we rewrite
         # ``expires_in`` to the remaining seconds so the SDK's downstream
@@ -1280,7 +1280,7 @@ def _resolve_redirect_uri(cfg: dict, port: int) -> str:
 # of 2026-07, verified by live call against api.figma.com):
 #   "Claude Code" → 200
 #   "Codex"       → 200
-#   "Hermes Agent" / "Hermes" / "Cursor" / "VS Code" / … → 403
+#   "Moor Agent" / "Moor" / "Cursor" / "VS Code" / … → 403
 # pi-figma-remote-auth and similar tools work around this the same way — register
 # under an allowlisted name so the browser flow can start. User can still pin a
 # different name via oauth.client_name if Figma ever admits one.
@@ -1355,7 +1355,7 @@ def _build_client_metadata(cfg: dict) -> "OAuthClientMetadata":
 =======
     if OAuthClientMetadata is None:
         _ensure_sdk_loaded()
-    client_name = cfg.get("client_name", "Hermes Agent")
+    client_name = cfg.get("client_name", "Moor Agent")
 >>>>>>> upstream/main
     scope = cfg.get("scope")
     redirect_uri = _resolve_redirect_uri(cfg, port)
@@ -1374,7 +1374,7 @@ def _build_client_metadata(cfg: dict) -> "OAuthClientMetadata":
         "token_endpoint_auth_method": auth_method,
         # SEP-837 (2026-07-28 spec): clients MUST declare an application_type
         # during registration so OIDC-strict authorization servers stop
-        # rejecting loopback redirect_uris. Hermes is a CLI/desktop app
+        # rejecting loopback redirect_uris. Moor is a CLI/desktop app
         # redirecting to 127.0.0.1/localhost — that is exactly "native".
         # Overridable for the rare hosted-dashboard deployment fronting a
         # real https redirect.
@@ -1494,9 +1494,9 @@ def humanize_oauth_registration_error(
     Returns a humanized message when the error is a registration 403/Forbidden,
     else ``None`` so the caller keeps the original exception text.
 
-    Figma's remote MCP gates DCR on exact ``client_name``. Hermes auto-sets
+    Figma's remote MCP gates DCR on exact ``client_name``. Moor auto-sets
     ``Claude Code`` (known-good); this message fires when the user overrode
-    that with something Figma still rejects, or an older Hermes is running.
+    that with something Figma still rejects, or an older Moor is running.
     """
     msg = str(exc)
     lowered = msg.lower()
@@ -1517,7 +1517,7 @@ def humanize_oauth_registration_error(
         return (
             f"'{server_name}' is Figma's remote MCP — DCR is allowlisted by "
             f"exact client_name (\"{_FIGMA_DCR_CLIENT_NAME}\" and \"Codex\" "
-            "work; most other names 403). Hermes defaults to "
+            "work; most other names 403). Moor defaults to "
             f"client_name: {_FIGMA_DCR_CLIENT_NAME!r} automatically. If you "
             "set oauth.client_name yourself, change it to one of those, or "
             "clear it and re-run:\n"

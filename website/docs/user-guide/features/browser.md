@@ -66,7 +66,7 @@ Get your API key at [browser-use.com](https://browser-use.com).
 
 Browser Use mode uses the [Browser Use CLI 3.0](https://github.com/browser-use/browser-use) — a new browser harness that is state-of-the-art at web tasks — instead of the built-in browser tools. The agent writes and executes Python in the browser to click, type, drag, scrape, and interact with webpages.
 
-**This is the default browser mode**: when `browser.backend` is unset and the `browser-use` CLI is runnable (installed, or available through `uvx`), the agent gets the single `browser_exec` tool. If the CLI can't run, Hermes falls back to the built-in browser tools automatically.
+**This is the default browser mode**: when `browser.backend` is unset and the `browser-use` CLI is runnable (installed, or available through `uvx`), the agent gets the single `browser_exec` tool. If the CLI can't run, Moor falls back to the built-in browser tools automatically.
 
 The mode is a **driver** that composes with your configured browser backend: it drives your local Chrome, a Nous-subscription cloud browser, Browserbase, Firecrawl, or Browser Use cloud browsers — whichever browser source is selected in `hermes tools` → Browser Automation. The one exception is Camofox, which has no CDP endpoint for the harness to attach to; Camofox setups automatically keep the built-in browser tools.
 
@@ -353,9 +353,9 @@ Or via environment variable:
 AGENT_BROWSER_ENGINE=lightpanda
 ```
 
-Hermes drives Lightpanda through `agent-browser` over CDP, the same way it drives local Chrome.
+Moor drives Lightpanda through `agent-browser` over CDP, the same way it drives local Chrome.
 
-**Automatic Chrome fallback.** Lightpanda doesn't yet cover everything Chrome does, so the integration is non-disruptive: Lightpanda handles the actions it supports, and Hermes transparently retries on Chrome for anything it doesn't. The supported set covers the core agent workflow — navigate, snapshot, click, type, scroll, back, press, and eval. Screenshots also fall back to Chrome because Lightpanda has no graphical renderer; `browser_vision` is pre-routed straight to Chrome for the same reason.
+**Automatic Chrome fallback.** Lightpanda doesn't yet cover everything Chrome does, so the integration is non-disruptive: Lightpanda handles the actions it supports, and Moor transparently retries on Chrome for anything it doesn't. The supported set covers the core agent workflow — navigate, snapshot, click, type, scroll, back, press, and eval. Screenshots also fall back to Chrome because Lightpanda has no graphical renderer; `browser_vision` is pre-routed straight to Chrome for the same reason.
 
 ### Local Chromium-family browser via CDP (`/browser connect`)
 
@@ -467,7 +467,7 @@ BROWSER_INACTIVITY_TIMEOUT=120
 #   chrome     — force Chrome explicitly
 AGENT_BROWSER_ENGINE=auto
 
-# Extra Chromium launch flags (comma- or newline-separated). Hermes auto-injects
+# Extra Chromium launch flags (comma- or newline-separated). Moor auto-injects
 >>>>>>> upstream/main
 # `--no-sandbox,--disable-dev-shm-usage` when it detects root or AppArmor-restricted
 # unprivileged user namespaces (Ubuntu 23.10+, DGX Spark, many container images),

@@ -545,7 +545,7 @@ Karpathy's LLM Wiki: build/query interlinked markdown KB.
 | Source | Bundled (installed by default) |
 | Path | `skills/research/llm-wiki` |
 | Version | `2.1.0` |
-| Author | Hermes Agent |
+| Author | Moor Agent |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `wiki`, `knowledge-base`, `research`, `notes`, `markdown`, `rag-alternative` |
@@ -554,7 +554,7 @@ Karpathy's LLM Wiki: build/query interlinked markdown KB.
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Hermes loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that Moor loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Karpathy's LLM Wiki

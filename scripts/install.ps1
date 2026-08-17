@@ -737,7 +737,7 @@ function Install-Uv {
 <<<<<<< HEAD
     # Moor owns its own uv at $HermesHome\bin\uv.exe.  Always install there —
 =======
-    # Hermes owns its own uv at $HermesHome\bin\uv.exe.  Always install there --
+    # Moor owns its own uv at $HermesHome\bin\uv.exe.  Always install there --
 >>>>>>> upstream/main
     # no PATH probing, no conda guards, no multi-location resolution chains.
     # The runtime update path (hermes_cli/managed_uv.py) looks in the same
@@ -879,7 +879,7 @@ function Ensure-NodeExeOnPath {
     return $true
 }
 
-# Put the Hermes-managed Node dir at the FRONT of the persisted User PATH.
+# Put the Moor-managed Node dir at the FRONT of the persisted User PATH.
 #
 # Appending is not enough: it leaves a pre-existing system Node ahead of the
 # bundled one in every new shell, so anything launched without a curated
@@ -929,7 +929,7 @@ function Get-NpmRange {
     return $NpmRange
 }
 
-# Upgrade the Hermes-managed Node tree's bundled npm into $NpmRange.
+# Upgrade the Moor-managed Node tree's bundled npm into $NpmRange.
 #
 # The nodejs.org zip ships whatever npm that Node major bundles -- Node 26.5.1
 # bundles npm 11.17.0, one minor below the root package.json's own
@@ -975,7 +975,7 @@ function Update-ManagedNpm {
     # in-place upgrade would hit WinError 5 (Access denied) on npm.cmd
     # (#80926).  Defer; the next update with the app closed retries.
     if (Test-ManagedNodeInUse $NodeDir) {
-        Write-Warn "Hermes-managed Node.js is in use by a running app; skipping the bundled npm upgrade (applies on a later update with the app closed)."
+        Write-Warn "Moor-managed Node.js is in use by a running app; skipping the bundled npm upgrade (applies on a later update with the app closed)."
         return $false
     }
 
@@ -1593,7 +1593,7 @@ function Test-Node {
             $script:HasNode = $true
             return $true
         }
-        Write-Warn "Node.js $version is too old (Hermes requires Node >=26)"
+        Write-Warn "Node.js $version is too old (Moor requires Node >=26)"
     }
 
     # Prefer a Moor-managed Node from a previous run over a too-old system one.
@@ -1605,7 +1605,7 @@ function Test-Node {
         Write-Success "Node.js $version found (Moor-managed)"
 =======
         Set-ManagedNodeFirstOnUserPath "$HermesHome\node"
-        Write-Success "Node.js $version found (Hermes-managed)"
+        Write-Success "Node.js $version found (Moor-managed)"
         # A tree from an older install still has that Node major's bundled
         # npm, which is below the current engines.npm floor. No-ops when the
         # npm is already in range, so reruns cost one --version probe.
@@ -1679,7 +1679,7 @@ function Test-Node {
                     try {
                         Rename-Item "$HermesHome\node" $backup -ErrorAction Stop
                     } catch {
-                        Write-Warn "Hermes-managed Node.js is in use by a running app; deferring its upgrade. Close the app and re-run the update."
+                        Write-Warn "Moor-managed Node.js is in use by a running app; deferring its upgrade. Close the app and re-run the update."
                         Remove-Item -Recurse -Force $staged -ErrorAction SilentlyContinue
                         Remove-Item -Recurse -Force $tmpDir -ErrorAction SilentlyContinue
                         Remove-Item -Force $tmpZip -ErrorAction SilentlyContinue
@@ -2489,7 +2489,7 @@ function Install-Venv {
             # That process holds the venv's .pyd files open and re-triggers the
             # access-denied failure. Select only roots whose executable lives
             # under this venv, then stop each root's whole process tree. Some
-            # Hermes children re-exec through .hermes-runtime, so killing only
+            # Moor children re-exec through .hermes-runtime, so killing only
             # the selected venv process can leave its child holding the install
             # open. The path-prefix check still keeps unrelated Python processes
             # outside this venv untouched.
@@ -2543,7 +2543,7 @@ function Install-Venv {
             $renameErr = $_.Exception.Message
             throw (
                 "Could not move the existing venv aside ($renameErr). " +
-                "A process still has the install directory open (often a non-Hermes " +
+                "A process still has the install directory open (often a non-Moor " +
                 "python.exe that resolved into this venv via PATH). Close those " +
                 "processes and retry - the previous install was left intact."
             )
@@ -2688,7 +2688,7 @@ function Complete-VenvTransaction {
 function Restore-VenvBackup {
     # Rollback: the dependency stage failed after Install-Venv replaced the
     # venv. Park the unusable replacement and restore the previous working
-    # venv so Hermes (and the venv-blocker probe) stay usable (#83149).
+    # venv so Moor (and the venv-blocker probe) stay usable (#83149).
     $backupName = Get-PendingVenvBackup
     if (-not $backupName) { return }
     try {
@@ -2861,7 +2861,7 @@ except Exception:
     if (-not $NoVenv) {
         $venvPython = "$InstallDir\venv\Scripts\python.exe"
         if (-not (Test-Path $venvPython)) {
-            throw "Install reported success but $venvPython does not exist. The dependency sync likely landed in a sibling .venv\ directory. Re-run the installer; if it persists, close Hermes processes and preserve existing venv directories before retrying. Do not delete venv in place."
+            throw "Install reported success but $venvPython does not exist. The dependency sync likely landed in a sibling .venv\ directory. Re-run the installer; if it persists, close Moor processes and preserve existing venv directories before retrying. Do not delete venv in place."
         }
         # Relax EAP=Stop while running the import probe.  Python writes
         # deprecation warnings and import-system info to stderr; under
@@ -2877,7 +2877,7 @@ except Exception:
         if ($importExitCode -ne 0) {
             $sibling = "$InstallDir\.venv"
             $hint = if (Test-Path $sibling) {
-                "Detected sibling .venv\ at $sibling -- uv synced there instead of venv\. Close Hermes processes, preserve the existing venv, and rerun the installer so the transactional recovery path can move directories safely."
+                "Detected sibling .venv\ at $sibling -- uv synced there instead of venv\. Close Moor processes, preserve the existing venv, and rerun the installer so the transactional recovery path can move directories safely."
             } else {
                 "Recover with: cd '$InstallDir'; `$env:UV_PROJECT_ENVIRONMENT='$InstallDir\venv'; uv sync --extra all --locked"
             }
@@ -2893,7 +2893,7 @@ except Exception:
     } catch {
         # Dependency install or import validation failed: restore the previous
         # working venv (parked by Install-Venv) before surfacing the error, so
-        # a failed update leaves Hermes and its blocker probe usable.
+        # a failed update leaves Moor and its blocker probe usable.
         Restore-VenvBackup
         Pop-Location
         throw
@@ -2995,7 +2995,7 @@ function Set-PathVariable {
         # venv\Scripts directory. venv\Scripts contains python.exe /
         # pythonw.exe / pip.exe, and putting it on the user PATH silently
         # hijacks the `python` command in every terminal on the machine
-        # (#83797): unrelated projects start resolving python to Hermes'
+        # (#83797): unrelated projects start resolving python to Moor'
         # runtime interpreter. A dedicated bin dir with copies of the
         # launcher exes keeps `hermes` globally available without
         # shadowing anything. (Launcher exes embed the venv interpreter
@@ -3528,7 +3528,7 @@ function Install-BrowserUseCli {
     }
     $managedBin = Join-Path $HermesHome "bin"
     $managedBu = Join-Path $managedBin "browser-use.exe"
-    # MANAGED-FIRST: only Hermes' managed copy short-circuits. A browser-use
+    # MANAGED-FIRST: only Moor' managed copy short-circuits. A browser-use
     # on the user's PATH is a side install -- resolution prefers the managed
     # copy, so it must be provisioned regardless.
     if (Test-Path $managedBu) {
@@ -3540,7 +3540,7 @@ function Install-BrowserUseCli {
     $prevEAP = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
     try {
-        # UV_TOOL_BIN_DIR keeps the binary inside Hermes' managed bin dir,
+        # UV_TOOL_BIN_DIR keeps the binary inside Moor' managed bin dir,
         # where the browser tool resolves it -- no reliance on the user PATH.
         $env:UV_TOOL_BIN_DIR = $managedBin
         $env:UV_NO_CONFIG = "1"
@@ -3638,7 +3638,7 @@ function Install-CuaDriver {
         # Same upstream installer `hermes computer-use install` runs. Bounded
         # via a background job: the upstream installer serializes with its own
         # lock (600s stale window), so the ceiling sits above that -- matching
-        # Hermes' _CUA_INSTALLER_TIMEOUT (660s).
+        # Moor' _CUA_INSTALLER_TIMEOUT (660s).
         $job = Start-Job -ScriptBlock {
             Invoke-RestMethod -UseBasicParsing "https://raw.githubusercontent.com/trycua/cua/main/libs/cua-driver/scripts/install.ps1" | Invoke-Expression
         }
@@ -3830,7 +3830,7 @@ function Install-Desktop {
     # resolves apps/desktop/release/win-unpacked/Moor.exe directly,
     # so an "unpacked" build (electron-builder --dir) is enough — we
 =======
-    # resolves apps/desktop/release/win-unpacked/Hermes.exe directly,
+    # resolves apps/desktop/release/win-unpacked/Moor.exe directly,
     # so an "unpacked" build (electron-builder --dir) is enough -- we
 >>>>>>> upstream/main
     # don't need to produce an NSIS/MSI artifact here.
@@ -3840,7 +3840,7 @@ function Install-Desktop {
 <<<<<<< HEAD
     # enforces the build floor (^20.19 || >=22.12) and prepends the Moor-managed
 =======
-    # enforces the build floor (Node >=26) and prepends the Hermes-managed
+    # enforces the build floor (Node >=26) and prepends the Moor-managed
 >>>>>>> upstream/main
     # Node to PATH, so the build never runs on a too-old system Node -- the cause
     # of the opaque "Build desktop app ... exit code 1" failure (Vite crashes on
@@ -3955,8 +3955,8 @@ function Install-Desktop {
     # stamped onto Moor.exe by our own rcedit step (Set-DesktopExeIdentity)
 =======
     # (whose macOS symlinks crash 7-Zip on non-admin Windows -- a dead end we
-    # are NOT trying to work around). The Hermes icon + product name are
-    # stamped onto Hermes.exe by our own rcedit step (Set-DesktopExeIdentity)
+    # are NOT trying to work around). The Moor icon + product name are
+    # stamped onto Moor.exe by our own rcedit step (Set-DesktopExeIdentity)
 >>>>>>> upstream/main
     # AFTER this build, completely decoupled from electron-builder signing.
     #

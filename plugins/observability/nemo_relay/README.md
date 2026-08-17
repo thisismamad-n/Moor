@@ -10,13 +10,13 @@ CLI UX. Instead, this plugin lets Moor emit NeMo Relay lifecycle events for
 the work Moor already owns: sessions, turns, provider/API calls, tool calls,
 approval prompts, and delegated subagents.
 =======
-Optional Hermes observability plugin that configures exporters and maps
-Hermes-specific observer hooks to NeMo Relay marks and ATIF state. Hermes core
+Optional Moor observability plugin that configures exporters and maps
+Moor-specific observer hooks to NeMo Relay marks and ATIF state. Moor core
 owns Relay session, turn, LLM, and tool execution scopes.
 
 NeMo Relay is NVIDIA's runtime layer for agent execution boundaries. It does
-not replace Hermes Agent's planner, tools, memory, model provider routing, or
-CLI UX. Hermes core emits NeMo Relay lifecycle events for provider and tool
+not replace Moor Agent's planner, tools, memory, model provider routing, or
+CLI UX. Moor core emits NeMo Relay lifecycle events for provider and tool
 execution, while this plugin enables rich exporters and observer marks for
 sessions, turns, approval prompts, and delegated subagents.
 >>>>>>> upstream/main
@@ -27,8 +27,8 @@ With this plugin enabled, Moor Agent can:
 - Preserve Moor execution as NeMo Relay scopes, LLM spans, tool spans, and
   mark events.
 =======
-- Export the Relay scopes and LLM/tool lifecycles emitted by Hermes core.
-- Add Hermes session, turn, approval, and subagent mark events.
+- Export the Relay scopes and LLM/tool lifecycles emitted by Moor core.
+- Add Moor session, turn, approval, and subagent mark events.
 >>>>>>> upstream/main
 - Export raw lifecycle events as Agent Trajectory Observability Format (ATOF)
   JSONL for debugging and offline inspection.
@@ -97,7 +97,7 @@ uv run hermes chat --query 'Reply exactly ok' --provider custom --model qwen3.6:
 
 To ship the updated CLI into another environment, build and install a fresh
 wheel from this checkout. On platforms for which Relay publishes a native
-wheel, Hermes installs its supported NeMo Relay runtime as a normal dependency:
+wheel, Moor installs its supported NeMo Relay runtime as a normal dependency:
 
 ```bash
 uv build --wheel
@@ -107,7 +107,7 @@ hermes plugins enable observability/nemo_relay
 
 The plugin remains opt-in even though the runtime dependency is installed by
 default. Enabling this plugin controls rich observability and adaptive
-behavior; it does not control Hermes shared client metrics.
+behavior; it does not control Moor shared client metrics.
 
 ## Session-Span Segmentation (Continuous Sessions)
 
@@ -207,7 +207,7 @@ Relay owns exporter lifecycle through that config. The direct
 double-export trajectories on teardown. If `plugins.toml` initialization fails,
 Moor keeps the direct env-var fallbacks active for that run.
 
-Hermes core routes provider and tool execution through NeMo Relay managed APIs
+Moor core routes provider and tool execution through NeMo Relay managed APIs
 regardless of whether this plugin is enabled. To install adaptive interceptors
 on those boundaries, include an adaptive component in the same `plugins.toml`:
 
@@ -241,8 +241,8 @@ execution boundary.
 
 ### Dynamic Plugins
 
-Hermes uses the dynamic-plugin activation API available in NeMo Relay 0.6 and
-later. Configure native or worker plugins with Hermes-owned
+Moor uses the dynamic-plugin activation API available in NeMo Relay 0.6 and
+later. Configure native or worker plugins with Moor-owned
 >>>>>>> upstream/main
 `[[dynamic_plugins]]` entries that match the Python binding's activation-spec
 fields:
@@ -301,14 +301,14 @@ available. No dynamic plugin is loaded in that degraded mode.
 
 For the full generic Moor middleware contract, see
 =======
-For the full generic Hermes middleware contract, see
+For the full generic Moor middleware contract, see
 >>>>>>> upstream/main
 [`docs/middleware/README.md`](../../../docs/middleware/README.md).
 
 ## Canonical Local Examples
 
 The observe-only examples in this section use the NeMo Relay runtime installed
-with Hermes and a local Ollama model served through the OpenAI-compatible API.
+with Moor and a local Ollama model served through the OpenAI-compatible API.
 
 ```bash
 export HERMES_HOME=/tmp/hermes-nemo-relay-docs/hermes-home
@@ -498,9 +498,9 @@ The plugin keeps NeMo Relay's native event model:
 - Moor API request hooks map to `llm` scope start/end events.
 - Moor tool hooks map to `tool` scope start/end events.
 =======
-- Hermes sessions map to `agent` scopes.
-- Hermes core managed provider calls map to `llm` scope start/end events.
-- Hermes core managed tool calls map to `tool` scope start/end events.
+- Moor sessions map to `agent` scopes.
+- Moor core managed provider calls map to `llm` scope start/end events.
+- Moor core managed tool calls map to `tool` scope start/end events.
 >>>>>>> upstream/main
 - Turn, approval, subagent, and diagnostic fallback events map to `mark`
   events.
@@ -518,9 +518,9 @@ The `observability/nemo_relay` plugin uses Moor execution middleware to hand
 LLM and tool calls to NeMo Relay managed execution when an adaptive component is
 enabled.
 =======
-Hermes core owns the LLM and tool boundaries and enters NeMo Relay managed
-execution while a Hermes-managed Relay consumer is active. With no shared
-metrics subscriber or explicitly configured Relay plugin, Hermes calls the
+Moor core owns the LLM and tool boundaries and enters NeMo Relay managed
+execution while a Moor-managed Relay consumer is active. With no shared
+metrics subscriber or explicitly configured Relay plugin, Moor calls the
 provider or tool directly. The `observability/nemo_relay` plugin retains the
 managed path while its adaptive components are installed on those boundaries.
 >>>>>>> upstream/main
@@ -563,13 +563,13 @@ Moor tool call
 Execution follows these boundaries with or without an adaptive component:
 
 ```text
-Hermes provider call
+Moor provider call
   -> nemo_relay.llm.execute(...)
-    -> Hermes provider adapter callback(...)
+    -> Moor provider adapter callback(...)
 
-Hermes tool call
+Moor tool call
   -> nemo_relay.tools.execute(...)
-    -> Hermes authorization and dispatch callback(...)
+    -> Moor authorization and dispatch callback(...)
 >>>>>>> upstream/main
 ```
 
@@ -585,7 +585,7 @@ middleware for a local Moor run. This path requires a NeMo Relay runtime that
 supports `[components.config.tool_parallelism]`, as provided by the supported
 0.x release range beginning with 0.5.
 =======
-middleware for a local Hermes run. This path requires a NeMo Relay runtime that
+middleware for a local Moor run. This path requires a NeMo Relay runtime that
 supports `[components.config.tool_parallelism]`, as provided by NeMo Relay 0.6
 and later.
 >>>>>>> upstream/main

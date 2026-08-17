@@ -927,7 +927,7 @@ def _normalize_openviking_url(url: str) -> str:
     # Local / LAN self-host remains allowed; reject cloud-metadata and other
     # always-blocked floors so a poisoned endpoint cannot SSRF via memory sync.
     # Never silently replace an explicitly unsafe endpoint with localhost: that
-    # could attach Hermes to an unrelated deployment and forward credentials to
+    # could attach Moor to an unrelated deployment and forward credentials to
     # a destination the user did not configure.
     try:
         check_url = candidate
@@ -941,7 +941,7 @@ def _normalize_openviking_url(url: str) -> str:
     except Exception as exc:
         logger.debug("OpenViking endpoint safety validation failed", exc_info=True)
         raise _OpenVikingEndpointError(
-            "OpenViking endpoint safety validation failed; Hermes refused the connection."
+            "OpenViking endpoint safety validation failed; Moor refused the connection."
         ) from exc
 
     return candidate
@@ -1536,7 +1536,7 @@ def _start_local_openviking_server(endpoint: str) -> tuple[str, str]:
         listener = _describe_local_port_listener(host, port)
         return (
             _LOCAL_SERVER_OCCUPIED,
-            f"Port {host}:{port} is occupied by {listener}. Hermes did not start "
+            f"Port {host}:{port} is occupied by {listener}. Moor did not start "
             "openviking-server because the listener has not passed OpenViking's /health check.",
         )
     server_cmd = shutil.which("openviking-server")
@@ -1549,12 +1549,12 @@ def _start_local_openviking_server(endpoint: str) -> tuple[str, str]:
     try:
         log_path.parent.mkdir(parents=True, exist_ok=True)
         # Do not let the server child inherit this process's PYTHONPATH.
-        # The Hermes Desktop backend can include the Hermes venv's
+        # The Moor Desktop backend can include the Moor venv's
         # site-packages in PYTHONPATH. If inherited, openviking-server would
-        # import aiohttp and friends from the Hermes venv instead of its own
+        # import aiohttp and friends from the Moor venv instead of its own
         # (its venv's site-packages are shadowed because PYTHONPATH precedes
         # them) —
-        # and on Windows the loaded DLLs then lock the Hermes venv,
+        # and on Windows the loaded DLLs then lock the Moor venv,
         # aborting `hermes update` with access-denied on .pyd files.
         # Strip PYTHONPATH so the server resolves packages from its own
         # venv. (#78153)
@@ -1674,7 +1674,7 @@ def _runtime_openviking_timeout_message(endpoint: str) -> str:
 <<<<<<< HEAD
         "OpenViking memory disabled for this Moor run."
 =======
-        "OpenViking memory is temporarily unavailable; Hermes will retry on a later access or when "
+        "OpenViking memory is temporarily unavailable; Moor will retry on a later access or when "
         "the config changes."
 >>>>>>> upstream/main
     )
@@ -2632,7 +2632,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
                 if not healthy:
                     warning_message = (
                         f"OpenViking server at {endpoint} is still not reachable after auto-start. "
-                        "OpenViking memory is temporarily unavailable; Hermes will retry on a later access or when "
+                        "OpenViking memory is temporarily unavailable; Moor will retry on a later access or when "
                         "the config changes."
                     )
                 else:
@@ -2651,7 +2651,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
             except Exception as e:
                 warning_message = (
                     f"OpenViking server at {endpoint} could not be attached after auto-start: {e}. "
-                    "OpenViking memory is temporarily unavailable; Hermes will retry on a later access or when "
+                    "OpenViking memory is temporarily unavailable; Moor will retry on a later access or when "
                     "the config changes."
                 )
 
@@ -2686,7 +2686,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
                 "OpenViking memory disabled for this Moor run. "
 =======
                 f"Remote OpenViking server at {endpoint} is not reachable. "
-                "OpenViking memory is temporarily unavailable; Hermes will retry on a later access or when "
+                "OpenViking memory is temporarily unavailable; Moor will retry on a later access or when "
                 "the config changes. "
 >>>>>>> upstream/main
                 "Check the configured endpoint and network connectivity.",
@@ -2713,7 +2713,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
                 self._runtime_start_pending = False
                 warning_message = (
                     f"Local OpenViking server at {endpoint} is not reachable. {start_message} "
-                    "OpenViking memory is temporarily unavailable; Hermes will retry on a later access or when "
+                    "OpenViking memory is temporarily unavailable; Moor will retry on a later access or when "
                     "the config changes."
                 )
                 self._client = None
@@ -2840,7 +2840,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
                 elif health_state != "healthy":
                     _emit_runtime_warning(
                         f"{health_message} OpenViking memory is temporarily unavailable; "
-                        "Hermes will retry on a later access or when the config changes.",
+                        "Moor will retry on a later access or when the config changes.",
                         warning_callback,
                     )
                     self._client = None
@@ -2964,7 +2964,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
         self._failed_refresh = (settings_key, time.monotonic())
         if health_state == "responded":
             logger.warning(
-                "%s OpenViking memory is temporarily unavailable; Hermes will retry on a "
+                "%s OpenViking memory is temporarily unavailable; Moor will retry on a "
                 "later access (after cooldown) or when the config changes.",
                 health_message,
             )

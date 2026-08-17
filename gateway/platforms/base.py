@@ -50,9 +50,9 @@ def _consume_detached_handler_exception(task: "asyncio.Task") -> None:
         )
 
 
-# Audio file extensions Hermes recognizes for native audio delivery.
+# Audio file extensions Moor recognizes for native audio delivery.
 # Keep Telegram's narrower attachment/voice sets below separate: formats such
-# as MPEG-2 Layer II are audio to Hermes but unsupported by sendAudio/sendVoice.
+# as MPEG-2 Layer II are audio to Moor but unsupported by sendAudio/sendVoice.
 _AUDIO_MIME_TYPES = {
     ".ogg": "audio/ogg",
     ".opus": "audio/opus",
@@ -1599,7 +1599,7 @@ def _docker_persistent_home_host_root() -> Optional[Path]:
 
 
 def _cache_dir_container_mounts() -> List[Tuple[Path, Path]]:
-    """(host, container) pairs for the auto-mounted Hermes cache dirs.
+    """(host, container) pairs for the auto-mounted Moor cache dirs.
 
     The agent legitimately sees generated artifacts at ``/root/.hermes/...``
     (``agent_visible_image`` from image_generate, cache-dir reads) and will
@@ -1624,7 +1624,7 @@ def _translate_docker_container_media_path(candidate: Path) -> Optional[Path]:
     """Translate a container-absolute path to its host path when possible.
 
     Uses longest-prefix match across configured ``docker_volumes``, the
-    auto-mounted Hermes cache dirs (``/root/.hermes/...``), the default
+    auto-mounted Moor cache dirs (``/root/.hermes/...``), the default
     persistent Docker ``/workspace`` host root, and the persistent ``/root``
     home mount.
     """

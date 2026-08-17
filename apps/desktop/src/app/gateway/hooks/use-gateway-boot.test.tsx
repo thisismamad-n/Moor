@@ -427,7 +427,7 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
     // The version-skew report: gateway WS connects fine, but refreshSessions()
     // rejects (e.g. older backend 404s an endpoint the fallback didn't cover,
     // or a transient read error). That must NOT reject boot() into
-    // failDesktopBoot's "Hermes couldn't start" overlay — the socket is open
+    // failDesktopBoot's "Moor couldn't start" overlay — the socket is open
     // and the app is fully usable with an empty sidebar.
     const refreshSessions = vi.fn(async () => {
       throw new Error('404: {"detail":"No such API endpoint: /api/profiles/sessions/sidebar"}')
@@ -457,8 +457,8 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
     desktop.settings = {
       getDefaultProjectDir: vi.fn(async () => ({
         defaultLabel: 'C:\\Users\\sonny',
-        dir: 'C:\\Hermes',
-        resolvedCwd: 'C:\\Hermes'
+        dir: 'C:\\Moor',
+        resolvedCwd: 'C:\\Moor'
       })),
       pickDefaultProjectDir: vi.fn(async () => undefined),
       setDefaultProjectDir: vi.fn(async () => undefined)
@@ -484,8 +484,8 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
     render(<Harness />)
     await flushAsync()
 
-    expect(cwdAtConnect).toBe('C:\\Hermes')
-    expect($currentCwd.get()).toBe('C:\\Hermes')
+    expect(cwdAtConnect).toBe('C:\\Moor')
+    expect($currentCwd.get()).toBe('C:\\Moor')
   })
 
   it('FIX: primary sleep/wake reconnect dials the window backend, not the active secondary profile', async () => {

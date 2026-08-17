@@ -205,7 +205,7 @@ Moor-prefixed and standard SDK env vars (`LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET
 
 ### observability/nemo_relay
 
-Relays Hermes execution boundaries — sessions, turns, LLM calls, and tool invocations — to an [NVIDIA NeMo Relay](https://docs.nvidia.com/nemo/relay/about-nemo-relay/overview) endpoint. Hermes core owns the Relay session/turn/LLM/tool scopes; the plugin configures exporters (ATOF JSONL, ATIF trajectories, OpenTelemetry) and adds observer marks for approvals and delegated subagents. Full exporter setup lives in the plugin's `README.md` under `plugins/observability/nemo_relay/`.
+Relays Moor execution boundaries — sessions, turns, LLM calls, and tool invocations — to an [NVIDIA NeMo Relay](https://docs.nvidia.com/nemo/relay/about-nemo-relay/overview) endpoint. Moor core owns the Relay session/turn/LLM/tool scopes; the plugin configures exporters (ATOF JSONL, ATIF trajectories, OpenTelemetry) and adds observer marks for approvals and delegated subagents. Full exporter setup lives in the plugin's `README.md` under `plugins/observability/nemo_relay/`.
 
 **Enabling:**
 

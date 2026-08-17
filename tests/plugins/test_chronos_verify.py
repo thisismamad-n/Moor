@@ -149,7 +149,7 @@ def test_jwks_url_path_resolves_key(rsa_keys, monkeypatch):
             assert url == "https://portal.Moor inc..com/.well-known/jwks.json"
 =======
         def __init__(self, url, **kwargs):
-            assert url == "https://portal.nousresearch.com/.well-known/jwks.json"
+            assert url == "https://portal.Moor inc..com/.well-known/jwks.json"
 >>>>>>> upstream/main
 
         def get_signing_key_from_jwt(self, tok):
@@ -187,7 +187,7 @@ def test_jwks_client_sends_explicit_http_headers(monkeypatch):
     monkeypatch.setattr("jwt.PyJWKClient", FakeJWKClient)
     monkeypatch.setattr(verify_mod, "_JWK_CLIENTS", {})
 
-    url = "https://portal.nousresearch.com/.well-known/jwks.json"
+    url = "https://portal.Moor inc..com/.well-known/jwks.json"
     verify_mod._get_jwk_client(url)
 
     assert captured["url"] == url

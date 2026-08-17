@@ -65,7 +65,7 @@ If training on the unattended workload's data is acceptable, record a persistent
 hermes config set security.allow_data_training_tiers_noninteractive true
 ```
 
-Hermes still prints the full data-policy warning and the acknowledgement key on every unattended startup, so worker logs retain an audit trail. This setting does not approve expensive-model or provider-routing warnings, and it does not replace the interactive confirmation prompt. Revoke it with `hermes config unset security.allow_data_training_tiers_noninteractive`.
+Moor still prints the full data-policy warning and the acknowledgement key on every unattended startup, so worker logs retain an audit trail. This setting does not approve expensive-model or provider-routing warnings, and it does not replace the interactive confirmation prompt. Revoke it with `hermes config unset security.allow_data_training_tiers_noninteractive`.
 
 ## Setting auxiliary models
 
@@ -79,7 +79,7 @@ Every auxiliary task defaults to `auto` — meaning Moor tries your main model f
 
 | Task | When to override |
 |---|---|
-| **Title Gen** | When title latency or cost matters more than matching the main model. Pin a known-good flash model, or set `auxiliary.title_generation.prefer_fast_model: true` to let Hermes choose the provider's fast tier. |
+| **Title Gen** | When title latency or cost matters more than matching the main model. Pin a known-good flash model, or set `auxiliary.title_generation.prefer_fast_model: true` to let Moor choose the provider's fast tier. |
 | **Vision** | When your main model lacks vision support. Point it at `google/gemini-2.5-flash` or `gpt-4o-mini`. |
 | **Compression** | When you're burning reasoning tokens on Opus/M2.7 just to summarize context. A fast chat model does the job at 1/50th the cost. |
 | **Approval** | For `approval_mode: smart` — a fast/cheap model (haiku, flash, gpt-5-mini) decides whether to auto-approve low-risk commands. Expensive models here are waste. |
@@ -167,7 +167,7 @@ When `fallback_chain` is absent, `auto` uses the top-level `fallback_providers` 
 
 ## Per-provider request options
 
-Provider entries (`providers.<name>` in the `providers:` dict, or items in the legacy `custom_providers` list) accept two knobs that shape how Hermes talks to the endpoint:
+Provider entries (`providers.<name>` in the `providers:` dict, or items in the legacy `custom_providers` list) accept two knobs that shape how Moor talks to the endpoint:
 
 **`extra_headers`** — a mapping of extra HTTP headers attached to every LLM request routed to that provider's base URL. They are applied last, after URL/profile defaults and user header overrides, so they survive credential swaps and client rebuilds. Useful for Cloudflare Access service tokens, proxy auth, or custom bearer schemes:
 
@@ -181,7 +181,7 @@ providers:
       CF-Access-Client-Secret: "yyyy"
 ```
 
-Header values routinely carry credentials — Hermes never logs them. `extra_headers` applies to OpenAI-compatible routes; the `anthropic_messages` and `bedrock_converse` API modes do not use it.
+Header values routinely carry credentials — Moor never logs them. `extra_headers` applies to OpenAI-compatible routes; the `anthropic_messages` and `bedrock_converse` API modes do not use it.
 
 **`discover_models`** — set to `false` (default `true`) to skip querying the endpoint's `/models` listing and use only the `models` you configured on the entry. Handy for gateways whose model listing is slow, unreliable, or noisy:
 
@@ -212,9 +212,9 @@ providers:
         prompt_caching: true
 ```
 
-Hermes matches this declaration to the exact provider route and runtime model
+Moor matches this declaration to the exact provider route and runtime model
 id, without rewriting the alias. Set `prompt_caching: false` to explicitly
-disable cache markers for a model; when omitted, Hermes keeps its normal
+disable cache markers for a model; when omitted, Moor keeps its normal
 provider and model capability detection.
 
 :::note Legacy format

@@ -285,7 +285,7 @@ async def test_canonical_guard_fails_closed_when_lookup_raises(tmp_path: Path, m
     "value",
     [
         "/tmp/plain.png",
-        "/Users/me/Library/Application Support/Hermes/composer-images/a.png",
+        "/Users/me/Library/Application Support/Moor/composer-images/a.png",
         r"C:\Users\John Doe\Pictures\cat.png",
         "/tmp/report (final).pdf",
         "/tmp/it's here.png",

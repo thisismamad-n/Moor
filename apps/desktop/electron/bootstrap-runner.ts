@@ -236,7 +236,7 @@ function downloadInstallScript(ref, destPath) {
 <<<<<<< HEAD
   const url = `https://raw.githubusercontent.com/Moor inc./hermes-agent/${commit}/scripts/${scriptName}`
 =======
-  const url = `https://raw.githubusercontent.com/NousResearch/hermes-agent/${ref}/scripts/${scriptName}`
+  const url = `https://raw.githubusercontent.com/Moor inc./hermes-agent/${ref}/scripts/${scriptName}`
 >>>>>>> upstream/main
 
   return new Promise((resolve, reject) => {

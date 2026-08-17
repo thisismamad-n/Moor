@@ -76,7 +76,7 @@ provides_tools:
   - my_platform_list
 ```
 
-With `provides_tools` declared, Hermes imports only `tools.py` during plugin
+With `provides_tools` declared, Moor imports only `tools.py` during plugin
 discovery and registers the client tools in every process — CLI and TUI
 included — while the adapter stays deferred. Keep the package `__init__.py`
 import-light and pull the adapter in from inside `register()` so the eager
@@ -275,7 +275,7 @@ def register(ctx):
         check_fn=check_requirements,
         parse_target_ref_fn=_parse_address,
         validate_target_ref_fn=_validate_address,
-        # May be a regular function or async def. Hermes awaits any awaitable
+        # May be a regular function or async def. Moor awaits any awaitable
         # result, including callable objects and functools.partial wrappers.
         send_message_handler=_send_request,
         # Prefer this lower-level hook when cron must send from a process

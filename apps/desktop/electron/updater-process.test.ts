@@ -23,7 +23,7 @@ test('stagedUpdaterSupportsPrewrittenMarker rejects installers predating the sel
   // The real-world trap: an installer staged at first install months ago, never
   // refreshed because copy_self_to_hermes_home no-ops during --update.
   assert.equal(
-    stagedUpdaterSupportsPrewrittenMarker('C:\\Hermes\\hermes-setup.exe', {
+    stagedUpdaterSupportsPrewrittenMarker('C:\\Moor\\hermes-setup.exe', {
       stagedMtimeMs: () => MARKER_SELF_ADOPT_EPOCH_MS - 60 * DAY_MS
     }),
     false
@@ -32,13 +32,13 @@ test('stagedUpdaterSupportsPrewrittenMarker rejects installers predating the sel
 
 test('stagedUpdaterSupportsPrewrittenMarker accepts installers from the fix onward', () => {
   assert.equal(
-    stagedUpdaterSupportsPrewrittenMarker('C:\\Hermes\\hermes-setup.exe', {
+    stagedUpdaterSupportsPrewrittenMarker('C:\\Moor\\hermes-setup.exe', {
       stagedMtimeMs: () => MARKER_SELF_ADOPT_EPOCH_MS
     }),
     true
   )
   assert.equal(
-    stagedUpdaterSupportsPrewrittenMarker('C:\\Hermes\\hermes-setup.exe', {
+    stagedUpdaterSupportsPrewrittenMarker('C:\\Moor\\hermes-setup.exe', {
       stagedMtimeMs: () => MARKER_SELF_ADOPT_EPOCH_MS + 30 * DAY_MS
     }),
     true
@@ -49,7 +49,7 @@ test('stagedUpdaterSupportsPrewrittenMarker treats an unreadable mtime as unsupp
   // Bias toward the path that can always make progress: a skipped pre-write
   // loses anti-respawn hardening, a wedged updater can never update again.
   assert.equal(
-    stagedUpdaterSupportsPrewrittenMarker('C:\\Hermes\\hermes-setup.exe', {
+    stagedUpdaterSupportsPrewrittenMarker('C:\\Moor\\hermes-setup.exe', {
       stagedMtimeMs: () => null
     }),
     false
@@ -61,12 +61,12 @@ test('resolveStagedUpdaterBinary still returns a stale staged updater on Windows
   // the stale binary is the only updater these users have, and it works fine
   // once it is allowed to write its own claim.
   assert.equal(
-    resolveStagedUpdaterBinary('C:\\Hermes', {
+    resolveStagedUpdaterBinary('C:\\Moor', {
       fileExists: () => true,
       isWindows: true,
       stagedMtimeMs: () => MARKER_SELF_ADOPT_EPOCH_MS - 60 * DAY_MS
     }),
-    path.join('C:\\Hermes', 'hermes-setup.exe')
+    path.join('C:\\Moor', 'hermes-setup.exe')
   )
 })
 

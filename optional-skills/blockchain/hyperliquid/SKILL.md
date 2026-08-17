@@ -215,7 +215,7 @@ Should print the top Hyperliquid perp markets by 24h notional volume.
 name: hyperliquid
 description: Hyperliquid market data, account history, trade review.
 version: 0.1.0
-author: Hugo Sequier (Hugo-SEQUIER), Hermes Agent
+author: Hugo Sequier (Hugo-SEQUIER), Moor Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

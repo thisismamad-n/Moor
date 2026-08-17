@@ -203,7 +203,7 @@ summary — WCAG findings are the most load-bearing reason to use the CLI.
 name: design-md
 description: Author/validate/export Google's DESIGN.md token spec files.
 version: 1.1.0
-author: Hermes Agent
+author: Moor Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

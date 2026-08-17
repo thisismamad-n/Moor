@@ -858,7 +858,7 @@ class TestNodeRuntimeNpmResolution:
         from hermes_cli import update_cmd
 
         desktop_dir = PROJECT_ROOT / "apps" / "desktop"
-        packaged_exe = desktop_dir / "release" / "win-unpacked" / "Hermes.exe"
+        packaged_exe = desktop_dir / "release" / "win-unpacked" / "Moor.exe"
         build_ok = subprocess.CompletedProcess([], 0, stdout="", stderr="")
 
         with (
@@ -894,7 +894,7 @@ class TestNodeRuntimeNpmResolution:
         project_root = tmp_path / "hermes-agent"
         (project_root / ".git").mkdir(parents=True)
         desktop_dir = project_root / "apps" / "desktop"
-        packaged_exe = desktop_dir / "release" / "win-unpacked" / "Hermes.exe"
+        packaged_exe = desktop_dir / "release" / "win-unpacked" / "Moor.exe"
         packaged_exe.parent.mkdir(parents=True)
         packaged_exe.write_bytes(b"desktop")
 

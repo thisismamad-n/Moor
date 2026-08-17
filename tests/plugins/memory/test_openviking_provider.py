@@ -656,10 +656,10 @@ def test_start_local_openviking_server_uses_endpoint_host_and_port(monkeypatch):
 
 
 def test_start_local_openviking_server_strips_pythonpath_from_child_env(monkeypatch):
-    """The spawned server must not inherit Hermes's PYTHONPATH (#78153).
+    """The spawned server must not inherit Moor's PYTHONPATH (#78153).
 
-    Inheriting it makes openviking-server import packages from the Hermes
-    venv instead of its own, and on Windows locks Hermes venv DLLs so the
+    Inheriting it makes openviking-server import packages from the Moor
+    venv instead of its own, and on Windows locks Moor venv DLLs so the
     venv cannot be rebuilt during `hermes update`.
     """
     popen_calls = []
@@ -831,7 +831,7 @@ def test_https_local_endpoint_is_not_runtime_autostart_eligible(monkeypatch):
         "OpenViking memory disabled for this Moor run. "
 =======
         "Remote OpenViking server at https://localhost:1934 is not reachable. "
-        "OpenViking memory is temporarily unavailable; Hermes will retry on a later access or when "
+        "OpenViking memory is temporarily unavailable; Moor will retry on a later access or when "
         "the config changes. "
 >>>>>>> upstream/main
         "Check the configured endpoint and network connectivity."
@@ -870,7 +870,7 @@ def test_runtime_does_not_autostart_when_local_server_reports_unhealthy(monkeypa
         "OpenViking memory disabled for this Moor run."
 =======
         "Service at http://localhost:1934 responded but reported unhealthy OpenViking status. "
-        "OpenViking memory is temporarily unavailable; Hermes will retry on a later access "
+        "OpenViking memory is temporarily unavailable; Moor will retry on a later access "
         "or when the config changes."
 >>>>>>> upstream/main
     ]
@@ -2288,7 +2288,7 @@ class TestOpenVikingEnvWriter:
         _write_env_vars(env, {"OPENAI_API_KEY": "new"})
 
         lines = [l for l in env.read_text(encoding="utf-8-sig").splitlines() if l]
-        # The stale value must be gone, not left as a duplicate. Hermes and
+        # The stale value must be gone, not left as a duplicate. Moor and
         # python-dotenv use the last occurrence, but the file must have one value.
         assert lines.count("OPENAI_API_KEY=new") == 1
         assert not any(l.endswith("=old") for l in lines)

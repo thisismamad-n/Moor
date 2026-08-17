@@ -872,7 +872,7 @@ def _numbered_fallback(
 
     return chosen
 =======
-"""Shared curses-based UI components for Hermes CLI.
+"""Shared curses-based UI components for Moor CLI.
 
 Used by `hermes tools` and `hermes skills` for interactive checklists.
 Provides a curses multi-select with keyboard navigation, plus a

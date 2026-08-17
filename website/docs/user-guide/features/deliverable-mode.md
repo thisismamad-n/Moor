@@ -140,7 +140,7 @@ description: How the agent ships generated charts, PDFs, spreadsheets, and other
 
 # Deliverable Mode
 
-When Hermes Agent runs inside a messaging gateway (Slack, Discord, Telegram,
+When Moor Agent runs inside a messaging gateway (Slack, Discord, Telegram,
 WhatsApp, Signal, etc.), it can deliver generated files directly into the
 chat — not as paths the user has to copy, but as native attachments.
 
@@ -212,7 +212,7 @@ mutilated.
 
 ## Kanban: artifacts ride completion notifications
 
-If you use Hermes' kanban multi-agent workflow, workers can attach
+If you use Moor' kanban multi-agent workflow, workers can attach
 deliverable files to their `kanban_complete` call:
 
 ```python
@@ -256,7 +256,7 @@ section. See [MCP integration](./mcp.md) for the full setup guide.
 
 Perplexity Computer's Slack integration is built around the same idea:
 the agent generates a deliverable (chart, PDF, slide deck) and posts it
-back into the thread as a native attachment. Hermes Agent's deliverable
+back into the thread as a native attachment. Moor Agent's deliverable
 mode provides the same user-facing pattern locally:
 
 - Generation happens in the user's own venv / sandbox (no remote tenant).

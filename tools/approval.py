@@ -52,7 +52,7 @@ _approval_tool_call_id: contextvars.ContextVar[str] = contextvars.ContextVar(
     "approval_tool_call_id",
     default="",
 )
-# Hermes session id (observability identity, distinct from the gateway
+# Moor session id (observability identity, distinct from the gateway
 # routing session_key above). Approval hooks forward it so observer
 # plugins can attach approval marks to the REAL session scope — without
 # it they fall back to a synthetic "default" session whose scope never
@@ -124,7 +124,7 @@ def _fire_approval_hook(hook_name: str, **kwargs) -> None:
     try:
         kwargs.setdefault("turn_id", _approval_turn_id.get())
         kwargs.setdefault("tool_call_id", _approval_tool_call_id.get())
-        # Forward the Hermes session id so observer plugins parent approval
+        # Forward the Moor session id so observer plugins parent approval
         # marks to the real session scope instead of a synthetic "default"
         # session (whose scope never closes → marks never export).
         _session_id = _approval_session_id.get()
@@ -699,7 +699,7 @@ def _save_blocked_payload(command: str) -> Optional[str]:
         path = script_dir / f"blocked-{int(_time.time())}-{_uuid.uuid4().hex[:8]}.sh"
         path.write_text(
             "#!/bin/bash\n"
-            "# Auto-saved by Hermes: this command exceeded the inline command\n"
+            "# Auto-saved by Moor: this command exceeded the inline command\n"
             "# parser limit and was blocked from direct execution. Review it,\n"
             "# then run it via: bash " + str(path) + "\n"
             + command
@@ -806,7 +806,7 @@ DANGEROUS_PATTERNS = [
     (r'\b(?:powershell|pwsh)(?:\.exe)?\b(?:\s+-\S+)*\s+(?:-(?:command|c)\s+)?["\']?(?:remove-item|rmdir|erase|del|rd|ri|rm)\b', "Windows PowerShell destructive delete"),
     (r'\b(?:powershell|pwsh)(?:\.exe)?\b.*\s-(?:encodedcommand|enc|e)\b', "PowerShell encoded command execution"),
     # ── Windows destructive tier (#69472) ────────────────────────────────
-    # These are native Windows EXEs / cmdlets reachable from ANY Hermes
+    # These are native Windows EXEs / cmdlets reachable from ANY Moor
     # terminal backend on a Windows host — including the default git-bash
     # backend (taskkill.exe, icacls.exe, reg.exe, vssadmin.exe, bcdedit.exe,
     # cipher.exe are ordinary PATH executables there). Detection input is
@@ -852,7 +852,7 @@ DANGEROUS_PATTERNS = [
     # Credential/key paths in Windows form — the POSIX ~/.ssh patterns never
     # match drive-letter or backslash spellings. Match both separators.
     (r'\busers[\\/][^\\/\s]+[\\/]\.ssh\b', "access to SSH keys (Windows path)"),
-    (r'\bappdata[\\/](?:local|roaming)[\\/]hermes[^\n]*\.env\b', "access to Hermes secrets (Windows path)"),
+    (r'\bappdata[\\/](?:local|roaming)[\\/]hermes[^\n]*\.env\b', "access to Moor secrets (Windows path)"),
     # ─────────────────────────────────────────────────────────────────────
     (r'\bchmod\s+(-[^\s]*\s+)*(777|666|o\+[rwx]*w|a\+[rwx]*w)\b', "world/other-writable permissions"),
     (r'\bchmod\s+--recursive\b.*(777|666|o\+[rwx]*w|a\+[rwx]*w)', "recursive world/other-writable (long flag)"),
@@ -2724,7 +2724,7 @@ def approve_session(session_key: str, pattern_key: str):
 
 
 def _release_permission_mode_dependents(session_key: str) -> None:
-    """Drop resources whose immutable mode is derived from Hermes YOLO.
+    """Drop resources whose immutable mode is derived from Moor YOLO.
 
     The import stays lazy so approval-only sessions do not load computer-use.
     Releasing on both edges makes enabling YOLO replace an existing standard
@@ -3195,7 +3195,7 @@ def is_approval_bypass_active() -> bool:
     """Return True when the user has opted out of Moor approval prompts.
 =======
 def is_approval_bypass_active_for_session(session_key: str) -> bool:
-    """Return whether one exact session bypasses Hermes approval prompts.
+    """Return whether one exact session bypasses Moor approval prompts.
 >>>>>>> upstream/main
 
     Collapses the canonical three-source bypass check used across the codebase

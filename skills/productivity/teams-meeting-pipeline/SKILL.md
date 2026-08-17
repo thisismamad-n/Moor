@@ -120,7 +120,7 @@ Point the user to these when they need more depth than this skill covers:
 name: teams-meeting-pipeline
 description: Teams meeting summaries, job replay, Graph subscriptions.
 version: 1.1.0
-author: Hermes Agent + Teknium
+author: Moor Agent + Teknium
 license: MIT
 platforms: [linux, macos, windows]
 prerequisites:

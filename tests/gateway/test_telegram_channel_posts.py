@@ -185,7 +185,7 @@ async def test_command_handler_uses_effective_message_for_channel_post(telegram_
 
 Telegram channel broadcasts are delivered as ``Update.channel_post`` rather than
 ``Update.message``.  The adapter should use ``effective_message`` so channel
-posts are converted into Hermes gateway events instead of being silently
+posts are converted into Moor gateway events instead of being silently
 ignored.
 """
 

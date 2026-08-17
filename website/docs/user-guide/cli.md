@@ -55,7 +55,7 @@ hermes -w -z "Fix issue #123"     # Single query in worktree
 
 ### Plugin management
 
-The `hermes plugins` commands manage native Hermes plugins and portable Agent
+The `hermes plugins` commands manage native Moor plugins and portable Agent
 Plugins v1 packages through the same opt-in workflow:
 
 ```bash
@@ -67,7 +67,7 @@ hermes plugins update <plugin-name>
 hermes plugins remove <plugin-name>
 ```
 
-Portable packages remain disabled until explicitly enabled. Hermes currently
+Portable packages remain disabled until explicitly enabled. Moor currently
 loads portable Agent Skills and stdio MCP entries. See the
 [plugin developer guide](/developer-guide/plugins#portable-agent-plugins-v1-packages)
 for the exact supported subset and trust boundary.
@@ -270,7 +270,7 @@ There are two ways to enter multi-line messages:
   2. Returns the sum
 ```
 
-`Ctrl+J` and backslash continuation are enabled by default, matching Claude Code / Codex / OpenCode multiline shortcuts. On supported terminals such as iTerm2, Hermes also requests extended key reporting so `Shift+Enter` arrives as a distinct newline key. If your terminal sends LF for plain `Enter` and you need the legacy `Ctrl+J`-as-submit fallback, opt out:
+`Ctrl+J` and backslash continuation are enabled by default, matching Claude Code / Codex / OpenCode multiline shortcuts. On supported terminals such as iTerm2, Moor also requests extended key reporting so `Shift+Enter` arrives as a distinct newline key. If your terminal sends LF for plain `Enter` and you need the legacy `Ctrl+J`-as-submit fallback, opt out:
 
 ```yaml
 # ~/.hermes/config.yaml
@@ -296,7 +296,7 @@ Most terminals send the same byte sequence for `Enter` and `Shift+Enter` by defa
 <<<<<<< HEAD
 Where the terminal cannot distinguish them, `Alt+Enter` and `Ctrl+J` continue to work everywhere. **On Windows Terminal specifically, `Alt+Enter` is captured by the terminal (toggles fullscreen) and never reaches Moor — use `Ctrl+Enter` (delivered as `Ctrl+J`) or `Ctrl+J` directly for a newline.**
 =======
-Where the terminal cannot distinguish them, `Alt+Enter` and `Ctrl+J` continue to work by default. **On Windows Terminal specifically, `Alt+Enter` is captured by the terminal (toggles fullscreen) and never reaches Hermes — use `Ctrl+Enter` (delivered as `Ctrl+J`) or `Ctrl+J` directly for a newline.**
+Where the terminal cannot distinguish them, `Alt+Enter` and `Ctrl+J` continue to work by default. **On Windows Terminal specifically, `Alt+Enter` is captured by the terminal (toggles fullscreen) and never reaches Moor — use `Ctrl+Enter` (delivered as `Ctrl+J`) or `Ctrl+J` directly for a newline.**
 >>>>>>> upstream/main
 
 ## Redirecting the Agent Mid-Turn
@@ -341,7 +341,7 @@ You can also change it inside the CLI:
 <<<<<<< HEAD
 The very first time you press Enter while Moor is working, Moor prints a one-line reminder explaining the `/busy` knob (`"(tip) Your message interrupted the current run…"`). It only fires once per install — a flag in `config.yaml` under `onboarding.seen.busy_input_prompt` latches it. Delete that key to see the tip again.
 =======
-The first time you press Enter while Hermes is working, Hermes prints a one-line reminder explaining the `/busy` knob. It only fires once per install; `onboarding.seen.busy_input_prompt` in `config.yaml` records that it was shown. Delete that key to see the tip again.
+The first time you press Enter while Moor is working, Moor prints a one-line reminder explaining the `/busy` knob. It only fires once per install; `onboarding.seen.busy_input_prompt` in `config.yaml` records that it was shown. Delete that key to see the tip again.
 >>>>>>> upstream/main
 :::
 

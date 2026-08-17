@@ -174,7 +174,7 @@ def _is_blocked_type(text: str) -> Optional[str]:
 # Backend selection — env-swappable for tests
 # ---------------------------------------------------------------------------
 
-# Per-Hermes-session cached backends. Each backend owns its own cua-driver
+# Per-Moor-session cached backends. Each backend owns its own cua-driver
 # session, native target, typed-browser binding, refs, and grant namespace.
 _backend_lock = threading.Lock()
 # Backward-compatible empty-session injection hook used by older tests.
@@ -190,7 +190,7 @@ _backend_permission_modes: Dict[str, str] = {}
 # don't pass a session_id (e.g. the classic single-run CLI). Values:
 #   _session_auto_approve[sid] -> bool   ("always_approve everything")
 #   _always_allow[sid]         -> set of (action, delivery_mode) scope keys
-# See NousResearch/hermes-agent#67052 gap 4.
+# See Moor inc./hermes-agent#67052 gap 4.
 _approval_lock = threading.Lock()
 _session_auto_approve: Dict[str, bool] = {}
 _always_allow: Dict[str, set] = {}
@@ -238,9 +238,9 @@ def _warn_bypass_escalation(session_id: str) -> None:
 
 
 def _cua_permission_mode(session_id: str) -> str:
-    """Map Hermes's explicit approval bypass onto Cua's immutable mode.
+    """Map Moor's explicit approval bypass onto Cua's immutable mode.
 
-    Hermes has TWO session-identity namespaces: the tool-dispatch path passes
+    Moor has TWO session-identity namespaces: the tool-dispatch path passes
     the DB ``session_id`` (``agent.session_id``), while gateway ``/yolo``
     keys approval state off the gateway ``session_key`` (set per turn via the
     ``set_current_session_key`` contextvar in tools/approval.py). CLI and TUI
@@ -377,7 +377,7 @@ def release_computer_use_session(session_id: str) -> bool:
     removes the exact session backend, its call lock, and its recorded
     permission mode before stopping the backend, so new lookups cannot retain
     the stale target/ref namespace — and stops a private embedded daemon when
-    Hermes YOLO selected unrestricted mode. Approval state is cleared even
+    Moor YOLO selected unrestricted mode. Approval state is cleared even
     when no backend was started.
 
     Returns ``True`` when a backend was found and released, ``False`` when the
@@ -405,7 +405,7 @@ def release_computer_use_session(session_id: str) -> bool:
     try:
         # Let an in-flight action finish before ending the driver session and
         # dropping its target/ref state. Do not hold the global cache lock
-        # while waiting: unrelated Hermes sessions remain independent.
+        # while waiting: unrelated Moor sessions remain independent.
         if call_lock is not None:
             with call_lock:
                 backend.stop()
@@ -424,7 +424,7 @@ def _shutdown_backend_atexit() -> None:
     """Stop all cached backends so cua-driver children don't outlive us.
 
     Each session backend holds a long-lived ``cua-driver`` subprocess, so
-    without this a driver can survive the Hermes process that spawned it
+    without this a driver can survive the Moor process that spawned it
     (#28152 item 3). #69903 kept the orphan from burning a core by disabling
     the cursor overlay; the process itself still lingered.
 
@@ -625,7 +625,7 @@ def _request_approval(action: str, args: Dict[str, Any],
     Approval is scoped by (action, delivery_mode) AND by session_id.
     Foreground delivery is a visible focus change, so a prior background
     approval — even ``approve_session`` on the same action — must NOT
-    silently authorize it (NousResearch/hermes-agent#67052).
+    silently authorize it (Moor inc./hermes-agent#67052).
     ``always_approve`` (the blanket "auto-approve everything" unlock) still
     covers foreground, since the user explicitly opted into unattended
     operation. State is keyed on session_id so concurrent runs don't leak
@@ -733,7 +733,7 @@ def _dispatch(backend: ComputerUseBackend, action: str, args: Dict[str, Any]) ->
     # cua-driver's typed browser surface is namespaced inside the existing
     # computer_use tool so it cannot collide with native browser/MCP tools.
     # The backend owns the opaque driver session, target, tab and ref state;
-    # none of those capabilities can be supplied across Hermes sessions.
+    # none of those capabilities can be supplied across Moor sessions.
     if action == "cua_browser_state":
         state_args: Dict[str, Any] = {}
         for public, internal in (
@@ -1034,7 +1034,7 @@ def _text_response(res: ActionResult) -> str:
 # Window classes of browsers whose page content the typed cua_browser_* route
 # can drive with trusted input and ZERO focus steal. When background text
 # delivery is refused for one of these surfaces, the driver's only hint is
-# "foreground" (it doesn't know Hermes has a typed page route), so the model
+# "foreground" (it doesn't know Moor has a typed page route), so the model
 # flashes the user's window to front for every keystroke batch. The hint below
 # offers the no-flash rung first; foreground remains valid for browser chrome,
 # native dialogs, and anything the typed route can't bind exactly.

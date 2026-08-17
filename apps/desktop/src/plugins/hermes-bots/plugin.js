@@ -1,13 +1,13 @@
 /**
- * Hermes Bot Mode — a "one chat per agent" roster for the Hermes desktop.
+ * Moor Bot Mode — a "one chat per agent" roster for the Moor desktop.
  *
- * Left pane "Bots": one row per Hermes profile (a bot = an agent profile) with
+ * Left pane "Bots": one row per Moor profile (a bot = an agent profile) with
  * a customizable avatar (shape + color + eyes, image, or pet). Click opens that
  * bot's chat; right-click → Edit Profile (avatar, title, description).
  * "New Agent" creates a profile — Name / Title / Description with an
  * "Advanced" disclosure for full profile config.
  *
- * Right tile "Routines": scheduled tasks (Hermes cron jobs) scoped to the
+ * Right tile "Routines": scheduled tasks (Moor cron jobs) scoped to the
  * bot you're currently chatting with — follows the live gateway profile.
  *
  * Bots message each other straight into each bot's ONE canonical "Bot
@@ -520,7 +520,7 @@ async function duplicateBot(bot, roster) {
   return name
 }
 
-/** Permanently delete a bot's Hermes profile, then remove plugin-local state
+/** Permanently delete a bot's Moor profile, then remove plugin-local state
  * that would otherwise leave stale appearance/unread data behind.
  *
  * Prefer the SDK's `host.deleteProfile` when this Desktop build ships it: it
@@ -1781,7 +1781,7 @@ function AvatarPicker({ shape, color, image, onShape, onColor, onImage, generate
               className: 'px-2 py-3 text-center text-xs leading-5 text-(--ui-text-tertiary)',
               children:
                 imagen === false
-                  ? 'No image model available. If you just enabled one (or updated Hermes), restart the gateway: Ctrl+K → "Restart gateway".'
+                  ? 'No image model available. If you just enabled one (or updated Moor), restart the gateway: Ctrl+K → "Restart gateway".'
                   : 'Checking image backend…'
             })
         : null,
@@ -2263,10 +2263,10 @@ function displayName(bot, meta) {
   }
 
   // The primary profile is literally named "default" — as a bot identity
-  // that reads like nobody bothered. Present it as Hermes (the agent it is)
+  // that reads like nobody bothered. Present it as Moor (the agent it is)
   // unless the user gives it a real title.
   if ((bot.name || '').trim().toLowerCase() === 'default' && !bot.title) {
-    return 'Hermes'
+    return 'Moor'
   }
 
   const raw = (bot.title || bot.name || '').replace(/[-_]+/g, ' ').trim()
@@ -2363,7 +2363,7 @@ function knownGroups(metaByName) {
 // actually speaks is its own turn's choice — replying with exactly "(pass)"
 // (or nothing, or failing) is silence. Hard caps end every turn; a round in
 // which everyone passed means the conversation settled. Each member runs its
-// turn in its OWN persistent per-group Hermes session and is fed only the
+// turn in its OWN persistent per-group Moor session and is fed only the
 // room messages that are NEW since it last saw the room.
 
 const GROUP_CHAT_MAX_ROUNDS = 3
@@ -3093,7 +3093,7 @@ function BotRow({ bot, onDelete, onEdit, onGroup }) {
     if (bot.remoteSource) {
       if (typeof host.ensureAgent !== 'function') {
         host.notifyError?.(
-          new Error('Update Hermes Desktop to chat with agents on other connections.'),
+          new Error('Update Moor Desktop to chat with agents on other connections.'),
           bot.connectionLabel || 'Remote source'
         )
 
@@ -3532,7 +3532,7 @@ function AdvancedProfileConfig({ bot, state, setState }) {
   if (unsupported) {
     return jsx('div', {
       className: 'px-2 py-3 text-center text-xs text-(--ui-text-tertiary)',
-      children: 'Full configuration needs a newer gateway (restart it after updating Hermes).'
+      children: 'Full configuration needs a newer gateway (restart it after updating Moor).'
     })
   }
 
@@ -3768,13 +3768,13 @@ function AdvancedProfileConfig({ bot, state, setState }) {
 }
 
 // ── skills hub section: the REAL hub page (docs) embedded as a picker ──────
-// https://hermes-agent.nousresearch.com/docs/skills?embed=picker hides the
+// https://hermes-agent.Moor inc..com/docs/skills?embed=picker hides the
 // docs chrome and adds "+ Add to this Agent" per card, posting
 // {type: 'hermes-skill-pick', ...} to us (hermes-agent#86243). We validate
 // the origin, install via skills.manage, and bubble onInstalled so the
 // checklist above gains the row. Search-box fallback kept for offline use.
 
-const HUB_ORIGIN = 'https://hermes-agent.nousresearch.com'
+const HUB_ORIGIN = 'https://hermes-agent.Moor inc..com'
 const HUB_PICKER_URL = HUB_ORIGIN + '/docs/skills?embed=picker'
 
 function HubSkillsSection({ forProfile, onInstalled }) {
@@ -3924,7 +3924,7 @@ function HubSkillsSection({ forProfile, onInstalled }) {
                 },
                 children: jsx('iframe', {
                   src: HUB_PICKER_URL,
-                  title: 'Hermes Skills Hub',
+                  title: 'Moor Skills Hub',
                   ref: frameRef,
                   style: {
                     width: '133.34%',
@@ -4796,7 +4796,7 @@ function CreateAgentDialog({ open, onClose, roster }) {
                         ? jsx('div', {
                             className: 'px-2 py-3 text-center text-xs text-(--ui-text-tertiary)',
                             children:
-                              'Capability catalog needs a newer gateway (restart it after updating Hermes).'
+                              'Capability catalog needs a newer gateway (restart it after updating Moor).'
                           })
                         : !caps
                           ? jsx('div', {
@@ -5251,7 +5251,7 @@ function RoutineRow({ job, profile }) {
 
 // Structured schedule picker: frequency first, then only the detail that
 // frequency needs (time of day, weekday, day of month, interval). Emits a
-// Hermes-native schedule string; Advanced exposes it raw.
+// Moor-native schedule string; Advanced exposes it raw.
 const FREQUENCIES = [
   { id: 'once', label: 'Once, in\u2026' },
   { id: 'hourly', label: 'Every hour' },
@@ -5285,7 +5285,7 @@ const TIMES = (() => {
   return out
 })()
 
-/** Compose the Hermes schedule string from picker state. */
+/** Compose the Moor schedule string from picker state. */
 function composeSchedule(state) {
   const [h, m] = (state.time || '9:0').split(':').map(Number)
 
@@ -5771,7 +5771,7 @@ async function openProfileSession(botName, storedId, gatewayGeneration) {
   const id = String(storedId || '')
   if (!NAME_RE.test(profile) || !id || gatewayGeneration !== $sessionsGatewayGeneration.get()) return
   if (typeof host.openSession !== 'function') {
-    throw new Error('This Hermes Desktop version cannot open stored sessions')
+    throw new Error('This Moor Desktop version cannot open stored sessions')
   }
   await host.openSession(id, { profile })
   if (gatewayGeneration !== $sessionsGatewayGeneration.get()) return
@@ -6511,7 +6511,7 @@ function BotsPane() {
               children: [
                 jsx('div', {
                   children: gatewayUp
-                    ? `Roster unavailable: ${error instanceof Error ? error.message : 'gateway error'}. If your gateway predates profiles.list, update Hermes and restart the gateway.`
+                    ? `Roster unavailable: ${error instanceof Error ? error.message : 'gateway error'}. If your gateway predates profiles.list, update Moor and restart the gateway.`
                     : 'Waiting for the gateway connection… (remote gateways can take a few seconds; retries automatically)'
                 }),
                 jsx(Button, {
@@ -6622,7 +6622,7 @@ function BotsPane() {
               children: [
                 'This will permanently delete the bot ',
                 jsx('span', { className: 'font-medium text-foreground', children: deleting.name }),
-                ' and its associated Hermes profile at ',
+                ' and its associated Moor profile at ',
                 jsx('span', { className: 'font-mono text-xs', children: deleting.path }),
                 '. This cannot be undone.'
               ]

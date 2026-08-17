@@ -179,7 +179,7 @@ COMMAND_REGISTRY: list[CommandDef] = [
 =======
     CommandDef("rollback", "List or restore filesystem checkpoints (restores keep your hand-edits; --all overrides)", "Session",
                args_hint="[number] [--all]"),
-    CommandDef("snapshot", "Create or restore state snapshots of Hermes config/state", "Session",
+    CommandDef("snapshot", "Create or restore state snapshots of Moor config/state", "Session",
 >>>>>>> upstream/main
                cli_only=True, aliases=("snap",), args_hint="[create|restore <id>|prune]"),
     CommandDef("export", "Export a profile (config, skills, theme) to a shareable archive", "Configuration",
@@ -213,7 +213,7 @@ COMMAND_REGISTRY: list[CommandDef] = [
                args_hint="[text | draft <text> | show | pause | resume | clear | status | wait <pid> | unwait]"),
 =======
                args_hint="<prompt>", busy_policy="dispatch", busy_handler="steer"),
-    CommandDef("goal", "Set a standing goal Hermes works on across turns until achieved", "Session",
+    CommandDef("goal", "Set a standing goal Moor works on across turns until achieved", "Session",
                args_hint="[text | draft <text> | show | gate add <cmd> | pause | resume | clear | status | wait <pid> | unwait]",
                busy_policy="dispatch", busy_handler="goal"),
     CommandDef("heartbeat", "Set a recurring prompt that re-enters this session when idle", "Session",
@@ -306,10 +306,10 @@ COMMAND_REGISTRY: list[CommandDef] = [
 <<<<<<< HEAD
     CommandDef("busy", "Control what Enter does while Moor is working", "Configuration",
 =======
-    CommandDef("wake", "Toggle the 'Hey Hermes' wake word listener", "Configuration",
+    CommandDef("wake", "Toggle the 'Hey Moor' wake word listener", "Configuration",
                cli_only=True, args_hint="[on|off|status]",
                subcommands=("on", "off", "status")),
-    CommandDef("busy", "Control what Enter does while Hermes is working", "Configuration",
+    CommandDef("busy", "Control what Enter does while Moor is working", "Configuration",
 >>>>>>> upstream/main
                cli_only=True, args_hint="[queue|steer|interrupt|status]",
                subcommands=("queue", "steer", "interrupt", "status")),
@@ -399,9 +399,9 @@ COMMAND_REGISTRY: list[CommandDef] = [
     CommandDef("update", "Update Moor Agent to the latest version", "Info"),
     CommandDef("version", "Show Moor Agent version", "Info", aliases=("v",)),
 =======
-    CommandDef("update", "Update Hermes Agent to the latest version", "Info",
+    CommandDef("update", "Update Moor Agent to the latest version", "Info",
                busy_policy="dispatch"),
-    CommandDef("version", "Show Hermes Agent version", "Info", aliases=("v",),
+    CommandDef("version", "Show Moor Agent version", "Info", aliases=("v",),
                busy_policy="dispatch", execute="version"),
 >>>>>>> upstream/main
     CommandDef("debug", "Upload debug report (system info + logs) and get shareable links", "Info",

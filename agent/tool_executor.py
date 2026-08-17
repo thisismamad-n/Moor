@@ -66,7 +66,7 @@ def _ensure_file_checkpoint(
         return
 
     # File tools resolve relative paths against the task's live/session cwd,
-    # which can differ from the Hermes process cwd (notably in Docker).  Resolve
+    # which can differ from the Moor process cwd (notably in Docker).  Resolve
     # through that same path pipeline before asking the checkpoint manager to
     # discover the project root.
     from tools.file_tools import _resolve_path_for_task
@@ -551,7 +551,7 @@ def _run_agent_tool_execution_middleware(
     begin_execution=None,
     authorization_gate: _ConcurrentToolAuthorizationGate | None = None,
 ) -> _ManagedToolResult:
-    """Run Relay rewrites before Hermes policy and dispatch exactly once."""
+    """Run Relay rewrites before Moor policy and dispatch exactly once."""
     from agent import relay_tools
     from hermes_cli.middleware import (
         apply_tool_request_middleware,
@@ -571,7 +571,7 @@ def _run_agent_tool_execution_middleware(
         with dispatch_lock:
             if state["dispatched"]:
                 raise RuntimeError(
-                    "Hermes tool execution callback invoked more than once"
+                    "Moor tool execution callback invoked more than once"
                 )
             state["dispatched"] = True
             state["blocked"] = False

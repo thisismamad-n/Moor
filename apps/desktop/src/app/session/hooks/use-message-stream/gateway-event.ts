@@ -147,7 +147,7 @@ function sessionInfoDescribesSelectedSession(storedSessionId: string | undefined
  * A turn failed on a billing wall (out of credits / payment required). The
  * gateway forwards the structured descriptor built by `agent/billing_links.py`;
  * we cache it per-session (drives the in-chat banner) AND raise one sticky,
- * billing-specific toast — never the generic "Hermes error" — with a smart CTA
+ * billing-specific toast — never the generic "Moor error" — with a smart CTA
  * (Nous → in-app Settings → Billing, other providers → their billing page).
  */
 function surfaceBillingBlock(sessionId: string, raw: unknown): void {
@@ -434,7 +434,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
 
         return
       } else if (event.type === 'skin.changed') {
-        // A runtime skin switch (Hermes activating an authored skin, or `/skin`
+        // A runtime skin switch (Moor activating an authored skin, or `/skin`
         // on another surface). Only the active source+profile's change repaints.
         if (fromActiveSource()) {
           ingestBackendSkin(payload as HermesSkin | undefined, { apply: true })
@@ -993,7 +993,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
         const failure =
           payload?.status === 'error'
             ? {
-                error: coerceGatewayText(payload.error).trim() || finalText || 'Hermes reported an error',
+                error: coerceGatewayText(payload.error).trim() || finalText || 'Moor reported an error',
                 partial: Boolean(payload.partial)
               }
             : undefined
@@ -1504,7 +1504,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
         showAgentNotice(notice)
 
         // The urgent pair (access paused / restored) also breaks through as a
-        // native OS notification when Hermes is backgrounded; dispatch is gated
+        // native OS notification when Moor is backgrounded; dispatch is gated
         // by the user's notification prefs + backgrounded check.
         const native = nativeNoticeInput(notice, translateNow('notifications.native.creditsTitle'))
 

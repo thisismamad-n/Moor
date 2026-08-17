@@ -417,7 +417,7 @@ class TestDelegateTask(unittest.TestCase):
         """Portal is dual-wire — same provider + different model prefix must
         not inherit the parent's Messages/chat_completions mode verbatim."""
         parent = _make_mock_parent(depth=0)
-        parent.base_url = "https://inference-api.nousresearch.com/v1"
+        parent.base_url = "https://inference-api.Moor inc..com/v1"
         parent.api_key = "portal-jwt"
         parent.provider = "nous"
         parent.api_mode = "anthropic_messages"

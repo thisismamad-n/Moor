@@ -68,7 +68,7 @@ export const zh: Translations = {
       connectingGateway: '正在连接桌面网关',
       loadingSettings: '正在加载 Moor 设置',
       loadingSessions: '正在加载最近会话',
-      retryingRemoteBackend: '正在重新连接远程 Hermes 后端…',
+      retryingRemoteBackend: '正在重新连接远程 Moor 后端…',
       startingDesktopConnection: '正在启动桌面连接',
       startingHermesDesktop: '正在启动 Moor 桌面版…'
     },
@@ -144,7 +144,7 @@ export const zh: Translations = {
 =======
       diskFull: '磁盘已满 — 请腾出一些空间后再试。',
       gatewayAuthFailed: '网关认证失败 — 请检查你的 API_SERVER_KEY。',
-      methodNotAllowed: '桌面后端拒绝了该请求 (405 Method Not Allowed)。请尝试重启 Hermes Desktop。',
+      methodNotAllowed: '桌面后端拒绝了该请求 (405 Method Not Allowed)。请尝试重启 Moor Desktop。',
 >>>>>>> upstream/main
       microphonePermission: '麦克风权限已被拒绝。',
       openaiRejectedApiKey: 'OpenAI 拒绝了该 API key。',
@@ -181,8 +181,8 @@ export const zh: Translations = {
       turnDoneTitle: 'Moor 已完成',
       turnDoneBody: '回复已就绪。',
 =======
-      inputBody: 'Hermes 正在等待你的回应。',
-      turnDoneTitle: 'Hermes 已完成',
+      inputBody: 'Moor 正在等待你的回应。',
+      turnDoneTitle: 'Moor 已完成',
       turnDoneBody: '',
 >>>>>>> upstream/main
       turnErrorTitle: '本轮失败',
@@ -382,14 +382,14 @@ export const zh: Translations = {
       agent: {
         title: '智能体插件',
         blurb:
-          '运行在 Hermes 后端——工具、技能、MCP 服务器、钩子和斜杠命令。「便携」插件是 Agent Plugins 标准包（技能 + MCP 组合，也可在其他智能体中使用）。开关在新会话中生效。',
+          '运行在 Moor 后端——工具、技能、MCP 服务器、钩子和斜杠命令。「便携」插件是 Agent Plugins 标准包（技能 + MCP 组合，也可在其他智能体中使用）。开关在新会话中生效。',
         empty: '尚未安装智能体插件。',
         loadFailed: '无法加载智能体插件',
         portable: '便携',
         search: '搜索插件…',
         noMatches: '没有匹配的插件。',
         toggleFailed: (name: string) => `无法切换 ${name}`,
-        updateBackendToManage: '请更新 Hermes 后端以便在桌面端管理此插件。',
+        updateBackendToManage: '请更新 Moor 后端以便在桌面端管理此插件。',
         sources: { bundled: '内置', user: '用户', git: 'git', project: '项目', entrypoint: 'pip' }
       }
     },
@@ -402,7 +402,7 @@ export const zh: Translations = {
       focusedHint: '完成提醒仅在 Moor 处于后台时触发。',
 =======
       enableAllDesc: '关闭后静音下方所有通知。',
-      focusedHint: '完成提醒仅在 Hermes 处于后台时触发。',
+      focusedHint: '完成提醒仅在 Moor 处于后台时触发。',
 >>>>>>> upstream/main
       kinds: {
         approval: {
@@ -431,7 +431,7 @@ export const zh: Translations = {
         },
         plugin: {
           label: '插件通知',
-          description: 'Hermes 在后台时，桌面插件发送了通知。'
+          description: 'Moor 在后台时，桌面插件发送了通知。'
         }
       },
       test: '发送测试通知',
@@ -494,7 +494,7 @@ export const zh: Translations = {
       backdropTitle: '聊天背景',
       backdropDesc: '对话后方那张淡淡的雕像图片。',
       reactionsTitle: '消息回应',
-      reactionsDesc: 'iMessage 风格的表情回应 — 你可以给消息添加回应，Hermes 也能回应你的消息。',
+      reactionsDesc: 'iMessage 风格的表情回应 — 你可以给消息添加回应，Moor 也能回应你的消息。',
       composerPopoutTitle: '悬浮输入框',
       composerPopoutDesc: '允许将输入框拖出底部停靠区。关闭后，输入框会锁定在底部。',
       embedsTitle: '内嵌预览',
@@ -737,7 +737,7 @@ export const zh: Translations = {
         repoScanRoots: '要扫描的文件夹。留空时扫描主目录。',
         repoScanExcludePaths: '发现代码仓库时跳过这些文件夹及其子目录。'
       },
-      timezone: '当 Hermes 需要本地时间上下文时使用。留空则使用系统时区。',
+      timezone: '当 Moor 需要本地时间上下文时使用。留空则使用系统时区。',
 >>>>>>> upstream/main
       agent: {
         imageInputMode: '控制图片附件如何发送给模型。',
@@ -826,7 +826,7 @@ export const zh: Translations = {
       searchPlaceholder: '搜索…',
       noResults: '未找到结果',
       systemDefault: '系统默认',
-      loading: '正在加载 Hermes 配置...',
+      loading: '正在加载 Moor 配置...',
 >>>>>>> upstream/main
       emptyTitle: '无可配置项',
       emptyDesc: '此分区没有可调整的设置。',
@@ -848,7 +848,7 @@ export const zh: Translations = {
     },
     quickEntry: {
       enabledTitle: '快速输入',
-      enabledDesc: '用全局快捷键在任何地方唤出一个小输入框，无需打开 Hermes 即可发送提示。',
+      enabledDesc: '用全局快捷键在任何地方唤出一个小输入框，无需打开 Moor 即可发送提示。',
       shortcutTitle: '快速输入快捷键',
       shortcutDesc: '至少需要一个修饰键，例如 CommandOrControl+Shift+Space。',
       active: '快捷键已生效。',
@@ -878,7 +878,7 @@ export const zh: Translations = {
     // v2 多连接注册表：设置 → 连接。
     connections: {
       title: '连接',
-      intro: '注册你的智能体所在的每个位置——本机、局域网中的远程网关、Hermes Cloud 实例——全部保存在这里。',
+      intro: '注册你的智能体所在的每个位置——本机、局域网中的远程网关、Moor Cloud 实例——全部保存在这里。',
       stagedNote: '聊天和智能体列表会跟随你选择的来源；应用管理的窗口后端仍在“设置 → 网关”中选择。',
       loadFailed: '无法加载连接',
       primaryPill: '主连接',
@@ -898,15 +898,15 @@ export const zh: Translations = {
       updateAllRunning: '正在更新所有实例…',
       updateAllDone: '更新已分发',
       updateAllFailed: '批量更新失败',
-      updateSkippedCloud: '由 Hermes Cloud 托管',
+      updateSkippedCloud: '由 Moor Cloud 托管',
       kindLocal: '本地',
       kindRemote: '远程网关',
-      kindCloud: 'Hermes Cloud',
+      kindCloud: 'Moor Cloud',
       kindSsh: 'SSH',
-      kindLocalDesc: '由本应用管理的 Hermes 运行时。',
-      kindRemoteDesc: '可通过 HTTP(S) 访问的 Hermes 网关——局域网、Tailscale 或互联网。',
-      kindCloudDesc: '通过你的 Hermes Cloud 账户发现的托管实例。',
-      kindSshDesc: '通过 SSH 访问的 Hermes 安装。',
+      kindLocalDesc: '由本应用管理的 Moor 运行时。',
+      kindRemoteDesc: '可通过 HTTP(S) 访问的 Moor 网关——局域网、Tailscale 或互联网。',
+      kindCloudDesc: '通过你的 Moor Cloud 账户发现的托管实例。',
+      kindSshDesc: '通过 SSH 访问的 Moor 安装。',
       labelTitle: '名称',
       labelDesc: '必填。此实例出现的所有位置都会显示该名称；必须唯一（例如“家庭服务器”、“工作笔记本”）。',
       labelPlaceholder: '家庭服务器',
@@ -914,7 +914,7 @@ export const zh: Translations = {
       sshHostTitle: 'SSH 主机',
       headersTitle: '额外网关请求头',
       headersDesc:
-        '随发往此网关的每个 HTTP 和 WebSocket 请求一起发送——用于 Cloudflare Access 等访问代理（CF-Access-Client-Id / CF-Access-Client-Secret）。值加密存储。由 Hermes 管理的请求头（Authorization、Cookie、Host 等）会被忽略。',
+        '随发往此网关的每个 HTTP 和 WebSocket 请求一起发送——用于 Cloudflare Access 等访问代理（CF-Access-Client-Id / CF-Access-Client-Secret）。值加密存储。由 Moor 管理的请求头（Authorization、Cookie、Host 等）会被忽略。',
       headerValuePlaceholder: '值',
       headerValueSaved: '已保存——留空以保留',
       headerAdd: '添加请求头',
@@ -943,7 +943,7 @@ export const zh: Translations = {
 <<<<<<< HEAD
       localDesc: '在 localhost 启动私有 Moor 后端。这是默认方式，并且可离线工作。',
 =======
-      localDesc: '在 localhost 启动私有 Hermes 后端。这是默认方式，并且可离线工作。',
+      localDesc: '在 localhost 启动私有 Moor 后端。这是默认方式，并且可离线工作。',
       inheritTitle: '使用默认网关',
       inheritDesc: '移除此 profile 的自定义覆盖并使用默认连接。',
 >>>>>>> upstream/main
@@ -1034,7 +1034,7 @@ export const zh: Translations = {
       saveFailed: '无法保存网关设置',
       sshTitle: '通过 SSH 连接',
       sshDesc:
-        'Hermes 会通过 SSH 在远程启动并以隧道连接到本应用——无需自行启动或暴露任何服务。前提：已具备到该主机的密钥 SSH 访问。',
+        'Moor 会通过 SSH 在远程启动并以隧道连接到本应用——无需自行启动或暴露任何服务。前提：已具备到该主机的密钥 SSH 访问。',
       sshTrustHint: '首次提供的主机密钥会被信任并固定；后续变更将被拒绝。',
       sshHostTitle: '主机',
       sshHostDesc: 'user@host，或 ~/.ssh/config 中的 Host 别名。',
@@ -1049,7 +1049,7 @@ export const zh: Translations = {
       sshPortDesc: '留空 = 22 或 ~/.ssh/config 中的端口。',
       sshKeyTitle: '密钥文件',
       sshKeyDesc: '私钥路径。留空 = ssh-agent 或 ~/.ssh/config。',
-      sshHermesPathTitle: 'Hermes 路径（可选）',
+      sshHermesPathTitle: 'Moor 路径（可选）',
       sshHermesPathDesc: '远程 hermes 可执行文件的完整路径。留空 = 自动检测。',
       sshHermesPathPlaceholder: '自动检测',
       sshRemoteProfileTitle: '远程配置文件（可选）',
@@ -1057,17 +1057,17 @@ export const zh: Translations = {
       sshTestConnection: '测试 SSH',
       sshConnect: '连接',
       sshButtonsHint: '“保存”将在下次启动时生效，“连接”则立即重新连接。',
-      sshReachable: (host, platform) => `可连接：${host}（${platform}）——已找到 Hermes`,
+      sshReachable: (host, platform) => `可连接：${host}（${platform}）——已找到 Moor`,
       sshIncompleteHost: '连接前请输入 SSH 主机。',
       sshErrUnreachable: '无法通过 SSH 连接到该主机。请检查主机、端口和网络。',
       sshErrAuth:
-        'SSH 认证失败。请将密钥加载到 ssh-agent（ssh-add），或在 ~/.ssh/config 中设置 IdentityFile——Hermes 以非交互方式运行 ssh。',
+        'SSH 认证失败。请将密钥加载到 ssh-agent（ssh-add），或在 ~/.ssh/config 中设置 IdentityFile——Moor 以非交互方式运行 ssh。',
       sshErrHostKey: '自上次连接以来主机密钥已更改。请确认这是预期的，然后运行 ssh-keygen -R <host> 并重新连接。',
       sshErrNotInstalled:
-        '远程主机上未安装 Hermes。请在远程安装（curl -fsSL https://hermes-agent.nousresearch.com/install.sh | sh）或设置 Hermes 路径。',
-      sshErrPlatform: '不支持的远程平台。Hermes Desktop 的 SSH 模式支持 Linux、macOS 和 Windows 远程主机。',
+        '远程主机上未安装 Moor。请在远程安装（curl -fsSL https://hermes-agent.Moor inc..com/install.sh | sh）或设置 Moor 路径。',
+      sshErrPlatform: '不支持的远程平台。Moor Desktop 的 SSH 模式支持 Linux、macOS 和 Windows 远程主机。',
       sshErrTimeout: 'SSH 连接超时。主机可能无法访问或处于休眠状态。',
-      sshErrUpdateRequired: '使用 Desktop SSH 连接前，请更新远程主机上的 Hermes。',
+      sshErrUpdateRequired: '使用 Desktop SSH 连接前，请更新远程主机上的 Moor。',
       sshErrUnknown: 'SSH 连接失败。'
     },
     keys: {
@@ -1145,7 +1145,7 @@ export const zh: Translations = {
       noOutput: '暂无输出。',
       deepLinkTitle: '添加 MCP 服务器？',
       deepLinkDescription:
-        '一个链接请求将此 MCP 服务器添加到 Hermes。请检查下方的完整配置——它来自该链接，而非 Hermes。',
+        '一个链接请求将此 MCP 服务器添加到 Moor。请检查下方的完整配置——它来自该链接，而非 Moor。',
       deepLinkStdioWarning: '此服务器会使用下方所示命令在你的电脑上运行本地进程。仅在信任其来源时继续。',
       deepLinkConfirm: '添加服务器',
       deepLinkNameInvalid: '名称须为 1-64 个字母、数字、点、连字符或下划线。',
@@ -1916,7 +1916,7 @@ export const zh: Translations = {
     showAllProfiles: '显示全部配置档案',
     switchToProfile: name => `切换到 ${name}`,
     manageProfiles: '管理配置档案…',
-    connectGateway: '连接另一个 Hermes 网关…',
+    connectGateway: '连接另一个 Moor 网关…',
     actions: '操作',
     color: '颜色…',
     colorFor: '颜色',
@@ -1992,7 +1992,7 @@ export const zh: Translations = {
       message: count => `在您检查模型设置之前，${count} 个定时任务将被跳过。`,
       detailMore: (names, remaining) => `${names}，以及另外 ${remaining} 个`,
       review: '检查定时任务',
-      saveFailed: 'Hermes 未保存该模型更改。'
+      saveFailed: 'Moor 未保存该模型更改。'
     },
     search: '搜索定时任务…',
     loading: '正在加载定时任务…',
@@ -2254,7 +2254,7 @@ export const zh: Translations = {
       baseBranchPlaceholder: '搜索分支…',
       baseBranchNone: '未找到分支',
       startWorkFailed: '无法创建工作树',
-      worktreeStaleBackend: '请更新 Hermes 后端以在此远程连接上创建工作树 —— 该后端早于 git 工作树 API。',
+      worktreeStaleBackend: '请更新 Moor 后端以在此远程连接上创建工作树 —— 该后端早于 git 工作树 API。',
       worktreeProjectLabel: '项目',
       worktreeProjectPlaceholder: '搜索项目…',
       worktreeProjectNone: '没有包含文件夹的项目',
@@ -2627,11 +2627,11 @@ export const zh: Translations = {
     applyingClose: '此窗口会在更新期间关闭，随后 Moor 会自动重新打开。',
     errorTitle: '更新未完成',
     errorBody: '没有数据丢失。你可以现在重试。',
-    blockerTitle: '关闭本地预览以更新 Hermes？',
-    blockerBody: 'Hermes 需要在更新前停止这些本地预览。这不会修改或删除你的文件。',
-    foreignBlockerTitle: '关闭其他进程以更新 Hermes',
-    foreignBlockerBody: 'Hermes 无法安全地自动关闭这些进程。请关闭拥有这些进程的应用、终端或服务，然后重试更新。',
-    mixedBlockerBody: 'Hermes 可以关闭下方列出的本地预览。其他进程必须手动关闭，更新才能继续。',
+    blockerTitle: '关闭本地预览以更新 Moor？',
+    blockerBody: 'Moor 需要在更新前停止这些本地预览。这不会修改或删除你的文件。',
+    foreignBlockerTitle: '关闭其他进程以更新 Moor',
+    foreignBlockerBody: 'Moor 无法安全地自动关闭这些进程。请关闭拥有这些进程的应用、终端或服务，然后重试更新。',
+    mixedBlockerBody: 'Moor 可以关闭下方列出的本地预览。其他进程必须手动关闭，更新才能继续。',
     closePreviewsAndUpdate: '关闭预览并更新',
     closePreviewsAndCheckAgain: '关闭预览并重新检查',
     localPreview: '本地预览',
@@ -2665,21 +2665,21 @@ export const zh: Translations = {
     viewDocs: '查看安装文档',
     installTo: '将安装到',
     retryAfterRun: '我已运行 -- 重试',
-    setupChoiceTitle: '设置 Hermes Desktop',
-    setupChoiceDesc: '将此应用连接到你已运行的 Hermes 网关，或在这台电脑上本地安装 Hermes。',
-    connectExistingTitle: '连接到现有 Hermes',
+    setupChoiceTitle: '设置 Moor Desktop',
+    setupChoiceDesc: '将此应用连接到你已运行的 Moor 网关，或在这台电脑上本地安装 Moor。',
+    connectExistingTitle: '连接到现有 Moor',
     connectExistingShort: '连接现有环境',
     connectExistingDesc: '使用会话令牌或浏览器登录连接远程后端。不会启动本地安装。',
-    installLocalTitle: '本地安装 Hermes',
-    installLocalDesc: '下载 Hermes，创建 Python 环境，并在这台电脑上运行后端。',
-    localStartUnavailable: '无法启动本地安装。请重启 Hermes Desktop 后重试。',
-    remoteSetupTitle: '连接到现有 Hermes',
-    remoteSetupDesc: '输入网关 URL。Hermes Desktop 会检测需要令牌还是浏览器登录。',
+    installLocalTitle: '本地安装 Moor',
+    installLocalDesc: '下载 Moor，创建 Python 环境，并在这台电脑上运行后端。',
+    localStartUnavailable: '无法启动本地安装。请重启 Moor Desktop 后重试。',
+    remoteSetupTitle: '连接到现有 Moor',
+    remoteSetupDesc: '输入网关 URL。Moor Desktop 会检测需要令牌还是浏览器登录。',
     remoteUrlTitle: '网关 URL',
-    remoteUrlDesc: '使用 Hermes 网关的基础 URL；远程地址请包含 https://。',
+    remoteUrlDesc: '使用 Moor 网关的基础 URL；远程地址请包含 https://。',
     remoteUrlPlaceholder: 'https://gateway.example.com/hermes',
     probing: '正在检测网关认证方式...',
-    probeError: '无法连接到该 Hermes 网关。',
+    probeError: '无法连接到该 Moor 网关。',
     identityProvider: '你的身份提供方',
     authTitle: '认证',
     authNeedsOauth: provider => `测试此网关前请先使用 ${provider} 登录。`,
@@ -2878,7 +2878,7 @@ export const zh: Translations = {
       connectionSsh: host => `SSH: ${host}`,
       connectionRemote: host => `远程: ${host}`,
       connectionCloud: host => `云端: ${host}`,
-      connectionCloudTooltip: host => `Hermes Cloud · ${host}`,
+      connectionCloudTooltip: host => `Moor Cloud · ${host}`,
       connectionSshTooltip: host => `SSH · ${host}`,
       connectionRemoteTooltip: host => `Remote · ${host}`,
       backendLabel: version => `后端 v${version}`,
@@ -3213,7 +3213,7 @@ export const zh: Translations = {
       envRequired: '请先填写所需凭据',
       sendFailed: '无法发送 MCP 设置响应',
       reloadFailed: '服务器已保存，但重新加载 MCP 工具失败 — 将在下个会话加载',
-      gatewayDisconnected: 'Hermes 网关未连接'
+      gatewayDisconnected: 'Moor 网关未连接'
     },
     tool: {
       copyCode: '复制代码',

@@ -191,7 +191,7 @@ Background: ``.dockerignore`` excludes ``.git``, so the existing git-pull
 update path can never succeed inside the published image.  Before this
 fix, ``hermes update`` would fall through to ``"✗ Not a git repository.
 Please reinstall: curl ... install.sh"`` — that script installs a *new*
-host-side Hermes, not an update to the running container, so the message
+host-side Moor, not an update to the running container, so the message
 was actively misleading.
 
 These tests pin the new behaviour: when ``detect_install_method`` reports
@@ -229,7 +229,7 @@ def test_cmd_update_in_docker_prints_guidance_and_exits(
     # Spot-check the key guidance — exhaustive wording is locked in by the
     # config-module test below to keep these CLI tests resilient to copy edits.
     assert "doesn't apply inside the Docker container" in out
-    assert "docker pull nousresearch/hermes-agent:latest" in out
+    assert "docker pull Moor inc./hermes-agent:latest" in out
 
     # No git invocations — the early-return must beat every git command.
     git_calls = [c for c in mock_run.call_args_list if c.args and c.args[0] and "git" in str(c.args[0][0])]
@@ -261,7 +261,7 @@ def test_format_docker_update_message_contents():
     msg = format_docker_update_message()
 
     # Primary command — the entire reason this message exists.
-    assert "docker pull nousresearch/hermes-agent:latest" in msg
+    assert "docker pull Moor inc./hermes-agent:latest" in msg
 
     # The four key concepts the message must cover:
     assert "restart" in msg.lower(), "must explain that a restart is required"

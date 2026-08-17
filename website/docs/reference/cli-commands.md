@@ -25,7 +25,7 @@ hermes [global-options] <command> [subcommand/options]
 | `--profile <name>`, `-p <name>` | Select which Moor profile to use for this invocation. Overrides the sticky default set by `hermes profile use`. |
 | `--resume <session>`, `-r <session>` | Resume a previous session by ID or title. |
 =======
-| `--profile <name>`, `-p <name>` | Select which Hermes profile to use for this invocation. Overrides the sticky default set by `hermes profile use`. |
+| `--profile <name>`, `-p <name>` | Select which Moor profile to use for this invocation. Overrides the sticky default set by `hermes profile use`. |
 | `--resume <session>`, `-r <session>` | Resume a previous session by ID or title. The keyword `latest` resumes the most recent session (workspace-scoped, same lookup as `-c`). |
 >>>>>>> upstream/main
 | `--continue [name]`, `-c [name]` | Resume the most recent session, or the most recent session matching a title. |
@@ -78,7 +78,7 @@ hermes [global-options] <command> [subcommand/options]
 | `hermes logs` | View, tail, and filter agent/gateway/error log files. |
 | `hermes config` | Show, edit, migrate, and query configuration files. |
 | `hermes skin` | List, switch, and tweak display skins. |
-| `hermes console` | Open the safe Hermes command console. |
+| `hermes console` | Open the safe Moor command console. |
 | `hermes pairing` | Approve or revoke messaging pairing codes. |
 | `hermes skills` | Browse, install, publish, audit, and configure skills. |
 | `hermes bundles` | Group several skills under a single `/<name>` slash command. See [Skill Bundles](../user-guide/features/skills.md#skill-bundles). |
@@ -97,7 +97,7 @@ hermes [global-options] <command> [subcommand/options]
 | `hermes claw` | OpenClaw migration helpers. |
 | `hermes import-agent` | Import a Claude Code (`~/.claude`) or Codex CLI (`~/.codex`) setup. |
 | `hermes dashboard` | Launch the web dashboard for managing config, API keys, and sessions. |
-| `hermes serve` | Start the Hermes backend server (headless; powers the desktop app and remote backends). |
+| `hermes serve` | Start the Moor backend server (headless; powers the desktop app and remote backends). |
 | `hermes desktop` (alias `gui`) | Build and launch the native Electron desktop app. |
 | `hermes profile` | Manage profiles — multiple isolated Moor instances. |
 | `hermes completion` | Print shell completion scripts (bash/zsh/fish). |
@@ -254,7 +254,7 @@ Subcommands:
 | `uninstall` | Remove the installed service. |
 | `setup` | Interactive messaging-platform setup. |
 | `migrate-legacy` | Remove legacy `hermes.service` units left over from pre-rename installs. Profile units (`hermes-gateway-<profile>.service`) and unrelated services are never touched. Flags: `--dry-run`, `-y`/`--yes`. |
-| `enroll` | Experimental: enroll this gateway with a relay connector and save relay credentials for connector-backed platforms. See [Hermes Relay](/user-guide/messaging/relay). |
+| `enroll` | Experimental: enroll this gateway with a relay connector and save relay credentials for connector-backed platforms. See [Moor Relay](/user-guide/messaging/relay). |
 
 Options:
 
@@ -1380,7 +1380,7 @@ Unified plugin management — general plugins, memory providers, and context eng
 |------------|-------------|
 | *(none)* | Composite interactive UI — general plugin toggles + provider plugin configuration. |
 | `install <identifier> [--force] [--ref COMMIT_SHA]` | Install a plugin from a Git URL, `owner/repo`, or a bare index name. Bare names (no slash) are resolved through the community plugin index to `owner/repo` plus the index-pinned commit; ambiguous names list candidates and exit. `--ref` accepts only a full 40-character commit SHA, installs that exact immutable revision, and overrides any index pin. |
-| `search [term] [--json] [--capability CAP] [--refresh]` | Search the community plugin index (fuzzy match on name/description/tags; omit `term` to browse). Fetched from `plugins.index_url` (default: the NousResearch plugin index), cached under `~/.hermes/cache/` for 24h, falling back to the stale cache and then the bundled seed when offline. Indexed ≠ audited — inclusion is a metadata review only. |
+| `search [term] [--json] [--capability CAP] [--refresh]` | Search the community plugin index (fuzzy match on name/description/tags; omit `term` to browse). Fetched from `plugins.index_url` (default: the Moor inc. plugin index), cached under `~/.hermes/cache/` for 24h, falling back to the stale cache and then the bundled seed when offline. Indexed ≠ audited — inclusion is a metadata review only. |
 | `update <name>` | Pull latest changes for an unpinned installed plugin. Pinned plugins must be reinstalled with `--force --ref <new-commit>` to move. |
 | `remove <name>` (aliases: `rm`, `uninstall`) | Remove an installed plugin. |
 | `enable <name>` | Enable a disabled plugin. |
@@ -1438,20 +1438,20 @@ Subcommands:
 to use for re-running the install if the toolset toggle didn't trigger
 it (for example, on returning-user setups).
 
-If cua-driver is already present, Hermes checks its version and runtime
+If cua-driver is already present, Moor checks its version and runtime
 manifest. A compatible 0.20.0 or newer installation is left in place. An old or
 incomplete standard installation is repaired with the current upstream
-installer. Hermes never replaces a custom binary selected through
+installer. Moor never replaces a custom binary selected through
 `HERMES_CUA_DRIVER_CMD`; update that binary directly or remove the override.
 `hermes computer-use status` reports when repair is required.
 
-The built-in `computer_use` toolset is the recommended Hermes integration.
+The built-in `computer_use` toolset is the recommended Moor integration.
 Registering raw Cua MCP tools is an alternative when you need Cua's low-level
-tool vocabulary. `cua-driver skills install` detects Hermes and links Cua's
-skill pack into the Hermes skills directory automatically.
+tool vocabulary. `cua-driver skills install` detects Moor and links Cua's
+skill pack into the Moor skills directory automatically.
 
 Permission mode, capability-manifest approval, and the existing-profile grant
-belong to runtime launch. In bounded mode Hermes passes Cua's canonical
+belong to runtime launch. In bounded mode Moor passes Cua's canonical
 `--capability-manifest` and `--approve-capability-manifest` flags. Every MCP
 transport owns a private lifecycle session inside its runtime. Public session
 names label cursor and session state; they do not own or share the runtime.
@@ -1575,7 +1575,7 @@ hermes claw migrate --source /home/user/old-openclaw
 hermes import-agent [claude-code|codex] [options]
 ```
 
-Import a **Claude Code** (`~/.claude`) or **OpenAI Codex CLI** (`~/.codex`) setup into Hermes. Maps `CLAUDE.md`/`AGENTS.md` instructions to memory entries, `Bash(...)` permission allow/deny rules to `command_allowlist`/`approvals.deny`, MCP servers to `mcp_servers` in `config.yaml`, and skill directories into `~/.hermes/skills/`. Always previews before applying; API keys and credentials are never imported.
+Import a **Claude Code** (`~/.claude`) or **OpenAI Codex CLI** (`~/.codex`) setup into Moor. Maps `CLAUDE.md`/`AGENTS.md` instructions to memory entries, `Bash(...)` permission allow/deny rules to `command_allowlist`/`approvals.deny`, MCP servers to `mcp_servers` in `config.yaml`, and skill directories into `~/.hermes/skills/`. Always previews before applying; API keys and credentials are never imported.
 
 | Option | Description |
 | --- | --- |
@@ -1732,7 +1732,7 @@ Additional behavior:
 | `hermes uninstall [--full] [--gui] [--yes]` | Remove Moor, optionally deleting all config/data. `--gui` removes only the desktop Chat GUI, leaving the agent intact; `--full` also deletes config/data; `--yes` skips prompts. |
 =======
 
-| `hermes uninstall [--full] [--gui] [--dry-run] [--yes]` | Remove Hermes, optionally deleting all config/data. `--gui` removes only the desktop Chat GUI, leaving the agent intact; `--full` also deletes config/data; `--dry-run` prints what would be removed without changing anything; `--yes` skips prompts. |
+| `hermes uninstall [--full] [--gui] [--dry-run] [--yes]` | Remove Moor, optionally deleting all config/data. `--gui` removes only the desktop Chat GUI, leaving the agent intact; `--full` also deletes config/data; `--dry-run` prints what would be removed without changing anything; `--yes` skips prompts. |
 >>>>>>> upstream/main
 
 ## See also

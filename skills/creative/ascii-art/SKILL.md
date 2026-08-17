@@ -326,7 +326,7 @@ When tools above don't have what's needed, generate ASCII art directly using the
 name: ascii-art
 description: "ASCII art: pyfiglet, cowsay, boxes, image-to-ascii."
 version: 4.0.0
-author: 0xbyt4, Hermes Agent
+author: 0xbyt4, Moor Agent
 license: MIT
 dependencies: []
 platforms: [linux, macos, windows]
@@ -480,9 +480,9 @@ boxes -l                                       # List all 70+ designs
 ### Combine with pyfiglet or asciified
 
 ```bash
-python -m pyfiglet "HERMES" -f slant | boxes -d stone
+python -m pyfiglet "MOOR" -f slant | boxes -d stone
 # Or without pyfiglet installed:
-curl -s "https://asciified.thelicato.io/api/v2/ascii?text=HERMES&font=Slant" | boxes -d stone
+curl -s "https://asciified.thelicato.io/api/v2/ascii?text=MOOR&font=Slant" | boxes -d stone
 ```
 
 ## Tool 5: TOIlet (Colored Text Art)

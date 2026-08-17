@@ -270,7 +270,7 @@ def _needs_server_members_intent(
     allowed_user_ids: set[str] | list[str] | None,
     allowed_role_ids: set[str] | list[str] | None,
 ) -> bool:
-    """Return True when Hermes must request Discord's Server Members intent.
+    """Return True when Moor must request Discord's Server Members intent.
 
     Message Content is always requested. Server Members is only needed when the
     allowlist contains usernames (not pure numeric IDs / ``*``) or when role
@@ -287,7 +287,7 @@ def _format_privileged_intents_guidance(*, needs_members: bool) -> str:
     lines = [
         "Discord rejected the connection because privileged Gateway Intents "
         "are not enabled for this bot in the Developer Portal.",
-        "Hermes is requesting:",
+        "Moor is requesting:",
         "  - Message Content Intent (required to read message text)",
     ]
     if needs_members:
@@ -300,7 +300,7 @@ def _format_privileged_intents_guidance(*, needs_members: bool) -> str:
             "Fix: https://discord.com/developers/applications → your application "
             "→ Bot → Privileged Gateway Intents → enable the intent(s) listed "
             "above → Save Changes, then restart the gateway.",
-            "Docs: https://hermes-agent.nousresearch.com/docs/user-guide/messaging/discord",
+            "Docs: https://hermes-agent.Moor inc..com/docs/user-guide/messaging/discord",
         ]
     )
     return "\n".join(lines)
@@ -1535,7 +1535,7 @@ class DiscordAdapter(BasePlatformAdapter):
                 False,
             )
         if _is("PrivilegedIntentsRequired"):
-            # Name the exact intents Hermes requested (#79430): Message
+            # Name the exact intents Moor requested (#79430): Message
             # Content always; Server Members only when username/role
             # allowlists actually need member lookups.
             guidance = _format_privileged_intents_guidance(
@@ -2567,7 +2567,7 @@ class DiscordAdapter(BasePlatformAdapter):
         is offline. Normal startup resume only handles sessions already marked
         resume_pending; this pass scans recent channel/thread history, records
         what it saw durably, and reuses the normal message handler for messages
-        that lack a substantive non-outage Hermes response. Emoji-only acks are
+        that lack a substantive non-outage Moor response. Emoji-only acks are
         deliberately not sufficient completion evidence.
         """
         if not self._client:
@@ -2835,7 +2835,7 @@ class DiscordAdapter(BasePlatformAdapter):
         self._with_discord_recovery_db(_op)
 
     async def _should_backfill_discord_message(self, message: Any) -> bool:
-        """Return True when a recent Discord message still needs Hermes work."""
+        """Return True when a recent Discord message still needs Moor work."""
         if not self._client or not getattr(self._client, "user", None):
             return False
         if getattr(getattr(message, "author", None), "id", None) == getattr(self._client.user, "id", None):
@@ -2851,7 +2851,7 @@ class DiscordAdapter(BasePlatformAdapter):
         return True
 
     def _is_down_notice_content(self, content: str) -> bool:
-        """Recognize only explicit Hermes/gateway outage notices."""
+        """Recognize only explicit Moor/gateway outage notices."""
         text = (content or "").lower()
         subject = r"(?:hermes|the agent|agent|the gateway|gateway|bmo)"
         state = r"(?:is|was|appears to be|is currently|was currently)"
@@ -10267,7 +10267,7 @@ def interactive_setup() -> None:
     print_info("  - Server Members Intent (required if you use usernames or role allowlists)")
     print_info("Save Changes in the Developer Portal before starting the gateway.")
     print_info(
-        "Docs: https://hermes-agent.nousresearch.com/docs/user-guide/messaging/discord"
+        "Docs: https://hermes-agent.Moor inc..com/docs/user-guide/messaging/discord"
     )
     token = prompt("Discord bot token", password=True)
     if not token:

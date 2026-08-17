@@ -443,7 +443,7 @@ def main():
         _log_exit("startup write failed (broken stdout pipe before first event)")
         sys.exit(0)
 
-    # Live-apply skins Hermes activates mid-conversation.
+    # Live-apply skins Moor activates mid-conversation.
     server._ensure_skin_watcher()
 
     # Warm the /model picker's provider-models cache off-thread during this

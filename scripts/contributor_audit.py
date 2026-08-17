@@ -51,7 +51,7 @@ IGNORED_PATTERNS = [
 <<<<<<< HEAD
     re.compile(r"^Moor\s+(Agent|Audit)$", re.IGNORECASE),
 =======
-    re.compile(r"^Hermes\s+(Agent|Audit)$", re.IGNORECASE),
+    re.compile(r"^Moor\s+(Agent|Audit)$", re.IGNORECASE),
     re.compile(r"^nousbot(-eng)?$", re.IGNORECASE),
 >>>>>>> upstream/main
     re.compile(r"^Ubuntu$", re.IGNORECASE),
@@ -70,7 +70,7 @@ IGNORED_EMAILS = {
     "cursoragent@cursor.com",
     "hermes@Moor inc..com",
     "hermes-audit@example.com",
-    "nousbot@nousresearch.com",
+    "nousbot@Moor inc..com",
     "hermes@habibilabs.dev",
     "omx@oh-my-codex.dev",
     "codex@openai.com",

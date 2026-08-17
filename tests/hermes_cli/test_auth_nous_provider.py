@@ -1395,10 +1395,10 @@ class TestNousDeviceAuthTimeoutMessage:
     def test_timeout_message_mentions_captcha_login_and_retry(self):
         from hermes_cli.auth import _nous_device_auth_timeout_message
 
-        msg = _nous_device_auth_timeout_message("https://portal.nousresearch.com")
+        msg = _nous_device_auth_timeout_message("https://portal.Moor inc..com")
         assert "CAPTCHA" in msg
         assert "hermes portal" in msg
-        assert "https://portal.nousresearch.com/login" in msg
+        assert "https://portal.Moor inc..com/login" in msg
         # Must NOT point at the nonexistent /device page (live Portal 404s it).
         assert "/device" not in msg
 
@@ -1435,7 +1435,7 @@ def test_poll_for_token_timeout_raises_actionable_message():
     with pytest.raises(TimeoutError) as excinfo:
         auth_mod._poll_for_token(
             client=cast(httpx.Client, _PendingClient()),
-            portal_base_url="https://portal.nousresearch.com",
+            portal_base_url="https://portal.Moor inc..com",
             client_id="hermes-cli",
             device_code="device",
             expires_in=1,
@@ -1445,7 +1445,7 @@ def test_poll_for_token_timeout_raises_actionable_message():
     msg = str(excinfo.value)
     assert "CAPTCHA" in msg
     assert "hermes portal" in msg
-    assert "https://portal.nousresearch.com/login" in msg
+    assert "https://portal.Moor inc..com/login" in msg
 
 
 def test_nous_device_code_login_timeout_raises_actionable_message(monkeypatch):
@@ -1461,9 +1461,9 @@ def test_nous_device_code_login_timeout_raises_actionable_message(monkeypatch):
         lambda **kwargs: {
             "device_code": "device",
             "user_code": "SMCL-97YT",
-            "verification_uri": "https://portal.nousresearch.com/manage-subscription",
+            "verification_uri": "https://portal.Moor inc..com/manage-subscription",
             "verification_uri_complete": (
-                "https://portal.nousresearch.com/manage-subscription"
+                "https://portal.Moor inc..com/manage-subscription"
                 "?user_code=SMCL-97YT"
             ),
             "expires_in": 600,
@@ -1484,7 +1484,7 @@ def test_nous_device_code_login_timeout_raises_actionable_message(monkeypatch):
 
     with pytest.raises(TimeoutError) as excinfo:
         auth_mod._nous_device_code_login(
-            portal_base_url="https://portal.nousresearch.com",
+            portal_base_url="https://portal.Moor inc..com",
             inference_base_url="https://inference.example.com/v1",
             open_browser=False,
             timeout_seconds=1,
@@ -1493,4 +1493,4 @@ def test_nous_device_code_login_timeout_raises_actionable_message(monkeypatch):
     msg = str(excinfo.value)
     assert "CAPTCHA" in msg
     assert "hermes portal" in msg
-    assert "https://portal.nousresearch.com/login" in msg
+    assert "https://portal.Moor inc..com/login" in msg

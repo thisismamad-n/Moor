@@ -889,10 +889,10 @@ class ProviderInfo:
 
 
 # ---------------------------------------------------------------------------
-# Provider ID mapping: Hermes ↔ models.dev
+# Provider ID mapping: Moor ↔ models.dev
 # ---------------------------------------------------------------------------
 
-# Hermes provider names → models.dev provider IDs
+# Moor provider names → models.dev provider IDs
 PROVIDER_TO_MODELS_DEV: Dict[str, str] = {
     "openrouter": "openrouter",
     "novita": "novita-ai",
@@ -927,7 +927,7 @@ PROVIDER_TO_MODELS_DEV: Dict[str, str] = {
     "xiaomi": "xiaomi",
     "nvidia": "nvidia",
     # Meta Model API (Muse Spark family, api.meta.ai). models.dev keys these
-    # under the "meta" provider id; Hermes' provider is "meta-ai" (and the
+    # under the "meta" provider id; Moor' provider is "meta-ai" (and the
     # api.meta.ai host reverse-maps to "meta-ai"), so without both aliases the
     # context/pricing lookup misses and muse-spark-* falls back to the generic
     # 256K default instead of its true 1M window.
@@ -941,13 +941,13 @@ PROVIDER_TO_MODELS_DEV: Dict[str, str] = {
     "ollama-cloud": "ollama-cloud",
 }
 
-# Reverse mapping: models.dev id → Hermes ids (built lazily; many-to-one,
+# Reverse mapping: models.dev id → Moor ids (built lazily; many-to-one,
 # e.g. both "meta" and "meta-ai" may map to the same models.dev id).
 _MODELS_DEV_TO_PROVIDER: Optional[Dict[str, List[str]]] = None
 
 
 def _models_dev_to_hermes_ids(mdev_id: str) -> List[str]:
-    """Return the Hermes provider ids that map to *mdev_id* (may be [])."""
+    """Return the Moor provider ids that map to *mdev_id* (may be [])."""
     global _MODELS_DEV_TO_PROVIDER
     if _MODELS_DEV_TO_PROVIDER is None:
         reverse: Dict[str, List[str]] = {}
@@ -1601,7 +1601,7 @@ class ModelCapabilities:
 #      ``_default: {context_window: 128000}`` therefore cannot clamp every
 #      catalog-known model of a provider.
 #
-# Provider keys accept the Hermes provider id (as used elsewhere in
+# Provider keys accept the Moor provider id (as used elsewhere in
 # config.yaml) or the models.dev provider id. Model ids match exactly,
 # then case-insensitively (mirroring catalog lookup).
 
@@ -1628,7 +1628,7 @@ def _load_model_overrides() -> Dict[str, Any]:
 def _provider_override_section(provider: str) -> Optional[Dict[str, Any]]:
     """Return the override section for *provider*, or None.
 
-    Accepts either the Hermes provider id or the models.dev provider id as
+    Accepts either the Moor provider id or the models.dev provider id as
     the config key, so ``copilot`` and ``github-copilot`` both work
     regardless of which id space a caller passes in.
     """
@@ -1643,7 +1643,7 @@ def _provider_override_section(provider: str) -> Optional[Dict[str, Any]]:
     mapped = PROVIDER_TO_MODELS_DEV.get(provider_key)
     if mapped and mapped != provider_key:
         candidates.append(mapped)
-    # Reverse: caller passed a models.dev id, config keyed by Hermes id.
+    # Reverse: caller passed a models.dev id, config keyed by Moor id.
     for hermes_id in _models_dev_to_hermes_ids(provider_key):
         if hermes_id != provider_key:
             candidates.append(hermes_id)
@@ -1824,7 +1824,7 @@ def _merge_catalog_entry_with_override(
 def _get_provider_models(
     provider: str, *, allow_network: bool = False
 ) -> Optional[Dict[str, Any]]:
-    """Resolve a Hermes provider ID to its models dict from models.dev.
+    """Resolve a Moor provider ID to its models dict from models.dev.
 
     Returns the models dict or None if the provider is unknown or has no data.
 
@@ -2026,7 +2026,7 @@ _NOISE_PATTERNS: re.Pattern = re.compile(
 )
 
 # Google's live Gemini catalogs currently include a mix of stale slugs and
-# Gemma models whose TPM quotas are too small for normal Hermes agent traffic.
+# Gemma models whose TPM quotas are too small for normal Moor agent traffic.
 # Keep capability metadata available for direct/manual use, but hide these from
 # the Gemini model catalogs we surface in setup and model selection.
 _GOOGLE_HIDDEN_MODELS = frozenset({
@@ -2172,7 +2172,7 @@ def get_provider_info(
 ) -> Optional[ProviderInfo]:
     """Get full provider metadata from models.dev.
 
-    Accepts either a Hermes provider ID (e.g. "kilocode") or a models.dev
+    Accepts either a Moor provider ID (e.g. "kilocode") or a models.dev
     ID (e.g. "kilo").  Returns None if the provider is not in the catalog.
 
     ``allow_network`` defaults to True — the primary caller is
@@ -2180,7 +2180,7 @@ def get_provider_info(
     catalog is worth a short network wait. Hot-path callers should pass
     ``allow_network=False``.
     """
-    # Resolve Hermes ID → models.dev ID
+    # Resolve Moor ID → models.dev ID
     mdev_id = PROVIDER_TO_MODELS_DEV.get(provider_id, provider_id)
 
     # NOTE: keep the zero-argument call on the default path. Dozens of test
@@ -2207,7 +2207,7 @@ def get_model_info(
 ) -> Optional[ModelInfo]:
     """Get full model metadata from models.dev.
 
-    Accepts Hermes or models.dev provider ID.  Tries exact match then
+    Accepts Moor or models.dev provider ID.  Tries exact match then
     case-insensitive fallback.  Returns None if not found.
 
     ``model_overrides`` entries use the SAME canonical schema as every

@@ -785,7 +785,7 @@ class TestLazyMcpInstall:
 
         state = {
             "ready": False,
-            "reason": "Hermes computer use requires cua-driver 0.20.0 or newer",
+            "reason": "Moor computer use requires cua-driver 0.20.0 or newer",
         }
         with patch.object(
                  cua_backend,
@@ -823,7 +823,7 @@ class TestContractAutoRepair:
     """An installed-but-incompatible driver is repaired automatically, once.
 
     The 0.20 runtime-contract gate fails closed; when the failure is an old
-    installed driver (a state Hermes' own version-floor bump created),
+    installed driver (a state Moor' own version-floor bump created),
     start() runs the standard install/repair path once instead of failing
     every computer_use call until the user runs the CLI by hand.
     """
@@ -833,7 +833,7 @@ class TestContractAutoRepair:
             "ready": False,
             "binary": "/usr/local/bin/cua-driver",
             "version": "0.19.3",
-            "reason": "Hermes computer use requires cua-driver 0.20.0 or newer",
+            "reason": "Moor computer use requires cua-driver 0.20.0 or newer",
         }
 
     def test_start_auto_repairs_incompatible_driver(self, monkeypatch):

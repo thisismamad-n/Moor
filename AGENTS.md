@@ -219,12 +219,12 @@ on the backend process.
 
 The client and the backend are separate machines on separate clocks. The
 desktop app can be driving a backend Electron spawned locally, one over SSH,
-one behind a plain URL + token, or Hermes Cloud. Only the first two are spawned
+one behind a plain URL + token, or Moor Cloud. Only the first two are spawned
 by us and carry `HERMES_DESKTOP=1`. Every env-keyed GUI gate is therefore a
 silent no-op on the other half of the topologies, and the failure is invisible:
 the tool is stripped from the schema before the model ever sees it, on the same
 backend whose platform hint is telling the model it's *"chatting inside the
-Hermes desktop app."*
+Moor desktop app."*
 
 The pattern that works:
 
@@ -1426,7 +1426,7 @@ source files configuration belongs in the JS (vitest) test suite, not in `tests/
 
 ### Don't fake the host OS
 
-Hermes supports Linux, macOS and native Windows, and plenty of its behaviour
+Moor supports Linux, macOS and native Windows, and plenty of its behaviour
 genuinely differs per host. Those differences are tested by running on the
 host, not by patching `sys.platform`.
 

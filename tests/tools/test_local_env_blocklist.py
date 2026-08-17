@@ -359,26 +359,26 @@ def _physical_repo_root(tmp_path: Path) -> Path:
 
 
 class TestPythonpathSelectiveStrip:
-    """PYTHONPATH Hermes-owned entry stripping (#74817).
+    """PYTHONPATH Moor-owned entry stripping (#74817).
 
-    The Desktop Electron app injects the Hermes repo root and the Hermes
+    The Desktop Electron app injects the Moor repo root and the Moor
     venv's site-packages (Python 3.11) into PYTHONPATH.  When this leaks
     into subprocesses running a different Python (e.g. 3.13), 3.11 C
     extensions appear on sys.path and crash with ImportError.
     ``_strip_hermes_owned_pythonpath`` surgically removes only the
-    entries Hermes itself owns (repo root, own venv site-packages),
+    entries Moor itself owns (repo root, own venv site-packages),
     preserving user paths — including user paths whose names merely
     contain another Python version.
     """
 
     def test_owned_entries_stripped_matrix(self):
-        """Exact Hermes-owned entries are removed; everything else survives
+        """Exact Moor-owned entries are removed; everything else survives
         verbatim (ordering, duplicates, empty components).
 
         Covers: the running venv's site-packages, the repo root (computed
         independently via parents[2] so an off-by-one in _hermes_repo_root
-        cannot silently pass), duplicate Hermes entries, all-owned input
-        (PYTHONPATH key removed), and mixed user/Hermes ordering with an
+        cannot silently pass), duplicate Moor entries, all-owned input
+        (PYTHONPATH key removed), and mixed user/Moor ordering with an
         empty component preserved.
         """
         from tools.environments.local import _strip_hermes_owned_pythonpath
@@ -412,7 +412,7 @@ class TestPythonpathSelectiveStrip:
         "",
     ])
     def test_non_owned_entries_preserved(self, user_pp):
-        """Anything not proven Hermes-owned is preserved byte-for-byte.
+        """Anything not proven Moor-owned is preserved byte-for-byte.
 
         One invariant, one matrix: ordinary user paths, Nix store paths,
         other-major/minor-version site-packages, paths merely containing a
@@ -428,7 +428,7 @@ class TestPythonpathSelectiveStrip:
 
     def test_non_owned_runtime_shaped_entries_preserved(self):
         """Runtime-derived user spellings are preserved: site-packages for a
-        different interpreter version, a descendant of the Hermes venv
+        different interpreter version, a descendant of the Moor venv
         site-packages, and direct/deeper children of the repo root.  The
         repo root is computed independently (parents[2] of this file) so an
         off-by-one in _hermes_repo_root cannot silently pass; no launcher
@@ -457,16 +457,16 @@ class TestPythonpathSelectiveStrip:
             assert env["PYTHONPATH"] == user_pp
 
     def test_windows_backslash_paths(self):
-        """Windows-style backslash paths are handled for Hermes-owned entries.
+        """Windows-style backslash paths are handled for Moor-owned entries.
 
         On Windows, os.pathsep is ';'.  We mock it so the test runs
         correctly on POSIX CI.  On a POSIX host a backslash path is a
         single path component, so ``Path`` cannot identify it as
-        Hermes-owned — the critical invariant is that user Windows paths
+        Moor-owned — the critical invariant is that user Windows paths
         (including site-packages paths for another Python version) are
         never destroyed.  On a real Windows host, Path splits on
-        backslashes and Hermes venv site-packages entries are stripped
-        by the same Hermes-owned check (covered by the Windows-only test
+        backslashes and Moor venv site-packages entries are stripped
+        by the same Moor-owned check (covered by the Windows-only test
         below).
         """
         from tools.environments.local import _strip_hermes_owned_pythonpath
@@ -484,14 +484,14 @@ class TestPythonpathSelectiveStrip:
         assert "PYTHONPATH" in env
         entries = env["PYTHONPATH"].split(";")
         # Both survive on POSIX: user paths must always be preserved, and
-        # the Hermes-owned check cannot match a backslash path here.
+        # the Moor-owned check cannot match a backslash path here.
         assert hermes_win in entries
         assert user_win in entries
 
     @pytest.mark.windows_only
     def test_windows_hermes_owned_paths_stripped(self):
-        """On Windows, a Hermes venv site-packages entry written with
-        backslashes is stripped by the same Hermes-owned check, while a
+        """On Windows, a Moor venv site-packages entry written with
+        backslashes is stripped by the same Moor-owned check, while a
         user Windows path is preserved.  Windows-only: POSIX ``Path`` does
         not split on backslashes, so this cannot be meaningfully simulated
         on a POSIX host."""
@@ -550,9 +550,9 @@ class TestPythonpathSelectiveStrip:
     def test_base_python_sanitizer_uses_validated_separate_runtime_venv(self, tmp_path, monkeypatch):
         """A base interpreter strips the exact Windows runtime site-packages.
 
-        This deliberately uses a synthetic Hermes venv separate from the test
+        This deliberately uses a synthetic Moor venv separate from the test
         runner: sys.prefix represents base Python, while validated VIRTUAL_ENV
-        identifies ``<repo>/venv`` as the Hermes runtime producer contract.
+        identifies ``<repo>/venv`` as the Moor runtime producer contract.
         """
         import tools.environments.local as local
 
@@ -620,7 +620,7 @@ class TestPythonpathSelectiveStrip:
     ])
     def test_builders_strip_hermes_venv_pythonpath(self, builder):
         """Every subprocess env builder applies the same sanitation contract:
-        Hermes venv site-packages is stripped, user entries survive.
+        Moor venv site-packages is stripped, user entries survive.
         """
         from tools.environments import local as local_mod
 
@@ -643,7 +643,7 @@ class TestPythonpathSelectiveStrip:
         assert "/home/user/my-lib" in entries
 
     def test_scrub_child_env_strips_hermes_venv_pythonpath(self):
-        """execute_code's _scrub_child_env path: after scrubbing, Hermes venv
+        """execute_code's _scrub_child_env path: after scrubbing, Moor venv
         site-packages entries should be stripped when
         _strip_hermes_owned_pythonpath is applied (as the spawn path does),
         while user entries (even for another Python version) are preserved.
@@ -673,12 +673,12 @@ class TestPythonpathSelectiveStrip:
     def test_execute_code_composition_strips_inherited_hermes_entries(self, same_env):
         """Integration: execute_code's real spawn path composes a clean PYTHONPATH.
 
-        Seeds a contaminated inherited PYTHONPATH (Hermes repo root + Hermes
+        Seeds a contaminated inherited PYTHONPATH (Moor repo root + Moor
         venv site-packages + user entries) through os.environ and drives
         execute_code all the way to Popen.  Proves the #84500 conditional
         composition and the #82581 selective strip compose correctly:
 
-        * inherited Hermes venv site-packages never survive into the sandbox;
+        * inherited Moor venv site-packages never survive into the sandbox;
         * the staging tmpdir stays the first entry;
         * the repo root is deliberately re-added exactly once for a same-env
           child (the single occurrence proves the inherited copy was stripped
@@ -739,7 +739,7 @@ class TestPythonpathSelectiveStrip:
         assert norm_parts[0] == norm_staging, \
             "staging tmpdir must be the first PYTHONPATH entry"
         assert norm_venv not in norm_parts, \
-            "inherited Hermes venv site-packages must be stripped"
+            "inherited Moor venv site-packages must be stripped"
         assert norm_user_a in norm_parts and norm_user_b in norm_parts, \
             "user PYTHONPATH entries must survive"
         assert norm_parts.index(norm_user_a) > norm_parts.index(norm_staging), \
@@ -1004,11 +1004,11 @@ class TestPythonpathSelectiveStrip:
 
 
 class TestPythonhomeSanitized:
-    """PYTHONHOME must not leak from the Hermes runtime into subprocesses.
+    """PYTHONHOME must not leak from the Moor runtime into subprocesses.
 
     The gateway inherits/sets PYTHONHOME in its process environment; a child
     interpreter (system Python, another venv, cron no_agent scripts) that
-    inherits it redirects its stdlib search to the Hermes venv and crashes
+    inherits it redirects its stdlib search to the Moor venv and crashes
     with version-mismatch errors before importing anything (#75018).
     """
 

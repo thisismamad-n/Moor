@@ -259,7 +259,7 @@ class TestClassifyApiError:
                 "message": (
                     "Model 'openai/gpt-5.5-pro' requires available credits. "
                     "Your account balance is too low to use paid models — "
-                    "add credits at https://portal.nousresearch.com or pick a free model."
+                    "add credits at https://portal.Moor inc..com or pick a free model."
                 ),
             },
         )

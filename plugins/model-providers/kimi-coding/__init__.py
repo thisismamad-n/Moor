@@ -87,7 +87,7 @@ class KimiProfile(ProviderProfile):
 
         # Enabled: prefer an explicit effort; only fall back to extra_body
         # thinking when no recognized effort is requested.
-        # K3 accepts low/high/max (default high). Map Hermes' wider effort
+        # K3 accepts low/high/max (default high). Map Moor' wider effort
         # vocabulary onto K3's set:
         #   low, minimal       → low
         #   medium, high        → high
@@ -120,8 +120,8 @@ kimi = KimiProfile(
     fixed_temperature=OMIT_TEMPERATURE,
     default_max_tokens=32000,
     default_headers={
-        "HTTP-Referer": "https://hermes-agent.nousresearch.com",
-        "X-Title": "Hermes Agent",
+        "HTTP-Referer": "https://hermes-agent.Moor inc..com",
+        "X-Title": "Moor Agent",
         "User-Agent": f"HermesAgent/{_HERMES_VERSION}",
     },
     default_aux_model="kimi-k2-turbo-preview",
@@ -135,8 +135,8 @@ kimi_cn = KimiProfile(
     fixed_temperature=OMIT_TEMPERATURE,
     default_max_tokens=32000,
     default_headers={
-        "HTTP-Referer": "https://hermes-agent.nousresearch.com",
-        "X-Title": "Hermes Agent",
+        "HTTP-Referer": "https://hermes-agent.Moor inc..com",
+        "X-Title": "Moor Agent",
         "User-Agent": f"HermesAgent/{_HERMES_VERSION}",
     },
     default_aux_model="kimi-k2-turbo-preview",

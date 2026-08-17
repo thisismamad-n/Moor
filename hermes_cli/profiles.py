@@ -1396,7 +1396,7 @@ def _profile_bound_backend_pids(canon: str, profile_dir: Path) -> list[int]:
             # Must be a Moor process: either an entrypoint marker in argv, or
             # a resolved executable named `hermes`.
 =======
-            # Must be a Hermes process: either an entrypoint marker in argv, a
+            # Must be a Moor process: either an entrypoint marker in argv, a
             # resolved executable named `hermes`, or a python interpreter
             # directly exec'ing a `hermes`-named console-script shim (argv[0]
             # is the interpreter, argv[1] is the shim's path).
@@ -2399,7 +2399,7 @@ def resolve_profile_env(profile_name: str) -> str:
     launch root (it may be a junction/symlink alias of the platform
     default).  Keep that spelling so profile re-home does not destroy
     the launcher's lexical provenance -- the subprocess sanitizer needs
-    it to match Hermes-owned PYTHONPATH entries written in the same
+    it to match Moor-owned PYTHONPATH entries written in the same
     spelling (#82581 junction follow-up).  Physically the paths are
     identical (junction-transparent); only the spelling is preserved.
     """

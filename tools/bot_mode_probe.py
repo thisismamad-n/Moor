@@ -124,7 +124,7 @@ def _build_section(home: Path) -> str:
 
     return (
         f"{_PROTOCOL_HEADING}\n"
-        "This install runs Bot Mode: each Hermes profile is an agent teammate with "
+        "This install runs Bot Mode: each Moor profile is an agent teammate with "
         'one canonical "Bot Chat" conversation. To message a teammate, run on the '
         "terminal tool (background=true, notify_on_complete=true), then finish your "
         "turn — the reply arrives later as a new message:\n"

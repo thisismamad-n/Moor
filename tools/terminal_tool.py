@@ -1095,7 +1095,7 @@ PTY mode: Set pty=true for interactive CLI tools (Codex, Claude Code, Python REP
 Do NOT use vim/nano/interactive tools without pty=true — they hang without a pseudo-terminal. Pipe git output to cat if it might page.
 =======
 Foreground (default): returns INSTANTLY when the command finishes, even with a high timeout — set timeout generously for long builds.
-Background: set background=true (returns a session_id). Pair with notify_on_complete=true for bounded tasks; leave silent only for servers/daemons that never exit. Never use nohup/setsid/trailing '&' — use background=true so Hermes tracks the process. After starting a server, verify readiness with a health check, then act in a separate call; no blind sleep loops. Manage with process(action="poll"/"wait").
+Background: set background=true (returns a session_id). Pair with notify_on_complete=true for bounded tasks; leave silent only for servers/daemons that never exit. Never use nohup/setsid/trailing '&' — use background=true so Moor tracks the process. After starting a server, verify readiness with a health check, then act in a separate call; no blind sleep loops. Manage with process(action="poll"/"wait").
 Working directory: use 'workdir' for per-command cwd. When a command changes the session cwd (cd, pushd), the result includes a "cwd" field — trust it instead of prefixing every command with 'cd'.
 PTY: set pty=true for interactive CLIs (they hang without it). Pipe git output to cat if it might page.
 >>>>>>> upstream/main
@@ -2550,7 +2550,7 @@ def _foreground_background_guidance(command: str) -> str | None:
             "readiness checks and tests in separate commands."
 =======
             "Re-send WITHOUT the wrapper as terminal(command=\"<cmd>\", background=true, "
-            "notify_on_complete=true) so Hermes tracks the process, then run readiness "
+            "notify_on_complete=true) so Moor tracks the process, then run readiness "
             "checks and tests in separate commands."
 >>>>>>> upstream/main
         )
@@ -2905,7 +2905,7 @@ def terminal_tool(
                     "error": (
                         "Blocked: launchctl submit/bootstrap registers a persistent "
                         "KeepAlive job and is unsafe from inside the gateway process. "
-                        "Use Hermes cron for one-shot delayed work, or install an "
+                        "Use Moor cron for one-shot delayed work, or install an "
                         "explicit LaunchAgent from a separate shell."
                     ),
                     "status": "error",

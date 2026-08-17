@@ -86,7 +86,7 @@ delegation:
 <<<<<<< HEAD
 Moor 支持六种终端后端。每种后端决定 agent 的 shell 命令实际在哪里执行 —— 本地机器、Docker 容器、通过 SSH 的远程服务器、Modal 云沙箱（直接或通过 Nous 托管的 gateway）、Daytona 工作区，或 Singularity/Apptainer 容器。
 =======
-Hermes 支持七种终端后端。每种后端决定 agent 的 shell 命令实际在哪里执行 —— 本地机器、Docker 容器、通过 SSH 的远程服务器、Modal 云沙箱（直接或通过 Nous 托管的 gateway）、Daytona 工作区、Vercel Sandbox，或 Singularity/Apptainer 容器。
+Moor 支持七种终端后端。每种后端决定 agent 的 shell 命令实际在哪里执行 —— 本地机器、Docker 容器、通过 SSH 的远程服务器、Modal 云沙箱（直接或通过 Nous 托管的 gateway）、Daytona 工作区、Vercel Sandbox，或 Singularity/Apptainer 容器。
 >>>>>>> upstream/main
 
 ```yaml
@@ -103,7 +103,7 @@ terminal:
 <<<<<<< HEAD
 对于 Modal 和 Daytona 等云沙箱，`container_persistent: true` 表示 Moor 将尝试在沙箱重建后保留文件系统状态。这并不保证相同的活跃沙箱、PID 空间或后台进程之后仍在运行。
 =======
-对于 Modal、Daytona 和 Vercel Sandbox 等云沙箱，`container_persistent: true` 表示 Hermes 将尝试在沙箱重建后保留文件系统状态。这并不保证相同的活跃沙箱、PID 空间或后台进程之后仍在运行。
+对于 Modal、Daytona 和 Vercel Sandbox 等云沙箱，`container_persistent: true` 表示 Moor 将尝试在沙箱重建后保留文件系统状态。这并不保证相同的活跃沙箱、PID 空间或后台进程之后仍在运行。
 >>>>>>> upstream/main
 
 ### 后端概览
@@ -242,7 +242,7 @@ terminal:
 
 ### Vercel Sandbox 后端
 
-在 [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox) 云 microVM 中运行命令。Hermes 使用普通的终端和文件工具接口；没有 Vercel 特定的面向模型的工具。
+在 [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox) 云 microVM 中运行命令。Moor 使用普通的终端和文件工具接口；没有 Vercel 特定的面向模型的工具。
 
 ```yaml
 terminal:
@@ -259,9 +259,9 @@ terminal:
 pip install 'hermes-agent[vercel]'
 ```
 
-**必需认证：** 使用 `VERCEL_TOKEN`、`VERCEL_PROJECT_ID` 和 `VERCEL_TEAM_ID` 三者全部配置访问令牌认证。这是在 Render、Railway、Docker 及类似宿主上部署和正常长期运行 Hermes 进程的受支持设置。
+**必需认证：** 使用 `VERCEL_TOKEN`、`VERCEL_PROJECT_ID` 和 `VERCEL_TEAM_ID` 三者全部配置访问令牌认证。这是在 Render、Railway、Docker 及类似宿主上部署和正常长期运行 Moor 进程的受支持设置。
 
-对于一次性本地开发，Hermes 也接受短期 Vercel OIDC token：
+对于一次性本地开发，Moor 也接受短期 Vercel OIDC token：
 
 ```bash
 VERCEL_OIDC_TOKEN="$(vc project token <project-name>)" hermes chat
@@ -275,13 +275,13 @@ VERCEL_OIDC_TOKEN="$(vc project token)" hermes chat
 
 OIDC token 是短期的，不应作为文档化的部署路径使用。
 
-**运行时：** `terminal.vercel_runtime` 支持 `node24`、`node22` 和 `python3.13`。未设置时，Hermes 默认使用 `node24`。
+**运行时：** `terminal.vercel_runtime` 支持 `node24`、`node22` 和 `python3.13`。未设置时，Moor 默认使用 `node24`。
 
-**持久化：** 当 `container_persistent: true` 时，Hermes 在清理期间对沙箱文件系统进行快照，并从该快照为同一任务恢复后续沙箱。快照内容可以包括复制到沙箱中的 Hermes 同步凭据、技能和缓存文件。这仅保留文件系统状态；不保留活跃沙箱身份、PID 空间、shell 状态或正在运行的后台进程。
+**持久化：** 当 `container_persistent: true` 时，Moor 在清理期间对沙箱文件系统进行快照，并从该快照为同一任务恢复后续沙箱。快照内容可以包括复制到沙箱中的 Moor 同步凭据、技能和缓存文件。这仅保留文件系统状态；不保留活跃沙箱身份、PID 空间、shell 状态或正在运行的后台进程。
 
-**后台命令：** `terminal(background=true)` 使用 Hermes 的通用非本地后台进程流程。您可以在沙箱存活期间通过普通进程工具生成、轮询、等待、查看日志和终止进程。Hermes 不提供清理或重启后的原生 Vercel 分离进程恢复。
+**后台命令：** `terminal(background=true)` 使用 Moor 的通用非本地后台进程流程。您可以在沙箱存活期间通过普通进程工具生成、轮询、等待、查看日志和终止进程。Moor 不提供清理或重启后的原生 Vercel 分离进程恢复。
 
-**磁盘大小：** Vercel Sandbox 目前不支持 Hermes 的 `container_disk` 资源旋钮。将 `container_disk` 保持未设置或使用共享默认值 `51200`；非默认值会导致诊断和后端创建失败，而不是被静默忽略。
+**磁盘大小：** Vercel Sandbox 目前不支持 Moor 的 `container_disk` 资源旋钮。将 `container_disk` 保持未设置或使用共享默认值 `51200`；非默认值会导致诊断和后端创建失败，而不是被静默忽略。
 
 ### Singularity/Apptainer 后端
 
@@ -628,7 +628,7 @@ auxiliary:
 
 `context_timeout_seconds`（默认 `120`）是 agent 侧 `compress_context`（对话循环、预检压缩、手动 `/compress`）的**无进展超时**，语义与 gateway 会话预压缩（session hygiene）的 inactivity 预算相同：摘要模型仍在流式出 token 时会延长等待；仅当完全无输出时才跳过压缩并保留原消息。设为 `0` 可关闭。Gateway 会话预压缩仍使用自己的 `hygiene_timeout_seconds`，不会被双重包装。
 
-`context_total_ceiling_seconds`（默认 `600`）限制即使仍有 token 推进时的 agent 侧**预提交**等待时间（摘要 / 流式阶段），并会被钳制为至少等于 `context_timeout_seconds`。确切保证：**摘要阶段受该上限约束；提交阶段若超出上限则记录日志并向用户告警。**一旦 worker 已进入 compression commit fence 且 SessionDB 变更正在进行，提交绝不会被中途放弃（那会导致 transcript 分叉），但等待不再是静默的：若提交超过上限，Hermes 会记录超时（WARNING，重复时升级为 ERROR），通过用户可见的警告通道发送一次性提醒，并以有界增量继续等待直到提交完成。
+`context_total_ceiling_seconds`（默认 `600`）限制即使仍有 token 推进时的 agent 侧**预提交**等待时间（摘要 / 流式阶段），并会被钳制为至少等于 `context_timeout_seconds`。确切保证：**摘要阶段受该上限约束；提交阶段若超出上限则记录日志并向用户告警。**一旦 worker 已进入 compression commit fence 且 SessionDB 变更正在进行，提交绝不会被中途放弃（那会导致 transcript 分叉），但等待不再是静默的：若提交超过上限，Moor 会记录超时（WARNING，重复时升级为 ERROR），通过用户可见的警告通道发送一次性提醒，并以有界增量继续等待直到提交完成。
 
 :::tip Gateway 热重载压缩和上下文长度
 从最近的版本开始，在运行中的 gateway 上编辑 `config.yaml` 中的 `model.context_length` 或任何 `compression.*` 键将在下一条消息时生效 —— 无需 gateway 重启、`/reset` 或会话轮换。缓存的 agent 签名包含这些键，因此 gateway 在检测到更改时会透明地重建 agent。API 密钥和工具/技能配置仍需要通常的重载路径。
@@ -720,9 +720,9 @@ context:
 
 取而代之的是，当预算真正耗尽（90/90）时，Moor 注入一条消息要求模型收尾，并允许一次**宽限调用**以便其给出最终响应。如果该宽限调用仍未产生文本，则会要求 agent 总结已完成的工作。
 =======
-当 agent 在处理具有许多工具调用的复杂任务时，它可能会耗尽其迭代预算（默认：500 轮）。Hermes **不会**在任务中途注入压力警告 —— 早期版本会在预算达到 70%/90% 时警告模型，这会导致模型过早放弃复杂任务，该机制已于 2026 年 4 月移除。
+当 agent 在处理具有许多工具调用的复杂任务时，它可能会耗尽其迭代预算（默认：500 轮）。Moor **不会**在任务中途注入压力警告 —— 早期版本会在预算达到 70%/90% 时警告模型，这会导致模型过早放弃复杂任务，该机制已于 2026 年 4 月移除。
 
-取而代之的是，当预算真正耗尽（500/500）时，Hermes 注入一条消息要求模型收尾，并允许一次**宽限调用**以便其给出最终响应。如果该宽限调用仍未产生文本，则会要求 agent 总结已完成的工作。
+取而代之的是，当预算真正耗尽（500/500）时，Moor 注入一条消息要求模型收尾，并允许一次**宽限调用**以便其给出最终响应。如果该宽限调用仍未产生文本，则会要求 agent 总结已完成的工作。
 >>>>>>> upstream/main
 
 ```yaml

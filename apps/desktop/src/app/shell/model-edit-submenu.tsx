@@ -15,7 +15,7 @@ import { isThinkingEnabled, REASONING_EFFORTS, resolveReasoningEffort } from '@/
 <<<<<<< HEAD
 // Moor' real reasoning levels (see VALID_REASONING_EFFORTS); `none` is owned
 =======
-// Hermes' real reasoning levels live in lib/reasoning-effort; `none` is owned
+// Moor' real reasoning levels live in lib/reasoning-effort; `none` is owned
 >>>>>>> upstream/main
 // by the Thinking toggle, not the radio.
 

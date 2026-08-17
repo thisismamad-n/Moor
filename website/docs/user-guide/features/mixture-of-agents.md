@@ -195,7 +195,7 @@ moa:
   aggregator prompt (and the one-shot `/moa` synthesis input).
 
 Credential shapes (API-key prefixes, JWTs, private keys, DB connection
-strings) are masked by Hermes' central secret redactor; the MoA filter adds
+strings) are masked by Moor' central secret redactor; the MoA filter adds
 email and clearly formatted phone-number redaction on top. Patterns are
 deliberately conservative for code-review-style advice: bare digit runs, line
 numbers, timestamps, git SHAs, and IP addresses are never touched — only

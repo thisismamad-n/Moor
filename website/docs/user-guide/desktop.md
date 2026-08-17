@@ -60,7 +60,7 @@ Chatting against a Moor instance on another machine instead of the bundled local
 
 #### Repository discovery
 
-Hermes Desktop discovers local Git repositories for the Projects sidebar by scanning your home directory to a bounded depth. You can change this per profile in **Settings → Workspace**, or in `config.yaml`:
+Moor Desktop discovers local Git repositories for the Projects sidebar by scanning your home directory to a bounded depth. You can change this per profile in **Settings → Workspace**, or in `config.yaml`:
 
 ```yaml
 desktop:
@@ -69,7 +69,7 @@ desktop:
   repo_scan_exclude_paths: []
 ```
 
-- Set `repo_scan_enabled: false` to stop the filesystem scan completely. Existing disk-discovery cache rows for that profile are cleared; explicit projects and repositories inferred from intentional Hermes sessions remain available.
+- Set `repo_scan_enabled: false` to stop the filesystem scan completely. Existing disk-discovery cache rows for that profile are cleared; explicit projects and repositories inferred from intentional Moor sessions remain available.
 - Set `repo_scan_roots` to a list of folders to restrict scanning. An empty list preserves the default home-directory scan.
 - Set `repo_scan_exclude_paths` to folders whose complete subtrees should be skipped.
 
@@ -112,12 +112,12 @@ A real terminal lives in the right sidebar, next to the file browser:
 
 For sessions running inside a Git repository, the app has a built-in source-control surface:
 
-- **Review pane** — **Cmd/Ctrl+G** toggles the working-tree review pane: branch and ahead/behind status, changed files (list or tree view), and diffs scoped to **Uncommitted**, **Branch**, or **Last turn** (just what the agent changed in its most recent turn). Stage/unstage files, revert changes, write a commit message (or **Generate commit message**), then **Commit** or **Commit & Push** — and **Create PR** via the GitHub CLI (`gh`), or hand the whole thing to the agent with **Ask Hermes to open PR**. You can also create and switch branches from here.
+- **Review pane** — **Cmd/Ctrl+G** toggles the working-tree review pane: branch and ahead/behind status, changed files (list or tree view), and diffs scoped to **Uncommitted**, **Branch**, or **Last turn** (just what the agent changed in its most recent turn). Stage/unstage files, revert changes, write a commit message (or **Generate commit message**), then **Commit** or **Commit & Push** — and **Create PR** via the GitHub CLI (`gh`), or hand the whole thing to the agent with **Ask Moor to open PR**. You can also create and switch branches from here.
 - **Worktrees** — **Cmd/Ctrl+Shift+B** (or **New worktree** on a project in the sidebar) creates a Git worktree on a new branch so an agent can work on a parallel copy of the repo without touching your checkout. Worktrees show up as their own lanes under the project; removing one offers to delete the worktree directory (the branch stays) or just hide the lane and leave it on disk, with a force option when it has uncommitted changes.
 
 ### Memory Graph
 
-The **Memory Graph** (command palette → *Memory Graph*, or the status-bar item) is an interactive map of what Hermes has learned for you — skills and memories laid out as a zoomable node graph with a timeline, filterable by **All / Used / Learned**. A share control exports the map layout as a compact code you can paste to someone else (layout only — none of your memory or skill text is included) and imports codes the same way.
+The **Memory Graph** (command palette → *Memory Graph*, or the status-bar item) is an interactive map of what Moor has learned for you — skills and memories laid out as a zoomable node graph with a timeline, filterable by **All / Used / Learned**. A share control exports the map layout as a compact code you can paste to someone else (layout only — none of your memory or skill text is included) and imports codes the same way.
 
 ### Quick Entry
 
@@ -129,7 +129,7 @@ Talk to Moor and hear it back, the same [voice mode](./features/voice-mode.md) a
 
 ### HUD mode
 
-**⌘/Ctrl+Shift+H** (or the titlebar button) detaches the chat into a chrome-free, always-on-top floating bar that sits over whatever you are working in. The app window steps aside; the HUD keeps your live conversation and a composer. Where you park it is context — the bar's position tells Hermes which app and screen you're asking about, so "this", "here", and "that page" resolve to what's underneath it.
+**⌘/Ctrl+Shift+H** (or the titlebar button) detaches the chat into a chrome-free, always-on-top floating bar that sits over whatever you are working in. The app window steps aside; the HUD keeps your live conversation and a composer. Where you park it is context — the bar's position tells Moor which app and screen you're asking about, so "this", "here", and "that page" resolve to what's underneath it.
 
 - **Moving the bar** — **press and hold** anywhere on the composer for a beat, then drag. A quick press still types; a held press grabs the window. This is the only way to move the HUD — there is no titlebar to drag.
 - **Resizing** — drag the bottom-right corner of the bar.
@@ -165,10 +165,10 @@ The app also surfaces the broader Moor management surface so you don't have to d
 ### Bot Mode (built in)
 
 **Bot Mode** ships with the app and is on by default: a "one chat per agent"
-roster where every [Hermes profile](./profiles.md) appears as a bot with its
+roster where every [Moor profile](./profiles.md) appears as a bot with its
 own avatar (geometric face, uploaded image, AI-generated portrait, or a pixel
 pet), its own canonical **Bot Chat** conversation, and its own **Routines**
-(recurring tasks backed by Hermes cron). Create new agents from the roster —
+(recurring tasks backed by Moor cron). Create new agents from the roster —
 Name / Title / Description plus an Advanced disclosure with the full
 capabilities surface (model, SOUL, skills, toolsets, MCP servers) — group
 them into sections, and open group chats where several bots deliberate.
@@ -187,7 +187,7 @@ routines pane, and composer middleware unregister live, no restart needed.
 
 ### Keyboard & navigation
 
-- **Command palette** — press **Cmd+K** or **Cmd+P** (Ctrl+K / Ctrl+P on Windows/Linux) to jump to actions and navigate the app from the keyboard: open any page or settings section, jump to a session by title or id, switch model/theme/color mode, spawn a terminal, restart the gateway, update Hermes, and more.
+- **Command palette** — press **Cmd+K** or **Cmd+P** (Ctrl+K / Ctrl+P on Windows/Linux) to jump to actions and navigate the app from the keyboard: open any page or settings section, jump to a session by title or id, switch model/theme/color mode, spawn a terminal, restart the gateway, update Moor, and more.
 - **Rebindable shortcuts** — **Settings → Keyboard Shortcuts** (or **Cmd/Ctrl+/**) opens the shortcuts panel where you can remap almost every binding — profile switching, session navigation, view toggles, and any shortcuts contributed by desktop plugins. Duplicate assignments are flagged as conflicts. A few defaults worth knowing: **Cmd/Ctrl+N** new session, **Cmd/Ctrl+.** Command Center, **Cmd/Ctrl+,** Settings, **Cmd/Ctrl+Shift+F** search sessions, **Cmd/Ctrl+1–9** switch profiles, **Shift+X** toggle light/dark.
 - **Custom zoom shortcuts** — zoom the interface in half-step increments for finer control over text size.
 - **UI language switcher** — change the app's interface language in-app, including Simplified Chinese (zh-Hans).
@@ -247,21 +247,21 @@ By default the app starts and manages its own **local** backend. You can instead
 **Settings → Gateway → Connection mode** offers the alternatives to the local gateway:
 
 - **Remote gateway** — enter the URL of a `hermes serve` backend you run yourself and sign in. This is the mode the rest of this section walks through.
-- **Hermes Cloud** — sign in once to Hermes Cloud and pick from the agents on your account; no URL to paste. The app discovers your agents (with an organization picker if your account spans several orgs), and connecting to one switches the session over automatically. The status bar shows the cloud connection while it's active.
+- **Moor Cloud** — sign in once to Moor Cloud and pick from the agents on your account; no URL to paste. The app discovers your agents (with an organization picker if your account spans several orgs), and connecting to one switches the session over automatically. The status bar shows the cloud connection while it's active.
 
 Connection modes are configured **per profile** — a per-profile override can point one profile at a remote or cloud backend while others stay local (**Use default gateway** removes an override).
 
 ### Settings → Connections: the multi-connection registry
 
-Alongside the per-profile connection mode above, **Settings → Connections** manages a named registry of every agent source the app knows about — the local runtime, any number of remote gateways (LAN, Tailscale, internet), Hermes Cloud instances, and SSH hosts — all persisted together in one place. You can jump there from the plug button at the right end of the sidebar profile rail (**Connect another Hermes gateway…**) or via **⌘K → Connections**. The full guide, including the union agent roster, `@name-device` handles, fleet-wide updates, and the plugin SDK surface, is at [Connecting Desktop to Many Hermes Instances](./multi-connection-desktop.md).
+Alongside the per-profile connection mode above, **Settings → Connections** manages a named registry of every agent source the app knows about — the local runtime, any number of remote gateways (LAN, Tailscale, internet), Moor Cloud instances, and SSH hosts — all persisted together in one place. You can jump there from the plug button at the right end of the sidebar profile rail (**Connect another Moor gateway…**) or via **⌘K → Connections**. The full guide, including the union agent roster, `@name-device` handles, fleet-wide updates, and the plugin SDK surface, is at [Connecting Desktop to Many Moor Instances](./multi-connection-desktop.md).
 
 - **Every connection needs a unique name** (a device name such as "Homelab" or "Work laptop"). When the same profile name exists on several registered sources, surfaces disambiguate it as `@profile-device` (e.g. `@research-homelab`).
 - **Add / edit / remove / test** connections from the panel. The local entry is managed by the app and cannot be removed. **Test** probes the connection's own HTTP and WebSocket legs directly.
 - Existing settings are **imported automatically** the first time you run a build with the registry: your current global connection and any per-profile overrides become named entries. The legacy settings file is left untouched, so older builds keep working.
-- Cloud entries come from the Hermes Cloud sign-in/discovery flow above, not from a hand-typed URL.
+- Cloud entries come from the Moor Cloud sign-in/discovery flow above, not from a hand-typed URL.
 - Tokens are stored encrypted with the OS keyring (with the same explicit plain-text opt-in as Settings → Gateway on keyring-less Linux).
 
-Side-by-side routing is live: each registered source dials its own backends and sockets on demand (keyed per connection + profile), the plugin SDK exposes the union agent roster (`host.agents()` / `host.ensureAgent()`), and **Update all instances** in the Connections panel dispatches `hermes update` to every eligible source at once — Hermes Cloud entries are skipped (the platform updates them), and each instance reports its own result.
+Side-by-side routing is live: each registered source dials its own backends and sockets on demand (keyed per connection + profile), the plugin SDK exposes the union agent roster (`host.agents()` / `host.ensureAgent()`), and **Update all instances** in the Connections panel dispatches `hermes update` to every eligible source at once — Moor Cloud entries are skipped (the platform updates them), and each instance reports its own result.
 
 
 :::info The remote backend is a running `hermes serve` process
@@ -424,12 +424,12 @@ box.
 
 For the strongest guarantee — a certificate-anchored identity, the same
 mechanism yabai/skhd users rely on — create a self-signed code-signing
-certificate once and tell Hermes to use it:
+certificate once and tell Moor to use it:
 
 1. Keychain Access → Certificate Assistant → **Create a Certificate…**
-2. Name: `Hermes Local Signing`, Identity Type: *Self-Signed Root*,
+2. Name: `Moor Local Signing`, Identity Type: *Self-Signed Root*,
    Certificate Type: **Code Signing**.
-3. `hermes config set desktop.macos_signing_identity "Hermes Local Signing"`
+3. `hermes config set desktop.macos_signing_identity "Moor Local Signing"`
 
 The next update re-signs the rebuilt app with that certificate; every TCC grant
 survives. No Apple Developer account is required. Notarized release builds are
@@ -438,7 +438,7 @@ detected and never re-signed.
 One-time note: changing the signing identity (including the first update after
 this fix) changes the app's identity once, so macOS will re-prompt one final
 time. Grants are stable from then on. If a permission gets stuck, reset it with
-`tccutil reset All com.nousresearch.hermes` and re-grant.
+`tccutil reset All com.Moor inc..hermes` and re-grant.
 
 ## See also
 

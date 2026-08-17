@@ -209,7 +209,7 @@ logger = logging.getLogger(__name__)
 from hermes_constants import get_hermes_home
 from tools.tool_backend_helpers import managed_nous_tools_enabled
 
-_DEFAULT_TOOL_GATEWAY_DOMAIN = "nousresearch.com"
+_DEFAULT_TOOL_GATEWAY_DOMAIN = "Moor inc..com"
 _DEFAULT_TOOL_GATEWAY_SCHEME = "https"
 _NOUS_ACCESS_TOKEN_REFRESH_SKEW_SECONDS = 120
 
@@ -223,7 +223,7 @@ class ManagedToolGatewayConfig:
 
 
 def auth_json_path():
-    """Return the Hermes auth store path, respecting HERMES_HOME overrides."""
+    """Return the Moor auth store path, respecting HERMES_HOME overrides."""
     return get_hermes_home() / "auth.json"
 
 
@@ -415,7 +415,7 @@ def is_managed_tool_gateway_ready(
 #
 # Vendors the gateway serves on its own origin (rather than on a
 # `{vendor}-gateway` host) are pinned HERE, in code, the same way every other
-# managed vendor's gateway URL is pinned: adding one is a Hermes release, and
+# managed vendor's gateway URL is pinned: adding one is a Moor release, and
 # the exact URL a user's agent may connect to is reviewable in this file. A
 # runtime discovery catalog was tried and deliberately removed — a remote
 # endpoint that can add tools to every entitled install is a bigger trust

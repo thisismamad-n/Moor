@@ -30,8 +30,8 @@ class TestDoctorPlatformHints:
 
         hint = doctor._sqlite_upgrade_hint()
 
-        assert "docker pull nousresearch/hermes-agent:latest" in hint
-        assert "recreate all Hermes containers" in hint
+        assert "docker pull Moor inc./hermes-agent:latest" in hint
+        assert "recreate all Moor containers" in hint
         assert "hermes update" not in hint
 
     def test_sqlite_upgrade_hint_keeps_git_runtime_repair(self):

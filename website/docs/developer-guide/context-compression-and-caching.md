@@ -219,7 +219,7 @@ routes (including Codex OAuth chat sessions) keep Moor' summary compressor.
 OpenAI's Responses API supports server-side compaction: when a request includes
 `context_management: [{type: "compaction", compact_threshold: N}]` and the
 rendered input crosses N tokens, the server prunes older context into an opaque
-encrypted `compaction` output item. Hermes captures that item into the
+encrypted `compaction` output item. Moor captures that item into the
 assistant message's existing replay sidecar and sends it back on subsequent
 turns, standing in for the pruned history — long-horizon recall without a
 client-side summary pass, and ZDR-friendly (`store: false`, no

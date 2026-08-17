@@ -109,8 +109,8 @@ MiniMax TTS selects its region, endpoint, and credential together:
 
 - `region: "global"` uses `https://api.minimax.io/v1/t2a_v2` with `MINIMAX_API_KEY`.
 - `region: "cn"` uses `https://api.minimaxi.com/v1/t2a_v2` with `MINIMAX_CN_API_KEY`.
-- If `region` is omitted, `MINIMAX_API_KEY` keeps precedence for backward compatibility. If only `MINIMAX_CN_API_KEY` is configured, Hermes selects `cn`.
-- An explicitly selected region must have its matching credential. Hermes never borrows the other region's key. A `base_url` override does not change the selected credential, and an override pointing at the other region's official endpoint is rejected.
+- If `region` is omitted, `MINIMAX_API_KEY` keeps precedence for backward compatibility. If only `MINIMAX_CN_API_KEY` is configured, Moor selects `cn`.
+- An explicitly selected region must have its matching credential. Moor never borrows the other region's key. A `base_url` override does not change the selected credential, and an override pointing at the other region's official endpoint is rejected.
 
 **Speed control**: The global `tts.speed` value applies to all providers by default. Each provider can override it with its own `speed` setting (e.g., `tts.openai.speed: 1.5`). Provider-specific speed takes precedence over the global value. Default is `1.0` (normal speed).
 
@@ -133,7 +133,7 @@ tts:
 <<<<<<< HEAD
 Gemini 3.1 Flash TTS supports freeform square-bracket audio tags such as `[whispers]`, `[excitedly]`, `[very slow]`, `[laughs]`, and other expressive delivery notes. Enable `tts.gemini.audio_tags` to have Moor run a hidden rewrite pass before Gemini TTS. The rewrite inserts inline tags into the TTS script only; the visible chat reply stays unchanged.
 =======
-Google's Gemini 3.1 Flash TTS and xAI's Grok TTS support freeform square-bracket audio tags such as `[whispers]`, `[excitedly]`, `[very slow]`, `[laughs]`, and other expressive delivery notes. Enable `tts.gemini.audio_tags` or `tts.xai.auto_speech_tags` to have Hermes run a hidden rewrite pass before TTS. The rewrite inserts inline tags into the TTS script only; the visible chat reply stays unchanged.
+Google's Gemini 3.1 Flash TTS and xAI's Grok TTS support freeform square-bracket audio tags such as `[whispers]`, `[excitedly]`, `[very slow]`, `[laughs]`, and other expressive delivery notes. Enable `tts.gemini.audio_tags` or `tts.xai.auto_speech_tags` to have Moor run a hidden rewrite pass before TTS. The rewrite inserts inline tags into the TTS script only; the visible chat reply stays unchanged.
 >>>>>>> upstream/main
 
 ```yaml
@@ -156,7 +156,7 @@ The rewrite uses `auxiliary.tts_audio_tags` and defaults to your main chat model
 <<<<<<< HEAD
 Each provider has a documented per-request input-character cap. Moor truncates text before calling the provider so requests never fail with a length error:
 =======
-Each provider has a documented per-request input-character cap. Hermes splits longer replies into ordered, sentence-aware chunks before calling the provider, so the full normalized text is preserved instead of silently truncated:
+Each provider has a documented per-request input-character cap. Moor splits longer replies into ordered, sentence-aware chunks before calling the provider, so the full normalized text is preserved instead of silently truncated:
 >>>>>>> upstream/main
 
 | Provider | Default cap (chars) |
@@ -293,9 +293,9 @@ tts:
       output_format: wav
 ```
 
-**Supported `output_format` values:** `mp3` (default), `wav`, `ogg`, `flac`, `m4a`, `aac`, `amr`, `opus`. Your command must actually produce that format (e.g. via `ffmpeg`); Hermes only validates the declared value and names the output file accordingly. An unknown value falls back to `mp3`. The chosen format is also exposed to the command as the `{format}` placeholder.
+**Supported `output_format` values:** `mp3` (default), `wav`, `ogg`, `flac`, `m4a`, `aac`, `amr`, `opus`. Your command must actually produce that format (e.g. via `ffmpeg`); Moor only validates the declared value and names the output file accordingly. An unknown value falls back to `mp3`. The chosen format is also exposed to the command as the `{format}` placeholder.
 
-**Subprocess environment:** command providers (TTS and STT) run with Hermes secrets scrubbed from the child environment — gateway bot tokens, LLM provider API keys, and internal relay credentials are removed; `PATH`, `HOME`, locale, and other normal variables are kept. If your command template needs its own API key from the environment (e.g. a `curl` one-liner), list the variable names under `env_passthrough` in the provider config:
+**Subprocess environment:** command providers (TTS and STT) run with Moor secrets scrubbed from the child environment — gateway bot tokens, LLM provider API keys, and internal relay credentials are removed; `PATH`, `HOME`, locale, and other normal variables are kept. If your command template needs its own API key from the environment (e.g. a `curl` one-liner), list the variable names under `env_passthrough` in the provider config:
 
 ```yaml
 tts:
@@ -358,8 +358,8 @@ Use `{{` and `}}` for literal braces.
 | `max_text_length`  | `5000`  | Input is truncated to this length before rendering the command.                                             |
 =======
 | `timeout`          | `120`   | Idle seconds; stdout or stderr output resets the deadline. The process tree is killed after inactivity (Unix `killpg`, Windows `taskkill /T`). |
-| `output_format`    | `mp3`   | One of `mp3` / `wav` / `ogg` / `flac`. Auto-inferred from the output extension if Hermes picks a path.      |
-| `voice_compatible` | `false` | When `true`, Hermes converts MP3/WAV output to Opus/OGG via ffmpeg so Telegram renders a voice bubble.      |
+| `output_format`    | `mp3`   | One of `mp3` / `wav` / `ogg` / `flac`. Auto-inferred from the output extension if Moor picks a path.      |
+| `voice_compatible` | `false` | When `true`, Moor converts MP3/WAV output to Opus/OGG via ffmpeg so Telegram renders a voice bubble.      |
 | `max_text_length`  | `5000`  | Maximum input characters per command invocation; longer text is split into ordered chunks.                  |
 >>>>>>> upstream/main
 | `voice` / `model`  | empty   | Passed to the command as placeholder values only.                                                           |
@@ -513,7 +513,7 @@ stt:
 <<<<<<< HEAD
 **Custom local CLI fallback** — Set `HERMES_LOCAL_STT_COMMAND` if you want Moor to call a local transcription command directly. The command template supports `{input_path}`, `{output_dir}`, `{language}`, and `{model}` placeholders. Your command must write a `.txt` transcript somewhere under `{output_dir}`.
 =======
-**Custom local CLI fallback** — Set `HERMES_LOCAL_STT_COMMAND` if you want Hermes to call a local transcription command directly. The command template supports `{input_path}`, `{output_dir}`, `{language}`, and `{model}` placeholders. Hermes tokenizes the rendered template into an argument list and executes it without a shell, so operators such as `|`, `>`, `&&`, and `;` are passed as literal arguments. Your command must write a `.txt` transcript somewhere under `{output_dir}`.
+**Custom local CLI fallback** — Set `HERMES_LOCAL_STT_COMMAND` if you want Moor to call a local transcription command directly. The command template supports `{input_path}`, `{output_dir}`, `{language}`, and `{model}` placeholders. Moor tokenizes the rendered template into an argument list and executes it without a shell, so operators such as `|`, `>`, `&&`, and `;` are passed as literal arguments. Your command must write a `.txt` transcript somewhere under `{output_dir}`.
 >>>>>>> upstream/main
 
 #### Example: Doubao / Volcengine ASR

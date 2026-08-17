@@ -33,7 +33,7 @@ def check_api_key() -> bool:
     """Check whether the OpenRouter API key is present."""
     return bool(os.getenv("OPENROUTER_API_KEY"))
 =======
-"""Shared OpenRouter API client for Hermes tools.
+"""Shared OpenRouter API client for Moor tools.
 
 Provides a single lazy-initialized AsyncOpenAI client that all tool modules
 can share.  Routes through the centralized provider router in

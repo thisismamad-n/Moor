@@ -44,9 +44,9 @@ Plugins that integrate **someone else's product or project** — observability/m
 
 ## Portable Agent Plugins v1 packages
 
-Hermes can also install and load directory packages that target the Agent
+Moor can also install and load directory packages that target the Agent
 Plugins v1.0.0 format. This is a compatibility adapter for the portable
-components Hermes already owns. It does not replace native `plugin.yaml` plus
+components Moor already owns. It does not replace native `plugin.yaml` plus
 `register(ctx)` plugins.
 
 ```text
@@ -76,17 +76,17 @@ Use `skills_list` to discover the full qualified skill name. Portable skill
 namespaces have the deterministic form `agent-plugin-<slug>-<hash>`, derived
 from the discovered plugin key so sanitized names cannot collide.
 
-Hermes validates `plugin.json`, Agent Skills frontmatter, fixed component
+Moor validates `plugin.json`, Agent Skills frontmatter, fixed component
 locations, `mcp.json`, resolved paths, and symlink containment locally. It does
 not fetch JSON schemas while loading a package. A bad skill or MCP entry is
 skipped at its own boundary when valid sibling components can still load.
 `PLUGIN_ROOT` points to the resolved package root. `PLUGIN_DATA` points to a
-profile-scoped writable directory managed by Hermes.
+profile-scoped writable directory managed by Moor.
 Values declared in portable MCP `env` are visible package data, not a secret
 storage mechanism. Do not place credentials in `mcp.json`.
 
 The current portable subset supports stdio and Streamable HTTP MCP entries.
-Portable `streamable-http` entries are routed through Hermes' existing native
+Portable `streamable-http` entries are routed through Moor' existing native
 remote MCP client (the same runtime that powers URL-based `mcp_servers`
 config), with the v1 boundary rules enforced: the URL must be absolute
 http(s) with no user information or fragment, plain HTTP is accepted only
@@ -94,22 +94,22 @@ for `localhost`/loopback hosts, and configured headers are never forwarded
 across a cross-origin redirect. Legacy `sse` entries are reported and
 skipped. Agent Plugins v1 does not define trust, permissions, provenance, or a
 sandbox. Enabling a package grants its instructions and local executable the
-same full-trust posture as other installed Hermes plugins.
+same full-trust posture as other installed Moor plugins.
 
 The [rendered specification](https://agent-plugins.org/specification) currently
 labels v1.0.0 a Working Draft, while the
 [versioned specification repository](https://github.com/agentplugins/agent-plugins-spec/blob/main/spec/1.0.0.md)
-records it as Published. Hermes keys behavior on the canonical v1.0.0 schema
+records it as Published. Moor keys behavior on the canonical v1.0.0 schema
 identifiers and normative text, not either mutable status label. This is an
 explicit supported subset, not a claim of full Agent Plugins conformance.
 
 ## Native plugin compatibility contract
 
 Native `plugin.yaml` plus `register(ctx)` plugins are protected by behavior,
-not by one global plugin API number. Hermes does not expose a
+not by one global plugin API number. Moor does not expose a
 `PLUGIN_API_VERSION`, require a manifest-wide `api:` match, or attach an API
 version to unrelated values. A plugin that uses a documented behavior should
-continue to work after a normal Hermes upgrade.
+continue to work after a normal Moor upgrade.
 
 The compatibility rules are:
 
@@ -118,12 +118,12 @@ The compatibility rules are:
   keyword-only. Existing return fields are not removed or silently retyped.
 - **Hook payloads are keyword payloads.** New hook data is added as keyword
   fields, never by changing the meaning or position of an existing field.
-  Hermes inspects callback signatures: a legacy callback receives the fields it
+  Moor inspects callback signatures: a legacy callback receives the fields it
   declares, while a callback with `**kwargs` receives the complete current
   payload. New plugins should accept `**kwargs` so they can opt into additive
   data without another signature change.
 - **Manifests are open to additions.** Unknown `plugin.yaml` fields are ignored.
-  Older Hermes releases can therefore load a plugin whose manifest contains
+  Older Moor releases can therefore load a plugin whose manifest contains
   metadata introduced by a newer release, provided the plugin code itself uses
   supported runtime behavior.
 - **Provider interfaces grow through defaults.** New provider methods have a
@@ -157,7 +157,7 @@ Removal after the window must include any migration needed for persisted data
 or resumable sessions. In practice, additive aliases and adapters are preferred
 to removal.
 
-Hermes enforces this contract with frozen external-plugin fixtures discovered
+Moor enforces this contract with frozen external-plugin fixtures discovered
 from an isolated `HERMES_HOME`. Those tests load and invoke the plugin through
 `PluginManager`; they assert real registration and callback outcomes rather
 than internal symbol lists or source-code shape.
@@ -183,7 +183,7 @@ cd ~/.hermes/plugins/calculator
 
 `hermes plugins doctor [path-or-id]` runs the same directory discovery,
 manifest parser, namespaced import, `register(ctx)`, hook registry, and tool
-registry used by Hermes itself. It reports invalid hook names, callbacks that do
+registry used by Moor itself. It reports invalid hook names, callbacks that do
 not accept `**kwargs`, registration failures, and drift between declared and
 registered tools/hooks. Pass `--ci` to exit non-zero on an error:
 
@@ -268,7 +268,7 @@ calculator = "my_pkg:register"
 "calculator.tools.override" = "my_pkg:register"
 ```
 
-Hermes reads these from installed metadata without importing your code, so
+Moor reads these from installed metadata without importing your code, so
 `hermes plugins capabilities` and the consent flow stay accurate for pip
 installs.
 
@@ -278,14 +278,14 @@ installs.
 optional; a manifest without `manifest_version` is a v1 manifest and stays
 fully supported forever. Unknown fields never break loading — they are ignored
 with a warning (forward compatibility), and a `manifest_version` newer than
-this Hermes understands still loads with a warning.
+this Moor understands still loads with a warning.
 
 | Field | Type | Meaning |
 |---|---|---|
 | `manifest_version` | int | Manifest **file-format** version. Absent = `1`. Current max: `2`. Independent from `api_version`. |
 | `api_version` | int | Runtime **plugin API generation** the plugin targets (ctx surface / hook signatures). Deliberately a separate axis from `manifest_version` — an `api_version: 1` plugin can use a v2 manifest. |
 | `requires_plugins` | list | Inter-plugin dependencies: `- id: other-plugin` with optional `version_range: ">=1.0,<2"`. **Advisory**: a missing dependency logs a clear warning but the plugin still loads — probe at runtime with `ctx.has_plugin("other-plugin")`. Load **order** honors these edges: when A requires B, B's `register()` runs before A's (topological sort, alphabetical tiebreak; cycles warn and fall back to alphabetical order). |
-| `python_dependencies` | list of str | Declared pip requirements (e.g. `"requests>=2.0,<3"`). **Declaration seam only** — Hermes validates them, and `hermes plugins install` / `hermes plugins doctor` surface missing ones with a `pip install` hint, but Hermes **never auto-installs** them. Pin upper bounds. |
+| `python_dependencies` | list of str | Declared pip requirements (e.g. `"requests>=2.0,<3"`). **Declaration seam only** — Moor validates them, and `hermes plugins install` / `hermes plugins doctor` surface missing ones with a `pip install` hint, but Moor **never auto-installs** them. Pin upper bounds. |
 | `config_schema` | mapping | JSON-schema-ish description of keys under `plugins.entries.<id>.settings`: `api_url: {type: str, default: "", description: "...", required: false}`. Validated at load; mismatches log actionable warnings naming the key and expected type — never load failures. Types: `str`, `int`, `float`, `bool`, `list`, `dict` (plus JSON-schema aliases). |
 | `license` | str | SPDX-style license id (e.g. `MIT`). |
 | `homepage` | str | Project URL. |
@@ -311,12 +311,12 @@ config_schema:
 
 :::note pip-dependency isolation is deferred
 `python_dependencies` is intentionally declare-and-surface only. Installing
-arbitrary packages into Hermes' shared venv is a conflict and supply-chain
+arbitrary packages into Moor' shared venv is a conflict and supply-chain
 surface, so the install seam's isolation design (constraints-file installs
 against the host lock vs. per-plugin vendored dirs vs. conflict detection
 with refusal) is an explicitly deferred follow-up — see the round-2 review on
-[#64165](https://github.com/NousResearch/hermes-agent/issues/64165) and
-[#15220](https://github.com/NousResearch/hermes-agent/issues/15220). Plugin
+[#64165](https://github.com/Moor inc./hermes-agent/issues/64165) and
+[#15220](https://github.com/Moor inc./hermes-agent/issues/15220). Plugin
 packs (#64166) build on these v2 fields.
 :::
 
@@ -516,7 +516,7 @@ def register(ctx):
 - If this function crashes, the plugin is disabled but Moor continues fine
 =======
 - `ctx.get_config()` / `ctx.set_config()` access only this plugin's settings namespace; `ctx.state` stores plugin-owned runtime data under the active profile.
-- If this function crashes, the plugin is disabled but Hermes continues fine
+- If this function crashes, the plugin is disabled but Moor continues fine
 >>>>>>> upstream/main
 
 **`dispatch_tool` example — a slash command that runs a tool:**
@@ -540,7 +540,7 @@ The dispatched tool goes through the normal approval, redaction, and budget pipe
 
 ### Store settings and runtime state
 
-Use plugin-relative config keys for user-visible behavior. Hermes resolves them
+Use plugin-relative config keys for user-visible behavior. Moor resolves them
 under `plugins.entries.<plugin-id>.settings` and rejects global, cross-plugin,
 and traversal paths:
 
@@ -860,7 +860,7 @@ tools, so the registration order is correct: your handler replaces the
 built-in one.
 
 **Non-bundled plugins also need an operator grant.** For any plugin that
-does not ship with Hermes core (user, project, or pip source),
+does not ship with Moor core (user, project, or pip source),
 `override=True` against an existing built-in tool additionally requires a
 per-plugin opt-in in `config.yaml`:
 
@@ -873,7 +873,7 @@ plugins:
 
 Without the grant, `ctx.register_tool(..., override=True)` raises
 `PluginToolOverrideError`; since `register()` exceptions are caught by the
-loader, the plugin is disabled and Hermes continues. The gate exists
+loader, the plugin is disabled and Moor continues. The gate exists
 because an enabled plugin that silently replaces a privileged built-in
 like `shell_exec` or `write_file` could intercept everything the model
 routes through it. Bundled plugins are exempt: an override there is a
@@ -1064,7 +1064,7 @@ The canonical list of kinds is `VALID_MIDDLEWARE` in `hermes_cli/middleware.py`:
 | Kind | Receives | Return contract |
 |------|----------|-----------------|
 | `tool_request` | `tool_name`, `args`, `original_args`, context kwargs | Return `{"args": {...}}` to replace the effective tool arguments before hooks, guardrails, approvals, and execution see them. Return `None` to leave the call unchanged. |
-| `llm_request` | `request`, `original_request`, context kwargs | Return `{"request": {...}}` to replace the effective provider kwargs before Hermes sends them. |
+| `llm_request` | `request`, `original_request`, context kwargs | Return `{"request": {...}}` to replace the effective provider kwargs before Moor sends them. |
 | `tool_execution` | the payload plus `next_call` | Wraps tool execution. Call `next_call(payload)` exactly once to run the downstream chain (or skip it to short-circuit) and return the result. |
 | `llm_execution` | the payload plus `next_call` | Same shape, wrapping the provider call. |
 
@@ -1075,7 +1075,7 @@ The canonical list of kinds is `VALID_MIDDLEWARE` in `hermes_cli/middleware.py`:
 - `next_call` in execution middleware is **single-use**. Calling it twice raises, because it would re-run the provider or tool.
 - A middleware callback that raises is logged and skipped; the chain continues. A downstream failure raised after your `next_call` propagates as itself. Middleware can never break the base runtime path.
 - Middleware payloads carry `middleware_schema_version` (`hermes.middleware.v1`) alongside the observer telemetry fields.
-- Unknown kinds register with a warning instead of failing, so a plugin written against a newer Hermes still loads on an older one.
+- Unknown kinds register with a warning instead of failing, so a plugin written against a newer Moor still loads on an older one.
 
 ### Register CLI commands
 

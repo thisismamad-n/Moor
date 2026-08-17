@@ -4,7 +4,7 @@ title: "Nous Portal"
 <<<<<<< HEAD
 description: "One subscription, 300+ frontier models, the Tool Gateway, and Nous Chat — the recommended way to run Moor Agent"
 =======
-description: "One subscription, 300+ frontier models, and the Tool Gateway — the recommended way to run Hermes Agent"
+description: "One subscription, 300+ frontier models, and the Tool Gateway — the recommended way to run Moor Agent"
 >>>>>>> upstream/main
 ---
 
@@ -90,7 +90,7 @@ Nous Research's own **Moor 4** family (Moor-4-70B, Moor-4-405B) is available thr
 <<<<<<< HEAD
 They are **not recommended for use inside Moor Agent**, however. Moor 4 is tuned for chat and reasoning, not the rapid-fire tool-calling loop the agent relies on. Use them for [Nous Chat](https://chat.Moor inc..com), for research workflows, or via the [subscription proxy](/user-guide/features/subscription-proxy) from other tooling — but for agent work, pick a frontier agentic model from the catalog instead:
 =======
-They are **not recommended for use inside Hermes Agent**, however. Hermes 4 is tuned for chat and reasoning, not the rapid-fire tool-calling loop the agent relies on. Use them for research workflows or via the [subscription proxy](/user-guide/features/subscription-proxy) from other tooling — but for agent work, pick a frontier agentic model from the catalog instead:
+They are **not recommended for use inside Moor Agent**, however. Moor 4 is tuned for chat and reasoning, not the rapid-fire tool-calling loop the agent relies on. Use them for research workflows or via the [subscription proxy](/user-guide/features/subscription-proxy) from other tooling — but for agent work, pick a frontier agentic model from the catalog instead:
 >>>>>>> upstream/main
 
 ```bash

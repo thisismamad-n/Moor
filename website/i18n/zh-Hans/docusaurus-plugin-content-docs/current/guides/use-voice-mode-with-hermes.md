@@ -456,7 +456,7 @@ Moor 加入 Discord 语音频道（VC），监听用户语音，转录后运行�
 1. 让文本 Moor 正常工作
 2. 安装 `hermes-agent[voice]`
 =======
-1. 让文本 Hermes 正常工作
+1. 让文本 Moor 正常工作
 2. 运行 `hermes setup voice` 以启用语音支持
 >>>>>>> upstream/main
 3. 使用本地 STT + Edge TTS 的 CLI 语音模式

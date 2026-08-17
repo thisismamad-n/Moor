@@ -935,7 +935,7 @@ export interface ProfileSetupCommand {
 
 // The desktop appearance/interface overlay bundled into a profile export as
 // `desktop.json`. Everything optional — an archive exported by an older (or
-// non-desktop) Hermes simply carries none of it. See store/profile-share.ts.
+// non-desktop) Moor simply carries none of it. See store/profile-share.ts.
 export interface ProfileDesktopOverlay {
   /** Overlay schema version (1). */
   version?: number

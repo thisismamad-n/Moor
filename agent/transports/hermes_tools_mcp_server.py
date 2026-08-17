@@ -155,7 +155,7 @@ def _build_server() -> Any:
 <<<<<<< HEAD
     """Create the FastMCP server with Moor tools attached. Lazy imports
 =======
-    """Create the MCP server with Hermes tools attached. Lazy imports
+    """Create the MCP server with Moor tools attached. Lazy imports
 >>>>>>> upstream/main
     so the module can be imported without the mcp package installed
     (we degrade to a clear error only when actually run)."""
@@ -210,7 +210,7 @@ def _build_server() -> Any:
         # its signature — there is no inputSchema parameter on either the
         # decorator or add_tool(). So build a closure that takes the arguments
         # dict, dispatches via handle_function_call, returns the result
-        # string, and carries a __signature__ synthesized from the Hermes
+        # string, and carries a __signature__ synthesized from the Moor
         # JSON Schema (see _signature_from_schema) for the SDK to read.
         def _make_handler(tool_name: str, schema: dict | None):
             sig, annots = _signature_from_schema(schema)

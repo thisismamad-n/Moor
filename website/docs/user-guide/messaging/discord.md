@@ -84,7 +84,7 @@ This guide walks you through the full setup process — from creating your bot o
 
 ### Gateway WebSocket health
 
-Discord REST and the Gateway WebSocket are separate transports. A successful REST response (including `fetch_user()` returning HTTP 200) does not prove that the bot can still receive Gateway events. Hermes therefore combines the ready state, client/socket closure state, socket openness, heartbeat ACK age, and finite heartbeat latency.
+Discord REST and the Gateway WebSocket are separate transports. A successful REST response (including `fetch_user()` returning HTTP 200) does not prove that the bot can still receive Gateway events. Moor therefore combines the ready state, client/socket closure state, socket openness, heartbeat ACK age, and finite heartbeat latency.
 
 After the configured number of consecutive unhealthy samples, the adapter emits one retryable fatal event. The existing gateway reconnect watcher creates a fresh adapter; the Discord adapter does not start a second unbounded reconnect loop.
 
@@ -522,7 +522,7 @@ discord:
 
 **Type:** object — **Default:** disabled
 
-Discord's WebSocket resume window can expire during a restart or network outage. Messages sent during that gap are not delivered as live gateway events. When this option is enabled, Hermes scans a bounded set of configured channel and thread histories after Discord reconnects, then sends still-unhandled messages through the same authorization, mention, channel, deduplication, and dispatch path as live events.
+Discord's WebSocket resume window can expire during a restart or network outage. Messages sent during that gap are not delivered as live gateway events. When this option is enabled, Moor scans a bounded set of configured channel and thread histories after Discord reconnects, then sends still-unhandled messages through the same authorization, mention, channel, deduplication, and dispatch path as live events.
 
 ```yaml
 discord:
@@ -534,7 +534,7 @@ discord:
     max_dispatches: 10
 ```
 
-If `channels` is empty, Hermes uses `discord.free_response_channels`. Set it to `"*"` only when the bot should inspect every reachable server text channel. The recovery ledger is stored per profile under `gateway/discord_message_recovery.db`, preventing a successfully answered message from being replayed again after a later restart.
+If `channels` is empty, Moor uses `discord.free_response_channels`. Set it to `"*"` only when the bot should inspect every reachable server text channel. The recovery ledger is stored per profile under `gateway/discord_message_recovery.db`, preventing a successfully answered message from being replayed again after a later restart.
 
 #### `group_sessions_per_user`
 
@@ -775,7 +775,7 @@ discord:
 
 Notes:
 - Set `voice_channel_inactivity_timeout_seconds: 0` if you want the bot to remain in the voice channel until an explicit `/voice leave` or manual disconnect. The default preserves the historical 300-second idle auto-leave.
-- `voice_playback_timeout_seconds` is a floor, not a hard cap for long TTS. Hermes probes the generated audio duration and waits for `duration + 30s` when that is longer than the configured floor.
+- `voice_playback_timeout_seconds` is a floor, not a hard cap for long TTS. Moor probes the generated audio duration and waits for `duration + 30s` when that is longer than the configured floor.
 - The acknowledgement fires at most once per turn, only when the bot is in a voice channel and the mixer is active. It uses your configured TTS provider.
 - `ambient_path` accepts any file `ffmpeg` can decode; it's looped seamlessly. Leave it empty to use the built-in synthesised pad (no asset needed).
 - All settings live in `config.yaml` (not `.env`) — they're behavioral, not secrets.
@@ -828,7 +828,7 @@ Moor 0.18 intentionally fails closed on externally reachable adapters. A Discord
 
 ### "Privileged intents" / `PrivilegedIntentsRequired` error on startup
 
-**Cause**: Hermes requests privileged Gateway Intents that are not enabled for your bot in the Developer Portal. Discord then rejects the WebSocket connection. Hermes always requests **Message Content Intent**. It also requests **Server Members Intent** when your allowlist uses usernames (not numeric IDs) or when `DISCORD_ALLOWED_ROLES` is set. Presence Intent is not required.
+**Cause**: Moor requests privileged Gateway Intents that are not enabled for your bot in the Developer Portal. Discord then rejects the WebSocket connection. Moor always requests **Message Content Intent**. It also requests **Server Members Intent** when your allowlist uses usernames (not numeric IDs) or when `DISCORD_ALLOWED_ROLES` is set. Presence Intent is not required.
 
 **Fix**:
 
@@ -836,7 +836,7 @@ Moor 0.18 intentionally fails closed on externally reachable adapters. A Discord
 2. Enable **Message Content Intent** (required). Enable **Server Members Intent** if you use usernames or role allowlists.
 3. Click **Save Changes**, then restart the gateway (`hermes gateway restart`).
 
-The gateway log should name the exact intent(s) Hermes requested. Until they are enabled, Discord will keep rejecting the connection — this is a portal configuration error, not a flaky network issue.
+The gateway log should name the exact intent(s) Moor requested. Until they are enabled, Discord will keep rejecting the connection — this is a portal configuration error, not a flaky network issue.
 
 ### Bot can't see messages in a specific channel
 

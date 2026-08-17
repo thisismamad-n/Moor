@@ -702,7 +702,7 @@ def redeem_codex_reset_credit(
     plural = "s" if remaining != 1 else ""
     if code == "reset":
         # The redeemed reset restores the account's quota upstream — lift any
-        # persisted pool cooldowns so Hermes doesn't keep the credential
+        # persisted pool cooldowns so Moor doesn't keep the credential
         # frozen behind the now-stale ``last_error_reset_at`` (issue #43747).
         try:
             from hermes_cli.auth import clear_codex_pool_quota_cooldowns

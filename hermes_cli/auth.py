@@ -207,7 +207,7 @@ def normalize_actual_base_url(base_url: str) -> str:
 
     Actual hosted inference is exposed at api.actual.inc, while the Actual
     client's offline local server binds a loopback host. Both use a /v1 API
-    surface for Hermes' Responses transport.
+    surface for Moor' Responses transport.
     """
     url = str(base_url or "").strip().rstrip("/")
     if not url:
@@ -400,7 +400,7 @@ PROVIDER_REGISTRY: Dict[str, ProviderConfig] = {
         # `sk-ant-oat01…` OAuth token: sent as `x-api-key` it 401s, and sent as a
         # bare Bearer it 429s. It is listed here because this tuple doubles as the
         # credential-DISCOVERY list (agent/credential_pool.py builds its env scan
-        # from it), so removing it would stop Hermes finding a setup-token
+        # from it), so removing it would stop Moor finding a setup-token
         # credential at all. The adapter routes such a value down the OAuth path
         # on the strength of its prefix, not on this entry. Only ANTHROPIC_API_KEY
         # and ANTHROPIC_TOKEN are usable as literal API keys.
@@ -1905,7 +1905,7 @@ def is_provider_explicitly_configured(provider_id: str) -> bool:
                 return True
 
         # MoA presets are explicit model selections too.  A user who configured
-        # ``provider: anthropic`` as a MoA advisor/aggregator has opted Hermes
+        # ``provider: anthropic`` as a MoA advisor/aggregator has opted Moor
         # into using Anthropic credentials for that slot even when the main
         # session model is another provider.  Without this, Claude Code OAuth
         # entries are pruned/ignored by credential_pool.load_pool("anthropic"),
@@ -4283,7 +4283,7 @@ def _probe_codex_quota_restored(
 ) -> Optional[bool]:
     """Ask the Codex usage endpoint whether this account's quota is usable again.
 
-    Hermes persists a Codex 429's ``reset_at`` locally and freezes the
+    Moor persists a Codex 429's ``reset_at`` locally and freezes the
     credential until it elapses — but the upstream window can reopen EARLY
     (the user redeems a banked rate-limit reset via the Codex CLI/ChatGPT UI,
     upgrades their plan, or OpenAI resets the window).  This probe detects

@@ -14,7 +14,7 @@ This page documents Moor' built-in tools, grouped by toolset. Availability varie
 <<<<<<< HEAD
 In addition to built-in tools, Moor can load tools dynamically from MCP servers. MCP tools appear with the prefix `mcp_<server>_` (e.g., `mcp_github_create_issue` for the `github` MCP server). See [MCP Integration](/user-guide/features/mcp) for configuration.
 =======
-In addition to built-in tools, Hermes can load tools dynamically from MCP servers. MCP tools appear with the prefix `mcp__<server>__` (e.g., `mcp__github__create_issue` for the `github` MCP server). See [MCP Integration](/user-guide/features/mcp) for configuration.
+In addition to built-in tools, Moor can load tools dynamically from MCP servers. MCP tools appear with the prefix `mcp__<server>__` (e.g., `mcp__github__create_issue` for the `github` MCP server). See [MCP Integration](/user-guide/features/mcp) for configuration.
 >>>>>>> upstream/main
 :::
 
@@ -138,7 +138,7 @@ Registered when the agent is either (a) spawned by the kanban dispatcher (`HERME
 | `kanban_link` | Link tasks with a parent → child dependency edge. | `HERMES_KANBAN_TASK` or `kanban` toolset |
 | `kanban_unblock` | Move a blocked task to `ready` when all parents are done, or `todo` while any parent remains open. Orchestrator-only; hidden from dispatcher-spawned task workers. | profile with `kanban` toolset |
 | `kanban_attach` | Attach a file to a task by passing its bytes inline (base64). Stored as a real attachment under the task's attachments dir, capped at 25 MB. | `HERMES_KANBAN_TASK` or `kanban` toolset |
-| `kanban_attach_url` | Attach a file to a task by URL — Hermes downloads it server-side and stores it as a real attachment (capped at 25 MB). Only http/https URLs. | `HERMES_KANBAN_TASK` or `kanban` toolset |
+| `kanban_attach_url` | Attach a file to a task by URL — Moor downloads it server-side and stores it as a real attachment (capped at 25 MB). Only http/https URLs. | `HERMES_KANBAN_TASK` or `kanban` toolset |
 | `kanban_attachments` | List the files attached to a task: id, filename, content_type, size, uploader, and the absolute on-disk path. | `HERMES_KANBAN_TASK` or `kanban` toolset |
 
 ## `project` toolset
@@ -183,18 +183,18 @@ Tools for driving desktop [Projects](../user-guide/cli.md) — named, multi-fold
 
 ## `desktop_ui` toolset
 
-Enabled for sessions whose source is the Hermes desktop app, on any backend it
-is connected to (local, SSH, URL, or Hermes Cloud). Absent from CLI, TUI,
+Enabled for sessions whose source is the Moor desktop app, on any backend it
+is connected to (local, SSH, URL, or Moor Cloud). Absent from CLI, TUI,
 messaging, and cron sessions.
 
 | Tool | Description | Requires environment |
 |------|-------------|----------------------|
-| `read_terminal` | Read what's currently shown in the in-app terminal pane of the Hermes desktop GUI (the embedded shell beside this chat). | — |
-| `close_terminal` | Close the read-only terminal tab for a background process in the Hermes desktop GUI. Does NOT kill the process — only drops the tab/view; use process(action='kill') to stop it. | — |
-| `open_preview` | Open a web URL, localhost dev-server URL, or file path in the preview pane beside the chat in the Hermes desktop app. | — |
-| `read_preview` | Read what's currently shown in the preview pane of the Hermes desktop GUI — the in-app Browser's page text (URL + title + rendered text, pageable with `start`/`count`), or a file/artifact tab's identity. | — |
-| `read_window_below` | Identify the OS window directly underneath the Hermes desktop window — app name, title, bounds (metadata only, never pixels). On macOS, other apps' titles appear only when Screen Recording is already granted; the tool never prompts for it. | — |
-| `focus_pane` | Reveal and focus a pane in the Hermes desktop app (chat, files, terminal, review, sessions). | — |
+| `read_terminal` | Read what's currently shown in the in-app terminal pane of the Moor desktop GUI (the embedded shell beside this chat). | — |
+| `close_terminal` | Close the read-only terminal tab for a background process in the Moor desktop GUI. Does NOT kill the process — only drops the tab/view; use process(action='kill') to stop it. | — |
+| `open_preview` | Open a web URL, localhost dev-server URL, or file path in the preview pane beside the chat in the Moor desktop app. | — |
+| `read_preview` | Read what's currently shown in the preview pane of the Moor desktop GUI — the in-app Browser's page text (URL + title + rendered text, pageable with `start`/`count`), or a file/artifact tab's identity. | — |
+| `read_window_below` | Identify the OS window directly underneath the Moor desktop window — app name, title, bounds (metadata only, never pixels). On macOS, other apps' titles appear only when Screen Recording is already granted; the tool never prompts for it. | — |
+| `focus_pane` | Reveal and focus a pane in the Moor desktop app (chat, files, terminal, review, sessions). | — |
 | `react_to_message` | React to a message with a single emoji, iMessage-tapback style. Opt-in via Settings → Appearance (`display.message_reactions`). | — |
 >>>>>>> upstream/main
 

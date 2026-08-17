@@ -813,7 +813,7 @@ def generate_multi_session_html_export(sessions: List[Dict[str, Any]]) -> str:
         title = s.get("title") or "Moor Session"
         model = s.get("model", "Unknown")
 =======
-        title = s.get("title") or "Hermes Session"
+        title = s.get("title") or "Moor Session"
         model = s.get("model") or "Unknown"
 >>>>>>> upstream/main
         started_at = _format_timestamp(s.get("started_at", 0))
@@ -864,7 +864,7 @@ def generate_multi_session_html_export(sessions: List[Dict[str, Any]]) -> str:
 <<<<<<< HEAD
         page_title="Moor Session Export" if is_multi else _escape_html(sessions[0].get("title", "Moor Session")),
 =======
-        page_title="Hermes Session Export" if is_multi else _escape_html(sessions[0].get("title") or "Hermes Session"),
+        page_title="Moor Session Export" if is_multi else _escape_html(sessions[0].get("title") or "Moor Session"),
 >>>>>>> upstream/main
         sidebar_html=sidebar_html,
         sessions_html="\n".join(sessions_html_list),

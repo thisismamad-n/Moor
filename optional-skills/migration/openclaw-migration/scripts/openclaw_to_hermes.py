@@ -546,7 +546,7 @@ def rebrand_text(text: str) -> str:
 
 
 def parse_existing_memory_entries(path: Path) -> List[str]:
-    """Parse a DESTINATION Hermes memory store (memories/MEMORY.md, USER.md).
+    """Parse a DESTINATION Moor memory store (memories/MEMORY.md, USER.md).
 
     Splits on ``ENTRY_DELIMITER`` only, matching ``MemoryStore._parse_entries``
     in ``tools/memory_tool.py``: a store with no delimiter is ONE intact entry.

@@ -176,7 +176,7 @@ def _raise_gemini_thinking_max_tokens(
     """Raise Gemini output caps that thinking tokens would otherwise consume.
 
     Gemini bills thought tokens against maxOutputTokens / max_tokens. A
-    global Hermes cap of 4096 is enough for visible text, but Ultra/high
+    global Moor cap of 4096 is enough for visible text, but Ultra/high
     thinking can exhaust it on the first request and abort after four
     length-continuations.
     """

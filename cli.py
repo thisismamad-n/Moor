@@ -3046,7 +3046,7 @@ def _heal_cooked_mode_drift(fd: int) -> bool:
     prompt_toolkit's ``run_in_terminal`` / ``in_terminal`` wraps every
     "print above the prompt" in a ``cooked_mode()`` context: it flips the
     tty back to cooked (ICANON/ECHO/ISIG), runs the function, then restores
-    raw mode.  Hermes schedules those windows cross-thread constantly — the
+    raw mode.  Moor schedules those windows cross-thread constantly — the
     background self-review's ``💾`` summary, background process notification
     drains, curses pickers — and if a restore is ever lost (coroutine
     cancelled mid-window, racing chains, an external writer touching the
@@ -3974,11 +3974,11 @@ def _hermes_call_output_screen_diff(
     size,
     previous_width,
 ):
-    """Call prompt_toolkit ``_output_screen_diff`` with Hermes resize guards.
+    """Call prompt_toolkit ``_output_screen_diff`` with Moor resize guards.
 
     1. Inflate ``previous_screen.height`` when the new screen is taller so pt
        skips the reserve-vertical-space cursor move that stamps chrome into
-       scrollback (pt #29 / Hermes #26137).
+       scrollback (pt #29 / Moor #26137).
     2. On AttributeError/TypeError from a corrupt previous paint buffer
        (classic after tmux attach with same width), retry once with
        ``previous_screen=None`` so pt first-paints cleanly instead of crashing
@@ -5632,7 +5632,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
 
         Terminals with focus tracking active (Ghostty, iTerm2, xterm builds,
         multiplexers that toggle DECSET 1004 upstream) emit ``\\x1b[I`` when
-        the Hermes tab/window becomes visible again. Emulators can coalesce
+        the Moor tab/window becomes visible again. Emulators can coalesce
         or drop hidden-tab output and repaint the surface while we're
         invisible, so on regain prompt_toolkit's incremental diff stacks on
         stale content — a second copy of the composer/prompt chrome next to
@@ -9108,7 +9108,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                     f"    [bold {_accent_hex()}]{('/' + name):<22}[/] [dim]-[/] {_escape(desc)}"
                 )
 
-        _cprint(f"\n  {_DIM}Tip: Just type your message to chat with Hermes!{_RST}")
+        _cprint(f"\n  {_DIM}Tip: Just type your message to chat with Moor!{_RST}")
         _cprint(f"  {_DIM}Multi-line: Ctrl+J, Alt+Enter, or \\+Enter for a new line{_RST}")
 >>>>>>> upstream/main
         _cprint(f"  {_DIM}Draft editor: Ctrl+G (Alt+G in VSCode/Cursor){_RST}")
@@ -10386,7 +10386,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             return True
 
         choices = [
-            ("once", "Switch anyway", "Use this model for the current Hermes session."),
+            ("once", "Switch anyway", "Use this model for the current Moor session."),
             ("cancel", "Cancel", "Keep the current model."),
         ]
         raw = self._prompt_text_input_modal(
@@ -13872,7 +13872,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
           re-sends the full input prefix, expensive on long-context /
           high-reasoning models).  This stops silent cache-breaking reloads
           when config.yaml is rewritten frequently by external tooling or
-          other Hermes instances.
+          other Moor instances.
         """
 
         import yaml as _yaml
@@ -15078,7 +15078,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                 # Fail-closed echo guard (#75780): a playback-phase capture
                 # has no acoustic echo cancellation, so speaker bleed alone
                 # can trip the barge trigger. If the transcript is a close
-                # match for what Hermes just spoke, treat it as self-capture
+                # match for what Moor just spoke, treat it as self-capture
                 # instead of queuing it as a user turn.
                 if getattr(self, "_voice_barge_phase", None) == "playback":
                     from tools.voice_mode import is_tts_echo
@@ -15252,7 +15252,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
 
         _cprint(f"\n{_DIM}Voice mode disabled.{_RST}")
 
-    # ── Wake word ("Hey Hermes") ─────────────────────────────────────────
+    # ── Wake word ("Hey Moor") ─────────────────────────────────────────
     #
     # An always-on hotword listener (tools/wake_word.py) that, on detecting
     # the wake phrase, starts a fresh session and captures one utterance via
@@ -15470,7 +15470,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         if state == "LISTENING" and audio_is_silent():
             _cprint(f"  {_ACCENT}⚠ Microphone delivers only silence — the listener can't hear anything.{_RST}")
             _cprint(f"  {_DIM}On macOS: System Settings > Privacy & Security > Microphone — allow your"
-                    f" terminal/Hermes, then /wake off + /wake on.{_RST}")
+                    f" terminal/Moor, then /wake off + /wake on.{_RST}")
         if not reqs["available"] and reqs.get("hint"):
             _cprint(f"  {_DIM}{reqs['hint']}{_RST}")
         if not owned:
@@ -16314,7 +16314,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                         if not _streaming_box_opened:
                             _streaming_box_opened = True
                             w = self._scrollback_box_width(getattr(self.console, "width", 80))
-                            label = " ⚕ Hermes "
+                            label = " ⚕ Moor "
                             if self.show_timestamps:
                                 label = f"{label}{datetime.now().strftime(getattr(self, 'timestamp_format', '%H:%M'))} "
                             fill = w - 2 - HermesCLI._status_bar_display_width(label)
@@ -20040,7 +20040,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         process_thread = threading.Thread(target=process_loop, daemon=True)
         process_thread.start()
 
-        # Wake word ("Hey Hermes") — start the always-on hotword listener if
+        # Wake word ("Hey Moor") — start the always-on hotword listener if
         # enabled. Off-thread so a first-run engine install never blocks the
         # prompt; best-effort, so deps/mic/key gaps are surfaced, never fatal.
         def _wake_startup():

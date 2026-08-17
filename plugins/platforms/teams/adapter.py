@@ -662,7 +662,7 @@ def _suppress_third_party_dotenv() -> Iterator[None]:
     ``microsoft_teams.apps.app`` calls ``load_dotenv(find_dotenv(usecwd=True))``
     at module import time. That mutates process-global ``os.environ`` from
     whatever ``.env`` sits above cwd — typically a root profile's secrets.
-    Hermes owns dotenv loading; third-party import side effects must not.
+    Moor owns dotenv loading; third-party import side effects must not.
     """
     try:
         import dotenv as _dotenv
@@ -1476,7 +1476,7 @@ def _install_hint() -> str:
 
     Derived (not hardcoded) so a pin bump in ``tools/lazy_deps.py`` — aiohttp
     is CVE-pinned, so bumps happen — never leaves this string stale.
-    ``feature_install_command(venv_pip=True)`` targets the actual Hermes
+    ``feature_install_command(venv_pip=True)`` targets the actual Moor
     venv in every layout and sidesteps Ubuntu 24.04's PEP 668 failure that
     a bare ``pip install`` hint invites.
     """

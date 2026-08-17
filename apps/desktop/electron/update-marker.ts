@@ -144,7 +144,7 @@ export function writeUpdateMarker(hermesHome, pid, { now = Date.now } = {}) {
  * `writeUpdateMarker` unconditionally overwrites the marker file. Called
  * before every hand-off with no conflict check, a user who clicks "Update"
  * again while a prior updater is still parked mid-run (e.g. "waiting for
- * Hermes to exit…") clobbers that still-running updater's claim: the
+ * Moor to exit…") clobbers that still-running updater's claim: the
  * retry's pre-write now names the NEW child, so the OLD process — alive
  * and mutating the checkout — is no longer recorded as the owner. A second
  * live updater can then run over the same tree unrecorded, the exact

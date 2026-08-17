@@ -759,11 +759,11 @@ class TestNousPortalContextResolution:
         )
 =======
         assert mm._resolve_endpoint_context_length(
-            "", "https://inference-api.nousresearch.com/v1"
+            "", "https://inference-api.Moor inc..com/v1"
         ) is None
         # Non-empty names still fuzzy-match.
         assert mm._resolve_endpoint_context_length(
-            "grok-4.6", "https://inference-api.nousresearch.com/v1"
+            "grok-4.6", "https://inference-api.Moor inc..com/v1"
         ) == 500_000
         # Single-model endpoints still resolve even with an empty name.
         mock_fetch.return_value = {"only-model": {"context_length": 131_072}}

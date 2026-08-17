@@ -370,9 +370,9 @@ _detached_ws_transport = _DropTransport()
 
 
 def _prepend_tool_paths(env: dict[str, str]) -> dict[str, str]:
-    """Prepend Hermes' managed bin, the venv bin dir, and the user-local
+    """Prepend Moor' managed bin, the venv bin dir, and the user-local
     bin dir to PATH so slash_worker child processes can resolve
-    Hermes-managed CLIs (browser-use, uvx, uv) even when the parent
+    Moor-managed CLIs (browser-use, uvx, uv) even when the parent
     gateway was launched with a minimal PATH (e.g. by the
     Desktop/Dashboard app). Managed bin leads, matching the managed-first
     resolution policy for the Browser Use CLI."""
@@ -429,8 +429,8 @@ class _SlashWorker:
             inherit_profile_home=False,  # base already carries the HOME contract
             extra={"HERMES_HOME": str(profile_home)} if profile_home else None,
         )
-        # Prepend the Hermes venv bin dir and the user-local bin dir to PATH so
-        # slash_worker child processes can resolve Hermes-managed CLIs
+        # Prepend the Moor venv bin dir and the user-local bin dir to PATH so
+        # slash_worker child processes can resolve Moor-managed CLIs
         # (browser-use, uvx) even when the parent gateway was launched with a
         # minimal PATH (e.g. by the Desktop/Dashboard app). See #83845.
         env = _prepend_tool_paths(env)
@@ -3796,7 +3796,7 @@ _skin_watcher_started = False
 
 def _ensure_skin_watcher() -> None:
     """Watch cheap on-disk signatures and broadcast change events — so a skin
-    Hermes activates, a pet ``/pet`` adopts, a cron the scheduler fires, or a
+    Moor activates, a pet ``/pet`` adopts, a cron the scheduler fires, or a
     messaging turn another process writes goes live on every surface within a
     couple seconds, on its own, with no client-side poll in the loop.
     Idempotent; started at gateway.ready. (Named for its original skin-only
@@ -4468,7 +4468,7 @@ def _gui_surface_toolsets(platform: str) -> set[str]:
     driving a local, SSH, URL, or cloud backend, and only the local/SSH spawn
     paths run with ``HERMES_DESKTOP=1``. Keying GUI capability off that env var
     silently stripped every pane/browser tool from URL and cloud gateways while
-    the same backend told the model it was "chatting inside the Hermes desktop
+    the same backend told the model it was "chatting inside the Moor desktop
     app". See the surface-capability rule in AGENTS.md.
     """
     surfaces = {"project"}
@@ -6207,7 +6207,7 @@ def _agent_cbs(sid: str) -> dict:
         ),
         # read_window_below tool (desktop GUI): the renderer asks its main
         # process (which owns native window enumeration) which OS window sits
-        # directly underneath the Hermes window, and answers
+        # directly underneath the Moor window, and answers
         # window.read.respond with the serialized metadata.
         "read_window_below_callback": lambda: _block(
             "window.read.request",
@@ -13561,7 +13561,7 @@ def _discover_repos_payload(
                 # NOTE: `last_seen` is when the disk scan last saw the directory,
                 # not when the user last worked in it. Folding it into
                 # `last_active` stamped every scanned repo with the scan time —
-                # i.e. "just now" — so a git checkout with zero Hermes sessions
+                # i.e. "just now" — so a git checkout with zero Moor sessions
                 # outranked the repos the user actually works in. Activity stays
                 # session-derived; a repo with no sessions has no activity.
 
@@ -14218,7 +14218,7 @@ def _rank_slash_completions(
     ``usage``/``origin_of`` are the callables :func:`_skill_usage_lookup`
     returns. Registry commands keep their existing order — only the skill
     block is reordered, most-used first and A-Z within a tie, so the handful
-    of skills someone invokes daily lead the ones that shipped with Hermes
+    of skills someone invokes daily lead the ones that shipped with Moor
     and were never opened.
 
     ``score_of`` (optional) is the fuzzy-match scorer from
@@ -15398,7 +15398,7 @@ def _voice_record_key() -> str:
     return str(record_key) if isinstance(record_key, str) and record_key else "ctrl+b"
 
 
-# ── Wake word ("Hey Hermes") ──────────────────────────────────────────────
+# ── Wake word ("Hey Moor") ──────────────────────────────────────────────
 # The detector is process-global (one mic), like voice. The first eligible
 # transport to call wake.start owns it until stop, disconnect, or stream failure.
 # On detection we emit wake.detected; the client opens a new session and starts

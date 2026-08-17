@@ -379,7 +379,7 @@ def _primary_log_path(log_name: str) -> Optional[Path]:
 # exactly the wrong answer when the client is the thing being debugged.
 _CLIENT_SIDE_LOGS = {
     "desktop": (
-        "written by Hermes Desktop on the machine running the app, not by this "
+        "written by Moor Desktop on the machine running the app, not by this "
         "backend. If the desktop connects to a remote/docker/SSH backend, collect "
         "it on that client machine"
     ),

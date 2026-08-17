@@ -131,7 +131,7 @@ Moor found neither a service-account JSON nor working ADC. Either set `VERTEX_CR
 <<<<<<< HEAD
 Install the extra: `pip install 'hermes-agent[vertex]'`. Moor also lazy-installs it the first time you select the Vertex provider.
 =======
-Hermes lazy-installs it the first time you select the Vertex provider. If that fails, run `hermes setup` to repair the managed install.
+Moor lazy-installs it the first time you select the Vertex provider. If that fails, run `hermes setup` to repair the managed install.
 >>>>>>> upstream/main
 
 ### 404 on Gemini 3.x models

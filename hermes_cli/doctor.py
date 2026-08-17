@@ -89,7 +89,7 @@ def _sqlite_upgrade_hint(install_method: str | None = None) -> str:
     method = install_method or detect_install_method(PROJECT_ROOT)
     if method == "docker":
         command = recommended_update_command_for_method(method)
-        action = f"run `{command}`, then recreate all Hermes containers"
+        action = f"run `{command}`, then recreate all Moor containers"
     elif method in {"nix", "nixos"}:
         action = recommended_update_command_for_method(method)
     else:
@@ -101,7 +101,7 @@ def _sqlite_upgrade_hint(install_method: str | None = None) -> str:
 
 
 def _hermes_database_paths(hermes_home: Path) -> list[tuple[str, Path]]:
-    """Return (display name, path) pairs for Hermes-managed SQLite databases."""
+    """Return (display name, path) pairs for Moor-managed SQLite databases."""
     # backup.py owns the canonical list of per-profile stores; reuse it.
     from hermes_cli.backup import _QUICK_STATE_FILES
 
@@ -196,7 +196,7 @@ def _report_database_journal_modes(
     try:
         databases = _hermes_database_paths(home)
     except Exception as exc:
-        check_warn(f"Could not list Hermes databases: {exc}")
+        check_warn(f"Could not list Moor databases: {exc}")
         return
     exposed = []
     for name, path in databases:
@@ -1074,7 +1074,7 @@ def run_doctor(args):
             (_sqlite_src[:48] + "…") if len(_sqlite_src) > 48 else _sqlite_src
         )
         if is_sqlite_wal_reset_vulnerable():
-            # Warn-only: Hermes already refuses to enable WAL on fresh DBs.
+            # Warn-only: Moor already refuses to enable WAL on fresh DBs.
             # Do not append to ``issues`` because runtime repair remains
             # best-effort and unsupported installs may need manual action.
             check_warn(
@@ -1817,7 +1817,7 @@ def run_doctor(args):
                 check_warn(f"{_DHH}/state.db exists but has issues: {e}")
 
         # Health/stats snapshot (#statedb-visibility): a multi-GB state.db
-        # with a runaway WAL was previously invisible to every Hermes
+        # with a runaway WAL was previously invisible to every Moor
         # surface. Strictly read-only (mode=ro) so it is safe against a
         # live DB held by the gateway; any failure degrades to one info
         # line rather than failing doctor.
@@ -2139,7 +2139,7 @@ def run_doctor(args):
     if _safe_which("node"):
         check_ok("Node.js")
         # agent-browser is no longer a root package.json dependency (#43564)
-        # — it resolves lazily via npx (or a global/Hermes-managed install)
+        # — it resolves lazily via npx (or a global/Moor-managed install)
         # at first use. Mirror tools.browser_tool._find_agent_browser's own
         # resolution cascade here so doctor can't diverge from what browser
         # tools will actually find; validate=False keeps this a cheap

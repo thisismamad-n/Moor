@@ -68,7 +68,7 @@ export const ja = defineLocale({
       connectingGateway: 'ライブデスクトップゲートウェイに接続中',
       loadingSettings: 'Moor の設定を読み込み中',
       loadingSessions: '最近のセッションを読み込み中',
-      retryingRemoteBackend: 'リモート Hermes バックエンドに再接続中…',
+      retryingRemoteBackend: 'リモート Moor バックエンドに再接続中…',
       startingDesktopConnection: 'デスクトップ接続を開始中',
       startingHermesDesktop: 'Moor Desktop を起動中…'
     },
@@ -182,8 +182,8 @@ export const ja = defineLocale({
       turnDoneTitle: 'Moor が完了しました',
       turnDoneBody: '応答の準備ができました。',
 =======
-      inputBody: 'Hermes が応答を待っています。',
-      turnDoneTitle: 'Hermes が完了しました',
+      inputBody: 'Moor が応答を待っています。',
+      turnDoneTitle: 'Moor が完了しました',
       turnDoneBody: '',
 >>>>>>> upstream/main
       turnErrorTitle: 'ターンが失敗しました',
@@ -264,7 +264,7 @@ export const ja = defineLocale({
       focusedHint: '完了通知は Moor がバックグラウンドにあるときのみ表示されます。',
 =======
       enableAllDesc: 'オフで以下の通知をすべて無効にします。',
-      focusedHint: '完了通知は Hermes がバックグラウンドにあるときのみ表示されます。',
+      focusedHint: '完了通知は Moor がバックグラウンドにあるときのみ表示されます。',
 >>>>>>> upstream/main
       kinds: {
         approval: {
@@ -293,7 +293,7 @@ export const ja = defineLocale({
         },
         plugin: {
           label: 'プラグイン通知',
-          description: 'Hermes がバックグラウンドの間に、デスクトッププラグインが通知を送信しました。'
+          description: 'Moor がバックグラウンドの間に、デスクトッププラグインが通知を送信しました。'
         }
       },
       test: 'テスト通知を送信',
@@ -691,7 +691,7 @@ export const ja = defineLocale({
       searchPlaceholder: '検索…',
       noResults: '結果が見つかりません',
       systemDefault: 'システムのデフォルト',
-      loading: 'Hermes の設定を読み込み中...',
+      loading: 'Moor の設定を読み込み中...',
 >>>>>>> upstream/main
       emptyTitle: '設定項目がありません',
       emptyDesc: 'このセクションには調整できる設定がありません。',
@@ -705,7 +705,7 @@ export const ja = defineLocale({
     quickEntry: {
       enabledTitle: 'クイック入力',
       enabledDesc:
-        'グローバルショートカットで小さな入力欄をどこからでも呼び出し、Hermes を開かずにプロンプトを送信します。',
+        'グローバルショートカットで小さな入力欄をどこからでも呼び出し、Moor を開かずにプロンプトを送信します。',
       shortcutTitle: 'クイック入力のショートカット',
       shortcutDesc: '修飾キーが 1 つ以上必要です（例: CommandOrControl+Shift+Space）。',
       active: 'ショートカットは有効です。',
@@ -754,7 +754,7 @@ export const ja = defineLocale({
 <<<<<<< HEAD
         'ローカルホストでプライベートな Moor バックエンドを起動します。これがデフォルトで、オフラインでも動作します。',
 =======
-        'ローカルホストでプライベートな Hermes バックエンドを起動します。これがデフォルトで、オフラインでも動作します。',
+        'ローカルホストでプライベートな Moor バックエンドを起動します。これがデフォルトで、オフラインでも動作します。',
       inheritTitle: 'デフォルトゲートウェイを使用',
       inheritDesc: 'このプロファイルのオーバーライドを削除し、デフォルト接続を使用します。',
 >>>>>>> upstream/main
@@ -820,7 +820,7 @@ export const ja = defineLocale({
       saveFailed: 'ゲートウェイ設定を保存できませんでした',
       sshTitle: 'SSH で接続',
       sshDesc:
-        'Hermes は SSH 経由でリモート上に起動され、このアプリにトンネルされます。リモート側で何かを起動・公開する必要はありません。ホストへの鍵ベースの SSH アクセスが前提です。',
+        'Moor は SSH 経由でリモート上に起動され、このアプリにトンネルされます。リモート側で何かを起動・公開する必要はありません。ホストへの鍵ベースの SSH アクセスが前提です。',
       sshTrustHint: '初回に提示されたホスト鍵を信頼して固定し、以後の変更は拒否します。',
       sshHostTitle: 'ホスト',
       sshHostDesc: 'user@host、または ~/.ssh/config の Host エイリアス。',
@@ -835,7 +835,7 @@ export const ja = defineLocale({
       sshPortDesc: '空欄 = 22 または ~/.ssh/config のポート。',
       sshKeyTitle: '鍵ファイル',
       sshKeyDesc: '秘密鍵のパス。空欄 = ssh-agent または ~/.ssh/config。',
-      sshHermesPathTitle: 'Hermes パス（任意）',
+      sshHermesPathTitle: 'Moor パス（任意）',
       sshHermesPathDesc: 'リモートの hermes バイナリへのフルパス。空欄 = 自動検出。',
       sshHermesPathPlaceholder: '自動検出',
       sshRemoteProfileTitle: 'リモートプロファイル（任意）',
@@ -843,19 +843,19 @@ export const ja = defineLocale({
       sshTestConnection: 'SSH をテスト',
       sshConnect: '接続',
       sshButtonsHint: '「保存」は次回起動時に適用され、「接続」は今すぐ再接続します。',
-      sshReachable: (host, platform) => `接続可能: ${host}（${platform}）— Hermes を検出`,
+      sshReachable: (host, platform) => `接続可能: ${host}（${platform}）— Moor を検出`,
       sshIncompleteHost: '接続する前に SSH ホストを入力してください。',
       sshErrUnreachable: 'SSH でそのホストに到達できませんでした。ホスト、ポート、ネットワークを確認してください。',
       sshErrAuth:
-        'SSH 認証に失敗しました。鍵を ssh-agent に読み込む（ssh-add）か、~/.ssh/config に IdentityFile を設定してください。Hermes は非対話的に ssh を実行します。',
+        'SSH 認証に失敗しました。鍵を ssh-agent に読み込む（ssh-add）か、~/.ssh/config に IdentityFile を設定してください。Moor は非対話的に ssh を実行します。',
       sshErrHostKey:
         '前回の接続以降、ホスト鍵が変更されています。想定どおりか確認し、ssh-keygen -R <host> を実行してから再接続してください。',
       sshErrNotInstalled:
-        'リモートホストに Hermes がインストールされていません。リモートでインストールする（curl -fsSL https://hermes-agent.nousresearch.com/install.sh | sh）か、Hermes パスを設定してください。',
+        'リモートホストに Moor がインストールされていません。リモートでインストールする（curl -fsSL https://hermes-agent.Moor inc..com/install.sh | sh）か、Moor パスを設定してください。',
       sshErrPlatform:
-        'サポートされていないリモートプラットフォームです。Hermes Desktop の SSH モードは Linux、macOS、Windows のリモートホストに対応しています。',
+        'サポートされていないリモートプラットフォームです。Moor Desktop の SSH モードは Linux、macOS、Windows のリモートホストに対応しています。',
       sshErrTimeout: 'SSH 接続がタイムアウトしました。ホストが到達不能、またはスリープ中の可能性があります。',
-      sshErrUpdateRequired: 'Desktop SSH で接続する前に、リモートホストの Hermes を更新してください。',
+      sshErrUpdateRequired: 'Desktop SSH で接続する前に、リモートホストの Moor を更新してください。',
       sshErrUnknown: 'SSH 接続に失敗しました。'
     },
     keys: {
@@ -910,7 +910,7 @@ export const ja = defineLocale({
       noOutput: 'まだ出力がありません。',
       deepLinkTitle: 'MCP サーバーを追加しますか？',
       deepLinkDescription:
-        'リンクがこの MCP サーバーを Hermes に追加するよう要求しました。下の設定はリンク側から来たものです。内容を必ず確認してください。',
+        'リンクがこの MCP サーバーを Moor に追加するよう要求しました。下の設定はリンク側から来たものです。内容を必ず確認してください。',
       deepLinkStdioWarning:
         'このサーバーは下記のコマンドでローカルプロセスを実行します。提供元を信頼できる場合のみ続行してください。',
       deepLinkConfirm: 'サーバーを追加',
@@ -1557,7 +1557,7 @@ export const ja = defineLocale({
       message: count => `モデル設定を確認するまで、${count} 件のスケジュール済みジョブがスキップされます。`,
       detailMore: (names, remaining) => `${names}、ほか ${remaining} 件`,
       review: 'スケジュール済みジョブを確認',
-      saveFailed: 'Hermes はモデルの変更を保存しませんでした。'
+      saveFailed: 'Moor はモデルの変更を保存しませんでした。'
     },
     search: 'Cron ジョブを検索...',
     loading: 'Cron ジョブを読み込み中...',
@@ -1819,7 +1819,7 @@ export const ja = defineLocale({
       baseBranchNone: 'ブランチが見つかりません',
       startWorkFailed: 'ワークツリーを作成できませんでした',
       worktreeStaleBackend:
-        'このリモート接続でワークツリーを作成するには Hermes バックエンドを更新してください — git ワークツリー API 以前のバージョンです。',
+        'このリモート接続でワークツリーを作成するには Moor バックエンドを更新してください — git ワークツリー API 以前のバージョンです。',
       worktreeProjectLabel: 'プロジェクト',
       worktreeProjectPlaceholder: 'プロジェクトを検索…',
       worktreeProjectNone: 'フォルダのあるプロジェクトがありません',
@@ -2150,14 +2150,14 @@ export const ja = defineLocale({
     applyingClose: 'このウィンドウは更新中に閉じ、その後 Moor が自動的に再度開きます。',
     errorTitle: '更新が完了しませんでした',
     errorBody: 'ご安心ください。何も失われていません。今すぐ再試行できます。',
-    blockerTitle: 'Hermes を更新するためにローカルプレビューを閉じますか？',
+    blockerTitle: 'Moor を更新するためにローカルプレビューを閉じますか？',
     blockerBody:
       '更新する前に、これらのローカルプレビューを停止する必要があります。ファイルが変更または削除されることはありません。',
-    foreignBlockerTitle: '他のプロセスを閉じて Hermes を更新',
+    foreignBlockerTitle: '他のプロセスを閉じて Moor を更新',
     foreignBlockerBody:
-      'Hermes はこれらのプロセスを安全に自動終了できません。各プロセスを所有するアプリ、ターミナル、またはサービスを閉じてから、もう一度更新してください。',
+      'Moor はこれらのプロセスを安全に自動終了できません。各プロセスを所有するアプリ、ターミナル、またはサービスを閉じてから、もう一度更新してください。',
     mixedBlockerBody:
-      'Hermes は以下のローカルプレビューを閉じることができます。更新を続けるには、他のプロセスを手動で閉じる必要があります。',
+      'Moor は以下のローカルプレビューを閉じることができます。更新を続けるには、他のプロセスを手動で閉じる必要があります。',
     closePreviewsAndUpdate: 'プレビューを閉じて更新',
     closePreviewsAndCheckAgain: 'プレビューを閉じて再確認',
     localPreview: 'ローカルプレビュー',
@@ -2192,25 +2192,25 @@ export const ja = defineLocale({
     viewDocs: 'インストールドキュメントを見る',
     installTo: 'インストール先',
     retryAfterRun: '実行しました — 再試行',
-    setupChoiceTitle: 'Hermes Desktop をセットアップ',
+    setupChoiceTitle: 'Moor Desktop をセットアップ',
     setupChoiceDesc:
-      'すでに実行している Hermes ゲートウェイに接続するか、このコンピューターに Hermes をローカルインストールします。',
-    connectExistingTitle: '既存の Hermes に接続',
+      'すでに実行している Moor ゲートウェイに接続するか、このコンピューターに Moor をローカルインストールします。',
+    connectExistingTitle: '既存の Moor に接続',
     connectExistingShort: '既存環境に接続',
     connectExistingDesc:
       'セッショントークンまたはブラウザーサインインでリモートバックエンドを使用します。ローカルインストールは開始されません。',
-    installLocalTitle: 'Hermes をローカルにインストール',
-    installLocalDesc: 'Hermes をダウンロードし、Python 環境を作成して、このコンピューターでバックエンドを実行します。',
+    installLocalTitle: 'Moor をローカルにインストール',
+    installLocalDesc: 'Moor をダウンロードし、Python 環境を作成して、このコンピューターでバックエンドを実行します。',
     localStartUnavailable:
-      'ローカルインストールを開始できません。Hermes Desktop を再起動して、もう一度お試しください。',
-    remoteSetupTitle: '既存の Hermes に接続',
+      'ローカルインストールを開始できません。Moor Desktop を再起動して、もう一度お試しください。',
+    remoteSetupTitle: '既存の Moor に接続',
     remoteSetupDesc:
-      'ゲートウェイ URL を入力してください。Hermes Desktop がトークンとブラウザーサインインのどちらが必要かを検出します。',
+      'ゲートウェイ URL を入力してください。Moor Desktop がトークンとブラウザーサインインのどちらが必要かを検出します。',
     remoteUrlTitle: 'ゲートウェイ URL',
-    remoteUrlDesc: 'Hermes ゲートウェイのベース URL を使用します。リモートの場合は https:// を含めてください。',
+    remoteUrlDesc: 'Moor ゲートウェイのベース URL を使用します。リモートの場合は https:// を含めてください。',
     remoteUrlPlaceholder: 'https://gateway.example.com/hermes',
     probing: 'ゲートウェイ認証方式を検出中...',
-    probeError: 'その Hermes ゲートウェイに到達できませんでした。',
+    probeError: 'その Moor ゲートウェイに到達できませんでした。',
     identityProvider: 'ID プロバイダー',
     authTitle: '認証',
     authNeedsOauth: provider => `このゲートウェイをテストする前に ${provider} でサインインしてください。`,
@@ -2418,7 +2418,7 @@ export const ja = defineLocale({
       connectionSsh: host => `SSH: ${host}`,
       connectionRemote: host => `リモート: ${host}`,
       connectionCloud: host => `クラウド: ${host}`,
-      connectionCloudTooltip: host => `Hermes Cloud · ${host}`,
+      connectionCloudTooltip: host => `Moor Cloud · ${host}`,
       connectionSshTooltip: host => `SSH · ${host}`,
       connectionRemoteTooltip: host => `Remote · ${host}`,
       backendLabel: version => `バックエンド v${version}`,

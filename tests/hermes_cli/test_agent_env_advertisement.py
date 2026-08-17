@@ -2,9 +2,9 @@
 
 Port of earendil-works/pi#7493: entry points advertise the agent harness to
 child processes via the cross-agent ``AI_AGENT`` standard plus a
-Hermes-specific marker, without clobbering an outer harness.
+Moor-specific marker, without clobbering an outer harness.
 
-The AI_AGENT value must equal Hermes' id in the public agent-harness
+The AI_AGENT value must equal Moor' id in the public agent-harness
 registry (``hermes-agent`` in huggingface.js ``agent-harnesses.ts``) —
 standard-var matching there is exact, so any other value is attributed to
 "unknown".
@@ -12,7 +12,7 @@ standard-var matching there is exact, so any other value is attributed to
 The terminal backends additionally export both vars inside every wrapped
 shell command (``BaseEnvironment._wrap_command``) so the marker reaches
 REMOTE backends (Docker/SSH/Modal/Daytona/Singularity/Vercel) whose exec
-environment does not inherit the Hermes process env, and survives the
+environment does not inherit the Moor process env, and survives the
 cross-session leak guard that strips ``HERMES_SESSION_*`` from subprocess
 envs in engaged multi-session hosts.
 """
@@ -75,7 +75,7 @@ class TestWrapCommandAdvertisesHarness:
 
     def test_shell_sets_default_and_preserves_outer(self):
         """Run the wrapped script through real bash both ways."""
-        wrapped = self._wrap('echo "AI=$AI_AGENT HERMES=$HERMES_AGENT"')
+        wrapped = self._wrap('echo "AI=$AI_AGENT MOOR=$HERMES_AGENT"')
 
         clean_env = {k: v for k, v in os.environ.items()
                      if k not in ("AI_AGENT", "HERMES_AGENT")}
@@ -83,11 +83,11 @@ class TestWrapCommandAdvertisesHarness:
             ["bash", "-c", wrapped], capture_output=True, text=True,
             env=clean_env, timeout=30,
         )
-        assert f"AI={HARNESS_ID} HERMES=true" in out.stdout
+        assert f"AI={HARNESS_ID} MOOR=true" in out.stdout
 
         outer_env = dict(clean_env, AI_AGENT="pi", HERMES_AGENT="false")
         out = subprocess.run(
             ["bash", "-c", wrapped], capture_output=True, text=True,
             env=outer_env, timeout=30,
         )
-        assert "AI=pi HERMES=false" in out.stdout
+        assert "AI=pi MOOR=false" in out.stdout

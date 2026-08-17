@@ -986,7 +986,7 @@ def _stored_prompt_matches_runtime(agent, prompt: str) -> bool:
 
         Anchor on the ``User home directory:`` line that immediately precedes
         the working-directory line in that block, and take the FIRST such
-        occurrence, so only Hermes' own emitted block can satisfy the read.
+        occurrence, so only Moor' own emitted block can satisfy the read.
         """
         prefix = f"{label}:"
         lines = prompt.splitlines()
@@ -2461,7 +2461,7 @@ def run_conversation(
             agent._emit_status("❌ Ollama runtime context is too small for Moor tool use")
 =======
             append_message(messages, {"role": "assistant", "content": final_response})
-            agent._emit_status("❌ Ollama runtime context is too small for Hermes tool use")
+            agent._emit_status("❌ Ollama runtime context is too small for Moor tool use")
 >>>>>>> upstream/main
             api_call_count -= 1
             agent._api_call_count = api_call_count
@@ -4897,7 +4897,7 @@ def run_conversation(
                 # field (structured 400 naming the param). One-shot: turn
                 # native compaction off for the rest of the session and
                 # retry — the next _build_api_kwargs re-resolves the gate
-                # and omits the field, and Hermes' local compression takes
+                # and omits the field, and Moor' local compression takes
                 # over as the sole owner. Generic 4xx/5xx/timeouts do NOT
                 # match (see is_native_compaction_rejection) and take the
                 # normal retry path.

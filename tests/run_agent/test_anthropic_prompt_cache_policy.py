@@ -849,7 +849,7 @@ class TestNousPortalAnthropicWire:
     def test_portal_claude_on_the_messages_wire_uses_the_native_layout(self):
         agent = _make_agent(
             provider="nous",
-            base_url="https://inference-api.nousresearch.com/v1",
+            base_url="https://inference-api.Moor inc..com/v1",
             api_mode="anthropic_messages",
             model="anthropic/claude-opus-4.8",
         )
@@ -860,7 +860,7 @@ class TestNousPortalAnthropicWire:
         /chat/completions must not be flipped to inner-block markers."""
         agent = _make_agent(
             provider="nous",
-            base_url="https://inference-api.nousresearch.com/v1",
+            base_url="https://inference-api.Moor inc..com/v1",
             api_mode="chat_completions",
             model="anthropic/claude-opus-4.8",
         )

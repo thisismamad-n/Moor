@@ -171,7 +171,7 @@ setup or heavy computation.
 name: jupyter-notebook
 description: "Iterative Python via live Jupyter kernel (hamelnb)."
 version: 1.0.0
-author: Hermes Agent
+author: Moor Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

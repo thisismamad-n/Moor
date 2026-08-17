@@ -167,7 +167,7 @@ Service accounts require CLI v2.18.0+.
 name: 1password
 description: Set up op CLI, sign in, and read or inject secrets.
 version: 1.0.0
-author: arceus77-7, enhanced by Hermes Agent
+author: arceus77-7, enhanced by Moor Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
@@ -192,7 +192,7 @@ Use this skill when the user wants secrets managed through 1Password instead of 
 - 1Password account
 - 1Password CLI (`op`) installed
 - One of: desktop app integration, service account token (`OP_SERVICE_ACCOUNT_TOKEN`), or Connect server
-- `tmux` available for stable authenticated sessions during Hermes terminal calls (desktop app flow only)
+- `tmux` available for stable authenticated sessions during Moor terminal calls (desktop app flow only)
 
 ## When to Use
 
@@ -204,7 +204,7 @@ Use this skill when the user wants secrets managed through 1Password instead of 
 
 ## Authentication Methods
 
-### Service Account (recommended for Hermes)
+### Service Account (recommended for Moor)
 
 Set `OP_SERVICE_ACCOUNT_TOKEN` in `${HERMES_HOME:-~/.hermes}/.env` (the skill will prompt for this on first load).
 No desktop app needed. Supports `op read`, `op inject`, `op run`.
@@ -250,9 +250,9 @@ op --version
 
 3. Choose an auth method above and configure it.
 
-## Hermes Execution Pattern (desktop app flow)
+## Moor Execution Pattern (desktop app flow)
 
-Hermes terminal commands are non-interactive by default and can lose auth context between calls.
+Moor terminal commands are non-interactive by default and can lose auth context between calls.
 For reliable `op` use with desktop app integration, run sign-in and secret operations inside a dedicated tmux session.
 
 Note: This is NOT needed when using `OP_SERVICE_ACCOUNT_TOKEN` — the token persists across terminal calls automatically.

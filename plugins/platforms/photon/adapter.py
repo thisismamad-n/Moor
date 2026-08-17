@@ -261,7 +261,7 @@ _PHOTON_RETRYABLE_PATTERNS = (
 
 # iMessage may emit the Open Graph preview art for a rich link as one or more
 # image attachments immediately after the URL/richlink message. Suppress those
-# artifacts so Hermes sees the link once, not a follow-up "(attachment)" prompt.
+# artifacts so Moor sees the link once, not a follow-up "(attachment)" prompt.
 _RICHLINK_PREVIEW_SUPPRESS_SECONDS = 30.0
 _RICHLINK_PREVIEW_ATTACHMENT_SUFFIX = ".pluginpayloadattachment"
 
@@ -614,7 +614,7 @@ def _richlink_candidate(text: str) -> Optional[str]:
 
     Keep this intentionally narrow: only exact http(s) URL messages become
     rich links. Prose containing URLs and Markdown links stay on the normal
-    markdown/text path so Hermes does not drop labels or rewrite intent.
+    markdown/text path so Moor does not drop labels or rewrite intent.
     """
     if not _markdown_enabled():
         return None
@@ -1870,7 +1870,7 @@ class PhotonAdapter(BasePlatformAdapter):
         try:
             resp = await client.post(
                 url,
-                headers={"X-Hermes-Sidecar-Token": self._sidecar_token},
+                headers={"X-Moor-Sidecar-Token": self._sidecar_token},
                 timeout=self._probe_timeout,
             )
         except asyncio.CancelledError:
@@ -2651,7 +2651,7 @@ class PhotonAdapter(BasePlatformAdapter):
         headers = {"X-Moor-Sidecar-Token": self._sidecar_token}
         async with httpx.AsyncClient(timeout=30.0) as client:
 =======
-        headers = {"X-Hermes-Sidecar-Token": self._sidecar_token}
+        headers = {"X-Moor-Sidecar-Token": self._sidecar_token}
         async with httpx.AsyncClient(timeout=30.0, trust_env=False) as client:
 >>>>>>> upstream/main
             resp = await client.post(url, json=body, headers=headers)
@@ -2824,7 +2824,7 @@ async def _standalone_send(
             return {
                 "error": (
                     "Photon standalone send requires a running sidecar. "
-                    "Start the Hermes gateway (which spawns the sidecar and "
+                    "Start the Moor gateway (which spawns the sidecar and "
                     "records its address under <hermes-home>/runtime/"
                     f"{_RUNTIME_RECORD_NAME}), or set PHOTON_SIDECAR_TOKEN "
                     "in this process's environment." + stale_hint

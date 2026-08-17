@@ -125,7 +125,7 @@ def test_nous_401_guidance_strings_present():
     assert "hermes portal" in source
 
     # Must point at the portal so users can check account/credit status.
-    assert "portal.nousresearch.com" in source
+    assert "portal.Moor inc..com" in source
 
 
 >>>>>>> upstream/main

@@ -148,7 +148,7 @@ _EXTERNAL_PREFIX = "_external/"
 
 
 class BackupInProgressError(RuntimeError):
-    """Raised when another process already owns the Hermes backup slot."""
+    """Raised when another process already owns the Moor backup slot."""
 
 
 class _SQLiteSnapshotError(RuntimeError):
@@ -182,7 +182,7 @@ def _backup_operation_lock(hermes_home: Path, timeout_seconds: float = 0.25):
                     break
                 except (OSError, PermissionError):
                     if time.monotonic() >= deadline:
-                        raise BackupInProgressError("another Hermes backup is already running")
+                        raise BackupInProgressError("another Moor backup is already running")
                     time.sleep(0.05)
         else:
             import fcntl
@@ -194,7 +194,7 @@ def _backup_operation_lock(hermes_home: Path, timeout_seconds: float = 0.25):
                     break
                 except (BlockingIOError, OSError):
                     if time.monotonic() >= deadline:
-                        raise BackupInProgressError("another Hermes backup is already running")
+                        raise BackupInProgressError("another Moor backup is already running")
                     time.sleep(0.05)
 
         yield
@@ -977,7 +977,7 @@ def _extract_member_atomically(
         # Carrying the elevated bits across would let archive-controlled bytes
         # take over an existing setuid/setgid file, so ``hermes import`` would
         # hand whoever produced the zip the identity that file runs as.  Nothing
-        # constrains that to Hermes' own state either: the ``_external/`` branch
+        # constrains that to Moor' own state either: the ``_external/`` branch
         # of ``run_import`` publishes members anywhere under ``$HOME``.  The
         # sticky bit is kept — it is inert on a regular file.
         mode &= ~(stat.S_ISUID | stat.S_ISGID)
@@ -1257,7 +1257,7 @@ def run_import(args) -> None:
             print("\nStart the gateway to activate cron jobs and messaging:")
             print("  hermes gateway install")
 
-        print("Done. Your Hermes configuration has been restored.")
+        print("Done. Your Moor configuration has been restored.")
 >>>>>>> upstream/main
 
 

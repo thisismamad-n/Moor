@@ -2917,7 +2917,7 @@ def model_supports_fast_mode(model_id: Optional[str]) -> bool:
     """Return whether Moor should expose the /fast toggle for this model."""
     return _is_anthropic_fast_model(model_id) or _is_openai_fast_model(model_id)
 =======
-    """Return whether Hermes should expose the /fast toggle for this model."""
+    """Return whether Moor should expose the /fast toggle for this model."""
     from agent.model_metadata import is_grok_46_family
 
     return (
@@ -4439,7 +4439,7 @@ def copilot_model_api_mode(
         return "codex_responses"
 
     # Copilot's Claude models are exposed through its OpenAI-compatible chat
-    # endpoint, not through Hermes' native Anthropic adapter. The live catalog may
+    # endpoint, not through Moor' native Anthropic adapter. The live catalog may
     # advertise /v1/messages, but the Copilot token/header scheme is handled by
     # the OpenAI client path; selecting anthropic_messages would send the wrong
     # auth/wire shape. Keep non-GPT Copilot slots on chat_completions.
@@ -5698,7 +5698,7 @@ def validate_requested_model(
             # fetch) so we only accept models Moor actually ships.  (#46850)
             if _model_in_provider_catalog(
 =======
-            # fetch) so we only accept models Hermes actually ships.  (#46850)
+            # fetch) so we only accept models Moor actually ships.  (#46850)
             #
             # EXCEPTION: official OpenAI hosts (canonical api.openai.com and
             # the data-residency regional hosts).  Their /v1/models listing is

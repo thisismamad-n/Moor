@@ -286,7 +286,7 @@ Papers can be withdrawn after submission. When this happens:
 name: arxiv
 description: "Search arXiv papers by keyword, author, category, or ID."
 version: 1.0.0
-author: Hermes Agent
+author: Moor Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

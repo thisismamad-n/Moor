@@ -130,7 +130,7 @@ def hermes_lsp_bin_dir() -> Path:
         home = os.path.join(os.path.expanduser("~"), ".hermes")
     p = Path(home) / "lsp" / "bin"
 =======
-    """Return the Hermes-owned bin staging dir for LSP servers."""
+    """Return the Moor-owned bin staging dir for LSP servers."""
     from hermes_constants import get_hermes_home
 
     p = get_hermes_home() / "lsp" / "bin"
@@ -259,7 +259,7 @@ def _install_npm(
     needs ``typescript`` next to it; intelephense ships standalone).
     """
     # Managed npm first: $HERMES_HOME/node is not on an arbitrary process's
-    # PATH, so a bare which() misses the Node that Hermes installed and
+    # PATH, so a bare which() misses the Node that Moor installed and
     # reports "npm not on PATH" on a machine that has a perfectly good one.
     npm = find_node_executable("npm")
     if npm is None:

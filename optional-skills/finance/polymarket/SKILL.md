@@ -81,7 +81,7 @@ Generous — unlikely to hit for normal usage:
 name: polymarket
 description: "Query Polymarket: markets, prices, orderbooks, history."
 version: 1.0.0
-author: Hermes Agent + Teknium
+author: Moor Agent + Teknium
 license: MIT
 tags: [polymarket, prediction-markets, market-data, trading]
 platforms: [linux, macos, windows]

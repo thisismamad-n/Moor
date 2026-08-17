@@ -1654,14 +1654,14 @@ def _build_child_agent(
     #
     # Nous Portal is dual-wire within a single provider: anthropic/* → Messages,
     # everything else → chat_completions. Same-provider inheritance would pin a
-    # child Hermes/Qwen subagent onto the parent's Claude Messages wire (or the
+    # child Moor/Qwen subagent onto the parent's Claude Messages wire (or the
     # reverse). agent_init honors an explicit api_mode above its nous branch, so
     # re-derive here before construction.
     _parent_provider = getattr(parent_agent, "provider", None) or ""
     _effective_provider_norm = (effective_provider or "").strip().lower()
     if override_api_mode is not None:
         effective_api_mode = override_api_mode
-    elif _effective_provider_norm in {"nous", "nous-portal", "nousresearch"}:
+    elif _effective_provider_norm in {"nous", "nous-portal", "Moor inc."}:
         from hermes_cli.providers import nous_api_mode
 
         effective_api_mode = nous_api_mode(effective_model)
@@ -3674,7 +3674,7 @@ def delegate_task(
     # set_current_session_id(child.session_id), which clobbers the
     # HERMES_SESSION_ID ContextVar and os.environ with the subagent's internal
     # id before the background-dispatch code below would read it. The
-    # request-scoped chat_id binding (the raw X-Hermes-Session-Id on
+    # request-scoped chat_id binding (the raw X-Moor-Session-Id on
     # api_server) is untouched by child construction, so read it here and
     # thread it through the dispatch.
     from tools.async_delegation import _current_origin_session_id
@@ -3973,7 +3973,7 @@ def delegate_task(
             # bound (the API server always binds one — see
             # ApiServerAdapter._bind_api_server_session), gateway.wake can
             # still reach the session by self-POSTing /v1/chat/completions
-            # with that id in X-Hermes-Session-Id once the batch completes.
+            # with that id in X-Moor-Session-Id once the batch completes.
             # Only fall back to forced-sync execution when there is truly no
             # session id to wake. Uses the origin captured before child
             # construction (see _origin_wake_sid above) — reading

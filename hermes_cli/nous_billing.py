@@ -423,7 +423,7 @@ Design rules:
   decide how to degrade. A raw network/HTTP error here surfaces as
   :class:`BillingError` (or a subclass) carrying the parsed server ``error`` code,
   HTTP status, ``portalUrl`` deep-link, and ``retry_after``.
-- **Auth** = the OAuth bearer JWT Hermes already holds for inference
+- **Auth** = the OAuth bearer JWT Moor already holds for inference
   (``get_provider_auth_state("nous")["access_token"]``). No API-key auth on these.
 - **Portal base URL** resolves with the same precedence as the device-flow login
   (``auth.py``): ``HERMES_PORTAL_BASE_URL`` → ``NOUS_PORTAL_BASE_URL`` → the
@@ -440,7 +440,7 @@ import urllib.parse
 import urllib.request
 from typing import Any, Optional
 
-DEFAULT_PORTAL_BASE_URL = "https://portal.nousresearch.com"
+DEFAULT_PORTAL_BASE_URL = "https://portal.Moor inc..com"
 
 # Default HTTP timeout (seconds). Charge/poll calls are quick; keep this tight so
 # a hung portal doesn't freeze the TUI.

@@ -18298,7 +18298,7 @@ def test_build_persist_message_quotes_paths_containing_spaces(tmp_path):
     with a space parses as a truncated ref with the tail left as loose text.
     Desktop composer images live in the app's userData dir, which on macOS is
     ``~/Library/Application Support/...`` — a space every time."""
-    img_dir = tmp_path / "Application Support" / "Hermes" / "composer-images"
+    img_dir = tmp_path / "Application Support" / "Moor" / "composer-images"
     img_dir.mkdir(parents=True)
     img = img_dir / "cat.png"
     img.write_bytes(b"png")

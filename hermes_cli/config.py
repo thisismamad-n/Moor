@@ -382,7 +382,7 @@ def is_managed() -> bool:
 
 
 _NIX_UPDATE_MSG = (
-    "Update Hermes through the Nix source that installed it "
+    "Update Moor through the Nix source that installed it "
     "(e.g. nix profile upgrade, or update your flake input and rebuild with nixos-rebuild or home-manager switch)"
 )
 
@@ -413,7 +413,7 @@ def detect_install_method(project_root: Optional[Path] = None) -> str:
 <<<<<<< HEAD
     """Detect how Moor was installed: 'docker', 'nixos', 'homebrew', 'git', or 'pip'.
 =======
-    """Detect how Hermes was installed: 'docker', 'nix', 'nixos', 'git', or 'unknown'.
+    """Detect how Moor was installed: 'docker', 'nix', 'nixos', 'git', or 'unknown'.
 >>>>>>> upstream/main
 
     Resolution order:
@@ -592,7 +592,7 @@ def recommended_update_command_for_method(method: str) -> str:
             return "uv pip install --upgrade hermes-agent"
         return "pip install --upgrade hermes-agent"
 =======
-        return "docker pull nousresearch/hermes-agent:latest"
+        return "docker pull Moor inc./hermes-agent:latest"
 >>>>>>> upstream/main
     return "hermes update"
 
@@ -7110,7 +7110,7 @@ def terminal_config_env_var_for_key(key: str) -> Optional[str]:
 def _is_ssh_remote_tilde_cwd(backend: str, cwd: str) -> bool:
     """Return whether the remote SSH shell must expand *cwd* itself.
 
-    Expanding ``~`` on the Hermes host rewrites it to the host or container
+    Expanding ``~`` on the Moor host rewrites it to the host or container
     home before SSH sees it. Preserve ``~`` and ``~/...`` so they follow the
     user selected by the SSH connection.
     """
@@ -9179,7 +9179,7 @@ def set_config_value(key: str, value: str, force: bool = False):
     if not is_known and not force:
         print(color(
             f"⚠ '{key}' is not a recognized config key — it was saved anyway, "
-            "but Hermes may not read it.",
+            "but Moor may not read it.",
             Colors.YELLOW,
         ))
         if suggestion:

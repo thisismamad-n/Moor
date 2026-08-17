@@ -84,7 +84,7 @@ Moor 按会话键跟踪正在运行的 agent。
 
 ### Discord Gateway WebSocket 健康
 
-Discord REST 与 Gateway WebSocket 是独立传输。REST 请求成功不代表机器人仍能接收 Gateway 事件。Hermes 会组合检查 ready 状态、client/socket 关闭状态、socket 是否打开、heartbeat ACK 年龄和有限 heartbeat latency。
+Discord REST 与 Gateway WebSocket 是独立传输。REST 请求成功不代表机器人仍能接收 Gateway 事件。Moor 会组合检查 ready 状态、client/socket 关闭状态、socket 是否打开、heartbeat ACK 年龄和有限 heartbeat latency。
 
 连续异常达到阈值后，适配器只上报一次可重试失败；现有 Gateway 重连器创建新适配器，不会启动第二个无限重连循环。
 
@@ -511,7 +511,7 @@ discord:
 
 **类型：** 对象 — **默认值：** 禁用
 
-Discord 的 WebSocket 恢复窗口可能在重启或网络中断时过期。在此期间发送的消息不会作为实时网关事件交付。启用后，Hermes 会在 Discord 重连后扫描一组有界的频道与线程历史记录，并将尚未处理的消息交给与实时事件相同的授权、提及、频道、去重和分发流程。
+Discord 的 WebSocket 恢复窗口可能在重启或网络中断时过期。在此期间发送的消息不会作为实时网关事件交付。启用后，Moor 会在 Discord 重连后扫描一组有界的频道与线程历史记录，并将尚未处理的消息交给与实时事件相同的授权、提及、频道、去重和分发流程。
 
 ```yaml
 discord:
@@ -523,7 +523,7 @@ discord:
     max_dispatches: 10
 ```
 
-如果 `channels` 留空，Hermes 会使用 `discord.free_response_channels`。只有当机器人确实需要检查所有可访问的服务器文字频道时才设置为 `"*"`。恢复账本按配置文件存储在 `gateway/discord_message_recovery.db`，避免已成功回复的消息在后续重启时再次执行。
+如果 `channels` 留空，Moor 会使用 `discord.free_response_channels`。只有当机器人确实需要检查所有可访问的服务器文字频道时才设置为 `"*"`。恢复账本按配置文件存储在 `gateway/discord_message_recovery.db`，避免已成功回复的消息在后续重启时再次执行。
 
 #### `group_sessions_per_user`
 

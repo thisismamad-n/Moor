@@ -522,7 +522,7 @@ def _cwd_marker(session_id: str) -> str:
 # HERMES_SESSION_ID leak via the shared snapshot). Stripping them from the
 # snapshot is safe because they are re-injected on every command; a snapshot
 # should only carry the user's own shell state (PATH, functions, exports they
-# set), not Hermes' per-turn session identity.
+# set), not Moor' per-turn session identity.
 #
 # Kept in sync with gateway.session_context._VAR_MAP: every bridged name starts
 # with one of these prefixes (or is HERMES_UI_SESSION_ID). Used by unit tests
@@ -901,17 +901,17 @@ class BaseEnvironment(ABC):
             parts.append(f"unset {present} {value}")
 
         # Harness attribution: every tool subprocess advertises that it runs
-        # under Hermes via the cross-agent ``AI_AGENT`` standard (read by e.g.
-        # huggingface_hub's agent detection) plus the Hermes-specific
+        # under Moor via the cross-agent ``AI_AGENT`` standard (read by e.g.
+        # huggingface_hub's agent detection) plus the Moor-specific
         # ``HERMES_AGENT`` marker.  The value MUST equal our id in the public
         # agent-harness registry (``hermes-agent`` — see huggingface.js
         # ``agent-harnesses.ts``); standard-var matching is exact, so any other
         # value is reported as "unknown".  Setting it here (rather than only in
         # the host process env) is what carries the marker into REMOTE backends
         # (Docker/SSH/Modal/Daytona/Singularity/Vercel), whose exec env is not
-        # inherited from the Hermes process.  ``${VAR:-default}`` semantics:
+        # inherited from the Moor process.  ``${VAR:-default}`` semantics:
         # never clobber an outer harness value that arrived via the inherited
-        # process env (Hermes running inside another agent's terminal).
+        # process env (Moor running inside another agent's terminal).
         parts.append(
             'export AI_AGENT="${AI_AGENT:-hermes-agent}" '
             'HERMES_AGENT="${HERMES_AGENT:-true}"'

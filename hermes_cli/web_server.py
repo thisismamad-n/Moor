@@ -504,7 +504,7 @@ def _resolve_session_token() -> str:
 
 
 _SESSION_TOKEN = _resolve_session_token()
-_SESSION_HEADER_NAME = "X-Hermes-Session-Token"
+_SESSION_HEADER_NAME = "X-Moor-Session-Token"
 _SSH_OWNER_NONCE: Optional[str] = None
 
 
@@ -1674,7 +1674,7 @@ def _normalize_main_model_assignment(provider: str, model: str) -> tuple[str, st
 
     # A named custom provider that didn't resolve above (typo, config
     # mismatch, entry missing from custom_providers/providers) must still
-    # not be treated as a stray vendor prefix -- it isn't a known Hermes
+    # not be treated as a stray vendor prefix -- it isn't a known Moor
     # provider/alias, but it also isn't the analytics-vendor case this
     # fallback exists for. Match only the durable named-custom syntax
     # (bare "custom" bucket, or "custom:<name>" per
@@ -1868,7 +1868,7 @@ def _count_status_active_sessions() -> int:
     This is best-effort status garnish, not a critical path.  Opens read-only
     (via the shared stale-schema heal, same as every other dashboard read
     path) so /api/status never routinely writes to state.db while another
-    Hermes process is using it.
+    Moor process is using it.
 >>>>>>> upstream/main
     """
     from hermes_state import _default_db_path
@@ -4816,7 +4816,7 @@ async def check_hermes_update(force: bool = False):
         current_version: installed Moor version string
 =======
         install_method: 'git' | 'docker' | 'nix' | 'nixos' | 'unknown'
-        current_version: installed Hermes version string
+        current_version: installed Moor version string
 >>>>>>> upstream/main
         behind: commits behind upstream (>=1), 0 if up to date,
                 -1 if behind by an unknown count, or null if the
@@ -8590,36 +8590,36 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
 <<<<<<< HEAD
         "docs_url": "https://hermes-agent.Moor inc..com/docs/user-guide/messaging/teams",
 =======
-        "description": "Connect Hermes to Microsoft Teams chats via the Bot Framework.",
-        "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/teams",
+        "description": "Connect Moor to Microsoft Teams chats via the Bot Framework.",
+        "docs_url": "https://hermes-agent.Moor inc..com/docs/user-guide/messaging/teams",
 >>>>>>> upstream/main
     },
     # Bundled platform plugins: name comes from the plugin registry label;
     # give each a human description (the registry's install_hint is a
     # dependency note, not a description) and a docs link.
     "irc": {
-        "description": "Relay messages between an IRC channel (or DMs) and Hermes.",
-        "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/irc",
+        "description": "Relay messages between an IRC channel (or DMs) and Moor.",
+        "docs_url": "https://hermes-agent.Moor inc..com/docs/user-guide/messaging/irc",
     },
     "line": {
-        "description": "Use Hermes from LINE via the LINE Messaging API webhook.",
-        "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/line",
+        "description": "Use Moor from LINE via the LINE Messaging API webhook.",
+        "docs_url": "https://hermes-agent.Moor inc..com/docs/user-guide/messaging/line",
     },
     "ntfy": {
-        "description": "Chat with Hermes over ntfy push topics (ntfy.sh or self-hosted).",
-        "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/ntfy",
+        "description": "Chat with Moor over ntfy push topics (ntfy.sh or self-hosted).",
+        "docs_url": "https://hermes-agent.Moor inc..com/docs/user-guide/messaging/ntfy",
     },
     "photon": {
-        "description": "Use Hermes through iMessage via Photon's managed Spectrum platform.",
-        "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/photon",
+        "description": "Use Moor through iMessage via Photon's managed Spectrum platform.",
+        "docs_url": "https://hermes-agent.Moor inc..com/docs/user-guide/messaging/photon",
     },
     "raft": {
         "description": "Join a Raft workspace as an external agent.",
-        "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/raft",
+        "docs_url": "https://hermes-agent.Moor inc..com/docs/user-guide/messaging/raft",
     },
     "simplex": {
-        "description": "Talk to Hermes over SimpleX Chat via a local simplex-chat daemon.",
-        "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/simplex",
+        "description": "Talk to Moor over SimpleX Chat via a local simplex-chat daemon.",
+        "docs_url": "https://hermes-agent.Moor inc..com/docs/user-guide/messaging/simplex",
     },
     "yuanbao": {
         "name": "Yuanbao (元宝)",
@@ -8650,17 +8650,17 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     "msgraph_webhook": {
         "name": "Microsoft Graph Webhook",
         "description": "Receive Microsoft Graph change notifications (Teams meetings, Outlook, …).",
-        "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/msgraph-webhook",
+        "docs_url": "https://hermes-agent.Moor inc..com/docs/user-guide/messaging/msgraph-webhook",
         "required_env": (),
     },
     "whatsapp_cloud": {
         "name": "WhatsApp Cloud API",
-        "description": "Use Hermes via Meta's hosted WhatsApp Cloud API (no local bridge).",
-        "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/whatsapp-cloud",
+        "description": "Use Moor via Meta's hosted WhatsApp Cloud API (no local bridge).",
+        "docs_url": "https://hermes-agent.Moor inc..com/docs/user-guide/messaging/whatsapp-cloud",
     },
     "relay": {
         "name": "Relay (experimental)",
-        "description": "Generic relay adapter fronted by the Hermes Relay connector.",
+        "description": "Generic relay adapter fronted by the Moor Relay connector.",
         "docs_url": "",
         "required_env": (),
     },
@@ -10814,7 +10814,7 @@ async def disconnect_oauth_provider(
                     detail=f"{provider['name']} cannot be disconnected automatically. {disconnect_hint}",
                 )
 
-            # Anthropic clears only the Hermes-managed PKCE file and auth-store entry.
+            # Anthropic clears only the Moor-managed PKCE file and auth-store entry.
             # The separate claude-code catalog row is external/read-only and rejected
             # above so we never pretend to remove ~/.claude/* credentials owned by the CLI.
             if provider_id == "anthropic":
@@ -16123,7 +16123,7 @@ def _resolve_chat_argv(
         profile_dir = _resolve_profile_dir(requested)
 
     argv, cwd = _make_tui_argv(PROJECT_ROOT / "ui-tui", tui_dev=False)
-    # Hermes TUI child: build via the single spawn-env factory (profile-home
+    # Moor TUI child: build via the single spawn-env factory (profile-home
     # contract applied; secrets kept — the spawned agent needs provider creds).
     # An explicit profile scope below still overrides HERMES_HOME afterwards.
     from tools.environments.local import build_subprocess_env

@@ -181,7 +181,7 @@ def _has_agent_browser() -> bool:
         if agent_browser_runnable(shutil.which("agent-browser")):
             return True
 
-        # Hermes-managed Node dirs (Windows installer / POSIX $HERMES_HOME/node)
+        # Moor-managed Node dirs (Windows installer / POSIX $HERMES_HOME/node)
         # are prepended to PATH at runtime but usually absent from the *probe*
         # process's PATH. Without this rung a successful install keeps
         # reporting "needs setup" on Windows.

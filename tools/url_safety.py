@@ -15,7 +15,7 @@ metadata hostnames (metadata.google.internal, 169.254.169.254) are
 Limitations:
   - DNS rebinding (TOCTOU): an attacker-controlled DNS server with TTL=0
     can return a public IP for the check, then a private IP for the actual
-    connection. Hermes-owned direct httpx request paths should use
+    connection. Moor-owned direct httpx request paths should use
     ``create_ssrf_safe_client()`` / ``create_ssrf_safe_async_client()`` so the
     same policy is applied immediately before TCP connect and the client
     connects to the validated IP while preserving Host/SNI semantics.

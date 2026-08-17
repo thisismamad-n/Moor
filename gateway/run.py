@@ -4350,7 +4350,7 @@ class TurnRunner:
                 f"- {task['title']} - {labels.get(task['status'], task['status'])}"
                 for task in _visible_tasks()
             ]
-            return "Hermes is working\n" + "\n".join(lines)
+            return "Moor is working\n" + "\n".join(lines)
 
         def _apply_native_event(raw: Any) -> bool:
             nonlocal anonymous_seq
@@ -4427,7 +4427,7 @@ class TurnRunner:
                 result = await adapter.send_native_task_card_progress(
                     chat_id=ctx.source.chat_id,
                     tasks=_visible_tasks(),
-                    title="Hermes is working",
+                    title="Moor is working",
                     reply_to=ctx._progress_reply_to,
                     metadata=ctx._progress_metadata,
                     fallback_text=_fallback_text(),
@@ -5665,7 +5665,7 @@ class TurnRunner:
         # Memory update notifications in chat.  Config: display.memory_notifications
         #   off     — no chat notification (still logged to stdout)
         #   on      — generic "💾 Memory updated" (default)
-        #   verbose — content preview: "💾 Memory ➕ Hermes Repo..."
+        #   verbose — content preview: "💾 Memory ➕ Moor Repo..."
         _mem_notif = ctx.user_config.get("display", {}).get("memory_notifications")
         if isinstance(_mem_notif, bool):
             _mem_notif = "on" if _mem_notif else "off"
@@ -11078,7 +11078,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 *cmd_argv,
             ]
             # The watcher process must itself break away from any job object the
-            # parent CLI lives in (Electron/Tauri-wrapped Hermes Desktop, Windows
+            # parent CLI lives in (Electron/Tauri-wrapped Moor Desktop, Windows
             # Terminal, schtasks shells); otherwise it is reaped when the CLI
             # exits and the gateway never respawns.  windows_detach_popen_kwargs()
             # carries CREATE_BREAKAWAY_FROM_JOB, but a restrictive job object
@@ -11952,7 +11952,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 <<<<<<< HEAD
         logger.info("Starting Moor Gateway...")
 =======
-        logger.info("Starting Hermes Gateway...")
+        logger.info("Starting Moor Gateway...")
         # Enable faulthandler for stack dumps on freezes/crashes (#70344).
         # Falls back to a log file when sys.stderr is None (Windows VBS /
         # pythonw / detached service) — otherwise the gateway would die
@@ -12289,7 +12289,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # Recover sessions that were active when the gateway last exited.
         # Exact durable turn markers cover long-running work; the 120-second
         # recency heuristic remains as an upgrade fallback for turns started by
-        # older Hermes versions that did not write exact markers.
+        # older Moor versions that did not write exact markers.
         #
         # SKIP suspension after a clean (graceful) shutdown — the previous
         # process already drained active agents, so sessions aren't stuck.
@@ -14075,7 +14075,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         if not watchdog.start():
             return False
         self._systemd_watchdog = watchdog
-        watchdog.ready("Hermes Gateway running")
+        watchdog.ready("Moor Gateway running")
         return True
 
     async def _stop_systemd_watchdog(self) -> None:
@@ -15828,13 +15828,13 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         if args.lower() in {"off", "resume", "stop", "disengage"}:
             if estop.disengage():
                 return "▶️ Resumed — new work is accepted again."
-            return "Hermes wasn't paused."
+            return "Moor wasn't paused."
         state = estop.get_state()
         if state is not None and not args:
             reason = state.get("reason")
             suffix = f" (reason: {reason})" if reason else ""
             return (
-                f"⏸️ Hermes is already paused{suffix}. "
+                f"⏸️ Moor is already paused{suffix}. "
                 "Use `/pause off` to resume."
             )
         estop.engage(reason=args or None)
@@ -24568,7 +24568,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         source = await asyncio.to_thread(self._build_process_event_source, evt)
         if not source:
             # API-server-originated sessions bind a RAW session key (the
-            # X-Hermes-Session-Id value — see _bind_api_server_session), not a
+            # X-Moor-Session-Id value — see _bind_api_server_session), not a
             # structured ``agent:main:...`` key, so _build_process_event_source
             # cannot derive routing metadata from it and returns None above.
             # Recover the raw session id and wake the real session via the API
@@ -24647,7 +24647,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             # its chat_id is the raw session id (see _bind_api_server_session,
             # which binds chat_id = session_id). handle_message would run the
             # wake under a build_session_key()-derived key that never matches
-            # the raw X-Hermes-Session-Id session — self-post instead.
+            # the raw X-Moor-Session-Id session — self-post instead.
             from gateway.wake import deliver_wake
             raw_sid = str(evt.get("origin_session_id") or "").strip() or str(source.chat_id or "")
             try:
@@ -31239,7 +31239,7 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
 def main():
     """CLI entry point for the gateway."""
     # Advertise the agent harness to child processes (AI_AGENT is the
-    # cross-agent standard; HERMES_AGENT the Hermes-specific marker — see
+    # cross-agent standard; HERMES_AGENT the Moor-specific marker — see
     # _advertise_agent_env in hermes_cli/main.py, kept inline here to avoid
     # importing that module's startup side effects). The value must equal our
     # public agent-harness registry id (``hermes-agent``) — standard-var

@@ -2643,7 +2643,7 @@ class AIAgent:
                 for marker in network_resolution_markers
             ):
                 return (
-                    "Hermes can't reach the model provider. You may be offline. "
+                    "Moor can't reach the model provider. You may be offline. "
                     "Check your internet connection and try again."
                 )
             current = current.__cause__ or current.__context__
@@ -3242,7 +3242,7 @@ class AIAgent:
             self._pending_redirect = None
 
         # Codex app-server owns its model/tool loop and watches a private
-        # interrupt event rather than Hermes' per-thread flag.
+        # interrupt event rather than Moor' per-thread flag.
         if getattr(self, "api_mode", None) == "codex_app_server":
             _codex_session = getattr(self, "_codex_session", None)
             _request_interrupt = getattr(_codex_session, "request_interrupt", None)
@@ -3415,7 +3415,7 @@ class AIAgent:
     def redirect(self, text: str) -> bool:
         """Redirect the active turn without converting it into a new task.
 
-        During a normal Hermes model request this cancels only that request;
+        During a normal Moor model request this cancels only that request;
         the conversation loop retains completed messages/tool results, records
         the displayed partial reasoning as plain assistant context, appends the
         correction as a real user message, and retries. During tool execution
@@ -3570,7 +3570,7 @@ class AIAgent:
             if changed is not None:
                 changed.update(landed_paths)
             # Feed the checkpoint agent-write ledger so /rollback's safe mode
-            # can tell Hermes-authored content from later user hand-edits.
+            # can tell Moor-authored content from later user hand-edits.
             mgr = getattr(self, "_checkpoint_mgr", None)
             if mgr is not None and getattr(mgr, "enabled", False):
                 for _p in landed_paths:
@@ -3862,7 +3862,7 @@ class AIAgent:
             if cause == "turn_lease":
                 return (
                     prefix
-                    + "the turn was stopped because another Hermes process "
+                    + "the turn was stopped because another Moor process "
                     "took over this session. Your reply was not saved — wait "
                     "for the other process to finish, then send your message "
                     "again."
@@ -3871,7 +3871,7 @@ class AIAgent:
                 return (
                     prefix
                     + "the turn was stopped because session storage was busy "
-                    "(another Hermes process was writing to the state "
+                    "(another Moor process was writing to the state "
                     "database). Your message should already be saved — "
                     "please send it again in a moment."
                 )
@@ -4509,7 +4509,7 @@ class AIAgent:
 
         # 4. Release the session-owned computer-use backend.  This ends the
         # exact cua-driver session, drops typed-browser refs/grants, and stops
-        # a private embedded daemon when Hermes YOLO selected unrestricted
+        # a private embedded daemon when Moor YOLO selected unrestricted
         # mode.  The import is lazy so sessions without computer_use retain
         # the narrow core footprint.
         try:
@@ -8424,7 +8424,7 @@ class AIAgent:
                     _clear_if_owned()
 
         try:
-            # Serialize the full load -> run -> flush region across Hermes
+            # Serialize the full load -> run -> flush region across Moor
             # processes. Gateway's asyncio lease closes alias routing inside one
             # process; this durable lease covers Desktop, CLI resume, gateway,
             # and background delivery processes sharing state.db (#84234).
@@ -8479,12 +8479,12 @@ class AIAgent:
                     _lease_waited = True
                     if elapsed < 1.0:
                         self._emit_status(
-                            "⏳ Another Hermes process is using this session; "
+                            "⏳ Another Moor process is using this session; "
                             "waiting for it to finish before starting your turn..."
                         )
                     else:
                         self._emit_status(
-                            "⏳ Still waiting for the other Hermes process on "
+                            "⏳ Still waiting for the other Moor process on "
                             f"this session ({int(elapsed)}s)..."
                         )
 
@@ -8503,7 +8503,7 @@ class AIAgent:
                         )
                         relay_outcome = "cancelled"
                         interrupt_msg = (
-                            "Stopped waiting for another Hermes process on "
+                            "Stopped waiting for another Moor process on "
                             "this session. Your message was not processed."
                         )
                         interrupt_result = {
@@ -8533,7 +8533,7 @@ class AIAgent:
                     # enter load/run/flush, and surface a resend notice instead
                     # of a bare TimeoutError that looks like a hang.
                     timeout_msg = (
-                        "⏳ Another Hermes process kept this session busy too "
+                        "⏳ Another Moor process kept this session busy too "
                         "long. Your message was not processed - wait for the "
                         "other process to finish, then send it again."
                     )

@@ -21,7 +21,7 @@ Design summary
 --------------
 
 * The ``iron-proxy`` binary is auto-installed into ``<hermes_home>/bin/iron-proxy``
-  on first use.  Hermes pins one upstream version (``_IRON_PROXY_VERSION``)
+  on first use.  Moor pins one upstream version (``_IRON_PROXY_VERSION``)
   and downloads the matching tar.gz from the official GitHub Releases page,
   verifying the SHA-256 against the release's ``checksums.txt``.
 
@@ -140,7 +140,7 @@ _DEFAULT_ALLOWED_HOSTS: Tuple[str, ...] = (
     "api.groq.com",
     "api.together.xyz",
     "api.deepseek.com",
-    "inference.nousresearch.com",
+    "inference.Moor inc..com",
 )
 
 # Provider env-var name -> upstream host (or list of hosts) on which the
@@ -153,7 +153,7 @@ _BEARER_PROVIDERS: Dict[str, Tuple[str, ...]] = {
     "DEEPSEEK_API_KEY": ("api.deepseek.com",),
     "MISTRAL_API_KEY": ("api.mistral.ai",),
     "XAI_API_KEY": ("api.x.ai",),
-    "NOUS_API_KEY": ("inference.nousresearch.com",),
+    "NOUS_API_KEY": ("inference.Moor inc..com",),
 }
 
 
@@ -165,7 +165,7 @@ _BEARER_PROVIDERS: Dict[str, Tuple[str, ...]] = {
 # not "uncovered".
 #
 # ``aliases`` are interchangeable env-var names for the SAME upstream
-# credential (Hermes' auth.py keys Google on both GEMINI_API_KEY and
+# credential (Moor' auth.py keys Google on both GEMINI_API_KEY and
 # GOOGLE_API_KEY).  Aliased names MUST collapse into a single mapping:
 # every rule carries ``require: true``, and two require-rules on the same
 # host reject each other's requests (each rule whose own token isn't
@@ -1363,7 +1363,7 @@ def write_proxy_config(config: Dict) -> Path:
     """
 
     try:
-        import yaml  # PyYAML is already a Hermes dep
+        import yaml  # PyYAML is already a Moor dep
     except ImportError as exc:
         raise RuntimeError(
             "PyYAML is required to write the iron-proxy config but is not "
@@ -1818,7 +1818,7 @@ def start_proxy(
     # Plant a per-start nonce in the child env so ``_pid_alive`` can
     # confirm a candidate PID still refers to *our* binary across PID
     # recycling.  Module-global is fine — only one managed proxy per
-    # Hermes process.
+    # Moor process.
     _proxy_nonce = hashlib.sha256(os.urandom(16)).hexdigest()
     env[_HERMES_IRON_PROXY_NONCE_ENV] = _proxy_nonce
 
@@ -1826,7 +1826,7 @@ def start_proxy(
     # Keep ownership of the fd tight: open with explicit 0o600 so the
     # log doesn't get world-readable under a slack umask, then close it
     # immediately after Popen (the child has its own dup).  Without the
-    # close-on-success path, every restart leaked one fd in the Hermes
+    # close-on-success path, every restart leaked one fd in the Moor
     # process.
     #
     # O_NOFOLLOW (defence-in-depth, same threat model as the pidfile

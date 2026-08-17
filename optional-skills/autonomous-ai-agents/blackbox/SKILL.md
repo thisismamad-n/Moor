@@ -148,7 +148,7 @@ Control token usage via `.blackboxcli/settings.json`:
 name: blackbox
 description: Delegate coding tasks to the Blackbox AI multi-model CLI.
 version: 1.0.1
-author: Hermes Agent (Nous Research)
+author: Moor Agent (Nous Research)
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
@@ -159,7 +159,7 @@ metadata:
 
 # Blackbox CLI
 
-Delegate coding tasks to [Blackbox AI](https://www.blackbox.ai/) via the Hermes terminal. Blackbox is a multi-model coding agent CLI that dispatches tasks to multiple LLMs (Claude, Codex, Gemini, Blackbox Pro) and uses a judge to select the best implementation.
+Delegate coding tasks to [Blackbox AI](https://www.blackbox.ai/) via the Moor terminal. Blackbox is a multi-model coding agent CLI that dispatches tasks to multiple LLMs (Claude, Codex, Gemini, Blackbox Pro) and uses a judge to select the best implementation.
 
 The CLI (npm `@blackbox_ai/blackbox-cli`, binary `blackbox`) is a TypeScript coding agent (forked from Gemini CLI) and supports interactive sessions, non-interactive one-shots, checkpointing, MCP, and vision model switching.
 

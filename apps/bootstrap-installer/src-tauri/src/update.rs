@@ -142,7 +142,7 @@ struct MarkerOwner {
 /// Self-PID is treated as non-ownership on purpose (#74761): since #50238 the
 /// desktop pre-writes this marker with the spawned updater's pid before the
 /// updater reaches `acquire`. Without the exclusion, `acquire` sees a live
-/// owner that is itself and aborts ("Another Hermes update is already
+/// owner that is itself and aborts ("Another Moor update is already
 /// running"), then the desktop relaunches and retries forever. A foreign live
 /// pid (e.g. a dashboard-spawned `hermes update`) still blocks.
 fn live_marker_owner(path: &Path) -> Option<MarkerOwner> {
@@ -279,7 +279,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
                 format!("{secs}s")
             };
             let msg = format!(
-                "Another Hermes update is already running (PID {}, started {} ago). \
+                "Another Moor update is already running (PID {}, started {} ago). \
                  Wait for it to finish, or close the window or dashboard tab that \
                  started it, then try again.",
                 owner.pid, elapsed
@@ -912,7 +912,7 @@ fn update_child_env(install_root: &Path) -> Vec<(String, OsString)> {
     // `hermes update` child claims that SAME lock (hermes_cli/update_lock.py).
     // Name our pid so the child recognizes the live holder as its own
     // orchestrator and runs under our claim — without this every GUI update
-    // refuses its parent's marker with exit 2 ("Hermes is still running")
+    // refuses its parent's marker with exit 2 ("Moor is still running")
     // and no number of retries can ever succeed. Keep the variable name in
     // sync with HANDOFF_PID_ENV in hermes_cli/update_lock.py.
     envs.push((

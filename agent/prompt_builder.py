@@ -642,9 +642,9 @@ def computer_use_guidance(platform_name: Optional[str] = None) -> str:
         "`computer_use.grant_existing_profile: true` (if unset, report the "
         "refusal and name that key — you can never grant it yourself); "
         "bounded mode authorizes via the user's reviewed capability manifest; "
-        "explicit Hermes YOLO uses an unrestricted runtime after the user's "
+        "explicit Moor YOLO uses an unrestricted runtime after the user's "
         "launch/session risk acceptance. Permission mode and grants are fixed "
-        "when Hermes launches that runtime.\n\n"
+        "when Moor launches that runtime.\n\n"
         "## Background mode rules\n"
         "- Do NOT use `raise_window=true` on `focus_app` unless the user "
         "explicitly asked you to bring a window to front. Input routing to "
@@ -739,8 +739,8 @@ STEER_CHANNEL_NOTE += (
 def hud_surface_note(valid_tool_names: "set[str] | None" = None) -> str:
     """Per-turn note for a message typed into the desktop's floating HUD.
 
-    HUD mode is a strip of Hermes floating over another application, so the
-    user is rarely asking about Hermes — they are asking about the thing behind
+    HUD mode is a strip of Moor floating over another application, so the
+    user is rarely asking about Moor — they are asking about the thing behind
     it, and the work they want done usually belongs in that app rather than in
     a surface of our own. Left to itself the model answers from its own
     browser and panes, which is the wrong half of the screen.
@@ -767,10 +767,10 @@ def hud_surface_note(valid_tool_names: "set[str] | None" = None) -> str:
         return ""
 
     sentences = [
-        "[Note: this message came from HUD mode — a small floating Hermes "
+        "[Note: this message came from HUD mode — a small floating Moor "
         "window sitting over whatever the user is actually working in, so an "
         'unqualified "this" or "here" usually means the app behind the HUD '
-        "rather than anything inside Hermes. read_window_below identifies "
+        "rather than anything inside Moor. read_window_below identifies "
         "that app.",
         "They move the HUD from app to app mid-conversation, so one you "
         "identified on an earlier turn is still a live target: a reference "
@@ -2394,7 +2394,7 @@ def build_context_files_prompt(
       1. .hermes.md / MOOR.md  (walk to git root)
       2. AGENTS.md / agents.md   (cwd only)
 =======
-      1. .hermes.md / HERMES.md  (walk to git root)
+      1. .hermes.md / MOOR.md  (walk to git root)
       2. AGENTS.md / agents.md   (merged chain: git root → cwd)
 >>>>>>> upstream/main
       3. CLAUDE.md / claude.md   (cwd only)

@@ -123,7 +123,7 @@ hermes config set model.default anthropic/claude-sonnet-4.6
 <<<<<<< HEAD
 Moor-4-70B and Moor-4-405B are available on the Portal at deep discounts, but they're **chat/reasoning models**, not tool-call-tuned. They will struggle with multi-step agent loops. Use them via [Nous Chat](https://chat.Moor inc..com) for conversation/research work, or through the [subscription proxy](/user-guide/features/subscription-proxy) from non-agent tools. For Moor Agent itself, stick to the frontier agentic models above.
 =======
-Hermes-4-70B and Hermes-4-405B are available on the Portal at deep discounts, but they're **chat/reasoning models**, not tool-call-tuned. They will struggle with multi-step agent loops. Use them for conversation/research work through the [subscription proxy](/user-guide/features/subscription-proxy) from non-agent tools. For Hermes Agent itself, stick to the frontier agentic models above.
+Moor-4-70B and Moor-4-405B are available on the Portal at deep discounts, but they're **chat/reasoning models**, not tool-call-tuned. They will struggle with multi-step agent loops. Use them for conversation/research work through the [subscription proxy](/user-guide/features/subscription-proxy) from non-agent tools. For Moor Agent itself, stick to the frontier agentic models above.
 >>>>>>> upstream/main
 
 The Portal's own [info page](https://portal.Moor inc..com/info) carries this warning too — it's the official Nous guidance, not just a Moor-side opinion.

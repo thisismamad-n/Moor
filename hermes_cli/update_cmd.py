@@ -1,4 +1,4 @@
-"""Hermes update pipeline — extracted from ``hermes_cli/main.py``.
+"""Moor update pipeline — extracted from ``hermes_cli/main.py``.
 
 Mechanical move (main.py decomposition): ``_cmd_update_impl``, ``_cmd_update_check``
 and every module-level helper used only by the update path, plus the update-only
@@ -150,7 +150,7 @@ def _run_migrate_config_fresh(*, interactive: bool = False, quiet: bool = False)
     return migrate_config(interactive=interactive, quiet=quiet)
 
 
-# Critical files that Hermes must be able to import immediately after an
+# Critical files that Moor must be able to import immediately after an
 # update/install. Most are imported on every CLI startup; ``web_server.py``
 # is the desktop/dashboard backend path that a fresh Windows install launches
 # right away. If any of these fail to parse after a pull, the user can be
@@ -432,7 +432,7 @@ def _print_curator_first_run_notice() -> None:
     print("  Preview now:  hermes curator run --dry-run")
     print("  Pause it:     hermes curator pause")
     print(
-        "  Docs:         https://hermes-agent.nousresearch.com/docs/user-guide/features/curator"
+        "  Docs:         https://hermes-agent.Moor inc..com/docs/user-guide/features/curator"
     )
 
 def _print_fts_optimize_available_notice() -> None:
@@ -875,7 +875,7 @@ def _update_complete_message(pre_version: str | None) -> str:
 
 
 def _update_via_zip(args, *, had_desktop_app_before_update: bool = False):
-    """Update Hermes Agent by downloading a ZIP archive.
+    """Update Moor Agent by downloading a ZIP archive.
 
     Used on Windows when git file I/O is broken (antivirus, NTFS filter
     drivers causing 'Invalid argument' errors on file creation).
@@ -910,7 +910,7 @@ def _update_via_zip(args, *, had_desktop_app_before_update: bool = False):
         )
         _m().sys.exit(1)
     zip_url = (
-        f"https://github.com/NousResearch/hermes-agent/archive/refs/heads/{branch}.zip"
+        f"https://github.com/Moor inc./hermes-agent/archive/refs/heads/{branch}.zip"
     )
 
     print("→ Downloading latest version...")
@@ -1034,7 +1034,7 @@ def _update_via_zip(args, *, had_desktop_app_before_update: bool = False):
         print("  Your existing install was left in place.")
         print(
             "  Re-run `hermes update` to retry; if the agent won't start, "
-            "reinstall from https://hermes-agent.nousresearch.com"
+            "reinstall from https://hermes-agent.Moor inc..com"
         )
         _m().sys.exit(1)
     finally:
@@ -1429,7 +1429,7 @@ def _restore_stashed_changes(
         print(
             "  Restoring them may reapply local customizations onto the updated codebase."
         )
-        print("  Review the result afterward if Hermes behaves unexpectedly.")
+        print("  Review the result afterward if Moor behaves unexpectedly.")
         print("Restore local changes now? [Y/n]")
         if input_fn is not None:
             response = input_fn("Restore local changes now? [Y/n]", "y")
@@ -1513,7 +1513,7 @@ def _restore_stashed_changes(
     stash_selector = _resolve_stash_selector(git_cmd, cwd, stash_ref)
     if stash_selector is None:
         print(
-            "⚠ Local changes were restored, but Hermes couldn't find the stash entry to drop."
+            "⚠ Local changes were restored, but Moor couldn't find the stash entry to drop."
         )
         print(
             "  The stash was left in place. You can remove it manually after checking the result."
@@ -1528,7 +1528,7 @@ def _restore_stashed_changes(
         )
         if drop.returncode != 0:
             print(
-                "⚠ Local changes were restored, but Hermes couldn't drop the saved stash entry."
+                "⚠ Local changes were restored, but Moor couldn't drop the saved stash entry."
             )
             if drop.stdout.strip():
                 print(drop.stdout.strip())
@@ -1540,7 +1540,7 @@ def _restore_stashed_changes(
             _print_stash_cleanup_guidance(stash_ref, stash_selector)
 
     print("⚠ Local changes were restored on top of the updated codebase.")
-    print("  Review `git diff` / `git status` if Hermes behaves unexpectedly.")
+    print("  Review `git diff` / `git status` if Moor behaves unexpectedly.")
     return True
 
 def _discard_stashed_changes(
@@ -1566,7 +1566,7 @@ def _discard_stashed_changes(
     if stash_selector is None:
         print(
             "⚠ Configured to discard local changes on non-interactive update, "
-            "but Hermes couldn't find the stash entry to drop."
+            "but Moor couldn't find the stash entry to drop."
         )
         _print_stash_cleanup_guidance(stash_ref)
         return False
@@ -1579,7 +1579,7 @@ def _discard_stashed_changes(
     )
     if drop.returncode != 0:
         print(
-            "⚠ Configured to discard local changes, but Hermes couldn't drop "
+            "⚠ Configured to discard local changes, but Moor couldn't drop "
             "the saved stash entry."
         )
         if drop.stderr.strip():
@@ -1591,13 +1591,13 @@ def _discard_stashed_changes(
     return True
 
 OFFICIAL_REPO_URLS = {
-    "https://github.com/NousResearch/hermes-agent.git",
-    "git@github.com:NousResearch/hermes-agent.git",
-    "https://github.com/NousResearch/hermes-agent",
-    "git@github.com:NousResearch/hermes-agent",
+    "https://github.com/Moor inc./hermes-agent.git",
+    "git@github.com:Moor inc./hermes-agent.git",
+    "https://github.com/Moor inc./hermes-agent",
+    "git@github.com:Moor inc./hermes-agent",
 }
 
-OFFICIAL_REPO_URL = "https://github.com/NousResearch/hermes-agent.git"
+OFFICIAL_REPO_URL = "https://github.com/Moor inc./hermes-agent.git"
 
 SKIP_UPSTREAM_PROMPT_FILE = ".skip_upstream_prompt"
 
@@ -1722,8 +1722,8 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
 
         # Ask user if they want to add upstream
         print()
-        print("ℹ Your fork is not tracking the official Hermes repository.")
-        print("  This means you may miss updates from NousResearch/hermes-agent.")
+        print("ℹ Your fork is not tracking the official Moor repository.")
+        print("  This means you may miss updates from Moor inc./hermes-agent.")
         print()
         try:
             response = (
@@ -1737,7 +1737,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
             print("→ Adding upstream remote...")
             if _add_upstream_remote(git_cmd, cwd):
                 print(
-                    "  ✓ Added upstream: https://github.com/NousResearch/hermes-agent.git"
+                    "  ✓ Added upstream: https://github.com/Moor inc./hermes-agent.git"
                 )
                 has_upstream = True
             else:
@@ -1745,7 +1745,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
                 return
         else:
             print(
-                "  Skipped. Run 'git remote add upstream https://github.com/NousResearch/hermes-agent.git' to add later."
+                "  Skipped. Run 'git remote add upstream https://github.com/Moor inc./hermes-agent.git' to add later."
             )
             _mark_skip_upstream_prompt()
             return
@@ -1878,7 +1878,7 @@ def _format_concurrent_instances_message(
     lines.append(f"  Updating now would fail to overwrite {shim} because")
     lines.append("  Windows blocks REPLACE on a running executable.")
     lines.append("")
-    lines.append("  Close Hermes Desktop, exit any open `hermes` REPLs, and")
+    lines.append("  Close Moor Desktop, exit any open `hermes` REPLs, and")
     lines.append("  stop the gateway (`hermes gateway stop`) before retrying.")
     lines.append("")
     if matches:
@@ -1929,7 +1929,7 @@ def _capture_active_tool_dependencies() -> list[str]:
 
         return tools_config.active_restorable_python_tool_dependencies()
     except Exception as exc:
-        logger.debug("Could not snapshot active Hermes Tools dependencies: %s", exc)
+        logger.debug("Could not snapshot active Moor Tools dependencies: %s", exc)
         return []
 
 
@@ -1952,7 +1952,7 @@ def _restore_active_tool_dependencies(
     try:
         from hermes_cli import tools_config
     except Exception as exc:
-        logger.debug("Hermes Tools dependency restore skipped (import failed): %s", exc)
+        logger.debug("Moor Tools dependency restore skipped (import failed): %s", exc)
         return
 
     target_python = _m()._resolve_install_target_python(install_cmd_prefix, env)
@@ -1988,7 +1988,7 @@ def _restore_active_tool_dependencies(
         return
 
     print()
-    print(f"→ Restoring {len(missing)} Hermes Tools dependency set(s)...")
+    print(f"→ Restoring {len(missing)} Moor Tools dependency set(s)...")
     restored: list[str] = []
     failed: list[tuple[str, str]] = []
     for name, install_args in missing:
@@ -2128,7 +2128,7 @@ def _refresh_active_memory_provider_dependencies() -> None:
 
     Memory-provider bridge packages are declared in each provider's
     ``plugin.yaml`` (plus mode-dependent extras like Hindsight's
-    ``hindsight-all``), NOT in Hermes' editable-install extras or
+    ``hindsight-all``), NOT in Moor' editable-install extras or
     ``LAZY_DEPS`` alone — so the core dependency reinstall above can strip
     or downgrade them (#53272 mem0ai, #70636 hindsight-embed). Re-run the
     provider's declared install for the ACTIVE provider only, after the
@@ -2398,8 +2398,8 @@ def _update_node_dependencies() -> list[str]:
     from hermes_constants import get_default_hermes_root
 
     # This cache describes PROJECT_ROOT/node_modules, which is shared by every
-    # Hermes profile using this checkout. Keep one per-checkout cache under the
-    # shared Hermes root rather than rerunning npm once per named profile.
+    # Moor profile using this checkout. Keep one per-checkout cache under the
+    # shared Moor root rather than rerunning npm once per named profile.
     shared_hermes_root = get_default_hermes_root()
 
     # Best-effort: warm npx's cache for agent-browser (#43564). Runs before
@@ -2767,7 +2767,7 @@ def _ensure_fhs_path_guard() -> None:
 
     path_line = 'export PATH="/usr/local/bin:$PATH"'
     path_comment = (
-        "# Hermes Agent — ensure /usr/local/bin is on PATH " "(RHEL non-login shells)"
+        "# Moor Agent — ensure /usr/local/bin is on PATH " "(RHEL non-login shells)"
     )
     wrote_any = False
     for candidate in (".bashrc", ".bash_profile"):
@@ -2807,7 +2807,7 @@ def _ensure_acp_launcher() -> None:
     (Zed, JetBrains, Buzz Desktop) spawn the agent by resolving the
     ``hermes-acp`` command name against the login-shell PATH; the console
     script of that name lives inside the install's venv, which is not on that
-    PATH, so those hosts report Hermes as not installed even when it is.
+    PATH, so those hosts report Moor as not installed even when it is.
 
     The shim simply delegates to the sibling ``hermes`` launcher with the
     ``acp`` subcommand, which makes it correct for every install layout
@@ -2837,7 +2837,7 @@ def _ensure_acp_launcher() -> None:
                 continue
             shim = (
                 "#!/usr/bin/env bash\n"
-                "# Hermes Agent — ACP launcher (written by `hermes update`).\n"
+                "# Moor Agent — ACP launcher (written by `hermes update`).\n"
                 "# ACP hosts (Zed, JetBrains, Buzz) resolve the agent by this\n"
                 "# command name on the login-shell PATH.\n"
                 f'exec "{hermes_cmd}" acp "$@"\n'
@@ -3448,13 +3448,13 @@ def _defer_update_for_self_lock(loaded: list[str]) -> None:
 def _format_venv_python_holders_message(matches: list[tuple[int, str, str]]) -> str:
     """Explain which venv processes block the update and how to clear them."""
     lines = [
-        "✗ Other Hermes processes are running from this install's venv:",
+        "✗ Other Moor processes are running from this install's venv:",
     ]
     for pid, name, cmdline in matches[:6]:
         hint = ""
         low = cmdline.lower()
         if "serve" in low or "dashboard" in low:
-            hint = "  ← Hermes Desktop backend (close the desktop app)"
+            hint = "  ← Moor Desktop backend (close the desktop app)"
         elif "gateway" in low:
             hint = "  ← gateway"
         lines.append(f"  PID {pid}  {name}  {cmdline[:120]}{hint}")
@@ -3468,7 +3468,7 @@ def _format_venv_python_holders_message(matches: list[tuple[int, str, str]]) -> 
         "  dependency update would fail partway and leave a broken install."
     )
     lines.append(
-        "  Close the Hermes desktop app / other Hermes terminals, then re-run:"
+        "  Close the Moor desktop app / other Moor terminals, then re-run:"
     )
     lines.append("    hermes update")
     lines.append("  (or use `hermes update --force-venv` to proceed anyway at your own risk)")
@@ -3601,12 +3601,12 @@ def _orphaned_desktop_backend_pids(
     ``serve`` backend still holding the venv at that point is a straggler
     whose supervisor is gone: SIGTERM raced its spawn, or it belongs to a
     crashed window. Nothing will respawn it, and refusing on it dead-ends
-    the update with "Hermes is still running" while the user stares at zero
+    the update with "Moor is still running" while the user stares at zero
     open windows (ryanc's 2026-08-09 01:59/02:17 failures).
 
     A holder qualifies only when BOTH hold:
 
-    - its cmdline is a Hermes backend (``hermes_cli.main`` + ``serve`` /
+    - its cmdline is a Moor backend (``hermes_cli.main`` + ``serve`` /
       ``dashboard``), and
     - its supervising parent is demonstrably gone: the parent PID no longer
       exists, or the PID was reused (parent created *after* the child).
@@ -3799,7 +3799,7 @@ def _pause_windows_gateways_for_update() -> dict | None:
     # update even though the gateway itself is stopped.
     launcher_pids = _m()._venv_launcher_ancestors(mapped_pids)
 
-    print("→ Stopping Windows gateway process(es) before updating Hermes...")
+    print("→ Stopping Windows gateway process(es) before updating Moor...")
     try:
         drain_timeout = max(float(_get_restart_drain_timeout()), 1.0)
     except Exception:
@@ -4410,7 +4410,7 @@ def _rebuild_desktop_after_update(
     # still-settling rebuild window the first wait didn't fully catch — then
     # surface the captured tail so the failure is debuggable.
     #
-    # Start the build subprocess with the Hermes-managed Node on PATH: when
+    # Start the build subprocess with the Moor-managed Node on PATH: when
     # `hermes update` runs inside the desktop updater chain (Desktop →
     # hermes-setup → hermes update), the shell PATH customizations are lost,
     # so a bare-PATH child would fail with `node: not found` before cmd_gui can
@@ -4481,7 +4481,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
             logger.debug("Could not read updates.non_interactive_local_changes: %s", exc)
             discard_local_changes = False
 
-    print("⚕ Updating Hermes Agent...")
+    print("⚕ Updating Moor Agent...")
     print()
 
     # On Windows, abort early if another hermes.exe is holding the venv shim
@@ -4555,7 +4555,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                 # Electron's teardown lost the SIGTERM race, exited, and left
                 # its backend (and any .hermes-runtime child) holding the
                 # venv. Nothing will respawn an orphan, so reap the tree and
-                # re-check instead of dead-ending with "Hermes is still
+                # re-check instead of dead-ending with "Moor is still
                 # running" while no window is open. Backends whose Desktop
                 # is still alive never reach here (_orphaned_desktop_
                 # backend_pids returns None for them) — that path keeps the
@@ -4600,7 +4600,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         else:
             print("✗ Not a git repository. Please reinstall:")
             print(
-                "  curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash"
+                "  curl -fsSL https://hermes-agent.Moor inc..com/install.sh | bash"
             )
             sys.exit(1)
 
@@ -4917,7 +4917,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                     _print_update_completion("✓ Update complete!")
                 else:
                     print(f"⚠ Venv still unhealthy after repair: {detail_after}")
-                    print("  Close all Hermes windows/gateways and re-run: hermes update")
+                    print("  Close all Moor windows/gateways and re-run: hermes update")
             else:
                 _repair_node_deps_on_current_checkout(_print_update_completion)
             if runtime_repaired is not None and not _m()._is_windows():
@@ -4926,7 +4926,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                     "⚠ Restart required to finish the managed Python runtime repair."
                 )
                 print(
-                    "  Any running Hermes gateways, Desktop backends, or other "
+                    "  Any running Moor gateways, Desktop backends, or other "
                     "long-lived processes still use the previous runtime."
                 )
                 print("  Restart each of them to pick up the repaired runtime.")
@@ -5234,7 +5234,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
             print(f"  ⚠ {failing_module} still fails to import after updating:")
             print(f"      {import_error}")
             print("    Run `hermes update` again — if it persists, reinstall:")
-            print("    https://hermes-agent.nousresearch.com")
+            print("    https://hermes-agent.Moor inc..com")
 
         node_failures = _update_node_dependencies()
         _m()._build_web_ui(_m().PROJECT_ROOT / "web")
@@ -5665,7 +5665,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
             logger.debug("FHS PATH guard check failed: %s", e)
 
         # Self-heal the hermes-acp launcher for installs that predate it, so
-        # ACP hosts (Zed, JetBrains, Buzz) can resolve Hermes on PATH without
+        # ACP hosts (Zed, JetBrains, Buzz) can resolve Moor on PATH without
         # a reinstall.  No-op on Windows and when already present.
         try:
             _ensure_acp_launcher()
@@ -6504,7 +6504,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
 
         _m()._resume_windows_gateways_after_update(_windows_gateway_resume)
 
-        # Warn if legacy Hermes gateway unit files are still installed.
+        # Warn if legacy Moor gateway unit files are still installed.
         # When both hermes.service (from a pre-rename install) and the
         # current hermes-gateway.service are enabled, they SIGTERM-fight
         # for the same bot token (see PR #11909). Flagging here means
@@ -6518,7 +6518,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
 
             if supports_systemd_services() and has_legacy_hermes_units():
                 print()
-                print("⚠ Legacy Hermes gateway unit(s) detected:")
+                print("⚠ Legacy Moor gateway unit(s) detected:")
                 for name, path, is_sys in _find_legacy_hermes_units():
                     scope = "system" if is_sys else "user"
                     print(f"    {path}  ({scope} scope)")

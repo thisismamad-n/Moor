@@ -215,7 +215,7 @@ python3 ~/.hermes/skills/blockchain/evm/scripts/evm_client.py ens vitalik.eth
 name: evm
 description: "Read-only EVM client: wallets, tokens, gas across 8 chains."
 version: 1.0.0
-author: Mibayy (@Mibayy), youssefea (@youssefea), ethernet8023 (@ethernet8023), Hermes Agent
+author: Mibayy (@Mibayy), youssefea (@youssefea), ethernet8023 (@ethernet8023), Moor Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

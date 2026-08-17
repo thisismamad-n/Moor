@@ -66,7 +66,7 @@ Config file: `$HERMES_HOME/supermemory.json`
 | `SUPERMEMORY_CONTAINER_TAG` | Override container tag (takes priority over config file) |
 
 Base URL precedence is `supermemory.json` → `SUPERMEMORY_BASE_URL` →
-`https://api.supermemory.ai`. Hermes resolves it once and uses the same endpoint
+`https://api.supermemory.ai`. Moor resolves it once and uses the same endpoint
 for SDK operations, setup/status probes, and full-session conversation ingest.
 
 ## Tools

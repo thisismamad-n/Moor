@@ -60,7 +60,7 @@ def icon_path(project_root: Path) -> Path:
 def resolve_exec_command() -> str:
     """Build the absolute ``Exec=`` command line for ``hermes desktop``.
 
-    Prefer the real ``hermes`` executable (argv[0] or PATH). When Hermes
+    Prefer the real ``hermes`` executable (argv[0] or PATH). When Moor
     runs as a module with no launcher installed, use the current
     interpreter, also absolute.
     """
@@ -90,15 +90,15 @@ def render_desktop_entry(exec_command: str, icon: str) -> str:
     return (
         "[Desktop Entry]\n"
         "Type=Application\n"
-        "Name=Hermes\n"
-        "GenericName=Hermes Desktop\n"
-        "Comment=Launch Hermes Desktop\n"
+        "Name=Moor\n"
+        "GenericName=Moor Desktop\n"
+        "Comment=Launch Moor Desktop\n"
         f"Exec={exec_command}\n"
         f"Icon={icon}\n"
         "Terminal=false\n"
         "Categories=Utility;\n"
         "StartupNotify=true\n"
-        "StartupWMClass=Hermes\n"
+        "StartupWMClass=Moor\n"
     )
 
 
@@ -141,7 +141,7 @@ def _run_quiet(cmd: "list[str]") -> bool:
 
 
 def install_desktop_entry(project_root: Path) -> Optional[Path]:
-    """Write (or refresh) the Hermes desktop entry. Return its path.
+    """Write (or refresh) the Moor desktop entry. Return its path.
 
     Return ``None`` on non-Linux platforms or when the write fails. This
     is a convenience, never a reason to fail a launch.

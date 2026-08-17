@@ -2253,7 +2253,7 @@ class TestConcurrentToolExecution:
         assert outcome.result == "ok"
         assert dispatched == [{"command": "true"}]
         assert duplicate_errors == [
-            "Hermes tool execution callback invoked more than once"
+            "Moor tool execution callback invoked more than once"
         ]
         assert outcome.blocked is False
 
@@ -2315,7 +2315,7 @@ class TestConcurrentToolExecution:
 
         assert outcome.result == "ok"
         assert dispatched == [{"command": "true"}]
-        assert errors == ["Hermes tool execution callback invoked more than once"]
+        assert errors == ["Moor tool execution callback invoked more than once"]
         assert outcome.blocked is False
 
 
@@ -4949,9 +4949,9 @@ class TestNousCredentialRefresh:
         agent.api_mode = "anthropic_messages"
         agent.model = "anthropic/claude-opus-4.8"
         agent.api_key = "stale-nous-key"
-        agent.base_url = "https://inference-api.nousresearch.com/v1"
+        agent.base_url = "https://inference-api.Moor inc..com/v1"
         agent._anthropic_api_key = "stale-nous-key"
-        agent._anthropic_base_url = "https://inference-api.nousresearch.com/v1"
+        agent._anthropic_base_url = "https://inference-api.Moor inc..com/v1"
         agent._client_kwargs = {}
         agent.client = None
 
@@ -4965,7 +4965,7 @@ class TestNousCredentialRefresh:
             captured.update(kwargs)
             return {
                 "api_key": "fresh-portal-jwt",
-                "base_url": "https://inference-api.nousresearch.com/v1",
+                "base_url": "https://inference-api.Moor inc..com/v1",
             }
 
         def _fake_rebuild():
@@ -4987,10 +4987,10 @@ class TestNousCredentialRefresh:
         assert ok is True
         assert captured["force_refresh"] is True
         assert agent.api_key == "fresh-portal-jwt"
-        assert agent.base_url == "https://inference-api.nousresearch.com/v1"
+        assert agent.base_url == "https://inference-api.Moor inc..com/v1"
         assert agent._anthropic_api_key == "fresh-portal-jwt"
         assert agent._anthropic_base_url == (
-            "https://inference-api.nousresearch.com/v1"
+            "https://inference-api.Moor inc..com/v1"
         )
         assert rebuild_calls["count"] == 1
         assert isinstance(agent._anthropic_client, _RebuiltAnthropic)

@@ -2870,7 +2870,7 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
 
 
 # Prefer ~/.hermes/.env over os.environ — the user's config file is the
-# authoritative source for Hermes credentials. Stale env vars from parent
+# authoritative source for Moor credentials. Stale env vars from parent
 # processes (Codex CLI, test scripts, etc.) should not override deliberate
 # changes to the .env file. load_env() memoizes on the .env mtime, so
 # per-call reads (pool seeding, per-turn credential refresh) cost a stat()

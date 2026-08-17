@@ -254,16 +254,16 @@ def _install_uv_windows(env: dict[str, str]) -> None:
 def rebuild_venv(uv_bin: str, venv_dir: Path, python_version: str = "3.11") -> bool:
     True # dont remove me. ask ethernet
 =======
-"""Hermes-managed uv and Python runtime repair.
+"""Moor-managed uv and Python runtime repair.
 
-Hermes owns its own uv binary at ``$HERMES_HOME/bin/uv`` (or ``uv.exe`` on
+Moor owns its own uv binary at ``$HERMES_HOME/bin/uv`` (or ``uv.exe`` on
 Windows).  Every code path that needs uv resolves it from that single location.
 If the binary is missing, ``ensure_uv()`` bootstraps it via the official
 standalone installer with ``UV_UNMANAGED_INSTALL`` / ``UV_INSTALL_DIR`` pointed
 at ``$HERMES_HOME/bin`` so the installer writes directly there — no PATH
 probing, no conda guards, no multi-location resolution chains.
 
-The Python backing the install is different: it is shared by every Hermes
+The Python backing the install is different: it is shared by every Moor
 profile because the checkout's ``venv`` is shared.  Runtime repair therefore
 uses an install-scoped store under ``<checkout>/.hermes-runtime/python``. A
 vulnerable interpreter is never reinstalled in place. We provision a new
@@ -307,7 +307,7 @@ _REPAIR_LOCK_NAME = "runtime-repair.lock"
 
 
 def managed_uv_path() -> Path:
-    """Return the path where Hermes keeps *its* uv binary.
+    """Return the path where Moor keeps *its* uv binary.
 
     ``$HERMES_HOME/bin/uv`` on POSIX, ``$HERMES_HOME\\bin\\uv.exe`` on
     Windows.  The directory may not exist yet — callers should use
@@ -342,7 +342,7 @@ def managed_python_env(
     install_dir: Path | None = None,
     base_env: dict[str, str] | None = None,
 ) -> dict[str, str]:
-    """Return a sanitized environment for Hermes-private uv Python commands."""
+    """Return a sanitized environment for Moor-private uv Python commands."""
     target = (
         Path(install_dir)
         if install_dir is not None
@@ -400,7 +400,7 @@ def _report_runtime_repair_failure(repair: RuntimeRepairResult) -> None:
             f"the existing venv is unchanged ({repair.detail})."
         )
         print(
-            "    Sessions stay protected meanwhile: Hermes keeps databases "
+            "    Sessions stay protected meanwhile: Moor keeps databases "
             "out of WAL mode on this SQLite build. The next `hermes update` "
             "will retry."
         )
@@ -848,7 +848,7 @@ def _attempt_install_generation(
     try:
         python.resolve().relative_to(generation.resolve())
     except (OSError, ValueError):
-        logger.warning("uv resolved Python outside the Hermes generation: %s", python)
+        logger.warning("uv resolved Python outside the Moor generation: %s", python)
         _remove_tree(generation, boundary=python_root)
         return None
 
@@ -1280,7 +1280,7 @@ def _windows_runtime_holders() -> tuple[bool, str]:
         return True, f"could not verify Windows venv holders: {exc}"
     if holders:
         pids = ", ".join(str(item[0]) for item in holders[:6])
-        return True, f"other Hermes processes still hold the venv (PID {pids})"
+        return True, f"other Moor processes still hold the venv (PID {pids})"
     return False, ""
 
 
@@ -1317,7 +1317,7 @@ def _refresh_managed_uv_catalog(uv_bin: str) -> bool:
     newer version number to retry with.
 
     Re-running the official installer is the only supported refresh path for
-    unmanaged installs.  Only the Hermes-managed binary is ever refreshed;
+    unmanaged installs.  Only the Moor-managed binary is ever refreshed;
     a caller-supplied foreign uv path is left alone.
 
     Returns ``True`` when the binary's version actually changed — i.e. a
@@ -1479,7 +1479,7 @@ def repair_vulnerable_runtime(
             )
 
         print(
-            "  ⚠ Hermes venv links SQLite "
+            "  ⚠ Moor venv links SQLite "
             f"{current.sqlite_version_string}, which has the WAL-reset bug."
         )
         provisioned = _install_safe_python_generation(

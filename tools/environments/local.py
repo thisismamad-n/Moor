@@ -350,15 +350,15 @@ _HERMES_PROVIDER_ENV_BLOCKLIST = _build_provider_env_blocklist()
 #
 # PYTHONHOME is included because a gateway-inherited value redirects the
 # standard-library search of ANY child interpreter — including unrelated
-# system/venv Pythons — to the Hermes venv's stdlib, which crashes with
+# system/venv Pythons — to the Moor venv's stdlib, which crashes with
 # version-mismatch errors before a child script even imports a package
-# (#75018). Hermes itself treats PYTHONHOME as contamination in its own
+# (#75018). Moor itself treats PYTHONHOME as contamination in its own
 # child processes (managed_uv.py, sqlite_runtime.py), so stripping it from
 # subprocess envs is consistent. Users who need PYTHONHOME for a specific
 # child can set it explicitly in the command.
 #
 # PYTHONPATH is NOT included here — it's handled by
-# _strip_hermes_owned_pythonpath() which removes only Hermes-owned entries,
+# _strip_hermes_owned_pythonpath() which removes only Moor-owned entries,
 # preserving user-set paths.
 _ACTIVE_VENV_MARKER_VARS = ("VIRTUAL_ENV", "CONDA_PREFIX", "PYTHONHOME")
 
@@ -519,7 +519,7 @@ def _sanitize_subprocess_env(base_env: dict | None, extra_env: dict | None = Non
 
     # Filter PYTHONPATH before removing VIRTUAL_ENV: legacy Windows launchers
     # can run the gateway under a base interpreter while VIRTUAL_ENV identifies
-    # the separate Hermes runtime venv.  The filter validates that relationship
+    # the separate Moor runtime venv.  The filter validates that relationship
     # against the repo layout before trusting it.
     _strip_hermes_owned_pythonpath_and_runtime_markers(sanitized)
 
@@ -684,7 +684,7 @@ def build_subprocess_env(
     function (or :func:`hermes_subprocess_env` for the model-driving-CLI
     surface) instead of copying ``os.environ`` directly, so profile-home
     propagation (``HERMES_HOME`` / subprocess ``HOME`` contract) and the
-    Hermes secret-scrub policy have a single owner.  History: ~11 separate
+    Moor secret-scrub policy have a single owner.  History: ~11 separate
     commits each fixed one more spawn site that missed profile-HOME or
     secret-scrub propagation; this factory is the fix for the class.
 
@@ -706,7 +706,7 @@ def build_subprocess_env(
       scrubbing could change behavior.  The site is still a win: it becomes
       grep-able and future-fixable.
     * ``inherit_profile_home`` — on the non-scrub path, when True, bridge the
-      context-local Hermes home override into ``HERMES_HOME`` and apply the
+      context-local Moor home override into ``HERMES_HOME`` and apply the
       subprocess HOME contract (``hermes_constants.apply_subprocess_home_env``).
       Pass False to keep the inherited env untouched (exact legacy
       ``os.environ.copy()`` behavior).
@@ -1156,11 +1156,11 @@ def _prepend_hermes_bin_dir(existing_path: str) -> str:
 
 
 def _managed_runtime_path_entries() -> list[str]:
-    """Return existing Hermes-managed runtime dirs for the terminal subshell PATH.
+    """Return existing Moor-managed runtime dirs for the terminal subshell PATH.
 
     The terminal tool spawns a subshell whose PATH is the agent process's PATH
-    plus ``_SANE_PATH``. Neither carries the runtimes Hermes installs for
-    itself, so on a machine where Hermes provisioned its own toolchain a
+    plus ``_SANE_PATH``. Neither carries the runtimes Moor installs for
+    itself, so on a machine where Moor provisioned its own toolchain a
     command the agent runs resolves a system copy instead — or nothing at all:
 
     - ``$HERMES_HOME/node`` (+ ``/bin``) — installed to satisfy the desktop and
@@ -1200,7 +1200,7 @@ def _append_missing_sane_path_entries(existing_path: str) -> str:
     - **Duplicates are collapsed** (first occurrence wins), so a caller PATH
       that already contains repeats is not propagated verbatim.
 
-    Hermes-managed runtime dirs are appended alongside the sane entries, not
+    Moor-managed runtime dirs are appended alongside the sane entries, not
     prepended: a tool the user deliberately put on their own PATH still wins,
     and the managed one only fills the gap where there would otherwise be
     nothing.
@@ -1354,12 +1354,12 @@ def _build_hermes_repo_root_aliases(
     lexical_root: Path,
     configured_home: Path,
 ) -> tuple[Path, ...]:
-    """Return exact repo-root spellings emitted by Hermes launchers.
+    """Return exact repo-root spellings emitted by Moor launchers.
 
     ``gateway_windows._preserve_hermes_home_path`` maps a physical path under
     the resolved HERMES_HOME back onto the configured HERMES_HOME spelling.
     Mirror that producer contract here so a junction-backed install is matched
-    without treating arbitrary descendants of HERMES_HOME as Hermes-owned.
+    without treating arbitrary descendants of HERMES_HOME as Moor-owned.
     Additionally, when the repo itself is a junction under the configured root
     (repo-level junction, possibly cross-drive), the single deterministic
     candidate <root>/<repo dirname> is accepted only when strict resolve
@@ -1404,7 +1404,7 @@ def _build_hermes_repo_root_aliases(
     # cannot express a cross-drive link (commonpath raises on different
     # drives), so prove the EXACT filesystem identity of the single
     # deterministic candidate -- <lexical root>/<repo dirname> -- with a
-    # strict resolve before accepting it as Hermes-owned.  Fail-closed: a
+    # strict resolve before accepting it as Moor-owned.  Fail-closed: a
     # missing path (strict resolve raises), a real directory that is not the
     # known physical root, or any unrelated spelling never becomes an alias.
     for home in home_candidates:
@@ -1418,19 +1418,19 @@ def _build_hermes_repo_root_aliases(
     return tuple(aliases)
 
 
-# --- Hermes venv / repo-root detection (module-level, computed once) ---
+# --- Moor venv / repo-root detection (module-level, computed once) ---
 
-#: The Hermes repository root - three levels up from this file
+#: The Moor repository root - three levels up from this file
 #: (``tools/environments/local.py`` -> ``tools/environments`` -> ``tools``
 #: -> repo root).  This is the directory the Electron app prepends to
 #: PYTHONPATH so the backend can do ``import tools``, ``import hermes_cli``,
-#: etc.  Subprocesses that are NOT the Hermes backend don't need it and it
+#: etc.  Subprocesses that are NOT the Moor backend don't need it and it
 #: can shadow local packages.
 _hermes_repo_root: Path = Path(__file__).resolve().parents[2]
 
-#: Alternate spellings of the repo root that Hermes launchers may emit.
+#: Alternate spellings of the repo root that Moor launchers may emit.
 #: ``Path(__file__).resolve()`` canonicalizes symlinks/junctions, but the
-#: Windows gateway launcher deliberately renders Hermes-owned paths under
+#: Windows gateway launcher deliberately renders Moor-owned paths under
 #: the configured HERMES_HOME spelling (which may be a junction to another
 #: drive — see ``hermes_cli/gateway_windows.py::_preserve_hermes_home_path``).
 #: ``Path(__file__)`` (unresolved) keeps that spelling, so a PYTHONPATH
@@ -1462,7 +1462,7 @@ def _validated_runtime_venv(env: dict) -> Path | None:
 
     A user may carry an unrelated VIRTUAL_ENV, so the variable alone is not
     provenance.  The legacy Windows base-Python gateway producer uses the exact
-    ``<Hermes repo>/venv`` layout and a real venv marker; require both before
+    ``<Moor repo>/venv`` layout and a real venv marker; require both before
     accepting its separate runtime venv.
     """
     value = env.get("VIRTUAL_ENV")
@@ -1483,7 +1483,7 @@ def _validated_runtime_venv(env: dict) -> Path | None:
 
 
 def _get_hermes_site_packages(env: dict) -> list[Path]:
-    """Return exact site-packages dirs owned by the Hermes runtime.
+    """Return exact site-packages dirs owned by the Moor runtime.
 
     Uses ``site.getsitepackages()`` when available for robustness (it respects
     ``.pth`` rewrites and platform conventions), with a manual fallback that
@@ -1527,7 +1527,7 @@ def _get_hermes_site_packages(env: dict) -> list[Path]:
 
 
 def _strip_hermes_owned_pythonpath_and_runtime_markers(env: dict) -> None:
-    """Strip Hermes-owned PYTHONPATH entries, then the runtime marker vars.
+    """Strip Moor-owned PYTHONPATH entries, then the runtime marker vars.
 
     Ordering is load-bearing: PYTHONPATH filtering must run BEFORE the
     markers are removed so a validated Windows base-interpreter launch
@@ -1539,14 +1539,14 @@ def _strip_hermes_owned_pythonpath_and_runtime_markers(env: dict) -> None:
 
 
 def _strip_hermes_owned_pythonpath(env: dict) -> None:
-    """Remove Hermes-owned PYTHONPATH entries from subprocess environments.
+    """Remove Moor-owned PYTHONPATH entries from subprocess environments.
 
-    Launchers prepend the Hermes repo root and the Hermes venv's
+    Launchers prepend the Moor repo root and the Moor venv's
     site-packages so the backend can ``import tools``; leaking those into a
     child Python of a DIFFERENT version makes it load the backend's C
     extensions and crash (``numpy._core._multiarray_umath``, ``PIL._imaging``,
     ``cryptography``).  Blanket-removing PYTHONPATH would discard legitimate
-    user entries, so only entries proven Hermes-owned are removed:
+    user entries, so only entries proven Moor-owned are removed:
 
     1. The exact repo root (never direct children -- no launcher injects
        one, and user paths under the repo must survive).
@@ -1571,7 +1571,7 @@ def _strip_hermes_owned_pythonpath(env: dict) -> None:
     for entry in pp.split(os.pathsep):
         # Empty and non-normalized components are user-owned semantics.  In
         # particular, an empty component means the current working directory.
-        # Preserve raw spelling unless the exact component is Hermes-owned.
+        # Preserve raw spelling unless the exact component is Moor-owned.
         if entry == "":
             kept.append(entry)
             continue
@@ -1579,7 +1579,7 @@ def _strip_hermes_owned_pythonpath(env: dict) -> None:
         entry_path = Path(entry)
         should_strip = False
 
-        # --- Check 1: Hermes venv site-packages ---
+        # --- Check 1: Moor venv site-packages ---
         # Producers inject the exact directory, never a descendant.  Exact
         # matching avoids deleting a user path nested below site-packages.
         for sp in hermes_site_packages:
@@ -1590,7 +1590,7 @@ def _strip_hermes_owned_pythonpath(env: dict) -> None:
             stripped.append(entry)
             continue
 
-        # --- Check 2: Hermes repo root ---
+        # --- Check 2: Moor repo root ---
         # The Electron app prepends the repo root so ``import tools`` works
         # in the backend.  Subprocesses don't need it and it can shadow
         # local packages of the same name.  Only the EXACT root is stripped:
@@ -1598,7 +1598,7 @@ def _strip_hermes_owned_pythonpath(env: dict) -> None:
         # independent PYTHONPATH entry, and user paths that merely happen to
         # live under the repo directory must be preserved.  Both the
         # resolved and unresolved (HERMES_HOME/junction) spellings count as
-        # Hermes-owned.
+        # Moor-owned.
         if not should_strip:
             should_strip = any(
                 _same_path(entry_path, repo_root)
@@ -1617,7 +1617,7 @@ def _strip_hermes_owned_pythonpath(env: dict) -> None:
 
     if stripped:
         logger.debug(
-            "Stripped Hermes-owned entries from PYTHONPATH: %s",
+            "Stripped Moor-owned entries from PYTHONPATH: %s",
             stripped,
         )
 

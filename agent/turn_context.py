@@ -1286,7 +1286,7 @@ def build_turn_context(
             pass
         # Deterministic, model-independent recall indicator: when memory was
         # actually injected this turn, tell the user — don't rely on the model
-        # to surface it. Rendered by Hermes (via _emit_status), so it always
+        # to surface it. Rendered by Moor (via _emit_status), so it always
         # shows and can't be silently dropped by the model.
         if ext_prefetch_cache:
             try:

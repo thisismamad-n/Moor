@@ -1887,7 +1887,7 @@ def switch_model(
     # /chat/completions. resolve_runtime_provider already sets this when it
     # succeeds; always re-derive from the *final* (post-normalize) model so
     # alias clears / empty fallbacks cannot leave Claude on the OpenAI wire.
-    if target_provider in {"nous", "nous-portal", "nousresearch"}:
+    if target_provider in {"nous", "nous-portal", "Moor inc."}:
         from hermes_cli.providers import nous_api_mode
 
         api_mode = nous_api_mode(new_model)
@@ -2086,7 +2086,7 @@ def _prefetch_provider_models_parallel(provider_slugs: list[str]) -> None:
     so concurrent writes to ``provider_models_cache.json`` don't clobber each
     other.
 
-    :param provider_slugs: Hermes provider IDs to prefetch (e.g. ``["openrouter",
+    :param provider_slugs: Moor provider IDs to prefetch (e.g. ``["openrouter",
         "anthropic", "deepseek"]``).  Unknown providers are silently skipped.
     """
     from hermes_cli.models import cached_provider_model_ids
@@ -2176,7 +2176,7 @@ def _collect_authed_provider_slugs(
     slugs: list[str] = []
     seen: set[str] = set()
 
-    # --- Section 1: Hermes-mapped providers (PROVIDER_TO_MODELS_DEV) ---
+    # --- Section 1: Moor-mapped providers (PROVIDER_TO_MODELS_DEV) ---
     for hermes_id, mdev_id in PROVIDER_TO_MODELS_DEV.items():
         _alias_target = _PROVIDER_ALIAS_TABLE.get(hermes_id)
         if (
@@ -2231,7 +2231,7 @@ def _collect_authed_provider_slugs(
             slugs.append(hermes_id)
             seen.add(hermes_id.lower())
 
-    # --- Section 2: Hermes-only providers (HERMES_OVERLAYS) ---
+    # --- Section 2: Moor-only providers (HERMES_OVERLAYS) ---
     _mdev_to_hermes = {v: k for k, v in PROVIDER_TO_MODELS_DEV.items()}
     for pid, overlay in HERMES_OVERLAYS.items():
         if pid.lower() in seen:
@@ -2541,7 +2541,7 @@ def list_authenticated_providers(
         except Exception:
             pass  # best-effort; serial path still works as fallback
 
-    # --- 1. Check Hermes-mapped providers ---
+    # --- 1. Check Moor-mapped providers ---
 >>>>>>> upstream/main
     from hermes_cli.models import _AGGREGATOR_PROVIDERS as _AGG_PROVIDERS
     from hermes_cli.providers import ALIASES as _PROVIDER_ALIAS_TABLE
@@ -3022,7 +3022,7 @@ def list_authenticated_providers(
                     models_list.append(model_id)
 =======
             # Build models list from both default_model and full models array.
-            # Hermes writes ``models:`` as a dict keyed by model id, but older
+            # Moor writes ``models:`` as a dict keyed by model id, but older
             # or hand-edited configs may use strings or ``[{id: ...}]`` rows —
             # _declared_model_ids() owns that contract.
             entry_models: list = []
@@ -3036,7 +3036,7 @@ def list_authenticated_providers(
             if group_key not in ep_groups:
                 # Strip per-model suffix so "Palantir Claude 4.7 Opus" becomes
                 # "Palantir Claude". Em dash and " - " are the separators
-                # Hermes's own writer uses (mirrors section-4 grouping).
+                # Moor's own writer uses (mirrors section-4 grouping).
                 grp_display = display_name
                 for sep in ("—", " - "):
                     if sep in grp_display:

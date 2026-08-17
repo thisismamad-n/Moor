@@ -1,12 +1,12 @@
 ---
 sidebar_label: "Desktop Plugin SDK"
 title: "Desktop Plugin SDK (@hermes/plugin-sdk)"
-description: "Extend the native Hermes Desktop app — panes, pages, sidebar nav, status bar, palette commands, keybinds, themes, and a scoped backend namespace, with one import and no build step."
+description: "Extend the native Moor Desktop app — panes, pages, sidebar nav, status bar, palette commands, keybinds, themes, and a scoped backend namespace, with one import and no build step."
 ---
 
 # Desktop Plugin SDK
 
-The native [Hermes Desktop](/user-guide/desktop) app is contribution-driven: every
+The native [Moor Desktop](/user-guide/desktop) app is contribution-driven: every
 surface in the window — panes, routes, sidebar nav, status-bar items, palette
 entries, keybinds, themes — registers into one central registry. Core registers
 its surfaces exactly the way a plugin does, so the plugin story is the real one,
@@ -21,13 +21,13 @@ repo clone, no `npm run build`, no patching app source. Drop the file in
 and hot-reloads every save.
 
 :::warning This is not the web-dashboard plugin SDK
-"Plugin" means several unrelated things across Hermes. This page is the **native
+"Plugin" means several unrelated things across Moor. This page is the **native
 desktop app** (`hermes desktop`) SDK — the `@hermes/plugin-sdk` module and
 `$HERMES_HOME/desktop-plugins/`. The **web dashboard** (`hermes dashboard`) has
 its own, unrelated plugin system on `window.__HERMES_PLUGIN_SDK__` with a
 `manifest.json` — documented at
 [Extending the Dashboard](/user-guide/features/extending-the-dashboard). Python
-CLI/gateway plugins are documented at [Build a Hermes Plugin](/developer-guide/plugins).
+CLI/gateway plugins are documented at [Build a Moor Plugin](/developer-guide/plugins).
 The three do not share code, APIs, or delivery. Only the backend `plugin_api.py`
 namespace (`/api/plugins/<id>`) is shared between the desktop and dashboard SDKs.
 :::
@@ -66,7 +66,7 @@ written against the disk door (what you and the agent write);
 [Bundled plugins](#bundled-plugins) notes the two
 differences. No desktop plugins ship in the core tree today — reference demos
 live in the companion
-[`hermes-example-plugins`](https://github.com/NousResearch/hermes-example-plugins)
+[`hermes-example-plugins`](https://github.com/Moor inc./hermes-example-plugins)
 repo.
 
 ## Quick start — your first plugin
@@ -86,7 +86,7 @@ function HelloPane() {
   return jsxs('div', {
     className: 'flex h-full flex-col gap-2 p-3 text-sm',
     children: [
-      jsx('div', { className: 'font-medium', children: 'Hello, Hermes' }),
+      jsx('div', { className: 'font-medium', children: 'Hello, Moor' }),
       jsx('div', {
         className: 'text-(--ui-text-tertiary)',
         children: `gateway: ${gateway}`
@@ -432,7 +432,7 @@ is the registry routing identity;
 pair it with `profile` for keys and persistence. Endpoint, token, SSH host/key, and
 other raw connection fields never cross the plugin IPC boundary. `profile` is the
 source-local route used
-for requests; `targetProfile` is the backend Hermes profile served by that route.
+for requests; `targetProfile` is the backend Moor profile served by that route.
 They differ when a route explicitly maps to another backend profile (for example an
 SSH `remoteProfile` override or a legacy per-profile URL alias). This distinction
 preserves backend identity without exposing connection secrets.
@@ -465,7 +465,7 @@ rejection your `.catch()` sees, never an error-boundary crash.
 `ctx.os` is the curated OS door — every way a plugin reaches outside the app
 window, in one namespace attributed to your plugin. `ctx.os.notify` posts a
 **native OS notification** — the same Electron pipeline the app's own
-approval/turn alerts use. It fires only while the user is away from Hermes
+approval/turn alerts use. It fires only while the user is away from Moor
 (backgrounded / unfocused); use `host.notify` for the in-app toast when
 they're looking at the app. Users can silence it per device under Settings ▸
 Notifications ▸ "Plugin notifications", and repeats from the same plugin are
@@ -576,7 +576,7 @@ standalone door).
 ### The Python side
 
 Desktop plugins reuse the dashboard plugin backend mount. Put the backend in a
-`dashboard/` subfolder of a regular Hermes plugin and declare it in a
+`dashboard/` subfolder of a regular Moor plugin and declare it in a
 `manifest.json`:
 
 ```
@@ -678,7 +678,7 @@ enable/disable contract as a disk plugin. The two differences:
 
 No desktop plugins ship in the core tree today; the shipped app stays uncluttered
 and demos live in the
-[`hermes-example-plugins`](https://github.com/NousResearch/hermes-example-plugins)
+[`hermes-example-plugins`](https://github.com/Moor inc./hermes-example-plugins)
 companion repo.
 
 ## Security model

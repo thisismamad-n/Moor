@@ -544,10 +544,10 @@ Moor Agent works in Telegram group chats with a few considerations:
 - Use `telegram.ignored_threads` to keep Moor silent in specific Telegram forum topics, even when the group would otherwise allow free responses or mention-triggered replies
 - If `telegram.require_mention` is left unset or false, Moor keeps the previous open-group behavior and responds to normal group messages it can see
 =======
-- In groups with multiple Hermes bots, `telegram.exclusive_bot_mentions` keeps routing deterministic. When a message explicitly mentions one or more Telegram bot usernames, only the mentioned bot profiles process it; other Hermes bots ignore it before reply and wake-word fallbacks run. This is enabled by default.
-- Renaming the bot's `@username` in BotFather is picked up automatically — Hermes follows the new handle for mention routing without a gateway restart. Collectible (Fragment) usernames that don't end in `bot` are supported too.
-- Use `telegram.ignored_threads` to keep Hermes silent in specific Telegram forum topics, even when the group would otherwise allow free responses or mention-triggered replies
-- If `telegram.require_mention` is left unset or false, Hermes keeps the previous open-group behavior and responds to normal group messages it can see
+- In groups with multiple Moor bots, `telegram.exclusive_bot_mentions` keeps routing deterministic. When a message explicitly mentions one or more Telegram bot usernames, only the mentioned bot profiles process it; other Moor bots ignore it before reply and wake-word fallbacks run. This is enabled by default.
+- Renaming the bot's `@username` in BotFather is picked up automatically — Moor follows the new handle for mention routing without a gateway restart. Collectible (Fragment) usernames that don't end in `bot` are supported too.
+- Use `telegram.ignored_threads` to keep Moor silent in specific Telegram forum topics, even when the group would otherwise allow free responses or mention-triggered replies
+- If `telegram.require_mention` is left unset or false, Moor keeps the previous open-group behavior and responds to normal group messages it can see
 >>>>>>> upstream/main
 
 ### Multiple Moor bots in one group

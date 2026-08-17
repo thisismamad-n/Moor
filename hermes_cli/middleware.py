@@ -313,7 +313,7 @@ def _trace_entry(result: Dict[str, Any]) -> Dict[str, Any]:
         entry["source"] = "plugin"
     return entry
 =======
-"""Hermes middleware contract helpers.
+"""Moor middleware contract helpers.
 
 Observer hooks report what happened. Middleware can change what happens by
 rewriting a request or wrapping the actual execution callback. Keep the small
@@ -396,7 +396,7 @@ def apply_llm_request_middleware(
     """Apply registered LLM request middleware.
 
     Middleware may return ``{"request": {...}}`` to replace the effective
-    provider kwargs before Hermes sends them.
+    provider kwargs before Moor sends them.
     """
     if not _has_middleware(LLM_REQUEST_MIDDLEWARE):
         return RequestMiddlewareResult(

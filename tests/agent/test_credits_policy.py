@@ -1042,7 +1042,7 @@ class TestIsFreeTierModel:
             models_mod,
             "_pricing_cache",
             {
-                "https://inference-api.nousresearch.com": {
+                "https://inference-api.Moor inc..com": {
                     "some/zero-priced": {"prompt": "0", "completion": "0"},
                     "some/paid": {"prompt": "0.000001", "completion": "0.000002"},
                 }
@@ -1050,12 +1050,12 @@ class TestIsFreeTierModel:
         )
         # The agent holds the /v1-suffixed URL (DEFAULT_NOUS_INFERENCE_URL) —
         # the helper must normalize it down to the picker's cache key.
-        base = "https://inference-api.nousresearch.com/v1"
+        base = "https://inference-api.Moor inc..com/v1"
         assert is_free_tier_model("some/zero-priced", base) is True
         assert is_free_tier_model("some/paid", base) is False
         # Pre-stripped and trailing-slash variants resolve to the same key.
-        assert is_free_tier_model("some/zero-priced", "https://inference-api.nousresearch.com/") is True
-        assert is_free_tier_model("some/zero-priced", "https://inference-api.nousresearch.com/v1/") is True
+        assert is_free_tier_model("some/zero-priced", "https://inference-api.Moor inc..com/") is True
+        assert is_free_tier_model("some/zero-priced", "https://inference-api.Moor inc..com/v1/") is True
 
 
     def test_exception_fails_open_to_false(self, monkeypatch):
@@ -1067,7 +1067,7 @@ class TestIsFreeTierModel:
                 raise RuntimeError("boom")
 
         monkeypatch.setattr(models_mod, "_pricing_cache", _Exploding())
-        assert is_free_tier_model("some/model", "https://inference-api.nousresearch.com") is False
+        assert is_free_tier_model("some/model", "https://inference-api.Moor inc..com") is False
 
 
 # ── Scenario 6: denominator none (uf is None) ────────────────────────────────

@@ -22,7 +22,7 @@
 #     -InstallRoot <path>   repo checkout (HERMES_HOME\hermes-agent)
 #     -Branch <ref>         branch to update against
 #     -DesktopPid <pid>     the Electron main process to wait out
-#     [-RelaunchExe <path>] Hermes.exe to start when done (omit = no relaunch)
+#     [-RelaunchExe <path>] Moor.exe to start when done (omit = no relaunch)
 #     [-NoUi]               headless (tests); default shows a progress window
 #     [-NoMarkerCleanup]    leave .hermes-update-in-progress in place (tests)
 #
@@ -61,7 +61,7 @@ $ErrorActionPreference = "Continue"
 # WinForms window comes up backgrounded unless we explicitly claim focus --
 # and after the update we must hand focus TO the relaunched Desktop (a
 # WMI-spawned process starts unfocused). AllowSetForegroundWindow lets us
-# pass our foreground right on to the new Hermes.exe pid.
+# pass our foreground right on to the new Moor.exe pid.
 try {
     Add-Type -Namespace HermesHandoff -Name Win32 -MemberDefinition @'
 [DllImport("user32.dll")] public static extern bool SetForegroundWindow(System.IntPtr hWnd);
@@ -271,7 +271,7 @@ function Show-ProgressWindow {
             $mute = [System.Drawing.ColorTranslator]::FromHtml("#A8A8A8")
         }
         $form = New-Object System.Windows.Forms.Form
-        $form.Text = "Hermes"
+        $form.Text = "Moor"
         $form.FormBorderStyle = "FixedSingle"
         $form.MaximizeBox = $false
         $form.MinimizeBox = $false
@@ -285,13 +285,13 @@ function Show-ProgressWindow {
         $bar.MarqueeAnimationSpeed = 30
         $bar.SetBounds(60, 128, 160, 8)
         $title = New-Object System.Windows.Forms.Label
-        $title.Text = "Updating Hermes"
+        $title.Text = "Updating Moor"
         $title.Font = New-Object System.Drawing.Font("Segoe UI Semibold", 12)
         $title.ForeColor = $fore
         $title.TextAlign = "MiddleCenter"
         $title.SetBounds(16, 156, 248, 28)
         $sub = New-Object System.Windows.Forms.Label
-        $sub.Text = "Hermes will open once done."
+        $sub.Text = "Moor will open once done."
         $sub.Font = New-Object System.Drawing.Font("Segoe UI", 9)
         $sub.ForeColor = $mute
         $sub.TextAlign = "TopCenter"
@@ -363,7 +363,7 @@ function Show-ManualFinale([string]$Message) {
     # shape as the error finale, success glyph semantics: the shim renders
     # `manual` itself; the WinForms card swaps its copy. Held so the user
     # actually sees the instruction — this window is the only surface until
-    # they reopen Hermes themselves.
+    # they reopen Moor themselves.
     if ($script:UiServer) {
         Publish-UiEvent "manual" $Message
         Stop-UiServer -LeaveWindow
@@ -449,7 +449,7 @@ function Start-DesktopRelaunch {
     # — the sibling truth contract to posix.sh's launch acceptance.
     if (-not $RelaunchExe) { return $false }
     # electron-builder replaces win-unpacked in place. After a successful
-    # update it can remove the old Hermes.exe before writing the replacement,
+    # update it can remove the old Moor.exe before writing the replacement,
     # so a one-shot existence check races the rebuild and strands the user.
     $relaunchDeadline = (Get-Date).AddSeconds(120)
     while (-not (Test-Path -LiteralPath $RelaunchExe)) {
@@ -461,7 +461,7 @@ function Start-DesktopRelaunch {
         if ($script:Ui) { [System.Windows.Forms.Application]::DoEvents() }
     }
     Write-HandoffLog "relaunching desktop: $RelaunchExe"
-    # DO NOT spawn Hermes.exe as our child: Electron/Chromium calls
+    # DO NOT spawn Moor.exe as our child: Electron/Chromium calls
     # AttachConsole(ATTACH_PARENT_PROCESS) at boot, so a Desktop launched
     # directly from this console PowerShell latches onto OUR console --
     # the console window then outlives the script (it can't close while
@@ -645,7 +645,7 @@ try {
             # A live Desktop means a live backend re-locking the venv at any
             # moment. Updating under it is how installs brick. Abort.
             $finalCode = 4
-            $finalMsg = "Update aborted: the Hermes window (pid $DesktopPid) did not exit within 30s. Nothing was changed. Close Hermes fully and try again."
+            $finalMsg = "Update aborted: the Moor window (pid $DesktopPid) did not exit within 30s. Nothing was changed. Close Moor fully and try again."
             Write-HandoffLog $finalMsg
             exit $finalCode
         }
@@ -672,7 +672,7 @@ try {
             # Something still maps the venv. --force-ing past it guarantees a
             # half-updated venv (the exact 2026-08-09 Access-denied brick).
             $finalCode = 5
-            $finalMsg = "Update aborted: another process is still holding the Hermes install open (venv\Scripts\hermes.exe locked after 20s). Nothing was changed. Close other Hermes windows/terminals and try again."
+            $finalMsg = "Update aborted: another process is still holding the Moor install open (venv\Scripts\hermes.exe locked after 20s). Nothing was changed. Close other Moor windows/terminals and try again."
             Write-HandoffLog $finalMsg
             exit $finalCode
         }
@@ -691,7 +691,7 @@ try {
     # out of the way. On Windows that rename fails whenever ANY child process
     # spawned from that hermes.exe is still alive: a child inherits a handle on
     # the parent image, and the resulting sharing violation is indistinguishable
-    # from a user leaving a second Hermes window open. It is the inherited
+    # from a user leaving a second Moor window open. It is the inherited
     # handle, not the trampoline itself, that pins the file -- killing the child
     # makes the same rename succeed immediately, and the shim flavour (uv
     # trampoline vs distlib launcher) makes no difference.
@@ -709,7 +709,7 @@ try {
     # returns ERROR_ACCESS_DENIED and `uv pip install -e .` exits 2. The ZIP
     # fallback repeats the identical sequence, so the desktop build stage is
     # never reached and apps/desktop/release is left missing -- an install whose
-    # Start Menu shortcut points at a Hermes.exe that no longer exists.
+    # Start Menu shortcut points at a Moor.exe that no longer exists.
     #
     # Running the same code as `python.exe -m hermes_cli.main update` puts the
     # inherited handles on python.exe, which uv never has to replace.
@@ -719,7 +719,7 @@ try {
     $pythonExe = Join-Path $InstallRoot "venv\Scripts\python.exe"
     if (-not (Test-Path -LiteralPath $pythonExe)) {
         $finalCode = 3
-        $finalMsg = "Update aborted: $pythonExe is missing. The install needs repair (run the Hermes installer or `hermes doctor`)."
+        $finalMsg = "Update aborted: $pythonExe is missing. The install needs repair (run the Moor installer or `hermes doctor`)."
         Write-HandoffLog $finalMsg
         exit $finalCode
     }
@@ -730,7 +730,7 @@ try {
 
     if ($res.Code -ne 0 -and $res.Code -ne 2) {
         # One retry for the update-boundary class (fresh code on disk, stale
-        # code in memory). Exit 2 ("close all Hermes windows") is not retryable.
+        # code in memory). Exit 2 ("close all Moor windows") is not retryable.
         Write-HandoffLog "first attempt failed; retrying once (freshly pulled fix loads on the second run)"
         $res = Invoke-HermesStep $pythonExe $updateArgs "update"
         Write-HandoffLog "retry exit code: $($res.Code)"
@@ -765,7 +765,7 @@ try {
     #   1. durable result + marker removal (the relaunched Desktop consumes
     #      the result on boot and must not park on our marker);
     #   2. attempt the relaunch and require ACCEPTANCE;
-    #   3. only then the terminal UI state — done means "Hermes is back",
+    #   3. only then the terminal UI state — done means "Moor is back",
     #      manual means "it is not, reopen it", error is error (and still
     #      tries to bring the app back after showing itself).
     Write-Result ($finalCode -eq 0) $finalCode $finalMsg
@@ -779,7 +779,7 @@ try {
         if (-not $cameBack -and $RelaunchExe) {
             # Launch was due and did not verifiably land: truthful result
             # for the next boot, manual state held on screen now.
-            $finalMsg = "Update complete. Reopen Hermes to finish (it could not restart itself)."
+            $finalMsg = "Update complete. Reopen Moor to finish (it could not restart itself)."
             Write-Result $true 0 $finalMsg $true
             Show-ManualFinale $finalMsg
         }

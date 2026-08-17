@@ -1834,7 +1834,7 @@ def check_compression_model_feasibility(agent: Any) -> None:
                     f"           model: <model-with-{old_threshold:,}+-context>\n"
                     f"  (Lowering compression.threshold cannot help here — "
                     f"with {_main_label}'s {main_ctx:,}-token window, "
-                    f"Hermes's small-context floor and output reservation "
+                    f"Moor's small-context floor and output reservation "
                     f"would recompute the trigger to "
                     f"{recomputed_threshold:,} tokens, still above the "
                     f"compression model's {aux_context:,}.)"
@@ -2316,7 +2316,7 @@ def compress_context(
     # the actual thread (#36801). Route compaction to the app server's own
     # thread/compact mechanism. Behavior is controlled by
     # ``compression.codex_app_server_auto`` (native|hermes|off).
-    # The memory-provider context handoff below is intentionally Hermes-only:
+    # The memory-provider context handoff below is intentionally Moor-only:
     # the app server does not expose its native summary prompt, so there is no
     # truthful injection point for ``on_pre_compress()`` return text here.
     if getattr(agent, "api_mode", None) == "codex_app_server":

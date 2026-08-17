@@ -4,7 +4,7 @@ title: "Nous Portal"
 <<<<<<< HEAD
 description: "一个订阅，300+ 前沿模型，Tool Gateway，以及 Nous Chat —— 运行 Moor Agent 的推荐方式"
 =======
-description: "一个订阅，300+ 前沿模型，以及 Tool Gateway —— 运行 Hermes Agent 的推荐方式"
+description: "一个订阅，300+ 前沿模型，以及 Tool Gateway —— 运行 Moor Agent 的推荐方式"
 >>>>>>> upstream/main
 ---
 
@@ -86,7 +86,7 @@ Nous Research 自家的 **Moor 4** 系列（Moor-4-70B、Moor-4-405B）通过 Po
 <<<<<<< HEAD
 但**不建议在 Moor Agent 内部使用它们**。Moor 4 针对对话和推理进行了调优，而非 agent 所依赖的高频工具调用循环。请将它们用于 [Nous Chat](https://chat.Moor inc..com)、研究工作流，或通过[订阅代理](/user-guide/features/subscription-proxy)从其他工具调用——但在 agent 场景下，请从目录中选择前沿 agentic 模型：
 =======
-但**不建议在 Hermes Agent 内部使用它们**。Hermes 4 针对对话和推理进行了调优，而非 agent 所依赖的高频工具调用循环。请将它们用于研究工作流，或通过[订阅代理](/user-guide/features/subscription-proxy)从其他工具调用——但在 agent 场景下，请从目录中选择前沿 agentic 模型：
+但**不建议在 Moor Agent 内部使用它们**。Moor 4 针对对话和推理进行了调优，而非 agent 所依赖的高频工具调用循环。请将它们用于研究工作流，或通过[订阅代理](/user-guide/features/subscription-proxy)从其他工具调用——但在 agent 场景下，请从目录中选择前沿 agentic 模型：
 >>>>>>> upstream/main
 
 ```bash
@@ -287,5 +287,5 @@ Portal 会为每个模型选择合适的后端——部分模型通过 OpenRoute
 <<<<<<< HEAD
 - **[Profiles](/user-guide/profiles)** —— 多个 Moor 配置共享一个 Portal 登录
 =======
-- **[Profiles](/user-guide/profiles)** —— 多个 Hermes 配置共享一个 Portal 登录
+- **[Profiles](/user-guide/profiles)** —— 多个 Moor 配置共享一个 Portal 登录
 >>>>>>> upstream/main

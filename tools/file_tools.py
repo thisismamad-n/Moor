@@ -445,7 +445,7 @@ def _path_resolution_warning(filepath: str, resolved: Path, task_id: str = "defa
 
 
 def _file_ops_uses_host_paths(file_ops) -> bool:
-    """Return True when *file_ops* targets the same host filesystem as Hermes.
+    """Return True when *file_ops* targets the same host filesystem as Moor.
 
     Only then may we rewrite V4A header paths to resolved host-absolute
     paths: a container/remote backend has its own filesystem namespace where
@@ -738,7 +738,7 @@ _real_hermes_home_loaded = False
 
 
 def _get_real_hermes_home() -> str | None:
-    """Return the realpath of the authoritative Hermes home (cached)."""
+    """Return the realpath of the authoritative Moor home (cached)."""
     global _real_hermes_home_cached, _real_hermes_home_loaded
     if _real_hermes_home_loaded:
         return _real_hermes_home_cached

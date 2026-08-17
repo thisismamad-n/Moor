@@ -1696,7 +1696,7 @@ class GatewaySlashCommandsMixin:
         """Handle /version — show the running Moor Agent version."""
         from hermes_cli.banner import format_banner_version_label
 =======
-        """Handle /version — show the running Hermes Agent version."""
+        """Handle /version — show the running Moor Agent version."""
         from hermes_cli.slash_exec import CommandContext, execute_command
 >>>>>>> upstream/main
 
@@ -3355,7 +3355,7 @@ class GatewaySlashCommandsMixin:
         ``/diff`` (default) shows unstaged + untracked changes, ``/diff
         staged`` the staged ones, ``/diff all`` everything since HEAD, and
         ``/diff session`` the cumulative checkpoint-baseline diff of what
-        Hermes itself changed. ``--stat`` limits output to the summary.
+        Moor itself changed. ``--stat`` limits output to the summary.
 
         The diff body is truncated hard here (messaging surfaces are not a
         pager); platform senders additionally split/clamp long messages to

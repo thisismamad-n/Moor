@@ -720,7 +720,7 @@ def build_status_phrase(tool_name: str, args: dict | None, max_len: int = 49) ->
     ``assistant.threads.setStatus`` line) to show what the agent is doing
     right now: ``is running scripts/run_tests.sh…`` instead of a static
     ``is thinking...``.  The phrase is phrased to follow the bot's display
-    name ("Hermes is running …"), so it starts lowercase with "is".
+    name ("Moor is running …"), so it starts lowercase with "is".
 
     Pass ``args=None`` for a verb-only phrase (``is running…``) — used when
     ``display.live_status`` is ``verb`` to keep argument previews out of

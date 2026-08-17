@@ -2335,7 +2335,7 @@ def _make_tui_argv(tui_dir: Path, tui_dev: bool) -> tuple[list[str], Path]:
                 return env_node
         # find_node_executable() prefers the managed $HERMES_HOME/node tree,
         # which is not on PATH — a bare which() would declare "node not found"
-        # and exit on an install whose only Node is the one Hermes installed,
+        # and exit on an install whose only Node is the one Moor installed,
         # and would pick a system Node over the managed one when both exist.
         from hermes_constants import find_node_executable
 
@@ -2460,7 +2460,7 @@ def _make_tui_argv(tui_dir: Path, tui_dev: bool) -> tuple[list[str], Path]:
         result = _run_tui_install()
         if result.returncode != 0:
             # An npm outside the root package.json's `engines.npm` range fails
-            # here before doing any work; repair once (upgrade a Hermes-managed
+            # here before doing any work; repair once (upgrade a Moor-managed
             # npm in place, or provision a managed runtime when the npm belongs
             # to the user) and retry rather than dumping EBADENGINE at the user.
             from hermes_cli.npm_engine import maybe_repair_npm_engine
@@ -2985,7 +2985,7 @@ def cmd_chat(args):
     _resolve_continue_arg(args, use_tui=use_tui)
 
     # --resume @claude / --resume @codex: import a foreign session (Claude
-    # Code / Codex CLI) and resume the newly created Hermes session.
+    # Code / Codex CLI) and resume the newly created Moor session.
     _resume_foreign = getattr(args, "resume", None)
     if isinstance(_resume_foreign, str) and _resume_foreign.strip().lower() in (
         "@claude",
@@ -6211,7 +6211,7 @@ def _run_npm_install_deterministic(
     # command here identically (the `npm install` fallback included), so the
     # failure is worth exactly one repair attempt. `maybe_repair_npm_engine`
     # returns the npm to retry with — the same one after an in-place upgrade
-    # of a Hermes-managed install, or a freshly provisioned managed npm when
+    # of a Moor-managed install, or a freshly provisioned managed npm when
     # the failing npm belongs to the user's own toolchain.
     from hermes_cli.npm_engine import maybe_repair_npm_engine
 
@@ -6606,7 +6606,7 @@ def _renderer_bundle_dir(desktop_dir: Path, *, source_mode: bool) -> Optional[Pa
     if executable is None:
         return None
 
-    # macOS: …/Hermes.app/Contents/MacOS/Hermes → …/Contents/Resources
+    # macOS: …/Moor.app/Contents/MacOS/Moor → …/Contents/Resources
     resources = (
         executable.parent.parent / "Resources"
         if sys.platform == "darwin"
@@ -6741,7 +6741,7 @@ def _desktop_packaged_executable(desktop_dir: Path) -> Optional[Path]:
     if sys.platform == "win32" and len(existing) > 1:
         # Multiple unpacked trees can coexist (e.g. a stale win-arm64-unpacked
         # left behind by a cross-arch experiment next to the real win-unpacked).
-        # Picking purely by mtime can then hand a wrong-architecture Hermes.exe
+        # Picking purely by mtime can then hand a wrong-architecture Moor.exe
         # to the launcher, which Windows rejects with "This app can't run on
         # your computer" (#69179). Prefer candidates whose PE machine field
         # matches the host; fall back to mtime when none can be parsed.
@@ -6756,14 +6756,14 @@ def _desktop_packaged_executable(desktop_dir: Path) -> Optional[Path]:
 #
 # The desktop self-update chain (Desktop → hermes-setup --update →
 # `hermes update` → `hermes desktop --build-only` → relaunch) rebuilds
-# Hermes.exe on the end user's machine and used to verify only that the file
+# Moor.exe on the end user's machine and used to verify only that the file
 # EXISTS before declaring success. A corrupt cached Electron zip whose
 # extraction produced a truncated electron.exe, an interrupted rcedit resource
 # rewrite, a disk-full pack, or a wrong-arch unpacked tree therefore shipped a
 # broken binary that Windows refuses to load ("This app can't run on your
 # computer" / 此应用无法在你的电脑上运行). These helpers parse the PE header —
 # no signature infrastructure required — so a structurally broken or
-# wrong-architecture Hermes.exe is caught BEFORE the updater replaces the
+# wrong-architecture Moor.exe is caught BEFORE the updater replaces the
 # working app, and the previous build can be restored from the .bak tree that
 # apps/desktop/scripts/before-pack.mjs now preserves.
 
@@ -6797,7 +6797,7 @@ def _windows_native_machine_from_iswow64() -> Optional[str]:
     that makes ``IsWow64Process2`` fail with ``ERROR_INVALID_HANDLE`` (6),
     which is exactly the residual Windows-on-ARM failure after #71218: the
     gate fell through to ``PROCESSOR_ARCHITECTURE=AMD64`` (the emulated
-    process arch) and rejected a correctly-built ARM64 ``Hermes.exe``.
+    process arch) and rejected a correctly-built ARM64 ``Moor.exe``.
     Binding ``restype``/``argtypes`` to ``wintypes.HANDLE`` keeps the full
     ``0xFFFFFFFFFFFFFFFF`` pseudo-handle.
     """
@@ -7063,7 +7063,7 @@ def _ensure_desktop_exe_launchable(
     if error is None:
         return packaged_executable, False
 
-    print(f"✗ The built Hermes.exe failed its integrity check: {error}")
+    print(f"✗ The built Moor.exe failed its integrity check: {error}")
     print(f"    at: {packaged_executable}")
 
     # Self-heal setup for the retry: drop the (likely corrupt) cached Electron
@@ -7077,13 +7077,13 @@ def _ensure_desktop_exe_launchable(
 
     restored = _rollback_desktop_from_backup(packaged_executable)
     if restored is not None:
-        print("  ↩ Update aborted — restored the previous working Hermes.exe from backup.")
+        print("  ↩ Update aborted — restored the previous working Moor.exe from backup.")
         print("    Your existing version was kept and still works. Run `hermes desktop`")
         print("    (or the in-app update) again to retry with a fresh Electron download.")
         return restored, True
 
     print("  ✗ No usable backup was found to restore.")
-    print("    Run `hermes desktop --force-build` to rebuild, or re-run the Hermes")
+    print("    Run `hermes desktop --force-build` to rebuild, or re-run the Moor")
     print("    installer to repair the install.")
     return None, False
 
@@ -7516,7 +7516,7 @@ def _desktop_macos_local_codesign(
 
     # 1) Standalone Mach-O files (native modules, dylibs, crashpad handler).
     #    Compare paths relative to the app root — the absolute path always
-    #    contains the outer Hermes.app component, so an absolute-parts check
+    #    contains the outer Moor.app component, so an absolute-parts check
     #    would skip every file.
     contents = app / "Contents"
     standalone: list[Path] = []
@@ -7566,7 +7566,7 @@ def _desktop_macos_relaunchable_fixup(
 
     An ad-hoc-signed .app has no stable Designated Requirement, so when the
     self-updater rebuilds the bundle in place (new cdhash) Gatekeeper reports
-    "Hermes is damaged and can't be opened" — and macOS TCC forgets every
+    "Moor is damaged and can't be opened" — and macOS TCC forgets every
     permission the user granted (Full Disk Access, Desktop/Downloads/Documents,
     Accessibility, Automation, microphone), re-prompting on every launch after
     every update.
@@ -7598,7 +7598,7 @@ def _desktop_macos_relaunchable_fixup(
     # exe = .../Moor.app/Contents/MacOS/Moor  ->  app bundle = .../Moor.app
 =======
         return True
-    # exe = .../Hermes.app/Contents/MacOS/Hermes  ->  app bundle = .../Hermes.app
+    # exe = .../Moor.app/Contents/MacOS/Moor  ->  app bundle = .../Moor.app
 >>>>>>> upstream/main
     app = exe.parents[2]
     if not str(app).endswith(".app") or not app.is_dir():
@@ -7829,7 +7829,7 @@ def _desktop_launch_options() -> tuple[list[str], str, str]:
 
 
 def _register_linux_desktop_entry() -> None:
-    """Install the XDG desktop entry for Hermes Desktop (Linux only, best-effort).
+    """Install the XDG desktop entry for Moor Desktop (Linux only, best-effort).
 
     Gives the Electron app a launcher presence: a menu item and an icon.
     ``Exec`` and ``Icon`` are absolute, so the entry works outside a login
@@ -8050,7 +8050,7 @@ def cmd_gui(args: argparse.Namespace):
                 _desktop_macos_relaunchable_fixup(desktop_dir)
 
                 # Windows integrity gate (#69179): never declare the rebuild a
-                # success on a Hermes.exe Windows cannot load (truncated PE from
+                # success on a Moor.exe Windows cannot load (truncated PE from
                 # a corrupt cached Electron zip, wrong-arch tree, interrupted
                 # rcedit rewrite). Roll back to the .bak tree preserved by
                 # before-pack.mjs when possible, then fail loudly so the
@@ -8068,7 +8068,7 @@ def cmd_gui(args: argparse.Namespace):
             # Build succeeded — write the stamp so next run can skip
             _write_desktop_build_stamp(PROJECT_ROOT, source_mode=source_mode)
 
-    # Linux: register the app in the desktop launcher, so Hermes shows up
+    # Linux: register the app in the desktop launcher, so Moor shows up
     # in the application menu with its icon. Best-effort and idempotent.
     # A failure must never stop the app from launching.
     _register_linux_desktop_entry()
@@ -8360,7 +8360,7 @@ def _restart_managed_dashboard_service(
             timeout=timeout,
         )
 
-    # Probe the user manager first: Hermes installs Linux services in the
+    # Probe the user manager first: Moor installs Linux services in the
     # user's systemd scope by default.  Only fall back to the system manager
     # when the unit is not present there, preserving root/system deployments.
     # Crucially, keep the selected scope for *all* probes and the restart — a
@@ -9804,8 +9804,8 @@ def _recover_core_update_marker_locked() -> None:
         print("✗ Could not auto-recover the interrupted install.")
         if self_locked:
             print(
-                "  Hermes is still running from the launcher that needs "
-                "replacing. Close other Hermes windows, restart from a "
+                "  Moor is still running from the launcher that needs "
+                "replacing. Close other Moor windows, restart from a "
                 "different terminal, then run:"
             )
             print(f'    cd /d "{PROJECT_ROOT}"')
@@ -16117,8 +16117,8 @@ def _advertise_agent_env() -> None:
     them. The value must be our id in the public agent-harness registry
     (``hermes-agent`` in huggingface.js ``agent-harnesses.ts``): standard-var
     matching is exact, so any other value is counted as "unknown".
-    ``HERMES_AGENT`` is the Hermes-specific marker. setdefault: never
-    clobber an outer harness (e.g. Hermes running inside another agent's
+    ``HERMES_AGENT`` is the Moor-specific marker. setdefault: never
+    clobber an outer harness (e.g. Moor running inside another agent's
     terminal).
     """
     os.environ.setdefault("AI_AGENT", "hermes-agent")
@@ -16301,7 +16301,7 @@ def main():
             "Manage iron-proxy, the optional TLS-intercepting egress firewall "
             "that swaps proxy tokens for real API credentials before outbound "
             "requests leave a sandbox.  Disabled by default.  See: "
-            "https://hermes-agent.nousresearch.com/docs/user-guide/egress/iron-proxy"
+            "https://hermes-agent.Moor inc..com/docs/user-guide/egress/iron-proxy"
         ),
     )
 
@@ -17421,10 +17421,10 @@ def main():
 
     sessions_import = sessions_subparsers.add_parser(
         "import",
-        help="Import a Claude Code or Codex CLI session into Hermes",
+        help="Import a Claude Code or Codex CLI session into Moor",
         description=(
             "Pull a conversation started in Claude Code (~/.claude/projects) "
-            "or Codex CLI (~/.codex/sessions) into the Hermes session store "
+            "or Codex CLI (~/.codex/sessions) into the Moor session store "
             "so it can be resumed with 'hermes --resume <id>'. The foreign "
             "files are only read, never modified."
         ),

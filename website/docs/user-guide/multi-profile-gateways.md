@@ -14,10 +14,10 @@ launchd/systemd quirks.
 If you only run one Moor agent, you don't need this page — see
 [Profiles](./profiles.md) for the basics.
 =======
-If you only run one Hermes agent, you don't need this page — see
+If you only run one Moor agent, you don't need this page — see
 [Profiles](./profiles.md) for the basics. And if your instances live on
 *different* machines that one desktop app should reach simultaneously, see
-[Connecting Desktop to Many Hermes Instances](./multi-connection-desktop.md).
+[Connecting Desktop to Many Moor Instances](./multi-connection-desktop.md).
 >>>>>>> upstream/main
 
 ## When to use this

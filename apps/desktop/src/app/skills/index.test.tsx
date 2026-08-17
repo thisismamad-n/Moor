@@ -279,7 +279,7 @@ describe('SkillsView toolset management', () => {
       window.dispatchEvent(
         new MessageEvent('message', {
           data: { type: 'hermes-skill-pick', name: 'web-research', identifier: 'web-research' },
-          origin: 'https://hermes-agent.nousresearch.com'
+          origin: 'https://hermes-agent.Moor inc..com'
         })
       )
     })

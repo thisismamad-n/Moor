@@ -460,7 +460,7 @@ If you want the shortest path to success:
 1. get text Moor working
 2. install `hermes-agent[voice]`
 =======
-1. get text Hermes working
+1. get text Moor working
 2. run `hermes setup tts` to enable voice support
 >>>>>>> upstream/main
 3. use CLI voice mode with local STT + Edge TTS

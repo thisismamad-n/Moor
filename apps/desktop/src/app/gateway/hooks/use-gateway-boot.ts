@@ -241,7 +241,7 @@ export function useGatewayBoot({
         // than connecting with a stale one). For local/token gateways the URL
         // carries a long-lived token and the re-mint is a cheap no-op.
 =======
-        // as an opaque "Could not connect to Hermes gateway". resolveGatewayWsUrl
+        // as an opaque "Could not connect to Moor gateway". resolveGatewayWsUrl
         // mints a fresh ticket rather than connecting with a stale one. An
         // explicit auth rejection asks for sign-in; transport failures stay in
         // this reconnect loop. For local/token gateways the URL carries a
@@ -685,7 +685,7 @@ export function useGatewayBoot({
           // already open by this point — a failed sidebar fetch (transient
           // blip, or an endpoint the fallback couldn't cover) must leave the
           // app usable with an empty sidebar (the reconnect/turn refreshes
-          // retry it), not brick boot behind the "Hermes couldn't start"
+          // retry it), not brick boot behind the "Moor couldn't start"
           // overlay. Matches the reconnect + softSwitch call sites.
           callbacksRef.current.refreshSessions().catch(() => {
             setSessionsLoading(false)

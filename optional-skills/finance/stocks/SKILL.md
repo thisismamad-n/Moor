@@ -99,7 +99,7 @@ Returns a JSON object with `symbol: "AAPL"` and a numeric `price` field.
 name: stocks
 description: Stock quotes, history, search, compare, crypto via Yahoo.
 version: 0.1.0
-author: Mibay (Mibayy), Hermes Agent
+author: Mibay (Mibayy), Moor Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

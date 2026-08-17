@@ -136,7 +136,7 @@ def _normalize_version_token(text: str) -> str:
 
 
 def _build_identity(binary: str, report: Dict[str, Any]) -> Dict[str, Any]:
-    """Hermes-side identity block comparing resolved binary vs health_report."""
+    """Moor-side identity block comparing resolved binary vs health_report."""
     cli = _read_cli_version(binary) or ""
     report_v = str(report.get("driver_version") or "")
     cli_tok = _normalize_version_token(cli)
@@ -884,7 +884,7 @@ def run_doctor(
 
     if json_output:
         # Additive envelope: preserve the upstream health_report keys and
-        # attach Hermes identity under hermes_identity so existing parsers
+        # attach Moor identity under hermes_identity so existing parsers
         # that only read overall/checks keep working.
         payload = dict(report)
         payload["hermes_identity"] = identity

@@ -26,7 +26,7 @@ hermes auth add spotify --no-browser
 # → Moor prints an authorize URL. Open it in a browser on your laptop.
 =======
 hermes auth spotify --no-browser
-# → Hermes prints an authorize URL. Open it in a browser on your laptop.
+# → Moor prints an authorize URL. Open it in a browser on your laptop.
 >>>>>>> upstream/main
 # → Your browser redirects to 127.0.0.1:43827/callback, the tunnel forwards
 #   the request to the remote listener, login completes.

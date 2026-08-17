@@ -58,7 +58,7 @@ test('managed Node dirs lead with the platform-native layout but always offer bo
   ])
 })
 
-test('managed Node dirs are empty without a Hermes home', () => {
+test('managed Node dirs are empty without a Moor home', () => {
   assert.deepEqual(hermesManagedNodePathEntries(undefined, { platform: 'darwin', pathModule: path.posix }), [])
   assert.deepEqual(hermesManagedNodePathEntries('', { platform: 'win32', pathModule: path.win32 }), [])
 })
@@ -150,7 +150,7 @@ test('buildDesktopBackendEnv forces PYTHONUTF8 unless the user set it explicitly
   assert.equal(optedOut.PYTHONUTF8, '0')
 })
 
-test('normalizeHermesHomeRoot maps profile homes back to the global Hermes root', () => {
+test('normalizeHermesHomeRoot maps profile homes back to the global Moor root', () => {
 >>>>>>> upstream/main
   assert.equal(
     normalizeHermesHomeRoot('/Users/test/.hermes/profiles/oracle', { pathModule: path.posix }),

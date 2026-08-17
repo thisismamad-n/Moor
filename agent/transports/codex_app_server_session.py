@@ -1056,8 +1056,8 @@ class CodexAppServerSession:
     def _decide_exec_approval(self, params: dict) -> str:
         """Decide a Codex exec approval request.
 
-        This is protocol-level routing only — it carries NO Hermes
-        approval-mode/timeout logic. The Hermes-side resolution happens
+        This is protocol-level routing only — it carries NO Moor
+        approval-mode/timeout logic. The Moor-side resolution happens
         upstream: ``agent/codex_runtime.py`` derives
         ``auto_approve_exec`` from the canonical
         ``tools.approval.is_approval_bypass_active()`` (which reads
@@ -1091,7 +1091,7 @@ class CodexAppServerSession:
     def _decide_apply_patch_approval(self, params: dict) -> str:
         """Decide a Codex apply_patch approval request.
 
-        Protocol-level routing only; Hermes approval-mode/timeout
+        Protocol-level routing only; Moor approval-mode/timeout
         resolution is delegated to ``tools/approval.py`` upstream — see
         the docstring on ``_decide_exec_approval``.
         """
@@ -1251,7 +1251,7 @@ def _approval_choice_to_codex_decision(choice: str) -> str:
     on codex 0.130.0).
 
     This mapping is Codex-protocol-semantic and intentionally lives here,
-    NOT in tools/approval.py: the Hermes approval mode/timeout resolution
+    NOT in tools/approval.py: the Moor approval mode/timeout resolution
     and the choice itself come from the shared core (tools/approval.py);
     only the wire-value translation is local.
     """
@@ -1260,7 +1260,7 @@ def _approval_choice_to_codex_decision(choice: str) -> str:
     if choice in {"session", "always"}:
         return "acceptForSession"
     # "deny" and "timeout" both map to decline — codex has no wire value for
-    # "prompt expired"; the Hermes-side messaging already distinguishes them.
+    # "prompt expired"; the Moor-side messaging already distinguishes them.
     return "decline"
 
 

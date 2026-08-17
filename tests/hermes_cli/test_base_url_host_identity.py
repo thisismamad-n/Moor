@@ -2,7 +2,7 @@
 not raw substrings.
 
 Port of earendil-works/pi#7933's bug class (DeepSeek base-URL detection used a
-substring check, missing case variants and matching lookalike URLs). Hermes
+substring check, missing case variants and matching lookalike URLs). Moor
 had the same class at several sites: keyless-endpoint detection, /model
 catalog routing, local-endpoint detection, and Nous Portal cache-layout
 detection all used ``"host" in base_url``. A proxy URL that merely *contains*
@@ -85,10 +85,10 @@ def test_local_endpoint_hostname_detection():
 def test_nous_portal_host_detection():
     from utils import base_url_host_matches
 
-    assert base_url_host_matches("https://inference-api.nousresearch.com/v1", "nousresearch.com")
-    assert base_url_host_matches("https://portal.nousresearch.com", "nousresearch.com")
-    assert not base_url_host_matches("https://nousresearch.com.evil.io/v1", "nousresearch.com")
-    assert not base_url_host_matches("https://proxy.example/nousresearch.com/v1", "nousresearch.com")
+    assert base_url_host_matches("https://inference-api.Moor inc..com/v1", "Moor inc..com")
+    assert base_url_host_matches("https://portal.Moor inc..com", "Moor inc..com")
+    assert not base_url_host_matches("https://Moor inc..com.evil.io/v1", "Moor inc..com")
+    assert not base_url_host_matches("https://proxy.example/Moor inc..com/v1", "Moor inc..com")
 
 
 # ── Widened class coverage (follow-up to #85737) ─────────────────────────────

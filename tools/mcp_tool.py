@@ -41,7 +41,7 @@ Example config::
           name: "X-User-Id"    # to this server's HTTP/SSE requests
           value_from: "static" # "static" (default) or "profile"
           value: "alice"       # required for static; profile mode uses the
-                               # active Hermes profile name
+                               # active Moor profile name
         timeout: 180
         skip_preflight: true  # bypass the content-type probe for a valid
                               # Streamable HTTP endpoint that answers HEAD/GET
@@ -411,7 +411,7 @@ def sdk_httpx():
 
     mcp 2.0 moved its HTTP transports and OAuth stack from ``httpx`` to
     ``httpx2`` — a separate distribution with the same public API, importable
-    side by side with Hermes' own pinned ``httpx``. Every object that crosses
+    side by side with Moor' own pinned ``httpx``. Every object that crosses
     the SDK boundary has to come from the module the SDK itself imports:
     the ``AsyncClient`` handed to ``streamable_http_client``, the client the
     ``sse_client`` factory returns, the ``Request`` built by the SDK's OAuth
@@ -677,12 +677,12 @@ def _build_safe_env(user_env: Optional[dict]) -> dict:
     Only passes through safe baseline variables (PATH, HOME, etc.) and XDG_*
     variables from the current process environment, secrets injected by an
     external secret source (Bitwarden, 1Password, plugin backends) that
-    Hermes explicitly tagged during dotenv loading, plus any variables
+    Moor explicitly tagged during dotenv loading, plus any variables
     explicitly specified by the user in the server config.
 
     This prevents accidentally leaking secrets like API keys, tokens, or
     credentials to MCP server subprocesses.  Secret-source-injected vars are
-    an exception: users configured that backend specifically so Hermes and
+    an exception: users configured that backend specifically so Moor and
     its subprocesses can consume those credentials without duplicating them
     in every MCP server's ``env:`` block.
     """
@@ -1533,7 +1533,7 @@ def _resolve_identity_header(server_name: str, config: dict):
     Returns a ``(header_name, header_value)`` tuple, or ``None`` when the
     key is unset or invalid. Invalid configs warn and are ignored — an
     identity header must never break the server connection. ``profile``
-    mode resolves the value to the active Hermes profile name once at
+    mode resolves the value to the active Moor profile name once at
     connect time; there is no per-call mutation.
     """
     raw = config.get("identity_header")
@@ -4572,7 +4572,7 @@ def _http_status_error_types() -> tuple:
     """``HTTPStatusError`` classes that can reach us, from both httpx flavours.
 
     A 401 can be raised either by the MCP SDK's own HTTP stack (``httpx2`` on
-    mcp >= 2.0) or by Hermes' pinned ``httpx``, and the two define unrelated
+    mcp >= 2.0) or by Moor' pinned ``httpx``, and the two define unrelated
     exception classes. Both go in the tuple so ``isinstance`` covers whichever
     layer raised.
     """
@@ -4955,7 +4955,7 @@ _lock = threading.Lock()
 # ---------------------------------------------------------------------------
 # Cross-process MCP discovery guard
 # ---------------------------------------------------------------------------
-# Advisory file lock that prevents N concurrent Hermes processes (e.g.
+# Advisory file lock that prevents N concurrent Moor processes (e.g.
 # gateway + CLI + TUI) from all running MCP discovery simultaneously.
 # See issue #62771.
 _LOCK_UNAVAILABLE: Any = object()  # sentinel: locking broken/unavailable

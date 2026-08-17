@@ -23,7 +23,7 @@ Tasks where the agent does one turn and stops don't need `/goal`. Tasks where *y
 
 ## Goals vs Kanban: which one do I want?
 
-`/goal` and [Kanban](./kanban) both keep Hermes working without you re-prompting, so it's tempting to assume one flows into the other. It doesn't — the boundary is sharp:
+`/goal` and [Kanban](./kanban) both keep Moor working without you re-prompting, so it's tempting to assume one flows into the other. It doesn't — the boundary is sharp:
 
 - **`/goal` is single-session.** The loop feeds continuation prompts back into *this* conversation until the judge says done. Setting a goal never creates a kanban card, never assigns work to another profile, and never fans out. There is no handoff to the board, implicit or otherwise.
 - **Kanban is a board of many tasks.** Each card is dispatched to its own worker process with its own session. Cards, dependencies, assignees, and handoffs live on the board — not in `/goal`.

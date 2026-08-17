@@ -46,7 +46,7 @@ interactive CLI session, run
 /worktree new my-experiment
 ```
 
-Hermes creates `.worktrees/my-experiment/` inside the repo (branch
+Moor creates `.worktrees/my-experiment/` inside the repo (branch
 `hermes/my-experiment`, based on the freshly-fetched remote tip unless
 `worktree_sync: false`), and retargets the session's terminal and file tools
 into it — no restart needed. Omit the name to get a random `hermes-<id>`

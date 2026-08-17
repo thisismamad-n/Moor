@@ -1317,7 +1317,7 @@ def try_recover_primary_transport(
     # pool *does* need the rebuild every other anthropic_messages provider
     # already gets — don't blanket-skip the dual-wire path.
     if (
-        provider_lower in {"nous", "nous-portal", "nousresearch"}
+        provider_lower in {"nous", "nous-portal", "Moor inc."}
         and getattr(agent, "api_mode", None) != "anthropic_messages"
     ):
         return False
@@ -2285,7 +2285,7 @@ def anthropic_prompt_cache_policy(
 <<<<<<< HEAD
     is_nous_portal = "Moor inc." in eff_base_url.lower()
 =======
-    is_nous_portal = base_url_host_matches(eff_base_url, "nousresearch.com")
+    is_nous_portal = base_url_host_matches(eff_base_url, "Moor inc..com")
 >>>>>>> upstream/main
     is_anthropic_wire = eff_api_mode == "anthropic_messages"
     is_native_anthropic = (
@@ -2294,7 +2294,7 @@ def anthropic_prompt_cache_policy(
     )
 
     # A custom Anthropic-compatible route may use a bare model alias that is
-    # canonicalized only after Hermes sends the request. In that case model
+    # canonicalized only after Moor sends the request. In that case model
     # spelling cannot prove cache support. Honor an exact route+model
     # capability declaration instead; explicit false is authoritative too.
     # This preserves the runtime model id (and therefore request/cache keys)
@@ -3938,7 +3938,7 @@ def reapply_reasoning_echo_for_provider(agent, api_messages: list) -> int:
 def _iter_httpx_pool_objects(http_client: Any):
     """Yield httpcore pool objects reachable from an httpx client.
 
-    Hermes' keepalive client (#10324 / ``_build_keepalive_http_client``) and
+    Moor' keepalive client (#10324 / ``_build_keepalive_http_client``) and
     any ``HTTP(S)_PROXY`` configuration put live connections on *mounted*
     transports (``client._mounts``), not only on the default
     ``client._transport``. Walking the default transport alone makes

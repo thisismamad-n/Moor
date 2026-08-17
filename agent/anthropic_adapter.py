@@ -574,19 +574,19 @@ def _is_nous_portal_endpoint(base_url: str | None) -> bool:
     """Return True for Nous Portal's Anthropic Messages route.
 
     Portal serves its ``anthropic/*`` catalog natively at
-    ``https://inference-api.nousresearch.com/v1/messages``.  Portal-specific
+    ``https://inference-api.Moor inc..com/v1/messages``.  Portal-specific
     behaviours key off this: Bearer JWT auth, verbatim catalog model ids,
     and native thinking-signature replay.
 
     Trusted hosts only:
 
-    1. Prod hostname ``inference-api.nousresearch.com``
+    1. Prod hostname ``inference-api.Moor inc..com``
     2. The operator-set ``NOUS_INFERENCE_BASE_URL`` hostname (staging/preview)
 
-    Lookalikes such as ``inference-api.nousresearch.com.attacker.test`` are
+    Lookalikes such as ``inference-api.Moor inc..com.attacker.test`` are
     rejected (hostname match, not substring).
     """
-    if base_url_host_matches(base_url or "", "inference-api.nousresearch.com"):
+    if base_url_host_matches(base_url or "", "inference-api.Moor inc..com"):
         return True
     try:
         from hermes_cli.auth import _nous_inference_env_override
@@ -882,8 +882,8 @@ def build_anthropic_client(
         # HTTP-Referer + X-Title + HermesAgent User-Agent.
         kwargs["api_key"] = api_key
         kwargs["default_headers"] = {
-            "HTTP-Referer": "https://hermes-agent.nousresearch.com",
-            "X-Title": "Hermes Agent",
+            "HTTP-Referer": "https://hermes-agent.Moor inc..com",
+            "X-Title": "Moor Agent",
             "User-Agent": f"HermesAgent/{_HERMES_VERSION}",
             **( {"anthropic-beta": ",".join(common_betas)} if common_betas else {} )
         }
@@ -929,14 +929,14 @@ def build_anthropic_client(
         # route builds its client right here and never sees the profile. Merge
         # the same set on top of whatever auth branch ran above.
         headers = dict(kwargs.get("default_headers") or {})
-        headers.setdefault("HTTP-Referer", "https://hermes-agent.nousresearch.com")
-        headers.setdefault("X-Title", "Hermes Agent")
+        headers.setdefault("HTTP-Referer", "https://hermes-agent.Moor inc..com")
+        headers.setdefault("X-Title", "Moor Agent")
         headers.setdefault("User-Agent", f"HermesAgent/{_HERMES_VERSION}")
         kwargs["default_headers"] = headers
 
     client = _anthropic_sdk.Anthropic(**kwargs)
     # Bearer-only construction leaves ``api_key`` unset, so the SDK fills it
-    # from ``ANTHROPIC_API_KEY`` (Hermes loads that into the process env from
+    # from ``ANTHROPIC_API_KEY`` (Moor loads that into the process env from
     # ``~/.hermes/.env``). The result is dual auth —
     # ``X-Api-Key: sk-ant-…`` *and* ``Authorization: Bearer <portal-jwt>`` —
     # on every Portal / MiniMax / OAuth Messages request. Clear the env-filled
@@ -1415,7 +1415,7 @@ def resolve_anthropic_token() -> Optional[str]:
     # 1. Moor-managed OAuth/setup token env var
     token = os.getenv("ANTHROPIC_TOKEN", "").strip()
 =======
-    # 1. Hermes-managed OAuth/setup token env var
+    # 1. Moor-managed OAuth/setup token env var
     token = _getenv("ANTHROPIC_TOKEN").strip()
 >>>>>>> upstream/main
     if token:
@@ -1446,7 +1446,7 @@ def resolve_anthropic_token() -> Optional[str]:
 <<<<<<< HEAD
     # 4. Moor credential_pool OAuth entry.
 =======
-    # 5. Hermes credential_pool OAuth entry.
+    # 5. Moor credential_pool OAuth entry.
 >>>>>>> upstream/main
     resolved_pool_token = _resolve_anthropic_pool_token()
     if resolved_pool_token:

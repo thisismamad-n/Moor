@@ -398,7 +398,7 @@ export class JsonRpcGatewayClient {
         call.reject(new Error(frame.error.message || 'Moor RPC failed'))
 =======
         call.reject(
-          new JsonRpcGatewayError(frame.error.message || 'Hermes RPC failed', {
+          new JsonRpcGatewayError(frame.error.message || 'Moor RPC failed', {
             code: typeof frame.error.code === 'number' ? frame.error.code : undefined,
             data: frame.error.data
           })

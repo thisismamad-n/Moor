@@ -101,7 +101,7 @@ def test_redact_short_flags_not_redacted() -> None:
 
 def test_classify_local_preview_args_preserves_full_directory_label_and_port() -> None:
     args = [
-        r"C:\Hermes\venv\Scripts\python.exe",
+        r"C:\Moor\venv\Scripts\python.exe",
         "-m",
         "http.server",
         "8766",

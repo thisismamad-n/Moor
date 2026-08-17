@@ -391,7 +391,7 @@ def test_status_constants_match_historical_strings():
     assert mod.STATUS_ERROR == "error"
     assert mod.STATUS_ARCHIVED == "archived"
 =======
-"""Tests for the OpenClaw→Hermes migration hardening features.
+"""Tests for the OpenClaw→Moor migration hardening features.
 
 Covers the changes in the "claw migrate hardening" PR:
   - secret redaction (engine-level, applied to report JSON)

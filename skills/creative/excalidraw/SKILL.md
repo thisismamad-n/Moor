@@ -203,7 +203,7 @@ See `references/colors.md` for full color tables. Quick reference:
 name: excalidraw
 description: "Hand-drawn Excalidraw JSON diagrams (arch, flow, seq)."
 version: 1.0.1
-author: Hermes Agent
+author: Moor Agent
 license: MIT
 dependencies: []
 platforms: [linux, macos, windows]

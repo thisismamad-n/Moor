@@ -83,7 +83,7 @@ WATCH_GLOBAL_COOLDOWN_SECONDS = 30
 # ---------------------------------------------------------------------------
 # systemd cgroup isolation for gateway-spawned local executors (#70716)
 # ---------------------------------------------------------------------------
-# When Hermes runs as a systemd gateway with MemoryHigh/MemoryMax limits,
+# When Moor runs as a systemd gateway with MemoryHigh/MemoryMax limits,
 # local background terminal commands inherit the gateway's cgroup.  A
 # memory-heavy executor (Codex, tests, Node) can push the whole cgroup past
 # MemoryMax and trigger systemd-oomd to kill the ENTIRE gateway — taking down
@@ -246,7 +246,7 @@ def _systemd_run_user_scope_available() -> bool:
 
 
 def _is_supervised_gateway_process() -> bool:
-    """Return whether this process is in a supervised Hermes gateway runtime.
+    """Return whether this process is in a supervised Moor gateway runtime.
 
     Both supervisor markers and ``_HERMES_GATEWAY`` are inherited by every
     descendant, and importing ``gateway.run`` also sets the latter. Require

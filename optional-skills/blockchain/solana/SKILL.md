@@ -212,7 +212,7 @@ python3 ~/.hermes/skills/blockchain/solana/scripts/solana_client.py stats
 name: solana
 description: Query Solana wallets, tokens, txs, and NFTs in USD.
 version: 0.2.0
-author: Deniz Alagoz (gizdusum), enhanced by Hermes Agent
+author: Deniz Alagoz (gizdusum), enhanced by Moor Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

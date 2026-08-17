@@ -938,7 +938,7 @@ class HonchoSessionManager:
 =======
         try:
             result = self._authed_call("dialectic query", _chat_once)
-            # Only automatic injection uses the Hermes-side character cap.
+            # Only automatic injection uses the Moor-side character cap.
 >>>>>>> upstream/main
             if (
                 apply_injection_cap

@@ -19,8 +19,8 @@ Two files make up the agent's memory:
 
 Both are stored in `~/.hermes/memories/` and are injected into the system prompt as a frozen snapshot at session start. The agent manages its own memory via the `memory` tool — it can add, replace, or remove entries.
 
-:::caution One agent per Hermes home
-Don't point two agent processes at the same Hermes home directory. Memory writes are automatic and load back into the system prompt at session start, so two writers sharing one home will compound each other's entries into state neither of them (nor you) authored. Memory is scoped per [profile](/user-guide/profiles) by design — give a second agent its own profile, and if they need shared memory, use an [external memory provider](/user-guide/features/memory-providers) instead.
+:::caution One agent per Moor home
+Don't point two agent processes at the same Moor home directory. Memory writes are automatic and load back into the system prompt at session start, so two writers sharing one home will compound each other's entries into state neither of them (nor you) authored. Memory is scoped per [profile](/user-guide/profiles) by design — give a second agent its own profile, and if they need shared memory, use an [external memory provider](/user-guide/features/memory-providers) instead.
 :::
 
 :::info
@@ -212,13 +212,13 @@ See [Session Search Tool](/user-guide/sessions#session-search-tool) for the thre
 
 ## Learning Journey (`/journey`)
 
-The learning journey is a timeline view of everything Hermes has learned — saved skills and memory entries plotted over time (oldest at top, newest at bottom), with a playable "constellation" scrubber that replays the build-up. The same graph data drives three surfaces:
+The learning journey is a timeline view of everything Moor has learned — saved skills and memory entries plotted over time (oldest at top, newest at bottom), with a playable "constellation" scrubber that replays the build-up. The same graph data drives three surfaces:
 
 - **Classic CLI / standalone** — `hermes journey` (aliases: `hermes learning`, `hermes memory-graph`) renders the timeline in the terminal. Flags: `--play` animates the build-up (`--fps` to tune it), `--width`/`--height` override the render size, `--no-color` disables color, and `--json` dumps the raw graph payload.
 - **TUI** — `/journey` (aliases: `/learning`, `/memory-graph`) opens the timeline as an overlay.
 - **Desktop app** — `/journey` opens the Star Map / memory-graph panel, an interactive visual of the same nodes.
 
-Beyond viewing, the journey is also where you **prune and correct** what Hermes has learned:
+Beyond viewing, the journey is also where you **prune and correct** what Moor has learned:
 
 | Command | What it does |
 |---------|--------------|

@@ -185,7 +185,7 @@ _FREE_TIER_GUIDANCE = (
     "gemini-2.5-flash). Moor typically makes 3-10 API calls per user turn, "
 =======
     "\n\nYour Google API key is on the free tier (a few hundred requests/day "
-    "for Gemini Flash models). Hermes typically makes 3-10 API calls per user turn, "
+    "for Gemini Flash models). Moor typically makes 3-10 API calls per user turn, "
 >>>>>>> upstream/main
     "so the free tier is exhausted in a handful of messages and cannot sustain "
     "an agent session. Enable billing on your Google Cloud project and "
@@ -569,7 +569,7 @@ def _thinking_requests_output_headroom(thinking_config: Any) -> bool:
     """Return True when Gemini will spend output tokens on thinking.
 
     Gemini bills thought tokens against ``maxOutputTokens``. A global
-    Hermes ``max_tokens`` of 4096/16384 is enough for visible text, but
+    Moor ``max_tokens`` of 4096/16384 is enough for visible text, but
     Ultra/high thinking can consume the entire budget and leave
     ``finishReason=MAX_TOKENS`` with no complete answer. Continuations
     then abort after 4 retries.

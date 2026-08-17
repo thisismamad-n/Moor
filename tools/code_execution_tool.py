@@ -137,7 +137,7 @@ def _truncate_stdout_text(stdout_text: str) -> Tuple[str, Dict[str, Any]]:
 # backends).  Secret-substring block is applied first; anything left must
 # match a safe prefix, the operational HERMES_ allowlist, or (on Windows) an
 # OS-essential name.  Delegate-task child context is also an exact-name
-# operational marker: without it, a sandbox script that spawns/imports Hermes
+# operational marker: without it, a sandbox script that spawns/imports Moor
 # code can lose the DB-layer Kanban mutation guard while still inheriting
 # HERMES_HOME.
 #
@@ -1478,15 +1478,15 @@ def execute_code(
 
         # ``hermes_tools.py`` always lives in the staging directory, so that
         # directory must be importable even when project mode changes CWD.
-        # Hermes's own package root is useful too, but only when the child
+        # Moor's own package root is useful too, but only when the child
         # uses the same Python environment. Project mode can select an
-        # external venv; exposing Hermes's site-packages to that interpreter
+        # external venv; exposing Moor's site-packages to that interpreter
         # can mix incompatible compiled extensions (for example, Python 3.12
         # NumPy with a Python 3.9 project interpreter).
         #
-        # Before re-injecting PYTHONPATH, strip Hermes-owned entries that
+        # Before re-injecting PYTHONPATH, strip Moor-owned entries that
         # leaked through _scrub_child_env (PYTHONPATH is in _SAFE_ENV_PREFIXES
-        # so it passes the scrub).  They are redundant for same-Hermes-
+        # so it passes the scrub).  They are redundant for same-Moor-
         # environment children and may be incompatible with external
         # interpreters (project mode can select a different venv), so they
         # must not shadow or poison the child's sys.path (#74817).
@@ -1503,7 +1503,7 @@ def execute_code(
             # fails" reports are diagnosable without log spam.
             _external_env_logged.add(_child_python)
             logger.info(
-                "execute_code: child interpreter %s is outside the Hermes "
+                "execute_code: child interpreter %s is outside the Moor "
                 "environment; hermes root omitted from PYTHONPATH",
                 _child_python,
             )
@@ -1858,7 +1858,7 @@ _PROBE_CACHE_MAX = 32
 _usable_python_cache: dict = {}
 _python_prefix_cache: dict = {}
 
-# Interpreter paths already reported as outside the Hermes environment —
+# Interpreter paths already reported as outside the Moor environment —
 # dedupes the exclusion log to once per path per process.
 _external_env_logged: set = set()
 
@@ -1934,7 +1934,7 @@ def _python_environment_prefix(python_path: str) -> str:
 
 
 def _uses_hermes_python_environment(python_path: str) -> bool:
-    """Whether *python_path* belongs to Hermes's active Python environment.
+    """Whether *python_path* belongs to Moor's active Python environment.
 
     Short-circuits when *python_path* IS the running interpreter (by path or
     realpath) — no subprocess probe on the default strict-mode path, and no
@@ -2131,7 +2131,7 @@ def build_execute_code_schema(enabled_sandbox_tools: set = None,
         "you need to see the full result and apply complex reasoning, "
         "or the task requires interactive user input.\n\n"
 =======
-        "Run a Python script that calls Hermes tools programmatically. "
+        "Run a Python script that calls Moor tools programmatically. "
         "Use when you need 3+ tool calls with logic between them: "
         "filtering/reducing large outputs before they enter context, "
         "conditional branching, or loops (N pages/files, retry on failure). "

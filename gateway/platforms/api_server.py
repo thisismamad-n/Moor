@@ -124,7 +124,7 @@ logger = logging.getLogger(__name__)
 
 
 def _hermes_version() -> str:
-    """Return the canonical Hermes Agent version string.
+    """Return the canonical Moor Agent version string.
 
     ``hermes_cli.__version__`` is the runtime source of truth used by the CLI,
     dashboard, portal tags, and release script. Prefer it over installed
@@ -387,9 +387,9 @@ def _request_agent_overrides(
     hardcode model names ("gpt-4o", ...), and existing deployments rely on
     those falling back to the gateway default on the OpenAI-compatible
     surfaces — so those handlers pass the opt-in
-    ``direct_model_requests`` config value here, while Hermes-native
+    ``direct_model_requests`` config value here, while Moor-native
     endpoints (session chat, /v1/runs) always allow it.  A request that
-    sends an explicit ``provider`` is unambiguously Hermes-aware and is
+    sends an explicit ``provider`` is unambiguously Moor-aware and is
     always honored.
     """
     if not isinstance(body, dict):
@@ -1409,7 +1409,7 @@ class APIServerAdapter(BasePlatformAdapter):
         # OpenAI clients routinely hardcode model names ("gpt-4o", ...), and
         # existing deployments rely on those falling back to the gateway
         # default rather than switching the executing model.  Requests that
-        # send an explicit ``provider`` — and the Hermes-native session-chat
+        # send an explicit ``provider`` — and the Moor-native session-chat
         # and /v1/runs endpoints — are always honored regardless of this flag.
         # (Idea credit: PR #22825 by @mssteuer.)
         self._direct_model_requests: bool = _coerce_request_bool(
@@ -3074,11 +3074,11 @@ class APIServerAdapter(BasePlatformAdapter):
         return web.json_response({"object": "list", "data": models})
 
     async def _handle_model_options(self, request: "web.Request") -> "web.Response":
-        """GET /api/model/options — return Hermes provider/model inventory.
+        """GET /api/model/options — return Moor provider/model inventory.
 
         This mirrors the dashboard/TUI model picker inventory endpoint so
         external clients using the API server can sync to the user's configured
-        Hermes provider catalog instead of scraping the single OpenAI-compatible
+        Moor provider catalog instead of scraping the single OpenAI-compatible
         `/v1/models` alias.
         """
         auth_err = self._check_auth(request)
@@ -3401,7 +3401,7 @@ class APIServerAdapter(BasePlatformAdapter):
 <<<<<<< HEAD
         """POST /api/sessions — create an empty Moor session row."""
 =======
-        """POST /api/sessions -- create an empty Hermes session row.
+        """POST /api/sessions -- create an empty Moor session row.
 
         The existence check, insert, title handling, and invalid-title
         rollback run as a single off-loop operation to avoid a TOCTOU
@@ -3779,7 +3779,7 @@ class APIServerAdapter(BasePlatformAdapter):
 <<<<<<< HEAD
             headers["X-Moor-Session-Key"] = gateway_session_key
 =======
-            headers["X-Hermes-Session-Key"] = gateway_session_key
+            headers["X-Moor-Session-Key"] = gateway_session_key
         runtime = {}
         if isinstance(result, dict):
             runtime = result.get("runtime") or {}
@@ -5565,7 +5565,7 @@ class APIServerAdapter(BasePlatformAdapter):
 
         # Persist the effective session ID surfaced by _run_agent so that
         # compression-triggered session rotations propagate to the stored
-        # response and the X-Hermes-Session-Id header.  Without this,
+        # response and the X-Moor-Session-Id header.  Without this,
         # previous_response_id chaining keeps resuming the pre-rotation
         # session and re-triggers compression on every subsequent request.
         _effective_session_id = session_id
@@ -5613,7 +5613,7 @@ class APIServerAdapter(BasePlatformAdapter):
 <<<<<<< HEAD
         response_headers = {"X-Moor-Session-Id": session_id}
 =======
-        response_headers = {"X-Hermes-Session-Id": _effective_session_id}
+        response_headers = {"X-Moor-Session-Id": _effective_session_id}
 >>>>>>> upstream/main
         if gateway_session_key:
             response_headers["X-Moor-Session-Key"] = gateway_session_key
@@ -6180,7 +6180,7 @@ class APIServerAdapter(BasePlatformAdapter):
                         "id": f"fc_{uuid.uuid4().hex[:24]}",
                         "type": "function_call",
                         # These calls were already executed server-side by the
-                        # Hermes agent; they are replayed for structured tool
+                        # Moor agent; they are replayed for structured tool
                         # UI only.  Mark them completed (matching the SSE
                         # streaming path) so OpenAI clients don't interpret
                         # them as pending calls the client must execute.
@@ -6861,7 +6861,7 @@ class APIServerAdapter(BasePlatformAdapter):
                             approval_token = set_current_session_key(approval_session_key)
                             session_tokens = self._bind_api_server_session(
                                 # chat_id carries the raw session id (the
-                                # X-Hermes-Session-Id equivalent) exactly like
+                                # X-Moor-Session-Id equivalent) exactly like
                                 # the other agent-entry routes bind it via
                                 # _run_agent(). Without it,
                                 # tools.async_delegation reads an empty

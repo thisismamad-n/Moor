@@ -1166,7 +1166,7 @@ def _command_provider_env_passthrough(config: Dict[str, Any]) -> list:
     """Return the provider's ``env_passthrough`` allowlist (opt-out of scrub).
 
     Command providers legitimately reference their own API keys in the shell
-    template (curl one-liners). The child env is scrubbed of Hermes secrets by
+    template (curl one-liners). The child env is scrubbed of Moor secrets by
     default; ``env_passthrough: [MY_API_KEY, ...]`` copies the named variables
     back from the parent environment so a trusted template keeps working.
     """
@@ -1183,7 +1183,7 @@ def _run_command_tts(
 ) -> subprocess.CompletedProcess:
     """Run a command-provider shell command with process-tree idle cleanup.
 
-    Child env is scrubbed of Hermes secrets (salvage of #56332) while still
+    Child env is scrubbed of Moor secrets (salvage of #56332) while still
     propagating delegated-child lineage markers when applicable.
     """
     from agent.delegation_context import delegated_child_subprocess_env

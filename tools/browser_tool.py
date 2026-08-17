@@ -756,7 +756,7 @@ def _ensure_browser_plugins_loaded() -> None:
 
 
 def _get_cloud_provider() -> Optional[CloudBrowserProvider]:
-    """Return the provider cached for the active Hermes profile."""
+    """Return the provider cached for the active Moor profile."""
     global _cached_cloud_provider, _cloud_provider_resolved
     global _cached_cloud_provider_scope
 
@@ -1231,7 +1231,7 @@ def _run_chrome_fallback_command(
         return {"success": False, "error": hint}
 
     # Resolve npx via the same PATH + extended-PATH cascade _find_agent_browser
-    # uses, not a bare shutil.which("npx") — Hermes-managed-Node-only setups
+    # uses, not a bare shutil.which("npx") — Moor-managed-Node-only setups
     # resolve npx only through the extended fallback path, and a bare lookup
     # would let a broken system npx shadow a healthy managed one. If npx isn't
     # found at all (Termux, bare container), fall back to the bare name and
@@ -2461,11 +2461,11 @@ def _agent_browser_candidate_present(path: str | None) -> bool:
 
 
 def _resolve_npx_bin() -> Optional[str]:
-    """Resolve a runnable npx binary, preferring the Hermes-managed/Homebrew
+    """Resolve a runnable npx binary, preferring the Moor-managed/Homebrew
     extended search over a bare ambient PATH lookup.
 
     Checking bare PATH first would let a broken or unrelated system npx
-    shadow a healthy Hermes-managed one with no recovery — every candidate
+    shadow a healthy Moor-managed one with no recovery — every candidate
     is therefore validated with ``node_tool_runnable`` (the same check
     ``find_hermes_node_executable`` uses to self-heal a managed Node tree)
     before being trusted, falling through to the next candidate otherwise.
@@ -2680,7 +2680,7 @@ def warm_agent_browser_npx_cache(timeout: float = 60.0) -> bool:
     Runs a credential-scrubbed, PATH-propagated environment matching every
     other agent-browser subprocess spawn (see ``_build_browser_env``) —
     this used to inherit the full parent environment, including every
-    provider/gateway credential Hermes holds, while running registry-fetched
+    provider/gateway credential Moor holds, while running registry-fetched
     npm code on every ``hermes update`` (the GHSA-m4m8-xjp4-5rmm class of
     risk ``_build_browser_env`` exists specifically to prevent). Runs in its
     own process group and kills the *whole* group — not just the top-level

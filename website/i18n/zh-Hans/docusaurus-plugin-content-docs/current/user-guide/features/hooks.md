@@ -9,7 +9,7 @@ description: "在关键生命周期节点运行自定义代码——记录活动
 <<<<<<< HEAD
 Moor 有三套 hook 系统，可在关键生命周期节点运行自定义代码：
 =======
-Hermes 有四套 hook 系统，可在关键生命周期节点运行自定义代码：
+Moor 有四套 hook 系统，可在关键生命周期节点运行自定义代码：
 >>>>>>> upstream/main
 
 | 系统 | 注册方式 | 运行环境 | 使用场景 |
@@ -558,7 +558,7 @@ return None
 
 **上下文注入位置：** 始终注入到**用户消息**，而非系统 prompt。这保留了 prompt 缓存——系统 prompt 在各轮次间保持不变，已缓存的 token 得以复用。系统 prompt 是 Moor 的领域（模型指导、工具执行、个性、技能）。插件在用户输入旁边贡献上下文。
 
-干净的用户消息 `content` 保持不变。为保证 replay 和 prompt cache 稳定，Hermes 可能把实际发送给 API 的消息（包括插件注入上下文）持久化到该行的 `api_content` sidecar。
+干净的用户消息 `content` 保持不变。为保证 replay 和 prompt cache 稳定，Moor 可能把实际发送给 API 的消息（包括插件注入上下文）持久化到该行的 `api_content` sidecar。
 
 当**多个插件**返回上下文时，其输出按插件发现顺序（按目录名字母顺序）以双换行符连接。
 

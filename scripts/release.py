@@ -2628,7 +2628,7 @@ def main():
                 f"    gh release create {tag_name} --title 'Moor Agent v{new_version} ({calver_date})' "
                 f"--notes-file .release_notes.md {' '.join(str(path) for path in artifacts)}"
 =======
-                f"    gh release create {tag_name} --title 'Hermes Agent v{new_version} ({calver_date})' "
+                f"    gh release create {tag_name} --title 'Moor Agent v{new_version} ({calver_date})' "
                 f"--notes-file .release_notes.md"
 >>>>>>> upstream/main
             )

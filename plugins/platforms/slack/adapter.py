@@ -68,7 +68,7 @@ except ImportError:  # pragma: no cover - plugin loaded outside package context
 logger = logging.getLogger(__name__)
 
 # User-Agent prefix for outbound Slack API calls so platform partners can
-# identify HermesAgent traffic — matching other Hermes outbound surfaces
+# identify HermesAgent traffic — matching other Moor outbound surfaces
 # that already set ``HermesAgent/<version>`` for platform-partner attribution.
 try:
     from hermes_cli import __version__ as _HERMES_VERSION
@@ -2063,7 +2063,7 @@ class SlackAdapter(BasePlatformAdapter):
                 await self._handle_assistant_thread_lifecycle_event(event, body)
 
             # Catch-all no-op ack for any other subscribed event type that
-            # Hermes has no listener for (e.g. user_change,
+            # Moor has no listener for (e.g. user_change,
             # user_huddle_changed, member_joined_channel, channel_archive,
             # pin_added, etc.).
             #
@@ -2093,7 +2093,7 @@ class SlackAdapter(BasePlatformAdapter):
             async def handle_unhandled_event(event, body, logger):
                 logger.debug(
                     "[Slack] Ignoring unhandled event type=%s (no listener "
-                    "registered; subscribed events not handled by Hermes can "
+                    "registered; subscribed events not handled by Moor can "
                     "be removed from the Slack app manifest via "
                     "`hermes slack manifest`)",
                     (event or {}).get(
@@ -2566,7 +2566,7 @@ class SlackAdapter(BasePlatformAdapter):
         chat_id: str,
         tasks: List[Dict[str, str]],
         *,
-        title: str = "Hermes is working",
+        title: str = "Moor is working",
         reply_to: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
         fallback_text: Optional[str] = None,
@@ -6143,7 +6143,7 @@ class SlackAdapter(BasePlatformAdapter):
 
         # Some Slack bot posts arrive as ordinary-looking message events with a
         # bot *user* id but without ``bot_id``/``subtype=bot_message``.  This is
-        # the shape produced by peer Hermes agents in Socket Mode on some
+        # the shape produced by peer Moor agents in Socket Mode on some
         # workspaces.  If we let those fall through as human users, an old
         # thread mention or active session will re-trigger the target agent on
         # every peer status/error/ack message, causing agent-agent loops.  Apply

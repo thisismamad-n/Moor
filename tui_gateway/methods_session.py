@@ -2535,7 +2535,7 @@ def _(rid, params: dict) -> dict:
     model = getattr(agent, "model", None) or mirror.get("model") or "(unknown)"
     project = _project_info_for_cwd(_display_session_cwd(session))
     lines = [
-        "Hermes TUI Status",
+        "Moor TUI Status",
         "",
         f"Session ID: {key}",
         f"Path: {display_hermes_home()}",
@@ -2823,7 +2823,7 @@ def _(rid, params: dict) -> dict:
         return _ok(rid, result)
 
     agent = session["agent"]
-    # Mirror the classic CLI /save: snapshot under the Hermes profile home
+    # Mirror the classic CLI /save: snapshot under the Moor profile home
     # (~/.hermes/sessions/saved/) rather than the project/workspace CWD, and
     # include the system prompt so the export matches the dashboard save.
     saved_dir = get_hermes_home() / "sessions" / "saved"

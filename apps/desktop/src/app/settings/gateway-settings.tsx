@@ -189,7 +189,7 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
   // so confirm resumes the right one.
   const [plainTextConfirm, setPlainTextConfirm] = useState<null | { apply: boolean }>(null)
 
-  // --- Hermes Cloud (cloud mode) state ---
+  // --- Moor Cloud (cloud mode) state ---
 >>>>>>> upstream/main
   // One portal session powers discovery + the silent per-agent cascade. These
   // track the cloud panel: whether we're signed in, the discovered agent list,

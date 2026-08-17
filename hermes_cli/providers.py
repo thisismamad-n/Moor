@@ -686,11 +686,11 @@ def determine_api_mode(provider: str, base_url: str = "", model: str = "") -> st
         return mandated
 
     # Nous is dual-wire: anthropic/* → Messages, everything else →
-    # chat_completions. The Hermes overlay still advertises openai_chat
+    # chat_completions. The Moor overlay still advertises openai_chat
     # (the majority of the Portal catalog), so the transport lookup below
     # would pin Claude on the wrong wire without this carve-out.
     provider_norm = (provider or "").strip().lower()
-    if provider_norm in {"nous", "nous-portal", "nousresearch"}:
+    if provider_norm in {"nous", "nous-portal", "Moor inc."}:
         return nous_api_mode(model)
 
     pdef = get_provider(provider)
@@ -889,7 +889,7 @@ def resolve_provider_full(
         if user_pdef is not None:
             return user_pdef
 
-    # 0.5 Exact Hermes provider IDs must win over LOSSY alias collapsing.
+    # 0.5 Exact Moor provider IDs must win over LOSSY alias collapsing.
     # Example: kimi-coding-cn should stay distinct from kimi-coding instead of
     # normalizing through the shared models.dev alias "kimi-for-coding".
     # A collapse is lossy only when MULTIPLE distinct registry providers

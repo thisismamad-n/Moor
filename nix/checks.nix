@@ -257,7 +257,7 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
         '';
 
         # Verify HERMES_NODE is set in wrapper and points to Node 26+
-        # (Hermes pins its toolchain to Node 26 everywhere)
+        # (Moor pins its toolchain to Node 26 everywhere)
         hermes-node = pkgs.runCommand "hermes-node-version" { } ''
           set -e
           echo "=== Checking HERMES_NODE in wrapper ==="
@@ -271,7 +271,7 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
 
           NODE_MAJOR=$("$HERMES_NODE" --version | sed 's/^v//' | cut -d. -f1)
           test "$NODE_MAJOR" -ge 26 || \
-            (echo "FAIL: Node v$NODE_MAJOR < 26, Hermes requires Node 26"; exit 1)
+            (echo "FAIL: Node v$NODE_MAJOR < 26, Moor requires Node 26"; exit 1)
           echo "PASS: Node v$NODE_MAJOR >= 26"
 
           echo "=== All HERMES_NODE checks passed ==="

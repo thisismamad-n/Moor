@@ -94,7 +94,7 @@ memo notes -ex                    # Export to HTML/Markdown
 name: apple-notes
 description: "Manage Apple Notes via memo CLI: create, search, edit."
 version: 1.0.1
-author: Hermes Agent
+author: Moor Agent
 license: MIT
 platforms: [macos]
 metadata:

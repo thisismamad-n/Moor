@@ -550,7 +550,7 @@ if __name__ == "__main__":
     main()
 =======
 #!/usr/bin/env python3
-"""Live test harness for Hermes Agent's Tool Search feature.
+"""Live test harness for Moor Agent's Tool Search feature.
 
 Spins up a real AIAgent against a real model, registers ~20 fake "MCP" tools
 with realistic shapes (github-like, slack-like, calendar-like, search-like),

@@ -33,7 +33,7 @@ hermes desktop
 <<<<<<< HEAD
 It builds and launches the GUI against your existing install — same config, keys, sessions, and skills. On first launch Moor walks you through picking a provider and model; nothing else to configure.
 =======
-It builds and launches the GUI against your existing install — same config, keys, sessions, and skills. If Desktop cannot find a usable runtime or saved remote connection, first launch lets you connect to an existing Hermes gateway or install Hermes locally. Local onboarding then walks you through choosing a provider and model.
+It builds and launches the GUI against your existing install — same config, keys, sessions, and skills. If Desktop cannot find a usable runtime or saved remote connection, first launch lets you connect to an existing Moor gateway or install Moor locally. Local onboarding then walks you through choosing a provider and model.
 >>>>>>> upstream/main
 
 ### Prebuilt installers
@@ -139,7 +139,7 @@ Cloud connections. Remote and cloud modes use the same remote-capability path;
 authentication and discovery differ, not the renderer feature model.
 
 When no usable local runtime or saved remote connection exists, the first-run
-screen offers **Connect to existing Hermes** before starting the local installer.
+screen offers **Connect to existing Moor** before starting the local installer.
 Desktop probes the gateway to discover token or OAuth authentication, requires a
 successful HTTP and WebSocket connection test, and saves the connection using
 the same encrypted Desktop configuration used by Settings. A saved remote
@@ -148,7 +148,7 @@ still includes the local-install option; this is a remote operating mode, not a
 separate client-only application.
 
 In remote mode the gateway host is the execution boundary: agent tools,
-terminal commands, and file operations run against the remote Hermes host, not
+terminal commands, and file operations run against the remote Moor host, not
 the computer displaying the Desktop UI.
 
 Remote gateways that sit behind an access proxy may require extra headers on
@@ -174,8 +174,8 @@ Electron `userData/connection.json` remote block:
 Per-profile remote entries under `profiles[name].headers` use the same shape.
 Desktop applies these headers only to matching remote gateway requests, treats
 `https` and `wss` as the same gateway origin for WebSocket upgrades, and drops
-transport- or Hermes-managed header names such as `Authorization`, `Cookie`,
-`Host`, `Origin`, `Referer`, and `X-Hermes-Session-Token`.
+transport- or Moor-managed header names such as `Authorization`, `Cookie`,
+`Host`, `Origin`, `Referer`, and `X-Moor-Session-Token`.
 
 Projects are the workspace abstraction. A project may own multiple folders,
 repositories, worktrees, and sessions; a bare new chat remains detached unless

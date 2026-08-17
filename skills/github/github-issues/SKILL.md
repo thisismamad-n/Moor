@@ -374,7 +374,7 @@ curl -s \
 name: github-issues
 description: "Create, triage, label, assign GitHub issues via gh or REST."
 version: 1.1.0
-author: Hermes Agent
+author: Moor Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

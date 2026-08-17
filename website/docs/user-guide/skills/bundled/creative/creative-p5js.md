@@ -593,7 +593,7 @@ p5.js sketches: gen art, shaders, interactive, 3D.
 | Source | Bundled (installed by default) |
 | Path | `skills/creative/p5js` |
 | Version | `1.0.0` |
-| Author | SHL0MS, Hermes Agent |
+| Author | SHL0MS, Moor Agent |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `creative-coding`, `generative-art`, `p5js`, `canvas`, `interactive`, `visualization`, `webgl`, `shaders`, `animation` |
@@ -602,7 +602,7 @@ p5.js sketches: gen art, shaders, interactive, 3D.
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Hermes loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that Moor loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # p5.js Production Pipeline

@@ -370,7 +370,7 @@ def _azure_reasoning_item():
 
 def _azure_post_tool_messages():
     return [
-        {"role": "system", "content": "You are Hermes."},
+        {"role": "system", "content": "You are Moor."},
         {"role": "user", "content": "Create a marker"},
         {
             "role": "assistant",
@@ -419,7 +419,7 @@ def test_build_api_kwargs_azure_foundry_non_tool_preserves_reasoning(monkeypatch
     agent = _build_azure_foundry_agent(monkeypatch)
 
     messages = [
-        {"role": "system", "content": "You are Hermes."},
+        {"role": "system", "content": "You are Moor."},
         {"role": "user", "content": "Explain recursion"},
         {
             "role": "assistant",

@@ -9597,7 +9597,7 @@ def has_spawnable_review(conn: sqlite3.Connection) -> bool:
 def review_dispatch_enabled() -> bool:
     """Return whether first-class review tasks should dispatch automatically.
 
-    The default is true because Hermes ships the ``sdlc-review`` skill and the
+    The default is true because Moor ships the ``sdlc-review`` skill and the
     review lifecycle includes a supported reviewer-owned changes-requested
     transition. Operators can disable it for human-only review boards.
     """
@@ -9632,7 +9632,7 @@ def review_dispatch_enabled() -> bool:
 # pressure level is "unknown" (no spawn restriction).
 # ---------------------------------------------------------------------------
 
-# Assumed per-worker memory footprint for the derived default cap. Hermes
+# Assumed per-worker memory footprint for the derived default cap. Moor
 # workers are full agent processes (Python + model client + tool subprocesses);
 # ~512 MiB is a deliberately conservative planning number so the derived cap
 # errs toward fewer workers on small VMs.
@@ -10305,7 +10305,7 @@ def _dispatch_once_locked(
     # Same concurrency model as ready dispatch: review spawns count
     # against max_spawn alongside ready tasks, so the total number of
     # running workers stays bounded.
-    # Auto-dispatch is enabled by default because Hermes bundles the
+    # Auto-dispatch is enabled by default because Moor bundles the
     # ``sdlc-review`` skill and reviewer workers can now approve, request
     # changes without block-loop accounting, or escalate a genuine blocker.
     # Human-only boards can disable it with ``kanban.review_dispatch``.

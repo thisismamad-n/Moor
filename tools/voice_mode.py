@@ -1344,7 +1344,7 @@ from hermes_constants import is_termux as _is_termux_environment
 def _voice_capture_install_hint() -> str:
     if _is_termux_environment():
         return "pkg install python-numpy portaudio && python -m pip install sounddevice"
-    # If we're running inside a venv (e.g. the bundled Hermes venv at
+    # If we're running inside a venv (e.g. the bundled Moor venv at
     # ~/.hermes/profiles/<name>/hermes-agent/venv/), `pip install` on the
     # user's PATH won't reach the right site-packages — the bare hint sends
     # them off to whichever Python their shell resolves first, which on macOS
@@ -1522,7 +1522,7 @@ def detect_audio_environment() -> dict:
             warnings.append(
                 "Running over SSH -- no audio devices available.\n"
                 "  If a sound server (PulseAudio/PipeWire) is running on this host,\n"
-                "  point Hermes at it, e.g.:\n"
+                "  point Moor at it, e.g.:\n"
                 "    export XDG_RUNTIME_DIR=/run/user/$(id -u)\n"
                 "    # or: export PULSE_SERVER=unix:$XDG_RUNTIME_DIR/pulse/native"
             )
@@ -2532,7 +2532,7 @@ def is_voice_stop_phrase(transcript: str, stop_phrases: Optional[tuple] = None) 
 
 
 # Similarity ratio (difflib.SequenceMatcher, 0..1) above which a
-# playback-phase barge transcript is treated as a self-capture of Hermes'
+# playback-phase barge transcript is treated as a self-capture of Moor'
 # own just-spoken TTS rather than genuine user speech. See #75780: the
 # full-duplex listener has no acoustic echo cancellation, so speaker bleed
 # on the mic can trip the barge trigger and get transcribed nearly
@@ -2562,9 +2562,9 @@ def is_tts_echo(
     """Return True when *transcript* looks like a self-capture of *spoken_text*.
 
     Compares a playback-phase barge-in transcript against the TTS text
-    Hermes just spoke using a character-level similarity ratio, which works
+    Moor just spoke using a character-level similarity ratio, which works
     across languages without word-tokenization. A genuine user interjection
-    is very unlikely to closely match Hermes' own words, so a high ratio is
+    is very unlikely to closely match Moor' own words, so a high ratio is
     a strong signal of speaker-bleed self-capture (fail-closed guard for the
     playback-phase full-duplex listener, which has no acoustic echo
     cancellation; see #75780).
@@ -2927,7 +2927,7 @@ def _play_audio_file_impl(file_path: str) -> bool:
     # ffmpeg are available, convert the audio to a uniquely-named WAV in the
     # Windows %TEMP% directory and play it via Media.SoundPlayer -- which
     # always has a working audio device on the Windows host (#17608).
-    # A unique suffix prevents concurrent Hermes TTS calls from colliding on
+    # A unique suffix prevents concurrent Moor TTS calls from colliding on
     # the same filename. The WAV is deleted in the shell pipeline
     # unconditionally (success or failure), and the ORIGINAL ffmpeg/
     # powershell exit status is preserved past that cleanup so the player

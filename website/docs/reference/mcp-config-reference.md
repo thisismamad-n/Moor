@@ -337,9 +337,9 @@ Behavior:
 - Token refresh is automatic; re-authorization only happens when refresh fails
 - Only applies to HTTP/StreamableHTTP transport (`url`-based servers)
 
-## Add to Hermes link
+## Add to Moor link
 
-MCP vendors and docs can offer a one-click **"Add to Hermes"** button that opens the Hermes desktop app with a pre-filled server config, mirroring Cursor's `cursor://anysphere.cursor-deeplink/mcp/install` scheme:
+MCP vendors and docs can offer a one-click **"Add to Moor"** button that opens the Moor desktop app with a pre-filled server config, mirroring Cursor's `cursor://anysphere.cursor-deeplink/mcp/install` scheme:
 
 ```text
 hermes://mcp/install?name=NAME&config=BASE64

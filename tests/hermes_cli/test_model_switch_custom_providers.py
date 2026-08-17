@@ -1584,7 +1584,7 @@ def test_cached_catalog_is_not_written_back_to_config(monkeypatch):
 
 
 def test_keyless_endpoint_with_saved_catalog_still_reads_cache(monkeypatch):
-    """A keyless local server must not be pinned by Hermes' own auto-save.
+    """A keyless local server must not be pinned by Moor' own auto-save.
 
     ``_save_discovered_models_to_config()`` writes a plain list into
     ``models:``, which ``_models_config_is_allowlist()`` reads back as an
@@ -1618,7 +1618,7 @@ def test_keyless_endpoint_with_saved_catalog_still_reads_cache(monkeypatch):
 def test_keyless_endpoint_with_saved_catalog_is_still_not_probed(monkeypatch):
     """...but the network-cost gate it rides on must survive intact.
 
-    The no-key + declared-catalog combination exists to keep Hermes from
+    The no-key + declared-catalog combination exists to keep Moor from
     probing an endpoint it cannot authenticate to. Serving that endpoint from
     a warm cache is free; hitting the network is not. With a cold cache and
     live probing fully enabled, this row must still make zero fetches.

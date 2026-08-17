@@ -67,7 +67,7 @@ image_gen:
   max_parallel_requests: 4      # concurrent images in one tool-call batch
 ```
 
-`max_parallel_requests` defaults to `4`. Hermes clamps it to at least one and
+`max_parallel_requests` defaults to `4`. Moor clamps it to at least one and
 to the global tool-worker limit, so image providers receive bounded parallel
 requests without allowing an image batch to bypass the agent's concurrency cap.
 
@@ -130,7 +130,7 @@ edit-capable model.
 :::note OpenAI (Codex auth) is best-effort
 
 The Codex surface (`chatgpt.com/backend-api/codex`) hosts `image_generation`
-as a tool the chat model may call, and Hermes cannot force the call — the
+as a tool the chat model may call, and Moor cannot force the call — the
 backend rejects every `tool_choice` shape for hosted tools, so the request
 relies on instructions to steer the model. When the host model declines to
 invoke the tool, the call fails with `empty_response`. Whether the hosted

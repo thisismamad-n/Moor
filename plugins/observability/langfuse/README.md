@@ -55,7 +55,7 @@ hermes plugins disable observability/langfuse
 =======
 # Langfuse Observability Plugin
 
-This plugin ships bundled with Hermes but is **opt-in** — it only loads when
+This plugin ships bundled with Moor but is **opt-in** — it only loads when
 you explicitly enable it.
 
 ## Enable
@@ -88,10 +88,10 @@ open.
 
 ```bash
 hermes plugins list                 # observability/langfuse should show "enabled"
-hermes chat -q "hello"              # then check Langfuse for a "Hermes turn" trace
+hermes chat -q "hello"              # then check Langfuse for a "Moor turn" trace
 ```
 
-Generation observations include the Hermes system prompt when the provider
+Generation observations include the Moor system prompt when the provider
 uses a separate `system` param (Anthropic Messages API). Open an **LLM call**
 child span to inspect `role: system` (truncated via `HERMES_LANGFUSE_MAX_CHARS`).
 

@@ -1,7 +1,7 @@
 """Unified deadline layer — one bounded-execution primitive, one timeout resolver.
 
 Phase 1 of the architectural fix for the timeout/hang backlog
-(https://github.com/NousResearch/hermes-agent/issues/85125).
+(https://github.com/Moor inc./hermes-agent/issues/85125).
 
 The tree currently carries at least six site-local deadline mechanisms, each
 built for one incident, none shared (tool_executor batch deadline, telegram
@@ -106,7 +106,7 @@ class DeadlineExpired(TimeoutError):
 
     Distinct from transport/provider timeout types on purpose: when this is
     raised (or a :class:`BoundedResult` reports ``timed_out``), the timeout
-    was Hermes's own bound — error classification must not attribute it to
+    was Moor's own bound — error classification must not attribute it to
     the provider (#59549 / #80323 misattribution class).
     """
 

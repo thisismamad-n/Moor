@@ -140,7 +140,7 @@ def get_hermes_home() -> Path:
 
 
 def hermes_home_key(path: str | Path | None = None) -> str:
-    """Return a stable key for a Hermes home/profile directory.
+    """Return a stable key for a Moor home/profile directory.
 
     Runtime registries use this key to isolate plugin-owned entries while
     keeping built-in registrations process-global.  ``strict=False`` preserves
@@ -321,7 +321,7 @@ def get_hermes_dir(
     *,
     home: Path | None = None,
 ) -> Path:
-    """Resolve a Hermes subdirectory with backward compatibility.
+    """Resolve a Moor subdirectory with backward compatibility.
 >>>>>>> upstream/main
 
     New installs get the consolidated layout (e.g. ``cache/images``).
@@ -339,7 +339,7 @@ def get_hermes_dir(
     Args:
         new_subpath: Preferred path relative to HERMES_HOME (e.g. ``"cache/images"``).
         old_name: Legacy path relative to HERMES_HOME (e.g. ``"image_cache"``).
-        home: Optional explicit Hermes home. Profile-aware callers that manage
+        home: Optional explicit Moor home. Profile-aware callers that manage
             more than one home in the same process use this instead of
             temporarily mutating the process or context-local HERMES_HOME.
 
@@ -528,7 +528,7 @@ def _print_managed_node_in_use_notice() -> None:
         return
     _managed_node_in_use_notice_printed = True
     print(
-        "→ Hermes-managed Node.js is in use by a running app; deferring its "
+        "→ Moor-managed Node.js is in use by a running app; deferring its "
         "upgrade until the app is closed (re-run `hermes update` afterwards).",
         flush=True,
     )
@@ -723,11 +723,11 @@ def _bootstrap_managed_node_posix() -> bool:
 
 
 def bootstrap_hermes_managed_node() -> str | None:
-    """Install a Hermes-managed Node tree and return its npm path.
+    """Install a Moor-managed Node tree and return its npm path.
 
     Used when the only Node/npm on the machine belongs to the user (system,
     nvm, brew, Nix) and cannot satisfy the repo's ``engines`` requirements —
-    Hermes never modifies a toolchain it does not own, so instead it provisions
+    Moor never modifies a toolchain it does not own, so instead it provisions
     its own tree under ``$HERMES_HOME/node`` (the same tree a fresh install
     creates) and works with that.
 
@@ -852,7 +852,7 @@ def _managed_node_tree_outdated(home: Path | None = None) -> bool:
 
 
 def find_hermes_node_executable(command: str) -> str | None:
-    """Return a Hermes-managed Node/npm executable path, healing broken trees.
+    """Return a Moor-managed Node/npm executable path, healing broken trees.
 
     Outdated trees (node major below ``_HERMES_NODE_TARGET_MAJOR``) heal the
     same way broken ones do — the once-per-process heal redownloads the target
@@ -1673,7 +1673,7 @@ def venv_python_path(venv_dir, *, windows: bool | None = None) -> Path:
 
 # ─── Partial-update diagnostics ──────────────────────────────────────────────
 
-# Top-level packages/modules that ship as part of Hermes itself. An ImportError
+# Top-level packages/modules that ship as part of Moor itself. An ImportError
 # naming one of these means our own tree is inconsistent; anything else is a
 # third-party problem with different remediation. Single source of truth —
 # `hermes_cli.update_cmd`'s post-update probe consumes this same set so the
@@ -1698,7 +1698,7 @@ FIRST_PARTY_MODULE_ROOTS = frozenset(
 
 
 def is_first_party_module(name: str | None) -> bool:
-    """True when *name* is a module that ships with Hermes.
+    """True when *name* is a module that ships with Moor.
 
     Matches on the first dotted segment against an exact set — a substring or
     ``startswith`` test would also claim third-party ``agents``, ``agentops``,
@@ -1742,5 +1742,5 @@ def partial_update_hint(exc: BaseException) -> list[str]:
         "and a related one was not.",
         "Re-run the update to bring the whole tree to the same version:",
         "    hermes update",
-        "If that also fails, reinstall: https://hermes-agent.nousresearch.com",
+        "If that also fails, reinstall: https://hermes-agent.Moor inc..com",
     ]

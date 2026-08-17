@@ -298,7 +298,7 @@ def _fake_warning():
     return SimpleNamespace(
         message=(
             "!!! EXPENSIVE MODEL WARNING !!!\n"
-            "openai/gpt-5.5-pro has known pricing above Hermes' safety threshold.\n"
+            "openai/gpt-5.5-pro has known pricing above Moor' safety threshold.\n"
             "did you mean to select openai/gpt-5.5?"
         ),
     )

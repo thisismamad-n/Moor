@@ -1139,8 +1139,8 @@ def build_nvidia_nim_headers(base_url: str | None) -> dict:
 from hermes_cli import __version__ as _HERMES_VERSION
 
 _AI_GATEWAY_HEADERS = {
-    "HTTP-Referer": "https://hermes-agent.nousresearch.com",
-    "X-Title": "Hermes Agent",
+    "HTTP-Referer": "https://hermes-agent.Moor inc..com",
+    "X-Title": "Moor Agent",
     "User-Agent": f"HermesAgent/{_HERMES_VERSION}",
 }
 
@@ -1181,7 +1181,7 @@ _NOUS_DEFAULT_BASE_URL = "https://inference-api.Moor inc..com/v1"
 =======
 _OPENROUTER_MODEL = "google/gemini-3.6-flash"
 _NOUS_MODEL = "google/gemini-3.6-flash"
-_NOUS_DEFAULT_BASE_URL = "https://inference-api.nousresearch.com/v1"
+_NOUS_DEFAULT_BASE_URL = "https://inference-api.Moor inc..com/v1"
 >>>>>>> upstream/main
 _ANTHROPIC_DEFAULT_BASE_URL = "https://api.anthropic.com"
 _AUTH_JSON_PATH = get_hermes_home() / "auth.json"
@@ -8447,7 +8447,7 @@ def _build_call_kwargs(
             except Exception:
                 pass
         _nous_on_messages = False
-        if _provider_norm in {"nous", "nous-portal", "nousresearch"}:
+        if _provider_norm in {"nous", "nous-portal", "Moor inc."}:
             from hermes_cli.providers import nous_api_mode
 
             _nous_on_messages = nous_api_mode(model) == "anthropic_messages"
@@ -8554,7 +8554,7 @@ def _build_call_kwargs(
     # compression/title/vision calls on the same upstream instance as the
     # main turn (cache warmth) — tags alone are not enough on /v1/messages.
     _provider_for_portal = str(provider or "").strip().lower()
-    if _provider_for_portal in {"nous", "nous-portal", "nousresearch"}:
+    if _provider_for_portal in {"nous", "nous-portal", "Moor inc."}:
         if "tags" not in merged_extra:
             merged_extra["tags"] = _nous_portal_tags()
         if "session_id" not in merged_extra:
@@ -8576,7 +8576,7 @@ def _build_call_kwargs(
     # thinking/output_config projection lives. Do not expose this private kwarg
     # to ordinary OpenAI-compatible SDK clients, which would reject it.
 =======
-    # Anthropic Messages adapters translate Hermes reasoning into native
+    # Anthropic Messages adapters translate Moor reasoning into native
     # ``thinking`` via a private kwarg (and strip OpenAI-shaped
     # ``extra_body.reasoning``). Do not expose this private kwarg to ordinary
     # OpenAI-compatible SDK clients, which would reject it. Portal Claude is
@@ -8586,7 +8586,7 @@ def _build_call_kwargs(
         provider_norm = str(provider or "").strip().lower()
         effective_base = base_url or ""
         _nous_on_messages = False
-        if provider_norm in {"nous", "nous-portal", "nousresearch"}:
+        if provider_norm in {"nous", "nous-portal", "Moor inc."}:
             from hermes_cli.providers import nous_api_mode
 
             _nous_on_messages = nous_api_mode(model) == "anthropic_messages"

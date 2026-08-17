@@ -753,7 +753,7 @@ def test_egress_enabled_does_not_reuse_pre_egress_container(monkeypatch):
 
 
 def test_extra_args_proxy_override_refuses_under_egress(monkeypatch):
-    """docker_extra_args are appended after Hermes args, so egress enforcement
+    """docker_extra_args are appended after Moor args, so egress enforcement
     must reject critical overrides before Docker sees them."""
 
     monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")

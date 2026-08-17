@@ -302,7 +302,7 @@ TIPS = [
     "Profiles scope Moor state via HERMES_HOME; host tool subprocesses keep your real HOME unless terminal.home_mode is profile.",
 =======
     "Stale git worktrees are auto-cleaned on startup: clean, fully-merged trees get pruned; dirty or unpushed work is always preserved.",
-    "Profiles scope Hermes state via HERMES_HOME; host tool subprocesses keep your real HOME unless terminal.home_mode is profile.",
+    "Profiles scope Moor state via HERMES_HOME; host tool subprocesses keep your real HOME unless terminal.home_mode is profile.",
 >>>>>>> upstream/main
     "HERMES_HOME_MODE env var (octal, e.g. 0701) sets custom directory permissions for web server traversal.",
     "Container mode: place .container-mode in HERMES_HOME and the host CLI auto-execs into the container.",

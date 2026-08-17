@@ -474,7 +474,7 @@ def _chat_messages_to_responses_input(
     model that cannot decrypt the blob (#85914). Default False = pre-feature
     wire, which is also correct for every caller that never sends
     ``context_management`` (auxiliary/compression client, ad-hoc
-    ``convert_messages``). Dropping the checkpoint costs nothing: Hermes'
+    ``convert_messages``). Dropping the checkpoint costs nothing: Moor'
     local history is never truncated by native compaction, so the full
     conversation is still on the wire.
     """

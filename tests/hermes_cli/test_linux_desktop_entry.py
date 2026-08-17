@@ -62,7 +62,7 @@ def test_install_writes_entry_with_absolute_exec_and_icon(tmp_path, xdg_home, mo
     assert icon_path.read_bytes() == b"\x89PNG fake"
 
     assert values["Type"] == "Application"
-    assert values["Name"] == "Hermes"
+    assert values["Name"] == "Moor"
     assert values["Terminal"] == "false"
 
 
@@ -111,7 +111,7 @@ def test_install_without_source_icon_uses_themed_name(tmp_path, xdg_home, monkey
     entry = lde.install_desktop_entry(root)
 
     # A broken absolute path renders as no icon. The themed name resolves
-    # when Hermes is installed some other way.
+    # when Moor is installed some other way.
     assert _parse(entry.read_text(encoding="utf-8"))["Icon"] == "hermes"
 
 

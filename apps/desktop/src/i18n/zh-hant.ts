@@ -68,7 +68,7 @@ export const zhHant = defineLocale({
       connectingGateway: '正在連線桌面閘道',
       loadingSettings: '正在載入 Moor 設定',
       loadingSessions: '正在載入最近工作階段',
-      retryingRemoteBackend: '正在重新連線遠端 Hermes 後端…',
+      retryingRemoteBackend: '正在重新連線遠端 Moor 後端…',
       startingDesktopConnection: '正在啟動桌面連線',
       startingHermesDesktop: '正在啟動 Moor Desktop…'
     },
@@ -144,7 +144,7 @@ export const zhHant = defineLocale({
 =======
       diskFull: '磁碟已滿 — 請騰出一些空間後再試。',
       gatewayAuthFailed: '閘道認證失敗 — 請檢查你的 API_SERVER_KEY。',
-      methodNotAllowed: '桌面後端拒絕了該請求 (405 Method Not Allowed)。請嘗試重新啟動 Hermes Desktop。',
+      methodNotAllowed: '桌面後端拒絕了該請求 (405 Method Not Allowed)。請嘗試重新啟動 Moor Desktop。',
 >>>>>>> upstream/main
       microphonePermission: '麥克風權限已被拒絕。',
       openaiRejectedApiKey: 'OpenAI 拒絕了該 API 金鑰。',
@@ -181,8 +181,8 @@ export const zhHant = defineLocale({
       turnDoneTitle: 'Moor 已完成',
       turnDoneBody: '回覆已就緒。',
 =======
-      inputBody: 'Hermes 正在等待你的回應。',
-      turnDoneTitle: 'Hermes 已完成',
+      inputBody: 'Moor 正在等待你的回應。',
+      turnDoneTitle: 'Moor 已完成',
       turnDoneBody: '',
 >>>>>>> upstream/main
       turnErrorTitle: '本輪失敗',
@@ -262,7 +262,7 @@ export const zhHant = defineLocale({
       focusedHint: '完成提醒僅在 Moor 位於背景時觸發。',
 =======
       enableAllDesc: '關閉後靜音下方所有通知。',
-      focusedHint: '完成提醒僅在 Hermes 位於背景時觸發。',
+      focusedHint: '完成提醒僅在 Moor 位於背景時觸發。',
 >>>>>>> upstream/main
       kinds: {
         approval: {
@@ -291,7 +291,7 @@ export const zhHant = defineLocale({
         },
         plugin: {
           label: '外掛通知',
-          description: 'Hermes 在背景時，桌面外掛傳送了通知。'
+          description: 'Moor 在背景時，桌面外掛傳送了通知。'
         }
       },
       test: '傳送測試通知',
@@ -354,7 +354,7 @@ export const zhHant = defineLocale({
       backdropTitle: '聊天背景',
       backdropDesc: '對話後方那張淡淡的雕像圖片。',
       reactionsTitle: '訊息回應',
-      reactionsDesc: 'iMessage 風格的表情回應 — 你可以對訊息做出回應，Hermes 也能回應你的訊息。',
+      reactionsDesc: 'iMessage 風格的表情回應 — 你可以對訊息做出回應，Moor 也能回應你的訊息。',
       composerPopoutTitle: '懸浮輸入框',
       composerPopoutDesc: '允許將輸入框拖出底部停靠區。關閉後，輸入框會鎖定在底部。',
       embedsTitle: '內嵌預覽',
@@ -597,7 +597,7 @@ export const zhHant = defineLocale({
         repoScanRoots: '要掃描的資料夾。留空時掃描主目錄。',
         repoScanExcludePaths: '探索程式碼儲存庫時略過這些資料夾及其子目錄。'
       },
-      timezone: 'Hermes 需要本機時間上下文時使用。留空則使用系統時區。',
+      timezone: 'Moor 需要本機時間上下文時使用。留空則使用系統時區。',
 >>>>>>> upstream/main
       agent: {
         imageInputMode: '控制圖片附件如何傳送給模型。',
@@ -686,7 +686,7 @@ export const zhHant = defineLocale({
       searchPlaceholder: '搜尋…',
       noResults: '找不到結果',
       systemDefault: '系統預設',
-      loading: '正在載入 Hermes 設定...',
+      loading: '正在載入 Moor 設定...',
 >>>>>>> upstream/main
       emptyTitle: '無可設定項目',
       emptyDesc: '此區段沒有可調整的設定。',
@@ -699,7 +699,7 @@ export const zhHant = defineLocale({
     },
     quickEntry: {
       enabledTitle: '快速輸入',
-      enabledDesc: '用全域快速鍵在任何地方喚出一個小輸入框，無需開啟 Hermes 即可送出提示。',
+      enabledDesc: '用全域快速鍵在任何地方喚出一個小輸入框，無需開啟 Moor 即可送出提示。',
       shortcutTitle: '快速輸入快速鍵',
       shortcutDesc: '至少需要一個修飾鍵，例如 CommandOrControl+Shift+Space。',
       active: '快速鍵已生效。',
@@ -744,7 +744,7 @@ export const zhHant = defineLocale({
 <<<<<<< HEAD
       localDesc: '在 localhost 啟動私有 Moor 後端。這是預設方式，可離線使用。',
 =======
-      localDesc: '在 localhost 啟動私有 Hermes 後端。這是預設方式，可離線使用。',
+      localDesc: '在 localhost 啟動私有 Moor 後端。這是預設方式，可離線使用。',
       inheritTitle: '使用預設閘道',
       inheritDesc: '移除此設定檔的自訂覆寫並使用預設連線。',
 >>>>>>> upstream/main
@@ -804,7 +804,7 @@ export const zhHant = defineLocale({
       saveFailed: '無法儲存閘道設定',
       sshTitle: '透過 SSH 連線',
       sshDesc:
-        'Hermes 會透過 SSH 在遠端啟動並以通道連線到本應用程式——無需自行啟動或公開任何服務。前提：已具備到該主機的金鑰 SSH 存取。',
+        'Moor 會透過 SSH 在遠端啟動並以通道連線到本應用程式——無需自行啟動或公開任何服務。前提：已具備到該主機的金鑰 SSH 存取。',
       sshTrustHint: '首次提供的主機金鑰會被信任並固定；後續變更將被拒絕。',
       sshHostTitle: '主機',
       sshHostDesc: 'user@host，或 ~/.ssh/config 中的 Host 別名。',
@@ -819,7 +819,7 @@ export const zhHant = defineLocale({
       sshPortDesc: '留空 = 22 或 ~/.ssh/config 中的連接埠。',
       sshKeyTitle: '金鑰檔案',
       sshKeyDesc: '私密金鑰路徑。留空 = ssh-agent 或 ~/.ssh/config。',
-      sshHermesPathTitle: 'Hermes 路徑（選用）',
+      sshHermesPathTitle: 'Moor 路徑（選用）',
       sshHermesPathDesc: '遠端 hermes 執行檔的完整路徑。留空 = 自動偵測。',
       sshHermesPathPlaceholder: '自動偵測',
       sshRemoteProfileTitle: '遠端設定檔（選用）',
@@ -827,17 +827,17 @@ export const zhHant = defineLocale({
       sshTestConnection: '測試 SSH',
       sshConnect: '連線',
       sshButtonsHint: '「儲存」會在下次啟動時生效，「連線」則立即重新連線。',
-      sshReachable: (host, platform) => `可連線：${host}（${platform}）——已找到 Hermes`,
+      sshReachable: (host, platform) => `可連線：${host}（${platform}）——已找到 Moor`,
       sshIncompleteHost: '連線前請輸入 SSH 主機。',
       sshErrUnreachable: '無法透過 SSH 連線到該主機。請檢查主機、連接埠和網路。',
       sshErrAuth:
-        'SSH 驗證失敗。請將金鑰載入 ssh-agent（ssh-add），或在 ~/.ssh/config 中設定 IdentityFile——Hermes 以非互動方式執行 ssh。',
+        'SSH 驗證失敗。請將金鑰載入 ssh-agent（ssh-add），或在 ~/.ssh/config 中設定 IdentityFile——Moor 以非互動方式執行 ssh。',
       sshErrHostKey: '自上次連線以來主機金鑰已變更。請確認這是預期的，然後執行 ssh-keygen -R <host> 並重新連線。',
       sshErrNotInstalled:
-        '遠端主機上未安裝 Hermes。請在遠端安裝（curl -fsSL https://hermes-agent.nousresearch.com/install.sh | sh）或設定 Hermes 路徑。',
-      sshErrPlatform: '不支援的遠端平台。Hermes Desktop 的 SSH 模式支援 Linux、macOS 和 Windows 遠端主機。',
+        '遠端主機上未安裝 Moor。請在遠端安裝（curl -fsSL https://hermes-agent.Moor inc..com/install.sh | sh）或設定 Moor 路徑。',
+      sshErrPlatform: '不支援的遠端平台。Moor Desktop 的 SSH 模式支援 Linux、macOS 和 Windows 遠端主機。',
       sshErrTimeout: 'SSH 連線逾時。主機可能無法存取或處於睡眠狀態。',
-      sshErrUpdateRequired: '使用 Desktop SSH 連線前，請更新遠端主機上的 Hermes。',
+      sshErrUpdateRequired: '使用 Desktop SSH 連線前，請更新遠端主機上的 Moor。',
       sshErrUnknown: 'SSH 連線失敗。'
     },
     keys: {
@@ -891,7 +891,7 @@ export const zhHant = defineLocale({
       disableTool: tool => `停用 ${tool}`,
       noOutput: '尚無輸出。',
       deepLinkTitle: '新增 MCP 伺服器？',
-      deepLinkDescription: '一個連結要求將此 MCP 伺服器加入 Hermes。請檢查下方的完整設定——它來自該連結，而非 Hermes。',
+      deepLinkDescription: '一個連結要求將此 MCP 伺服器加入 Moor。請檢查下方的完整設定——它來自該連結，而非 Moor。',
       deepLinkStdioWarning: '此伺服器會使用下方所示指令在你的電腦上執行本機程序。僅在信任其來源時繼續。',
       deepLinkConfirm: '新增伺服器',
       deepLinkNameInvalid: '名稱須為 1-64 個字母、數字、點、連字號或底線。',
@@ -1508,7 +1508,7 @@ export const zhHant = defineLocale({
       message: count => `在您檢查模型設定之前，${count} 個排程工作將被略過。`,
       detailMore: (names, remaining) => `${names}，以及另外 ${remaining} 個`,
       review: '檢查排程工作',
-      saveFailed: 'Hermes 未儲存該模型變更。'
+      saveFailed: 'Moor 未儲存該模型變更。'
     },
     search: '搜尋排程工作…',
     loading: '正在載入排程工作…',
@@ -1765,7 +1765,7 @@ export const zhHant = defineLocale({
       baseBranchPlaceholder: '搜尋分支…',
       baseBranchNone: '未找到分支',
       startWorkFailed: '無法建立工作樹',
-      worktreeStaleBackend: '請更新 Hermes 後端以在此遠端連線上建立工作樹 —— 該後端早於 git 工作樹 API。',
+      worktreeStaleBackend: '請更新 Moor 後端以在此遠端連線上建立工作樹 —— 該後端早於 git 工作樹 API。',
       worktreeProjectLabel: '專案',
       worktreeProjectPlaceholder: '搜尋專案…',
       worktreeProjectNone: '沒有包含資料夾的專案',
@@ -2091,12 +2091,12 @@ export const zhHant = defineLocale({
     applyingClose: '此視窗會在更新期間關閉，隨後 Moor 會自動重新開啟。',
     errorTitle: '更新未完成',
     errorBody: '沒有資料遺失。您可以現在重試。',
-    blockerTitle: '關閉本機預覽以更新 Hermes？',
-    blockerBody: 'Hermes 需要在更新前停止這些本機預覽。這不會修改或刪除您的檔案。',
-    foreignBlockerTitle: '關閉其他處理程序以更新 Hermes',
+    blockerTitle: '關閉本機預覽以更新 Moor？',
+    blockerBody: 'Moor 需要在更新前停止這些本機預覽。這不會修改或刪除您的檔案。',
+    foreignBlockerTitle: '關閉其他處理程序以更新 Moor',
     foreignBlockerBody:
-      'Hermes 無法安全地自動關閉這些處理程序。請關閉擁有這些處理程序的應用程式、終端機或服務，然後重試更新。',
-    mixedBlockerBody: 'Hermes 可以關閉下方列出的本機預覽。其他處理程序必須手動關閉，更新才能繼續。',
+      'Moor 無法安全地自動關閉這些處理程序。請關閉擁有這些處理程序的應用程式、終端機或服務，然後重試更新。',
+    mixedBlockerBody: 'Moor 可以關閉下方列出的本機預覽。其他處理程序必須手動關閉，更新才能繼續。',
     closePreviewsAndUpdate: '關閉預覽並更新',
     closePreviewsAndCheckAgain: '關閉預覽並重新檢查',
     localPreview: '本機預覽',
@@ -2130,21 +2130,21 @@ export const zhHant = defineLocale({
     viewDocs: '檢視安裝文件',
     installTo: '將安裝至',
     retryAfterRun: '我已執行 -- 重試',
-    setupChoiceTitle: '設定 Hermes Desktop',
-    setupChoiceDesc: '將此應用程式連線到您已執行的 Hermes 閘道，或在這台電腦上本機安裝 Hermes。',
-    connectExistingTitle: '連線到現有 Hermes',
+    setupChoiceTitle: '設定 Moor Desktop',
+    setupChoiceDesc: '將此應用程式連線到您已執行的 Moor 閘道，或在這台電腦上本機安裝 Moor。',
+    connectExistingTitle: '連線到現有 Moor',
     connectExistingShort: '連線現有環境',
     connectExistingDesc: '使用工作階段權杖或瀏覽器登入連線遠端後端。不會啟動本機安裝。',
-    installLocalTitle: '本機安裝 Hermes',
-    installLocalDesc: '下載 Hermes、建立 Python 環境，並在這台電腦上執行後端。',
-    localStartUnavailable: '無法啟動本機安裝。請重新啟動 Hermes Desktop 後再試一次。',
-    remoteSetupTitle: '連線到現有 Hermes',
-    remoteSetupDesc: '輸入閘道 URL。Hermes Desktop 會偵測需要權杖還是瀏覽器登入。',
+    installLocalTitle: '本機安裝 Moor',
+    installLocalDesc: '下載 Moor、建立 Python 環境，並在這台電腦上執行後端。',
+    localStartUnavailable: '無法啟動本機安裝。請重新啟動 Moor Desktop 後再試一次。',
+    remoteSetupTitle: '連線到現有 Moor',
+    remoteSetupDesc: '輸入閘道 URL。Moor Desktop 會偵測需要權杖還是瀏覽器登入。',
     remoteUrlTitle: '閘道 URL',
-    remoteUrlDesc: '使用 Hermes 閘道的基礎 URL；遠端位址請包含 https://。',
+    remoteUrlDesc: '使用 Moor 閘道的基礎 URL；遠端位址請包含 https://。',
     remoteUrlPlaceholder: 'https://gateway.example.com/hermes',
     probing: '正在偵測閘道驗證方式...',
-    probeError: '無法連線到該 Hermes 閘道。',
+    probeError: '無法連線到該 Moor 閘道。',
     identityProvider: '您的身分提供者',
     authTitle: '驗證',
     authNeedsOauth: provider => `測試此閘道前請先使用 ${provider} 登入。`,
@@ -2342,7 +2342,7 @@ export const zhHant = defineLocale({
       connectionSsh: host => `SSH: ${host}`,
       connectionRemote: host => `遠端: ${host}`,
       connectionCloud: host => `雲端: ${host}`,
-      connectionCloudTooltip: host => `Hermes Cloud · ${host}`,
+      connectionCloudTooltip: host => `Moor Cloud · ${host}`,
       connectionSshTooltip: host => `SSH · ${host}`,
       connectionRemoteTooltip: host => `Remote · ${host}`,
       backendLabel: version => `後端 v${version}`,
