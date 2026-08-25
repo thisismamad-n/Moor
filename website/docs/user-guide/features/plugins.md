@@ -112,6 +112,7 @@ Every `ctx.*` API below is available inside a plugin's `register(ctx)` function.
 | Register an image-generation backend | `ctx.register_image_gen_provider(provider)` — see [Image Generation Provider Plugins](/developer-guide/image-gen-provider-plugin) |
 | Register a video-generation backend | `ctx.register_video_gen_provider(provider)` — see [Video Generation Provider Plugins](/developer-guide/video-gen-provider-plugin) |
 | Register a context-compression engine | `ctx.register_context_engine(engine)` — see [Context Engine Plugins](/developer-guide/context-engine-plugin) |
+| Register a terminal execution backend (cloud sandbox) | `ctx.register_terminal_environment_provider(provider)` — see [Terminal Environment Plugins](/developer-guide/terminal-environment-plugin) |
 | Route human approval prompts | `ctx.register_approval_transport(name, present_fn)` — see [Approval transports](#approval-transports) |
 | Register a memory backend | Subclass `MemoryProvider` in `plugins/memory/<name>/__init__.py` — see [Memory Provider Plugins](/developer-guide/memory-provider-plugin) (uses a separate discovery system) |
 | Run a host-owned LLM call | `ctx.llm.complete(...)` / `ctx.llm.complete_structured(...)` — borrow the user's active model + auth for a one-shot completion with optional JSON schema validation. See [Plugin LLM Access](/developer-guide/plugin-llm-access) |
@@ -343,6 +344,41 @@ moor plugins enable my-plugin              # add to allow-list
 moor plugins disable my-plugin             # remove from allow-list + add to disabled
 moor plugins capabilities [my-plugin]      # declared vs granted capabilities
 ```
+
+### One-click install links (Desktop)
+
+Moor Desktop registers the `moor://` URL scheme, so a website, README, or
+chat message can link straight to a plugin install:
+
+```
+moor://plugin/install?repo=owner/repo            # main install link
+moor://plugin/install?repo=owner/repo&enable=1   # enable the agent plugin after install
+moor://plugin/install?repo=owner/repo&force=1    # replace an existing install
+```
+
+Clicking one opens Moor and shows a **confirmation dialog** — the repo id,
+a "Before you install" note, and GitHub browse + clone links — then
+shallow-clones the repo to detect what it ships (an **agent plugin** —
+backend Python, a **desktop plugin** — app UI, or both). You pick the
+components with checkboxes and confirm. Nothing is installed until you do;
+deep links never auto-install, and agent-plugin installs go through the same
+[install-time security scanning](#install-time-security-scanning) as
+`moor plugins install`.
+
+Hybrid repos (agent + desktop halves in one repo) use one link and one
+dialog. The same modal is reachable without a link via **Settings → Plugins →
+Install from Git**. Legacy `moor://plugin-agent/…` and
+`moor://plugin-desktop/…` URLs route into the same dialog. In dev builds
+(`npm run dev`) the scheme is `moor-dev://`.
+
+Websites need no SDK — a normal anchor works:
+
+```html
+<a href="moor://plugin/install?repo=owner/repo&enable=1">Install in Moor</a>
+```
+
+MCP servers have the equivalent link form — see
+[Add to Moor link](/reference/mcp-config-reference#add-to-moor-link).
 
 ### Plugin capabilities and consent
 

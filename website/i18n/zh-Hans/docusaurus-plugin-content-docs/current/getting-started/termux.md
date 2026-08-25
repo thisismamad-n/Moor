@@ -118,7 +118,7 @@ ln -sf "$PWD/venv/bin/moor" "$PREFIX/bin/moor"
 ### 6. 验证安装
 
 ```bash
-moor version
+moor --version
 moor doctor
 ```
 

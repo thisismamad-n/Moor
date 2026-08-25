@@ -18,8 +18,70 @@ def transport():
 
 
 class TestChatCompletionsBasic:
+    @pytest.mark.parametrize(
+        "choice",
+        [SimpleNamespace(message=SimpleNamespace()), SimpleNamespace()],
+    )
+    def test_normalize_response_allows_missing_optional_message_fields(
+        self, transport, choice
+    ):
+        response = SimpleNamespace(choices=[choice], usage=None)
 
+        normalized = transport.normalize_response(response)
 
+        assert normalized.content is None
+        assert normalized.tool_calls is None
+        assert normalized.finish_reason == "stop"
+
+    def test_normalize_response_allows_sparse_tool_call_fields(self, transport):
+        response = SimpleNamespace(
+            choices=[
+                SimpleNamespace(
+                    message=SimpleNamespace(
+                        tool_calls=[
+                            SimpleNamespace(
+                                function=SimpleNamespace(arguments='{"city":"Paris"}')
+                            ),
+                            SimpleNamespace(),
+                            SimpleNamespace(
+                                id="call-3",
+                                function=SimpleNamespace(name="lookup"),
+                            ),
+                            SimpleNamespace(
+                                id="call-4",
+                                function=SimpleNamespace(name="", arguments="{}"),
+                            ),
+                            SimpleNamespace(
+                                function=SimpleNamespace(
+                                    name="weather", arguments="{}"
+                                )
+                            ),
+                        ]
+                    )
+                )
+            ],
+            usage=None,
+        )
+
+        normalized = transport.normalize_response(response)
+
+        assert normalized.finish_reason == "stop"
+        assert normalized.tool_calls is not None
+        assert [tool.id for tool in normalized.tool_calls] == [
+            "call-3",
+            "call-4",
+            None,
+        ]
+        assert [tool.name for tool in normalized.tool_calls] == [
+            "lookup",
+            "",
+            "weather",
+        ]
+        assert [tool.arguments for tool in normalized.tool_calls] == [
+            "{}",
+            "{}",
+            "{}",
+        ]
 
     @pytest.mark.parametrize("provider", ["moor", "openrouter"])
     def test_gpt56_ultra_uses_max_wire_effort(self, transport, provider):
@@ -85,7 +147,7 @@ class TestChatCompletionsBasic:
         assert transport.convert_messages(msgs) is msgs
 
     def test_convert_messages_strips_internal_scaffolding_markers(self, transport):
-        """Moor-internal ``_``-prefixed markers must never reach the wire.
+        """moor-internal ``_``-prefixed markers must never reach the wire.
 
         The empty-response recovery path appends synthetic messages tagged
         with ``_empty_recovery_synthetic``; permissive providers ignore the
@@ -200,7 +262,7 @@ class TestChatCompletionsBuildKwargs:
         )
         assert kw["extra_body"]["reasoning"] == {"enabled": True, "effort": "medium"}
 
-    def test_moor_omits_disabled_reasoning(self, transport):
+    def test_moor_omits_disabled_reasoning_for_unknown_model(self, transport):
         from providers import get_provider_profile
         profile = get_provider_profile("moor")
         msgs = [{"role": "user", "content": "Hi"}]
@@ -210,7 +272,10 @@ class TestChatCompletionsBuildKwargs:
             supports_reasoning=True,
             reasoning_config={"enabled": False},
         )
-        # Moor rejects enabled=false; reasoning omitted entirely
+        # Not a Portal model id, so the catalog can't rule out a
+        # reasoning-mandatory route (which 400s on a disable) — omit.
+        # tests/plugins/model_providers/test_moor_profile.py covers the
+        # catalog-known cases where the disable IS forwarded.
         assert "reasoning" not in kw.get("extra_body", {})
 
     def test_ollama_num_ctx(self, transport):

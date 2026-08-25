@@ -986,6 +986,12 @@ def _run_debug_share_moor(args, *, log_lines: int, redact: bool) -> None:
         "\nShare this private link with the Moor team — only Moor staff "
         "(via Google login) can open it."
     )
+    print(
+        "\nPick up the discussion in:\n"
+        "  GitHub Issues        https://github.com/NousResearch/hermes-agent/issues\n"
+        "  Moor Portal Support  https://portal.nousresearch.com/help\n"
+        "  Discord              https://discord.gg/NousResearch"
+    )
 
 
 def run_debug_delete(args):

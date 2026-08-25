@@ -89,7 +89,7 @@ def remove_path_from_shell_configs():
             if new_content != original_content:
                 from utils import atomic_write_text
 
-                # This is the user's own shell rc, not a Moor-owned file, and
+                # This is the user's own shell rc, not a moor-owned file, and
                 # nothing in this function backs it up. A bare write_text()
                 # truncates it before the new content lands, so a crash or
                 # SIGINT mid-write leaves the user with an empty or truncated
@@ -336,12 +336,20 @@ def uninstall_gateway_service():
 # or open a new terminal anyway).
 
 
-def _moor_path_markers(moor_home: Path) -> list[str]:
-    """Path-entry substrings that identify Moor-owned User-PATH entries."""
+def _moor_path_markers(moor_home: Path, *, include_managed_bin: bool = False) -> list[str]:
+    """Path-entry substrings that identify moor-owned User-PATH entries.
+
+    ``include_managed_bin`` adds the managed binary dir (``<root>\\bin``,
+    holding the moor launchers and the managed uv) — only wanted when
+    that dir is about to be deleted (full uninstall from the default root),
+    so a keep-data uninstall leaves the still-working managed uv resolvable.
+    """
     root = str(moor_home).rstrip("\\/")
     # Match on prefix so sub-entries (git\cmd, git\bin, git\usr\bin, node, etc.)
     # all get swept.  Also match the bare moor-agent install dir.
     markers = [root + "\\moor-agent", root + "\\git", root + "\\node", root + "\\venv"]
+    if include_managed_bin:
+        markers.append(root + "\\bin")
     # Also match if MOOR_HOME was customised to somewhere else — find-and-nuke
     # any entry whose path component contains "moor".  We don't want to catch
     # unrelated entries like "cmoor-foo" or "ephermeral", so we look for
@@ -349,11 +357,17 @@ def _moor_path_markers(moor_home: Path) -> list[str]:
     return markers
 
 
-def remove_path_from_windows_registry(moor_home: Path) -> list[str]:
-    """Strip Moor-owned entries from User-scope PATH in the registry.
+def remove_path_from_windows_registry(moor_home: Path, *, include_managed_bin: bool = False) -> list[str]:
+    """Strip moor-owned entries from User-scope PATH in the registry.
 
     Returns the list of removed path entries.  Operates on HKCU\\Environment,
     same key the installer wrote to via ``[Environment]::SetEnvironmentVariable``.
+
+    ``include_managed_bin`` adds ``<moor_home>\\bin`` (the managed binary
+    dir holding the moor launchers and the managed uv) to the sweep. Only
+    pass it when that dir is actually being deleted — full uninstall from
+    the default root — so a keep-data uninstall leaves the still-working
+    managed uv resolvable.
     """
     try:
         import winreg
@@ -371,7 +385,7 @@ def remove_path_from_windows_registry(moor_home: Path) -> list[str]:
                 return []
             # Preserve REG_EXPAND_SZ vs REG_SZ so unexpanded %VARS% survive.
             entries = [e for e in path_value.split(";") if e]
-            markers = _moor_path_markers(moor_home)
+            markers = _moor_path_markers(moor_home, include_managed_bin=include_managed_bin)
             kept: list[str] = []
             for entry in entries:
                 entry_norm = entry.rstrip("\\/")
@@ -427,6 +441,58 @@ def remove_portable_tooling_windows(moor_home: Path) -> list[Path]:
                 removed.append(target)
             except Exception as e:
                 log_warn(f"Could not remove {target}: {e}")
+    return removed
+
+
+def remove_windows_bin_launchers(*, windows: bool | None = None) -> list[Path]:
+    """Delete the ``moor`` launchers install.ps1 staged in the managed
+    binary dir (the default Moor root's ``bin``, next to the managed uv).
+
+    Every uninstall mode deletes the code checkout, so the launchers —
+    which invoke ``<checkout>\\venv\\Scripts`` — would otherwise dangle:
+    ``moor`` in a new terminal resolves to a launcher whose target is
+    gone and errors, which reads worse than command-not-found. The managed
+    uv (uv*.exe) in the same dir is left for keep-data reinstalls.
+
+    A launcher that IS this process's own trampoline is mandatory-locked
+    against deletion but not rename (same fact
+    ``_install_repair._quarantine_running_moor_exe`` relies on), so
+    deletion falls back to renaming it aside with a non-executable suffix.
+
+    *windows* is an injectable platform verdict for tests (same pattern as
+    ``_install_repair.ensure_windows_bin_launchers``).
+    """
+    if windows is None:
+        windows = _is_windows()
+    if not windows:
+        return []
+    try:
+        # Lockstep launcher-name list — the same names install.ps1 and the
+        # startup heal stage into this dir.
+        from moor_cli._install_repair import _WINDOWS_BIN_LAUNCHERS
+        from moor_constants import get_default_moor_root
+
+        bin_dir = get_default_moor_root() / "bin"
+    except Exception as e:
+        log_warn(f"Could not locate the managed binary dir: {e}")
+        return []
+
+    removed: list[Path] = []
+    for name in _WINDOWS_BIN_LAUNCHERS:
+        for suffix in (".exe", ".cmd"):
+            launcher = bin_dir / f"{name}{suffix}"
+            if not launcher.exists():
+                continue
+            try:
+                launcher.unlink()
+                removed.append(launcher)
+            except OSError:
+                aside = launcher.with_name(f"{launcher.name}.uninstalled.{os.getpid()}")
+                try:
+                    os.rename(launcher, aside)
+                    removed.append(launcher)
+                except OSError as e:
+                    log_warn(f"Could not remove {launcher}: {e}")
     return removed
 
 
@@ -737,7 +803,7 @@ def _print_uninstall_dry_run(*, project_root: Path, moor_home: Path, full_uninst
     print(color("Would inspect/remove:", Colors.YELLOW, Colors.BOLD))
     print("  • Gateway services and standalone gateway processes")
     print("  • Moor PATH entries from shell configs / Windows User PATH")
-    print("  • Moor wrapper scripts and Moor-managed node/npm/npx symlinks")
+    print("  • Moor wrapper scripts and moor-managed node/npm/npx symlinks")
     print("  • Desktop Chat GUI artifacts")
     print(f"  • Code checkout: {project_root}")
     if full_uninstall:
@@ -794,12 +860,19 @@ def _perform_uninstall(
         # Expand %LOCALAPPDATA% etc. in moor_home so the marker matching is
         # against fully resolved paths — installer writes literal strings
         # like C:\Users\<u>\AppData\Local\moor\git\cmd, not %LOCALAPPDATA%.
-        removed_path_entries = remove_path_from_windows_registry(Path(os.path.expandvars(str(moor_home))))
+        # The managed binary dir (moor\bin: launchers + managed uv) leaves
+        # the PATH only when the full wipe below is about to delete it;
+        # keep-data mode keeps the dir and the still-working uv resolvable.
+        sweep_managed_bin = full_uninstall and _is_default_moor_home(moor_home)
+        removed_path_entries = remove_path_from_windows_registry(
+            Path(os.path.expandvars(str(moor_home))),
+            include_managed_bin=sweep_managed_bin,
+        )
         if removed_path_entries:
             for entry in removed_path_entries:
                 log_success(f"Removed from User PATH: {entry}")
         else:
-            log_info("No Moor-owned PATH entries in User environment")
+            log_info("No moor-owned PATH entries in User environment")
 
         log_info("Removing MOOR_HOME / MOOR_GIT_BASH_PATH User env vars...")
         removed_env = remove_moor_env_vars_windows()
@@ -807,7 +880,7 @@ def _perform_uninstall(
             for name in removed_env:
                 log_success(f"Removed User env var: {name}")
         else:
-            log_info("No Moor-set User env vars to remove")
+            log_info("No moor-set User env vars to remove")
     
     # 3. Remove wrapper script
     log_info("Removing moor command...")
@@ -818,16 +891,29 @@ def _perform_uninstall(
     else:
         log_info("No wrapper script found")
 
+    # 3a. Remove the Windows launchers from the managed binary dir. Both
+    #     modes delete the code checkout below, so a surviving launcher
+    #     would dangle — `moor` in a new terminal would resolve and then
+    #     error on its missing venv target, worse than command-not-found.
+    if _is_windows():
+        log_info("Removing Windows moor launchers...")
+        removed_launchers = remove_windows_bin_launchers()
+        if removed_launchers:
+            for launcher in removed_launchers:
+                log_success(f"Removed {launcher}")
+        else:
+            log_info("No Windows moor launchers found")
+
     # 3b. Remove node/npm/npx symlinks the installer left in ~/.local/bin
     #     (only when they still point into this Moor home's node dir, so we
     #     never clobber an existing nvm / user-managed Node).
-    log_info("Removing Moor-managed node/npm/npx symlinks...")
+    log_info("Removing moor-managed node/npm/npx symlinks...")
     removed_node_links = remove_node_symlinks(moor_home)
     if removed_node_links:
         for link in removed_node_links:
             log_success(f"Removed {link}")
     else:
-        log_info("No Moor-managed node/npm/npx symlinks found")
+        log_info("No moor-managed node/npm/npx symlinks found")
 
     # 3c. Remove the desktop Chat GUI's artifacts too (built renderer/release,
     #     node_modules, the packaged app bundle, and the Electron userData

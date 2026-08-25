@@ -178,7 +178,7 @@ Up to 5 numbers in dev mode.  Going to App Review removes this limit.
 
 ---
 
-## Allowlist (Moor-side)
+## Allowlist (moor-side)
 
 In addition to Meta's recipient whitelist, Moor has its own per-platform allowlist that controls **which incoming messages the agent processes**.  Add to `~/.moor/.env`:
 
@@ -365,15 +365,14 @@ If the model emits tool-call-shaped text instead of a structured call, it usuall
 
 ### STT (voice note transcription) returns empty / "could not transcribe"
 
-The default `stt.provider: local` requires `pip install faster-whisper`.  If you're a Moor subscriber, you can route STT through Meta's managed audio gateway instead:
+The default `stt.provider: local` requires `pip install faster-whisper`.  If you're a Moor subscriber, you can route STT through the managed gateway instead — select **Moor Subscription** for speech-to-text in `moor tools`, or set it directly:
 
 ```bash
-moor config set stt.provider openai
-moor config set stt.use_gateway true
+moor config set stt.provider moor
 moor gateway restart
 ```
 
-This uses your Moor Portal access token instead of needing a separate OpenAI key.
+This uses your Moor Portal access token instead of needing a separate OpenAI key. (Older docs suggested `stt.use_gateway true` — that flag is legacy; the provider selection alone controls routing now.)
 
 ---
 

@@ -567,6 +567,7 @@ class MoorConsoleEngine:
 
     def _register_defaults(self) -> None:
         self.register(("status",), "status", "Show Moor component status.", _status)
+        self.register(("version",), "version", "Show Moor version information.", _version)
         self.register(("doctor",), "doctor", "Run diagnostics without auto-fix.", _doctor)
         self.register(("logs",), "logs [name] [-n N]", "Show recent Moor logs.", _logs)
         self.register(("sessions", "list"), "sessions list [--limit N]", "List recent sessions.", _sessions_list)
@@ -613,13 +614,6 @@ class MoorConsoleEngine:
         """Register non-admin CLI commands that are safe for Moor Console."""
 
         extracted = {
-            "version": (
-                "moor_cli.subcommands.version",
-                "build_version_parser",
-                "cmd_version",
-                [()],
-                set(),
-            ),
             "dump": (
                 "moor_cli.subcommands.dump",
                 "build_dump_parser",
@@ -1280,6 +1274,13 @@ def _apply_confirmed_defaults(args: argparse.Namespace) -> None:
         setattr(args, "yes", True)
 
 
+def _version(_engine: MoorConsoleEngine, args: list[str]) -> str:
+    _expect_no_args(args, "version")
+    from moor_cli._startup_fast import print_fast_version_info
+
+    return _capture_output(lambda: print_fast_version_info(check_updates=True))
+
+
 def _status(_engine: MoorConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "status")
     from types import SimpleNamespace
@@ -1599,16 +1600,26 @@ def _cron_pause(_engine: MoorConsoleEngine, args: list[str]) -> str:
 
 
 def _cron_resume(_engine: MoorConsoleEngine, args: list[str]) -> str:
-    if len(args) != 1:
-        raise ConsoleCommandError("Usage: cron resume <job>")
-    from cron.jobs import AmbiguousJobReference, resume_job
+    parser = _ArgumentParser(prog="cron resume", add_help=False)
+    parser.add_argument("job")
+    parser.add_argument("--at")
+    parser.add_argument("--run-now", action="store_true")
+    ns = parser.parse_args(args)
+    if ns.at and ns.run_now:
+        raise ConsoleCommandError("Use exactly one of --at or --run-now.")
+    from cron.jobs import AmbiguousJobReference, _moor_now, rearm_oneshot, resume_job
 
     try:
-        job = resume_job(args[0])
+        if ns.at or ns.run_now:
+            job = rearm_oneshot(ns.job, _moor_now().isoformat() if ns.run_now else ns.at)
+        else:
+            job = resume_job(ns.job)
     except AmbiguousJobReference as exc:
         raise ConsoleCommandError(str(exc)) from exc
+    except ValueError as exc:
+        raise ConsoleCommandError(str(exc)) from exc
     if not job:
-        raise ConsoleCommandError(f"Job not found: {args[0]}")
+        raise ConsoleCommandError(f"Job not found: {ns.job}")
     return _format_job(job, "Resumed")
 
 

@@ -58,6 +58,7 @@ UTF8_BOM = b"\xef\xbb\xbf"
 IMMUNE_FILES = {
     # The rebrand tooling itself (contains the brand terms by definition).
     "scripts/rebrand.py",
+    "scripts/rebrand_selftest.py",
     "scripts/rebrand_inventory.py",
     # Written in final naming; contains legacy-path literals on purpose.
     "agent/legacy_home_migration.py",
@@ -98,6 +99,7 @@ HEAL_RULES: list[tuple[str, str]] = [
     (r"com\.Moor inc\.\.", "com.nousresearch."),
     (r"Moor inc\./((?:[Hh]ermes)[\w.\-]*)", r"NousResearch/\1"),
     (r"Moor-Agent", "moor-agent"),
+    (r"nousresearch\.github\.io/moor-agent", "nousresearch.github.io/hermes-agent"),
     # Truncated display hostnames in tests/docs (e.g. "https://hermes-agent
     # .nousresearch..." with literal ellipsis) escaped protection and got
     # half-renamed; restore before re-masking on every run.
@@ -130,10 +132,11 @@ def fork_replacement(fork: str) -> str:
 PROTECT_PATTERNS: list[str] = [
     # Any nousresearch host (portal/api/inference/tool-gateway/firecrawl/
     # audio-gateway/setup/docs/staging/...) with optional URL path, plus
-    # truncated display forms ("...nousresearch..." in length tests).
+    # truncated display forms ("...nousresearch..." in length tests),
+    # GitHub Pages (nousresearch.github.io), and regex literals with escaped dots.
     # Bounded repetition keeps matching linear-time on megabyte lines while
     # still allowing intra-label prefixes (staging-nousresearch.com).
-    r"(?:[A-Za-z0-9-]{1,63}\.){0,3}[A-Za-z0-9-]{0,63}nousresearch\.(?:com|wtf|ai|dev|org|net|\.\.\.)(?:/[^\s\"'`<>)\]]*)?",
+    r"(?:[A-Za-z0-9-]{1,63}\\?\.){0,3}[A-Za-z0-9-]{0,63}nousresearch\\?\.(?:com|wtf|ai|dev|org|net|github\\?\.io|\.\.\.)(?:/[^\s\"'`<>)\]]*)?",
     # Test/example nous hosts.
     r"(?:https?://)?(?:[A-Za-z0-9-]{1,63}\.){0,4}nous\.(?:test|example)(?:/[^\s\"'`<>)\]]*)?",
     # Truncated display hostnames ("https://...nousresearch..." with literal
@@ -607,7 +610,6 @@ def phase_assets(dry: bool) -> list[str]:
 def try_reinstall(dry: bool) -> str:
     if dry:
         return "skipped (dry-run)"
-    pip = None
     for candidate in (
         REPO / ".venv" / "Scripts" / "pip.exe",
         REPO / ".venv" / "bin" / "pip",
@@ -615,19 +617,25 @@ def try_reinstall(dry: bool) -> str:
         REPO / "venv" / "bin" / "pip",
     ):
         if candidate.is_file():
-            pip = candidate
-            break
-    if pip is None:
-        return "no venv pip found — run: pip install -e . --no-deps"
-    try:
-        subprocess.run(
-            [str(pip), "install", "-e", ".", "--no-deps", "--quiet",
-             "--disable-pip-version-check"],
-            cwd=REPO, capture_output=True, timeout=600, check=True,
-        )
-        return "editable package reinstalled into .venv"
-    except (subprocess.SubprocessError, OSError) as exc:
-        return f"reinstall failed ({exc}) — run: pip install -e . --no-deps"
+            try:
+                subprocess.run(
+                    [str(candidate), "install", "-e", ".", "--no-deps", "--quiet",
+                     "--disable-pip-version-check"],
+                    cwd=REPO, capture_output=True, timeout=600, check=True,
+                )
+                return "editable package reinstalled into .venv"
+            except (subprocess.SubprocessError, OSError) as exc:
+                return f"reinstall failed ({exc}) — run: pip install -e . --no-deps"
+    if shutil.which("uv"):
+        try:
+            subprocess.run(
+                ["uv", "pip", "install", "-e", ".", "--no-deps", "--quiet"],
+                cwd=REPO, capture_output=True, timeout=600, check=True,
+            )
+            return "editable package reinstalled into .venv (via uv)"
+        except (subprocess.SubprocessError, OSError) as exc:
+            return f"reinstall failed ({exc}) — run: uv pip install -e . --no-deps"
+    return "no venv pip found — run: pip install -e . --no-deps"
 
 
 # --------------------------------------------------------------------------
@@ -744,9 +752,22 @@ def verify_structure() -> list[str]:
     return problems
 
 
+def _resolve_python() -> str:
+    for candidate in (
+        REPO / ".venv" / "Scripts" / "python.exe",
+        REPO / ".venv" / "bin" / "python",
+        REPO / "venv" / "Scripts" / "python.exe",
+        REPO / "venv" / "bin" / "python",
+    ):
+        if candidate.is_file():
+            return str(candidate)
+    return sys.executable
+
+
 def verify_compile() -> list[str]:
+    py = _resolve_python()
     out = subprocess.run(
-        [sys.executable, "-m", "compileall", "-q", "-x",
+        [py, "-m", "compileall", "-q", "-x",
          r"(^|[/\\])(\.venv|venv|node_modules|\.git|__pycache__)([/\\]|$)",
          str(REPO)],
         cwd=REPO, capture_output=True, text=True, timeout=900,
@@ -757,6 +778,7 @@ def verify_compile() -> list[str]:
 
 def verify_imports() -> tuple[list[str], list[str]]:
     fatal, warnings = [], []
+    py = _resolve_python()
     env = dict(os.environ)
     tmp = tempfile.mkdtemp(prefix="moor-home-")
     env["MOOR_HOME"] = str(Path(tmp) / "home")
@@ -765,12 +787,12 @@ def verify_imports() -> tuple[list[str], list[str]]:
                 "agent.legacy_home_migration"]
     heavy = ["toolsets", "model_tools", "run_agent", "cli", "moor_cli.main", "gateway.run"]
     for mod in required:
-        r = subprocess.run([sys.executable, "-c", f"import {mod}"],
+        r = subprocess.run([py, "-c", f"import {mod}"],
                            cwd=REPO, capture_output=True, text=True, env=env, timeout=300)
         if r.returncode != 0:
             fatal.append(f"import {mod}: {r.stderr.strip().splitlines()[-1] if r.stderr else 'unknown'}")
     for mod in heavy:
-        r = subprocess.run([sys.executable, "-c", f"import {mod}"],
+        r = subprocess.run([py, "-c", f"import {mod}"],
                            cwd=REPO, capture_output=True, text=True, env=env, timeout=300)
         if r.returncode != 0:
             warnings.append(f"import {mod}: {r.stderr.strip().splitlines()[-1] if r.stderr else 'unknown'}")

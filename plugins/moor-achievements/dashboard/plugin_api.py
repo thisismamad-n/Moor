@@ -142,16 +142,47 @@ ACHIEVEMENTS: List[Dict[str, Any]] = [
 ]
 
 
+def _data_dir() -> Path:
+    """Durable data root (``<moor home>/plugin-data/moor-achievements/``).
+
+    Was the install tree (``plugins/moor-achievements/``) before the
+    plugin-data convention existed — state parked there died on
+    ``moor plugins remove``/``update``. Legacy files migrate on first read.
+    """
+    try:
+        from plugins.plugin_storage import plugin_data_dir
+
+        return plugin_data_dir("moor-achievements")
+    except Exception:
+        # Standalone dashboard import (no plugins package on sys.path):
+        # keep the plugin working with the same layout, computed locally.
+        root = get_moor_home() / "plugin-data" / "moor-achievements"
+        root.mkdir(parents=True, exist_ok=True)
+        return root
+
+
+def _data_file(name: str) -> Path:
+    path = _data_dir() / name
+    if not path.exists():
+        legacy = get_moor_home() / "plugins" / "moor-achievements" / name
+        if legacy.exists():
+            try:
+                path.write_text(legacy.read_text(encoding="utf-8"), encoding="utf-8")
+            except Exception:
+                pass
+    return path
+
+
 def state_path() -> Path:
-    return get_moor_home() / "plugins" / "moor-achievements" / "state.json"
+    return _data_file("state.json")
 
 
 def snapshot_path() -> Path:
-    return get_moor_home() / "plugins" / "moor-achievements" / "scan_snapshot.json"
+    return _data_file("scan_snapshot.json")
 
 
 def checkpoint_path() -> Path:
-    return get_moor_home() / "plugins" / "moor-achievements" / "scan_checkpoint.json"
+    return _data_file("scan_checkpoint.json")
 
 
 def load_state() -> Dict[str, Any]:

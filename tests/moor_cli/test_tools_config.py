@@ -256,8 +256,8 @@ def test_first_install_moor_auto_configures_video_gen(monkeypatch):
 
     tools_command(first_install=True, config=config)
 
-    assert config["video_gen"]["provider"] == "fal"
-    assert config["video_gen"]["use_gateway"] is True
+    assert config["video_gen"]["provider"] == "moor"
+    assert "use_gateway" not in config["video_gen"]
     # video_gen should NOT appear in the manual configure list — it's auto-configured
     assert "video_gen" not in configured
 
@@ -352,7 +352,7 @@ class TestAgentBrowserPostSetup:
 
     agent-browser is no longer a root package.json dependency (there's no
     local `npm install` step anymore); it resolves at runtime via
-    tools.browser_tool._find_agent_browser (PATH -> Homebrew/Moor-managed
+    tools.browser_tool._find_agent_browser (PATH -> Homebrew/moor-managed
     node -> local .bin -> npx). This class exercises the Chromium-install
     branch of _run_post_setup, which now delegates to that same resolution
     cascade instead of hand-rolling its own node_modules/.bin/agent-browser
@@ -477,7 +477,7 @@ class TestAgentBrowserPostSetup:
         ]
 
     def test_installs_chromium_via_npx_resolved_only_through_extended_path(self):
-        """Moor-managed-Node-only setups: npx resolves via
+        """moor-managed-Node-only setups: npx resolves via
         _find_agent_browser's extended-PATH fallback, not a bare PATH lookup.
         The install command must use that same resolved npx, not silently
         hand subprocess.run a None argument from a bare shutil.which('npx')
@@ -760,6 +760,26 @@ class TestImagegenModelPicker:
         assert isinstance(config["image_gen"], dict)
         assert config["image_gen"]["model"] == "fal-ai/flux-2/klein/9b"
 
+    def test_plugin_picker_falls_back_when_default_is_missing_from_catalog(self):
+        """A stale cross-provider model must not become an unindexable row."""
+        from moor_cli.tools_config import _configure_imagegen_model_for_plugin
+
+        catalog = {
+            "openai/gpt-5.4-image-2": {"strengths": "quality"},
+            "google/gemini-3-pro-image": {"strengths": "fallback"},
+        }
+        config = {"image_gen": {"model": "gpt-image-2-medium"}}
+        with (
+            patch(
+                "moor_cli.tools_config._plugin_image_gen_catalog",
+                return_value=(catalog, "also-missing"),
+            ),
+            patch("moor_cli.tools_config._prompt_choice", return_value=0),
+        ):
+            _configure_imagegen_model_for_plugin("openrouter", config)
+
+        assert config["image_gen"]["model"] == "openai/gpt-5.4-image-2"
+
 
 
 
@@ -1014,8 +1034,8 @@ def _saved_list_from_before(platform="cli"):
 
 @_requires_recently_shipped
 def test_saved_list_gains_toolsets_that_shipped_after_it_was_written():
-    """The bug: a frozen list never gained bfl, so composite users got Moor
-    Portal video generation on upgrade and picker users silently did not."""
+    """The bug: a frozen list never gained a newly shipped toolset, so
+    composite users got it on upgrade and picker users silently did not."""
     on_composite = _get_platform_tools(
         {"platform_toolsets": {"cli": ["moor-cli"]}},
         "cli",

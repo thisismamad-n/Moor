@@ -112,12 +112,19 @@ POST /v1/runs/{id}/approval      Resolve a pending approval
 POST /v1/runs/{id}/steer         Inject mid-run guidance at the next tool boundary
 POST /v1/runs/{id}/stop          Interrupt the run
 GET  /v1/capabilities            Machine-readable feature flags
+POST /v1/browser-control/register Register a browser controller
+GET  /v1/browser-control/ws       Browser-controller WebSocket
 GET  /v1/models                  Lists moor-agent
 GET  /api/model/options          Provider-aware picker inventory
 GET  /health, /health/detailed
 ```
 
-Setup, headers (`X-Moor-Session-Id`, `X-Moor-Session-Key`), and frontend wiring: [API Server](../user-guide/features/api-server).
+Setup, headers (`X-moor-session-Id`, `X-moor-session-Key`), and frontend wiring: [API Server](../user-guide/features/api-server).
+
+Browser extensions can opt into the disabled-by-default controller protocol to
+drive the exact browser session that opened the Moor conversation. The API
+and dashboard transports share one principal-bound broker and one explicit
+capability allowlist; see [Browser-extension control](../user-guide/features/api-server#browser-extension-control).
 
 ### Model catalog surfaces
 
@@ -129,7 +136,7 @@ If an external control plane needs Moor' curated provider rows, per-model
 pricing, or capability hints, use one of the authenticated picker surfaces:
 
 - API server REST: `GET /api/model/options` with the API-server bearer key
-- Dashboard backend REST: `GET /api/model/options` with `X-Moor-Session-Token`
+- Dashboard backend REST: `GET /api/model/options` with `X-moor-session-Token`
 - TUI gateway RPC: `model.options`
 
 Those surfaces share the same payload builder and the same custom-provider
@@ -141,7 +148,7 @@ probe policy:
   cache and probe all saved custom providers so live catalogs repopulate fully.
 
 Use `/v1/models` for OpenAI-client compatibility. Use `/api/model/options` or
-`model.options` when you are building a Moor-aware model picker.
+`model.options` when you are building a moor-aware model picker.
 
 `POST /v1/runs/{id}/steer` is the HTTP equivalent of Moor `/steer`: it does not create a new user turn or immediately rewrite the assistant output already in flight. Instead, the text is appended to the live run and becomes visible to the agent after the next tool boundary, so it can course-correct without discarding the current tool-calling loop.
 

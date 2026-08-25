@@ -298,7 +298,7 @@ RUN uv pip install --no-cache-dir --no-deps -e "."
 USER root
 RUN mkdir -p /opt/moor/bin && \
     cp /opt/moor/docker/moor-exec-shim.sh /opt/moor/bin/moor && \
-    chmod 0755 /opt/moor/bin/moor && \
+    chmod 0755 /opt/moor /opt/moor/bin/moor && \
     printf 'docker\n' > /opt/moor/.install_method
 # The ``.install_method`` stamp is baked next to the running code (the install
 # tree), NOT into $MOOR_HOME. $MOOR_HOME (/opt/data) is a shared data

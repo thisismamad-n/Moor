@@ -198,10 +198,10 @@ def _resolve_safe_cwd(cwd: str) -> str:
     return tempfile.gettempdir()
 
 
-# Moor-internal env vars that should NOT leak into terminal subprocesses.
+# moor-internal env vars that should NOT leak into terminal subprocesses.
 _MOOR_PROVIDER_ENV_FORCE_PREFIX = "_MOOR_FORCE_"
 
-# Moor-managed AWS *inference* credentials for ``auth_type="aws_sdk"``
+# moor-managed AWS *inference* credentials for ``auth_type="aws_sdk"``
 # providers (Bedrock).  Scoped DELIBERATELY NARROW: this lists only the
 # Bedrock-specific bearer token, which is a Moor inference secret exactly
 # analogous to ``OPENAI_API_KEY`` — nobody drives the ``aws``/``terraform``/
@@ -324,7 +324,7 @@ def _build_provider_env_blocklist() -> frozenset:
     })
     # CLAUDE_CODE_OAUTH_TOKEN is deliberately NOT stripped.  It is set and
     # owned by the user's Claude Code install (subscription OAuth), not a
-    # Moor-managed inference credential — Claude subscription auth is not a
+    # moor-managed inference credential — Claude subscription auth is not a
     # working Moor provider path.  Stripping it broke agent-spawned
     # ``claude`` CLIs: the child fell through to the shared macOS Keychain /
     # ``~/.claude/.credentials.json`` store and, on auth failure, cleared it,
@@ -358,13 +358,13 @@ _MOOR_PROVIDER_ENV_BLOCKLIST = _build_provider_env_blocklist()
 # child can set it explicitly in the command.
 #
 # PYTHONPATH is NOT included here — it's handled by
-# _strip_moor_owned_pythonpath() which removes only Moor-owned entries,
+# _strip_moor_owned_pythonpath() which removes only moor-owned entries,
 # preserving user-set paths.
 _ACTIVE_VENV_MARKER_VARS = ("VIRTUAL_ENV", "CONDA_PREFIX", "PYTHONHOME")
 
 
 def _is_moor_internal_secret(key: str) -> bool:
-    """Return True for Moor-internal secrets injected under *dynamic* names.
+    """Return True for moor-internal secrets injected under *dynamic* names.
 
     ``_MOOR_PROVIDER_ENV_BLOCKLIST`` is name-based and derived from the
     provider/tool registries, but the gateway and CLI also inject secrets into
@@ -388,7 +388,7 @@ def _is_moor_internal_secret(key: str) -> bool:
     ``KEY`` / ``SECRET`` / ``TOKEN``; the terminal backend's narrower name-based
     blocklist did not, which is the leak this predicate closes.
 
-    This is the single source of truth for "Moor-internal dynamic secret"
+    This is the single source of truth for "moor-internal dynamic secret"
     across every spawn path — the terminal ``_make_run_env`` /
     ``_sanitize_subprocess_env`` filters, the Docker passthrough filter, and the
     non-terminal :func:`moor_subprocess_env` helper all call it, so the
@@ -406,6 +406,22 @@ def _is_moor_internal_secret(key: str) -> bool:
     ):
         return True
     return False
+
+
+def _plugin_terminal_env_strip_keys() -> frozenset:
+    """Credential env keys owned by plugin-registered terminal backends.
+
+    Computed at call time (not import time) because plugins register after
+    this module is imported. Treated as Tier-1: stripped from every spawned
+    subprocess unconditionally, exactly like MODAL_*/DAYTONA_API_KEY in
+    ``_ALWAYS_STRIP_KEYS``. Fail-soft to an empty set.
+    """
+    try:
+        from agent.terminal_env_registry import plugin_strip_env_keys
+
+        return plugin_strip_env_keys()
+    except Exception:
+        return frozenset()
 
 
 def _inject_context_moor_home(env: dict) -> None:
@@ -468,7 +484,7 @@ def _inject_session_context_env(env: dict) -> None:
 
 
 def _sanitize_subprocess_env(base_env: dict | None, extra_env: dict | None = None) -> dict:
-    """Filter Moor-managed secrets from a subprocess environment."""
+    """Filter moor-managed secrets from a subprocess environment."""
     try:
         from tools.env_passthrough import (
             is_env_passthrough as _is_passthrough,
@@ -479,11 +495,14 @@ def _sanitize_subprocess_env(base_env: dict | None, extra_env: dict | None = Non
         _resolve_passthrough_value = lambda _name, fallback: fallback  # noqa: E731
 
     sanitized: dict[str, str] = {}
+    _plugin_strip = _plugin_terminal_env_strip_keys()
 
     for key, value in (base_env or {}).items():
         if key.startswith(_MOOR_PROVIDER_ENV_FORCE_PREFIX):
             continue
         if _is_moor_internal_secret(key):
+            continue
+        if key in _plugin_strip:
             continue
         passthrough = _is_passthrough(key)
         if key in _MOOR_PROVIDER_ENV_BLOCKLIST and not passthrough:
@@ -499,6 +518,8 @@ def _sanitize_subprocess_env(base_env: dict | None, extra_env: dict | None = Non
                 continue
             sanitized[real_key] = value
         elif _is_moor_internal_secret(key):
+            continue
+        elif key in _plugin_strip:
             continue
         else:
             passthrough = _is_passthrough(key)
@@ -522,6 +543,14 @@ def _sanitize_subprocess_env(base_env: dict | None, extra_env: dict | None = Non
     # the separate Moor runtime venv.  The filter validates that relationship
     # against the repo layout before trusting it.
     _strip_moor_owned_pythonpath_and_runtime_markers(sanitized)
+
+    # Keep bare ``moor`` invocations available to child jobs even when the
+    # gateway was launched by a service manager or cron without the console
+    # script's directory on PATH.  The terminal environment already applies
+    # this invariant; Cron scripts use this sanitizer directly (#92998).
+    path_key = _path_env_key(sanitized)
+    if path_key is not None:
+        sanitized[path_key] = _prepend_moor_bin_dir(sanitized.get(path_key, ""))
 
     _apply_windows_msys_bash_env_defaults(sanitized)
 
@@ -625,7 +654,9 @@ def moor_subprocess_env(*, inherit_credentials: bool = False) -> dict[str, str]:
     # Tier 1 — always strip.
     for key in _ALWAYS_STRIP_KEYS:
         env.pop(key, None)
-    # Internal routing hints and Moor-internal dynamic secrets
+    for key in _plugin_terminal_env_strip_keys():
+        env.pop(key, None)
+    # Internal routing hints and moor-internal dynamic secrets
     # (``AUXILIARY_<TASK>_API_KEY`` / ``_BASE_URL`` side-LLM credentials,
     # ``GATEWAY_RELAY_*`` relay-auth material) must never reach a child,
     # regardless of ``inherit_credentials`` — a model-driving CLI has no
@@ -1156,7 +1187,7 @@ def _prepend_moor_bin_dir(existing_path: str) -> str:
 
 
 def _managed_runtime_path_entries() -> list[str]:
-    """Return existing Moor-managed runtime dirs for the terminal subshell PATH.
+    """Return existing moor-managed runtime dirs for the terminal subshell PATH.
 
     The terminal tool spawns a subshell whose PATH is the agent process's PATH
     plus ``_SANE_PATH``. Neither carries the runtimes Moor installs for
@@ -1200,7 +1231,7 @@ def _append_missing_sane_path_entries(existing_path: str) -> str:
     - **Duplicates are collapsed** (first occurrence wins), so a caller PATH
       that already contains repeats is not propagated verbatim.
 
-    Moor-managed runtime dirs are appended alongside the sane entries, not
+    moor-managed runtime dirs are appended alongside the sane entries, not
     prepended: a tool the user deliberately put on their own PATH still wins,
     and the managed one only fills the gap where there would otherwise be
     nothing.
@@ -1359,7 +1390,7 @@ def _build_moor_repo_root_aliases(
     ``gateway_windows._preserve_moor_home_path`` maps a physical path under
     the resolved MOOR_HOME back onto the configured MOOR_HOME spelling.
     Mirror that producer contract here so a junction-backed install is matched
-    without treating arbitrary descendants of MOOR_HOME as Moor-owned.
+    without treating arbitrary descendants of MOOR_HOME as moor-owned.
     Additionally, when the repo itself is a junction under the configured root
     (repo-level junction, possibly cross-drive), the single deterministic
     candidate <root>/<repo dirname> is accepted only when strict resolve
@@ -1404,7 +1435,7 @@ def _build_moor_repo_root_aliases(
     # cannot express a cross-drive link (commonpath raises on different
     # drives), so prove the EXACT filesystem identity of the single
     # deterministic candidate -- <lexical root>/<repo dirname> -- with a
-    # strict resolve before accepting it as Moor-owned.  Fail-closed: a
+    # strict resolve before accepting it as moor-owned.  Fail-closed: a
     # missing path (strict resolve raises), a real directory that is not the
     # known physical root, or any unrelated spelling never becomes an alias.
     for home in home_candidates:
@@ -1430,7 +1461,7 @@ _moor_repo_root: Path = Path(__file__).resolve().parents[2]
 
 #: Alternate spellings of the repo root that Moor launchers may emit.
 #: ``Path(__file__).resolve()`` canonicalizes symlinks/junctions, but the
-#: Windows gateway launcher deliberately renders Moor-owned paths under
+#: Windows gateway launcher deliberately renders moor-owned paths under
 #: the configured MOOR_HOME spelling (which may be a junction to another
 #: drive — see ``moor_cli/gateway_windows.py::_preserve_moor_home_path``).
 #: ``Path(__file__)`` (unresolved) keeps that spelling, so a PYTHONPATH
@@ -1527,7 +1558,7 @@ def _get_moor_site_packages(env: dict) -> list[Path]:
 
 
 def _strip_moor_owned_pythonpath_and_runtime_markers(env: dict) -> None:
-    """Strip Moor-owned PYTHONPATH entries, then the runtime marker vars.
+    """Strip moor-owned PYTHONPATH entries, then the runtime marker vars.
 
     Ordering is load-bearing: PYTHONPATH filtering must run BEFORE the
     markers are removed so a validated Windows base-interpreter launch
@@ -1539,14 +1570,14 @@ def _strip_moor_owned_pythonpath_and_runtime_markers(env: dict) -> None:
 
 
 def _strip_moor_owned_pythonpath(env: dict) -> None:
-    """Remove Moor-owned PYTHONPATH entries from subprocess environments.
+    """Remove moor-owned PYTHONPATH entries from subprocess environments.
 
     Launchers prepend the Moor repo root and the Moor venv's
     site-packages so the backend can ``import tools``; leaking those into a
     child Python of a DIFFERENT version makes it load the backend's C
     extensions and crash (``numpy._core._multiarray_umath``, ``PIL._imaging``,
     ``cryptography``).  Blanket-removing PYTHONPATH would discard legitimate
-    user entries, so only entries proven Moor-owned are removed:
+    user entries, so only entries proven moor-owned are removed:
 
     1. The exact repo root (never direct children -- no launcher injects
        one, and user paths under the repo must survive).
@@ -1571,7 +1602,7 @@ def _strip_moor_owned_pythonpath(env: dict) -> None:
     for entry in pp.split(os.pathsep):
         # Empty and non-normalized components are user-owned semantics.  In
         # particular, an empty component means the current working directory.
-        # Preserve raw spelling unless the exact component is Moor-owned.
+        # Preserve raw spelling unless the exact component is moor-owned.
         if entry == "":
             kept.append(entry)
             continue
@@ -1598,7 +1629,7 @@ def _strip_moor_owned_pythonpath(env: dict) -> None:
         # independent PYTHONPATH entry, and user paths that merely happen to
         # live under the repo directory must be preserved.  Both the
         # resolved and unresolved (MOOR_HOME/junction) spellings count as
-        # Moor-owned.
+        # moor-owned.
         if not should_strip:
             should_strip = any(
                 _same_path(entry_path, repo_root)
@@ -1617,7 +1648,7 @@ def _strip_moor_owned_pythonpath(env: dict) -> None:
 
     if stripped:
         logger.debug(
-            "Stripped Moor-owned entries from PYTHONPATH: %s",
+            "Stripped moor-owned entries from PYTHONPATH: %s",
             stripped,
         )
 
@@ -1899,27 +1930,72 @@ class LocalEnvironment(BaseEnvironment):
                     if pgid is None:
                         raise
 
+                # Snapshot the descendant set BEFORE the first signal: once
+                # the wrapper dies its children reparent to init and a parent
+                # walk finds nothing (same rationale as agent/deadline.py
+                # kill_process_tree).  A descendant that called ``setsid``
+                # escapes the process group entirely and would survive the
+                # group-kill below — the #71148 class, terminal flavor
+                # (issue #84967's local sibling).  The snapshot must never
+                # break the kill path, so any failure just yields an empty
+                # sweep set.
+                descendants: list = []
+                try:
+                    import psutil
+
+                    descendants = psutil.Process(proc.pid).children(recursive=True)
+                except Exception:
+                    descendants = []
+
+                def _sweep_escaped_descendants() -> None:
+                    """SIGKILL snapshotted survivors outside the (dead) group.
+
+                    Runs after the TERM→KILL group escalation so in-group
+                    members keep their SIGTERM grace window; only escapees
+                    (own setsid sessions) are force-killed.  psutil's
+                    identity-aware Process means recycled PIDs are skipped.
+
+                    POSIX-only: reached solely from the non-_IS_WINDOWS
+                    branch above (the win32 path returns earlier).
+                    """
+                    for child in descendants:
+                        try:
+                            if not child.is_running():
+                                continue
+                            try:
+                                if os.getpgid(child.pid) == pgid:
+                                    continue  # group-kill already covers it
+                            except (ProcessLookupError, PermissionError, OSError):
+                                pass
+                            child.kill()
+                        except Exception:
+                            continue
+
                 try:
                     os.killpg(pgid, signal.SIGTERM)  # windows-footgun: ok — POSIX process-group SIGTERM (guarded by _IS_WINDOWS above)
                 except ProcessLookupError:
+                    _sweep_escaped_descendants()
                     return
 
                 # Wait on the process group, not just the shell wrapper. Under
                 # load the wrapper can exit before grandchildren do; returning
                 # at that point leaves orphaned process-group members behind.
                 if _wait_for_group_exit(pgid, 1.0):
+                    _sweep_escaped_descendants()
                     return
 
                 try:
                     # POSIX-only: _IS_WINDOWS is handled by the outer branch.
                     os.killpg(pgid, signal.SIGKILL)  # windows-footgun: ok — POSIX process-group SIGKILL
                 except ProcessLookupError:
+                    _sweep_escaped_descendants()
                     return
                 _wait_for_group_exit(pgid, 2.0)
                 try:
                     proc.wait(timeout=0.2)
                 except (subprocess.TimeoutExpired, OSError):
                     pass
+                _sweep_escaped_descendants()
         except (ProcessLookupError, PermissionError, OSError):
             try:
                 proc.kill()

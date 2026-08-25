@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { BUILTIN_THEME_LIST, DEFAULT_TYPOGRAPHY, EMOJI_FALLBACK } from './presets'
+import {
+  BUILTIN_THEME_LIST,
+  BUILTIN_THEMES,
+  DEFAULT_SKIN_NAME,
+  DEFAULT_TYPOGRAPHY,
+  EMOJI_FALLBACK,
+  nousAltTheme
+} from './presets'
 
 // #40364: none of the UI text/mono fonts carry emoji glyphs, so every font
 // stack must end with a color-emoji fallback or emoji render as tofu on
@@ -29,5 +36,17 @@ describe('theme typography emoji fallback (#40364)', () => {
     expect(EMOJI_FALLBACK).toContain('Apple Color Emoji')
     expect(EMOJI_FALLBACK).toContain('Segoe UI Emoji')
     expect(EMOJI_FALLBACK).toContain('Noto Color Emoji')
+  })
+})
+
+// The pre-GitHub Moor palette stays available as moor-alt; the default name
+// still means GitHub chrome + brand blue.
+describe('moor-alt is the retired Moor, not the default', () => {
+  it('is registered under its own name and leaves moor as the default', () => {
+    expect(DEFAULT_SKIN_NAME).toBe('moor')
+    expect(BUILTIN_THEMES['moor-alt']).toBe(nousAltTheme)
+    expect(BUILTIN_THEMES.moor).not.toBe(nousAltTheme)
+    expect(nousAltTheme.darkColors?.background).toBe('#0D2F86')
+    expect(BUILTIN_THEMES.moor.darkColors?.background).not.toBe(nousAltTheme.darkColors?.background)
   })
 })

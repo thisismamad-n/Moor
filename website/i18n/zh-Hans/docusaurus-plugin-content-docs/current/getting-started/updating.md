@@ -120,7 +120,7 @@ tail -f ~/.moor/logs/update.log
 ### 查看当前版本
 
 ```bash
-moor version
+moor --version
 ```
 
 与 [GitHub releases 页面](https://github.com/NousResearch/hermes-agent/releases) 上的最新版本进行比较。

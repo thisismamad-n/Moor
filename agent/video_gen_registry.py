@@ -132,6 +132,18 @@ def get_active_provider() -> Optional[VideoGenProvider]:
     except Exception as exc:
         logger.debug("Could not read video_gen.provider from config: %s", exc)
 
+    # The managed "Moor Subscription" selection is serviced by the FAL
+    # plugin through the managed fal-queue gateway (the plugin's resolver
+    # routes managed when the stored selection is "moor").
+    if configured:
+        try:
+            from tools.tool_backend_helpers import MOOR_MANAGED_PROVIDER
+
+            if configured.lower() == MOOR_MANAGED_PROVIDER:
+                configured = "fal"
+        except Exception:  # pragma: no cover — helpers are in-repo
+            pass
+
     with _lock:
         snapshot = dict(_providers)
         snapshot.update(_scoped_providers.get(moor_home_key(), {}))

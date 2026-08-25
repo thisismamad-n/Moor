@@ -18,6 +18,8 @@ import {
   setDefaultReasoningEffort
 } from '@/store/session'
 
+import { deferred } from '../../../test/deferred'
+
 import { useMoorConfig } from './use-moor-config'
 
 vi.mock('@/moor', () => ({
@@ -26,16 +28,6 @@ vi.mock('@/moor', () => ({
 }))
 
 const WORKSPACE_CWD_KEY = 'moor.desktop.workspace-cwd'
-
-function deferred<T>() {
-  let resolve!: (value: T | PromiseLike<T>) => void
-
-  const promise = new Promise<T>(done => {
-    resolve = done
-  })
-
-  return { promise, resolve }
-}
 
 const mockConfig = (config: Record<string, unknown>) =>
   vi.mocked(getMoorConfig).mockResolvedValue(config as Awaited<ReturnType<typeof getMoorConfig>>)

@@ -41,7 +41,13 @@ def test_update_via_zip_rejects_symlink_member(tmp_path, monkeypatch):
         target="/etc/passwd",
     )
 
+    fake_root = tmp_path / "install_dir"
+    fake_root.mkdir()
+
+    from moor_cli import main as moor_main
     from moor_cli.main import _update_via_zip
+
+    monkeypatch.setattr(moor_main, "PROJECT_ROOT", fake_root)
 
     args = type("Args", (), {})()
 

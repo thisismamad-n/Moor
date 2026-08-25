@@ -1,6 +1,19 @@
-import { contextBridge, ipcRenderer, webUtils } from 'electron'
+import { contextBridge, ipcRenderer, webFrame, webUtils } from 'electron'
+
+// Which translucency the OS can back. Asked synchronously because the renderer
+// needs it before its first paint, and answered by main because deciding it
+// needs `os.release()` — a sandboxed preload may only require electron, events,
+// timers and url, so importing node:os here throws before contextBridge runs
+// and takes the ENTIRE bridge down with it (window.moorDesktop undefined =>
+// "Desktop IPC bridge is unavailable"). No reply means no glass, which degrades
+// to an ordinary opaque window rather than a page thinned over nothing.
+const translucencySupport = ipcRenderer.sendSync('moor:translucency:support')
+const hudWindowing = ipcRenderer.sendSync('moor:hud:windowing')
+const hudNativeDrag = hudWindowing?.nativeDrag === true
 
 contextBridge.exposeInMainWorld('moorDesktop', {
+  glassSupported: translucencySupport?.glass === true,
+  translucencySupported: translucencySupport?.translucency === true,
   getConnection: profile => ipcRenderer.invoke('moor:connection', profile),
   // Registry-scoped backend resolution: { connectionId, profile } → descriptor.
   getConnectionFor: payload => ipcRenderer.invoke('moor:connection:for', payload),
@@ -59,12 +72,24 @@ contextBridge.exposeInMainWorld('moorDesktop', {
   // sized as a floating bar, so it mounts the real composer. Main owns the
   // window; `onChanged` keeps every window's toggle truthful.
   hud: {
+    nativeDrag: hudNativeDrag,
+    windowing: {
+      clientPlacement: hudWindowing?.clientPlacement !== false,
+      controlDrag: hudWindowing?.controlDrag === true,
+      nativeDrag: hudNativeDrag,
+      workspaceTransfer: hudWindowing?.workspaceTransfer === true
+    },
     open: request => ipcRenderer.invoke('moor:hud:open', request),
     close: () => ipcRenderer.invoke('moor:hud:close'),
     setIgnoreMouse: ignore => ipcRenderer.send('moor:hud:ignore-mouse', ignore),
     moveBy: delta => ipcRenderer.send('moor:hud:move-by', delta),
+    setWorkspaceTransfer: transferring => ipcRenderer.send('moor:hud:workspace-transfer', transferring),
     setBounds: bounds => ipcRenderer.send('moor:hud:set-bounds', bounds),
-    setVibrancy: on => ipcRenderer.invoke('moor:hud:vibrancy', on),
+    resetLayout: () => ipcRenderer.invoke('moor:hud:reset-layout'),
+    // Whether the band covers the window below the bar. Main pairs it with the
+    // user's translucency setting to decide the native frost (macOS vibrancy /
+    // Windows 11 DWM backdrop) — see hudFrostFor.
+    setFrost: showing => ipcRenderer.invoke('moor:hud:frost', showing),
     // The HUD tells main which session it is on; main hands that back to the
     // app window when the HUD closes, so the app can re-home onto it.
     setSession: sessionId => ipcRenderer.send('moor:hud:session', sessionId),
@@ -89,6 +114,15 @@ contextBridge.exposeInMainWorld('moorDesktop', {
       ipcRenderer.on('moor:hud:cursor', listener)
 
       return () => ipcRenderer.removeListener('moor:hud:cursor', listener)
+    },
+    // Main's game-overlay watch: whether a fullscreen app (a game) is under
+    // the HUD, so the renderer can step back to the low-opacity overlay
+    // treatment while one owns the screen.
+    onGameOverlay: callback => {
+      const listener = (_event, state) => callback(state)
+      ipcRenderer.on('moor:hud:game-overlay', listener)
+
+      return () => ipcRenderer.removeListener('moor:hud:game-overlay', listener)
     }
   },
   // Quick Entry: the global-hotkey mini composer window. Main owns the OS
@@ -137,9 +171,12 @@ contextBridge.exposeInMainWorld('moorDesktop', {
     save: payload => ipcRenderer.invoke('moor:connections:save', payload),
     remove: id => ipcRenderer.invoke('moor:connections:remove', id),
     setPrimary: id => ipcRenderer.invoke('moor:connections:set-primary', id),
+    setLaunchMode: mode => ipcRenderer.invoke('moor:connections:set-launch-mode', mode),
+    setLastUsed: id => ipcRenderer.invoke('moor:connections:set-last-used', id),
     test: id => ipcRenderer.invoke('moor:connections:test', id),
     // Fan out `moor update` to every eligible registered connection.
-    updateAll: () => ipcRenderer.invoke('moor:connections:update-all'),
+    // Optional excludeIds skips rows the caller updates through another path.
+    updateAll: options => ipcRenderer.invoke('moor:connections:update-all', options),
     // Registry lifecycle push (main → renderer): a connection was removed or
     // materially edited, so secondaries scoped to it must be disposed (and,
     // for edits, re-dialed at the new target).
@@ -179,12 +216,23 @@ contextBridge.exposeInMainWorld('moorDesktop', {
     set: maxMb => ipcRenderer.invoke('moor:data-url-read-max:set', maxMb)
   },
   readFileText: filePath => ipcRenderer.invoke('moor:readFileText', filePath),
+  readPluginSource: (filePath: string) => ipcRenderer.invoke('moor:readPluginSource', filePath),
   selectPaths: options => ipcRenderer.invoke('moor:selectPaths', options),
   selectSavePath: options => ipcRenderer.invoke('moor:selectSavePath', options),
   writeClipboard: text => ipcRenderer.invoke('moor:writeClipboard', text),
   readClipboard: () => ipcRenderer.invoke('moor:readClipboard'),
   saveGatewayFile: payload => ipcRenderer.invoke('moor:saveGatewayFile', payload),
   saveImageFromUrl: url => ipcRenderer.invoke('moor:saveImageFromUrl', url),
+  contextMenuEdit: command => ipcRenderer.invoke('moor:context-menu:edit', command),
+  contextMenuCopyImage: () => ipcRenderer.invoke('moor:context-menu:copy-image'),
+  contextMenuSpellcheck: action => ipcRenderer.invoke('moor:context-menu:spellcheck', action),
+  contextMenuGuestAddWord: payload => ipcRenderer.invoke('moor:context-menu:guest-add-word', payload),
+  onContextMenuSpellcheck: callback => {
+    const listener = (_event, payload) => callback(payload)
+    ipcRenderer.on('moor:context-menu-spellcheck', listener)
+
+    return () => ipcRenderer.removeListener('moor:context-menu-spellcheck', listener)
+  },
   saveImageBuffer: (data, ext) => ipcRenderer.invoke('moor:saveImageBuffer', { data, ext }),
   saveClipboardImage: () => ipcRenderer.invoke('moor:saveClipboardImage'),
   getPathForFile: file => {
@@ -207,7 +255,9 @@ contextBridge.exposeInMainWorld('moorDesktop', {
   setPreviewShortcutActive: active => ipcRenderer.send('moor:previewShortcutActive', Boolean(active)),
   openExternal: url => ipcRenderer.invoke('moor:openExternal', url),
   openPreviewInBrowser: url => ipcRenderer.invoke('moor:openPreviewInBrowser', url),
+  reachPreviewUrl: url => ipcRenderer.invoke('moor:preview:reach', url),
   fetchLinkTitle: url => ipcRenderer.invoke('moor:fetchLinkTitle', url),
+  resolveFavicon: url => ipcRenderer.invoke('moor:resolveFavicon', url),
   sanitizeWorkspaceCwd: cwd => ipcRenderer.invoke('moor:workspace:sanitize', cwd),
   settings: {
     getDefaultProjectDir: () => ipcRenderer.invoke('moor:setting:defaultProjectDir:get'),
@@ -217,6 +267,9 @@ contextBridge.exposeInMainWorld('moorDesktop', {
   zoom: {
     // Current zoom of this window, as { level, percent }.
     get: () => ipcRenderer.invoke('moor:zoom:get'),
+    // Synchronous zoom factor (1 = 100%). Coordinate math needs it in the
+    // same tick as the event it converts, so no IPC round-trip here.
+    factor: () => webFrame.getZoomFactor(),
     setPercent: percent => ipcRenderer.send('moor:zoom:set-percent', percent),
     // Fires on every zoom change, including the Ctrl/Cmd +/-/0 shortcuts,
     // so the settings UI can stay in sync with the keyboard.
@@ -237,6 +290,7 @@ contextBridge.exposeInMainWorld('moorDesktop', {
   revealPath: targetPath => ipcRenderer.invoke('moor:fs:reveal', targetPath),
   openDir: dirPath => ipcRenderer.invoke('moor:fs:openDir', dirPath),
   desktopPluginsRoot: () => ipcRenderer.invoke('moor:fs:desktopPluginsRoot'),
+  logsRoot: () => ipcRenderer.invoke('moor:fs:logsRoot'),
   agentPluginsRoot: () => ipcRenderer.invoke('moor:fs:agentPluginsRoot'),
   renamePath: (targetPath, newName) => ipcRenderer.invoke('moor:fs:rename', targetPath, newName),
   writeTextFile: (filePath, content) => ipcRenderer.invoke('moor:fs:writeText', filePath, content),
@@ -297,6 +351,12 @@ contextBridge.exposeInMainWorld('moorDesktop', {
 
     return () => ipcRenderer.removeListener('moor:close-preview-requested', listener)
   },
+  onPreviewNav: callback => {
+    const listener = (_event, command) => callback(command)
+    ipcRenderer.on('moor:preview-nav', listener)
+
+    return () => ipcRenderer.removeListener('moor:preview-nav', listener)
+  },
   onOpenFolderRequested: callback => {
     const listener = () => callback()
     ipcRenderer.on('moor:open-folder-requested', listener)
@@ -316,6 +376,8 @@ contextBridge.exposeInMainWorld('moorDesktop', {
     return () => ipcRenderer.removeListener('moor:deep-link', listener)
   },
   signalDeepLinkReady: () => ipcRenderer.invoke('moor:deep-link-ready'),
+  probePluginRepo: payload => ipcRenderer.invoke('moor:plugin:probe', payload),
+  installDesktopPlugin: payload => ipcRenderer.invoke('moor:plugin:installDesktop', payload),
   onWindowStateChanged: callback => {
     const listener = (_event, payload) => callback(payload)
     ipcRenderer.on('moor:window-state-changed', listener)
@@ -333,6 +395,12 @@ contextBridge.exposeInMainWorld('moorDesktop', {
     ipcRenderer.on('moor:notification-action', listener)
 
     return () => ipcRenderer.removeListener('moor:notification-action', listener)
+  },
+  onNotificationActivate: callback => {
+    const listener = (_event, payload) => callback(payload)
+    ipcRenderer.on('moor:notification-activate', listener)
+
+    return () => ipcRenderer.removeListener('moor:notification-activate', listener)
   },
   onPreviewFileChanged: callback => {
     const listener = (_event, payload) => callback(payload)

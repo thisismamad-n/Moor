@@ -85,7 +85,7 @@ They are **not recommended for use inside Moor Agent**, however. Hermes 4 is tun
 /model deepseek/deepseek-v4-pro        # cost-effective coder
 ```
 
-The Portal's own [model info page](https://portal.nousresearch.com/info) carries the same warning, so this isn't a Moor-side opinion — it's the official guidance from Moor inc..
+The Portal's own [model info page](https://portal.nousresearch.com/info) carries the same warning, so this isn't a moor-side opinion — it's the official guidance from Moor inc..
 
 ## Setup
 
@@ -213,24 +213,23 @@ model:
   base_url: https://inference-api.nousresearch.com/v1
 ```
 
-The Tool Gateway settings live under their respective tool sections:
+The Tool Gateway settings live under their respective tool sections — each category has a single selection key, and picking **Moor Subscription** in `moor tools` (or `moor setup --portal`) writes the value `moor`:
 
 ```yaml
 web:
-  backend: firecrawl
-  use_gateway: true   # web search/extract routes through Tool Gateway
+  backend: moor          # web search/extract routes through Tool Gateway
 
 image_gen:
-  use_gateway: true
+  provider: moor
 
 tts:
-  provider: openai
-  use_gateway: true
+  provider: moor
 
 browser:
-  cloud_provider: browser-use
-  use_gateway: true
+  cloud_provider: moor
 ```
+
+The runtime always follows the stored selection — direct API keys left in `.env` are ignored while a category is set to `moor`, and picking a direct provider (e.g. `image_gen.provider: fal`) without its key produces a clear error rather than silently rerouting through the gateway. (Older configs used a legacy `use_gateway: true` flag; it is read as equivalent to `moor` but is no longer written.)
 
 The OAuth refresh token is stored separately at `~/.moor/auth.json` (not in `config.yaml` — credentials and configuration are kept separate by design).
 

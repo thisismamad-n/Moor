@@ -127,7 +127,7 @@ services.moor-agent.environmentFiles = [ "/var/lib/moor/env" ];
 :::info
 当 `container.enable = true` 且 `addToSystemPackages = true` 时，主机上的**所有** `moor` 命令都会自动路由到托管容器中执行。这意味着你的交互式 CLI 会话在与 gateway 服务相同的环境中运行——可以访问所有容器内安装的包和工具。
 
-- 路由是透明的：`moor chat`、`moor sessions list`、`moor version` 等命令都会在底层 exec 进容器
+- 路由是透明的：`moor chat`、`moor sessions list`、`moor --version` 等命令都会在底层 exec 进容器
 - 所有 CLI 参数原样转发
 - 如果容器未运行，CLI 会短暂重试（交互式使用时显示 5 秒 spinner，脚本中静默等待 10 秒），然后以明确的错误退出——不会静默回退
 - 对于在 moor 代码库上工作的开发者，设置 `MOOR_DEV=1` 可绕过容器路由，直接运行本地检出版本
@@ -171,7 +171,7 @@ systemctl status moor-agent
 journalctl -u moor-agent -f
 
 # 如果 addToSystemPackages 为 true，测试 CLI
-moor version
+moor --version
 moor config       # 显示生成的配置
 ```
 
@@ -763,7 +763,7 @@ nix build .#checks.x86_64-linux.config-roundtrip    # 合并脚本保留用户�
 
 | 检查 | 测试内容 |
 |---|---|
-| `package-contents` | `moor` 和 `moor-agent` 二进制文件存在且 `moor version` 可运行 |
+| `package-contents` | `moor` 和 `moor-agent` 二进制文件存在且 `moor --version` 可运行 |
 | `entry-points-sync` | `pyproject.toml` 中 `[project.scripts]` 的每个条目在 Nix 包中都有对应的封装二进制文件 |
 | `cli-commands` | `moor --help` 暴露 `gateway` 和 `config` 子命令 |
 | `managed-guard` | `MOOR_MANAGED=true moor config set ...` 打印 NixOS 错误 |
@@ -967,7 +967,7 @@ nix-store --query --roots $(docker exec moor-agent readlink /data/current-packag
 |---|---|---|
 | `Cannot save configuration: managed by NixOS` | CLI 守卫已激活 | 编辑 `configuration.nix` 并执行 `nixos-rebuild switch` |
 | 容器意外重建 | `extraVolumes`、`extraOptions` 或 `image` 发生变更 | 预期行为——可写层重置。重新安装包或使用自定义镜像 |
-| `moor version` 显示旧版本 | 容器未重启 | `systemctl restart moor-agent` |
+| `moor --version` 显示旧版本 | 容器未重启 | `systemctl restart moor-agent` |
 | `/var/lib/moor` 权限拒绝 | 状态目录为 `0750 moor:moor` | 使用 `docker exec` 或 `sudo -u moor` |
 | `nix-collect-garbage` 删除了 moor | GC root 缺失 | 重启服务（preStart 会重新创建 GC root） |
 | `no container with name or ID "moor-agent"`（Podman） | Podman rootful 容器对普通用户不可见 | 为 podman 添加免密 sudo（参见[容器模式](#container-mode)章节） |

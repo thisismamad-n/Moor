@@ -197,15 +197,15 @@ providers:
 
 With discovery off, the model picker (`moor model`, `/model`) shows the configured list instead of a live probe.
 
-For an Anthropic-compatible gateway that resolves a bare model alias only
-after receiving the request, opt the alias into native prompt-cache markers
-with the per-model `prompt_caching` capability:
+For a gateway that resolves a bare model alias only after receiving the
+request, opt the alias into prompt-cache markers with the per-model
+`prompt_caching` capability:
 
 ```yaml
 providers:
-  anthropic-proxy:
-    api: https://gateway.example.com/anthropic
-    transport: anthropic_messages
+  model-proxy:
+    api: https://gateway.example.com/v1
+    transport: openai_chat  # or anthropic_messages
     models:
       fable:
         context_length: 1000000
@@ -213,9 +213,12 @@ providers:
 ```
 
 Moor matches this declaration to the exact provider route and runtime model
-id, without rewriting the alias. Set `prompt_caching: false` to explicitly
-disable cache markers for a model; when omitted, Moor keeps its normal
-provider and model capability detection.
+id, without rewriting the alias or inferring support from its provider name,
+host, or model family. The marker layout follows the configured transport:
+`openai_chat` uses the OpenAI-compatible envelope layout and
+`anthropic_messages` uses the native inner-block layout. Set
+`prompt_caching: false` to explicitly disable cache markers for a model; when
+omitted, Moor keeps its normal provider and model capability detection.
 
 :::note Legacy format
 Older configs used a top-level `custom_providers:` list (with `base_url` instead of `api`). It still works and is auto-migrated to the `providers:` dict on `moor update` (config v12).
@@ -326,28 +329,28 @@ The dashboard uses three endpoints. Useful for scripting:
 
 ```bash
 # List authenticated providers + curated model lists
-curl -H "X-Moor-Session-Token: $TOKEN" http://localhost:PORT/api/model/options
+curl -H "X-moor-session-Token: $TOKEN" http://localhost:PORT/api/model/options
 
 # Read current main + auxiliary assignments
-curl -H "X-Moor-Session-Token: $TOKEN" http://localhost:PORT/api/model/auxiliary
+curl -H "X-moor-session-Token: $TOKEN" http://localhost:PORT/api/model/auxiliary
 
 # Set the main model
-curl -X POST -H "Content-Type: application/json" -H "X-Moor-Session-Token: $TOKEN" \
+curl -X POST -H "Content-Type: application/json" -H "X-moor-session-Token: $TOKEN" \
   -d '{"scope":"main","provider":"openrouter","model":"anthropic/claude-opus-4.7"}' \
   http://localhost:PORT/api/model/set
 
 # Override a single auxiliary task
-curl -X POST -H "Content-Type: application/json" -H "X-Moor-Session-Token: $TOKEN" \
+curl -X POST -H "Content-Type: application/json" -H "X-moor-session-Token: $TOKEN" \
   -d '{"scope":"auxiliary","task":"vision","provider":"openrouter","model":"google/gemini-2.5-flash"}' \
   http://localhost:PORT/api/model/set
 
 # Assign one model to every auxiliary task
-curl -X POST -H "Content-Type: application/json" -H "X-Moor-Session-Token: $TOKEN" \
+curl -X POST -H "Content-Type: application/json" -H "X-moor-session-Token: $TOKEN" \
   -d '{"scope":"auxiliary","task":"","provider":"openrouter","model":"google/gemini-2.5-flash"}' \
   http://localhost:PORT/api/model/set
 
 # Reset all auxiliary tasks to auto
-curl -X POST -H "Content-Type: application/json" -H "X-Moor-Session-Token: $TOKEN" \
+curl -X POST -H "Content-Type: application/json" -H "X-moor-session-Token: $TOKEN" \
   -d '{"scope":"auxiliary","task":"__reset__","provider":"","model":""}' \
   http://localhost:PORT/api/model/set
 ```

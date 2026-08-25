@@ -159,7 +159,14 @@ moor teams-pipeline run <job-id>
 ```bash
 moor teams-pipeline fetch --meeting-id <meeting-id>
 moor teams-pipeline fetch --join-web-url "<join-url>"
+moor teams-pipeline fetch --join-web-url "<join-url>" --organizer-user-id <entra-user-id>
 ```
+
+Pass `--organizer-user-id` (the organizer's Microsoft Entra user ID) to resolve
+through the organizer-scoped `/users/{id}/onlineMeetings` Graph path. This is
+required for Teams `/meet/` short URLs, which Graph rejects on the
+`/communications/onlineMeetings` endpoint. Webhook-driven jobs derive the
+organizer automatically from the notification's `@odata.id`.
 
 ## Routine Runbook
 

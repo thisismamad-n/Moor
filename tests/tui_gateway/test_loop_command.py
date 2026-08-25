@@ -25,11 +25,11 @@ def moor_home(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     monkeypatch.setenv("MOOR_HOME", str(home))
 
-    from moor_cli import loops
+    from moor_cli import goals
 
-    loops._DB_CACHE.clear()
+    goals._DB_CACHE.clear()
     yield home
-    loops._DB_CACHE.clear()
+    goals._DB_CACHE.clear()
 
 
 @pytest.fixture()

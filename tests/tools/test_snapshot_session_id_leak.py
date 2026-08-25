@@ -49,6 +49,7 @@ def test_export_snippet_shape():
     assert "unset" in snippet
     assert "${!MOOR_SESSION_*}" in snippet
     assert "${!MOOR_CRON_AUTO_DELIVER_*}" in snippet
+    assert "${!MOOR_BROWSER_CONTROL_*}" in snippet
     assert "MOOR_UI_SESSION_ID" in snippet
     assert "grep -vE" not in snippet
     assert '"$__moor_snap_tmp"' in snippet

@@ -64,7 +64,7 @@ OpenViking's server config is separate from Moor:
   `account`, and `user`. It is read from `OPENVIKING_CLI_CONFIG_FILE` or
   `~/.openviking/ovcli.conf`.
 
-Moor-side provider config is read from environment variables in the active
+moor-side provider config is read from environment variables in the active
 profile's `.env`:
 
 | Env Var | Default | Description |
@@ -93,10 +93,14 @@ Moor sends `OPENVIKING_ACCOUNT` and `OPENVIKING_USER` as identity headers.
 ## Memory Writes And Deletes
 
 `viking_remember` writes directly to OpenViking with `POST /api/v1/content/write`
-and `mode=create`. It creates peer-scoped memory files under
-`viking://user/peers/${OPENVIKING_AGENT}/memories/...`; OpenViking may return a
-canonical user-scoped form such as
-`viking://user/default/peers/${OPENVIKING_AGENT}/memories/...` in API-key mode.
+and `mode=create`. It creates peer-scoped memory files under explicit-uid
+`viking://user/<user>/peers/${OPENVIKING_AGENT}/memories/...` URIs, where
+`<user>` is resolved client-side from `/api/v1/system/status` (server-asserted
+current user). Moor caches a confirmed user only for the active connection.
+If the probe fails, Moor uses the configured user, or `default`, for that
+operation and retries the probe later. Explicit-uid URIs are canonical and
+work under every OpenViking auth mode and version; the `viking://~` alias only
+expands for USER/ADMIN roles, not the default dev mode.
 Explicit remembers do not depend on session commit extraction.
 
 Moor built-in `memory` tool additions are mirrored to OpenViking after the
@@ -113,8 +117,9 @@ memory URI.
 
 `viking_forget` is intentionally narrow. It only accepts concrete user memory
 file URIs, such as
-`viking://user/peers/moor/memories/preferences/mem_abc123.md` or the canonical
-`viking://user/default/peers/moor/memories/preferences/mem_abc123.md`. Files
+`viking://user/default/peers/moor/memories/preferences/mem_abc123.md` (any
+explicit user id works; `viking://~/...` input is passed through untouched for
+deployments where the server expands the home alias). Files
 directly under `memories/`, such as `viking://user/default/memories/profile.md`,
 are also allowed because OpenViking supports them. The tool rejects directories,
 resources, skills, sessions, generated summary files, and URIs with query

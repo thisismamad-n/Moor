@@ -139,7 +139,7 @@ _UPDATE_CHECK_CACHE_SECONDS = 6 * 3600
 UPDATE_AVAILABLE_NO_COUNT = -1
 
 _UPSTREAM_REPO_URL = "https://github.com/NousResearch/hermes-agent.git"
-_OFFICIAL_REPO_CANONICAL = "github.com/NousResearch/hermes-agent"
+_OFFICIAL_REPO_CANONICAL = "github.com/nousresearch/hermes-agent"
 
 
 def _canonical_github_remote(url: str | None) -> str:
@@ -207,7 +207,7 @@ def _github_compare_behind(current_rev: str, target_rev: str) -> Optional[int]:
     if not (_is_full_sha(current_rev) and _is_full_sha(target_rev)):
         return None
     url = (
-        "https://api.github.com/repos/NousResearch/hermes-agent/"
+        "https://api.github.com/repos/nousresearch/hermes-agent/"
         f"compare/{current_rev}...{target_rev}"
     )
     try:
@@ -406,7 +406,7 @@ def check_for_updates() -> Optional[int]:
     # (web_server.py); mirror that here so the banner/TUI surfaces agree.
     try:
         from moor_cli.config import detect_install_method, get_project_root
-        if detect_install_method(get_project_root()) == "docker":
+        if detect_install_method(get_project_root()) in {"docker", "apt"}:
             return None
     except Exception:
         pass

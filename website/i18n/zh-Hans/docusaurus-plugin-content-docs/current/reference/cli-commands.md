@@ -78,7 +78,7 @@ moor [global-options] <command> [subcommand/options]
 | `moor dashboard` | 启动用于管理配置、API 密钥和会话的 Web 控制台。 |
 | `moor profile` | 管理 profile——多个隔离的 Moor 实例。 |
 | `moor completion` | 打印 shell 补全脚本（bash/zsh/fish）。 |
-| `moor version` | 显示版本信息。 |
+| `moor --version` | 显示版本信息。 |
 | `moor update` | 拉取最新代码并重新安装依赖。`--check` 预览而不安装；`--backup` 在拉取前对 `MOOR_HOME` 进行快照。 |
 | `moor uninstall` | 从系统中删除 Moor。 |
 
@@ -1152,7 +1152,7 @@ moor dashboard [options]
 | `--port` | `9119` | Web 服务器运行端口 |
 | `--host` | `127.0.0.1` | 绑定地址 |
 | `--no-open` | — | 不自动打开浏览器 |
-| `--insecure` | 关闭 | 允许绑定到非 localhost 主机。会在网络上暴露控制台凭据；仅在受信任的网络控制下使用。 |
+| `--insecure` | 关闭 | **已弃用 / 无实际作用。** 此参数曾用于在非回环绑定上绕过鉴权；自 2026 年 6 月安全加固后，公网绑定始终需要用户名/密码或 OAuth 鉴权提供方。若需保持仅本地访问，请绑定 `127.0.0.1` 并通过隧道连接。 |
 | `--stop` | — | 停止正在运行的 `moor dashboard` 进程并退出。 |
 | `--status` | — | 列出正在运行的 `moor dashboard` 进程并退出。 |
 
@@ -1246,7 +1246,7 @@ moor update [--check] [--backup] [--restart-gateway]
 
 | 命令 | 说明 |
 |---------|-------------|
-| `moor version` | 打印版本信息。 |
+| `moor --version` | 打印版本信息。 |
 | `moor update` | 拉取最新变更并重新安装依赖。 |
 | `moor uninstall [--full] [--yes]` | 删除 Moor，可选择删除所有 config/数据。 |
 

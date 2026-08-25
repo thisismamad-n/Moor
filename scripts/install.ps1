@@ -62,7 +62,7 @@ param(
     # builds apps/desktop into a launchable Moor.exe.
     #
     # Why opt-in:
-    #   * Moor-Setup.exe (the signed Tauri bootstrap installer) passes
+    #   * moor-setup.exe (the signed Tauri bootstrap installer) passes
     #     -IncludeDesktop so a user who installed via the GUI ends up
     #     with a launchable desktop binary.
     #   * The Electron desktop's own bootstrap-runner.ts runs install.ps1
@@ -248,7 +248,10 @@ function ConvertTo-LongPath {
     if ([string]::IsNullOrWhiteSpace($Path)) { return $Path }
     # Only 8.3 short names carry a tilde+digit ("~1"); skip every resolver for
     # ordinary long paths, which is the overwhelmingly common case.
-    if ($Path -notmatch '~\d') { return $Path }
+    if ($Path -notmatch '~\d') {
+        $script:LastResolver = 'skipped-long-path'
+        return $Path
+    }
 
     # 1. kernel32. Compiled on first use only, so a normal profile never pays
     #    the Add-Type cost (this file is re-entered once per install stage).
@@ -326,6 +329,12 @@ function Set-LongProfileEnvVars {
     return $rewrote
 }
 
+# ConvertTo-LongPath only assigns $script:LastResolver when a ~\d short path
+# actually needs expansion, so an ordinary long profile leaves it unset -- and
+# the ResolvedPathReport below reads it unconditionally, which is fatal under
+# Set-StrictMode before any stage starts. 'none' is the resolver's own value
+# for "nothing ran".
+$script:LastResolver = 'none'
 $script:NormalizedProfilePaths = Set-LongProfileEnvVars
 
 # Re-derive the install paths now that the env vars behind their defaults are
@@ -875,7 +884,7 @@ function Ensure-NodeExeOnPath {
     return $true
 }
 
-# Put the Moor-managed Node dir at the FRONT of the persisted User PATH.
+# Put the moor-managed Node dir at the FRONT of the persisted User PATH.
 #
 # Appending is not enough: it leaves a pre-existing system Node ahead of the
 # bundled one in every new shell, so anything launched without a curated
@@ -925,7 +934,7 @@ function Get-NpmRange {
     return $NpmRange
 }
 
-# Upgrade the Moor-managed Node tree's bundled npm into $NpmRange.
+# Upgrade the moor-managed Node tree's bundled npm into $NpmRange.
 #
 # The nodejs.org zip ships whatever npm that Node major bundles -- Node 26.5.1
 # bundles npm 11.17.0, one minor below the root package.json's own
@@ -971,7 +980,7 @@ function Update-ManagedNpm {
     # in-place upgrade would hit WinError 5 (Access denied) on npm.cmd
     # (#80926).  Defer; the next update with the app closed retries.
     if (Test-ManagedNodeInUse $NodeDir) {
-        Write-Warn "Moor-managed Node.js is in use by a running app; skipping the bundled npm upgrade (applies on a later update with the app closed)."
+        Write-Warn "moor-managed Node.js is in use by a running app; skipping the bundled npm upgrade (applies on a later update with the app closed)."
         return $false
     }
 
@@ -1089,7 +1098,7 @@ function Resolve-AvailablePythonVersion {
     # when none are available.
     #
     # This is the cross-process-safe counterpart to Test-Python's in-memory
-    # ``$script:PythonVersion = $fallbackVer`` mutation.  Under Moor-Setup.exe
+    # ``$script:PythonVersion = $fallbackVer`` mutation.  Under moor-setup.exe
     # each ``-Stage NAME`` runs in a *fresh* powershell.exe, so the fallback the
     # ``python`` stage settled on (e.g. 3.12 when 3.11 is absent) does NOT
     # survive into the ``venv`` stage's process -- there $PythonVersion is back
@@ -1369,7 +1378,7 @@ function Install-Git {
         } else {
             Write-Warn "Git is on PATH, but its Git Bash installation could not be located."
         }
-        Write-Info "Trying a Moor-managed PortableGit install instead..."
+        Write-Info "Trying a moor-managed PortableGit install instead..."
     }
 
     # Download PortableGit into $MoorHome\git.  Always works as long as
@@ -1592,13 +1601,13 @@ function Test-Node {
         Write-Warn "Node.js $version is too old (Moor requires Node >=26)"
     }
 
-    # Prefer a Moor-managed Node from a previous run over a too-old system one.
+    # Prefer a moor-managed Node from a previous run over a too-old system one.
     $managedNode = "$MoorHome\node\node.exe"
     if ((Test-Path $managedNode) -and (Test-NodeVersionOk (& $managedNode --version))) {
         $version = & $managedNode --version
         $env:Path = "$MoorHome\node;$env:Path"
         Set-ManagedNodeFirstOnUserPath "$MoorHome\node"
-        Write-Success "Node.js $version found (Moor-managed)"
+        Write-Success "Node.js $version found (moor-managed)"
         # A tree from an older install still has that Node major's bundled
         # npm, which is below the current engines.npm floor. No-ops when the
         # npm is already in range, so reruns cost one --version probe.
@@ -1607,7 +1616,7 @@ function Test-Node {
         return $true
     }
 
-    Write-Info "Installing Moor-managed Node.js $NodeVersion LTS..."
+    Write-Info "Installing moor-managed Node.js $NodeVersion LTS..."
 
     # Try the portable-zip path FIRST -- no UAC, no admin, no winget MSI.
     # winget install OpenJS.NodeJS.LTS triggers a system-wide MSI install
@@ -1671,7 +1680,7 @@ function Test-Node {
                     try {
                         Rename-Item "$MoorHome\node" $backup -ErrorAction Stop
                     } catch {
-                        Write-Warn "Moor-managed Node.js is in use by a running app; deferring its upgrade. Close the app and re-run the update."
+                        Write-Warn "moor-managed Node.js is in use by a running app; deferring its upgrade. Close the app and re-run the update."
                         Remove-Item -Recurse -Force $staged -ErrorAction SilentlyContinue
                         Remove-Item -Recurse -Force $tmpDir -ErrorAction SilentlyContinue
                         Remove-Item -Force $tmpZip -ErrorAction SilentlyContinue
@@ -2411,7 +2420,7 @@ function Install-Venv {
         return
     }
 
-    # Re-resolve the interpreter before creating the venv.  Under Moor-Setup.exe
+    # Re-resolve the interpreter before creating the venv.  Under moor-setup.exe
     # each stage runs in its own powershell.exe, so the fallback the `python`
     # stage picked (e.g. 3.12 when 3.11 is absent) did NOT propagate into this
     # fresh process -- $PythonVersion is back at its "3.11" default.  Trusting it
@@ -2977,41 +2986,95 @@ print(','.join(scripts))
     Write-Success "All dependencies installed"
 }
 
+function Install-MoorCommandLaunchers {
+    param(
+        [Parameter(Mandatory=$true)] [string]$Root,
+        [Parameter(Mandatory=$true)] [string]$Destination
+    )
+
+    # Expose ONLY the moor launchers on PATH -- never the whole
+    # venv\Scripts directory, which contains python.exe / pip.exe and
+    # silently hijacks the `python` command in every terminal (#83797).
+    # Requiring moor.exe before creating the destination keeps the PATH
+    # stage from reporting success with an unusable command (PR #92092).
+    $scriptsDir = Join-Path $Root "venv\Scripts"
+    $requiredSource = Join-Path $scriptsDir "moor.exe"
+    if (-not (Test-Path -LiteralPath $requiredSource -PathType Leaf)) {
+        throw "Cannot set up the moor command: required launcher not found: $requiredSource"
+    }
+
+    New-Item -ItemType Directory -Force -Path $Destination | Out-Null
+
+    # Launcher form depends on the venv (keep in lockstep with
+    # moor_cli/_install_repair.py): a normal venv's exe trampoline
+    # embeds an absolute interpreter path and survives copying; a
+    # relocatable venv's trampoline (managed_uv rebuilds use
+    # --relocatable) resolves relative to its own location, and a copy
+    # dies with 'uv trampoline failed to canonicalize script path' --
+    # those get a .cmd delegator invoking the in-venv exe instead.
+    $pyvenvCfg = Join-Path $Root "venv\pyvenv.cfg"
+    $venvRelocatable = $false
+    if (Test-Path -LiteralPath $pyvenvCfg) {
+        $venvRelocatable = [bool](Select-String -Path $pyvenvCfg -Pattern '^\s*relocatable\s*=\s*true\s*$' -Quiet)
+    }
+    foreach ($launcher in @("moor", "moor-acp")) {
+        $src = Join-Path $scriptsDir "$launcher.exe"
+        if (-not (Test-Path -LiteralPath $src -PathType Leaf)) { continue }
+        if ($venvRelocatable) {
+            Remove-Item (Join-Path $Destination "$launcher.exe") -Force -ErrorAction SilentlyContinue
+            Set-Content -Path (Join-Path $Destination "$launcher.cmd") -Value "@echo off`r`n`"$src`" %*" -Encoding Ascii
+        } else {
+            Remove-Item (Join-Path $Destination "$launcher.cmd") -Force -ErrorAction SilentlyContinue
+            Copy-Item -Force -LiteralPath $src -Destination (Join-Path $Destination "$launcher.exe")
+        }
+    }
+
+    # Verify either staged form before the caller mutates PATH.
+    $requiredExe = Join-Path $Destination "moor.exe"
+    $requiredCmd = Join-Path $Destination "moor.cmd"
+    if (-not ((Test-Path -LiteralPath $requiredExe -PathType Leaf) -or
+              (Test-Path -LiteralPath $requiredCmd -PathType Leaf))) {
+        throw "Cannot set up the moor command: launcher was not installed: $requiredExe"
+    }
+    return $Destination
+}
+
 function Set-PathVariable {
     Write-Info "Setting up moor command..."
     
     if ($NoVenv) {
         $moorBin = "$InstallDir"
     } else {
-        # Expose ONLY the moor launchers on PATH -- never the whole
-        # venv\Scripts directory. venv\Scripts contains python.exe /
-        # pythonw.exe / pip.exe, and putting it on the user PATH silently
-        # hijacks the `python` command in every terminal on the machine
-        # (#83797): unrelated projects start resolving python to Moor'
-        # runtime interpreter. A dedicated bin dir with copies of the
-        # launcher exes keeps `moor` globally available without
-        # shadowing anything. (Launcher exes embed the venv interpreter
-        # path, so they work from any location and survive updates.)
-        $moorBin = "$InstallDir\bin"
-        New-Item -ItemType Directory -Force -Path $moorBin | Out-Null
-        foreach ($launcher in @("moor.exe", "moor-acp.exe")) {
-            $src = "$InstallDir\venv\Scripts\$launcher"
-            if (Test-Path $src) {
-                Copy-Item -Force $src "$moorBin\$launcher"
-            }
-        }
+        # $MoorHome\bin is the managed binary dir (shared with the managed
+        # uv), OUTSIDE the git checkout: `moor update`'s autostash
+        # (git stash push --include-untracked) deletes untracked files from
+        # the working tree, which silently removed the launchers an earlier
+        # installer staged under moor-agent\bin. No git operation can ever
+        # touch this dir. Staging and verification live in
+        # Install-MoorCommandLaunchers, which throws BEFORE any PATH
+        # mutation when the launchers cannot be staged.
+        $moorBin = "$MoorHome\bin"
+        Install-MoorCommandLaunchers -Root $InstallDir -Destination $moorBin | Out-Null
     }
     
     $currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
 
-    # Migrate installs that got venv\Scripts onto PATH from earlier
-    # installer versions -- remove it so the python shadowing stops.
-    $legacyBin = "$InstallDir\venv\Scripts"
-    if ((-not $NoVenv) -and $currentPath -like "*$legacyBin*") {
-        $cleaned = ($currentPath -split ';' | Where-Object { $_ -and $_ -ne $legacyBin }) -join ';'
-        [Environment]::SetEnvironmentVariable("Path", $cleaned, "User")
-        $currentPath = $cleaned
-        Write-Info "Removed legacy venv\Scripts from user PATH (kept moor via $moorBin)"
+    # Migrate older layouts off the user PATH:
+    #   venv\Scripts     -- shadowed the user's python (#83797)
+    #   moor-agent\bin -- lived inside the git checkout, where the update
+    #                       autostash could sweep the launchers off disk
+    # The moor-agent\bin FILES are left in place on purpose: editor/ACP
+    # configs that captured absolute launcher paths keep working, and the
+    # dir is git-ignored so it cannot dirty the checkout.
+    if (-not $NoVenv) {
+        $legacyEntries = @("$InstallDir\venv\Scripts", "$InstallDir\bin")
+        $items = @(($currentPath -split ';') | Where-Object { $_ })
+        $cleaned = @($items | Where-Object { $legacyEntries -notcontains $_ })
+        if ($cleaned.Count -ne $items.Count) {
+            $currentPath = $cleaned -join ";"
+            [Environment]::SetEnvironmentVariable("Path", $currentPath, "User")
+            Write-Info "Removed legacy launcher entries from user PATH (kept moor via $moorBin)"
+        }
     }
     
     if ($currentPath -notlike "*$moorBin*") {
@@ -3053,7 +3116,7 @@ function Write-BootstrapMarker {
     #   BOOTSTRAP_MARKER_SCHEMA_VERSION = 1 (line 187)
     #
     # Pinned commit/branch come from -Commit + -Branch flags (passed by
-    # Moor-Setup.exe) or fall back to whatever git resolves in the
+    # moor-setup.exe) or fall back to whatever git resolves in the
     # checkout. The desktop validates schemaVersion + pinnedCommit
     # length but doesn't enforce that HEAD matches the pin (users
     # update via `moor update` which moves HEAD legitimately).
@@ -3221,7 +3284,7 @@ You are Moor Agent, an intelligent AI assistant created by Moor inc.. You are he
 
 function Install-NodeDeps {
     if (-not $HasNode) {
-        # Cross-process driver mode (Moor-Setup.exe runs each -Stage NAME
+        # Cross-process driver mode (moor-setup.exe runs each -Stage NAME
         # in a fresh powershell.exe) means $script:HasNode set by Stage-Node
         # in the previous process isn't visible here. Re-probe rather than
         # trust the stale global -- Stage-Node already ran successfully or
@@ -3824,7 +3887,7 @@ function Install-Desktop {
 
     # Always re-resolve Node here. Stages run in separate PowerShell processes,
     # so $script:HasNode from Stage-Node isn't visible; more importantly Test-Node
-    # enforces the build floor (Node >=26) and prepends the Moor-managed
+    # enforces the build floor (Node >=26) and prepends the moor-managed
     # Node to PATH, so the build never runs on a too-old system Node -- the cause
     # of the opaque "Build desktop app ... exit code 1" failure (Vite crashes on
     # old Node).
@@ -4527,7 +4590,7 @@ $InstallStages = @(
 if ($IncludeDesktop) {
     # Insert AFTER node-deps so workspace npm is already installed when
     # the desktop build runs. Inserted only when explicitly requested
-    # (Moor-Setup.exe), never via the irm|iex CLI one-liner.
+    # (moor-setup.exe), never via the irm|iex CLI one-liner.
     $InstallStages += @{ Name = "desktop"; Title = "Building desktop app"; Category = "install"; NeedsUserInput = $false; Worker = "Stage-Desktop" }
 }
 $InstallStages += @(

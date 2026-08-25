@@ -264,6 +264,12 @@ _MOOR_BEHAVIORAL_VARS = frozenset({
     "MOOR_VOICE",
     "MOOR_VOICE_TTS",
     "MOOR_YOLO_MODE",
+    # Injected into subprocess envs by the terminal tool (_make_run_env), so
+    # any test run launched FROM a Moor agent session inherits them and
+    # moor_constants home-resolution helpers prefer them over monkeypatched
+    # HOME (test_subprocess_home_isolation red locally, green on CI).
+    "MOOR_REAL_HOME",
+    "TERMINAL_HOME_MODE",
     "MOOR_INTERACTIVE",
     "MOOR_QUIET",
     "MOOR_TOOL_PROGRESS",
@@ -341,6 +347,10 @@ _MOOR_BEHAVIORAL_VARS = frozenset({
     # (user shell, earlier leaky test, CI env), they change gateway auth
     # behavior and flake button-authorization tests.
     "TELEGRAM_ALLOWED_USERS",
+    "TELEGRAM_GROUP_ALLOWED_USERS",
+    "TELEGRAM_GROUP_ALLOWED_CHATS",
+    "QQ_ALLOWED_USERS",
+    "QQ_GROUP_ALLOWED_USERS",
     "DISCORD_ALLOWED_USERS",
     "WHATSAPP_ALLOWED_USERS",
     "SLACK_ALLOWED_USERS",

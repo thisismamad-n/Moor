@@ -105,7 +105,7 @@ class TestOpenRouterParity:
 
 
 class TestMoorParity:
-    """Moor: product tags, reasoning, omit when disabled."""
+    """Moor: product tags, reasoning passthrough (disable included)."""
 
     def test_tags(self, transport):
         from agent.portal_tags import moor_portal_tags

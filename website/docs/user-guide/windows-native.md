@@ -75,7 +75,7 @@ Top-to-bottom, in order:
 6. **Tiered `uv pip install`** — tries `.[all]` first, falls back to progressively smaller sets (`[messaging,dashboard,ext]` → `[messaging]` → `.`) if a `git+https` dep flakes on rate-limited GitHub. Prevents "single flake drops you to a bare install" failure mode.
 7. **Auto-installs messaging SDKs** keyed off `.env` — if `TELEGRAM_BOT_TOKEN` / `DISCORD_BOT_TOKEN` / `SLACK_BOT_TOKEN` / `SLACK_APP_TOKEN` / `WHATSAPP_ENABLED` are present, runs `python -m ensurepip --upgrade` and targeted `pip install` calls so each platform's SDK is actually importable.
 8. **Sets `MOOR_GIT_BASH_PATH`** to the resolved `bash.exe` so Moor finds it deterministically in fresh shells.
-9. **Adds `%LOCALAPPDATA%\moor\moor-agent\bin` to User PATH and sets `MOOR_HOME=%LOCALAPPDATA%\moor`** — exposes the `moor` command (and points it at your data dir) after you open a new terminal. Only the `moor.exe` / `moor-acp.exe` launchers are copied into this `bin` directory; the full `venv\Scripts` is deliberately **not** placed on PATH so Moor never shadows your own `python` command.
+9. **Adds `%LOCALAPPDATA%\moor\bin` to User PATH and sets `MOOR_HOME=%LOCALAPPDATA%\moor`** — exposes the `moor` command (and points it at your data dir) after you open a new terminal. Only the `moor.exe` / `moor-acp.exe` launchers are copied into this `bin` directory; the full `venv\Scripts` is deliberately **not** placed on PATH so Moor never shadows your own `python` command.
 10. **Runs `moor setup`** — the normal first-run wizard (model, provider, toolsets). Skip with `-SkipSetup`.
 
 :::tip Skip provider hunting on Windows
@@ -202,10 +202,10 @@ Services require admin rights to install and tie the gateway's lifecycle to mach
 
 | Path | Contents |
 |---|---|
-| `%LOCALAPPDATA%\moor\moor-agent\` | Git checkout + venv. The `bin\moor.exe` launcher (copied from `venv\Scripts\moor.exe`) is the command added to User PATH. Safe to `Remove-Item -Recurse` and reinstall. |
+| `%LOCALAPPDATA%\moor\moor-agent\` | Git checkout + venv. Safe to `Remove-Item -Recurse` and reinstall. |
 | `%LOCALAPPDATA%\moor\git\` | PortableGit (only if the installer provisioned it). |
 | `%LOCALAPPDATA%\moor\node\` | Portable Node.js (only if the installer provisioned it). |
-| `%LOCALAPPDATA%\moor\bin\` | Moor's managed `uv.exe` (the Python manager it uses for updates). |
+| `%LOCALAPPDATA%\moor\bin\` | The `moor` / `moor-acp` launchers and Moor's managed `uv.exe` (the Python manager it uses for updates). |
 | `%LOCALAPPDATA%\moor\` (root) | Your config, auth, skills, sessions, logs (`config.yaml`, `.env`, `skills\`, `sessions\`, `logs\`, …). **Survives reinstalls.** |
 
 On native Windows the installer sets `MOOR_HOME=%LOCALAPPDATA%\moor`, so your data and the disposable install live under the **same** `%LOCALAPPDATA%\moor` root: the install/runtime is the `moor-agent\`, `git\`, `node\`, and `bin\` subdirectories, while your data files sit directly in `%LOCALAPPDATA%\moor`. Reinstalling only replaces the `moor-agent\` checkout, so your data survives — but because the two share a root, **don't** `Remove-Item -Recurse %LOCALAPPDATA%\moor` if you want to keep your data; delete the `moor-agent\` subdirectory instead. Your data directory is identical in shape to a Linux `~/.moor`, so you can mirror it between machines.
@@ -224,12 +224,12 @@ The browser tool uses `agent-browser` (a Node helper) to drive Chromium. On Wind
 
 ### PATH after install
 
-The installer adds `%LOCALAPPDATA%\moor\moor-agent\bin` to your **User PATH** via `[Environment]::SetEnvironmentVariable`. Existing terminals don't pick this up — open a new PowerShell window (or Windows Terminal tab) after installation. Close-and-reopen, don't `$env:PATH += …` by hand unless you know what you're doing.
+The installer adds `%LOCALAPPDATA%\moor\bin` to your **User PATH** via `[Environment]::SetEnvironmentVariable`. Existing terminals don't pick this up — open a new PowerShell window (or Windows Terminal tab) after installation. Close-and-reopen, don't `$env:PATH += …` by hand unless you know what you're doing.
 
 Verify:
 
 ```powershell
-Get-Command moor        # should print C:\Users\<you>\AppData\Local\moor\moor-agent\bin\moor.exe
+Get-Command moor        # should print C:\Users\<you>\AppData\Local\moor\bin\moor.exe
 moor --version
 ```
 
@@ -288,7 +288,7 @@ Consequence: any codepath that said "check if this PID is alive" via `os.kill(pi
 ## Common pitfalls
 
 **`moor: command not found` right after install.**
-Open a new PowerShell window. The installer added `%LOCALAPPDATA%\moor\moor-agent\bin` to User PATH, but existing shells need to be restarted to pick it up. In the meantime you can run `& "$env:LOCALAPPDATA\moor\moor-agent\bin\moor.exe"`.
+Open a new PowerShell window. The installer added `%LOCALAPPDATA%\moor\bin` to User PATH, but existing shells need to be restarted to pick it up. In the meantime you can run `& "$env:LOCALAPPDATA\moor\bin\moor.exe"`.
 
 **`WinError 193: %1 is not a valid Win32 application` when running a tool.**
 You hit a shebang-script invocation that bypassed the `.cmd` shim. Moor resolves commands through `shutil.which(cmd, path=local_bin)` so PATHEXT picks up `.CMD` — if you're invoking the tool via a hardcoded path instead, switch to the `.cmd` variant (e.g., `npx.cmd`, not `npx`).
@@ -312,7 +312,7 @@ The installer provisions Node 26 at `%LOCALAPPDATA%\moor\node` but your PATH may
 The UTF-8 stdio shim didn't activate. Check that `MOOR_DISABLE_WINDOWS_UTF8` is NOT set (`Get-ChildItem env:MOOR_DISABLE_WINDOWS_UTF8`). If it's empty and you still see `?`, the console host (very old `cmd.exe`) may not support UTF-8 at all — switch to Windows Terminal.
 
 **Gateway can't send Telegram photos — "`BadRequest: payload contains invalid characters`".**
-This is unrelated to Windows but sometimes surfaces first there. Usually it means your file path contains unescaped backslashes in a JSON body. Telegram should be receiving paths Moor normalizes, not raw Windows paths — if you're seeing this inside a custom plugin, make sure you're passing the Moor-provided path, not `str(Path(...))` from user input.
+This is unrelated to Windows but sometimes surfaces first there. Usually it means your file path contains unescaped backslashes in a JSON body. Telegram should be receiving paths Moor normalizes, not raw Windows paths — if you're seeing this inside a custom plugin, make sure you're passing the moor-provided path, not `str(Path(...))` from user input.
 
 **"Works on my other machine" encoding weirdness after `git pull`.**
 If you edited Moor config or a skill on Windows using a non-UTF-8 editor (Notepad on older Windows versions, some Chinese IMEs), the file may have been saved with a BOM. Moor tolerates `utf-8-sig` on most config reads, but a BOM inside a folded YAML scalar (`description: >`) silently breaks YAML parsing. Re-save the file as plain UTF-8 without BOM.

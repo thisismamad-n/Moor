@@ -53,6 +53,7 @@ moor [global-options] <command> [subcommand/options]
 | `moor auth` | Manage credentials — add, list, remove, reset, status, logout. Handles OAuth flows for Codex/Moor/Anthropic. |
 | `moor login` / `logout` | **Deprecated** — use `moor auth` instead. |
 | `moor send` | Send a one-shot message to a configured messaging platform (Telegram, Discord, Slack, Signal, SMS, …). Useful from shell scripts, cron jobs, CI hooks, and monitoring daemons — no agent loop, no LLM. |
+| `moor peer` | Register peer Moor gateways on other machines and DM their agents' canonical Bot Chats (`moor peer dm <peer>[/<agent>] "…"`). The transport behind cross-machine bot-to-bot messaging. |
 | `moor secrets` | Manage external secret sources (currently Bitwarden Secrets Manager) for pulling API keys at process startup instead of from `~/.moor/.env`. |
 | `moor migrate` | Diagnose and (optionally) rewrite `config.yaml` to replace references to retired models or deprecated settings (e.g. `migrate xai`). |
 | `moor status` | Show agent, auth, and platform status. |
@@ -96,7 +97,7 @@ moor [global-options] <command> [subcommand/options]
 | `moor desktop` (alias `gui`) | Build and launch the native Electron desktop app. |
 | `moor profile` | Manage profiles — multiple isolated Moor instances. |
 | `moor completion` | Print shell completion scripts (bash/zsh/fish). |
-| `moor version` | Show version information. |
+| `moor --version` | Show version information. |
 | `moor update` | Pull latest code and reinstall dependencies. `--check` previews without installing; `--backup` takes a pre-pull `MOOR_HOME` snapshot. |
 | `moor uninstall` | Remove Moor from the system. |
 
@@ -111,9 +112,10 @@ Common options:
 | Option | Description |
 |--------|-------------|
 | `-q`, `--query "..."` | One-shot, non-interactive prompt. |
+| `--query-file PATH` | Read the one-shot prompt from a file (`-` = stdin). Nothing is shell-interpreted, so quotes, `$(...)`, and backticks arrive verbatim — use this for programmatic or untrusted message bodies (Bot Mode teammate DMs use it). Mutually exclusive with `-q`. |
 | `-m`, `--model <model>` | Override the model for this run. |
 | `-t`, `--toolsets <csv>` | Enable a comma-separated set of toolsets. |
-| `--provider <provider>` | Force a provider: `auto`, `openrouter`, `moor`, `openai-codex`, `copilot-acp`, `copilot`, `anthropic`, `gemini`, `huggingface`, `novita` (aliases `novita-ai`, `novitaai`), `openai-api`, `zai`, `kimi-coding`, `kimi-coding-cn`, `minimax`, `minimax-cn`, `minimax-oauth`, `kilocode`, `xiaomi`, `arcee`, `gmi`, `upstage` (alias `solar`), `alibaba`, `alibaba-coding-plan` (alias `alibaba_coding`), `deepseek`, `nvidia`, `ollama-cloud`, `xai` (alias `grok`), `xai-oauth` (alias `grok-oauth`), `qwen-oauth`, `bedrock`, `opencode-zen`, `opencode-go`, `commandcode`, `commandcode-anthropic`, `ai-gateway`, `azure-foundry`, `lmstudio`, `stepfun`, `tencent-tokenhub` (alias `tencent`, `tokenhub`). |
+| `--provider <provider>` | Force a provider: `auto`, `openrouter`, `moor`, `openai-codex`, `copilot-acp`, `copilot`, `anthropic`, `gemini`, `huggingface`, `novita` (aliases `novita-ai`, `novitaai`), `openai-api`, `zai`, `kimi-coding`, `kimi-coding-cn`, `minimax`, `minimax-cn`, `minimax-oauth`, `kilocode`, `xiaomi`, `arcee`, `gmi`, `upstage` (alias `solar`), `alibaba`, `alibaba-coding-plan` (alias `alibaba_coding`), `deepseek`, `nvidia`, `ollama-cloud`, `xai` (alias `grok`), `xai-oauth` (alias `grok-oauth`), `qwen-oauth`, `bedrock`, `opencode-zen`, `opencode-go`, `opencode-free` (aliases `free`, `opencode_free`; keyless), `commandcode`, `commandcode-anthropic`, `ai-gateway`, `azure-foundry`, `lmstudio`, `stepfun`, `tencent-tokenhub` (alias `tencent`, `tokenhub`). |
 | `-s`, `--skills <name>` | Preload one or more skills for the session (can be repeated or comma-separated). |
 | `-v`, `--verbose` | Verbose output. |
 | `-Q`, `--quiet` | Programmatic mode: suppress banner/spinner/tool previews. |
@@ -438,6 +440,42 @@ moor send --list telegram         # filter by platform
 ```
 
 
+
+## `moor peer`
+
+```bash
+moor peer add <name> --url http://host:port --key <API_SERVER_KEY>
+moor peer list
+moor peer dm <peer>[/<agent>] "message"
+moor peer remove <name>
+```
+
+Bot-to-bot DMs across machines. Register another Moor gateway (any machine
+running the `api_server` platform) as a *peer*, then message its agents:
+`moor peer dm` resolves the remote agent's canonical **Bot Chat** session
+over the peer's API server, runs one agent turn there, and prints the reply
+on stdout — the cross-machine twin of the local
+`moor -p <bot> chat --in ~ -c "Bot Chat" …` bot-messaging command.
+
+`<peer>` alone targets the peer gateway's main agent;
+`<peer>/<agent>` targets a named profile on a multiplexed peer (routed via
+its `/p/<profile>/` mirror).
+
+| Subcommand | Description |
+|--------|-------------|
+| `add <name> --url <URL> [--key <KEY>] [--note TEXT]` | Register or update a peer. The URL goes to `config.yaml` (`bot_peers`); the key is stored as `MOOR_PEER_<NAME>_KEY` in `~/.moor/.env`. |
+| `list` | List peers and whether each has a key configured. |
+| `dm <peer>[/<agent>] [message]` | Message the peer agent's canonical Bot Chat and print the reply (`--json` for machine-readable output; message falls back to stdin). |
+| `remove <name>` | Remove a peer from the registry (the `.env` key entry is left in place). |
+
+When at least one peer is registered, the Bot Mode messaging protocol
+(`agent.bot_mode_protocol`) taught to every canonical Bot Chat automatically
+includes the peer roster and the `moor peer dm` pattern, so agents discover
+cross-machine teammates without SOUL edits. See
+[Bot Mode](../user-guide/bot-mode.md).
+
+Exit codes: `0` on success, `1` on delivery/peer failure, `2` on usage errors.
+
 ## `moor secrets`
 
 ```bash
@@ -564,8 +602,8 @@ moor cron <list|create|edit|pause|resume|run|remove|status|tick>
 | Subcommand | Description |
 |------------|-------------|
 | `list` | Show scheduled jobs. |
-| `create` / `add` | Create a scheduled job from a prompt, optionally attaching one or more skills via repeated `--skill`. |
-| `edit` | Update a job's schedule, prompt, name, delivery, repeat count, or attached skills. Supports `--clear-skills`, `--add-skill`, and `--remove-skill`. |
+| `create` / `add` | Create a scheduled job from a prompt, optionally attaching one or more skills via repeated `--skill`. Supports a per-job reasoning pin via `--reasoning-effort <none\|minimal\|low\|medium\|high\|xhigh\|max\|ultra>`. |
+| `edit` | Update a job's schedule, prompt, name, delivery, repeat count, or attached skills. Supports `--clear-skills`, `--add-skill`, and `--remove-skill`, plus `--reasoning-effort` (empty string clears the pin). |
 | `pause` | Pause a job without deleting it. |
 | `resume` | Resume a paused job and compute its next future run. |
 | `run` | Trigger a job on the next scheduler tick. |
@@ -892,7 +930,7 @@ moor debug share --local      # Print report to terminal (no upload)
 moor backup [options]
 ```
 
-Create a zip archive of your Moor configuration, skills, sessions, and data. The backup excludes the moor-agent codebase itself.
+Create a zip archive of your Moor configuration, skills, sessions, and data. The backup excludes the moor-agent codebase itself, and it does not nest earlier backup artifacts (`backups/`, `state-snapshots/`) — each of those already contains its own copy of `state.db`.
 
 | Option | Description |
 |--------|-------------|
@@ -1590,6 +1628,8 @@ moor serve [options]
 
 Start the Moor **backend server** — the JSON-RPC/WebSocket gateway the [desktop app](/user-guide/desktop) and remote clients connect to. It is the same server `moor dashboard` runs, but **headless**: it never opens a browser UI. The desktop app launches its own `moor serve` backend; use this command directly when you want a headless backend on a remote host. Accepts the same `--host` / `--port` / `--insecure` / `--skip-build` / `--stop` / `--status` options as `moor dashboard` below (a non-loopback bind engages the same auth gate). Requires the `[web]` extra; the embedded Chat socket additionally needs `[pty]` on a POSIX host.
 
+**Port conflicts:** if the requested port (default `9119`) is already held by another process (e.g. a second `moor serve` or the gateway), the command prints a machine-readable sentinel line `BACKEND_PORT_IN_USE port=<port>` to stdout, a human hint naming the likely holder, and exits with code **75** (`EX_TEMPFAIL`) instead of a generic error — so scripts and the desktop app can tell "port occupied" apart from "backend broken". Pass `--port 0` to bind a free ephemeral port (the successful boot announces the chosen port via `MOOR_BACKEND_READY port=<port>`).
+
 ## `moor dashboard`
 
 ```bash
@@ -1692,7 +1732,7 @@ moor completion fish > ~/.config/fish/completions/moor.fish
 ## `moor update`
 
 ```bash
-moor update [--gateway] [--check] [--no-backup] [--backup] [--yes]
+moor update [--gateway] [--check] [--plan] [--no-backup] [--backup] [--yes]
 ```
 
 Pulls the latest `moor-agent` code and reinstalls dependencies in the managed venv, then re-runs the post-install hooks (MCP servers, skills sync, completion install). Safe to run on a live install. Use `--check` to see whether your checkout is behind `origin/main` without installing.
@@ -1703,6 +1743,7 @@ Pulls the latest `moor-agent` code and reinstalls dependencies in the managed ve
 |--------|-------------|
 | `--gateway` | Internal mode used by the messaging `/update` command. Uses file-based IPC for prompts and progress streaming instead of reading from terminal stdin. Not a gateway restart flag. |
 | `--check` | Check whether an update is available without pulling, installing dependencies, or restarting anything. |
+| `--plan` | Print the update plan and exit without changing anything: install kind (git/Docker/Nix/apt), every running Moor service across all profiles with its supervisor and running code version, and how each will be restarted. On image- or package-managed installs, reports the correct external update command instead. Read-only. |
 | `--no-backup` | Skip all pre-update backups for this run (both the quick state snapshot and the full zip), regardless of `updates.pre_update_backup`. |
 | `--backup` | Force a **full** pre-update backup for this run: the quick state snapshot plus a complete zip of `MOOR_HOME` (config, auth, sessions, skills, pairing data). The default mode is `quick` — a lightweight state snapshot only. Set the permanent mode via `updates.pre_update_backup: quick | full | off` in `config.yaml`. |
 | `--yes`, `-y` | Assume yes for interactive prompts such as config migration and stash restore. API-key entry is skipped; run `moor config migrate` separately for those. |
@@ -1710,6 +1751,7 @@ Pulls the latest `moor-agent` code and reinstalls dependencies in the managed ve
 Additional behavior:
 
 - **Gateway restart.** After a successful update, Moor attempts to restart all running gateway profiles automatically so they pick up the new code. Use `moor gateway restart` when you want to restart a gateway without applying an update.
+- **Update receipts + fleet version check.** Every run writes a machine-readable receipt to `~/.moor/logs/update_receipts/` (pre-update fleet plan, steps, skips with reasons, restart outcome; `latest.json` points at the newest). After the restart phase the updater verifies each live gateway's running code against the updated checkout and prints a per-profile version matrix; a gateway still on pre-update code fails the update (exit 1) with the exact restart command.
 - **Local source changes.** For git installs, dirty tracked files and untracked files are auto-stashed before branch checkout or pull (`git stash push --include-untracked`). Interactive terminal updates ask before restoring the stash. Non-interactive updates restore it by default; set `updates.non_interactive_local_changes: discard` only on managed installs where local source edits should be thrown away after a successful pull. If stash restore conflicts or the pull fails, the stash is left in place for manual recovery.
 - **npm lockfile churn.** Before stashing or switching branches, Moor makes a best-effort cleanup of tracked `package-lock.json` diffs produced by npm install/build steps. Commit or manually stash intentional lockfile edits before running `moor update`.
 - **Pairing data snapshot.** Even when `--backup` is off, `moor update` takes a lightweight snapshot of `~/.moor/pairing/` and the Feishu comment rules before `git pull`. You can roll it back with `moor backup restore --state pre-update` if a pull rewrites a file you were editing.
@@ -1720,7 +1762,7 @@ Additional behavior:
 
 | Command | Description |
 |---------|-------------|
-| `moor version` | Print version information. |
+| `moor --version` | Print version information. |
 | `moor update` | Pull latest changes and reinstall dependencies. |
 
 | `moor uninstall [--full] [--gui] [--dry-run] [--yes]` | Remove Moor, optionally deleting all config/data. `--gui` removes only the desktop Chat GUI, leaving the agent intact; `--full` also deletes config/data; `--dry-run` prints what would be removed without changing anything; `--yes` skips prompts. |

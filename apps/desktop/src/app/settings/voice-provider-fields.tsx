@@ -37,7 +37,7 @@ export function VoiceProviderFields({ section, providerKey }: { section: 'tts' |
 
   const { data: schemaResponse } = useQuery({
     queryKey: ['moor-config-schema'],
-    queryFn: getMoorConfigSchema,
+    queryFn: () => getMoorConfigSchema(),
     staleTime: 5 * 60 * 1000
   })
 

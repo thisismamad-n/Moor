@@ -84,6 +84,15 @@ The Tool Gateway is a **paid-subscription** feature. Free-tier Moor accounts can
 
 Some accounts are also entitled to a **free tool pool** — a small managed-tool allowance that covers gateway tool calls without a paid subscription. When a free pool is available, the gateway surfaces it and shows a setup prompt on first use, so you can opt in and start using managed tools right away.
 
+## The enablement checklist
+
+Picking a Moor model (`moor model`) offers a per-tool checklist of gateway backends. Its behavior respects your existing setup:
+
+- Tools you've explicitly pointed at another backend (e.g. `web.backend: searxng`, `browser.cloud_provider: camofox`) are **never offered** — your selection can't be accidentally overwritten.
+- Tools configured via environment variables alone (e.g. `SEARXNG_URL`, `CAMOFOX_URL`) are offered **unchecked**, labeled to keep your own backend.
+- Only genuinely unconfigured tools come pre-checked.
+- Declines stick: if you submit the checklist with a tool unchecked, it won't be pre-checked on future Moor model swaps (stored in `tool_gateway_declined_tools` in `config.yaml`; checking it later clears the decline).
+
 ## Mix and match
 
 The gateway is per-tool. Turn it on for just what you want:
@@ -124,37 +133,51 @@ The set evolves — `moor tools` → Image Generation shows the current live lis
 
 Most users never need to touch this — `moor model` and `moor tools` cover every workflow interactively. This section is for writing config.yaml directly or scripting setups.
 
-### Per-tool `use_gateway` flag
+### One selection key per tool category
 
-Each tool's config block takes a `use_gateway` boolean:
+Each tool category has a single provider-selection key, written by the `moor tools` picker (or the desktop GUI). Picking the **Moor Subscription** row stores the value `moor`, which routes that category through the managed Tool Gateway. Picking a BYOK row stores the vendor name (`fal`, `openai`, `firecrawl`, `browser-use`, ...), which goes direct with your own credentials:
 
 ```yaml
 web:
-  backend: firecrawl
-  use_gateway: true
+  backend: moor          # web search/extract via the Tool Gateway
 
 image_gen:
-  use_gateway: true
+  provider: moor         # image generation via the Tool Gateway
 
 tts:
-  provider: openai
-  use_gateway: true
+  provider: moor         # TTS via the Tool Gateway
+
+stt:
+  provider: moor         # speech-to-text via the Tool Gateway
 
 browser:
-  cloud_provider: browser-use
-  use_gateway: true
+  cloud_provider: moor   # cloud browser via the Tool Gateway
 ```
 
-Precedence: `use_gateway: true` routes through Moor regardless of any direct keys in `.env`. `use_gateway: false` (or absent) uses direct keys if available and only falls back to the gateway when none exist.
+The runtime **always uses the stored selection** — credential presence never selects or reroutes a category. A `FAL_KEY` sitting in `.env` is ignored while `image_gen.provider: moor`; conversely, `image_gen.provider: fal` with no `FAL_KEY` set produces a clear error instead of silently falling back to the gateway:
 
-### Disabling the gateway
+```
+image_gen is configured to use fal (set via moor tools), but FAL_KEY is not set. Run 'moor tools' to change it.
+```
+
+Categories you have **never configured** (no selection key ever written) autodetect from available credentials, same as before. But once a selection exists, adding a key to `.env` does not change the route — only `moor tools` (or editing the selection key) does.
+
+### Switching back to your own keys
+
+```bash
+moor tools    # pick the tool → choose a direct provider (e.g. Firecrawl)
+```
+
+Or set the selection key directly:
 
 ```yaml
 web:
-  use_gateway: false   # Moor now uses FIRECRAWL_API_KEY from .env
+  backend: firecrawl   # Moor now uses FIRECRAWL_API_KEY from .env
 ```
 
-`moor tools` automatically clears the flag when you pick a non-gateway provider, so this usually happens for you.
+### Legacy `use_gateway` flag (deprecated)
+
+Older Moor versions used a per-tool `use_gateway: true` boolean to route through the gateway. That flag is **legacy**: it is never written anymore, and the `moor tools` picker removes it from a category's config when it rewrites the selection. Old configs that still contain `use_gateway: true` are interpreted at read time as the `moor` selection, so existing setups keep working. Don't set `use_gateway` in new configs — select the provider in `moor tools` instead.
 
 ### Self-hosted gateway (advanced)
 
@@ -189,4 +212,4 @@ Modal is available as an **optional add-on** through the Moor subscription, not 
 
 ### Do I need to delete my existing API keys when I enable the gateway?
 
-No — keep them in `.env`. When `use_gateway: true`, Moor skips direct keys and uses the gateway. Flip the flag back to `false` and your keys become the source again. The gateway isn't a lock-in.
+No — keep them in `.env`. While a tool's selection is **Moor Subscription**, direct keys for that tool are simply ignored. Pick the direct provider again in `moor tools` and your keys become the source again. The gateway isn't a lock-in.
