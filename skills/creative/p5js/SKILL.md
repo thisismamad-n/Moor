@@ -6,7 +6,7 @@ author: SHL0MS, Moor Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  moor:
     tags: [creative-coding, generative-art, p5js, canvas, interactive, visualization, webgl, shaders, animation]
     related_skills: [ascii-video, manim-video, excalidraw]
 ---

@@ -227,7 +227,7 @@ class TestClassifyApiError:
                 ),
             },
         )
-        result = classify_api_error(e, provider="nous", model="gpt-5")
+        result = classify_api_error(e, provider="moor", model="gpt-5")
         assert result.reason == FailoverReason.billing
         assert result.retryable is False
         assert result.should_fallback is True
@@ -245,7 +245,7 @@ class TestClassifyApiError:
                 ),
             },
         )
-        result = classify_api_error(e, provider="nous", model="openai/gpt-5.5-pro")
+        result = classify_api_error(e, provider="moor", model="openai/gpt-5.5-pro")
         assert result.reason == FailoverReason.billing
         assert result.retryable is False
         assert result.should_fallback is True

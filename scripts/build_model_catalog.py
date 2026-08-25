@@ -2,7 +2,7 @@
 """Build the Moor Model Catalog — a centralized JSON manifest of curated models.
 
 This script reads the in-repo hardcoded curated lists (``OPENROUTER_MODELS``,
-``_PROVIDER_MODELS["nous"]``) and writes them to a JSON manifest that the
+``_PROVIDER_MODELS["moor"]``) and writes them to a JSON manifest that the
 Moor CLI fetches at runtime. Publishing the catalog through the docs site
 lets maintainers update model lists without shipping a Moor release.
 
@@ -17,7 +17,7 @@ Usage::
 Output: ``website/static/api/model-catalog.json``
 
 Live URL (after ``deploy-site.yml`` runs on merge to main):
-``https://hermes-agent.Moor inc..com/docs/api/model-catalog.json``
+``https://hermes-agent.nousresearch.com/docs/api/model-catalog.json``
 """
 
 from __future__ import annotations
@@ -30,10 +30,10 @@ from datetime import datetime, timezone
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, REPO_ROOT)
 
-# Ensure HERMES_HOME is set for imports that touch it at module level.
-os.environ.setdefault("HERMES_HOME", os.path.join(os.path.expanduser("~"), ".hermes"))
+# Ensure MOOR_HOME is set for imports that touch it at module level.
+os.environ.setdefault("MOOR_HOME", os.path.join(os.path.expanduser("~"), ".moor"))
 
-from hermes_cli.models import (  # noqa: E402
+from moor_cli.models import (  # noqa: E402
     OPENROUTER_MODELS,
     PREFERRED_SILENT_DEFAULT_MODEL,
     _PROVIDER_MODELS,
@@ -51,7 +51,7 @@ def _openrouter_entry(mid: str, desc: str) -> dict:
     return entry
 
 
-def _nous_entry(mid: str) -> dict:
+def _moor_entry(mid: str) -> dict:
     entry: dict = {"id": mid}
     if mid == PREFERRED_SILENT_DEFAULT_MODEL:
         entry["default"] = True
@@ -63,8 +63,8 @@ def build_catalog() -> dict:
         "version": CATALOG_VERSION,
         "updated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "metadata": {
-            "source": "hermes-agent repo",
-            "docs": "https://hermes-agent.Moor inc..com/docs/reference/model-catalog",
+            "source": "moor-agent repo",
+            "docs": "https://hermes-agent.nousresearch.com/docs/reference/model-catalog",
         },
         "providers": {
             "openrouter": {
@@ -82,19 +82,19 @@ def build_catalog() -> dict:
                     for mid, desc in OPENROUTER_MODELS
                 ],
             },
-            "nous": {
+            "moor": {
                 "metadata": {
-                    "display_name": "Nous Portal",
+                    "display_name": "Moor Portal",
                     "note": (
                         "Free-tier gating is determined live via Portal pricing "
-                        "(partition_nous_models_by_tier), not this manifest. "
+                        "(partition_moor_models_by_tier), not this manifest. "
                         'The entry labeled "default": true is the model Moor '
                         "silently lands on when the user never picked one."
                     ),
                 },
                 "models": [
-                    _nous_entry(mid)
-                    for mid in _PROVIDER_MODELS.get("nous", [])
+                    _moor_entry(mid)
+                    for mid in _PROVIDER_MODELS.get("moor", [])
                 ],
             },
         },

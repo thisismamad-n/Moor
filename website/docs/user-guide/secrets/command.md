@@ -12,10 +12,10 @@ Resolve credentials by running your own helper command at startup — any secret
 secrets:
   command:
     enabled: true
-    command: "cat /run/user/1000/hermes-secrets.env"
+    command: "cat /run/user/1000/moor-secrets.env"
     # or any vault CLI that dumps KEY=VALUE lines:
-    # command: "pass show hermes/env"
-    # command: "secret-tool lookup service hermes-env"
+    # command: "pass show moor/env"
+    # command: "secret-tool lookup service moor-env"
 ```
 
 ## Config

@@ -9,12 +9,12 @@ sidebar_position: 0
 Moor Agent connects to external systems for AI inference, tool servers, IDE workflows, programmatic access, and more. These integrations extend what Moor can do and where it can run.
 
 :::tip Start here
-If you only have time to set up one integration, set up [Nous Portal](/integrations/nous-portal) — a single OAuth login covers 300+ models plus the four Tool Gateway tools (web search, image generation, TTS, and browser automation).
+If you only have time to set up one integration, set up [Moor Portal](/integrations/moor-portal) — a single OAuth login covers 300+ models plus the four Tool Gateway tools (web search, image generation, TTS, and browser automation).
 :::
 
 ## AI Providers & Routing
 
-Moor supports multiple AI inference providers out of the box. Use `hermes model` to configure interactively, or set them in `config.yaml`.
+Moor supports multiple AI inference providers out of the box. Use `moor model` to configure interactively, or set them in `config.yaml`.
 
 - **[AI Providers](/integrations/providers)** — OpenRouter, Anthropic, OpenAI, Google, and any OpenAI-compatible endpoint. Moor auto-detects capabilities like vision, streaming, and tool use per provider.
 - **[Provider Routing](/user-guide/features/provider-routing)** — Fine-grained control over which underlying providers handle your OpenRouter requests. Optimize for cost, speed, or quality with sorting, whitelists, blacklists, and explicit priority ordering.
@@ -26,7 +26,7 @@ Moor supports multiple AI inference providers out of the box. Use `hermes model`
 
 ## Web Search Backends
 
-The `web_search` and `web_extract` tools support eight backend providers, configured via `config.yaml` or `hermes tools`:
+The `web_search` and `web_extract` tools support eight backend providers, configured via `config.yaml` or `moor tools`:
 
 | Backend | Env Var | Search | Extract | Crawl |
 |---------|---------|--------|---------|-------|
@@ -103,7 +103,7 @@ The big platforms have a canonical "create your bot/app" URL, and some accept pa
 |----------|-------------|---------------|
 | **Telegram** | [t.me/BotFather](https://t.me/BotFather) | Chat with BotFather — send `/newbot` to mint a bot token |
 | **Discord** | [discord.com/developers/applications?new_application=true](https://discord.com/developers/applications?new_application=true) | Developer Portal with the **New Application** dialog pre-opened |
-| **Slack** | [api.slack.com/apps?new_app=1](https://api.slack.com/apps?new_app=1) | The **Create New App** dialog — pick *From an app manifest* and paste the manifest `hermes slack manifest --agent-view` generates |
+| **Slack** | [api.slack.com/apps?new_app=1](https://api.slack.com/apps?new_app=1) | The **Create New App** dialog — pick *From an app manifest* and paste the manifest `moor slack manifest --agent-view` generates |
 | **LINE** | [developers.line.biz/console](https://developers.line.biz/console/) | LINE Developers Console for creating a Messaging API channel |
 | **Feishu/Lark** | [open.feishu.cn/app](https://open.feishu.cn/app) | Feishu open-platform console for creating a custom app |
 
@@ -119,7 +119,7 @@ Each platform's setup page walks through what to do once you're there.
 
 ## Plugins
 
-- **[Plugin System](/user-guide/features/plugins)** — Extend Moor with custom tools, lifecycle hooks, and CLI commands without modifying core code. Plugins are discovered from `~/.hermes/plugins/`, project-local `.hermes/plugins/`, and pip-installed entry points.
+- **[Plugin System](/user-guide/features/plugins)** — Extend Moor with custom tools, lifecycle hooks, and CLI commands without modifying core code. Plugins are discovered from `~/.moor/plugins/`, project-local `.moor/plugins/`, and pip-installed entry points.
 - **[Build a Plugin](/developer-guide/plugins)** — Step-by-step guide for creating Moor plugins with tools, hooks, and CLI commands.
 
 ## Training & Evaluation

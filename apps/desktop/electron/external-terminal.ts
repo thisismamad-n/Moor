@@ -2,11 +2,11 @@
 //
 // This is deliberately NOT the in-app terminal pane: the point of the verb is
 // to hand a session to the terminal the user already lives in, running
-// `hermes --tui --resume <id>` there. Two problems have to be solved for that
+// `moor --tui --resume <id>` there. Two problems have to be solved for that
 // to work anywhere:
 //
 //  1. WHAT to run. The desktop's Moor runtime is often a venv Python invoked
-//     as `python -m hermes_cli.main`, not a `hermes` on PATH — so the command
+//     as `python -m moor_cli.main`, not a `moor` on PATH — so the command
 //     and its PYTHONPATH have to be carried over verbatim. We write them into a
 //     small launcher script instead of trying to quote a nested command through
 //     a terminal emulator's `-e` argument, which every emulator parses
@@ -52,7 +52,7 @@ export function windowsQuote(value: string): string {
  */
 export function terminalScriptEnv(
   backendEnv: Record<string, string | undefined> = {},
-  hermesHome?: string
+  moorHome?: string
 ): Record<string, string> {
   const out: Record<string, string> = {}
 
@@ -64,8 +64,8 @@ export function terminalScriptEnv(
     out[key] = value
   }
 
-  if (hermesHome) {
-    out.HERMES_HOME = hermesHome
+  if (moorHome) {
+    out.MOOR_HOME = moorHome
   }
 
   return out

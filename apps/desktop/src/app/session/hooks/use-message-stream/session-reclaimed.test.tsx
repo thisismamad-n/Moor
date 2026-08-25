@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ClientSessionState } from '@/app/types'
 import { createClientSessionState } from '@/lib/chat-runtime'
 import { $sessionStates, $sessionTiles, publishSessionState } from '@/store/session-states'
-import type { RpcEvent } from '@/types/hermes'
+import type { RpcEvent } from '@/types/moor'
 
 import { useMessageStream } from './index'
 
@@ -32,7 +32,7 @@ function Harness() {
     activeSessionIdRef,
     hydrateFromStoredSession: vi.fn(async () => undefined),
     queryClient,
-    refreshHermesConfig: vi.fn<() => Promise<void>>(async () => undefined),
+    refreshMoorConfig: vi.fn<() => Promise<void>>(async () => undefined),
     refreshSessions: vi.fn<() => Promise<void>>(async () => undefined),
     sessionStateByRuntimeIdRef,
     updateSessionState: (sessionId, updater) => {

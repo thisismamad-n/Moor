@@ -7,7 +7,7 @@ Run Box commands through Moor' `terminal` tool. Prefer the documented command in
 Resolve one command runner before any Box operation:
 
 1. Check whether `box` already resolves in the runtime shell (`command -v box` on macOS/Linux or `Get-Command box` in PowerShell). If it does, use that command as-is, regardless of where Moor or Box CLI was installed.
-2. If it does not resolve, install and verify an isolated CLI under a writable, persistent Moor runtime directory. Prefer the current Moor home at `tools/box-cli`; `HERMES_HOME` is optional, and Moor uses its platform default when it is unset (`~/.hermes` on macOS/Linux and `%LOCALAPPDATA%\hermes` on Windows).
+2. If it does not resolve, install and verify an isolated CLI under a writable, persistent Moor runtime directory. Prefer the current Moor home at `tools/box-cli`; `MOOR_HOME` is optional, and Moor uses its platform default when it is unset (`~/.moor` on macOS/Linux and `%LOCALAPPDATA%\moor` on Windows).
 3. If that directory is not writable, ask for a writable persistent directory in the runtime. Do not assume Moor's source checkout, a global npm prefix, or a user home is writable. If a nonstandard existing CLI is not on `PATH`, ask for its executable path instead of scanning the machine.
 
 Only use `npm exec --prefix` after Moor installed and verified that exact local copy. Run each installation block below as one terminal call, record the verified absolute prefix it prints, and use that literal path in later calls. Never depend on a shell variable surviving a separate Moor terminal call, and never give the user an unverified `npm exec --prefix` command to run.
@@ -19,7 +19,7 @@ On macOS/Linux:
 ```bash
 node --version
 npm --version
-BOX_CLI_HOME="${HERMES_HOME:-$HOME/.hermes}/tools/box-cli"
+BOX_CLI_HOME="${MOOR_HOME:-$HOME/.moor}/tools/box-cli"
 mkdir -p "$BOX_CLI_HOME"
 npm install --prefix "$BOX_CLI_HOME" @box/cli
 npm exec --prefix "$BOX_CLI_HOME" -- box --version
@@ -31,7 +31,7 @@ On Windows PowerShell:
 ```powershell
 node --version
 npm --version
-$boxCliHome = Join-Path $(if ($env:HERMES_HOME) { $env:HERMES_HOME } else { Join-Path $env:LOCALAPPDATA "hermes" }) "tools\box-cli"
+$boxCliHome = Join-Path $(if ($env:MOOR_HOME) { $env:MOOR_HOME } else { Join-Path $env:LOCALAPPDATA "moor" }) "tools\box-cli"
 New-Item -ItemType Directory -Force -Path $boxCliHome | Out-Null
 npm install --prefix $boxCliHome @box/cli
 npm exec --prefix $boxCliHome -- box --version

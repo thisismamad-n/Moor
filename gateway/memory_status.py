@@ -25,7 +25,7 @@ Public-safety note: ``/api/status`` is an unauthenticated liveness probe
 (``PUBLIC_API_PATHS``), which is exactly why NAS can consume it.  This
 block therefore carries only coarse numbers (MB granularity), enums, and
 booleans — the same disclosure class as the existing ``active_agents``
-count and ``nous_session_valid`` field (which was added for the same
+count and ``moor_session_valid`` field (which was added for the same
 NAS-sweep audience).
 
 Everything here is best-effort and read-only: a missing/corrupt file
@@ -141,7 +141,7 @@ def collect_memory_status(
 ) -> Dict[str, Any]:
     """Build the ``memory`` block for ``/api/status``.
 
-    ``home`` scopes the read to a profile's HERMES_HOME (the status
+    ``home`` scopes the read to a profile's MOOR_HOME (the status
     endpoint's ``?profile=`` handling passes it through); ``None`` means
     the active profile.  ``now`` is injectable for tests.
 

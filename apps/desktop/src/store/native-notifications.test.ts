@@ -14,8 +14,8 @@ import { __resetNativeNotifyBaselineForTests, markNativeNotifyBaseline } from '.
 import { $approvalRequest, setApprovalRequest } from './prompts'
 import { $activeSessionId, setActiveSessionId } from './session'
 
-const desktopWindow = window as unknown as { hermesDesktop?: Window['hermesDesktop'] }
-const initialHermesDesktop = desktopWindow.hermesDesktop
+const desktopWindow = window as unknown as { moorDesktop?: Window['moorDesktop'] }
+const initialMoorDesktop = desktopWindow.moorDesktop
 
 const notify = vi.fn().mockResolvedValue(true)
 
@@ -36,7 +36,7 @@ function freshSession(): string {
 
 beforeEach(() => {
   notify.mockClear()
-  desktopWindow.hermesDesktop = { notify } as unknown as Window['hermesDesktop']
+  desktopWindow.moorDesktop = { notify } as unknown as Window['moorDesktop']
   setNativeNotifyEnabled(true)
 
   for (const kind of NATIVE_NOTIFICATION_KINDS) {
@@ -49,10 +49,10 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  if (initialHermesDesktop) {
-    desktopWindow.hermesDesktop = initialHermesDesktop
+  if (initialMoorDesktop) {
+    desktopWindow.moorDesktop = initialMoorDesktop
   } else {
-    delete desktopWindow.hermesDesktop
+    delete desktopWindow.moorDesktop
   }
 })
 

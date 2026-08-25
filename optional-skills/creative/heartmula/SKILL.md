@@ -6,7 +6,7 @@ author: Teknium (teknium1), Moor Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  moor:
     tags: [music, audio, generation, ai, heartmula, heartcodec, lyrics, songs]
     related_skills: [audiocraft-audio-generation, songwriting-and-ai-music]
 ---

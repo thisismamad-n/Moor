@@ -145,13 +145,13 @@ class TestStartRun:
                 status = await status_resp.json()
                 assert status["run_id"] == data["run_id"]
                 assert status["status"] in {"queued", "running", "completed"}
-                assert status["object"] == "hermes.run"
+                assert status["object"] == "moor.run"
 
     @pytest.mark.asyncio
     async def test_start_binds_chat_id_for_delegation_wake_target(self, adapter):
         """/v1/runs must bind the raw session id as the api_server chat_id
         (like every other agent-entry route does via _run_agent): the async
-        delegation dispatch reads HERMES_SESSION_CHAT_ID to pick its wake
+        delegation dispatch reads MOOR_SESSION_CHAT_ID to pick its wake
         self-post target, and an empty binding forces background delegations
         on this route back to synchronous execution."""
         app = _create_runs_app(adapter)
@@ -427,7 +427,7 @@ class TestSteerRun:
 
         assert resp.status == 200
         assert payload == {
-            "object": "hermes.run.steer",
+            "object": "moor.run.steer",
             "run_id": "run_123",
             "accepted": True,
         }
@@ -782,7 +782,7 @@ class TestRunsProviderAuthFailure:
         async with TestClient(TestServer(app)) as cli:
             with patch.object(adapter, "_create_agent") as mock_create:
                 mock_create.side_effect = _ProviderAuthResolutionError(
-                    "No credentials found for provider 'nous'"
+                    "No credentials found for provider 'moor'"
                 )
 
                 resp = await cli.post("/v1/runs", json={"input": "hello"})
@@ -798,5 +798,5 @@ class TestRunsProviderAuthFailure:
                     await asyncio.sleep(0.05)
 
                 assert status["status"] == "failed"
-                assert status["error"] == "⚠️ Provider authentication failed: No credentials found for provider 'nous'"
+                assert status["error"] == "⚠️ Provider authentication failed: No credentials found for provider 'moor'"
                 assert status["last_event"] == "run.failed"

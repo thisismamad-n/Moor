@@ -6,7 +6,7 @@ author: Teknium (teknium1), Moor Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  moor:
     tags: [qa, testing, browser, web, dogfood]
     related_skills: []
 ---

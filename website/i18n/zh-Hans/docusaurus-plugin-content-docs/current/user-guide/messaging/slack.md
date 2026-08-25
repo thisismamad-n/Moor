@@ -31,9 +31,9 @@ description: "使用 Socket Mode 将 Moor Agent 设置为 Slack 机器人"
 
 1. 生成 manifest：
    ```bash
-   hermes slack manifest --write
+   moor slack manifest --write
    ```
-   此命令会将 `~/.hermes/slack-manifest.json` 写入磁盘并打印粘贴说明。
+   此命令会将 `~/.moor/slack-manifest.json` 写入磁盘并打印粘贴说明。
 2. 前往 [https://api.slack.com/apps](https://api.slack.com/apps) →
    **Create New App** → **From an app manifest**
 3. 选择你的工作区，粘贴 JSON 内容，检查后点击 **Next** → **Create**
@@ -90,7 +90,7 @@ Socket Mode 让机器人通过 WebSocket 连接，无需公开 URL。
 1. 在侧边栏前往 **Settings → Socket Mode**
 2. 将 **Enable Socket Mode** 切换为开启
 3. 系统会提示你创建一个 **App-Level Token**：
-   - 命名为类似 `hermes-socket` 的名称（名称不重要）
+   - 命名为类似 `moor-socket` 的名称（名称不重要）
    - 添加 **`connections:write`** 权限范围
    - 点击 **Generate**
 4. **复制该令牌**——它以 `xapp-` 开头。这就是你的 `SLACK_APP_TOKEN`
@@ -171,7 +171,7 @@ Member ID 格式类似 `U01ABC2DEF3`。你至少需要自己的 Member ID。
 
 ## 第八步：配置 Moor
 
-将以下内容添加到你的 `~/.hermes/.env` 文件：
+将以下内容添加到你的 `~/.moor/.env` 文件：
 
 ```bash
 # 必需
@@ -187,15 +187,15 @@ SLACK_HOME_CHANNEL_NAME=general              # 主频道的可读名称（可选
 或运行交互式设置：
 
 ```bash
-hermes gateway setup    # 提示时选择 Slack
+moor gateway setup    # 提示时选择 Slack
 ```
 
 然后启动 gateway：
 
 ```bash
-hermes gateway              # 前台运行
-hermes gateway install      # 安装为用户服务
-sudo hermes gateway install --system   # 仅 Linux：开机启动系统服务
+moor gateway              # 前台运行
+moor gateway install      # 安装为用户服务
+sudo moor gateway install --system   # 仅 Linux：开机启动系统服务
 ```
 
 ---
@@ -216,26 +216,26 @@ sudo hermes gateway install --system   # 仅 Linux：开机启动系统服务
 
 每个 Moor 命令（`/btw`、`/stop`、`/new`、`/model`、`/help`……）都是原生 Slack 斜杠命令——与它们在 Telegram 和 Discord 上的工作方式完全相同。在 Slack 中输入 `/`，自动补全选择器会列出每个 Moor 命令及其描述。
 
-底层实现：Moor 附带一个生成的 Slack 应用 manifest（见第一步，方式 A），它将 [`COMMAND_REGISTRY`](https://github.com/Moor inc./hermes-agent/blob/main/hermes_cli/commands.py) 中的每个命令声明为斜杠命令。在 Socket Mode 下，无论 manifest 的 `url` 字段如何，Slack 都会通过 WebSocket 路由命令事件。
+底层实现：Moor 附带一个生成的 Slack 应用 manifest（见第一步，方式 A），它将 [`COMMAND_REGISTRY`](https://github.com/NousResearch/hermes-agent/blob/main/hermes_cli/commands.py) 中的每个命令声明为斜杠命令。在 Socket Mode 下，无论 manifest 的 `url` 字段如何，Slack 都会通过 WebSocket 路由命令事件。
 
 ### 更新后刷新斜杠命令
 
-当 Moor 添加新命令时（例如执行 `hermes update` 后），重新生成 manifest 并更新你的 Slack 应用：
+当 Moor 添加新命令时（例如执行 `moor update` 后），重新生成 manifest 并更新你的 Slack 应用：
 
 ```bash
-hermes slack manifest --write
+moor slack manifest --write
 ```
 
 然后在 Slack 中：
 1. 打开 [https://api.slack.com/apps](https://api.slack.com/apps) →
    你的 Moor 应用
 2. **Features → App Manifest → Edit**
-3. 粘贴 `~/.hermes/slack-manifest.json` 的新内容
+3. 粘贴 `~/.moor/slack-manifest.json` 的新内容
 4. **保存**。如果权限范围或斜杠命令有变化，Slack 会提示重新安装应用。
 
-### 旧版 `/hermes <子命令>` 仍然有效
+### 旧版 `/moor <子命令>` 仍然有效
 
-为了向后兼容旧版 manifest，你仍然可以输入 `/hermes btw run the tests`——Moor 会以与 `/btw run the tests` 相同的方式路由它。自由形式的问题也有效：`/hermes what's the weather?` 会被当作普通消息处理。
+为了向后兼容旧版 manifest，你仍然可以输入 `/moor btw run the tests`——Moor 会以与 `/btw run the tests` 相同的方式路由它。自由形式的问题也有效：`/moor what's the weather?` 会被当作普通消息处理。
 
 ### 在话题（thread）中使用命令（`!cmd` 前缀）
 
@@ -250,7 +250,7 @@ Slack 本身会阻止在话题回复中使用原生斜杠命令——在话题�
 如果你手动维护 Slack manifest 并只需要斜杠命令列表：
 
 ```bash
-hermes slack manifest --slashes-only > /tmp/slashes.json
+moor slack manifest --slashes-only > /tmp/slashes.json
 ```
 
 将该数组粘贴到现有 manifest 的 `features.slash_commands` 键中。
@@ -275,7 +275,7 @@ hermes slack manifest --slashes-only > /tmp/slashes.json
 
 ## 配置选项
 
-除了第八步中的必需环境变量外，你还可以通过 `~/.hermes/config.yaml` 自定义 Slack 机器人行为。
+除了第八步中的必需环境变量外，你还可以通过 `~/.moor/config.yaml` 自定义 Slack 机器人行为。
 
 ### 话题与回复行为
 
@@ -353,8 +353,8 @@ slack:
   # 触发机器人的自定义提及模式
   # （除默认 @mention 检测外）
   mention_patterns:
-    - "hey hermes"
-    - "hermes,"
+    - "hey moor"
+    - "moor,"
 
   # 每条发出消息前添加的文本
   reply_prefix: ""
@@ -478,7 +478,7 @@ SLACK_BOT_TOKEN=xoxb-workspace1-token,xoxb-workspace2-token,xoxb-workspace3-toke
 SLACK_APP_TOKEN=xapp-your-app-token
 ```
 
-或在 `~/.hermes/config.yaml` 中：
+或在 `~/.moor/config.yaml` 中：
 
 ```yaml
 platforms:
@@ -491,7 +491,7 @@ platforms:
 除了环境变量或配置中的 token 外，Moor 还会从以下位置的 **OAuth token 文件**加载 token：
 
 ```
-~/.hermes/slack_tokens.json
+~/.moor/slack_tokens.json
 ```
 
 此文件是一个将团队 ID 映射到 token 条目的 JSON 对象：
@@ -608,7 +608,7 @@ slack:
 **始终设置 `SLACK_ALLOWED_USERS`**，填入授权用户的 Member ID。没有此设置，gateway 默认会**拒绝所有消息**作为安全措施。切勿分享你的 bot token——像密码一样对待它们。
 :::
 
-- Token 应存储在 `~/.hermes/.env` 中（文件权限 `600`）
+- Token 应存储在 `~/.moor/.env` 中（文件权限 `600`）
 - 定期通过 Slack 应用设置轮换 token
 - 审计谁有权访问你的 Moor 配置目录
 - Socket Mode 意味着不暴露公开端点——减少一个攻击面

@@ -25,7 +25,7 @@ description: >
   survive compaction and restarts.
 
   Pure stdlib transport (http.server + urllib) — no a2a-sdk dependency required.
-author: Nous Research
+author: Moor inc.
 # The outbound client tools. Declaring them here is what asks discovery to
 # import `tools.py` in CLI/TUI processes, where the plugin is otherwise
 # deferred and the tools would never register at all (#78050). The inbound
@@ -36,8 +36,8 @@ provides_tools:
   - a2a_list
   - a2a_history
   - a2a_orchestrate
-# requires_env / optional_env are surfaced in the `hermes config` UI via the
-# platform-plugin env var injector in hermes_cli/config.py.
+# requires_env / optional_env are surfaced in the `moor config` UI via the
+# platform-plugin env var injector in moor_cli/config.py.
 requires_env: []
 optional_env:
   - name: A2A_PEER_TOKENS

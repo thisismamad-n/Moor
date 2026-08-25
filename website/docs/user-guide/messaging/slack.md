@@ -38,9 +38,9 @@ Mode — all at once.
 
 1. Generate the manifest. New Slack apps must use Agent view:
    ```bash
-   hermes slack manifest --agent-view --write
+   moor slack manifest --agent-view --write
    ```
-   This writes `~/.hermes/slack-manifest.json` and prints paste-in
+   This writes `~/.moor/slack-manifest.json` and prints paste-in
    instructions. Existing apps that still use Slack's legacy Assistant view
    can omit `--agent-view` until they are ready to migrate.
 
@@ -48,7 +48,7 @@ Mode — all at once.
    Markdown file, add `--long-description-file`:
 
    ```bash
-   hermes slack manifest --agent-view \
+   moor slack manifest --agent-view \
      --long-description-file AGENTS.md --write
    ```
 
@@ -118,7 +118,7 @@ Socket Mode lets the bot connect via WebSocket instead of requiring a public URL
 1. In the sidebar, go to **Settings → Socket Mode**
 2. Toggle **Enable Socket Mode** to ON
 3. You'll be prompted to create an **App-Level Token**:
-   - Name it something like `hermes-socket` (the name doesn't matter)
+   - Name it something like `moor-socket` (the name doesn't matter)
    - Add the **`connections:write`** scope
    - Click **Generate**
 4. **Copy the token** — it starts with `xapp-`. This is your `SLACK_APP_TOKEN`
@@ -204,7 +204,7 @@ Member IDs look like `U01ABC2DEF3`. You need your own Member ID at minimum.
 
 ## Step 8: Configure Moor
 
-Add the following to your `~/.hermes/.env` file:
+Add the following to your `~/.moor/.env` file:
 
 ```bash
 # Required
@@ -220,15 +220,15 @@ SLACK_HOME_CHANNEL_NAME=general              # Human-readable name for the home 
 Or run the interactive setup:
 
 ```bash
-hermes gateway setup    # Select Slack when prompted
+moor gateway setup    # Select Slack when prompted
 ```
 
 Then start the gateway:
 
 ```bash
-hermes gateway              # Foreground
-hermes gateway install      # Install as a user service
-sudo hermes gateway install --system   # Linux only: boot-time system service
+moor gateway              # Foreground
+moor gateway install      # Install as a user service
+sudo moor gateway install --system   # Linux only: boot-time system service
 ```
 
 :::tip Codex reasoning-effort safety
@@ -260,7 +260,7 @@ Moor command with its description.
 
 Under the hood: Moor ships with a generated Slack app manifest (see
 Step 1, Option A) that declares every command in
-[`COMMAND_REGISTRY`](https://github.com/Moor inc./hermes-agent/blob/main/hermes_cli/commands.py)
+[`COMMAND_REGISTRY`](https://github.com/NousResearch/hermes-agent/blob/main/hermes_cli/commands.py)
 as a slash command. In Socket Mode, Slack routes the command event
 through the WebSocket regardless of the manifest's `url` field.
 
@@ -270,7 +270,7 @@ New Slack apps use Slack's **Agent** messaging experience. Existing Moor
 Assistant apps can migrate by regenerating the manifest with `--agent-view`:
 
 ```bash
-hermes slack manifest --agent-view --write
+moor slack manifest --agent-view --write
 ```
 
 Update the manifest in **Features → App Manifest**, then reinstall the app if
@@ -283,26 +283,26 @@ channel's history.
 
 ### Refreshing slash commands after updates
 
-When Moor adds new commands (e.g. after `hermes update`), regenerate
+When Moor adds new commands (e.g. after `moor update`), regenerate
 the manifest and update your Slack app:
 
 ```bash
-hermes slack manifest --write
+moor slack manifest --write
 ```
 
 Then in Slack:
 1. Open [https://api.slack.com/apps](https://api.slack.com/apps) →
    your Moor app
 2. **Features → App Manifest → Edit**
-3. Paste the new contents of `~/.hermes/slack-manifest.json`
+3. Paste the new contents of `~/.moor/slack-manifest.json`
 4. **Save**. Slack will prompt to reinstall the app if scopes or slash
    commands changed.
 
-### Legacy `/hermes <subcommand>` still works
+### Legacy `/moor <subcommand>` still works
 
 For backward compatibility with older manifests, you can still type
-`/hermes btw run the tests` — Moor routes it the same way as `/btw
-run the tests`. Free-form questions also work: `/hermes what's the
+`/moor btw run the tests` — Moor routes it the same way as `/btw
+run the tests`. Free-form questions also work: `/moor what's the
 weather?` is treated as a regular message.
 
 ### Using commands inside threads (the `!cmd` prefix)
@@ -360,7 +360,7 @@ If you maintain your Slack manifest by hand and just want the slash
 command list:
 
 ```bash
-hermes slack manifest --slashes-only > /tmp/slashes.json
+moor slack manifest --slashes-only > /tmp/slashes.json
 ```
 
 Paste that array into the `features.slash_commands` key of your
@@ -386,7 +386,7 @@ In channels, always @mention the bot to start a conversation. Once the bot is ac
 
 ## Configuration Options
 
-Beyond the required environment variables from Step 8, you can customize Slack bot behavior through `~/.hermes/config.yaml`.
+Beyond the required environment variables from Step 8, you can customize Slack bot behavior through `~/.moor/config.yaml`.
 
 ### Thread & Reply Behavior
 
@@ -628,8 +628,8 @@ slack:
   # Custom mention patterns that trigger the bot
   # (in addition to the default @mention detection)
   mention_patterns:
-    - "hey hermes"
-    - "hermes,"
+    - "hey moor"
+    - "moor,"
 
   # Text prepended to every outgoing message
   reply_prefix: ""
@@ -699,7 +699,7 @@ By default, emoji reactions are acknowledged and dropped — a 👍 on a bot
 message does nothing. Set `slack.reaction_triggers` to route reactions into
 the agent loop (requires the `reactions:read` scope plus the
 `reaction_added`/`reaction_removed` bot event subscriptions in your Slack app
-manifest — regenerate with `hermes slack manifest`):
+manifest — regenerate with `moor slack manifest`):
 
 ```yaml
 slack:
@@ -894,7 +894,7 @@ SLACK_BOT_TOKEN=xoxb-workspace1-token,xoxb-workspace2-token,xoxb-workspace3-toke
 SLACK_APP_TOKEN=xapp-your-app-token
 ```
 
-Or in `~/.hermes/config.yaml`:
+Or in `~/.moor/config.yaml`:
 
 ```yaml
 platforms:
@@ -907,7 +907,7 @@ platforms:
 In addition to tokens in the environment or config, Moor also loads tokens from an **OAuth token file** at:
 
 ```
-~/.hermes/slack_tokens.json
+~/.moor/slack_tokens.json
 ```
 
 This file is a JSON object mapping team IDs to token entries:
@@ -1026,7 +1026,7 @@ the gateway will **deny all messages** by default as a safety measure. Never sha
 treat them like passwords.
 :::
 
-- Tokens should be stored in `~/.hermes/.env` (file permissions `600`)
+- Tokens should be stored in `~/.moor/.env` (file permissions `600`)
 - Rotate tokens periodically via the Slack app settings
 - Audit who has access to your Moor config directory
 - Socket Mode means no public endpoint is exposed — one less attack surface

@@ -6,9 +6,9 @@ author: Tony Simons (asimons81), Moor Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  moor:
     tags: [Coding-Agent, Antigravity, CLI, Auth, Plugins, Sandbox]
-    related_skills: [grok, codex, claude-code, hermes-agent]
+    related_skills: [grok, codex, claude-code, moor-agent]
 ---
 
 # Antigravity CLI (`agy`)

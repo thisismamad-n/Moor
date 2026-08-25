@@ -6,7 +6,7 @@ author: Moor Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  moor:
     tags: [Browser, HAR, API, Reverse-Engineering, Playwright]
     category: web-development
 ---

@@ -2,12 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { $cronReviewRequest } from '@/store/cron'
 import { $notifications, clearNotifications, dismissNotification } from '@/store/notifications'
-import type { ModelAssignmentResponse } from '@/types/hermes'
+import type { ModelAssignmentResponse } from '@/types/moor'
 
 const setModelAssignment = vi.fn()
 const getApiRequestProfile = vi.fn<() => string | null>(() => 'default')
 
-vi.mock('@/hermes', () => ({
+vi.mock('@/moor', () => ({
   setModelAssignment: (...args: unknown[]) => setModelAssignment(...args),
   getApiRequestProfile: () => getApiRequestProfile()
 }))
@@ -22,7 +22,7 @@ function response(impact: ModelAssignmentResponse['cron_model_impact']): ModelAs
   return {
     ok: true,
     scope: 'main',
-    provider: 'nous',
+    provider: 'moor',
     model: 'new/model',
     cron_model_impact: impact
   }
@@ -61,11 +61,11 @@ describe('setMainModelAssignment', () => {
     setModelAssignment.mockResolvedValue(response(positive()))
     const requestCount = $cronReviewRequest.get()
 
-    await setMainModelAssignment({ provider: 'nous', model: 'new/model' })
+    await setMainModelAssignment({ provider: 'moor', model: 'new/model' })
 
     expect(setModelAssignment).toHaveBeenCalledWith({
       scope: 'main',
-      provider: 'nous',
+      provider: 'moor',
       model: 'new/model'
     })
     const notification = $notifications.get().find(item => item.id === CRON_MODEL_IMPACT_NOTIFICATION_ID)
@@ -91,18 +91,18 @@ describe('setMainModelAssignment', () => {
       })
     )
 
-    await setMainModelAssignment({ provider: 'nous', model: 'new/model' })
+    await setMainModelAssignment({ provider: 'moor', model: 'new/model' })
 
     expect($notifications.get()).toEqual([])
   })
 
   it('keeps an existing warning for an older backend but clears it on explicit zero impact', async () => {
     setModelAssignment.mockResolvedValueOnce(response(positive()))
-    await setMainModelAssignment({ provider: 'nous', model: 'one' })
+    await setMainModelAssignment({ provider: 'moor', model: 'one' })
     expect($notifications.get()).toHaveLength(1)
 
     setModelAssignment.mockResolvedValueOnce(response(undefined))
-    await setMainModelAssignment({ provider: 'nous', model: 'two' })
+    await setMainModelAssignment({ provider: 'moor', model: 'two' })
     expect($notifications.get()).toHaveLength(1)
     const retainedAction = $notifications.get()[0].action
     const reviewCount = $cronReviewRequest.get()
@@ -118,13 +118,13 @@ describe('setMainModelAssignment', () => {
         jobs: []
       })
     )
-    await setMainModelAssignment({ provider: 'nous', model: 'three' })
+    await setMainModelAssignment({ provider: 'moor', model: 'three' })
     expect($notifications.get()).toEqual([])
   })
 
   it('rejects non-persisted confirmation outcomes without changing impact state', async () => {
     setModelAssignment.mockResolvedValueOnce(response(positive()))
-    await setMainModelAssignment({ provider: 'nous', model: 'one' })
+    await setMainModelAssignment({ provider: 'moor', model: 'one' })
 
     setModelAssignment.mockResolvedValueOnce({
       ok: false,
@@ -150,8 +150,8 @@ describe('setMainModelAssignment', () => {
     const second = deferred<ModelAssignmentResponse>()
     setModelAssignment.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise)
 
-    const firstCall = setMainModelAssignment({ provider: 'nous', model: 'first' })
-    const secondCall = setMainModelAssignment({ provider: 'nous', model: 'second' })
+    const firstCall = setMainModelAssignment({ provider: 'moor', model: 'first' })
+    const secondCall = setMainModelAssignment({ provider: 'moor', model: 'second' })
     second.resolve(response(positive('Second job')))
     await secondCall
     first.resolve(response(positive('Stale first job')))
@@ -165,7 +165,7 @@ describe('setMainModelAssignment', () => {
   it('invalidates pending responses and action closures on profile or connection changes', async () => {
     const pending = deferred<ModelAssignmentResponse>()
     setModelAssignment.mockReturnValueOnce(pending.promise)
-    const call = setMainModelAssignment({ provider: 'nous', model: 'pending' })
+    const call = setMainModelAssignment({ provider: 'moor', model: 'pending' })
 
     invalidateCronModelImpactScope()
     pending.resolve(response(positive('Stale job')))
@@ -173,7 +173,7 @@ describe('setMainModelAssignment', () => {
     expect($notifications.get()).toEqual([])
 
     setModelAssignment.mockResolvedValueOnce(response(positive('Current job')))
-    await setMainModelAssignment({ provider: 'nous', model: 'current' })
+    await setMainModelAssignment({ provider: 'moor', model: 'current' })
     const action = $notifications.get()[0].action
     const requestCount = $cronReviewRequest.get()
     getApiRequestProfile.mockReturnValue('other')
@@ -184,20 +184,20 @@ describe('setMainModelAssignment', () => {
 
   it('clears an obsolete warning when the drift guard is disabled', async () => {
     setModelAssignment.mockResolvedValueOnce(response(positive()))
-    await setMainModelAssignment({ provider: 'nous', model: 'one' })
+    await setMainModelAssignment({ provider: 'moor', model: 'one' })
     expect($notifications.get()).toHaveLength(1)
 
     setModelAssignment.mockResolvedValueOnce(
       response({ available: true, guard_enabled: false, affected_count: 0, truncated: false, jobs: [] })
     )
-    await setMainModelAssignment({ provider: 'nous', model: 'two' })
+    await setMainModelAssignment({ provider: 'moor', model: 'two' })
 
     expect($notifications.get()).toEqual([])
   })
 
   it('does not let a dismissed notification mutate cron configuration', async () => {
     setModelAssignment.mockResolvedValue(response(positive()))
-    await setMainModelAssignment({ provider: 'nous', model: 'new/model' })
+    await setMainModelAssignment({ provider: 'moor', model: 'new/model' })
 
     dismissNotification(CRON_MODEL_IMPACT_NOTIFICATION_ID)
 

@@ -2,8 +2,8 @@
   "version": 1,
   "updated_at": "2026-08-14T17:59:48Z",
   "metadata": {
-    "source": "hermes-agent repo",
-    "docs": "https://hermes-agent.Moor inc..com/docs/reference/model-catalog"
+    "source": "moor-agent repo",
+    "docs": "https://hermes-agent.nousresearch.com/docs/reference/model-catalog"
   },
   "providers": {
     "openrouter": {
@@ -175,10 +175,10 @@
         }
       ]
     },
-    "nous": {
+    "moor": {
       "metadata": {
-        "display_name": "Nous Portal",
-        "note": "Free-tier gating is determined live via Portal pricing (partition_nous_models_by_tier), not this manifest. The entry labeled \"default\": true is the model Moor silently lands on when the user never picked one."
+        "display_name": "Moor Portal",
+        "note": "Free-tier gating is determined live via Portal pricing (partition_moor_models_by_tier), not this manifest. The entry labeled \"default\": true is the model Moor silently lands on when the user never picked one."
       },
       "models": [
         {

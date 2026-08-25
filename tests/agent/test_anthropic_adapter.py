@@ -80,9 +80,9 @@ class TestBuildAnthropicClient:
             )
             kwargs = mock_sdk.Anthropic.call_args[1]
             headers = kwargs["default_headers"]
-            assert headers["HTTP-Referer"] == "https://hermes-agent.Moor inc..com"
+            assert headers["HTTP-Referer"] == "https://hermes-agent.nousresearch.com"
             assert headers["X-Title"] == "Moor Agent"
-            assert headers["User-Agent"].startswith("HermesAgent/")
+            assert headers["User-Agent"].startswith("MoorAgent/")
             # Auth branch is unchanged: x-api-key via api_key, betas kept.
             assert kwargs["api_key"] == "sk-opencode-secret"
             assert "anthropic-beta" in headers
@@ -141,7 +141,7 @@ class TestBuildAnthropicClient:
 
     def test_disables_sdk_retries_for_api_key(self):
         """#26293: the SDK's default max_retries=2 ignores Retry-After and
-        double-retries inside hermes's outer loop. We delegate retry entirely
+        double-retries inside moor's outer loop. We delegate retry entirely
         to the outer loop, so the client must be built with max_retries=0."""
         with patch("agent.anthropic_adapter._anthropic_sdk") as mock_sdk:
             build_anthropic_client("sk-ant-api03-something")
@@ -1452,7 +1452,7 @@ class TestConvertToolsToAnthropicDedup:
 
     Anthropic rejects requests with duplicate tool names.  This guard converts
     a hard failure into a warning log.  See:
-    https://github.com/Moor inc./hermes-agent/issues/18478
+    https://github.com/NousResearch/hermes-agent/issues/18478
     """
 
     def _make_openai_tool(self, name: str) -> dict:

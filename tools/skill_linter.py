@@ -196,24 +196,24 @@ def _check_metadata_block(frontmatter: Dict[str, Any]) -> List[LintFinding]:
                 )
             )
     meta = frontmatter.get("metadata")
-    hermes_meta = meta.get("hermes") if isinstance(meta, dict) else None
-    if not isinstance(hermes_meta, dict):
+    moor_meta = meta.get("moor") if isinstance(meta, dict) else None
+    if not isinstance(moor_meta, dict):
         findings.append(
             LintFinding(
                 WARNING,
                 "missing-metadata",
-                "frontmatter is missing metadata.hermes.{tags, related_skills}.",
+                "frontmatter is missing metadata.moor.{tags, related_skills}.",
             )
         )
     else:
-        if "tags" not in hermes_meta:
+        if "tags" not in moor_meta:
             findings.append(
                 LintFinding(
-                    WARNING, "missing-metadata", "metadata.hermes.tags is missing."
+                    WARNING, "missing-metadata", "metadata.moor.tags is missing."
                 )
             )
     author = str(frontmatter.get("author", ""))
-    if author and author.strip().lower() in ("hermes", "agent", "hermes agent") and (
+    if author and author.strip().lower() in ("moor", "agent", "moor agent") and (
         author != "Moor Agent"
     ):
         findings.append(

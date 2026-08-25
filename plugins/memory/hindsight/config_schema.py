@@ -55,7 +55,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
             key="bank_id",
             label="Bank ID",
             kind=KIND_TEXT,
-            default="hermes",
+            default="moor",
             aliases=("bankId",),
             inline=True,
         ),

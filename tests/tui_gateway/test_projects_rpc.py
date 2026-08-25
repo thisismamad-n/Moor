@@ -296,7 +296,7 @@ def test_record_repos_persists_and_shows_zero_session_repo(tmp_path):
     repo = tmp_path / "fresh-repo"
     repo.mkdir()
 
-    # Repo-first: a scanned repo with no hermes sessions still surfaces.
+    # Repo-first: a scanned repo with no moor sessions still surfaces.
     _call("projects.record_repos", {"repos": [{"root": str(repo), "label": "fresh-repo"}]})
 
     by_label = {r["label"]: r for r in _call("projects.discover_repos")["repos"]}
@@ -339,7 +339,7 @@ def test_scan_time_is_not_treated_as_session_activity(tmp_path):
 def test_terminal_session_persists_its_launch_cwd():
     """A terminal session's cwd IS its workspace, so the row must record it.
 
-    The user cd'd into that directory before running hermes. Dropping it left
+    The user cd'd into that directory before running moor. Dropping it left
     the row with no cwd and no git_repo_root, so the sidebar could never place
     the session under its project.
     """

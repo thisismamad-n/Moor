@@ -6,7 +6,7 @@ author: Ben Barclay (benbarclay), Moor Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  moor:
     tags: [Documents, OCR, Action-Items, Deadlines, Extraction]
     related_skills: [ocr-and-documents, pdf, docx, notion]
 ---

@@ -1,7 +1,7 @@
 """Global emergency stop (ESTOP) — a resumable pause for NEW work only.
 
-``hermes pause`` writes a sentinel file at ``$HERMES_HOME/ESTOP``;
-``hermes resume`` removes it. While the sentinel exists:
+``moor pause`` writes a sentinel file at ``$MOOR_HOME/ESTOP``;
+``moor resume`` removes it. While the sentinel exists:
 
 * the cron scheduler skips dispatching due jobs (``cron/scheduler.py:tick``),
 * the embedded kanban dispatcher skips spawning workers
@@ -16,7 +16,7 @@ the very next check.
 
 The sentinel body is optional JSON ``{"reason": ..., "engaged_at": ...}``.
 A corrupt or empty file still counts as engaged (fail safe): the pause must
-hold even if the file was created by ``touch ~/.hermes/ESTOP``.
+hold even if the file was created by ``touch ~/.moor/ESTOP``.
 
 Ported from: gastownhall/gastown estop.go (MIT). Related prior art:
 #26778 (/panic — kill/exit semantics; deliberately different, ours is
@@ -42,25 +42,25 @@ _log_lock = threading.Lock()
 _logged_components: set[str] = set()
 
 
-def _hermes_home() -> Path:
-    """Resolve the active HERMES_HOME (profile-aware) at call time."""
+def _moor_home() -> Path:
+    """Resolve the active MOOR_HOME (profile-aware) at call time."""
     try:
-        from hermes_constants import get_hermes_home
-        return get_hermes_home()
+        from moor_constants import get_moor_home
+        return get_moor_home()
     except Exception:
-        return Path(os.path.expanduser("~/.hermes"))
+        return Path(os.path.expanduser("~/.moor"))
 
 
 def sentinel_path() -> Path:
-    """Path of the ESTOP sentinel under the active HERMES_HOME."""
-    return _hermes_home() / SENTINEL_NAME
+    """Path of the ESTOP sentinel under the active MOOR_HOME."""
+    return _moor_home() / SENTINEL_NAME
 
 
 def is_engaged() -> bool:
     """Cheap check (one stat): is the global emergency stop engaged?
 
     Fail SAFE on stat errors: if we cannot determine whether the sentinel
-    exists (permission error, transient I/O failure on HERMES_HOME), report
+    exists (permission error, transient I/O failure on MOOR_HOME), report
     engaged. The module contract is that the pause must hold even when the
     sentinel is unreadable — a fail-open here would silently lift an
     operator's emergency stop exactly when the filesystem is misbehaving.
@@ -131,11 +131,11 @@ def paused_reply() -> Optional[str]:
     if reason:
         return (
             f"⏸️ Moor is paused ({reason}). New work is on hold; "
-            "run `hermes resume` to pick things back up."
+            "run `moor resume` to pick things back up."
         )
     return (
         "⏸️ Moor is paused. New work is on hold; "
-        "run `hermes resume` to pick things back up."
+        "run `moor resume` to pick things back up."
     )
 
 
@@ -160,7 +160,7 @@ def check_paused(component: str, logger: logging.Logger) -> bool:
         suffix = f" (reason: {reason})" if reason else ""
         logger.info(
             "%s dispatch paused by global emergency stop%s — remove with "
-            "`hermes resume` (%s)",
+            "`moor resume` (%s)",
             component,
             suffix,
             sentinel_path(),

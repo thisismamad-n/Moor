@@ -164,7 +164,7 @@ def test_jwks_url_path_resolves_key(rsa_keys, monkeypatch):
 def test_jwks_client_sends_explicit_http_headers(monkeypatch):
     """Constructor-contract regression: the JWKS fetch must send an explicit
     Accept + User-Agent so it isn't blocked by the NAS portal WAF (same fix as
-    the dashboard-auth nous/self_hosted providers)."""
+    the dashboard-auth moor/self_hosted providers)."""
     from plugins.cron_providers.chronos import verify as verify_mod
 
     captured = {}
@@ -183,7 +183,7 @@ def test_jwks_client_sends_explicit_http_headers(monkeypatch):
     assert captured["url"] == url
     assert captured["kwargs"].get("headers") == {
         "Accept": "application/json",
-        "User-Agent": "HermesAgent/1.0",
+        "User-Agent": "MoorAgent/1.0",
     }
 
 

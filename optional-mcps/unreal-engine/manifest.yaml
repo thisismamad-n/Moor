@@ -1,4 +1,4 @@
-# Nous-approved MCP catalog entry.
+# Moor-approved MCP catalog entry.
 # Presence in this directory = approval. Merged via PR review.
 manifest_version: 1
 
@@ -51,4 +51,4 @@ post_install: |
   on the engine game thread — avoid issuing overlapping calls.
 
   Re-run the tool checklist any time with:
-    hermes mcp configure unreal-engine
+    moor mcp configure unreal-engine

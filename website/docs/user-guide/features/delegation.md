@@ -145,7 +145,7 @@ delivered records are bounded and profile-local.
 You can configure a different model for subagents via `config.yaml` — useful for delegating simple tasks to cheaper/faster models:
 
 ```yaml
-# In ~/.hermes/config.yaml
+# In ~/.moor/config.yaml
 delegation:
   model: "google/gemini-flash-2.0"    # Cheaper model for subagents
   provider: "openrouter"              # Optional: route subagents to a different provider
@@ -158,7 +158,7 @@ If omitted, subagents use the same model as the parent.
 Decomposing a problem into well-specified subtasks takes frontier-level judgment; executing a subtask that already comes with a clear goal, full context, and an output contract usually doesn't. Meanwhile the children are where the tokens go — a parallel batch of subagents typically burns the large majority of a run's total tokens, so the worker model is where the cost actually lives. Pinning `delegation.model` to an inexpensive model while your main session stays on a frontier model keeps the planning quality where it matters and cuts spend where the volume is:
 
 ```yaml
-# ~/.hermes/config.yaml
+# ~/.moor/config.yaml
 model:
   default: "your-frontier-model"     # parent (planner) stays on the frontier model
 delegation:
@@ -220,7 +220,7 @@ first request, `after_llm_calls` otherwise). All three are `null` on
 non-timeout errors.
 
 :::tip Diagnostic dump on zero-call timeout
-With a hard cap configured, if a subagent times out having made **zero** API calls (usually: provider unreachable, auth failure, or tool-schema rejection), `delegate_task` writes a structured diagnostic to `~/.hermes/logs/subagent-timeout-<session>-<timestamp>.log` containing the subagent's config snapshot, credential-resolution trace, any early error messages, and stack traces for **all** live threads (not just the child's own) — a child parked waiting on a nested helper thread is indistinguishable from a slow provider without the full picture.
+With a hard cap configured, if a subagent times out having made **zero** API calls (usually: provider unreachable, auth failure, or tool-schema rejection), `delegate_task` writes a structured diagnostic to `~/.moor/logs/subagent-timeout-<session>-<timestamp>.log` containing the subagent's config snapshot, credential-resolution trace, any early error messages, and stack traces for **all** live threads (not just the child's own) — a child parked waiting on a nested helper thread is indistinguishable from a slow provider without the full picture.
 :::
 
 ## Stall Detection for Background Subagents
@@ -329,13 +329,13 @@ So the parent (or the operator driving it) can tell a steered child from one tha
 Every `delegate_task` dispatch also creates one **append-only, human-readable log per task** so you (or the parent agent) can watch a subagent work in real time instead of waiting for the consolidated summary:
 
 ```
-<hermes_home>/cache/delegation/live/<delegation_id>/task-<n>.log
+<moor_home>/cache/delegation/live/<delegation_id>/task-<n>.log
 ```
 
 The dispatch response includes the paths as `live_transcripts`, and the files are pre-created at dispatch time, so this works immediately:
 
 ```bash
-tail -f ~/.hermes/cache/delegation/live/deleg_ab12cd34/task-0.log
+tail -f ~/.moor/cache/delegation/live/deleg_ab12cd34/task-0.log
 ```
 
 Each line is timestamped and shows the child's assistant text, thinking snippets, tool calls (`-> tool_name({args})`), tool results, and a final status marker. A `manifest.json` in the same directory describes the batch (goals, task count, per-task status). The logs persist after completion — they double as the full-fidelity operational record alongside the summary — and directories older than 7 days are pruned automatically on new dispatches. Because they live under `cache/delegation`, they are also readable from remote terminal backends (Docker/Modal/SSH).
@@ -403,7 +403,7 @@ delegation:
 With isolation on:
 
 - Each child starts its terminal in `<repo>/.worktrees/subagent-<id>` on its
-  own branch `hermes-subagent/subagent-<id>`, and its goal message tells it to
+  own branch `moor-subagent/subagent-<id>`, and its goal message tells it to
   work and commit there.
 - The parent's checkout stays untouched; children can't clobber each other's
   edits.
@@ -440,7 +440,7 @@ error.
 ## Configuration
 
 ```yaml
-# In ~/.hermes/config.yaml
+# In ~/.moor/config.yaml
 delegation:
   max_iterations: 50                        # Max turns per child (default: 50)
   # max_concurrent_children: 3              # Parallel children per batch (default: 3)

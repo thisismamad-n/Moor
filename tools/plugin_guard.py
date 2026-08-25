@@ -7,7 +7,7 @@ Inspired by Claude Cowork's skill & plugin security scanning (announced
 malicious content when someone uploads or edits them, returning pass /
 warn / fail). Moor already scans hub-installed *skills* via
 ``tools/skills_guard.py``; this module extends the same static-analysis
-engine to ``hermes plugins install`` and ``hermes plugins update``, which
+engine to ``moor plugins install`` and ``moor plugins update``, which
 previously cloned and executed arbitrary Git repositories unscanned.
 
 Plugins are strictly more dangerous than skills — they run Python
@@ -22,7 +22,7 @@ patterns would flag every legitimate provider plugin. So this scanner:
   and social-engineering content lives.
 - Exempts the "reads own env secret" / "HTTP call with key" pattern
   family on *code* files, while keeping genuinely malicious signals:
-  foreign credential-store access (~/.ssh, ~/.aws, ~/.hermes/.env),
+  foreign credential-store access (~/.ssh, ~/.aws, ~/.moor/.env),
   reverse shells, destructive commands, persistence mechanisms,
   obfuscated execution, and known exfiltration services.
 - Applies plugin-sized structural limits and skips VCS/venv noise.
@@ -102,7 +102,7 @@ CODE_EXEMPT_PATTERN_IDS = {
 # plugin repos occasionally vendor a compiled artifact legitimately, so a
 # binary is a warn-tier signal instead of an instant block.
 #
-# ``hermes_env_access`` (a reference to ``~/.hermes/.env``) is the DOCUMENTED
+# ``moor_env_access`` (a reference to ``~/.moor/.env``) is the DOCUMENTED
 # way plugins tell users where to put their API keys — nearly every legit
 # plugin README mentions it. A mere reference is informational for plugins;
 # actually READING the file still trips ``read_secrets_file`` (critical).
@@ -110,7 +110,7 @@ CODE_EXEMPT_PATTERN_IDS = {
 # at warn tier (caution) rather than an unoverridable block.
 SEVERITY_REMAP = {
     "binary_file": "high",
-    "hermes_env_access": "medium",
+    "moor_env_access": "medium",
     "curl_pipe_shell": "high",
 }
 
@@ -254,7 +254,7 @@ def scan_plugin(plugin_dir: Path, source: str = "") -> ScanResult:
 
     Args:
         plugin_dir: Path to the plugin directory (typically the temp clone,
-            before it is moved into ``~/.hermes/plugins/``).
+            before it is moved into ``~/.moor/plugins/``).
         source: Identifier for display (git URL or owner/repo shorthand).
 
     Returns:

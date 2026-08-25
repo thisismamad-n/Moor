@@ -21,23 +21,23 @@
 // Bare + prefixed variants of the session cookies the gateway may set,
 // depending on its deploy shape (HTTPS direct → __Host-, behind a path prefix
 // → __Secure-, loopback HTTP → bare). Mirrors
-// hermes_cli/dashboard_auth/cookies.py.
+// moor_cli/dashboard_auth/cookies.py.
 //
 // Two cookies are in play (see that module):
-//   - hermes_session_at: the OAuth access token. Short-lived (~15 min); its
+//   - moor_session_at: the OAuth access token. Short-lived (~15 min); its
 //     Max-Age tracks the access-token TTL, so the cookie jar drops it the
 //     instant the AT expires.
-//   - hermes_session_rt: the OAuth refresh token. Long-lived (24h rotating,
-//     reuse-detected — Portal NAS #293 / hermes #37247). When the AT cookie
+//   - moor_session_rt: the OAuth refresh token. Long-lived (24h rotating,
+//     reuse-detected — Portal NAS #293 / moor #37247). When the AT cookie
 //     has lapsed but the RT cookie is still present, the gateway middleware
 //     transparently rotates a fresh AT on the next authenticated request
 //     (POST /api/auth/ws-ticket), so the session is still LIVE even with no
 //     AT cookie. A liveness check that looked only at the AT cookie would
 //     force a needless full re-login every ~15 min — hence cookiesHaveLiveSession.
-const AT_COOKIE_VARIANTS = ['__Host-hermes_session_at', '__Secure-hermes_session_at', 'hermes_session_at']
-const RT_COOKIE_VARIANTS = ['__Host-hermes_session_rt', '__Secure-hermes_session_rt', 'hermes_session_rt']
+const AT_COOKIE_VARIANTS = ['__Host-moor_session_at', '__Secure-moor_session_at', 'moor_session_at']
+const RT_COOKIE_VARIANTS = ['__Host-moor_session_rt', '__Secure-moor_session_rt', 'moor_session_rt']
 
-// The Nous portal (NAS) does NOT use Moor gateway session cookies — it is a
+// The Moor portal (NAS) does NOT use Moor gateway session cookies — it is a
 // Privy-authed Next.js app. NAS `auth()` (src/server/auth/session.ts) reads the
 // `privy-token` access-token cookie (with `privy-id-token` alongside), which is
 // also exactly what the `/api/agents` cookie-auth path validates. So portal
@@ -59,9 +59,9 @@ const PRIVY_SESSION_COOKIE_VARIANTS = [
 // `privy-token` is minted. Distinguishing the two is what lets a cold start
 // silently renew instead of demanding a re-login (#73495).
 const PRIVY_ACCESS_COOKIE_VARIANTS = ['__Host-privy-token', '__Secure-privy-token', 'privy-token']
-// Keep this aligned with hermes_cli.profiles.validate_profile_name(). `default`
+// Keep this aligned with moor_cli.profiles.validate_profile_name(). `default`
 // is the built-in root alias; these names cannot be created as profiles.
-const RESERVED_REMOTE_PROFILES = new Set(['hermes', 'test', 'tmp', 'root', 'sudo'])
+const RESERVED_REMOTE_PROFILES = new Set(['moor', 'test', 'tmp', 'root', 'sudo'])
 
 function normalizeRemoteBaseUrl(rawUrl) {
   let value = String(rawUrl || '').trim()
@@ -234,7 +234,7 @@ const FORBIDDEN_REMOTE_HEADER_NAMES = new Set([
   'trailer',
   'transfer-encoding',
   'upgrade',
-  'x-hermes-session-token'
+  'x-moor-session-token'
 ])
 
 function normalizeRemoteHeaders(raw) {
@@ -372,10 +372,10 @@ function normalizeSshConfig(entry) {
     out.keyPath = keyPath
   }
 
-  const remoteHermesPath = String(entry.remoteHermesPath || '').trim()
+  const remoteMoorPath = String(entry.remoteMoorPath || '').trim()
 
-  if (remoteHermesPath) {
-    out.remoteHermesPath = remoteHermesPath
+  if (remoteMoorPath) {
+    out.remoteMoorPath = remoteMoorPath
   }
 
   // A Desktop profile can be a local routing label rather than the profile
@@ -506,7 +506,7 @@ export interface ProfileBackendRoute {
  *  3. A profile inheriting the app-global remote shares the primary backend —
  *     one host serves every profile — so it is scoped per request instead.
  *  4. Any other local profile gets its own pooled backend, spawned with
- *     `--profile`, so its `HERMES_HOME` scopes it.
+ *     `--profile`, so its `MOOR_HOME` scopes it.
  *
  * Routing used to be spread across three overlapping predicates that each
  * re-derived part of this table, which is how case 3 ended up registering
@@ -560,7 +560,7 @@ function pathWithGlobalRemoteProfile(path, profile, opts: ProfileRouteOptions = 
  * `mara` to remote `default`). Only a `?profile=` equal to the alias itself is
  * rewritten; cross-profile selectors (`all`, another concrete profile) and
  * unfiltered paths pass through untouched. Used by the v1 profile route above
- * and by the registry SSH branch of the `hermes:api` handler — both routes
+ * and by the registry SSH branch of the `moor:api` handler — both routes
  * reach a backend whose namespace is the remote profile, not the alias.
  */
 function translateSelfProfileQuery(path, profile, backendProfile) {
@@ -580,7 +580,7 @@ function translateSelfProfileQuery(path, profile, backendProfile) {
   let parsed
 
   try {
-    parsed = new URL(rawPath, 'http://hermes.local')
+    parsed = new URL(rawPath, 'http://moor.local')
   } catch {
     return path
   }
@@ -616,7 +616,7 @@ function pathWithProfileScope(path, profile) {
   let parsed
 
   try {
-    parsed = new URL(rawPath, 'http://hermes.local')
+    parsed = new URL(rawPath, 'http://moor.local')
   } catch {
     return path
   }
@@ -688,7 +688,7 @@ function resolveAuthMode(inputAuthMode, existingAuthMode) {
 }
 
 /**
- * True if any cookie in `cookies` is a hermes session ACCESS-token cookie
+ * True if any cookie in `cookies` is a moor session ACCESS-token cookie
  * with a non-empty value. `cookies` is an array of {name, value} (the shape
  * Electron's session.cookies.get returns).
  *
@@ -728,7 +728,7 @@ function cookiesHaveLiveSession(cookies) {
 }
 
 /**
- * True if the cookie jar holds a live Nous PORTAL (Privy) session — a non-empty
+ * True if the cookie jar holds a live Moor PORTAL (Privy) session — a non-empty
  * `privy-token` (access-token) cookie, or a variant. This is the portal
  * analogue of `cookiesHaveLiveSession`: the portal authenticates via Privy, not
  * the Moor gateway session cookies, so cloud sign-in / discovery liveness

@@ -1,5 +1,5 @@
 {
-  "name": "@hermes/bootstrap-installer",
+  "name": "@moor/bootstrap-installer",
   "private": true,
   "version": "0.0.1",
   "description": "Moor Setup — signed installer that drives scripts/install.ps1 with a polished native UI.",
@@ -19,7 +19,7 @@
     "fix": "npm run lint:fix"
   },
   "dependencies": {
-    "@nous-research/ui": "0.18.2",
+    "@moor-research/ui": "0.18.2",
     "@tailwindcss/typography": "0.5.20",
     "@tailwindcss/vite": "4.3.3",
     "@tauri-apps/api": "2.11.1",

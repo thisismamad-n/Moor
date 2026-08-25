@@ -38,7 +38,7 @@ class _PrepareDriver:
 
 def _route(driver: _PrepareDriver) -> CuaTypedBrowserRoute:
     return CuaTypedBrowserRoute(
-        session_id="hermes-a",
+        session_id="moor-a",
         call_tool=driver.call,
         has_tool=driver.has_tool,
     )
@@ -64,7 +64,7 @@ def test_existing_profile_prepare_delegates_authorization_to_driver():
                 "pid": 101,
                 "window_id": 202,
                 "strategy": {"kind": "existing_profile"},
-                "session": "hermes-a",
+                "session": "moor-a",
             },
         )
     ]

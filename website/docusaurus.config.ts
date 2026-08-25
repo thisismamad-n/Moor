@@ -7,11 +7,11 @@ const config: Config = {
   tagline: 'The self-improving AI agent',
   favicon: 'img/favicon.ico',
 
-  url: 'https://hermes-agent.Moor inc..com',
+  url: 'https://hermes-agent.nousresearch.com',
   baseUrl: '/docs/',
 
   organizationName: 'Moor inc.',
-  projectName: 'hermes-agent',
+  projectName: 'moor-agent',
 
   onBrokenLinks: 'warn',
 
@@ -55,7 +55,7 @@ const config: Config = {
           {
             // Moved when the Plugins subcategory was created under
             // Developer Guide > Extending (docs restructure, July 2026)
-            from: '/guides/build-a-hermes-plugin',
+            from: '/guides/build-a-moor-plugin',
             to: '/developer-guide/plugins',
           },
           {
@@ -80,7 +80,7 @@ const config: Config = {
         docs: {
           routeBasePath: '/',  // Docs at the root of /docs/
           sidebarPath: './sidebars.ts',
-          editUrl: 'https://github.com/Moor inc./hermes-agent/edit/main/website/',
+          editUrl: 'https://github.com/NousResearch/hermes-agent/edit/main/website/',
         },
         blog: false,
         theme: {
@@ -91,7 +91,7 @@ const config: Config = {
   ],
 
   themeConfig: {
-    image: 'img/hermes-agent-banner.png',
+    image: 'img/moor-agent-banner.png',
     // Algolia DocSearch (replaces @easyops-cn/docusaurus-search-local).
     // The local plugin shipped a ~16 MB client-side lunr index that every
     // visitor downloaded and hydrated before their first result; DocSearch
@@ -103,7 +103,7 @@ const config: Config = {
     algolia: {
       appId: '2JLBVEYZN5',
       apiKey: '8fda2a49223ce185ac30c2dbf6898a07',
-      indexName: 'hermes docs',
+      indexName: 'moor docs',
       contextualSearch: true,
     },
     colorMode: {
@@ -135,7 +135,7 @@ const config: Config = {
           position: 'left',
         },
         {
-          href: 'https://hermes-agent.Moor inc..com/',
+          href: 'https://hermes-agent.nousresearch.com/',
           label: 'Download',
           position: 'left',
         },
@@ -144,17 +144,17 @@ const config: Config = {
           position: 'right',
         },
         {
-          href: 'https://hermes-agent.Moor inc..com',
+          href: 'https://hermes-agent.nousresearch.com',
           label: 'Home',
           position: 'right',
         },
         {
-          href: 'https://github.com/Moor inc./hermes-agent',
+          href: 'https://github.com/NousResearch/hermes-agent',
           label: 'GitHub',
           position: 'right',
         },
         {
-          href: 'https://discord.gg/Moor inc.',
+          href: 'https://discord.gg/NousResearch',
           label: 'Discord',
           position: 'right',
         },
@@ -175,21 +175,21 @@ const config: Config = {
         {
           title: 'Community',
           items: [
-            { label: 'Discord', href: 'https://discord.gg/Moor inc.' },
-            { label: 'GitHub Issues', href: 'https://github.com/Moor inc./hermes-agent/issues' },
+            { label: 'Discord', href: 'https://discord.gg/NousResearch' },
+            { label: 'GitHub Issues', href: 'https://github.com/NousResearch/hermes-agent/issues' },
             { label: 'Skills Hub', href: 'https://agentskills.io' },
           ],
         },
         {
           title: 'More',
           items: [
-            { label: 'Desktop Download', href: 'https://hermes-agent.Moor inc..com/' },
-            { label: 'GitHub', href: 'https://github.com/Moor inc./hermes-agent' },
-            { label: 'Nous Research', href: 'https://Moor inc..com' },
+            { label: 'Desktop Download', href: 'https://hermes-agent.nousresearch.com/' },
+            { label: 'GitHub', href: 'https://github.com/NousResearch/hermes-agent' },
+            { label: 'Moor inc.', href: 'https://nousresearch.com' },
           ],
         },
       ],
-      copyright: `Built by <a href="https://Moor inc..com">Nous Research</a> · MIT License · ${new Date().getFullYear()}`,
+      copyright: `Built by <a href="https://nousresearch.com">Moor inc.</a> · MIT License · ${new Date().getFullYear()}`,
     },
     prism: {
       theme: prismThemes.github,

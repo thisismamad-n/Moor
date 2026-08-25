@@ -1,0 +1,402 @@
+# MOOR REBRAND PLAYBOOK — Instructions for AI Agents
+
+**Read this file completely before touching anything.** It is the canonical
+handoff document for any AI agent (or human) maintaining the Moor fork of
+upstream `NousResearch/hermes-agent`. It explains what was done, why, how to
+continue the work, every known trap, and how to verify you have not broken
+anything.
+
+Companion docs: `MOOR_WORKFLOW.md` (user-facing workflow summary).
+
+---
+
+## 1. Mission & context
+
+This repository is a personal fork of the upstream Hermes agent, fully
+rebranded to **Moor** (company: **Moor inc.**). The fork continuously absorbs
+upstream updates. Every time upstream content enters the tree, it arrives
+full of "hermes"/"nous" terms and must be transformed to the canonical Moor
+state — mechanically, completely, and without breaking live functionality.
+
+**This is NOT a one-time migration. It is a permanent, repeatable pipeline.**
+The single load-bearing tool is `scripts/rebrand.py`. Everything else in this
+document is context for operating and extending it.
+
+### The three-tier policy (memorize this)
+
+| Tier | Rule | Examples |
+|---|---|---|
+| **REBRAND** | Everything users see or that is internal naming | `hermes_cli`→`moor_cli`, `HERMES_*`→`MOOR_*`, `Hermes`→`Moor`, `Nous Research`→`Moor inc.`, `@hermes/*`→`@moor/*`, file/dir names, `~/.hermes`→`~/.moor`, appId `com.moorinc.*` |
+| **PROTECT** | External machine-facing identifiers — renaming silently breaks features | API hosts (`portal.nousresearch.com`, `inference-api.nousresearch.com`, `tool-gateway`, `firecrawl-gateway`, `openai-audio-gateway`, staging hosts, docs host `hermes-agent.nousresearch.com`), model slugs (`hermes-4-405b`, `NousResearch/Hermes-3-Llama-3.1-70B`, `openrouter/nousresearch/hermes-*`), `NOUS_API_KEY`, upstream Docker image refs, upstream Discord invite, contributor identities (`hermesagent26`, `.mailmap`, `contributors/emails/`), third-party project names (`hermesclaw`, `hermesatlas`), Reddit permalinks |
+| **IMMUNE** | Files the engine must never touch | `scripts/rebrand.py`, `scripts/rebrand_selftest.py`, `scripts/rebrand_inventory.py`, `agent/legacy_home_migration.py`, `.github/workflows/sync-upstream.yml`, `MOOR_WORKFLOW.md`, this file, `.mailmap`, `contributors/emails/**` |
+
+The rationale for PROTECT: these strings are resolved by *other systems*
+(OpenRouter, HuggingFace, OAuth servers, Docker Hub, GitHub). Renaming them
+produces a "fully branded" app whose login, inference, and model resolution
+are silently dead — the worst failure mode. Residual "nous"/"hermes" inside
+protected constants is accepted policy; the verifier enforces that nothing
+*outside* those constants leaks.
+
+---
+
+## 2. The engine: `scripts/rebrand.py`
+
+### Phase pipeline (order matters)
+
+```
+1. HEAL      reverse known damage-shapes from the OLD root rebrand.py
+             (e.g. `github.com/Moor inc./hermes-agent` → `github.com/NousResearch/hermes-agent`,
+              `Moor inc..com` domains → `nousresearch.com`, `com.Moor inc..hermes` →
+              `com.nousresearch.hermes`, `Moor-Agent` → `moor-agent`,
+              `moor-agent.nousresearch...` truncated-host fixups)
+2. FORK      rewrite github.com/NousResearch/hermes-agent URLs → the fork
+             (flag --github-fork, env MOOR_GITHUB_FORK, or auto-detect from
+             `git remote get-url origin`; skipped when origin IS upstream)
+3. PROTECT   mask protected spans with \x00P<n>\x00 sentinels
+4. REPLACE   the ordered text LADDER (see below)
+5. RESTORE   unmask protected spans verbatim
+6. RENAME    tracked files/dirs via a path-restricted ladder (no spaces)
+7. INJECT    re-apply fork-owned hooks upstream merges revert (idempotent,
+             anchored on POST-rebrand text):
+             - legacy-home migration call in moor_cli/main.py (after
+               `_apply_profile_override()`) and gateway/run.py (after
+               `os.environ.setdefault("MOOR_AGENT", "true")`)
+             - wake-word LEGACY-AUDIO-MODEL note in tools/wake_word.py
+               (after `_BUNDLED_MODEL_NAME = "hey_moor"`)
+8. CLEAN     delete *.egg-info, __pycache__, legacy root rebrand.py
+9. ASSETS    optional brand-assets/ overrides copied onto icon/logo slots
+10. VERIFY   hard gates (below)
+```
+
+### The ladder (ordered, case-aware — never reorder casually)
+
+Snake/env compounds first, then CamelCase, kebab (with a lambda that
+lowercases the tail: `Hermes-Agent`→`moor-agent` in ONE pass), npm scope,
+snake-suffix (`hey_hermes`→`hey_moor`), camel-suffix (`updateHermes`→
+`updateMoor`), lowerCamel-prefix (`hermesHome`→`moorHome`,
+`__hermesMeetQueue`→`__moorMeetQueue`), compound tokens (`hermesbot`,
+`hermesbench`, `hermesbyt4`, `HERMESPENTEST`, `hermesx`), prose wildcards
+(``HERMES_*``), and finally catch-alls (`HERMES_`→`MOOR_` etc.). The NOUS
+family runs with `Nous Research`/`NousResearch`→`Moor inc.` BEFORE the
+CamelCase rule (otherwise `NousResearch`→`MoorResearch`).
+
+### Verification gates (all must pass; `--ci` exits non-zero)
+
+1. **Residual scan** — every tracked text file scanned for `hermes` (any
+   case) and word-boundary `nous`/`nousresearch`. Each hit is classified:
+   inside a protected span → allowed; line carries a `LEGACY-*` marker →
+   allowed; else → **UNEXPECTED (must be zero)**.
+2. **Packaging structure** — `[project.scripts]` == `{moor, moor-agent,
+   moor-acp}`; py-modules exist on disk; packages.find dirs exist;
+   `package.json` name == `moor-agent`.
+3. **BOM parity with HEAD** — rename-aware comparison of UTF-8 BOM presence
+   against the git HEAD blobs. The transform must never add or drop a BOM.
+4. **compileall** over the repo.
+5. **Import smoke** — required: `moor_constants`, `moor_state`,
+   `moor_logging`, `moor_time`, `agent.legacy_home_migration` (fatal on
+   failure); heavy: `toolsets`, `model_tools`, `run_agent`, `cli`,
+   `moor_cli.main`, `gateway.run` (warn-only).
+
+### CLI flags
+
+```
+--dry-run          plan only, write nothing
+--github-fork O/R  rewrite upstream repo URLs to this fork
+--verify           verification only
+--ci               skip reinstall; verification failures exit non-zero
+--skip-reinstall   do not pip-install -e . into .venv
+--force            run even with unrelated dirty files (use sparingly)
+--no-verify        skip phase 10 (for quick iterations)
+```
+
+### Expected numbers (anomaly detection)
+
+From **pristine upstream** (9.5k files): ~5,510 files rewritten + ~1,287
+renames on run 1; run 2 must be **0 rewrites / 0 renames**. On an already-
+converged tree every run is 0/0. If a rerun rewrites anything, you have a
+non-idempotent rule — stop and fix it (see §6).
+
+### Performance invariant
+
+Protect patterns use **bounded repetition** (`{0,63}` labels etc.), never
+unbounded `[A-Za-z0-9.-]*` prefixes (quadratic blow-up on megabyte lines —
+this actually happened and turned a 5-minute run into a 20-minute hang) and
+never atomic groups `(?>...)` around prefixes (they prevent the backtracking
+needed for `staging-nousresearch.com`-style intra-label matches). Benchmark
+before committing regex changes:
+
+```powershell
+python -c "import re,time; p='<your pattern>'; s='a.'*20000; t=time.time(); re.search(p,s); print(time.time()-t)"
+# must be well under 0.5 s
+```
+
+---
+
+## 3. Golden rules
+
+1. **Never hand-edit brand terms in tracked files.** The engine owns them;
+   manual edits get reverted by the next run (or worse, create divergence).
+   If a term is wrong, fix the RULE, add a selftest case, re-run.
+2. **Run on a clean tree.** The script refuses a dirty tree (untracked
+   tooling files are tolerated) unless `--force`. Recovery is always
+   `git restore . && git clean -fd`.
+3. **Idempotency is sacred.** After any rule change: run twice, assert the
+   second run reports 0 rewrites / 0 renames.
+4. **Every rule change ships with a selftest case.** `scripts/
+   rebrand_selftest.py` (66 cases) covers pristine transforms, protected
+   spans, heal shapes, fork rewriting, path renames, and an idempotency loop.
+   Add cases for every bug you fix.
+5. **Never commit or push unless explicitly asked.** The transform is
+   designed to be reviewed via `git status`/`git diff` first.
+6. **Respect the immune list.** Documentation that documents the mappings
+   (`MOOR_WORKFLOW.md`, this file) MUST stay immune — the ladder would eat
+   its own "hermes_cli → moor_cli" examples.
+7. **Windows file writes must be LF-safe.** The repo enforces LF
+   (.gitattributes). NEVER use PowerShell `Set-Content` on source files (it
+   converts to CRLF and can add BOMs — this caused a real whole-file phantom
+   diff that had to be repaired). Use the editor/Write tool or Python with
+   explicit `newline=''` / byte-level writes.
+8. **Console output on Windows is cp1252.** The script reconfigures stdout
+   to UTF-8 at startup; keep that if you refactor, or emoji in file content
+   crash the report.
+
+---
+
+## 4. Routine workflows
+
+### A. After an upstream merge (local)
+
+```powershell
+git fetch upstream
+git merge upstream/main          # resolve conflicts if any
+python scripts/rebrand.py        # heal + protect + rename + verify
+git add -A
+git commit -m "sync: merge upstream main + reapply Moor rebrand"
+git push origin master           # only when the user asks
+```
+
+Then refresh toolchains (first time on a machine, or after dependency-affecting
+merges): `pip install -e . --no-deps` (or `uv pip install -e . --no-deps`) and
+`npm install --ignore-scripts` (refreshes `@moor/*` workspace links).
+
+### B. Automated (GitHub Actions)
+
+`.github/workflows/sync-upstream.yml` runs daily 06:00 UTC + manual dispatch:
+checkout → merge upstream → `python scripts/rebrand.py --ci --github-fork
+$GITHUB_REPOSITORY` → commit+push. Requirements: repo Settings → Actions →
+Workflow permissions → **Read and write**; `origin` must point at the user's
+fork (NOT NousResearch — check `git remote -v` if pushes fail). On merge
+conflicts the job fails with instructions; conflicts are resolved locally.
+
+Upstream's publish workflows (Docker, site deploy, skills index) carry repo
+guards that only fire on `NousResearch/hermes-agent`, so they no-op on the
+fork. CI test workflows DO run on the fork — the user may disable them in
+the Actions UI.
+
+### C. Adding a new rule (the safe iteration loop)
+
+1. Reproduce: find a real file/line the ladder misses (use
+   `scripts/rebrand_inventory.py` or `rg -i 'hermes|nous'`).
+2. Decide the tier (§1). If PROTECT: add to `PROTECT_PATTERNS` — check it
+   does not swallow legitimate rename targets (see the `hermesagent26` war
+   story: an over-broad protect pattern case-insensitively matched
+   `HermesAgent` class names and silently froze them).
+3. If REBRAND: add to `LADDER` at the correct precedence point (longest/
+   most-specific first; catch-alls last).
+4. Add a case to `rebrand_selftest.py` (transform + the idempotency loop
+   picks it up automatically).
+5. `python scripts/rebrand_selftest.py` → all green.
+6. `python scripts/rebrand.py --dry-run` → review counts.
+7. Real run → **run twice** → second run must be 0/0.
+8. `--verify` → all gates green.
+
+### D. Validating the engine against pristine upstream (do this after any
+significant engine change)
+
+```powershell
+git worktree add D:\Temps\moor-validate <upstream-commit-sha>
+# wait for checkout to fully materialize (Windows is slow — Test-Path first)
+Copy-Item scripts\rebrand.py D:\Temps\moor-validate\scripts\ -Force
+Copy-Item agent\legacy_home_migration.py D:\Temps\moor-validate\agent\ -Force
+cd D:\Temps\moor-validate
+python scripts\rebrand.py --force --skip-reinstall --no-verify --github-fork acme-test/moor
+python scripts\rebrand.py --force --skip-reinstall --no-verify --github-fork acme-test/moor   # must be 0/0
+& <main-repo>\.venv\Scripts\python.exe scripts\rebrand.py --verify --ci       # all green
+cd <main-repo>
+git worktree remove D:\Temps\moor-validate --force
+```
+
+Use a REAL upstream commit (`git log upstream/main -1`), not old fork merge
+commits — some fork history contains baked-in `<<<<<<< HEAD` conflict
+markers that fail compileall for reasons unrelated to the rebrand.
+
+---
+
+## 5. Structural components an agent must know
+
+| Path | Role |
+|---|---|
+| `scripts/rebrand.py` | The engine (immune). ~800 lines, stdlib only. |
+| `scripts/rebrand_selftest.py` | 66-case regression suite (immune). |
+| `scripts/rebrand_inventory.py` | Audit tool: brand-term counts by dir/ext/variant (immune). |
+| `agent/legacy_home_migration.py` | One-time `~/.hermes`→`~/.moor` copy migration (immune; contains legacy literals on purpose). Copy-only, marker-guarded, skipped when `MOOR_HOME`/`HERMES_HOME` is set (tests/CI/profiles never trigger it). Rewrites `provider: nous`→`moor` and `HERMES_`/`NOUS_` prefixes inside the COPY only. |
+| `.github/workflows/sync-upstream.yml` | Daily auto-sync + rebrand + push (immune). |
+| `MOOR_WORKFLOW.md` | User-facing summary (immune). |
+| `tools/wakewords/hey_moor.onnx/.tflite` | Renamed hotword models — audio still encodes the ORIGINAL phrase (see §7). |
+
+Injection hooks are anchored on post-rebrand text and self-skip via
+`skip_if` markers — if upstream renames the anchor lines, the engine reports
+`injection anchor not found` as a warning; fix the anchor regex, do not
+ignore it.
+
+---
+
+## 6. War stories — bugs already hit and fixed (do not repeat them)
+
+1. **`\bhermes\b` misses compounds.** `_` is a word char: `\bhermes\b` does
+   not match `hermes_cli`. Hence the ladder's explicit snake/camel/kebab/
+   suffix/prefix rules before any bare-word rule.
+2. **camelCase both directions.** `HermesAgent` (prefix) AND `updateHermes`
+   (suffix) AND `hermesHome`/`__hermesMeetQueue` (lowerCamel prefix, lookbehind
+   must ALLOW underscore) each needed their own rule.
+3. **Prose wildcards.** `` `HERMES_*` `` in docs has no identifier char after
+   the underscore — needed explicit `HERMES_\*` rules.
+4. **Regex-literal env families.** `/^HERMES_(?:BACKEND|DASHBOARD)_READY/`
+   has `(` after the underscore — needed `HERMES_\(` before the catch-alls.
+5. **Old-script damage shapes.** The legacy root rebrand.py replaced
+   `\bNousResearch\b`→`Moor inc.` INSIDE URLs/appIds/emails, producing
+   `github.com/Moor inc./hermes-agent`, `Moor inc..com`, `com.Moor inc..hermes`,
+   `Moor inc./Hermes-4-405B`. HEAL rules map each damaged shape back to the
+   exact pristine form; the normal pipeline then rebrands it correctly. Heal
+   runs FIRST, before fork-rewrite and masking.
+6. **Two-step non-idempotency.** Ladder produced `Moor-Agent` from pristine
+   `Hermes-Agent`, then the `Moor-Agent` heal rule "fixed" it one run later.
+   Fix: kebab ladder rule lowercases the tail via lambda in one pass
+   (`Hermes-Agent`→`moor-agent`). Lesson: any rule that produces a shape
+   another rule consumes = non-idempotent. The run-twice check catches this.
+7. **Self-eating injection.** The wake-word note originally contained the
+   literal phrase "hey hermes"; run 2's ladder rewrote the note itself.
+   Fix: injection text must contain NO brand terms (hence "ORIGINAL upstream
+   wake phrase" wording). Same reason immune docs exist.
+8. **Catastrophic backtracking.** `[A-Za-z0-9.-]*nousresearch\.` was O(n²)
+   on megabyte lines (20-minute hangs). Fix: bounded repetition
+   `{1,63}`/`{0,3}`. Do NOT "simplify" back to unbounded classes, and do NOT
+   use atomic groups `(?>...)` on those prefixes (breaks intra-label
+   matches like `staging-nousresearch.com`).
+9. **The BOM bug.** Decoding with `utf-8-sig` first makes `had_bom=True`
+   even for BOM-less files → the transform ADDED BOMs to ~5,200 files.
+   tomllib/setuptools then failed with `Invalid statement at line 1`.
+   Fixed by checking `raw.startswith(UTF8_BOM)` explicitly + the BOM-parity
+   verification gate. If you see `Invalid statement (at line 1, column 1)`
+   from tomllib anywhere: suspect a BOM first.
+10. **Stale git index after renames.** Plain `shutil.move` does not refresh
+    the index: `git ls-files` returns OLD paths, so every post-rename run
+    silently skipped all moved files (content fixes never reached them).
+    Fix: `resolve_disk_paths()` maps index paths → current disk locations.
+    If you add phases that enumerate files, they MUST use resolved paths.
+11. **Stale untracked duplicates.** An earlier partial rebrand left
+    untracked renamed copies at target paths; the rename step skipped
+    (target exists) and verification read the stale copy. Fix: backup the
+    duplicate to `%TEMP%\moor-stale-backup\` then move the tracked source
+    through. If you see surprise residuals in files whose mtime predates
+    your session — suspect a stale duplicate.
+12. **Verify must resolve paths too.** Verification maps the tracked list
+    through the rename plan; otherwise it reads missing old paths and
+    reports false green.
+13. **`utf-8-sig` in READERS.** `tomllib.loads(text)` fails on a leading
+    BOM char; readers in verify use `encoding="utf-8-sig"`. JSON likewise.
+14. **Lockfiles are text.** `uv.lock` / `package-lock.json` contain the
+    self-referential package name and workspace names; the ladder updates
+    them consistently. Do not exclude them. After renames, run
+    `npm install --ignore-scripts` to refresh node_modules links.
+15. **Editable installs break after renames.** The venv's editable finder
+    references old module paths; `pip install -e . --no-deps` (or
+    `uv pip install -e . --no-deps`) restores entry points (`moor.exe`,
+    `moor-agent.exe`, `moor-acp.exe`). The script does this automatically
+    unless `--skip-reinstall`.
+16. **Provider config is machine-facing.** `plugins/model-providers/moor/`
+    keeps `env_vars=("NOUS_API_KEY",)`, `base_url="https://inference-api.
+    nousresearch.com/v1"`, and `fallback_models=("hermes-3-405b", ...)` —
+    all PROTECTED. Do not "finish the rebrand" there.
+17. **CI repo guards.** Strings like `github.repository == 'NousResearch/
+    hermes-agent'` are protected (org-slug pattern). They no-op upstream
+    publish jobs on the fork — that is intentional and safe.
+18. **Env-var families are prefix-scanned at runtime.**
+    `tools/code_execution_tool.py` filters `startswith("MOOR_")`,
+    `tools/environments/local.py` uses `_MOOR_FORCE_` prefix, kanban/cron
+    isolation tests filter `MOOR_KANBAN_`. The ladder renames producers and
+    consumers consistently — never rename one side only.
+19. **`is_first_party_module()`** (moor_constants.py) checks
+    `root.startswith("moor_")` — the ladder keeps this in sync with the
+    renamed modules. Tests mirror it (`test_update_import_guard.py` uses
+    lookalike fixtures `hermesx`→`moorx`).
+20. **Worktree checkout on Windows materializes lazily.** After
+    `git worktree add`, wait and `Test-Path` before copying files in, or
+    the copies fail with confusing NotFound errors.
+
+---
+
+## 7. Known functional limitations (do not "fix" mechanically)
+
+- **Wake word audio**: `tools/wakewords/hey_moor.onnx/.tflite` are trained
+  embeddings of the ORIGINAL upstream wake phrase. All strings/files are
+  renamed, but spoken detection matches the original audio until a retrained
+  model is dropped in under the `hey_moor` name. Tracked by the
+  `LEGACY-AUDIO-MODEL` comment in `tools/wake_word.py`.
+- **Binary artwork**: icons/mascot/banner cannot be regenerated by the
+  engine. The user can drop replacements into `brand-assets/` (icon.ico/
+  icon.icns/icon.png/favicon.ico/logo.png/banner.png/mascot.jpg); the ASSETS
+  phase copies them onto the repo slots.
+- **Desktop build output** (`apps/desktop/dist/`, `release/`) is gitignored
+  and stale after rebrand; it regenerates on the next desktop build. Old
+  `hermes_cli` strings inside built bundles are expected until then.
+
+---
+
+## 8. Decision framework — proceed vs ask the human
+
+**Proceed autonomously** (engine handles by design): upstream merges, new
+files containing brand terms, rule additions with selftest coverage,
+verification failures caused by engine gaps (fix the gap), lockfile/package
+name updates.
+
+**Ask the human** before:
+- Changing the three-tier policy (e.g. "scorched-earth" renaming of
+  protected endpoints — this breaks Portal login/inference).
+- Adding a NEW external endpoint/model-slug to the protect list vs renaming
+  it (functional risk).
+- Deleting stale untracked duplicates that do NOT match the "generated by
+  an earlier script run" profile (possible manual work).
+- Any change to `agent/legacy_home_migration.py` semantics (data safety).
+- Disabling/altering CI workflows.
+
+---
+
+## 9. Quick reference
+
+```powershell
+# State check
+python scripts\rebrand_inventory.py          # brand-term census
+python scripts\rebrand.py --verify           # all gates (read-only)
+python scripts\rebrand.py --dry-run          # what WOULD change
+
+# The loop
+python scripts\rebrand_selftest.py           # rule regression suite (must be 66+ green)
+python scripts\rebrand.py                    # transform + verify
+python scripts\rebrand.py                    # AGAIN — must report 0/0
+
+# Recovery
+git restore . ; git clean -fd                # revert everything uncommitted
+
+# Toolchain refresh (after renames)
+pip install -e . --no-deps                   # or: uv pip install -e . --no-deps
+npm install --ignore-scripts
+
+# Smoke
+.venv\Scripts\moor.exe --version             # → "Moor Agent v0.20.2 ..."
+```
+
+**Definition of done for any rebrand work**: selftest green → transform run →
+second run 0 rewrites/0 renames → `--verify` all gates green (0 unexpected
+residuals, packaging OK, BOM parity OK, compileall OK, imports OK) →
+`moor --version` works.

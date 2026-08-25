@@ -40,11 +40,11 @@ description: "如何为 Moor Agent 做贡献 — 开发环境配置、代码风�
 
 ### 使用标准安装器
 
-对大多数贡献者来说，最好的开发启动方式和用户安装方式相同：运行标准安装器，然后在它克隆出的仓库里开发。安装器会创建 Moor venv、配置 `hermes` 命令、为 `hermes update` 写入安装方式标记，并把完整 git 项目克隆到 `$HERMES_HOME/hermes-agent`（通常是 `~/.hermes/hermes-agent`）。这样你的开发环境会和 CLI、updater、lazy dependency installer、gateway、docs 默认假设的布局一致。
+对大多数贡献者来说，最好的开发启动方式和用户安装方式相同：运行标准安装器，然后在它克隆出的仓库里开发。安装器会创建 Moor venv、配置 `moor` 命令、为 `moor update` 写入安装方式标记，并把完整 git 项目克隆到 `$MOOR_HOME/moor-agent`（通常是 `~/.moor/moor-agent`）。这样你的开发环境会和 CLI、updater、lazy dependency installer、gateway、docs 默认假设的布局一致。
 
 ```bash
-curl -fsSL https://hermes-agent.Moor inc..com/install.sh | bash
-cd "${HERMES_HOME:-$HOME/.hermes}/hermes-agent"
+curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+cd "${MOOR_HOME:-$HOME/.moor}/moor-agent"
 
 # 在标准安装基础上添加开发/测试 extras。
 uv pip install -e ".[all,dev]"
@@ -62,11 +62,11 @@ scripts/run_tests.sh
 
 ### 手动克隆备用路径
 
-只有在你明确不想使用 Moor managed install layout 时才使用这种方式（例如容器或 CI job 里的临时 clone）。如果这样安装，请确保运行的是这个 venv 里的 `hermes` entrypoint；运行系统 `python3 -m hermes_cli.main` 可能会加载无关的系统 Python 包。
+只有在你明确不想使用 Moor managed install layout 时才使用这种方式（例如容器或 CI job 里的临时 clone）。如果这样安装，请确保运行的是这个 venv 里的 `moor` entrypoint；运行系统 `python3 -m moor_cli.main` 可能会加载无关的系统 Python 包。
 
 ```bash
-git clone https://github.com/Moor inc./hermes-agent.git
-cd hermes-agent
+git clone https://github.com/NousResearch/hermes-agent.git
+cd moor-agent
 
 # 使用 Python 3.11 创建虚拟环境
 uv venv venv --python 3.11
@@ -82,27 +82,27 @@ npm install
 ### 配置开发环境
 
 ```bash
-mkdir -p ~/.hermes/{cron,sessions,logs,memories,skills}
-cp cli-config.yaml.example ~/.hermes/config.yaml
-touch ~/.hermes/.env
+mkdir -p ~/.moor/{cron,sessions,logs,memories,skills}
+cp cli-config.yaml.example ~/.moor/config.yaml
+touch ~/.moor/.env
 
 # 至少添加一个 LLM 提供商密钥：
-echo 'OPENROUTER_API_KEY=sk-or-v1-your-key' >> ~/.hermes/.env
+echo 'OPENROUTER_API_KEY=sk-or-v1-your-key' >> ~/.moor/.env
 ```
 
 ### 运行
 
 ```bash
-# 标准安装器已经把 `hermes` 放到了 PATH 上。
-hermes doctor
-hermes chat -q "Hello"
+# 标准安装器已经把 `moor` 放到了 PATH 上。
+moor doctor
+moor chat -q "Hello"
 ```
 
-如果你使用了手动克隆备用路径，可以在 checkout 中运行 `./hermes`，或显式把这个 clone 的 venv 链接到 PATH：
+如果你使用了手动克隆备用路径，可以在 checkout 中运行 `./moor`，或显式把这个 clone 的 venv 链接到 PATH：
 
 ```bash
 mkdir -p ~/.local/bin
-ln -sf "$(pwd)/venv/bin/hermes" ~/.local/bin/hermes
+ln -sf "$(pwd)/venv/bin/moor" ~/.local/bin/moor
 ```
 
 ### 运行测试
@@ -117,7 +117,7 @@ scripts/run_tests.sh
 - **注释**：仅在解释非显而易见的意图、权衡取舍或 API 特殊行为时添加
 - **错误处理**：捕获具体异常。对于意外错误，使用 `logger.warning()`/`logger.error()` 并设置 `exc_info=True`
 - **跨平台**：不得假设 Unix 环境（见下文）
-- **Profile 安全路径**：不得硬编码 `~/.hermes` — 代码路径使用 `hermes_constants` 中的 `get_hermes_home()`，面向用户的消息使用 `display_hermes_home()`。完整规则参见 [AGENTS.md](https://github.com/Moor inc./hermes-agent/blob/main/AGENTS.md#profiles-multi-instance-support)。
+- **Profile 安全路径**：不得硬编码 `~/.moor` — 代码路径使用 `moor_constants` 中的 `get_moor_home()`，面向用户的消息使用 `display_moor_home()`。完整规则参见 [AGENTS.md](https://github.com/NousResearch/hermes-agent/blob/main/AGENTS.md#profiles-multi-instance-support)。
 
 ## 跨平台兼容性
 
@@ -196,7 +196,7 @@ refactor/description   # 代码重构
 ### 提交前检查
 
 1. **运行测试**：`scripts/run_tests.sh` 以确保 CI 一致性。仅当 wrapper 不可用或您有意在 wrapper 之外调试时，才使用直接 `python -m pytest ...`。
-2. **手动测试**：运行 `hermes` 并验证您修改的代码路径
+2. **手动测试**：运行 `moor` 并验证您修改的代码路径
 3. **检查跨平台影响**：考虑 macOS、Linux、WSL2 和原生 Windows。如果您修改了文件 I/O、进程管理、终端处理、子进程或信号相关代码，请运行 `scripts/check-windows-footguns.py`。
 4. **保持 PR 聚焦**：每个 PR 只包含一个逻辑变更
 
@@ -236,18 +236,18 @@ fix(security): prevent shell injection in sudo password piping
 
 ## 报告问题
 
-- 使用 [GitHub Issues](https://github.com/Moor inc./hermes-agent/issues)
-- 请包含：操作系统、Python 版本、Moor 版本（`hermes version`）、完整错误堆栈
+- 使用 [GitHub Issues](https://github.com/NousResearch/hermes-agent/issues)
+- 请包含：操作系统、Python 版本、Moor 版本（`moor version`）、完整错误堆栈
 - 包含复现步骤
 - 创建前请检查是否已有重复 issue
 - 安全漏洞请私下报告
 
 ## 社区
 
-- **Discord**：[discord.gg/Moor inc.](https://discord.gg/Moor inc.)
+- **Discord**：[discord.gg/NousResearch](https://discord.gg/NousResearch)
 - **GitHub Discussions**：用于设计提案和架构讨论
 - **Skills Hub**：上传专业 skill 并与社区共享
 
 ## 许可证
 
-提交贡献即表示您同意您的贡献将以 [MIT 许可证](https://github.com/Moor inc./hermes-agent/blob/main/LICENSE) 授权。
+提交贡献即表示您同意您的贡献将以 [MIT 许可证](https://github.com/NousResearch/hermes-agent/blob/main/LICENSE) 授权。

@@ -790,10 +790,10 @@ class TaskStore:
 
 def _conv_dir() -> Path:
     try:
-        from hermes_constants import get_hermes_home
-        base = Path(get_hermes_home())
+        from moor_constants import get_moor_home
+        base = Path(get_moor_home())
     except Exception:
-        base = Path(os.path.expanduser("~/.hermes"))
+        base = Path(os.path.expanduser("~/.moor"))
     return base / "a2a_conversations"
 
 

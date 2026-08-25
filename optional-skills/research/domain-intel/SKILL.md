@@ -6,7 +6,7 @@ author: FurkanL0, Moor Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  moor:
     tags: [Domains, OSINT, DNS, Research]
     related_skills: []
 ---

@@ -75,13 +75,13 @@ Settings → Gateway."*
    - **Name** — required, unique; the "device name" shown everywhere this
      instance appears (placeholder: `Homelab`). Max 64 characters.
    - *Remote gateway only:*
-     - **Gateway URL** — the base URL of a running `hermes serve` backend,
+     - **Gateway URL** — the base URL of a running `moor serve` backend,
        e.g. `http://homelab.lan:9119`. Reverse-proxy path prefixes work.
      - **Authentication** — choose **Session token** or **OAuth**:
        - **Session token** — paste the dashboard session token from the
          remote gateway. When editing, *"Leave blank to keep the saved
          token."*
-       - **OAuth** — sign in through the Nous Portal browser flow; no token
+       - **OAuth** — sign in through the Moor Portal browser flow; no token
          to paste.
    - *SSH only:*
      - **SSH host** — one composite field in `user@host:22` form (user and
@@ -94,7 +94,7 @@ Edit any non-local entry later with the pencil button, or remove it with the
 trash button — removal asks for confirmation and reminds you that *"The
 instance itself is not touched — you can add it again any time."*
 
-:::info The remote backend is a running `hermes serve` process
+:::info The remote backend is a running `moor serve` process
 Nothing here works unless the backend is actually up and reachable on the
 other machine. The desktop app attaches to it; it does not start it for you
 (except for SSH connections, where the app starts the dashboard over the
@@ -117,7 +117,7 @@ machine keep working. If a migrated name collided, it was suffixed
 
 Every [profile](./profiles.md) on every registered connection is an *agent*.
 The union roster is what multi-source surfaces (and plugins like
-[Bot Mode](https://github.com/Moor inc./Moor-Bot-Mode)) render:
+[Bot Mode](https://github.com/NousResearch/Moor-Bot-Mode)) render:
 
 - When the same profile name exists on several sources, handles disambiguate
   as **`@name-device`** — `research` on your Homelab renders as
@@ -154,7 +154,7 @@ Switching agents is the same gesture as switching profiles:
 ## Updating every instance at once
 
 **Settings → Connections → Update all instances** (shown once more than one
-connection is registered) dispatches `hermes update` to every eligible
+connection is registered) dispatches `moor update` to every eligible
 connection in parallel:
 
 - **Local** updates through the app's own update pipeline (the same flow as
@@ -207,7 +207,7 @@ multi-source roster is the reference consumer.
 ## Troubleshooting
 
 - **"Connection test failed"** — the backend isn't reachable at that URL from
-  this machine. Check that `hermes serve` is running on the remote host, the
+  this machine. Check that `moor serve` is running on the remote host, the
   port is open, and (for token auth) the token is current. Re-run **Test**
   after fixing.
 - **An agent shows but won't open** — run **Test** on its connection. The

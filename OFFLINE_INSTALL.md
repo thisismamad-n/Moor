@@ -20,9 +20,9 @@ To set up the CLI from this copied codebase, you need to create a virtual enviro
 You can simply run the provided setup script from the root of the codebase:
 ```bash
 cd /path/to/copied/Moor
-./setup-hermes.sh
+./setup-moor.sh
 ```
-This script will automatically check/install `uv`, create a virtual environment, install dependencies, and symlink the `hermes` command for you.
+This script will automatically check/install `uv`, create a virtual environment, install dependencies, and symlink the `moor` command for you.
 
 ### Windows (PowerShell)
 On Windows natively, set up the environment manually using `uv`:
@@ -47,7 +47,7 @@ Once the installation finishes, you can start using the CLI:
 moor setup
 
 # Start chatting!
-hermes
+moor
 ```
 
 ---
@@ -59,7 +59,7 @@ The Moor Desktop App is located in `apps/desktop`. You can either launch it dire
 ### Method A: Launch directly (Recommended)
 If you have installed the CLI (Step 1) and your `.venv` is activated, you can build and launch the Desktop UI with a single command:
 ```bash
-hermes desktop
+moor desktop
 ```
 *Note: This requires Node.js to be installed. It connects the native UI directly to your local configuration and sessions.*
 
@@ -87,5 +87,5 @@ If you want to package the app into a shareable installer file (`.exe`, `.dmg`, 
 
 ---
 ### Troubleshooting
-- **Missing CLI Commands:** If you can't run `hermes` on Windows, ensure your virtual environment is activated (`.venv\Scripts\activate`).
-- **Desktop Boot Issues:** If the desktop app fails to launch, check the boot logs located at `%LOCALAPPDATA%\hermes\logs\desktop.log` (Windows) or `~/.hermes/logs/desktop.log` (macOS/Linux).
+- **Missing CLI Commands:** If you can't run `moor` on Windows, ensure your virtual environment is activated (`.venv\Scripts\activate`).
+- **Desktop Boot Issues:** If the desktop app fails to launch, check the boot logs located at `%LOCALAPPDATA%\moor\logs\desktop.log` (Windows) or `~/.moor/logs/desktop.log` (macOS/Linux).

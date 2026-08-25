@@ -9,7 +9,7 @@ Model IDs here track the canonical Fireworks catalog (fw-ai/fireconnect
 ``setup-cli``).
 """
 
-from hermes_cli import __version__ as _HERMES_VERSION
+from moor_cli import __version__ as _MOOR_VERSION
 from providers import register_provider
 from providers.base import ProviderProfile
 
@@ -28,9 +28,9 @@ fireworks = ProviderProfile(
     # generic profile.default_headers path, so they survive switch_model and
     # credential rotation.
     default_headers={
-        "HTTP-Referer": "https://hermes-agent.Moor inc..com",
+        "HTTP-Referer": "https://hermes-agent.nousresearch.com",
         "X-Title": "Moor Agent",
-        "User-Agent": f"HermesAgent/{_HERMES_VERSION}",
+        "User-Agent": f"MoorAgent/{_MOOR_VERSION}",
     },
     # Auxiliary model for cheap tasks (compaction, title generation, vision).
     # A standard pay-as-you-go catalog ``/models/`` ID.

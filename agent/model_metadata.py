@@ -23,7 +23,7 @@ if TYPE_CHECKING:  # pragma: no cover — runtime import is lazy (see below)
 
 from utils import atomic_json_write, atomic_yaml_write, base_url_host_matches, base_url_hostname
 
-from hermes_constants import OPENROUTER_MODELS_URL
+from moor_constants import OPENROUTER_MODELS_URL
 from agent.message_metadata import PERSISTENCE_ONLY_MESSAGE_FIELDS
 
 logger = logging.getLogger(__name__)
@@ -61,7 +61,7 @@ def _resolve_requests_verify(base_url: str = "") -> bool | str:
        provider's configured bundle (not the process ``SSL_CERT_FILE``) logs a
        spurious CERTIFICATE_VERIFY_FAILED on every probe even though the chat
        path succeeds (per-provider ``ssl_ca_cert`` was reaching only httpx).
-    3. Env vars ``HERMES_CA_BUNDLE`` / ``REQUESTS_CA_BUNDLE`` / ``SSL_CERT_FILE``
+    3. Env vars ``MOOR_CA_BUNDLE`` / ``REQUESTS_CA_BUNDLE`` / ``SSL_CERT_FILE``
        (a single var covers both ``requests`` and ``httpx`` in-process).
     4. ``True`` — defer to the requests default (certifi).
 
@@ -71,7 +71,7 @@ def _resolve_requests_verify(base_url: str = "") -> bool | str:
     """
     if base_url:
         try:
-            from hermes_cli.config import get_custom_provider_tls_settings
+            from moor_cli.config import get_custom_provider_tls_settings
             tls = get_custom_provider_tls_settings(base_url)
             if tls.get("ssl_verify") is False:
                 return False
@@ -80,7 +80,7 @@ def _resolve_requests_verify(base_url: str = "") -> bool | str:
                 return ca
         except Exception:
             pass  # fall through to env vars — never break a probe on config lookup
-    for env_var in ("HERMES_CA_BUNDLE", "REQUESTS_CA_BUNDLE", "SSL_CERT_FILE"):
+    for env_var in ("MOOR_CA_BUNDLE", "REQUESTS_CA_BUNDLE", "SSL_CERT_FILE"):
         val = os.getenv(env_var)
         if val and os.path.isfile(val):
             return val
@@ -264,8 +264,8 @@ _LOCAL_PROBE_DISK_TTL_SECONDS = 300.0
 
 
 def _local_probe_disk_cache_path() -> Path:
-    from hermes_constants import get_hermes_home
-    return get_hermes_home() / "cache" / "local_endpoint_probes.json"
+    from moor_constants import get_moor_home
+    return get_moor_home() / "cache" / "local_endpoint_probes.json"
 
 
 def _load_local_probe_disk_cache() -> Dict[str, Any]:
@@ -314,8 +314,8 @@ def _local_probe_disk_put(kind: str, key: str, value: Any) -> None:
 
 def _get_model_metadata_cache_path() -> Path:
     """Return path to the OpenRouter model metadata disk cache."""
-    from hermes_constants import get_hermes_home
-    return get_hermes_home() / "cache" / "openrouter_model_metadata.json"
+    from moor_constants import get_moor_home
+    return get_moor_home() / "cache" / "openrouter_model_metadata.json"
 
 
 def _model_metadata_disk_cache_age_seconds() -> Optional[float]:
@@ -399,7 +399,7 @@ def _warn_context_length_fallback(model: str, base_url: str) -> None:
         model, base_url or "default", f"{DEFAULT_FALLBACK_CONTEXT:,}",
     )
 
-# Minimum context length required to run Hermes Agent.  Models with fewer
+# Minimum context length required to run Moor Agent.  Models with fewer
 # tokens cannot maintain enough working memory for tool-calling workflows.
 # Sessions, model switches, and cron jobs should reject models below this.
 MINIMUM_CONTEXT_LENGTH = 64_000
@@ -487,7 +487,7 @@ DEFAULT_CONTEXT_LENGTHS = {
     "llama": 131072,
     # Qwen — specific model families before the catch-all.
     # Official docs: https://help.aliyun.com/zh/model-studio/developer-reference/
-    "qwen3.8-max": 1_000_000,     # 1M context (OpenRouter & Nous portal, verified 2026-08-03)
+    "qwen3.8-max": 1_000_000,     # 1M context (OpenRouter & Moor portal, verified 2026-08-03)
     "qwen3.6-plus": 1048576,      # 1M context (DashScope/Alibaba & OpenRouter)
     "qwen3.7-plus": 1048576,      # 1M context (DashScope/Alibaba)
     "qwen3-coder-plus": 1000000,  # 1M context
@@ -497,7 +497,7 @@ DEFAULT_CONTEXT_LENGTHS = {
     # MiniMax — M3 is 1M context (max output 512K); M2.x series is 204,800.
     # Keys use substring matching (longest-first), so "minimax-m3" wins over
     # the generic "minimax" catch-all for the M3 slug on every surface
-    # (native MiniMax-M3, OpenRouter/Nous minimax/minimax-m3).
+    # (native MiniMax-M3, OpenRouter/Moor minimax/minimax-m3).
     # https://platform.minimax.io/docs/api-reference/text-chat-openai
     "minimax-m3": 1000000,
     "minimax": 204800,
@@ -510,7 +510,7 @@ DEFAULT_CONTEXT_LENGTHS = {
     "glm-5.2": 1_048_576,
     "glm": 202752,
     # xAI Grok — xAI /v1/models does not return context_length metadata,
-    # so these hardcoded fallbacks prevent Hermes from probing-down to
+    # so these hardcoded fallbacks prevent Moor from probing-down to
     # the default 128k when the user points at https://api.x.ai/v1
     # via a custom provider. Values sourced from models.dev (2026-04).
     # Keys use substring matching (longest-first), so e.g. "grok-4.20"
@@ -701,7 +701,7 @@ _URL_TO_PROVIDER: Dict[str, str] = {
     "portal.qwen.ai": "qwen-oauth",
     "openrouter.ai": "openrouter",
     "generativelanguage.googleapis.com": "gemini",
-    "inference-api.nousresearch.com": "nous",
+    "inference-api.nousresearch.com": "moor",
     "api.deepseek.com": "deepseek",
     "api.githubcopilot.com": "copilot",
     # Enterprise Copilot endpoints look like api.enterprise.githubcopilot.com,
@@ -711,7 +711,7 @@ _URL_TO_PROVIDER: Dict[str, str] = {
     "models.github.ai": "copilot",
     # GitHub Models free tier (Azure-hosted prototyping endpoint) — same
     # canonical provider as the Copilot API.  Hard per-request token cap
-    # (often 8K) makes it unusable for Hermes' system prompt, but mapping
+    # (often 8K) makes it unusable for Moor' system prompt, but mapping
     # it here lets us recognize the endpoint and emit a targeted hint
     # instead of falling through the unknown-custom-endpoint path.
     "models.inference.ai.azure.com": "copilot",
@@ -835,7 +835,7 @@ def _maybe_cache_local_context_length(
     base_url: str,
     length: int,
 ) -> None:
-    """Persist a locally probed context length only when it meets Hermes minimum.
+    """Persist a locally probed context length only when it meets Moor minimum.
 
     Sub-minimum live windows (e.g. vLLM ``--max-model-len 32768``) are still
     returned to callers so ``agent_init`` can fail with the existing
@@ -1431,7 +1431,7 @@ def _resolve_endpoint_context_length(
             # Substring fuzzy match — only meaningful with a non-empty model
             # name.  An empty string is a substring of EVERY key, which would
             # "match" whatever model the endpoint happens to list first (e.g.
-            # a 32K embedding model on the Nous portal) and poison the
+            # a 32K embedding model on the Moor portal) and poison the
             # resolved context length for the whole agent.
             for key, entry in endpoint_metadata.items():
                 if model in key or key in model:
@@ -1446,8 +1446,8 @@ def _resolve_endpoint_context_length(
 
 def _get_context_cache_path() -> Path:
     """Return path to the persistent context length cache file."""
-    from hermes_constants import get_hermes_home
-    return get_hermes_home() / "context_length_cache.yaml"
+    from moor_constants import get_moor_home
+    return get_moor_home() / "context_length_cache.yaml"
 
 
 def _load_context_cache() -> Dict[str, int]:
@@ -1638,7 +1638,7 @@ def parse_available_output_tokens_from_error(error_msg: str) -> Optional[int]:
         "max_tokens" in error_lower
         and ("available_tokens" in error_lower or "available tokens" in error_lower)
     ) or (
-        # OpenRouter/Nous phrasing of the same condition.
+        # OpenRouter/Moor phrasing of the same condition.
         "in the output" in error_lower
         and "maximum context length" in error_lower
     ) or (
@@ -1689,7 +1689,7 @@ def parse_available_output_tokens_from_error(error_msg: str) -> Optional[int]:
             if tokens >= 1:
                 return tokens
 
-    # OpenRouter/Nous format: "maximum context length is N … (A of text input,
+    # OpenRouter/Moor format: "maximum context length is N … (A of text input,
     # B of tool input, C in the output)". Available output = ctx - text - tool.
     _m_ctx = re.search(r'maximum context length is (\d+)', error_lower)
     _m_parts = re.search(
@@ -1775,7 +1775,7 @@ def is_output_cap_error(error_msg: str) -> bool:
         "range of max_tokens should be" in error_lower      # DashScope / Alibaba
         or "available_tokens" in error_lower                # Anthropic
         or "available tokens" in error_lower
-        or ("in the output" in error_lower                  # OpenRouter / Nous
+        or ("in the output" in error_lower                  # OpenRouter / Moor
             and "maximum context length" in error_lower)
         or ("requested" in error_lower                      # LM Studio / llama.cpp
             and "output tokens" in error_lower)
@@ -2187,7 +2187,7 @@ def _query_local_context_length_uncached(model: str, base_url: str, api_key: str
                     # the *runtime* context Ollama will actually allocate KV cache
                     # for. The GGUF model_info.context_length is the training max,
                     # which can be larger than num_ctx — using it here would let
-                    # Hermes grow conversations past the runtime limit and Ollama
+                    # Moor grow conversations past the runtime limit and Ollama
                     # would silently truncate. Matches query_ollama_num_ctx().
                     params = data.get("parameters", "")
                     if "num_ctx" in params:
@@ -2279,7 +2279,7 @@ def _query_local_context_length_uncached(model: str, base_url: str, api_key: str
 def _normalize_model_version(model: str) -> str:
     """Normalize version separators for matching.
 
-    Nous uses dashes: claude-opus-4-6, claude-sonnet-4-5
+    Moor uses dashes: claude-opus-4-6, claude-sonnet-4-5
     OpenRouter uses dots: claude-opus-4.6, claude-sonnet-4.5
     Normalize both to dashes for comparison.
     """
@@ -2573,17 +2573,17 @@ def _resolve_codex_oauth_context_length(
     return context_length
 
 
-def _resolve_nous_context_length(
+def _resolve_moor_context_length(
     model: str,
     base_url: str = "",
     api_key: str = "",
 ) -> Tuple[Optional[int], str]:
-    """Resolve Nous Portal model context length.
+    """Resolve Moor Portal model context length.
 
-    Tries the live Nous inference endpoint first (authoritative), then falls
+    Tries the live Moor inference endpoint first (authoritative), then falls
     back to OpenRouter metadata with suffix/version matching.
 
-    Nous model IDs are bare after prefix-stripping (e.g. 'qwen3.6-plus',
+    Moor model IDs are bare after prefix-stripping (e.g. 'qwen3.6-plus',
     'claude-opus-4-6') while OpenRouter uses prefixed IDs (e.g.
     'qwen/qwen3.6-plus', 'anthropic/claude-opus-4.6').  Version
     normalization (dot↔dash) is applied to handle name drifts.
@@ -2595,7 +2595,7 @@ def _resolve_nous_context_length(
         portal blip will freeze the wrong value in forever)
       - ``""``           — could not resolve
     """
-    # Portal first — the Nous /models endpoint is authoritative for what our
+    # Portal first — the Moor /models endpoint is authoritative for what our
     # infrastructure enforces and may differ from OR (e.g. OR reports 1M for
     # qwen3.6-plus; the portal correctly says 262144).  Fall back to the OR
     # catalog only if the portal doesn't list the model.
@@ -2610,7 +2610,7 @@ def _resolve_nous_context_length(
         """Return context length, but reject known stale 32K underreports.
 
         Apply the same guard used for the generic OpenRouter path (step 6 in
-        resolve_context_length) so the Nous portal path does not short-circuit it.
+        resolve_context_length) so the Moor portal path does not short-circuit it.
         """
         ctx = entry.get("context_length")
         if ctx is None:
@@ -2618,7 +2618,7 @@ def _resolve_nous_context_length(
         if ctx <= 32768 and _model_name_suggests_stale_32k_underreport(or_id):
             logger.info(
                 "Rejecting OpenRouter metadata context=%s for %r "
-                "(known 32K underreport, Nous path); falling through to hardcoded defaults",
+                "(known 32K underreport, Moor path); falling through to hardcoded defaults",
                 ctx, or_id,
             )
             return None
@@ -2666,7 +2666,7 @@ def get_model_context_length(
     0. Explicit config override (model.context_length or custom_providers per-model)
     0b. model_overrides config (per-provider+model context_window override)
     0c. Endpoint-scoped metadata for models validated on one multiplexed endpoint
-    1. Persistent cache (previously discovered via probing).  Nous URLs,
+    1. Persistent cache (previously discovered via probing).  Moor URLs,
        LM Studio, and Codex OAuth bypass the cache here so their provider
        metadata can be reconciled against the authoritative live source.
     1b. AWS Bedrock static table (must precede custom-endpoint probe)
@@ -2675,7 +2675,7 @@ def get_model_context_length(
     4. Anthropic /v1/models API (API-key users only, not OAuth)
     5. Provider-aware lookups (before generic OpenRouter cache):
        a. Copilot live /models API
-       b. Nous: live /v1/models probe first (authoritative), then OR
+       b. Moor: live /v1/models probe first (authoritative), then OR
           cache fallback with suffix/version normalisation.  Only
           portal-derived values are persisted to disk.
        c. Codex OAuth /models probe
@@ -2698,12 +2698,12 @@ def get_model_context_length(
     # acting context, so they're ignored here.
     if (provider or "").strip().lower() == "moa":
         try:
-            from hermes_cli.config import (
+            from moor_cli.config import (
                 get_compatible_custom_providers,
                 load_config,
             )
-            from hermes_cli.moa_config import resolve_moa_preset
-            from hermes_cli.runtime_provider import resolve_runtime_provider
+            from moor_cli.moa_config import resolve_moa_preset
+            from moor_cli.runtime_provider import resolve_runtime_provider
 
             config = load_config()
             effective_custom_providers = custom_providers
@@ -2748,7 +2748,7 @@ def get_model_context_length(
     # See #15779.
     if custom_providers and base_url and model:
         try:
-            from hermes_cli.config import get_custom_provider_context_length
+            from moor_cli.config import get_custom_provider_context_length
             cp_ctx = get_custom_provider_context_length(
                 model=model,
                 base_url=base_url,
@@ -2842,7 +2842,7 @@ def get_model_context_length(
                     model, base_url, f"{cached:,}",
                 )
                 _invalidate_cached_context_length(model, base_url)
-            # Nous Portal: the portal /v1/models endpoint is authoritative.
+            # Moor Portal: the portal /v1/models endpoint is authoritative.
             # Bypass the persistent cache so step 5b can always reconcile
             # against it — this corrects pre-fix entries seeded from the
             # OR catalog (the same OR underreport class that the Kimi/Qwen
@@ -2850,9 +2850,9 @@ def get_model_context_length(
             # touching the on-disk file when the portal is unreachable.
             # The in-memory 300s endpoint metadata cache makes the per-call
             # cost amortise to ~0 within a process.
-            elif _infer_provider_from_url(base_url) == "nous":
+            elif _infer_provider_from_url(base_url) == "moor":
                 logger.debug(
-                    "Bypassing persistent cache for %s@%s (Nous portal authoritative)",
+                    "Bypassing persistent cache for %s@%s (Moor portal authoritative)",
                     model, base_url,
                 )
                 # Fall through; step 5b reconciles and overwrites if portal responds.
@@ -3032,15 +3032,15 @@ def get_model_context_length(
     # returns the provider-enforced limit which is what users can actually use.
     if effective_provider in {"copilot", "copilot-acp", "github-copilot"}:
         try:
-            from hermes_cli.models import get_copilot_model_context
+            from moor_cli.models import get_copilot_model_context
             ctx = get_copilot_model_context(model, api_key=api_key)
             if ctx:
                 return ctx
         except Exception:
             pass  # Fall through to models.dev
 
-    if effective_provider == "nous":
-        ctx, source = _resolve_nous_context_length(
+    if effective_provider == "moor":
+        ctx, source = _resolve_moor_context_length(
             model, base_url=base_url or "", api_key=api_key or ""
         )
         if ctx:
@@ -3049,7 +3049,7 @@ def get_model_context_length(
             # blip / auth glitch and step-1 would short-circuit it forever.
             # OR's catalog is community-maintained and is precisely why the
             # Kimi/Qwen DEFAULT_CONTEXT_LENGTHS overrides exist — we don't
-            # want it leaking into the persistent cache for Nous URLs.
+            # want it leaking into the persistent cache for Moor URLs.
             if base_url and source == "portal":
                 save_context_length(model, base_url, ctx)
             return ctx
@@ -3105,7 +3105,7 @@ def get_model_context_length(
     # brand-new slugs and (b) skipped the step-6 OR fallback (gated on `not
     # effective_provider`), so a fresh slug like claude-fable-5 fell through to
     # the generic "claude": 200K entry and under-reported a 1M window. Mirrors
-    # the dedicated Nous/Copilot/GMI branches above.
+    # the dedicated Moor/Copilot/GMI branches above.
     if effective_provider == "openrouter":
         metadata = fetch_model_metadata()
         entry = metadata.get(model)
@@ -3477,7 +3477,7 @@ def estimate_request_tokens_rough(
 ) -> int:
     """Rough token estimate for a full chat-completions request.
 
-    Includes the major payload buckets Hermes sends to providers:
+    Includes the major payload buckets Moor sends to providers:
     system prompt, conversation messages, and tool schemas.  With 50+
     tools enabled, schemas alone can add 20-30K tokens — a significant
     blind spot when only counting messages. Image content is counted

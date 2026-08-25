@@ -6,7 +6,7 @@ author: Teknium + Moor Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  moor:
     tags: [tldraw, canvas, whiteboard, document-script, diagramming]
     category: creative
     related_skills: []

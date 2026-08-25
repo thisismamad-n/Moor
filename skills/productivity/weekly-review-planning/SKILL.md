@@ -6,7 +6,7 @@ author: Ben Barclay (benbarclay), Moor Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  moor:
     tags: [Weekly-Review, Planning, Tasks, Calendar, Productivity]
     related_skills: [obsidian, notion, airtable, google-workspace, email-inbox-triage]
 ---

@@ -17,7 +17,7 @@ Create, read, edit Excel .xlsx workbooks and CSVs.
 | Source | Bundled (installed by default) |
 | Path | `skills/productivity/xlsx` |
 | Version | `1.0.0` |
-| Author | Nous Research |
+| Author | Moor inc. |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `excel`, `spreadsheet`, `xlsx`, `csv`, `openpyxl`, `productivity` |

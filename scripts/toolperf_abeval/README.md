@@ -1,7 +1,7 @@
 # Core-Toolset A/B Eval Harness
 
 The hard A/B evaluation used for the August 2026 core-toolset performance
-batch (tracker: [#77056](https://github.com/Moor inc./hermes-agent/issues/77056)).
+batch (tracker: [#77056](https://github.com/NousResearch/hermes-agent/issues/77056)).
 It measures whether a set of tool-layer changes actually reduces model waste —
 LLM turns, tool calls, tool errors, retries, result bytes, wall clock — on a
 battery of **error-inducing tasks**, each derived from a waste class measured
@@ -40,7 +40,7 @@ in real production traffic.
      provider: openrouter
    YAML
    printf 'OPENROUTER_API_KEY=%s\n' "$KEY" > "$ABEVAL_HOME/.env"
-   HERMES_HOME=$ABEVAL_HOME hermes plugins enable observability/nemo_relay
+   MOOR_HOME=$ABEVAL_HOME moor plugins enable observability/nemo_relay
    ```
 
 2. Prepare the two trees:

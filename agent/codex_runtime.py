@@ -359,14 +359,14 @@ _CODEX_TOOL_ITEM_TYPES = frozenset(
 
 # Internal MCP server that wraps Moor' native tools for codex. When
 # codex calls back through it, the inner dispatch runs in a SEPARATE
-# hermes-tools-mcp-server subprocess that has no access to the parent
+# moor-tools-mcp-server subprocess that has no access to the parent
 # agent's tool_progress_callback — so the inner call can never surface
 # its own native progress event. The codex-level mcpToolCall event IS
-# the display event for those calls; we strip the mcp.hermes-tools.*
+# the display event for those calls; we strip the mcp.moor-tools.*
 # namespacing and emit the bare tool name (web_search, browser_navigate,
 # vision_analyze, ...) since the user thinks of these as Moor tools,
 # not as MCP calls.
-_INTERNAL_MCP_SERVER = "hermes-tools"
+_INTERNAL_MCP_SERVER = "moor-tools"
 
 
 def _codex_item_to_tool_name(item: dict) -> str:
@@ -715,7 +715,7 @@ def run_codex_app_server_turn(
         # requests through, so codex app-server exec / apply_patch requests
         # fail closed (silently decline) by default. When the user has
         # explicitly opted out of Moor approvals — via `approvals.mode: off`
-        # in config, the /yolo session toggle, or --yolo / HERMES_YOLO_MODE —
+        # in config, the /yolo session toggle, or --yolo / MOOR_YOLO_MODE —
         # honor that and let codex's own sandbox permission profile
         # (~/.codex/config.toml) be the policy gate instead of double-gating
         # with a missing Moor UI. Defaults (manual/smart/unset) preserve the

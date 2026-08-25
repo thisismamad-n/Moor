@@ -6,7 +6,7 @@ author: Siqi Chen (@blader, https://github.com/blader/humanizer), ported by Moor
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  moor:
     tags: [writing, editing, humanize, anti-ai-slop, voice, prose, text]
     category: creative
     homepage: https://github.com/blader/humanizer

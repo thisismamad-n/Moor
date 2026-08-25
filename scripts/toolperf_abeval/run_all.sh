@@ -11,7 +11,7 @@
 #   model ...      models to test (default: the Aug 2026 pair)
 #
 # Requires: ABEVAL_HOME pointing at a configured Moor home (see README.md),
-# and this script run with the python that has hermes-agent's deps installed.
+# and this script run with the python that has moor-agent's deps installed.
 set -euo pipefail
 
 BASE=${1:?usage: run_all.sh <baseline-tree> <fixes-tree> [reps] [model ...]}

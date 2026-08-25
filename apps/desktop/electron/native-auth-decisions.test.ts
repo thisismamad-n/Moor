@@ -111,10 +111,10 @@ test('oauthGuardMayHardFail is false only when EVERY provider is password-based'
 })
 
 test('oauthGuardMayHardFail keeps the strict guard for oauth and mixed deployments', () => {
-  assert.equal(oauthGuardMayHardFail([{ name: 'nous', supportsPassword: false }]), true)
+  assert.equal(oauthGuardMayHardFail([{ name: 'moor', supportsPassword: false }]), true)
   assert.equal(
     oauthGuardMayHardFail([
-      { name: 'nous', supportsPassword: false },
+      { name: 'moor', supportsPassword: false },
       { name: 'basic', supportsPassword: true }
     ]),
     true

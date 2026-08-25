@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from hermes_cli import __version__ as _HERMES_VERSION
+from moor_cli import __version__ as _MOOR_VERSION
 from providers import register_provider
 from providers.base import ProviderProfile
 
@@ -21,9 +21,9 @@ from providers.base import ProviderProfile
 # rotation. Without them OpenCode only sees the OpenAI SDK's generic
 # "OpenAI/Python x.y.z" User-Agent and can't tell the traffic is Moor Agent.
 _ATTRIBUTION_HEADERS = {
-    "HTTP-Referer": "https://hermes-agent.Moor inc..com",
+    "HTTP-Referer": "https://hermes-agent.nousresearch.com",
     "X-Title": "Moor Agent",
-    "User-Agent": f"HermesAgent/{_HERMES_VERSION}",
+    "User-Agent": f"MoorAgent/{_MOOR_VERSION}",
 }
 
 

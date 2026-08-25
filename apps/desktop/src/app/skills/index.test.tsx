@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router'
 import type * as ReactRouterDom from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type * as HermesApi from '@/hermes'
+import type * as MoorApi from '@/moor'
 import { queryClient } from '@/lib/query-client'
 
 const getSkills = vi.fn()
@@ -22,8 +22,8 @@ const getSkillContent = vi.fn()
 // whose import-time subscription calls setApiRequestProfile) and stub only the
 // calls we assert on. Args are forwarded so the per-profile scope arg is
 // observable.
-vi.mock('@/hermes', async importOriginal => ({
-  ...(await importOriginal<typeof HermesApi>()),
+vi.mock('@/moor', async importOriginal => ({
+  ...(await importOriginal<typeof MoorApi>()),
   getSkills: (profile?: null | string) => getSkills(profile),
   getToolsets: (profile?: null | string) => getToolsets(profile),
   setSkillEnabled: (name: string, enabled: boolean, profile?: null | string) => setSkillEnabled(name, enabled, profile),
@@ -90,7 +90,7 @@ beforeEach(() => {
   getSkillContent.mockResolvedValue({
     name: 'web-research',
     path: '/skills/web-research/SKILL.md',
-    content: '---\nname: web-research\nversion: 1.2.0\nauthor: Nous\n---\n\n# Web Research\n\nDeep research steps.'
+    content: '---\nname: web-research\nversion: 1.2.0\nauthor: Moor\n---\n\n# Web Research\n\nDeep research steps.'
   })
   // Single profile by default → the scope selector stays hidden (>1 gate),
   // so existing tests see unchanged single-profile behavior.
@@ -278,8 +278,8 @@ describe('SkillsView toolset management', () => {
     await act(async () => {
       window.dispatchEvent(
         new MessageEvent('message', {
-          data: { type: 'hermes-skill-pick', name: 'web-research', identifier: 'web-research' },
-          origin: 'https://hermes-agent.Moor inc..com'
+          data: { type: 'moor-skill-pick', name: 'web-research', identifier: 'web-research' },
+          origin: 'https://hermes-agent.nousresearch.com'
         })
       )
     })

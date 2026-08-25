@@ -1,6 +1,6 @@
 """Regression tests for the ``auto`` → main-model-first policy.
 
-Prior to this change, aggregator users (OpenRouter / Nous Portal) had aux
+Prior to this change, aggregator users (OpenRouter / Moor Portal) had aux
 tasks routed through a cheap provider-side default (Gemini Flash) while
 non-aggregator users got their main model.  This made behavior inconsistent
 and surprising — users picked Claude but got Gemini Flash summaries.
@@ -96,7 +96,7 @@ class TestResolveAutoMainFirst:
         """
         import yaml
 
-        home = tmp_path / ".hermes"
+        home = tmp_path / ".moor"
         home.mkdir()
         (home / "config.yaml").write_text(
             yaml.safe_dump(
@@ -114,7 +114,7 @@ class TestResolveAutoMainFirst:
                 }
             )
         )
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("MOOR_HOME", str(home))
 
         with patch(
             "agent.auxiliary_client.resolve_provider_client"
@@ -280,125 +280,125 @@ class TestResolveVisionMainFirst:
 
 
     @staticmethod
-    def _stub_nous_portal(seen: dict):
-        """Stub the Nous network boundary, keeping the resolution chain real.
+    def _stub_moor_portal(seen: dict):
+        """Stub the Moor network boundary, keeping the resolution chain real.
 
-        Returns a ``_try_nous`` replacement that answers with the Portal's
+        Returns a ``_try_moor`` replacement that answers with the Portal's
         tier-aware slots: a vision model for ``vision=True``, the text chat
         default otherwise.
         """
-        nous_client = MagicMock()
-        nous_client.api_key = "jwt-test"
-        nous_client.base_url = "https://inference-api.Moor inc..com/v1"
+        moor_client = MagicMock()
+        moor_client.api_key = "jwt-test"
+        moor_client.base_url = "https://inference-api.nousresearch.com/v1"
 
-        def fake_try_nous(vision=False):
+        def fake_try_moor(vision=False):
             seen["vision"] = vision
-            return nous_client, (
+            return moor_client, (
                 "stepfun/step-3.7-flash:free" if vision else "tencent/hy3:free"
             )
 
-        return nous_client, fake_try_nous
+        return moor_client, fake_try_moor
 
-    def test_nous_main_vision_uses_portal_pick_not_text_chat_model(self):
-        """Nous main → vision runs the Portal's vision slot, not the chat model.
+    def test_moor_main_vision_uses_portal_pick_not_text_chat_model(self):
+        """Moor main → vision runs the Portal's vision slot, not the chat model.
 
-        A Nous chat default is routinely text-only (e.g. a ``:free`` chat SKU).
+        A Moor chat default is routinely text-only (e.g. a ``:free`` chat SKU).
         Letting it reach the vision lane means the image goes to a model that
-        cannot accept one and the Portal 404s. Only the Nous network boundary
+        cannot accept one and the Portal 404s. Only the Moor network boundary
         is stubbed — the strict vision backend, the provider router, and its
         missing-model pre-fill all run for real, because that pre-fill is where
         the chat model used to clobber the Portal's pick.
         """
         seen: dict = {}
-        nous_client, fake_try_nous = self._stub_nous_portal(seen)
+        moor_client, fake_try_moor = self._stub_moor_portal(seen)
 
         with patch(
-            "agent.auxiliary_client._read_main_provider", return_value="nous",
+            "agent.auxiliary_client._read_main_provider", return_value="moor",
         ), patch(
             "agent.auxiliary_client._read_main_model", return_value="tencent/hy3:free",
         ), patch(
             "agent.auxiliary_client._resolve_task_provider_model",
             return_value=("auto", None, None, None, None),
         ), patch(
-            "agent.auxiliary_client._try_nous", side_effect=fake_try_nous,
+            "agent.auxiliary_client._try_moor", side_effect=fake_try_moor,
         ):
             from agent.auxiliary_client import resolve_vision_provider_client
 
             provider, client, model = resolve_vision_provider_client()
 
-        assert provider == "nous"
-        assert client is nous_client
+        assert provider == "moor"
+        assert client is moor_client
         assert seen["vision"] is True
         assert model == "stepfun/step-3.7-flash:free"
 
-    def test_nous_main_vision_honours_explicit_vision_model(self):
+    def test_moor_main_vision_honours_explicit_vision_model(self):
         """An explicit auxiliary.vision.model still overrides the Portal pick."""
         seen: dict = {}
-        _nous_client, fake_try_nous = self._stub_nous_portal(seen)
+        _moor_client, fake_try_moor = self._stub_moor_portal(seen)
 
         with patch(
-            "agent.auxiliary_client._read_main_provider", return_value="nous",
+            "agent.auxiliary_client._read_main_provider", return_value="moor",
         ), patch(
             "agent.auxiliary_client._read_main_model", return_value="tencent/hy3:free",
         ), patch(
             "agent.auxiliary_client._resolve_task_provider_model",
             return_value=("auto", "qwen/qwen3-vl-8b-instruct", None, None, None),
         ), patch(
-            "agent.auxiliary_client._try_nous", side_effect=fake_try_nous,
+            "agent.auxiliary_client._try_moor", side_effect=fake_try_moor,
         ):
             from agent.auxiliary_client import resolve_vision_provider_client
 
             provider, _client, model = resolve_vision_provider_client()
 
-        assert provider == "nous"
+        assert provider == "moor"
         assert model == "qwen/qwen3-vl-8b-instruct"
 
-    def test_nous_explicit_vision_provider_also_skips_chat_model(self):
-        """``auxiliary.vision.provider: nous`` takes the same Portal pick.
+    def test_moor_explicit_vision_provider_also_skips_chat_model(self):
+        """``auxiliary.vision.provider: moor`` takes the same Portal pick.
 
         The explicit-provider branch reaches the strict vision backend with no
         model too, so it has to resolve the same way the auto branch does.
         """
         seen: dict = {}
-        nous_client, fake_try_nous = self._stub_nous_portal(seen)
+        moor_client, fake_try_moor = self._stub_moor_portal(seen)
 
         with patch(
-            "agent.auxiliary_client._read_main_provider", return_value="nous",
+            "agent.auxiliary_client._read_main_provider", return_value="moor",
         ), patch(
             "agent.auxiliary_client._read_main_model", return_value="tencent/hy3:free",
         ), patch(
             "agent.auxiliary_client._resolve_task_provider_model",
-            return_value=("nous", None, None, None, None),
+            return_value=("moor", None, None, None, None),
         ), patch(
-            "agent.auxiliary_client._try_nous", side_effect=fake_try_nous,
+            "agent.auxiliary_client._try_moor", side_effect=fake_try_moor,
         ):
             from agent.auxiliary_client import resolve_vision_provider_client
 
             provider, client, model = resolve_vision_provider_client()
 
-        assert provider == "nous"
-        assert client is nous_client
+        assert provider == "moor"
+        assert client is moor_client
         assert model == "stepfun/step-3.7-flash:free"
 
-    def test_nous_text_aux_still_uses_main_chat_model(self):
+    def test_moor_text_aux_still_uses_main_chat_model(self):
         """The vision carve-out must not leak into text aux resolution.
 
-        Text auxiliary work on a Nous main deliberately keeps the user's chat
+        Text auxiliary work on a Moor main deliberately keeps the user's chat
         model rather than dropping to the Portal's cheap default.
         """
         seen: dict = {}
-        _nous_client, fake_try_nous = self._stub_nous_portal(seen)
+        _moor_client, fake_try_moor = self._stub_moor_portal(seen)
 
         with patch(
-            "agent.auxiliary_client._read_main_provider", return_value="nous",
+            "agent.auxiliary_client._read_main_provider", return_value="moor",
         ), patch(
             "agent.auxiliary_client._read_main_model", return_value="tencent/hy3:free",
         ), patch(
-            "agent.auxiliary_client._try_nous", side_effect=fake_try_nous,
+            "agent.auxiliary_client._try_moor", side_effect=fake_try_moor,
         ):
             from agent.auxiliary_client import resolve_provider_client
 
-            _client, model = resolve_provider_client("nous")
+            _client, model = resolve_provider_client("moor")
 
         assert model == "tencent/hy3:free"
 
@@ -423,14 +423,14 @@ class TestResolveVisionMainFirst:
         ), patch(
             "agent.auxiliary_client.OpenAI",
         ) as mock_openai, patch(
-            "hermes_cli.auth.resolve_api_key_provider_credentials",
+            "moor_cli.auth.resolve_api_key_provider_credentials",
             return_value={
                 "provider": "copilot",
                 "api_key": "copilot-api-token",
                 "base_url": "https://api.githubcopilot.com",
             },
         ), patch(
-            "hermes_cli.copilot_auth.copilot_request_headers",
+            "moor_cli.copilot_auth.copilot_request_headers",
             side_effect=fake_headers,
         ):
             mock_client = MagicMock()
@@ -460,14 +460,14 @@ class TestResolveVisionMainFirst:
         with patch(
             "agent.auxiliary_client.OpenAI",
         ) as mock_openai, patch(
-            "hermes_cli.auth.resolve_api_key_provider_credentials",
+            "moor_cli.auth.resolve_api_key_provider_credentials",
             return_value={
                 "provider": "copilot",
                 "api_key": "copilot-api-token",
                 "base_url": "https://api.githubcopilot.com",
             },
         ), patch(
-            "hermes_cli.copilot_auth.copilot_request_headers",
+            "moor_cli.copilot_auth.copilot_request_headers",
             side_effect=fake_headers,
         ):
             mock_client = MagicMock()
@@ -494,7 +494,7 @@ class TestResolveVisionCustomProvider:
     Regression: a ``custom:<name>`` main provider resolves to the bare
     runtime provider id ``"custom"``.  ``resolve_provider_client("custom")``
     has no built-in endpoint, so without forwarding the live base_url/api_key
-    it returns ``(None, None)`` and vision falls through to OpenRouter / Nous,
+    it returns ``(None, None)`` and vision falls through to OpenRouter / Moor,
     which an offline / aggregator-less user has never configured — breaking
     vision entirely with ``No LLM provider configured for task=vision
     provider=auto``.  The fix recovers the live endpoint that

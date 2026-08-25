@@ -18,7 +18,7 @@ the agent's behavior** — the sprite is a display concern only. The feature is
 ## How it works
 
 - Pets are installed into your profile's `pets/` directory
-  (`<HERMES_HOME>/pets/<slug>/`), so each [profile](../profiles.md) keeps its
+  (`<MOOR_HOME>/pets/<slug>/`), so each [profile](../profiles.md) keeps its
   own set.
 - Selecting a pet writes `display.pet.slug` and `display.pet.enabled` to
   `config.yaml` — nothing is stored as a secret or env var.
@@ -52,34 +52,34 @@ from **Settings → Appearance**.
 
 ```bash
 # Browse the gallery (filter by substring)
-hermes pets list
-hermes pets list cat
+moor pets list
+moor pets list cat
 
 # Install a pet and make it active in one step
-hermes pets install boba --select
+moor pets install boba --select
 
 # Preview / animate it in your terminal (Ctrl+C to stop)
-hermes pets show
+moor pets show
 
 # Check your setup
-hermes pets doctor
+moor pets doctor
 ```
 
-## `hermes pets` commands
+## `moor pets` commands
 
 | Goal | Command |
 | --- | --- |
-| Browse the gallery | `hermes pets list [query] [--limit N]` |
-| List installed pets | `hermes pets list --installed` |
-| Install a pet | `hermes pets install <slug> [--select] [--force]` |
-| Set the active pet | `hermes pets select [slug]` (omit slug for a picker) |
-| Resize the pet everywhere | `hermes pets scale <factor>` (e.g. `0.5`, clamped 0.1–3.0) |
-| Preview/animate | `hermes pets show [slug] [--state <s>] [--cycle] [--once] [--mode <m>] [--scale <f>]` |
-| Disable the pet | `hermes pets off` |
-| Remove an installed pet | `hermes pets remove <slug>` |
-| Diagnose setup | `hermes pets doctor` |
+| Browse the gallery | `moor pets list [query] [--limit N]` |
+| List installed pets | `moor pets list --installed` |
+| Install a pet | `moor pets install <slug> [--select] [--force]` |
+| Set the active pet | `moor pets select [slug]` (omit slug for a picker) |
+| Resize the pet everywhere | `moor pets scale <factor>` (e.g. `0.5`, clamped 0.1–3.0) |
+| Preview/animate | `moor pets show [slug] [--state <s>] [--cycle] [--once] [--mode <m>] [--scale <f>]` |
+| Disable the pet | `moor pets off` |
+| Remove an installed pet | `moor pets remove <slug>` |
+| Diagnose setup | `moor pets doctor` |
 
-`hermes pets show` flags:
+`moor pets show` flags:
 
 - `--state` — play a single state (`idle`, `wave`, `run`, `failed`, `review`,
   `jump`).
@@ -107,7 +107,7 @@ it opens the Cmd+K pet palette.
 
 Beyond installing pre-made pets from the gallery, Moor can **generate a brand-new pet** from a text description — its own AI sprite-generation pipeline.
 
-- CLI/TUI: `/hatch <description>` (alias `/generate-pet`), or `hermes pets` → the generate flow.
+- CLI/TUI: `/hatch <description>` (alias `/generate-pet`), or `moor pets` → the generate flow.
 - Desktop app: the Pokédex-style **generate** UI — an animated egg, hatch FX, and a draft picker.
 
 How generation works (a two-step, cost-bounded flow):
@@ -117,11 +117,11 @@ How generation works (a two-step, cost-bounded flow):
 
 ### Image backend
 
-Generation uses the active [image-generation provider](/user-guide/features/image-generation), but it requires **reference-image grounding** so each animation row stays the same character as the base. Reference-capable backends: **Nous Portal**, **OpenRouter**, **OpenAI** (`gpt-image-2`), and **Krea**. OpenRouter/Nous run a quality-first model chain by default.
+Generation uses the active [image-generation provider](/user-guide/features/image-generation), but it requires **reference-image grounding** so each animation row stays the same character as the base. Reference-capable backends: **Moor Portal**, **OpenRouter**, **OpenAI** (`gpt-image-2`), and **Krea**. OpenRouter/Moor run a quality-first model chain by default.
 
-- Resolution order prefers Nous Portal → OpenAI → OpenRouter.
-- If no reference-capable backend is configured, generation surfaces an actionable error pointing you to `hermes tools` → Image Generation. (Installing/adopting existing gallery pets needs no image backend.)
-- Override the backend with the `HERMES_PET_IMAGE_PROVIDER` env var (e.g. `HERMES_PET_IMAGE_PROVIDER=openrouter`).
+- Resolution order prefers Moor Portal → OpenAI → OpenRouter.
+- If no reference-capable backend is configured, generation surfaces an actionable error pointing you to `moor tools` → Image Generation. (Installing/adopting existing gallery pets needs no image backend.)
+- Override the backend with the `MOOR_PET_IMAGE_PROVIDER` env var (e.g. `MOOR_PET_IMAGE_PROVIDER=openrouter`).
 
 ## Desktop app
 
@@ -211,7 +211,7 @@ display:
 
 ## Troubleshooting
 
-Run `hermes pets doctor` — it reports:
+Run `moor pets doctor` — it reports:
 
 - the pets directory and which pets are installed,
 - `display.pet.enabled`, `display.pet.slug`, and the resolved active pet,
@@ -227,10 +227,10 @@ Common gotchas:
 - A pet only shows once one is **installed AND selected** (`enabled: true`).
 - Inside a pipe/redirect (no TTY), terminal rendering is disabled by design.
 - The petdex npm CLI installs to `~/.codex/pets`; Moor uses its own
-  profile-scoped `<HERMES_HOME>/pets/` instead — install through `hermes pets`.
+  profile-scoped `<MOOR_HOME>/pets/` instead — install through `moor pets`.
 
 ## See also
 
-- The [`hermes-agent` skill](../skills/bundled/autonomous-ai-agents/autonomous-ai-agents-hermes-agent.md)
+- The [`moor-agent` skill](../skills/bundled/autonomous-ai-agents/autonomous-ai-agents-moor-agent.md)
   lets the agent install and switch pets for you on request (see its
   `references/petdex.md`).

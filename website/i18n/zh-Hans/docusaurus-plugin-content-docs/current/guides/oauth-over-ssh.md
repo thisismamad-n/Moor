@@ -21,7 +21,7 @@ description: "当 Moor 运行在远程机器、容器或跳板机后面时，如
 ssh -N -L 43827:127.0.0.1:43827 user@remote-host
 
 # 在远程机器的现有 SSH 会话中：
-hermes auth add spotify --no-browser
+moor auth add spotify --no-browser
 # → Moor 打印授权 URL，在笔记本的浏览器中打开。
 # → 浏览器重定向到 127.0.0.1:43827/callback，隧道转发到远程监听器，登录完成。
 ```
@@ -37,7 +37,7 @@ Moor 会在 `Waiting for callback on ...` 一行打印实际绑定的端口—�
 | `xai-oauth`（Grok SuperGrok） | 不适用 | 否——设备代码流程 |
 | `anthropic`（Claude Pro/Max） | 不适用 | 否——粘贴代码流程 |
 | `openai-codex`（ChatGPT Plus/Pro） | 不适用 | 否——设备码流程 |
-| `minimax`、`nous-portal` | 不适用 | 否——设备码流程 |
+| `minimax`、`moor-portal` | 不适用 | 否——设备码流程 |
 
 如果你的提供商不在表中，则不需要隧道。
 
@@ -60,7 +60,7 @@ ssh -N -L 43827:127.0.0.1:43827 user@remote-host
 
 ```bash
 ssh user@remote-host
-hermes auth add spotify --no-browser
+moor auth add spotify --no-browser
 ```
 
 Moor 检测到 SSH 会话，跳过自动打开浏览器，并打印授权 URL 以及 `Waiting for callback on http://127.0.0.1:<port>/callback`。

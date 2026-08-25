@@ -6,7 +6,7 @@ author: Ben Barclay (benbarclay), Moor Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  moor:
     tags: [Social-Media, Content-Calendar, Campaigns, Publishing]
     related_skills: [xurl, humanizer]
 ---

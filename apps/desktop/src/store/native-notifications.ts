@@ -30,7 +30,7 @@ export interface NativeNotificationPrefs {
   kinds: Record<NativeNotificationKind, boolean>
 }
 
-const STORAGE_KEY = 'hermes:native-notifications'
+const STORAGE_KEY = 'moor:native-notifications'
 
 const DEFAULT_PREFS: NativeNotificationPrefs = {
   enabled: true,
@@ -189,7 +189,7 @@ export function dispatchNativeNotification(input: NativeNotificationInput): void
     return
   }
 
-  void window.hermesDesktop?.notify({
+  void window.moorDesktop?.notify({
     actions: input.actions,
     body: input.body,
     kind: input.kind,
@@ -243,7 +243,7 @@ export async function respondToApprovalAction(sessionId: null | string, actionId
 // Settings "send test" — bypasses gating. Returns whether the OS accepted it so
 // the panel can flag a silent permission failure instead of looking dead.
 export async function sendTestNativeNotification(title: string, body: string): Promise<boolean> {
-  const bridge = window.hermesDesktop
+  const bridge = window.moorDesktop
 
   if (!bridge?.notify) {
     return false

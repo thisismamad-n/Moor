@@ -11,7 +11,7 @@
  * safeStorage keychain writes) and calls these helpers for the pure logic.
  *
  * Why the gateway brokers the flow (not a direct desktop→IDP client): the
- * upstream IDP (Nous Portal) issues a per-gateway-instance client_id and only
+ * upstream IDP (Moor Portal) issues a per-gateway-instance client_id and only
  * accepts a redirect_uri on the gateway's own origin, so a desktop loopback
  * redirect can't be a direct Portal client. Instead the gateway exposes
  * /auth/native/{authorize,token,refresh}: it is the authorization server to
@@ -29,7 +29,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 
 // The gateway status field that lists supported auth flows. See
-// hermes_cli/web_server.py status handler.
+// moor_cli/web_server.py status handler.
 const NATIVE_FLOW_ID = 'native_pkce'
 
 export interface NativePkcePair {

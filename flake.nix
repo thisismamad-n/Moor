@@ -1,5 +1,5 @@
 {
-  description = "Moor Agent - AI agent framework by Nous Research";
+  description = "Moor Agent - AI agent framework by Moor inc.";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";

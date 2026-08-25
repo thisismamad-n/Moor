@@ -46,7 +46,7 @@ export type ScanOutcome =
 // ---------------------------------------------------------------------------
 
 const SCAN_TIMEOUT_MS = 15000
-const SCAN_MODULE = 'hermes_cli._scan_venv_blockers'
+const SCAN_MODULE = 'moor_cli._scan_venv_blockers'
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -127,7 +127,7 @@ export async function stopSafeVenvBlockers(
     try {
       await execFn(
         pythonPath,
-        ['-m', 'hermes_cli._scan_venv_blockers', '--terminate-safe', String(process.pid), String(process.createTime)],
+        ['-m', 'moor_cli._scan_venv_blockers', '--terminate-safe', String(process.pid), String(process.createTime)],
         { cwd: updateRoot, windowsHide: true, timeout: 10_000, maxBuffer: 256 * 1024 }
       )
       stopped.push(process.pid)
@@ -303,6 +303,6 @@ export function formatProbeFailedMessage(): string {
     'Update aborted: Desktop could not verify the Moor installation is free.\n' +
     '\n' +
     'Close other Moor windows and terminals, then retry.  If the problem\n' +
-    'persists, run `hermes update` in a terminal for detailed diagnostics.'
+    'persists, run `moor update` in a terminal for detailed diagnostics.'
   )
 }

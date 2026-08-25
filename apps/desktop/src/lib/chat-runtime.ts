@@ -6,7 +6,7 @@ import { formatRefValue } from '@/components/assistant-ui/directive-text'
 import { type ChatMessage, type ChatMessagePart, chatMessageText, textPart } from '@/lib/chat-messages'
 import { normalize } from '@/lib/text'
 import type { ComposerAttachment } from '@/store/composer'
-import type { ModelOptionsResponse, SessionInfo } from '@/types/hermes'
+import type { ModelOptionsResponse, SessionInfo } from '@/types/moor'
 
 export const SLASH_COMMAND_RE = /^\/[^\s/]*(?:\s|$)/
 export { BUILTIN_PERSONALITIES } from '@/lib/personalities'
@@ -180,7 +180,7 @@ export const PR_COMMENT_URL_RE =
   /^https:\/\/github\.com\/[^/\s]+\/[^/\s]+\/pull\/\d+(?:\/[^#\s]*)?#(?:discussion_r|issuecomment-)\d+$/
 
 /** The send-time expansion of a `review` attachment. `detail` holds the
- *  resolved comment as JSON (HermesPrComment shape); a malformed payload falls
+ *  resolved comment as JSON (MoorPrComment shape); a malformed payload falls
  *  back to the attachment's URL ref so the send never throws. */
 export function reviewCommentBlock(detail: string): null | string {
   try {

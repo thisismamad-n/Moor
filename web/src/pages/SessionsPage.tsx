@@ -49,17 +49,17 @@ import type {
 import { timeAgo } from "@/lib/utils";
 import { Markdown } from "@/components/Markdown";
 import { PlatformsCard } from "@/components/PlatformsCard";
-import { Toast } from "@nous-research/ui/ui/components/toast";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Checkbox } from "@nous-research/ui/ui/components/checkbox";
-import { ListItem } from "@nous-research/ui/ui/components/list-item";
-import { Segmented } from "@nous-research/ui/ui/components/segmented";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
+import { Toast } from "@moor-research/ui/ui/components/toast";
+import { Button } from "@moor-research/ui/ui/components/button";
+import { Checkbox } from "@moor-research/ui/ui/components/checkbox";
+import { ListItem } from "@moor-research/ui/ui/components/list-item";
+import { Segmented } from "@moor-research/ui/ui/components/segmented";
+import { Spinner } from "@moor-research/ui/ui/components/spinner";
+import { Badge } from "@moor-research/ui/ui/components/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@moor-research/ui/ui/components/card";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
-import { useConfirmDelete } from "@nous-research/ui/hooks/use-confirm-delete";
-import { Input } from "@nous-research/ui/ui/components/input";
+import { useConfirmDelete } from "@moor-research/ui/hooks/use-confirm-delete";
+import { Input } from "@moor-research/ui/ui/components/input";
 import {
   Dialog,
   DialogContent,
@@ -67,9 +67,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@nous-research/ui/ui/components/dialog";
+} from "@moor-research/ui/ui/components/dialog";
 import { useSystemActions } from "@/contexts/useSystemActions";
-import { useToast } from "@nous-research/ui/hooks/use-toast";
+import { useToast } from "@moor-research/ui/hooks/use-toast";
 import { useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { PluginSlot } from "@/plugins";
@@ -92,7 +92,7 @@ const SOURCE_CONFIG: Record<string, { icon: typeof Terminal; color: string }> =
     tool: { icon: Play, color: "text-warning" },
     api_server: { icon: Globe, color: "text-muted-foreground" },
     acp: { icon: Database, color: "text-muted-foreground" },
-    hermes_flow: { icon: Play, color: "text-warning" },
+    moor_flow: { icon: Play, color: "text-warning" },
     vulcan_delegate: { icon: Play, color: "text-warning" },
     webhook: { icon: Globe, color: "text-warning" },
   };
@@ -102,12 +102,12 @@ const AUTOMATION_SESSION_SOURCES = [
   "tool",
   "api_server",
   "acp",
-  "hermes_flow",
+  "moor_flow",
   "vulcan_delegate",
   "webhook",
 ];
 const AUTOMATION_SESSION_SOURCE_SET = new Set(AUTOMATION_SESSION_SOURCES);
-const NO_MATCHING_SESSION_SOURCE = "__hermes_dashboard_no_matching_source__";
+const NO_MATCHING_SESSION_SOURCE = "__moor_dashboard_no_matching_source__";
 
 type SessionFilterCategory = "chats" | "automation" | "all";
 type SourceSelectionsByCategory = Record<SessionFilterCategory, string[] | null>;
@@ -151,8 +151,8 @@ function sourceLabel(source: string): string {
       return "Cron";
     case "tool":
       return "Tool";
-    case "hermes_flow":
-      return "Hermes Flow";
+    case "moor_flow":
+      return "Moor Flow";
     case "vulcan_delegate":
       return "Vulcan delegate";
     case "webhook":
@@ -1471,9 +1471,9 @@ export default function SessionsPage() {
         const res = await fetch(api.exportSessionUrl(id), {
           credentials: "include",
           headers: {
-            "X-Hermes-Session-Token":
-              (window as unknown as { __HERMES_SESSION_TOKEN__?: string })
-                .__HERMES_SESSION_TOKEN__ ?? "",
+            "X-Moor-Session-Token":
+              (window as unknown as { __MOOR_SESSION_TOKEN__?: string })
+                .__MOOR_SESSION_TOKEN__ ?? "",
           },
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -1753,7 +1753,7 @@ export default function SessionsPage() {
               <span className="text-xs font-mondwest tracking-[0.12em] truncate">
                 {activeAction === "restart"
                   ? t.status.restartGateway
-                  : t.status.updateHermes}
+                  : t.status.updateMoor}
               </span>
 
               <Badge

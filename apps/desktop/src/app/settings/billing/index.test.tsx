@@ -65,7 +65,7 @@ function renderBilling(initialEntries: string[] = ['/settings?tab=billing']) {
 beforeEach(() => {
   apiMocks.fetchBillingState.mockResolvedValue(okBilling(todayBillingState))
   apiMocks.fetchSubscriptionState.mockResolvedValue(okSubscription(todaySubscriptionState))
-  Object.defineProperty(window, 'hermesDesktop', {
+  Object.defineProperty(window, 'moorDesktop', {
     configurable: true,
     value: {
       openExternal: apiMocks.openExternal
@@ -602,8 +602,8 @@ describe('BillingSettings', () => {
 
     renderBilling()
 
-    expect(await screen.findByText('Connect your Nous account')).toBeTruthy()
-    expect(screen.getByText('Run /portal in the TUI or open the Nous portal to connect your account.')).toBeTruthy()
+    expect(await screen.findByText('Connect your Moor account')).toBeTruthy()
+    expect(screen.getByText('Run /portal in the TUI or open the Moor portal to connect your account.')).toBeTruthy()
     expect(screen.queryByText('Payment method')).toBeNull()
     expect(screen.queryByText('Usage')).toBeNull()
   })

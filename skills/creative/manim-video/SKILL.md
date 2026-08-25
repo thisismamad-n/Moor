@@ -6,7 +6,7 @@ author: SHL0MS, Moor Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  moor:
     tags: [Manim, Animation, Math, Video]
     related_skills: []
 ---

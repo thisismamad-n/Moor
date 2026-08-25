@@ -2,11 +2,11 @@
 
 Moor includes NeMo Relay as a normal runtime dependency on platforms for
 which Relay publishes a native wheel. The shared-metrics integration is built
-into Moor and does not require `hermes plugins enable
+into Moor and does not require `moor plugins enable
 observability/nemo_relay`. Moor remains importable without Relay on other
 native targets. Those targets use an explicit reduced-capability no-op host:
 Moor execution remains available, while Relay scopes, middleware, plugins,
-and subscribers are unavailable. The `hermes-agent[nemo-relay]` extra remains
+and subscribers are unavailable. The `moor-agent[nemo-relay]` extra remains
 as a no-op compatibility alias for existing installation commands.
 
 Moor requires NeMo Relay 0.6.0 or later within the 0.6 release line. That
@@ -47,7 +47,7 @@ or dynamic Relay plugins.
 
 Moor core owns one Relay host and one isolated Relay session scope per Moor
 session. Core lifecycle producers use
-`hermes_cli.observability.relay_runtime` to obtain the shared session handle or
+`moor_cli.observability.relay_runtime` to obtain the shared session handle or
 run Relay scope, LLM, tool, and mark APIs in that session context. New product
 marks do not require Moor plugin registration. Shared-metrics marks must
 still contain only fields approved by the versioned allowlist; the hard
@@ -76,11 +76,11 @@ lowercased and structurally bounded, but they are not normalized through a
 checked-in model catalog. Pricing and model-family classification belong to
 the metrics backend. Prompts, responses, endpoints, errors, session IDs, task
 IDs, and request IDs are not included in the metrics event or package.
-New calls use `hermes.model_route.count`. The previous
-`hermes.model_call.count` contract remains readable only so pending local
+New calls use `moor.model_route.count`. The previous
+`moor.model_call.count` contract remains readable only so pending local
 counters created by older builds can be exported without losing data.
 
-The first consented session start emits an empty `hermes.client.active` Relay
+The first consented session start emits an empty `moor.client.active` Relay
 mark. The profile-scoped subscriber creates a random UUID install identity and
 uses a transactional compare-and-set to record at most one client-active
 counter in any rolling 24-hour window. The metric has no dimensions; Moor
@@ -89,7 +89,7 @@ resources. Concurrent Moor processes share the SQLite latch, so simultaneous
 starts cannot double-count one install. A later session or task can attempt the
 mark again, but the subscriber suppresses it until the rolling window expires.
 
-Each task run is a Relay `Function` scope named `hermes.task_run`, parented to
+Each task run is a Relay `Function` scope named `moor.task_run`, parented to
 the owning Moor session. The start counter contains only bounded execution
 surface and entrypoint values. The terminal counter contains bounded outcome,
 end reason, termination status, duration, logical model-call count, terminal
@@ -102,22 +102,22 @@ cancellations. Active task ownership follows the task ID if Moor rotates its
 conversation session during context compression.
 
 Each tool invocation is represented by a Relay tool lifecycle named
-`hermes.tool_call`. The terminal counter contains only bounded tool category,
+`moor.tool_call`. The terminal counter contains only bounded tool category,
 outcome, approval outcome, latency, and explicit retry-count buckets. Moor
 derives the category from the toolset already declared in its runtime registry;
 custom and unrecognized toolsets collapse to `other` rather than exporting
 tool or plugin names. Moor does not infer retries from repeated tool names or
 adjacent calls; when the
 hook does not provide an explicit retry relationship, the retry bucket is
-`unknown`. Approval decisions are emitted as `hermes.tool_approval` marks and
+`unknown`. Approval decisions are emitted as `moor.tool_approval` marks and
 recorded as attributed to a tool call or explicitly `unattributed`. Tool names,
 call IDs, arguments, results, commands, descriptions, and error text are not
 included in shared-metrics events or packages. A started tool that is still
 open when its task terminates is closed as failed, timed out, or cancelled and
 remains in the task's tool-count bucket.
 
-Successful skill mutations emit `hermes.skill.lifecycle` marks with only a
-bounded action and provenance. Successful loads emit `hermes.skill.load`
+Successful skill mutations emit `moor.skill.lifecycle` marks with only a
+bounded action and provenance. Successful loads emit `moor.skill.load`
 marks with bounded provenance, first-use or reuse state, reuse-after-patch
 state, and a use-count bucket. Moor derives reuse and patch-generation
 continuity transactionally in its existing `skills/.usage.json` state; skill
@@ -130,8 +130,8 @@ multi-skill semantics are defined.
 Local state is written under:
 
 ```text
-$HERMES_HOME/telemetry/shared_metrics/metrics.sqlite3
-$HERMES_HOME/telemetry/shared_metrics/outbox/*.json
+$MOOR_HOME/telemetry/shared_metrics/metrics.sqlite3
+$MOOR_HOME/telemetry/shared_metrics/outbox/*.json
 ```
 
 The database keeps transactional aggregate and package-outbox state. Package
@@ -148,11 +148,11 @@ use v2, which accepts both the retired model-call contract and the current
 model-route contract so upgrades can drain pending counters safely.
 
 Each package contains an `install_id` generated as a random UUID. Despite the
-schema field name, its current scope is one `HERMES_HOME`, so it is more
+schema field name, its current scope is one `MOOR_HOME`, so it is more
 precisely a persistent pseudonymous profile identifier. It is not derived from
 hardware, account, host, path, or credential data. It remains stable across
 packages from that profile and can therefore link those local packages.
-Deleting `$HERMES_HOME/telemetry/shared_metrics` resets the identifier together
+Deleting `$MOOR_HOME/telemetry/shared_metrics` resets the identifier together
 with all aggregates and package files.
 
 This slice has no remote-delivery path. A future remote exporter must not reuse
@@ -160,8 +160,8 @@ the persistent local identifier by default. It requires a separate product and
 privacy decision covering consent, identity scope, rotation or keyed
 pseudonymization, reset behavior, retention, and deletion.
 
-The install identity is scoped to one `HERMES_HOME`. To reset it, stop Moor
-processes and remove `$HERMES_HOME/telemetry/shared_metrics`. This deliberately
+The install identity is scoped to one `MOOR_HOME`. To reset it, stop Moor
+processes and remove `$MOOR_HOME/telemetry/shared_metrics`. This deliberately
 removes the old identity, aggregate database, and queued local packages
 together; the next consented session creates a new identity. Disabling shared
 metrics stops new collection but does not silently delete previously collected

@@ -6,7 +6,7 @@ author: Moor Agent
 license: MIT
 platforms: [macos]
 metadata:
-  hermes:
+  moor:
     tags: [iMessage, SMS, messaging, macOS, Apple]
 prerequisites:
   commands: [imsg]

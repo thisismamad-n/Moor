@@ -52,13 +52,13 @@ def _tick(job, tmp_path, current_provider, deliveries):
         deliveries.append(content)
         return None
 
-    with patch("cron.scheduler._hermes_home", tmp_path), \
+    with patch("cron.scheduler._moor_home", tmp_path), \
          patch("cron.scheduler._resolve_origin", return_value=None), \
-         patch("hermes_cli.env_loader.load_hermes_dotenv"), \
-         patch("hermes_cli.env_loader.reset_secret_source_cache"), \
-         patch("hermes_state.SessionDB", return_value=fake_db), \
+         patch("moor_cli.env_loader.load_moor_dotenv"), \
+         patch("moor_cli.env_loader.reset_secret_source_cache"), \
+         patch("moor_state.SessionDB", return_value=fake_db), \
          patch("tools.mcp_tool.discover_mcp_tools", return_value=[]), \
-         patch("hermes_cli.runtime_provider.resolve_runtime_provider",
+         patch("moor_cli.runtime_provider.resolve_runtime_provider",
                return_value={
                    "api_key": "test-key",
                    "base_url": "https://example.invalid/v1",
@@ -82,7 +82,7 @@ class TestDriftAlertOnce:
             cron_jobs.save_jobs([job])
             for _ in range(2):
                 fresh = [j for j in cron_jobs.load_jobs() if j["id"] == job["id"]][0]
-                ok, agent_called = _tick(fresh, tmp_path, "nous", deliveries)
+                ok, agent_called = _tick(fresh, tmp_path, "moor", deliveries)
                 assert agent_called is False, "drifted tick must not spend"
 
             stored = [j for j in cron_jobs.load_jobs() if j["id"] == job["id"]][0]
@@ -92,10 +92,10 @@ class TestDriftAlertOnce:
         blob = deliveries[0].lower()
         assert "drift" in blob
         assert "pin" in blob
-        assert "host running hermes" in blob
+        assert "host running moor" in blob
         # The single alert must carry the complete supported remediation
         # command — the generic summarizer's 180-char truncation must not eat it.
-        assert "hermes cron edit drift-once-test" in deliveries[0]
+        assert "moor cron edit drift-once-test" in deliveries[0]
         assert "cronjob action=update" not in deliveries[0]
         assert "[drift_skip" not in deliveries[0]
 
@@ -106,7 +106,7 @@ class TestDriftAlertOnce:
             cron_jobs.save_jobs([job])
             # Tick 1: drifted -> one alert, bit set.
             fresh = [j for j in cron_jobs.load_jobs() if j["id"] == job["id"]][0]
-            _tick(fresh, tmp_path, "nous", deliveries)
+            _tick(fresh, tmp_path, "moor", deliveries)
             assert len(deliveries) == 1
 
             # Tick 2: drift healed (resolution matches snapshot) -> runs, bit cleared.
@@ -118,7 +118,7 @@ class TestDriftAlertOnce:
 
             # Tick 3: drifts again -> re-alerts (not swallowed).
             fresh = [j for j in cron_jobs.load_jobs() if j["id"] == job["id"]][0]
-            _tick(fresh, tmp_path, "nous", deliveries)
+            _tick(fresh, tmp_path, "moor", deliveries)
 
         drift_alerts = [d for d in deliveries if "drift" in d.lower()]
         assert len(drift_alerts) == 2, f"expected re-alert after heal: {deliveries}"
@@ -137,13 +137,13 @@ class TestDriftAlertOnce:
         with cron_jobs.use_cron_store(tmp_path):
             cron_jobs.save_jobs([job])
             fresh = [j for j in cron_jobs.load_jobs() if j["id"] == job["id"]][0]
-            with patch("cron.scheduler._hermes_home", tmp_path), \
+            with patch("cron.scheduler._moor_home", tmp_path), \
                  patch("cron.scheduler._resolve_origin", return_value=None), \
-                 patch("hermes_cli.env_loader.load_hermes_dotenv"), \
-                 patch("hermes_cli.env_loader.reset_secret_source_cache"), \
-                 patch("hermes_state.SessionDB", return_value=fake_db), \
+                 patch("moor_cli.env_loader.load_moor_dotenv"), \
+                 patch("moor_cli.env_loader.reset_secret_source_cache"), \
+                 patch("moor_state.SessionDB", return_value=fake_db), \
                  patch("tools.mcp_tool.discover_mcp_tools", return_value=[]), \
-                 patch("hermes_cli.runtime_provider.resolve_runtime_provider",
+                 patch("moor_cli.runtime_provider.resolve_runtime_provider",
                        return_value={
                            "api_key": "test-key",
                            "base_url": "https://example.invalid/v1",

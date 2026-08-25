@@ -1,76 +1,163 @@
 # Moor Development Workflow
 
-This document explains the workflow for maintaining **Moor**, including how to keep the project up to date with the original upstream project (`Moor inc./hermes-agent`), manage your own features, and ensure the Moor rebranding is preserved.
-
-## 1. Project Setup (Already Completed)
-You have already:
-- Initialized the Git repository.
-- Linked your own GitHub as the `origin` remote.
-- Linked the original project as the `upstream` remote (`https://github.com/Moor inc./hermes-agent.git`).
-- Ran the `rebrand.py` script to change user-facing text from Moor to Moor.
+This document explains how **Moor** (a fork of the upstream
+`NousResearch/hermes-agent`) stays fully rebranded while continuously
+absorbing upstream updates — locally and automatically via GitHub Actions.
 
 ---
 
-## 2. The Routine Workflow: Pulling Updates from Upstream
+## 1. The rebrand engine
 
-Whenever you want to pull the latest features and bug fixes from the original creators of the project, follow these exact steps:
+`scripts/rebrand.py` is the canonical, idempotent, self-healing transformer.
+Run it any time the tree contains upstream content (after a merge, or to
+repair an old partial rebrand):
 
-### Step A: Download the Latest Upstream Changes
-Fetch the newest updates from the original repository and merge them into your branch:
+```powershell
+python scripts/rebrand.py                 # full transform + verify
+python scripts/rebrand.py --dry-run       # plan only, write nothing
+python scripts/rebrand.py --verify        # verification only
+python scripts/rebrand.py --github-fork OWNER/REPO   # rewrite repo URLs to your fork
+```
+
+What it does, in order:
+
+1. **Heal** — reverses damage from the old root `rebrand.py` (broken URLs
+   like `github.com/Moor inc./hermes-agent`, `hermes-agent.Moor inc..com`,
+   corrupted model slugs). Old damage converges to the canonical state.
+2. **Fork URLs** — rewrites `github.com/NousResearch/hermes-agent` links to
+   your fork (auto-detected from `origin`, `MOOR_GITHUB_FORK`, or the flag).
+3. **Protect** — masks spans that must stay byte-identical so live
+   integrations keep working:
+   - Nous API hosts: `portal.nousresearch.com` (OAuth/billing),
+     `inference-api.nousresearch.com`, `api.nousresearch.com`,
+     `tool-gateway`, `firecrawl-gateway`, `openai-audio-gateway`, staging
+     hosts, and the docs host `hermes-agent.nousresearch.com` (model
+     catalog / skills index the agent fetches).
+   - Model slugs: `hermes-4-405b`, `Hermes-3-Llama-3.1-70B`,
+     `NousResearch/Hermes3`, `openrouter/nousresearch/hermes-*` — real IDs
+     at OpenRouter / HuggingFace.
+   - `NOUS_API_KEY` (the Portal credential), upstream Docker image refs,
+     the upstream Discord invite, contributor identities (`hermesagent26`,
+     `.mailmap`, `contributors/emails/`), and third-party project names.
+4. **Replace** — ordered case-aware text ladder: `HERMES_*`→`MOOR_*`,
+   `hermes_*`→`moor_*`, `Hermes*`→`Moor*`, `nous*`→`moor*`,
+   `Nous Research`→`Moor inc.`, npm scope `@hermes/*`→`@moor/*`, app IDs
+   →`com.moorinc.*`.
+5. **Rename** — tracked files/dirs: `hermes_cli/`→`moor_cli/`,
+   `hermes_constants.py`→`moor_constants.py`, `hermes`→`moor` (launcher),
+   `hey_hermes.onnx`→`hey_moor.onnx`, `@hermes/ink` package dir, tests,
+   docs, docker, nix, systemd, `.desktop`, icons (1,287 paths last pass).
+6. **Inject** — re-applies fork-owned hooks upstream merges revert:
+   legacy-home migration calls in `moor_cli/main.py` + `gateway/run.py`,
+   and the wake-word audio provenance note.
+7. **Clean** — stale `egg-info`, `__pycache__`, the legacy root `rebrand.py`.
+8. **Verify** — hard gates that fail the run (`--ci`) on:
+   - unexpected brand-term residuals (protected/allowlisted terms excluded),
+   - packaging structure (entry points `moor`/`moor-agent`/`moor-acp`,
+     py-modules, package.json name),
+   - **BOM parity with HEAD** (the transform must never add/drop a BOM),
+   - `compileall`, and import smoke tests of the core modules.
+
+Idempotency: a second run changes nothing (0 rewrites / 0 renames). This is
+checked every run and is what makes the script safe after every merge.
+
+---
+
+## 2. Local update routine
+
 ```powershell
 git fetch upstream
 git merge upstream/main
-```
-> **Note:** If you are using `master` instead of `main`, the command is still `git merge upstream/main` because the original repo uses `main`.
-
-### Step B: Resolve Any Merge Conflicts (If they happen)
-If the original developers modified the exact same line of code that you modified (or rebranded), Git will pause and tell you there is a **Merge Conflict**.
-1. Open the conflicting files in your code editor.
-2. Choose which changes to keep (usually you want to keep their new features).
-3. Once all conflicts are resolved, mark them as resolved:
-```powershell
-git add .
-```
-
-### Step C: Run the Rebrand Script
-Because the new code you just downloaded will contain the word "Moor", you must run your rebrand script again to enforce the Moor branding on the new files:
-```powershell
-python rebrand.py
-```
-
-### Step D: Save and Push
-Finally, commit the merged and rebranded update, and push it to your GitHub:
-```powershell
-git add .
-git commit -m "Merged upstream updates and applied Moor rebranding"
+# resolve conflicts if any, then:
+python scripts/rebrand.py
+git add -A
+git commit -m "sync: merge upstream + reapply Moor rebrand"
 git push origin master
+```
+
+Recovery: everything the script does is visible in `git status` / `git diff`.
+`git restore . && git clean -fd` reverts a run (run it on a clean tree; the
+script refuses a dirty tree unless `--force`).
+
+After the first rebrand on a machine, refresh the toolchains:
+
+```powershell
+pip install -e . --no-deps        # or: uv pip install -e . --no-deps
+npm install --ignore-scripts      # refresh @moor/* workspace links
 ```
 
 ---
 
-## 3. Adding Your Own Features
+## 3. Automatic sync via GitHub Actions
 
-You can write custom code, add new skills, and modify existing files at any time. 
-To save your custom work:
+`.github/workflows/sync-upstream.yml` runs daily (06:00 UTC) and on demand:
+
+1. checks out the fork, merges `upstream/main`,
+2. runs `scripts/rebrand.py --ci --github-fork $GITHUB_REPOSITORY`,
+3. commits `sync: merge upstream main + reapply Moor rebrand` and pushes.
+
+If the merge conflicts, the job fails with instructions — resolve locally
+and push. One-time setup: allow GitHub Actions to push
+(Settings → Actions → General → Workflow permissions → *Read and write*),
+and make sure `origin` points at **your** fork (currently both `origin` and
+`upstream` point at `NousResearch/hermes-agent`):
+
 ```powershell
-git add .
-git commit -m "Add my new awesome feature"
-git push origin master
+git remote set-url origin https://github.com/<you>/moor.git
 ```
 
-### Best Practices for Custom Features
-- **Try to keep the core structure intact:** It's completely fine to add new files (like new tools in the `tools/` folder or new skills). Adding new files almost never causes merge conflicts when pulling upstream.
-- **Modifying core files:** If you heavily modify the core files (like `run_agent.py` or `cli.py`), be prepared to manually resolve merge conflicts when you pull updates, since the original developers will likely be modifying those files as well.
+Note: upstream's publish workflows (Docker, site deploy, skills index) carry
+repo guards that only fire on `NousResearch/hermes-agent`, so they no-op on
+the fork. The test/lint workflows will run on your pushes — disable them in
+the Actions UI if you don't want the compute.
 
 ---
 
-## 4. Summary Checklist for Updates
-Whenever you hear there's a cool new update from Moor inc., just run this sequence:
+## 4. What stays Nous (on purpose)
 
-1. `git fetch upstream`
-2. `git merge upstream/main`
-3. *(Resolve conflicts if any)*
-4. `python rebrand.py`
-5. `git add .`
-6. `git commit -m "Update from upstream"`
-7. `git push origin master`
+Per policy, external identifiers that other systems resolve are preserved so
+features keep working. Residual "nous"/"hermes" strings exist only inside
+protected constants (API hosts, model slugs, `NOUS_API_KEY`, contributor
+identity data, upstream Discord invite). Users never see them in normal use;
+the verification phase enforces that nothing else leaks.
+
+---
+
+## 5. Legacy data migration (`~/.hermes` → `~/.moor`)
+
+`agent/legacy_home_migration.py` copies an existing upstream home
+(`~/.hermes` / `%LOCALAPPDATA%\hermes`) into the new Moor home on first
+start. Properties: copy-only (upstream stays runnable), once-per-machine
+(marker file in the legacy home), skipped whenever `MOOR_HOME`/`HERMES_HOME`
+is set (tests, profiles, Docker, CI never trigger it), and it rewrites
+`provider: nous` → `provider: moor` plus `HERMES_`/`NOUS_` env prefixes
+inside the copied `config.yaml`/`.env` only.
+
+---
+
+## 6. Known functional limitation: wake word
+
+The bundled hotword models (`tools/wakewords/hey_moor.onnx/.tflite`) are
+trained audio embeddings of the ORIGINAL upstream wake phrase. Renaming
+files and strings is complete, but spoken detection still matches the
+original audio until a retrained model is dropped into `tools/wakewords/`
+under the `hey_moor` name. The code note in `tools/wake_word.py` (marker
+`LEGACY-AUDIO-MODEL`) tracks this.
+
+## 7. Brand assets (optional)
+
+Binary artwork can't be regenerated by the script. Drop replacements into
+`brand-assets/` and they are copied over the repo slots on the next run:
+`icon.ico` / `icon.icns` / `icon.png` (desktop), `favicon.ico` (dashboard +
+website), `logo.png`, `banner.png` (website), `mascot.jpg` (replaces the old
+mascot in the desktop app + bootstrap installer).
+
+---
+
+## 8. Tooling reference
+
+| Script | Purpose |
+|---|---|
+| `scripts/rebrand.py` | Canonical rebrand engine (this whole document) |
+| `scripts/rebrand_selftest.py` | 66-case regression suite for the transform rules |
+| `scripts/rebrand_inventory.py` | Audit: counts brand-term occurrences by file/dir/variant |

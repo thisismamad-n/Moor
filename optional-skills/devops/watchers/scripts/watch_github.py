@@ -3,13 +3,13 @@
 
 Usage (via cron with --no-agent):
 
-    hermes cron create hermes-issues \\
+    moor cron create moor-issues \\
       --schedule "*/5 * * * *" --no-agent \\
-      --script "$HERMES_HOME/skills/devops/watchers/scripts/watch_github.py" \\
-      --script-args "--name hermes-issues --repo Moor inc./hermes-agent --scope issues"
+      --script "$MOOR_HOME/skills/devops/watchers/scripts/watch_github.py" \\
+      --script-args "--name moor-issues --repo NousResearch/hermes-agent --scope issues"
 
 Set GITHUB_TOKEN (or GH_TOKEN) in the Moor .env file
-(``${HERMES_HOME:-~/.hermes}/.env``) to avoid the 60 req/hr
+(``${MOOR_HOME:-~/.moor}/.env``) to avoid the 60 req/hr
 anonymous rate limit.
 
 Scopes: issues | pulls | releases | commits.  Or pass --search QUERY to

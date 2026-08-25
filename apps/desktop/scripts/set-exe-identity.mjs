@@ -21,10 +21,10 @@
 // HOW IT RUNS
 // -----------
 // Primarily as an electron-builder `afterPack` hook (scripts/after-pack.mjs),
-// so EVERY packed build — first install, `hermes desktop`, the installer's
+// so EVERY packed build — first install, `moor desktop`, the installer's
 // --update rebuild, or a dev's manual `npm run pack` — gets a branded exe from
 // one place. Previously this stamp lived only in install.ps1, so the update
-// path (which rebuilds via `hermes desktop --build-only`, never install.ps1)
+// path (which rebuilds via `moor desktop --build-only`, never install.ps1)
 // shipped a stock "Electron" exe. Keeping it in afterPack closes that gap.
 //
 // Also runnable standalone for ad-hoc re-stamping:
@@ -64,8 +64,8 @@ async function stampExeIdentity(exe, desktopRoot = resolve(import.meta.dirname, 
     'version-string': {
       ProductName: 'Moor',
       FileDescription: 'Moor',
-      CompanyName: 'Nous Research',
-      LegalCopyright: 'Copyright (c) 2026 Nous Research'
+      CompanyName: 'Moor inc.',
+      LegalCopyright: 'Copyright (c) 2026 Moor inc.'
     }
   })
 

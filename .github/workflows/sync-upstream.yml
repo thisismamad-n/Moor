@@ -1,0 +1,82 @@
+# Moor fork: sync from upstream hermes-agent and re-apply the Moor rebrand.
+#
+# Runs the canonical rebrand engine (scripts/rebrand.py) after every merge
+# from upstream so the fork stays fully Moor-branded with zero manual work.
+#
+# One-time setup (repo Settings → Actions → General → Workflow permissions):
+#   set default workflow permissions to "Read and write" (or rely on the
+#   `permissions:` block below).
+#
+# If the merge hits conflicts the job fails with instructions; resolve
+# locally (`git fetch upstream && git merge upstream/main`), rebrand, push.
+
+name: Sync upstream + rebrand
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # daily 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      upstream_ref:
+        description: "Upstream branch/tag to merge"
+        default: "main"
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync-and-rebrand:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout fork (full history for merge)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Configure git identity
+        run: |
+          git config user.name "moor-sync-bot"
+          git config user.email "moor-sync-bot@users.noreply.github.com"
+
+      - name: Fetch upstream
+        run: |
+          git remote add upstream https://github.com/NousResearch/hermes-agent.git
+          git fetch upstream --tags --no-tags \
+            "+refs/heads/${{ inputs.upstream_ref || 'main' }}:refs/remotes/upstream/${{ inputs.upstream_ref || 'main' }}"
+
+      - name: Merge upstream
+        id: merge
+        run: |
+          if ! git merge --no-edit "upstream/${{ inputs.upstream_ref || 'main' }}"; then
+            echo "::error::Merge conflicts between the fork and upstream."
+            echo "::error::Resolve locally: git fetch upstream && git merge upstream/${{ inputs.upstream_ref || 'main' }}, then run python scripts/rebrand.py, commit and push."
+            git merge --abort
+            exit 1
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Rebrand (heal + protect + rename + verify)
+        run: |
+          python scripts/rebrand.py --ci --skip-reinstall \
+            --github-fork "${{ github.repository }}"
+
+      - name: Commit and push
+        run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes after merge+rebrand (upstream had no brand terms)."
+            exit 0
+          fi
+          git commit -m "sync: merge upstream ${{ inputs.upstream_ref || 'main' }} + reapply Moor rebrand"
+          git push origin HEAD

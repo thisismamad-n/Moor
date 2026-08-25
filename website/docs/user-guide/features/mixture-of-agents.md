@@ -24,7 +24,7 @@ You can select a preset through the normal model picker surfaces:
 MoA presets are selectable on **every Moor surface**, because MoA is a normal provider in the model system:
 
 - **CLI / gateway / TUI `/model`** — `/model <preset> --provider moa`, or `/model --provider moa` for the default preset. A bare `/model <preset>` also works when the name exactly matches a configured preset.
-- **`hermes model`** and the **Dashboard model picker** — a `Mixture of Agents` provider row appears with your preset names as its models.
+- **`moor model`** and the **Dashboard model picker** — a `Mixture of Agents` provider row appears with your preset names as its models.
 - **Desktop GUI app** — the model dropdown shows an `MoA presets` section; selecting one (`MoA: <preset>`) switches the active model to that preset. The Desktop settings panel also creates and edits presets.
 
 Configured presets therefore show up wherever you would pick any other model.
@@ -67,7 +67,7 @@ You can configure named MoA presets from:
 
 - Dashboard → Models → Model Settings → Mixture of Agents
 - Desktop app → Settings → Model → Mixture of Agents
-- `hermes moa configure [name]`
+- `moor moa configure [name]`
 - `config.yaml`
 
 The config stores explicit provider/model pairs, so you can mix providers and use multiple models from the same provider:
@@ -233,17 +233,17 @@ Omit `reasoning_effort` to use the provider/Moor default for that slot.
 ## Terminal preset management
 
 ```bash
-hermes moa list
-hermes moa configure              # update the default preset
-hermes moa configure review       # create or update a named preset
-hermes moa delete review
+moor moa list
+moor moa configure              # update the default preset
+moor moa configure review       # create or update a named preset
+moor moa delete review
 ```
 
 ## Benchmarks
 
-On HermesBench, a two-model MoA preset — `claude-opus-4.8` aggregating over a `gpt-5.5` reference — outscores either model run on its own:
+On MoorBench, a two-model MoA preset — `claude-opus-4.8` aggregating over a `gpt-5.5` reference — outscores either model run on its own:
 
-| Model | HermesBench score |
+| Model | MoorBench score |
 |---|---|
 | **Opus aggregator (opus-4.8 + gpt-5.5 reference) — MoA** | **0.8202** |
 | `anthropic/claude-opus-4.8` | 0.7607 |
@@ -264,7 +264,7 @@ So MoA does not sacrifice prompt caching on either call type. Its only real cost
 
 ## Notes
 
-- MoA is no longer listed under `hermes tools`; there is no `moa` toolset to enable.
+- MoA is no longer listed under `moor tools`; there is no `moa` toolset to enable.
 - Setting `enabled: false` on a preset disables the reference fan-out for that preset: the aggregator acts alone, exactly as if you selected it as a plain model. This is the per-preset off switch surfaced in the dashboard and desktop settings.
 - A preset's aggregator cannot be another MoA preset. Recursive MoA trees are intentionally blocked.
 - Credential failures on one reference model do not abort the turn. Moor includes the failure in the reference context and continues with whatever models returned.

@@ -14,14 +14,14 @@ Delegate coding to OpenHands CLI (model-agnostic, LiteLLM).
 
 | | |
 |---|---|
-| Source | Optional — install with `hermes skills install official/autonomous-ai-agents/openhands` |
+| Source | Optional — install with `moor skills install official/autonomous-ai-agents/openhands` |
 | Path | `optional-skills/autonomous-ai-agents/openhands` |
 | Version | `0.1.0` |
 | Author | Tim Koepsel (xzessmedia), Moor Agent |
 | License | MIT |
 | Platforms | linux, macos |
 | Tags | `Coding-Agent`, `OpenHands`, `Model-Agnostic`, `LiteLLM` |
-| Related skills | [`claude-code`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-claude-code), [`codex`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-codex), [`opencode`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-opencode), [`hermes-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-hermes-agent) |
+| Related skills | [`claude-code`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-claude-code), [`codex`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-codex), [`opencode`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-opencode), [`moor-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-moor-agent) |
 
 ## Reference: full SKILL.md
 
@@ -38,7 +38,7 @@ This skill is the headless-mode wrapper for batch / one-shot delegation. The int
 ## When to Use
 
 - User wants a coding task delegated to OpenHands specifically.
-- User wants a coding agent that can run on a non-Anthropic / non-OpenAI provider (DeepSeek, Qwen, Ollama, vLLM, Nous, etc.) — sibling skills `claude-code` and `codex` are tied to one vendor.
+- User wants a coding agent that can run on a non-Anthropic / non-OpenAI provider (DeepSeek, Qwen, Ollama, vLLM, Moor, etc.) — sibling skills `claude-code` and `codex` are tied to one vendor.
 - Multi-step file edits + shell commands inside a workspace.
 
 For Claude-native, prefer `claude-code`. For OpenAI-native, prefer `codex`. For Moor-native subagents, use `delegate_task`.
@@ -164,4 +164,4 @@ If the JSONL stream ends with a `FinishAction` whose `action.message` mentions `
 
 - [OpenHands GitHub](https://github.com/All-Hands-AI/OpenHands)
 - [OpenHands CLI command reference](https://docs.openhands.dev/openhands/usage/cli/command-reference)
-- Sibling skills: `claude-code` (Anthropic-only), `codex` (OpenAI-only), `opencode` (multi-provider via OpenCode), `hermes-agent` (Moor subagents via `delegate_task`).
+- Sibling skills: `claude-code` (Anthropic-only), `codex` (OpenAI-only), `opencode` (multi-provider via OpenCode), `moor-agent` (Moor subagents via `delegate_task`).

@@ -14,14 +14,14 @@ Manual OAuth for remote MCP servers on headless gateways.
 
 | | |
 |---|---|
-| Source | Optional — install with `hermes skills install official/mcp/mcp-oauth-remote-gateway` |
+| Source | Optional — install with `moor skills install official/mcp/mcp-oauth-remote-gateway` |
 | Path | `optional-skills/mcp/mcp-oauth-remote-gateway` |
 | Version | `1.0.0` |
 | Author | Ben Barclay (benbarclay), Moor Agent |
 | License | MIT |
 | Platforms | linux, macos |
 | Tags | `MCP`, `OAuth`, `PKCE`, `Remote-Deployment` |
-| Related skills | [`hermes-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-hermes-agent), [`mcporter`](/docs/user-guide/skills/optional/mcp/mcp-mcporter), [`fastmcp`](/docs/user-guide/skills/optional/mcp/mcp-fastmcp) |
+| Related skills | [`moor-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-moor-agent), [`mcporter`](/docs/user-guide/skills/optional/mcp/mcp-mcporter), [`fastmcp`](/docs/user-guide/skills/optional/mcp/mcp-fastmcp) |
 
 ## Reference: full SKILL.md
 
@@ -72,8 +72,8 @@ to `http://127.0.0.1:P/callback?code=...`, which resolves to the user's own
 laptop and fails to connect. The callback never reaches the Moor process, the
 flow times out, and `/reload-mcp` returns "No MCP tools available" with no detail.
 
-Symptoms to recognize: `[xdg-open] <defunct>` processes under the hermes user, an
-empty or missing tokens directory (`$HERMES_HOME/mcp-tokens/`), and a reload that
+Symptoms to recognize: `[xdg-open] <defunct>` processes under the moor user, an
+empty or missing tokens directory (`$MOOR_HOME/mcp-tokens/`), and a reload that
 responds without any "Added/Reconnected: X" line in `change_detail`.
 
 ## Cheap First Fallbacks: the Built-in Flow's Own Escape Hatches
@@ -96,8 +96,8 @@ gateway/bot where `/reload-mcp` triggers the flow with nobody at a prompt.
 ## Preferred Front Door: the Moor Dashboard (try this BEFORE manual token surgery)
 
 A remote Moor gateway often also runs the **dashboard** web UI as a SEPARATE
-process (e.g. `hermes dashboard --host 0.0.0.0 --port <port>`; check with
-`ps aux | grep 'hermes dashboard'`). It exposes a connector/MCP console —
+process (e.g. `moor dashboard --host 0.0.0.0 --port <port>`; check with
+`ps aux | grep 'moor dashboard'`). It exposes a connector/MCP console —
 endpoints like `/api/mcp/servers`, `/api/mcp/status`, and `/connectors` (all
 login-gated; a cookieless curl returning 401/302 confirms they exist).
 
@@ -116,11 +116,11 @@ platforms inject it into the environment — grep for it rather than making the
 user hunt:
 
 ```bash
-env | grep -iE "HERMES_DASHBOARD_PUBLIC_URL|RAILWAY_PUBLIC_DOMAIN|RAILWAY_STATIC_URL|RAILWAY_SERVICE_.*_URL|PUBLIC_URL|BASE_URL|DOMAIN" \
+env | grep -iE "MOOR_DASHBOARD_PUBLIC_URL|RAILWAY_PUBLIC_DOMAIN|RAILWAY_STATIC_URL|RAILWAY_SERVICE_.*_URL|PUBLIC_URL|BASE_URL|DOMAIN" \
   | sed -E 's/(TOKEN|SECRET|KEY|PASSWORD)=.*/\1=***REDACTED***/I'
 ```
 
-`HERMES_DASHBOARD_PUBLIC_URL` is authoritative when present. On Railway also check
+`MOOR_DASHBOARD_PUBLIC_URL` is authoritative when present. On Railway also check
 `RAILWAY_PUBLIC_DOMAIN` / `RAILWAY_STATIC_URL` (the `*.up.railway.app` host) and
 `RAILWAY_SERVICE_*_URL` vars, which sometimes carry a friendlier custom domain.
 Hand the user the full `https://` URL and point them at the Connectors/MCP
@@ -129,13 +129,13 @@ to `*_TOKEN`/`*_SECRET` vars.
 
 **What the dashboard does NOT fix (still host-side / shell):** stdio servers that
 need shell auth state (a CLI `login` command whose credentials may not persist
-across restarts) and anything reading credentials from `$HERMES_HOME/.env`. Those
+across restarts) and anything reading credentials from `$MOOR_HOME/.env`. Those
 are out of the dashboard's scope regardless.
 
 ## The Workaround
 
 Do the OAuth dance manually, then write the resulting tokens into the exact files
-Moor' `HermesTokenStorage` would have written, so on `/reload-mcp` Moor finds
+Moor' `MoorTokenStorage` would have written, so on `/reload-mcp` Moor finds
 cached tokens and skips the browser flow entirely.
 
 Run the shell commands below through the `terminal` tool on the gateway host and
@@ -154,12 +154,12 @@ No display + a remote indicator = remote gateway. `tools/mcp_oauth.py::_can_open
 uses these same env vars, so if Moor' own auto-detect says "headless", the
 built-in flow won't work.
 
-### 2. Find HERMES_HOME and the config path
+### 2. Find MOOR_HOME and the config path
 
 ```bash
-HERMES_HOME=$(python3 -c 'from hermes_constants import get_hermes_home; print(get_hermes_home())')
-echo "config: $HERMES_HOME/config.yaml"
-echo "tokens: $HERMES_HOME/mcp-tokens/"
+MOOR_HOME=$(python3 -c 'from moor_constants import get_moor_home; print(get_moor_home())')
+echo "config: $MOOR_HOME/config.yaml"
+echo "tokens: $MOOR_HOME/mcp-tokens/"
 ```
 
 ### 3. Discover OAuth metadata from the MCP server
@@ -260,8 +260,8 @@ When the user pastes the callback URL:
 
 ### 8. Write tokens in Moor' exact schema
 
-`tools/mcp_oauth.py::HermesTokenStorage` expects two files under
-`$HERMES_HOME/mcp-tokens/` (create dir with `0o700`, files with `0o600`):
+`tools/mcp_oauth.py::MoorTokenStorage` expects two files under
+`$MOOR_HOME/mcp-tokens/` (create dir with `0o700`, files with `0o600`):
 
 **`<server_name>.json`** — the `OAuthToken` pydantic model:
 ```json
@@ -314,7 +314,7 @@ body = json.dumps({
     "params": {
         "protocolVersion": "2025-06-18",
         "capabilities": {},
-        "clientInfo": {"name": "hermes-debug", "version": "1.0"},
+        "clientInfo": {"name": "moor-debug", "version": "1.0"},
     },
 }).encode()
 # POST to the MCP URL with:
@@ -332,7 +332,7 @@ UA** — Cloudflare will 403 you even though Moor (which uses httpx) will succee
 
 ### 11. Tell the user to run `/reload-mcp`
 
-On reload, Moor sees `auth: oauth`, calls `HermesTokenStorage.get_tokens()`,
+On reload, Moor sees `auth: oauth`, calls `MoorTokenStorage.get_tokens()`,
 finds your cached tokens, skips the browser flow, and registers `mcp_<name>_*`
 tools. Refresh happens automatically before `expires_in` elapses.
 

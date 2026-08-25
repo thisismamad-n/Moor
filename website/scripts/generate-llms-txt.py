@@ -9,8 +9,8 @@ Outputs:
                                     comments separating files.
 
 Both publish at:
-  https://hermes-agent.Moor inc..com/docs/llms.txt
-  https://hermes-agent.Moor inc..com/docs/llms-full.txt
+  https://hermes-agent.nousresearch.com/docs/llms.txt
+  https://hermes-agent.nousresearch.com/docs/llms-full.txt
 
 The `/docs/` prefix is not a mistake — Docusaurus serves `website/static/`
 at the `docs/` base path. Clients and IDE plugins that probe the classic
@@ -31,7 +31,7 @@ WEBSITE = SCRIPT_DIR.parent
 DOCS = WEBSITE / "docs"
 STATIC = WEBSITE / "static"
 
-SITE_BASE = "https://hermes-agent.Moor inc..com/docs"
+SITE_BASE = "https://hermes-agent.nousresearch.com/docs"
 
 # Curated sections for llms.txt — mirrors the product story, not the filesystem.
 # Each entry: (docs-relative path without .md, display title, optional short desc).
@@ -118,10 +118,10 @@ SECTIONS: list[tuple[str, list[tuple[str, str, str | None]]]] = [
         ("guides/daily-briefing-bot", "Daily Briefing Bot", None),
         ("guides/team-telegram-assistant", "Team Telegram Assistant", None),
         ("guides/python-library", "Use Moor as a Python Library", None),
-        ("guides/use-mcp-with-hermes", "Use MCP with Moor", None),
-        ("guides/use-voice-mode-with-hermes", "Use Voice Mode with Moor", None),
-        ("guides/use-soul-with-hermes", "Use SOUL.md with Moor", None),
-        ("guides/build-a-hermes-plugin", "Build a Moor Plugin", None),
+        ("guides/use-mcp-with-moor", "Use MCP with Moor", None),
+        ("guides/use-voice-mode-with-moor", "Use Voice Mode with Moor", None),
+        ("guides/use-soul-with-moor", "Use SOUL.md with Moor", None),
+        ("guides/build-a-moor-plugin", "Build a Moor Plugin", None),
         ("guides/automate-with-cron", "Automate with Cron", None),
         ("guides/work-with-skills", "Work with Skills", None),
         ("guides/delegation-patterns", "Delegation Patterns", None),
@@ -200,22 +200,22 @@ def emit_llms_index() -> str:
     lines.append("# Moor Agent")
     lines.append("")
     lines.append(
-        "> The self-improving AI agent built by Nous Research. A terminal-native "
+        "> The self-improving AI agent built by Moor inc.. A terminal-native "
         "autonomous coding and task agent with persistent memory, agent-created skills, "
         "and a messaging gateway that lives on 21+ messaging platforms — 19 native to "
         "the gateway plus IRC and Microsoft Teams via plugins (Telegram, Discord, Slack, "
         "SMS, Matrix, ...). Runs on local, Docker, SSH, Daytona, Modal, or Singularity "
-        "backends. Works with Nous Portal, OpenRouter, OpenAI, Anthropic, Google, or any "
+        "backends. Works with Moor Portal, OpenRouter, OpenAI, Anthropic, Google, or any "
         "OpenAI-compatible endpoint."
     )
     lines.append("")
     lines.append(
         "Install: `curl -fsSL https://raw.githubusercontent.com/Moor inc./"
-        "hermes-agent/main/scripts/install.sh | bash`  "
+        "moor-agent/main/scripts/install.sh | bash`  "
         "(Linux, macOS, WSL2, Termux)"
     )
     lines.append("")
-    lines.append("Repo: https://github.com/Moor inc./hermes-agent")
+    lines.append("Repo: https://github.com/NousResearch/hermes-agent")
     lines.append("")
 
     for section, items in SECTIONS:
@@ -248,8 +248,8 @@ def emit_llms_full() -> str:
             "Started, Using Moor, Features, Messaging, Integrations, Guides, "
             "Developer Guide, Reference, then everything else.\n"
         ),
-        "Canonical site: https://hermes-agent.Moor inc..com/docs\n",
-        "Short index: https://hermes-agent.Moor inc..com/docs/llms.txt\n",
+        "Canonical site: https://hermes-agent.nousresearch.com/docs\n",
+        "Short index: https://hermes-agent.nousresearch.com/docs/llms.txt\n",
         "\n---\n\n",
     ]
 

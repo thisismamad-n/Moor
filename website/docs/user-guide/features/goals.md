@@ -32,17 +32,17 @@ Tasks where the agent does one turn and stops don't need `/goal`. Tasks where *y
 | You want | Reach for |
 |---|---|
 | Keep iterating on one task in this chat until it's done | `/goal <text>` |
-| Many independent tasks, with dependencies, handoffs, or multiple profiles | [Kanban](./kanban) — `hermes kanban create …` |
+| Many independent tasks, with dependencies, handoffs, or multiple profiles | [Kanban](./kanban) — `moor kanban create …` |
 | One card on the board that should keep iterating until its acceptance criteria are met | A kanban card with `--goal` |
 
 :::note
-If you want work on the board, put it there yourself (`hermes kanban create …`) — `/goal` won't do it for you. The reverse is also true: pausing, resuming, or clearing a goal in this chat never creates, claims, or moves a kanban card.
+If you want work on the board, put it there yourself (`moor kanban create …`) — `/goal` won't do it for you. The reverse is also true: pausing, resuming, or clearing a goal in this chat never creates, claims, or moves a kanban card.
 :::
 
 ## Quick start
 
 ```
-/goal Fix every failing test in tests/hermes_cli/ and make sure scripts/run_tests.sh passes for that directory
+/goal Fix every failing test in tests/moor_cli/ and make sure scripts/run_tests.sh passes for that directory
 ```
 
 What you'll see:
@@ -134,7 +134,7 @@ A completion contract makes the judge stricter, but the judge is still an LLM re
 
 ```
 /goal Fix the flaky session tests
-/goal gate add scripts/run_tests.sh tests/hermes_cli/test_goals.py
+/goal gate add scripts/run_tests.sh tests/moor_cli/test_goals.py
 ```
 
 How it works, each turn:
@@ -215,7 +215,7 @@ The continuation prompt is a plain user-role message appended to history. It doe
 
 ## Configuration
 
-Add to `~/.hermes/config.yaml`:
+Add to `~/.moor/config.yaml`:
 
 ```yaml
 goals:

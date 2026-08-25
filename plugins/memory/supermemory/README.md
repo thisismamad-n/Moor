@@ -5,20 +5,20 @@ Semantic long-term memory with profile recall, semantic search, explicit memory 
 ## Requirements
 
 - `pip install supermemory`
-- Hosted: API key from [app.supermemory.ai/integrations?connect=hermes](http://app.supermemory.ai/integrations?connect=hermes)
+- Hosted: API key from [app.supermemory.ai/integrations?connect=moor](http://app.supermemory.ai/integrations?connect=moor)
 - Self-hosted: a running [Supermemory local](https://supermemory.ai/docs/self-hosting/overview) server and the API key it prints on first boot
 
 ## Setup
 
 ```bash
-hermes memory setup    # select "supermemory"
+moor memory setup    # select "supermemory"
 ```
 
 Or manually:
 
 ```bash
-hermes config set memory.provider supermemory
-echo 'SUPERMEMORY_API_KEY=***' >> ~/.hermes/.env
+moor config set memory.provider supermemory
+echo 'SUPERMEMORY_API_KEY=***' >> ~/.moor/.env
 ```
 
 For a fully self-hosted setup, start Supermemory local and note the API key it
@@ -28,8 +28,8 @@ prints on first boot:
 npx supermemory local
 ```
 
-Before running `hermes memory setup`, add the local endpoint to
-`$HERMES_HOME/supermemory.json`:
+Before running `moor memory setup`, add the local endpoint to
+`$MOOR_HOME/supermemory.json`:
 
 ```json
 {
@@ -37,17 +37,17 @@ Before running `hermes memory setup`, add the local endpoint to
 }
 ```
 
-Then run `hermes memory setup` and enter the local server's API key. Configuring
+Then run `moor memory setup` and enter the local server's API key. Configuring
 the endpoint first ensures the setup connection probe also stays local.
 
 ## Config
 
-Config file: `$HERMES_HOME/supermemory.json`
+Config file: `$MOOR_HOME/supermemory.json`
 
 | Key | Default | Description |
 |-----|---------|-------------|
 | `base_url` | `https://api.supermemory.ai` | API endpoint for hosted or self-hosted Supermemory. Takes priority over `SUPERMEMORY_BASE_URL`. |
-| `container_tag` | `hermes` | Container tag used for search and writes. Supports `{identity}` template for profile-scoped tags (e.g. `hermes-{identity}` → `hermes-coder`). |
+| `container_tag` | `moor` | Container tag used for search and writes. Supports `{identity}` template for profile-scoped tags (e.g. `moor-{identity}` → `moor-coder`). |
 | `auto_recall` | `true` | Inject relevant memory context before turns |
 | `auto_capture` | `true` | Store cleaned user-assistant turns after each response |
 | `max_recall_results` | `10` | Max recalled items to format into context |
@@ -82,8 +82,8 @@ Kebab-case names are registered for the agent; snake_case aliases remain support
 
 ## Source attribution
 
-All Supermemory API calls send `x-sm-source: hermes`, and document writes stamp
-`metadata.sm_source: hermes`. This is a **functional routing key, not telemetry**:
+All Supermemory API calls send `x-sm-source: moor`, and document writes stamp
+`metadata.sm_source: moor`. This is a **functional routing key, not telemetry**:
 it groups Moor-written memories into a dedicated "Moor" Space in the
 Supermemory app, so you can filter, browse, and bulk-manage them per source agent
 (alongside Codex, Claude Code, etc.) from the Supermemory UI.
@@ -106,11 +106,11 @@ Use `{identity}` in the `container_tag` to scope memories per Moor profile:
 
 ```json
 {
-  "container_tag": "hermes-{identity}"
+  "container_tag": "moor-{identity}"
 }
 ```
 
-For a profile named `coder`, this resolves to `hermes-coder`. The default profile resolves to `hermes-default`. Without `{identity}`, all profiles share the same container.
+For a profile named `coder`, this resolves to `moor-coder`. The default profile resolves to `moor-default`. Without `{identity}`, all profiles share the same container.
 
 ## Multi-Container Mode
 
@@ -118,7 +118,7 @@ For advanced setups (e.g. OpenClaw-style multi-workspace), you can enable custom
 
 ```json
 {
-  "container_tag": "hermes",
+  "container_tag": "moor",
   "enable_custom_container_tags": true,
   "custom_containers": ["project-alpha", "project-beta", "shared-knowledge"],
   "custom_container_instructions": "Use project-alpha for coding tasks, project-beta for research, and shared-knowledge for team-wide facts."

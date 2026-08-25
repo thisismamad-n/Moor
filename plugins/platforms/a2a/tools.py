@@ -44,7 +44,7 @@ _ORCHESTRATE_MAX_WORKERS = 6  # max parallel peers for fan-out
 
 def _load_config() -> dict:
     try:
-        from hermes_cli.config import load_config
+        from moor_cli.config import load_config
         return load_config() or {}
     except Exception:
         return {}
@@ -340,7 +340,7 @@ def a2a_history(args: dict, **_: Any) -> str:
     """Recall a persisted A2A conversation by context_id.
 
     This is how prior A2A exchanges survive compaction/restarts: every turn is
-    written to ~/.hermes/a2a_conversations/<context>.jsonl and can be reloaded
+    written to ~/.moor/a2a_conversations/<context>.jsonl and can be reloaded
     here.
     """
     context_id = str(args.get("context_id") or args.get("contextId") or "").strip()

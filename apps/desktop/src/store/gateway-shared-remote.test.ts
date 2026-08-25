@@ -18,9 +18,9 @@ const gatewayMocks = vi.hoisted(() => ({
   setConnection: vi.fn()
 }))
 
-vi.mock('@/hermes', () => ({
+vi.mock('@/moor', () => ({
   setApiRequestConnection: vi.fn(),
-  HermesGateway: class {
+  MoorGateway: class {
     connectionState = 'closed'
     connect = async (wsUrl: string): Promise<void> => {
       await gatewayMocks.connect(wsUrl)
@@ -49,7 +49,7 @@ const {
 type DesktopStub = { getConnection: ReturnType<typeof vi.fn> }
 
 function installDesktop(stub: DesktopStub): void {
-  ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = stub
+  ;(window as unknown as { moorDesktop: unknown }).moorDesktop = stub
 }
 
 function makePrimary(): { connectionState: string } {
@@ -67,7 +67,7 @@ beforeEach(() => {
 afterEach(() => {
   closeSecondaryGateways()
   vi.clearAllMocks()
-  delete (window as unknown as { hermesDesktop?: unknown }).hermesDesktop
+  delete (window as unknown as { moorDesktop?: unknown }).moorDesktop
 })
 
 describe('ensureGatewayForProfile under a shared global remote', () => {

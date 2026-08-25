@@ -1,0 +1,5 @@
+name: moor-provider
+kind: model-provider
+version: 1.0.0
+description: Moor inc. Portal
+author: Moor inc.

@@ -13,10 +13,10 @@ from pathlib import Path
 import pytest
 
 pytestmark = pytest.mark.skipif(
-    os.environ.get("HERMES_RUN_SLOW_PET_TESTS") != "1",
+    os.environ.get("MOOR_RUN_SLOW_PET_TESTS") != "1",
     reason=(
         "pet generation image-processing suite is opt-in; run with "
-        "HERMES_RUN_SLOW_PET_TESTS=1 scripts/run_tests.sh tests/agent/test_pet_generate.py"
+        "MOOR_RUN_SLOW_PET_TESTS=1 scripts/run_tests.sh tests/agent/test_pet_generate.py"
     ),
 )
 
@@ -428,20 +428,20 @@ def test_list_sprite_providers_marks_default(monkeypatch):
     """Lists only available ref-capable backends, flagging the default pick."""
     from agent.pet.generate import imagegen
 
-    registry = {"openai": _FakeImgProvider("openai"), "nous": _FakeImgProvider("nous")}
+    registry = {"openai": _FakeImgProvider("openai"), "moor": _FakeImgProvider("moor")}
     monkeypatch.setattr(imagegen, "_discover", lambda: None)
     monkeypatch.setattr("agent.image_gen_registry.get_active_provider", lambda: registry["openai"])
     monkeypatch.setattr("agent.image_gen_registry.get_provider", lambda name: registry.get(name))
 
     listed = imagegen.list_sprite_providers()
     names = {p["name"] for p in listed}
-    assert names == {"openai", "nous"}
+    assert names == {"openai", "moor"}
     # Every entry carries a display label (no quality note — all backends are equal).
     assert all(p["label"] for p in listed)
     assert all("note" not in p for p in listed)
     assert [p["name"] for p in listed if p["default"]] == ["openai"]
-    # Listed in preference order: Nous Portal before OpenAI.
-    assert [p["name"] for p in listed] == ["nous", "openai"]
+    # Listed in preference order: Moor Portal before OpenAI.
+    assert [p["name"] for p in listed] == ["moor", "openai"]
 
 
 def test_generate_retries_without_transparent_background(monkeypatch, tmp_path):

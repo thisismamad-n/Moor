@@ -17,7 +17,7 @@ Create, read, edit, and template Word .docx files.
 | Source | Bundled (installed by default) |
 | Path | `skills/productivity/docx` |
 | Version | `1.0.0` |
-| Author | Nous Research |
+| Author | Moor inc. |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `word`, `docx`, `documents`, `office`, `templates` |

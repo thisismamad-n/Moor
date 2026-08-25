@@ -30,7 +30,7 @@ Selection is config-driven via `context.engine` in `config.yaml`. The resolution
 
 Plugin engines are **never auto-activated** — the user must explicitly set `context.engine` to the plugin's name. The default `"compressor"` always uses the built-in.
 
-Configure via `hermes plugins` → Provider Plugins → Context Engine, or edit `config.yaml` directly.
+Configure via `moor plugins` → Provider Plugins → Context Engine, or edit `config.yaml` directly.
 
 For building a context engine plugin, see [Context Engine Plugins](/developer-guide/context-engine-plugin).
 
@@ -91,7 +91,7 @@ compression:
   min_tail_user_messages: 1  # Real user messages guaranteed in the tail (default: 1)
   codex_gpt55_autoraise: true  # gpt-5.5 on Codex OAuth: raise trigger to 85% (default: true)
   codex_gpt55_autoraise_notice: true  # Show the one-time autoraise notice (default: true)
-  codex_app_server_auto: native  # native|hermes|off for Codex app-server thread compaction
+  codex_app_server_auto: native  # native|moor|off for Codex app-server thread compaction
   codex_responses_native: false  # gpt-5.6 on direct OpenAI/Codex: server-side compaction (opt-in)
   codex_responses_compact_threshold: 200000  # Server-side compaction trigger (input tokens)
   in_place: true             # Compact on the same session id, no rotation (default: true)
@@ -100,7 +100,7 @@ compression:
 auxiliary:
   compression:
     model: null              # Override model for summaries (default: auto-detect)
-    provider: auto           # Provider: "auto", "openrouter", "nous", "main", etc.
+    provider: auto           # Provider: "auto", "openrouter", "moor", "main", etc.
     base_url: null           # Custom OpenAI-compatible endpoint
 ```
 
@@ -118,7 +118,7 @@ auxiliary:
 | `idle_compact_after_seconds` | `0` | ≥0 seconds | Opt-in: compact up front when a session resumes after this many seconds idle (0 = disabled). Skips when context ≤ threshold × target_ratio; honors cooldown/anti-thrash/lock guards |
 | `codex_gpt55_autoraise` | `true` | bool | Raise the trigger to 85% for gpt-5.5 on the ChatGPT Codex OAuth route (see below). Set `false` to keep the global `threshold` |
 | `codex_gpt55_autoraise_notice` | `true` | bool | Show the one-time Codex gpt-5.5 autoraise notice. Set `false` to keep the 85% autoraise but suppress the banner |
-| `codex_app_server_auto` | `native` | `native`, `hermes`, `off` | Thread-compaction mode for Codex app-server sessions (see below) |
+| `codex_app_server_auto` | `native` | `native`, `moor`, `off` | Thread-compaction mode for Codex app-server sessions (see below) |
 | `codex_responses_native` | `false` | bool | Opt in to OpenAI's server-side compaction on the Responses API. Engages only for gpt-5.6-family models on the direct OpenAI API or a ChatGPT Codex subscription (see below) |
 | `codex_responses_compact_threshold` | `200000` | ≥1 tokens | Server-side compaction trigger in input tokens. Clamped below the local compression threshold at request time so the server compacts first |
 | `in_place` | `true` | bool | Compact on the same session id instead of rotating to a new one (see below) |
@@ -175,7 +175,7 @@ GitHub Copilot). At the default 50% trigger, compaction would fire at ~136K —
 half the window the model can actually use. When the active route is Codex
 OAuth (`provider: openai-codex`) and the model is gpt-5.5, Moor raises the
 trigger to **85%** (~231K) and shows a notice with the opt-out command. The
-notice is shown once per profile — a marker under `$HERMES_HOME`
+notice is shown once per profile — a marker under `$MOOR_HOME`
 (`.codex_gpt55_autoraise_notice`) records that it ran, so repeated agent/session
 inits (e.g. every inbound gateway message) don't re-emit it; if the raised
 threshold later changes it re-notifies once. Only this exact route is affected;
@@ -183,13 +183,13 @@ gpt-5.5 on any other provider keeps your global `threshold`. To opt back down to
 the global value:
 
 ```bash
-hermes config set compression.codex_gpt55_autoraise false
+moor config set compression.codex_gpt55_autoraise false
 ```
 
 To keep the 85% autoraise but hide only the one-time notice:
 
 ```bash
-hermes config set compression.codex_gpt55_autoraise_notice false
+moor config set compression.codex_gpt55_autoraise_notice false
 ```
 
 ### Codex app-server thread compaction
@@ -206,7 +206,7 @@ mechanism instead:
 - Automatic compaction is controlled by `compression.codex_app_server_auto`:
   the default `native` lets the app-server decide when to compact and Moor
   records the resulting compaction events (compression counters, session
-  events). Set `hermes` to let Moor' compression threshold initiate
+  events). Set `moor` to let Moor' compression threshold initiate
   app-server compaction, or `off` to disable Moor-initiated automatic
   compaction entirely (codex may still compact natively).
 

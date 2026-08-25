@@ -6,15 +6,15 @@ description: "One-command import of a Claude Code (~/.claude) or OpenAI Codex CL
 
 # Import from Other Agents
 
-`hermes import-agent` imports your existing **Claude Code** or **OpenAI Codex CLI** setup into Moor with one command. It follows the same preview-first pattern as [`hermes claw migrate`](../guides/migrate-from-openclaw.md): you always see a per-item plan before anything is written, and `--dry-run` never touches disk.
+`moor import-agent` imports your existing **Claude Code** or **OpenAI Codex CLI** setup into Moor with one command. It follows the same preview-first pattern as [`moor claw migrate`](../guides/migrate-from-openclaw.md): you always see a per-item plan before anything is written, and `--dry-run` never touches disk.
 
 ```bash
-hermes import-agent                    # auto-detect ~/.claude or ~/.codex
-hermes import-agent claude-code        # import from ~/.claude
-hermes import-agent codex              # import from ~/.codex
-hermes import-agent claude-code --dry-run          # preview only
-hermes import-agent codex --source /path/to/.codex # custom location
-hermes import-agent claude-code --overwrite --yes  # replace conflicts, skip prompts
+moor import-agent                    # auto-detect ~/.claude or ~/.codex
+moor import-agent claude-code        # import from ~/.claude
+moor import-agent codex              # import from ~/.codex
+moor import-agent claude-code --dry-run          # preview only
+moor import-agent codex --source /path/to/.codex # custom location
+moor import-agent claude-code --overwrite --yes  # replace conflicts, skip prompts
 ```
 
 ## What gets imported
@@ -23,11 +23,11 @@ hermes import-agent claude-code --overwrite --yes  # replace conflicts, skip pro
 
 | Claude Code | Moor |
 |---|---|
-| `CLAUDE.md` (global instructions) | Memory entries in `~/.hermes/memories/MEMORY.md` |
+| `CLAUDE.md` (global instructions) | Memory entries in `~/.moor/memories/MEMORY.md` |
 | `settings.json` → `permissions.allow` (`Bash(...)` rules) | `command_allowlist` in `config.yaml` |
 | `settings.json` → `permissions.deny` (`Bash(...)` rules) | `approvals.deny` in `config.yaml` |
 | `mcpServers` (from `~/.claude.json` and `settings.json`) | `mcp_servers` in `config.yaml` |
-| `skills/<name>/` (dirs with `SKILL.md`) | `~/.hermes/skills/claude-code-imports/<name>/` |
+| `skills/<name>/` (dirs with `SKILL.md`) | `~/.moor/skills/claude-code-imports/<name>/` |
 | `commands/*.md` (slash commands) | Skipped with a note — convert them into skills |
 
 Claude's `Bash(npm run test:*)` prefix rules become `npm run test*` globs. Non-`Bash` permission rules (`Read(...)`, `WebFetch`, ...) gate Claude-specific tools and are reported as unmapped rather than imported.
@@ -36,14 +36,14 @@ Claude's `Bash(npm run test:*)` prefix rules become `npm run test*` globs. Non-`
 
 | Codex CLI | Moor |
 |---|---|
-| `AGENTS.md` (global instructions) | Memory entries in `~/.hermes/memories/MEMORY.md` |
+| `AGENTS.md` (global instructions) | Memory entries in `~/.moor/memories/MEMORY.md` |
 | `config.toml` → `[mcp_servers.*]` | `mcp_servers` in `config.yaml` |
-| `memories/*.md` | Memory entries in `~/.hermes/memories/MEMORY.md` |
-| `skills/<name>/` (dirs with `SKILL.md`) | `~/.hermes/skills/codex-imports/<name>/` |
+| `memories/*.md` | Memory entries in `~/.moor/memories/MEMORY.md` |
+| `skills/<name>/` (dirs with `SKILL.md`) | `~/.moor/skills/codex-imports/<name>/` |
 
 ## What is never imported
 
-**API keys and credentials.** Credential files (`~/.claude/.credentials.json`, `~/.codex/auth.json`) are never read, and MCP server environment variables or headers with secret-looking names (`*_TOKEN`, `*_API_KEY`, `Authorization`, ...) are stripped and listed in the report so you can re-add them deliberately. Run `hermes setup` to configure providers, or add secrets to `~/.hermes/.env`.
+**API keys and credentials.** Credential files (`~/.claude/.credentials.json`, `~/.codex/auth.json`) are never read, and MCP server environment variables or headers with secret-looking names (`*_TOKEN`, `*_API_KEY`, `Authorization`, ...) are stripped and listed in the report so you can re-add them deliberately. Run `moor setup` to configure providers, or add secrets to `~/.moor/.env`.
 
 ## Behavior notes
 
@@ -51,4 +51,4 @@ Claude's `Bash(npm run test:*)` prefix rules become `npm run test*` globs. Non-`
 - **Merges, not replaces.** Memory entries are deduplicated against your existing `MEMORY.md`; allowlist/denylist patterns merge with what's already in `config.yaml`.
 - **Conflicts are skipped by default.** An MCP server or skill that already exists in Moor is reported as a conflict; pass `--overwrite` to replace it.
 - **Malformed files don't abort the run.** A broken `settings.json` or `config.toml` becomes a per-item error in the report while everything else still imports.
-- Coming from OpenClaw instead? Use [`hermes claw migrate`](../guides/migrate-from-openclaw.md).
+- Coming from OpenClaw instead? Use [`moor claw migrate`](../guides/migrate-from-openclaw.md).

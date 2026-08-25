@@ -316,7 +316,7 @@ class TestIsFreeTierModel:
 
     def test_pricing_cache_peek_zero_priced_model(self, monkeypatch):
         from agent.credits_tracker import is_free_tier_model
-        import hermes_cli.models as models_mod
+        import moor_cli.models as models_mod
 
         # The picker keys the cache on the pre-/v1 root (get_pricing_for_provider
         # strips a trailing /v1 before fetch_models_with_pricing).
@@ -330,7 +330,7 @@ class TestIsFreeTierModel:
                 }
             },
         )
-        # The agent holds the /v1-suffixed URL (DEFAULT_NOUS_INFERENCE_URL) —
+        # The agent holds the /v1-suffixed URL (DEFAULT_MOOR_INFERENCE_URL) —
         # the helper must normalize it down to the picker's cache key.
         base = "https://inference-api.nousresearch.com/v1"
         assert is_free_tier_model("some/zero-priced", base) is True
@@ -342,7 +342,7 @@ class TestIsFreeTierModel:
 
     def test_exception_fails_open_to_false(self, monkeypatch):
         from agent.credits_tracker import is_free_tier_model
-        import hermes_cli.models as models_mod
+        import moor_cli.models as models_mod
 
         class _Exploding:
             def get(self, *_a, **_kw):

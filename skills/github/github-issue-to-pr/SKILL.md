@@ -6,7 +6,7 @@ author: Ben Barclay (benbarclay), Moor Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  moor:
     tags: [GitHub, Issues, Coding, Pull-Requests, CI]
     related_skills: [github-issues, github-pr-workflow, systematic-debugging, test-driven-development, requesting-code-review]
 ---

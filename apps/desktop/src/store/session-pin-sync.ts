@@ -21,7 +21,7 @@
  * fenced out until a later page confirms the value we wrote.
  */
 
-import { setSessionPinnedRemote } from '@/hermes'
+import { setSessionPinnedRemote } from '@/moor'
 import { onConnectionScopeChange } from '@/lib/connection-scoped'
 import { $pinnedSessionIds, pinSession, unpinSession } from '@/store/layout'
 import { $sessions, sessionMatchesStoredId, sessionPinId } from '@/store/session'
@@ -130,7 +130,7 @@ function pullRemotePins(): void {
 
 function reconcile(): void {
   // Config/session REST is only reachable through the Electron bridge.
-  if (!window.hermesDesktop) {
+  if (!window.moorDesktop) {
     return
   }
 

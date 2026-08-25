@@ -116,7 +116,7 @@ export interface Translations {
       loadingSessions: string
       retryingRemoteBackend: string
       startingDesktopConnection: string
-      startingHermesDesktop: string
+      startingMoorDesktop: string
     }
     errors: {
       backgroundExited: string
@@ -168,7 +168,7 @@ export interface Translations {
     backendOutOfDateTitle: string
     backendOutOfDateMessage: string
     installMethodUnsupportedTitle: string
-    updateHermes: string
+    updateMoor: string
     updateReadyTitle: string
     updateReadyMessage: (count: number) => string
     updateReadyMessageUnknown: string
@@ -234,7 +234,7 @@ export interface Translations {
   }
 
   billingBlock: {
-    titleNous: string
+    titleMoor: string
     titleProvider: (provider: string) => string
     fallbackMessage: string
     openBilling: string
@@ -698,9 +698,9 @@ export interface Translations {
       sshPortDesc: string
       sshKeyTitle: string
       sshKeyDesc: string
-      sshHermesPathTitle: string
-      sshHermesPathDesc: string
-      sshHermesPathPlaceholder: string
+      sshMoorPathTitle: string
+      sshMoorPathDesc: string
+      sshMoorPathPlaceholder: string
       sshRemoteProfileTitle: string
       sshRemoteProfileDesc: string
       sshTestConnection: string
@@ -1217,10 +1217,10 @@ export interface Translations {
     noSessions: string
     gatewayRunning: string
     gatewayStopped: string
-    hermesActiveSessions: (version: string, count: number) => string
+    moorActiveSessions: (version: string, count: number) => string
     restartGateway: string
     gatewayRestartFailed: string
-    updateHermes: string
+    updateMoor: string
     actionRunning: string
     actionDone: string
     actionFailed: string

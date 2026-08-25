@@ -6,7 +6,7 @@ author: Jakub Wolniewicz (@frizikk) + Moor Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  moor:
     tags: [kanban, review, quality, verification]
     category: devops
     requires_toolsets: [kanban]

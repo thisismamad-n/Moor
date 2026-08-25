@@ -283,7 +283,7 @@ def test_delegate_task_requires_parent_agent_for_control():
 def test_empty_tasks_array_with_goal_is_single_task_not_batch_error():
     """Small models emit tasks=[] alongside goal; that must not trip the
     'Batch mode requires at least 2 tasks' gate (observed live with
-    gpt-5.4-mini on Nous Portal)."""
+    gpt-5.4-mini on Moor Portal)."""
     out = delegate_task(tasks=[], goal="", parent_agent=_StubParent())
     # Falls through to the single-goal validation, not the batch gate.
     assert "Provide either 'goal'" in out

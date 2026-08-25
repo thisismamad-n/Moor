@@ -10,7 +10,7 @@ from aiohttp.test_utils import TestClient, TestServer
 
 from gateway.config import PlatformConfig
 from gateway.platforms.api_server import APIServerAdapter
-from hermes_state import SessionDB
+from moor_state import SessionDB
 
 
 @pytest.fixture
@@ -119,7 +119,7 @@ async def test_session_messages_default_to_latest_bounded_page(adapter, session_
 @pytest.mark.asyncio
 async def test_run_agent_binds_api_session_context_for_tool_env(adapter, monkeypatch):
     """API-server request sessions should reach tools and terminal subprocess env."""
-    monkeypatch.setenv("HERMES_SESSION_ID", "stale-session")
+    monkeypatch.setenv("MOOR_SESSION_ID", "stale-session")
     observed = {}
 
     class FakeAgent:
@@ -135,10 +135,10 @@ async def test_run_agent_binds_api_session_context_for_tool_env(adapter, monkeyp
             from tools.environments.local import _make_run_env
 
             observed["task_id"] = task_id
-            observed["context_session_id"] = get_session_env("HERMES_SESSION_ID")
-            observed["context_platform"] = get_session_env("HERMES_SESSION_PLATFORM")
-            observed["context_session_key"] = get_session_env("HERMES_SESSION_KEY")
-            observed["child_session_id"] = _make_run_env({}).get("HERMES_SESSION_ID")
+            observed["context_session_id"] = get_session_env("MOOR_SESSION_ID")
+            observed["context_platform"] = get_session_env("MOOR_SESSION_PLATFORM")
+            observed["context_session_key"] = get_session_env("MOOR_SESSION_KEY")
+            observed["child_session_id"] = _make_run_env({}).get("MOOR_SESSION_ID")
             return {"final_response": "ok"}
 
     def fake_create_agent(**kwargs):
@@ -426,7 +426,7 @@ def _patch_api_server_runtime(monkeypatch):
         staticmethod(lambda: None),
     )
     monkeypatch.setattr("gateway.run._current_max_iterations", lambda: 90)
-    monkeypatch.setattr("hermes_cli.tools_config._get_platform_tools", lambda *_: set())
+    monkeypatch.setattr("moor_cli.tools_config._get_platform_tools", lambda *_: set())
     monkeypatch.setattr(
         "gateway.run._resolve_runtime_agent_kwargs_for_provider",
         lambda provider: {
@@ -446,8 +446,8 @@ async def test_create_session_respects_browser_source_and_model_lock(adapter, se
             "/api/sessions",
             json={
                 "id": "browser-lock-session",
-                "source": "hermes_browser",
-                "provider": "nous",
+                "source": "moor_browser",
+                "provider": "moor",
                 "model": "x-ai/grok-4.5",
                 "require_model_lock": True,
                 "title": "Browser lock",
@@ -457,16 +457,16 @@ async def test_create_session_respects_browser_source_and_model_lock(adapter, se
         assert resp.status == 201, await resp.text()
         payload = await resp.json()
 
-    assert payload["session"]["source"] == "hermes_browser"
+    assert payload["session"]["source"] == "moor_browser"
     assert payload["session"]["model"] == "x-ai/grok-4.5"
     row = session_db.get_session("browser-lock-session")
-    assert row["source"] == "hermes_browser"
+    assert row["source"] == "moor_browser"
     assert row["model"] == "x-ai/grok-4.5"
     import json as _json
     model_config = row.get("model_config")
     if isinstance(model_config, str):
         model_config = _json.loads(model_config)
-    assert model_config["browser_model_lock"]["provider"] == "nous"
+    assert model_config["browser_model_lock"]["provider"] == "moor"
     assert model_config["browser_model_lock"]["model"] == "x-ai/grok-4.5"
     assert model_config["browser_model_lock"]["confirmed"] is True
 
@@ -520,7 +520,7 @@ async def test_session_model_lock_endpoint_then_chat_reuses_persisted_lock_and_p
             lock_resp = await cli.post(
                 f"/api/sessions/{session_id}/model",
                 json={
-                    "provider": "nous",
+                    "provider": "moor",
                     "model": "x-ai/grok-4.5",
                     "require_model_lock": True,
                 },
@@ -534,14 +534,14 @@ async def test_session_model_lock_endpoint_then_chat_reuses_persisted_lock_and_p
             assert resp.status == 200, await resp.text()
             payload = await resp.json()
 
-    assert captured["provider"] == "nous"
+    assert captured["provider"] == "moor"
     assert captured["model"] == "x-ai/grok-4.5"
-    assert captured["api_key"] == "sk-nous"
+    assert captured["api_key"] == "sk-moor"
     assert captured["base_url"] == "https://nous.example/v1"
-    assert payload["runtime"]["provider"] == "nous"
+    assert payload["runtime"]["provider"] == "moor"
     assert payload["runtime"]["model"] == "x-ai/grok-4.5"
     assert payload["runtime"]["requested"] == {
-        "provider": "nous",
+        "provider": "moor",
         "model": "x-ai/grok-4.5",
     }
     assert payload["runtime"]["route_source"] == "session_model_lock"
@@ -563,18 +563,18 @@ async def test_session_model_lock_endpoint_then_chat_stream_reuses_persisted_loc
                 "final_response": "hi",
                 "session_id": session_id,
                 "runtime": {
-                    "provider": "nous",
+                    "provider": "moor",
                     "model": "x-ai/grok-4.5",
-                    "requested": {"provider": "nous", "model": "x-ai/grok-4.5"},
+                    "requested": {"provider": "moor", "model": "x-ai/grok-4.5"},
                     "route_source": "session_model_lock",
                 },
             },
             {
                 "total_tokens": 1,
                 "runtime": {
-                    "provider": "nous",
+                    "provider": "moor",
                     "model": "x-ai/grok-4.5",
-                    "requested": {"provider": "nous", "model": "x-ai/grok-4.5"},
+                    "requested": {"provider": "moor", "model": "x-ai/grok-4.5"},
                     "route_source": "session_model_lock",
                 },
             },
@@ -591,7 +591,7 @@ async def test_session_model_lock_endpoint_then_chat_stream_reuses_persisted_loc
             lock_resp = await cli.post(
                 f"/api/sessions/{session_id}/model",
                 json={
-                    "provider": "nous",
+                    "provider": "moor",
                     "model": "x-ai/grok-4.5",
                     "require_model_lock": True,
                 },
@@ -605,8 +605,8 @@ async def test_session_model_lock_endpoint_then_chat_stream_reuses_persisted_loc
             assert resp.status == 200, await resp.text()
             body = await resp.text()
 
-    assert captured["route"] == {"provider": "nous", "model": "x-ai/grok-4.5"}
-    assert captured["requested_runtime"]["provider"] == "nous"
+    assert captured["route"] == {"provider": "moor", "model": "x-ai/grok-4.5"}
+    assert captured["requested_runtime"]["provider"] == "moor"
     assert captured["requested_runtime"]["model"] == "x-ai/grok-4.5"
     assert captured["route_source"] == "session_model_lock"
     assert "x-ai/grok-4.5" in body
@@ -623,7 +623,7 @@ async def test_run_agent_reports_actual_agent_runtime_not_requested_metadata(ada
             self.session_id = "runtime-session"
             self.provider = "actual-provider"
             self.model = "actual-model"
-            self._hermes_api_runtime = {
+            self._moor_api_runtime = {
                 "provider": "requested-provider",
                 "model": "requested-model",
                 "route_source": "raw_request",
@@ -676,8 +676,8 @@ async def test_confirmed_runtime_lock_rejects_actual_runtime_mismatch(adapter, m
             user_message="hello",
             conversation_history=[],
             session_id="mismatch-session",
-            route={"provider": "nous", "model": "x-ai/grok-4.5"},
-            requested_runtime={"provider": "nous", "model": "x-ai/grok-4.5"},
+            route={"provider": "moor", "model": "x-ai/grok-4.5"},
+            requested_runtime={"provider": "moor", "model": "x-ai/grok-4.5"},
             route_source="session_model_lock",
             confirmed_runtime_lock=True,
         )
@@ -692,7 +692,7 @@ def test_confirmed_runtime_lock_disables_global_fallback_model(adapter, monkeypa
     captured = {}
 
     class FakeAgent:
-        provider = "nous"
+        provider = "moor"
         model = "x-ai/grok-4.5"
 
         def __init__(self, **kwargs):
@@ -702,7 +702,7 @@ def test_confirmed_runtime_lock_disables_global_fallback_model(adapter, monkeypa
 
     adapter._create_agent(
         session_id="locked-session",
-        route={"provider": "nous", "model": "x-ai/grok-4.5"},
+        route={"provider": "moor", "model": "x-ai/grok-4.5"},
         confirmed_runtime_lock=True,
     )
 
@@ -714,7 +714,7 @@ async def test_unconfirmed_request_does_not_replace_confirmed_session_lock(adapt
     session_id = session_db.create_session("one-off-override", "api_server")
     session_db.update_session_runtime_lock(
         session_id,
-        provider="nous",
+        provider="moor",
         model="x-ai/grok-4.5",
         route_source="raw_request",
         confirmed=True,
@@ -752,7 +752,7 @@ async def test_unconfirmed_request_does_not_replace_confirmed_session_lock(adapt
     config = row["model_config"]
     if isinstance(config, str):
         config = _json.loads(config)
-    assert config["browser_model_lock"]["provider"] == "nous"
+    assert config["browser_model_lock"]["provider"] == "moor"
     assert config["browser_model_lock"]["model"] == "x-ai/grok-4.5"
     assert config["browser_model_lock"]["confirmed"] is True
 
@@ -769,7 +769,7 @@ async def test_require_model_lock_hard_fails_when_global_default_would_be_used(a
                 f"/api/sessions/{session_id}/chat",
                 json={
                     "message": "hello",
-                    "provider": "nous",
+                    "provider": "moor",
                     "model": "",
                     "require_model_lock": True,
                 },

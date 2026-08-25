@@ -14,7 +14,7 @@ so no individual source can get it wrong:
 * provenance: which source supplied every applied var
 
 The single entry point for startup is :func:`apply_all`, called from
-``hermes_cli.env_loader._apply_external_secret_sources()``.
+``moor_cli.env_loader._apply_external_secret_sources()``.
 
 Plugins register additional sources via
 ``PluginContext.register_secret_source()`` which lands in
@@ -44,7 +44,7 @@ from agent.secret_sources.base import (
     reset_source_environment,
     set_source_environment,
 )
-from hermes_constants import hermes_home_key
+from moor_constants import moor_home_key
 
 logger = logging.getLogger(__name__)
 
@@ -169,7 +169,7 @@ def register_source(
 def get_source(name: str, *, scope: Optional[str] = None) -> Optional[SecretSource]:
     _ensure_builtin_sources()
     with _REGISTRY_LOCK:
-        return _SCOPED_SOURCES.get(scope or hermes_home_key(), {}).get(
+        return _SCOPED_SOURCES.get(scope or moor_home_key(), {}).get(
             name
         ) or _SOURCES.get(name)
 
@@ -210,7 +210,7 @@ def list_sources(*, scope: Optional[str] = None) -> List[SecretSource]:
     _ensure_builtin_sources()
     with _REGISTRY_LOCK:
         merged = dict(_SOURCES)
-        merged.update(_SCOPED_SOURCES.get(scope or hermes_home_key(), {}))
+        merged.update(_SCOPED_SOURCES.get(scope or moor_home_key(), {}))
         return list(merged.values())
 
 
@@ -229,7 +229,7 @@ def list_plugin_sources() -> List[SecretSource]:
             for name, source in _SOURCES.items()
             if _SOURCE_ORIGINS.get(name) == "plugin"
         }
-        merged.update(_SCOPED_SOURCES.get(hermes_home_key(), {}))
+        merged.update(_SCOPED_SOURCES.get(moor_home_key(), {}))
         return list(merged.values())
 
 
@@ -297,7 +297,7 @@ def _fetch_with_timeout(
     blows its budget is reported as ``TIMEOUT`` and its (eventual)
     result is discarded.  The thread itself may linger until process
     exit — acceptable for a startup-only path, and strictly better than
-    an unbounded hang on every ``hermes`` invocation.
+    an unbounded hang on every ``moor`` invocation.
     """
     timeout = source.fetch_timeout_seconds(cfg)
     executor = concurrent.futures.ThreadPoolExecutor(
@@ -388,14 +388,14 @@ def _ordered_enabled_sources(
 def _active_profile_name(home_path: Optional[Path]) -> str:
     """Best-effort active profile name for profile-scoped secret aliases.
 
-    A named profile's HERMES_HOME is ``~/.hermes/profiles/<name>``; the
-    default profile (``~/.hermes``) returns "".
+    A named profile's MOOR_HOME is ``~/.moor/profiles/<name>``; the
+    default profile (``~/.moor``) returns "".
     """
     if home_path is not None:
         resolved = Path(home_path)
         if resolved.parent.name == "profiles" and resolved.name:
             return resolved.name
-    for env_name in ("HERMES_PROFILE_NAME", "HERMES_PROFILE"):
+    for env_name in ("MOOR_PROFILE_NAME", "MOOR_PROFILE"):
         value = os.environ.get(env_name, "").strip()
         if value and value != "default":
             return value
@@ -456,7 +456,7 @@ def apply_all(secrets_cfg: dict, home_path: Path,
 
     secrets_cfg = secrets_cfg if isinstance(secrets_cfg, dict) else {}
     enabled = _ordered_enabled_sources(
-        secrets_cfg, scope=hermes_home_key(home_path)
+        secrets_cfg, scope=moor_home_key(home_path)
     )
     if not enabled:
         return report

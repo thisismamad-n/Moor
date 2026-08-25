@@ -136,7 +136,7 @@ delegate_task(
 你可以通过 `config.yaml` 为子智能体配置不同的模型——适用于将简单任务委派给更便宜/更快的模型：
 
 ```yaml
-# In ~/.hermes/config.yaml
+# In ~/.moor/config.yaml
 delegation:
   model: "google/gemini-flash-2.0"    # Cheaper model for subagents
   provider: "openrouter"              # Optional: route subagents to a different provider
@@ -149,7 +149,7 @@ delegation:
 将问题分解为规格清晰的子任务需要前沿模型级别的判断力；而执行一个已经带有明确目标、完整上下文和输出约定的子任务通常不需要。与此同时，token 消耗主要发生在子智能体身上——并行批量子智能体通常消耗一次运行中绝大多数的 token，因此成本真正落在 worker 模型上。将 `delegation.model` 固定为低价模型、同时主会话保持前沿模型，可以把规划质量留在最需要的地方，并在消耗量最大的地方削减开支：
 
 ```yaml
-# ~/.hermes/config.yaml
+# ~/.moor/config.yaml
 model:
   default: "your-frontier-model"     # 父智能体（规划者）保持前沿模型
 delegation:
@@ -201,7 +201,7 @@ delegation:
 正值会对每个子智能体强制执行挂钟时间硬限制；`0` 或负值表示禁用。
 
 :::tip 零调用超时时的诊断转储
-在配置了硬性上限的情况下，如果子智能体在**零次** API 调用的情况下超时（通常原因：provider 不可达、认证失败或工具 schema 被拒绝），`delegate_task` 会将结构化诊断信息写入 `~/.hermes/logs/subagent-timeout-<session>-<timestamp>.log`，其中包含子智能体的配置快照、凭据解析追踪以及早期错误消息。比之前的静默超时行为更易于定位根因。
+在配置了硬性上限的情况下，如果子智能体在**零次** API 调用的情况下超时（通常原因：provider 不可达、认证失败或工具 schema 被拒绝），`delegate_task` 会将结构化诊断信息写入 `~/.moor/logs/subagent-timeout-<session>-<timestamp>.log`，其中包含子智能体的配置快照、凭据解析追踪以及早期错误消息。比之前的静默超时行为更易于定位根因。
 :::
 
 ## 监控运行中的子智能体（`/agents`）
@@ -279,7 +279,7 @@ delegate_task(
 ## 配置
 
 ```yaml
-# In ~/.hermes/config.yaml
+# In ~/.moor/config.yaml
 delegation:
   max_iterations: 50                        # Max turns per child (default: 50)
   # max_concurrent_children: 3              # Parallel children per batch (default: 3)

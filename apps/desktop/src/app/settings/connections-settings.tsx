@@ -83,7 +83,7 @@ export function ConnectionsSettings() {
   const [plainTextConfirm, setPlainTextConfirm] = useState(false)
   const [updatingAll, setUpdatingAll] = useState(false)
 
-  const bridge = window.hermesDesktop?.connections
+  const bridge = window.moorDesktop?.connections
 
   const load = useCallback(async () => {
     if (!bridge) {
@@ -248,7 +248,7 @@ export function ConnectionsSettings() {
     [bridge, s.testFailed, s.testOk]
   )
 
-  // Fan out `hermes update` to every eligible source; per-connection results
+  // Fan out `moor update` to every eligible source; per-connection results
   // land as individual toasts so one dead box doesn't hide the others.
   const updateAll = useCallback(async () => {
     if (!bridge?.updateAll) {

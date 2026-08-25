@@ -1,7 +1,7 @@
 /**
  * Minimal OpenAI-compatible mock inference server for E2E tests.
  *
- * Implements just enough of the /v1/* surface for `hermes serve` to resolve a
+ * Implements just enough of the /v1/* surface for `moor serve` to resolve a
  * provider, list models, and stream a canned chat completion back to the
  * desktop app — without any real LLM.
  *
@@ -865,7 +865,7 @@ export interface BackgroundReleaseHandle {
 export function createBackgroundReleaseHandle(): BackgroundReleaseHandle {
   const path = nodePath.join(
     os.tmpdir(),
-    `hermes-e2e-bg-release-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    `moor-e2e-bg-release-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
   )
   return {
     path,

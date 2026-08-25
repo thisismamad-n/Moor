@@ -21,7 +21,7 @@ function render(activeGatewayProfile: string, refreshSessions: () => Promise<voi
         refreshActiveMessagingTranscript: noop,
         refreshCronJobs: noop,
         refreshCurrentModel: noop,
-        refreshHermesConfig: noop,
+        refreshMoorConfig: noop,
         refreshMessagingSessions: noop,
         refreshSessions,
         requestGateway

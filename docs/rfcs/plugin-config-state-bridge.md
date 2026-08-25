@@ -72,7 +72,7 @@ small host fact requested by the RFC. Settings writes use Moor'
 profile-aware config loader/saver and atomic YAML replacement. The bridge
 validates the existing YAML before writing so malformed config is never
 silently replaced. Every operation resolves the active context-local
-`HERMES_HOME`, so one globally loaded plugin context follows multiplexed
+`MOOR_HOME`, so one globally loaded plugin context follows multiplexed
 profile turns without crossing profile data.
 
 ## Durable state API
@@ -89,7 +89,7 @@ def register(ctx):
 The facade stores one JSON object at:
 
 ```text
-<HERMES_HOME>/plugin-data/<plugin-data-namespace>/state.json
+<MOOR_HOME>/plugin-data/<plugin-data-namespace>/state.json
 ```
 
 Portable Agent Plugins use their existing `PLUGIN_DATA` namespace exactly.
@@ -139,6 +139,6 @@ The implementation is covered with real temporary-Moor-home tests for:
 
 ## Related
 
-- [Issue #64227](https://github.com/Moor inc./hermes-agent/issues/64227)
-- [RFC PR #58542](https://github.com/Moor inc./hermes-agent/pull/58542) by Topher Ross
+- [Issue #64227](https://github.com/NousResearch/hermes-agent/issues/64227)
+- [RFC PR #58542](https://github.com/NousResearch/hermes-agent/pull/58542) by Topher Ross
 - #67531 — standalone plugin settings namespace discussion

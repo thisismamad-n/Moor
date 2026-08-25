@@ -54,10 +54,10 @@ function createGitRepo(root: string): string {
   return repo
 }
 
-function configureRepoCwd(hermesHome: string, mockUrl: string, repo: string): void {
-  writeMockProviderConfig(hermesHome, mockUrl)
-  fs.appendFileSync(path.join(hermesHome, 'config.yaml'), `\nterminal:\n  cwd: ${repo}\n`, 'utf8')
-  writeEnvFile(hermesHome)
+function configureRepoCwd(moorHome: string, mockUrl: string, repo: string): void {
+  writeMockProviderConfig(moorHome, mockUrl)
+  fs.appendFileSync(path.join(moorHome, 'config.yaml'), `\nterminal:\n  cwd: ${repo}\n`, 'utf8')
+  writeEnvFile(moorHome)
 }
 
 let fixture: MockBackendFixture | null = null
@@ -84,7 +84,7 @@ test.beforeAll(async () => {
   const repo = createGitRepo(sandbox.root)
   const mock = await startMockServer()
 
-  configureRepoCwd(sandbox.hermesHome, mock.url, repo)
+  configureRepoCwd(sandbox.moorHome, mock.url, repo)
 
   const { app, page } = await launchDesktop(buildAppEnv(sandbox))
   fixture = {

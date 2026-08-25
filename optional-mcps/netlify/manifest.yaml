@@ -1,4 +1,4 @@
-# Nous-approved MCP catalog entry.
+# Moor-approved MCP catalog entry.
 # Presence in this directory = approval. Merged via PR review.
 manifest_version: 1
 
@@ -28,5 +28,5 @@ suggest:
 
 post_install: |
   On first connection Moor opens a browser to authorize with
-  Netlify (or run `hermes mcp login netlify`). Approve access,
+  Netlify (or run `moor mcp login netlify`). Approve access,
   then restart the session so tools load.

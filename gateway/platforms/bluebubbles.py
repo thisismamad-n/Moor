@@ -100,8 +100,8 @@ MAX_TEXT_LENGTH = 4000
 # group mention gating without custom aliases, use conservative Moor wake
 # words so `require_mention: true` is a one-line enablement path.
 DEFAULT_MENTION_PATTERNS = [
-    r"(?<![\w@])@?hermes\s+agent\b[,:\-]?",
-    r"(?<![\w@])@?hermes\b[,:\-]?",
+    r"(?<![\w@])@?moor\s+agent\b[,:\-]?",
+    r"(?<![\w@])@?moor\b[,:\-]?",
 ]
 
 # Tapback reaction codes (BlueBubbles associatedMessageType values)

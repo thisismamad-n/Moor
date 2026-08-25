@@ -299,7 +299,7 @@ class TestDefaults:
 
 class TestGptQualityPinnedToMedium:
     """GPT-Image quality is baked into the FAL_MODELS defaults at 'medium'
-    and cannot be overridden via config. Pinning keeps Nous Portal billing
+    and cannot be overridden via config. Pinning keeps Moor Portal billing
     predictable across all users."""
 
     def test_gpt_payload_always_has_medium_quality(self, image_tool):
@@ -322,14 +322,14 @@ class TestGptQualityPinnedToMedium:
 class TestModelResolution:
 
     def test_no_config_falls_back_to_default(self, image_tool):
-        with patch("hermes_cli.config.load_config", return_value={}):
+        with patch("moor_cli.config.load_config", return_value={}):
             mid, meta = image_tool._resolve_fal_model()
         assert mid == "fal-ai/flux-2/klein/9b"
 
 
     def test_config_wins_over_env_var(self, image_tool, monkeypatch):
         monkeypatch.setenv("FAL_IMAGE_MODEL", "fal-ai/z-image/turbo")
-        with patch("hermes_cli.config.load_config",
+        with patch("moor_cli.config.load_config",
                    return_value={"image_gen": {"model": "fal-ai/nano-banana-pro"}}):
             mid, _ = image_tool._resolve_fal_model()
         assert mid == "fal-ai/nano-banana-pro"
@@ -407,16 +407,16 @@ class TestExtractHttpStatus:
 
 
 class TestManagedGatewayErrorTranslation:
-    """4xx from the Nous managed gateway should be translated to a user-actionable message."""
+    """4xx from the Moor managed gateway should be translated to a user-actionable message."""
 
     def test_4xx_translates_to_value_error_with_remediation(self, image_tool, monkeypatch):
-        """403 from managed gateway → ValueError mentioning FAL_KEY + hermes tools."""
+        """403 from managed gateway → ValueError mentioning FAL_KEY + moor tools."""
         from unittest.mock import MagicMock
 
         # Simulate: managed mode active, managed submit raises 4xx.
         managed_gateway = MagicMock()
         managed_gateway.gateway_origin = "https://fal-queue-gateway.example.com"
-        managed_gateway.nous_user_token = "test-token"
+        managed_gateway.moor_user_token = "test-token"
         monkeypatch.setattr(image_tool, "_resolve_managed_fal_gateway",
                             lambda: managed_gateway)
 
@@ -433,7 +433,7 @@ class TestManagedGatewayErrorTranslation:
         assert "fal-ai/nano-banana-pro" in msg
         assert "403" in msg
         assert "FAL_KEY" in msg
-        assert "hermes tools" in msg
+        assert "moor tools" in msg
         # Original exception chained for debugging
         assert exc_info.value.__cause__ is bad_request
 
@@ -504,7 +504,7 @@ class TestManagedKreaRouting:
             lambda: SimpleNamespace(
                 vendor="krea",
                 gateway_origin="https://krea-gateway.example.com",
-                nous_user_token="tok",
+                moor_user_token="tok",
                 managed_mode=True,
             ),
         )
@@ -515,7 +515,7 @@ class TestManagedKreaRouting:
             "agent.image_gen_registry.get_provider", lambda name: fake_provider
         )
         monkeypatch.setattr(
-            "hermes_cli.plugins._ensure_plugins_discovered", lambda *a, **k: None
+            "moor_cli.plugins._ensure_plugins_discovered", lambda *a, **k: None
         )
 
         out = image_tool._maybe_route_managed_krea("a cat", "portrait")
@@ -635,7 +635,7 @@ class TestUpscaleDispatchForwarding:
             "agent.image_gen_registry.get_provider", lambda name: fake_provider
         )
         monkeypatch.setattr(
-            "hermes_cli.plugins._ensure_plugins_discovered", lambda *a, **k: None
+            "moor_cli.plugins._ensure_plugins_discovered", lambda *a, **k: None
         )
 
         out = image_tool._dispatch_to_plugin_provider("a cat", "square", upscale=True)
@@ -653,7 +653,7 @@ class TestUpscaleDispatchForwarding:
             "agent.image_gen_registry.get_provider", lambda name: fake_provider
         )
         monkeypatch.setattr(
-            "hermes_cli.plugins._ensure_plugins_discovered", lambda *a, **k: None
+            "moor_cli.plugins._ensure_plugins_discovered", lambda *a, **k: None
         )
 
         image_tool._dispatch_to_plugin_provider("a cat", "square")

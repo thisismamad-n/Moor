@@ -6,7 +6,7 @@ author: AminBlg (https://github.com/AminBlg/SimpleEnglish), ported by Moor Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  moor:
     tags: [writing, documentation, ste, asd-ste100, technical-writing, editing, anti-ai-slop]
     category: creative
     homepage: https://github.com/AminBlg/SimpleEnglish

@@ -1,16 +1,16 @@
-"""OpenRouter-compatible image generation backend (OpenRouter + Nous Portal).
+"""OpenRouter-compatible image generation backend (OpenRouter + Moor Portal).
 
-Both OpenRouter and the Nous Portal inference endpoint speak the same
+Both OpenRouter and the Moor Portal inference endpoint speak the same
 OpenAI-style ``/chat/completions`` image-generation protocol: send
 ``modalities: ["image", "text"]`` with an image-output model (e.g.
 ``google/gemini-3-pro-image``), pass reference images as ``image_url``
 content parts for grounding, and read the generated images back from
 ``choices[0].message.images[].image_url.url`` (a ``data:image/...;base64`` URI).
 
-Nous Portal proxies OpenRouter, so one implementation services both — we only
+Moor Portal proxies OpenRouter, so one implementation services both — we only
 swap the resolved ``(base_url, api_key)``. Credentials are resolved through the
-agent's existing :func:`~hermes_cli.runtime_provider.resolve_runtime_provider`,
-which already understands OpenRouter's key pool and the Nous OAuth device-code
+agent's existing :func:`~moor_cli.runtime_provider.resolve_runtime_provider`,
+which already understands OpenRouter's key pool and the Moor OAuth device-code
 token, so this plugin never reinvents auth.
 
 Reference grounding is the reason pet sprite generation cares about this
@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 # is access-gated / unavailable / times out on this endpoint.
 #
 # Explicit override (OPENROUTER_IMAGE_MODEL, image_gen.<provider>.model, or
-# image_gen.model from ``hermes tools``): use exactly that model (no auto
+# image_gen.model from ``moor tools``): use exactly that model (no auto
 # fallback), so power users keep full control.
 DEFAULT_MODEL = "openai/gpt-5.4-image-2"
 _FALLBACK_MODEL = "google/gemini-3-pro-image"
@@ -74,7 +74,7 @@ _REQUEST_TIMEOUT = 300.0
 def _load_image_gen_config() -> Dict[str, Any]:
     """Read the ``image_gen`` section from config.yaml (``{}`` on failure)."""
     try:
-        from hermes_cli.config import load_config
+        from moor_cli.config import load_config
 
         cfg = load_config()
         section = cfg.get("image_gen") if isinstance(cfg, dict) else None
@@ -176,7 +176,7 @@ def _dedupe_models(models: list[str]) -> list[str]:
 class OpenRouterCompatImageProvider(ImageGenProvider):
     """Image generation over an OpenRouter-compatible chat-completions endpoint.
 
-    Instantiated once per backend (OpenRouter, Nous Portal). The two differ only
+    Instantiated once per backend (OpenRouter, Moor Portal). The two differ only
     in which runtime provider supplies ``(base_url, api_key)`` and in the config
     namespace used for the model override.
     """
@@ -208,7 +208,7 @@ class OpenRouterCompatImageProvider(ImageGenProvider):
 
     def _resolve_runtime(self) -> Dict[str, Any]:
         """Resolve ``(base_url, api_key)`` via the shared runtime resolver."""
-        from hermes_cli.runtime_provider import resolve_runtime_provider
+        from moor_cli.runtime_provider import resolve_runtime_provider
 
         return resolve_runtime_provider(requested=self._runtime_name)
 
@@ -258,7 +258,7 @@ class OpenRouterCompatImageProvider(ImageGenProvider):
         Precedence: explicit caller override (the ``model`` kwarg) → the
         provider's ``*_IMAGE_MODEL`` env override → scoped
         ``image_gen.<provider>.model`` → top-level ``image_gen.model`` (written
-        by ``hermes tools``) → the quality-first default chain.
+        by ``moor tools``) → the quality-first default chain.
 
         Any explicit user/model selection means "use this exact model", so no
         fallback. Only the bare default chain carries a Gemini fallback.
@@ -305,7 +305,7 @@ class OpenRouterCompatImageProvider(ImageGenProvider):
             return error_response(
                 error=(
                     f"No {self._display} credentials found. "
-                    f"Configure {self._display} in `hermes tools` → Image Generation."
+                    f"Configure {self._display} in `moor tools` → Image Generation."
                 ),
                 error_type="missing_api_key",
                 provider=self._name,
@@ -336,8 +336,8 @@ class OpenRouterCompatImageProvider(ImageGenProvider):
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-            # OpenRouter attribution headers (harmless against Nous Portal).
-            "HTTP-Referer": "https://github.com/Moor inc./hermes-agent",
+            # OpenRouter attribution headers (harmless against Moor Portal).
+            "HTTP-Referer": "https://github.com/NousResearch/hermes-agent",
             "X-Title": "Moor Agent",
         }
         last_error: Optional[Dict[str, Any]] = None
@@ -504,23 +504,23 @@ def _build_providers() -> List[OpenRouterCompatImageProvider]:
             },
         ),
         OpenRouterCompatImageProvider(
-            provider_name="nous",
-            display_name="Nous Portal",
-            runtime_name="nous",
-            config_key="nous",
-            model_env_var="NOUS_IMAGE_MODEL",
+            provider_name="moor",
+            display_name="Moor Portal",
+            runtime_name="moor",
+            config_key="moor",
+            model_env_var="MOOR_IMAGE_MODEL",
             setup_schema={
-                "name": "Nous Portal (image)",
+                "name": "Moor Portal (image)",
                 "badge": "subscription",
-                "tag": "Reference-grounded image generation via Nous Portal (OpenRouter-backed)",
+                "tag": "Reference-grounded image generation via Moor Portal (OpenRouter-backed)",
                 "env_vars": [],
-                "requires_nous_auth": True,
+                "requires_moor_auth": True,
             },
         ),
     ]
 
 
 def register(ctx: Any) -> None:
-    """Register the OpenRouter + Nous Portal image gen providers."""
+    """Register the OpenRouter + Moor Portal image gen providers."""
     for provider in _build_providers():
         ctx.register_image_gen_provider(provider)

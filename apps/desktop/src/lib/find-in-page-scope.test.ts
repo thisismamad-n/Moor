@@ -155,10 +155,10 @@ describe('performScopedFind', () => {
     // Enter re-wraps, losing `data-find-active` and pinning the ordinal to
     // 1 forever. Case-insensitive comparison keeps stepping.
     const surface = plantSurface('surface', '<p>Moor Moor</p>')
-    performScopedFind(surface, 'hermes', { forward: true, findNext: false })
+    performScopedFind(surface, 'moor', { forward: true, findNext: false })
 
     const before = [...surface.querySelectorAll('mark.find-hit')]
-    const result = performScopedFind(surface, 'hermes', { forward: true, findNext: true })
+    const result = performScopedFind(surface, 'moor', { forward: true, findNext: true })
 
     const after = [...surface.querySelectorAll('mark.find-hit')]
     expect(after.length).toBe(before.length)
@@ -174,23 +174,23 @@ describe('performScopedFind', () => {
     // re-render, the stale one survived, and the current query's live
     // matches arrived unwrapped. The fast path must not step on the stale
     // set — it must drop it and re-wrap, or the live match stays dark.
-    const surface = plantSurface('surface', '<p>hermes</p>')
-    performScopedFind(surface, 'hermes', { forward: true, findNext: false })
+    const surface = plantSurface('surface', '<p>moor</p>')
+    performScopedFind(surface, 'moor', { forward: true, findNext: false })
     // Re-render replaces the paragraph (destroying the genuine mark)…
     surface.querySelector('p')!.innerHTML = 'beta'
     // …but a stale mark survives the edit (external write / raced cleanup),
     // and the live content that matches the current query arrives unwrapped.
     surface.insertAdjacentHTML('beforeend', '<mark class="find-hit">Moor</mark>')
-    surface.insertAdjacentHTML('beforeend', '<p>hermes</p>')
+    surface.insertAdjacentHTML('beforeend', '<p>moor</p>')
 
-    const result = performScopedFind(surface, 'hermes', { forward: true, findNext: true })
+    const result = performScopedFind(surface, 'moor', { forward: true, findNext: true })
 
     // Re-wrapped: the stale mark's text is re-wrapped as a live occurrence
     // and the previously unwrapped match is wrapped too.
     expect(result.count).toBe(2)
     const marks = [...surface.querySelectorAll('mark.find-hit')]
     expect(marks.length).toBe(2)
-    expect(marks.every(mark => mark.textContent.toLowerCase() === 'hermes')).toBe(true)
+    expect(marks.every(mark => mark.textContent.toLowerCase() === 'moor')).toBe(true)
   })
 
   it('re-wraps when new unmarked content contains the query (fast path, #81778 review)', () => {

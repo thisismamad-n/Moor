@@ -6,7 +6,7 @@ author: Teknium (teknium1), Moor Agent
 license: MIT
 platforms: [linux, macos]
 metadata:
-  hermes:
+  moor:
     tags: [Payments, Stripe, Projects, Provisioning, Infrastructure]
     related_skills: [stripe-link-cli, mpp-agent]
 ---

@@ -28,7 +28,7 @@ export function hasValidBootstrapMarker(
   return true
 }
 
-// The active install at ~/.hermes/hermes-agent can be real and runnable even if
+// The active install at ~/.moor/moor-agent can be real and runnable even if
 // Desktop never wrote its first-run bootstrap marker (for example when Moor
 // was installed by the CLI first, or when a past desktop build forgot the
 // marker). Runtime usability is authoritative for "can we launch local Moor

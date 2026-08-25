@@ -13,7 +13,7 @@ description: "通过 OpenAI 兼容 API 服务器将 Open WebUI 连接到 Moor Ag
 ```mermaid
 flowchart LR
     A["Open WebUI<br/>浏览器 UI<br/>端口 3000"]
-    B["hermes-agent<br/>gateway API 服务器<br/>端口 8642"]
+    B["moor-agent<br/>gateway API 服务器<br/>端口 8642"]
     A -->|POST /v1/chat/completions| B
     B -->|SSE 流式响应| A
 ```
@@ -33,20 +33,20 @@ Open WebUI 与 Moor 之间是服务器到服务器的通信，因此此集成无
 ### 1. 启用 API 服务器
 
 ```bash
-hermes config set API_SERVER_ENABLED true
-hermes config set API_SERVER_KEY your-secret-key
+moor config set API_SERVER_ENABLED true
+moor config set API_SERVER_KEY your-secret-key
 ```
 
-`hermes config set` 会自动将标志路由到 `config.yaml`，将密钥路由到 `~/.hermes/.env`。如果 gateway 已在运行，请重启以使更改生效：
+`moor config set` 会自动将标志路由到 `config.yaml`，将密钥路由到 `~/.moor/.env`。如果 gateway 已在运行，请重启以使更改生效：
 
 ```bash
-hermes gateway stop && hermes gateway
+moor gateway stop && moor gateway
 ```
 
 ### 2. 启动 Moor Agent gateway
 
 ```bash
-hermes gateway
+moor gateway
 ```
 
 你应该看到：
@@ -62,7 +62,7 @@ curl -s http://127.0.0.1:8642/health
 # {"status": "ok", ...}
 
 curl -s -H "Authorization: Bearer your-secret-key" http://127.0.0.1:8642/v1/models
-# {"object":"list","data":[{"id":"hermes-agent", ...}]}
+# {"object":"list","data":[{"id":"moor-agent", ...}]}
 ```
 
 如果 `/health` 失败，说明 gateway 未加载 `API_SERVER_ENABLED=true`——重启它。如果 `/v1/models` 返回 `401`，说明你的 `Authorization` 头与 `API_SERVER_KEY` 不匹配。
@@ -87,7 +87,7 @@ docker run -d -p 3000:8080 \
 
 ### 5. 打开 UI
 
-访问 **http://localhost:3000** 。创建管理员账户（第一个用户将成为管理员）。你应该能在模型下拉列表中看到你的 agent（以你的 profile 命名，默认 profile 则显示为 **hermes-agent**）。开始聊天吧！
+访问 **http://localhost:3000** 。创建管理员账户（第一个用户将成为管理员）。你应该能在模型下拉列表中看到你的 agent（以你的 profile 命名，默认 profile 则显示为 **moor-agent**）。开始聊天吧！
 
 ## Docker Compose 设置
 
@@ -134,7 +134,7 @@ docker compose up -d
 7. 点击**对勾**验证连接
 8. **保存**
 
-你的 agent 模型现在应出现在模型下拉列表中（以你的 profile 命名，默认 profile 则显示为 **hermes-agent**）。
+你的 agent 模型现在应出现在模型下拉列表中（以你的 profile 命名，默认 profile 则显示为 **moor-agent**）。
 
 :::warning
 环境变量仅在 Open WebUI **首次启动**时生效。此后，连接设置存储在其内部数据库中。如需后续修改，请使用管理员 UI，或删除 Docker 卷后重新启动。
@@ -158,7 +158,7 @@ Open WebUI 连接后端时支持两种 API 模式：
 启用 Responses API 模式：
 
 1. 进入 **Admin Settings** → **Connections** → **OpenAI** → **Manage**
-2. 编辑你的 hermes-agent 连接
+2. 编辑你的 moor-agent 连接
 3. 将 **API Type** 从 "Chat Completions" 改为 **"Responses (Experimental)"**
 4. 保存
 
@@ -181,7 +181,7 @@ Open WebUI 目前即使在 Responses 模式下也在客户端管理对话历史�
 
 你的 agent 可以访问该 API 服务器 Moor 实例所拥有的相同工具和能力。如果 API 服务器是远程的，这些工具也是远程的。
 
-如果你今天需要工具在**本地**工作区运行，请在本地运行 Moor 并将其指向纯 LLM 提供商或纯 OpenAI 兼容模型代理（例如 vLLM、LiteLLM、Ollama、llama.cpp、OpenAI、OpenRouter 等）。"远程大脑、本地执行"的分离运行时模式正在 [#18715](https://github.com/Moor inc./hermes-agent/issues/18715) 中跟踪；这不是当前 API 服务器的行为。
+如果你今天需要工具在**本地**工作区运行，请在本地运行 Moor 并将其指向纯 LLM 提供商或纯 OpenAI 兼容模型代理（例如 vLLM、LiteLLM、Ollama、llama.cpp、OpenAI、OpenRouter 等）。"远程大脑、本地执行"的分离运行时模式正在 [#18715](https://github.com/NousResearch/hermes-agent/issues/18715) 中跟踪；这不是当前 API 服务器的行为。
 
 :::tip 工具进度
 启用流式传输（默认）后，工具运行时你会看到简短的内联指示——工具 emoji 及其关键参数。这些内容在 agent 最终答案之前出现在响应流中，让你了解后台正在发生的事情。
@@ -211,7 +211,7 @@ Open WebUI 目前即使在 Responses 模式下也在客户端管理对话历史�
 
 - **检查 URL 是否有 `/v1` 后缀**：`http://host.docker.internal:8642/v1`（不只是 `:8642`）
 - **验证 gateway 是否运行**：`curl http://localhost:8642/health` 应返回 `{"status": "ok"}`
-- **检查模型列表**：`curl -H "Authorization: Bearer your-secret-key" http://localhost:8642/v1/models` 应返回包含 `hermes-agent` 的列表
+- **检查模型列表**：`curl -H "Authorization: Bearer your-secret-key" http://localhost:8642/v1/models` 应返回包含 `moor-agent` 的列表
 - **Docker 网络**：在 Docker 内部，`localhost` 指容器本身，而非你的主机。请使用 `host.docker.internal` 或 `--network=host`。
 - **空 Ollama 后端遮挡选择器**：如果你省略了 `ENABLE_OLLAMA_API=false`，Open WebUI 会在你的 Moor 模型上方显示一个空的 Ollama 区域。请使用 `-e ENABLE_OLLAMA_API=false` 重启容器，或在 **Admin Settings → Connections** 中禁用 Ollama。
 
@@ -240,15 +240,15 @@ Open WebUI 在首次启动后会将 OpenAI 兼容连接设置持久化到其自�
 `API_SERVER_*` 是环境变量，而非 YAML 配置键，因此请将它们写入每个 profile 的 `.env`。选择默认平台范围之外的端口（`8644` 是 webhook 适配器，`8645` 是 wecom-callback，`8646` 是 msgraph-webhook），例如 `8650+`：
 
 ```bash
-hermes profile create alice
-cat >> ~/.hermes/profiles/alice/.env <<EOF
+moor profile create alice
+cat >> ~/.moor/profiles/alice/.env <<EOF
 API_SERVER_ENABLED=true
 API_SERVER_PORT=8650
 API_SERVER_KEY=alice-secret
 EOF
 
-hermes profile create bob
-cat >> ~/.hermes/profiles/bob/.env <<EOF
+moor profile create bob
+cat >> ~/.moor/profiles/bob/.env <<EOF
 API_SERVER_ENABLED=true
 API_SERVER_PORT=8651
 API_SERVER_KEY=bob-secret
@@ -258,8 +258,8 @@ EOF
 ### 2. 启动各 gateway
 
 ```bash
-hermes -p alice gateway &
-hermes -p bob gateway &
+moor -p alice gateway &
+moor -p bob gateway &
 ```
 
 ### 3. 在 Open WebUI 中添加连接
@@ -276,7 +276,7 @@ hermes -p bob gateway &
 :::tip 自定义模型名称
 模型名称默认为 profile 名称。如需覆盖，请在 profile 的 `.env` 中设置 `API_SERVER_MODEL_NAME`：
 ```bash
-hermes -p alice config set API_SERVER_MODEL_NAME "Alice's Agent"
+moor -p alice config set API_SERVER_MODEL_NAME "Alice's Agent"
 ```
 :::
 

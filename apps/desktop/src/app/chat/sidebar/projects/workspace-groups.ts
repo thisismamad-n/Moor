@@ -1,5 +1,5 @@
-import type { HermesGitWorktree } from '@/global'
-import type { ProjectInfo, SessionInfo } from '@/hermes'
+import type { MoorGitWorktree } from '@/global'
+import type { ProjectInfo, SessionInfo } from '@/moor'
 import { normalize } from '@/lib/text'
 
 import { rankSessions } from '../order'
@@ -180,7 +180,7 @@ export function sortWorktreeGroups(groups: SidebarSessionGroup[]): SidebarSessio
  */
 export function mergeRepoWorktreeGroups(
   repo: Pick<SidebarWorkspaceTree, 'groups' | 'id' | 'path'>,
-  discoveredWorktrees?: HermesGitWorktree[]
+  discoveredWorktrees?: MoorGitWorktree[]
 ): SidebarSessionGroup[] {
   // Branch-primary labels: a linked worktree's identity in every git UI (VS
   // Code, JetBrains, lazygit, …) is its CHECKED-OUT BRANCH, not the directory it

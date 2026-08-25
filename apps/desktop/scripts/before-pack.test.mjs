@@ -7,7 +7,7 @@ import { test } from 'vitest'
 import beforePack, { cleanStaleAppOutDir, preserveRollbackBackup } from '../scripts/before-pack.mjs'
 
 test('cleanStaleAppOutDir removes a populated unpacked directory', () => {
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-before-pack-'))
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'moor-before-pack-'))
   try {
     const appOutDir = path.join(tempRoot, 'linux-unpacked')
     fs.mkdirSync(appOutDir, { recursive: true })
@@ -28,7 +28,7 @@ test('cleanStaleAppOutDir removes a populated unpacked directory', () => {
 })
 
 test('cleanStaleAppOutDir is a no-op when the directory is absent', () => {
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-before-pack-'))
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'moor-before-pack-'))
   try {
     const missing = path.join(tempRoot, 'does-not-exist')
     assert.equal(cleanStaleAppOutDir(missing), false)
@@ -54,7 +54,7 @@ test('beforePack default export resolves even when cleanup throws', async () => 
 // ─── Windows rollback preservation (#69179) ────────────────────────────────
 
 test('preserveRollbackBackup moves a working build to .bak', () => {
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-before-pack-'))
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'moor-before-pack-'))
   try {
     const appOutDir = path.join(tempRoot, 'win-unpacked')
     fs.mkdirSync(appOutDir, { recursive: true })
@@ -77,7 +77,7 @@ test('preserveRollbackBackup moves a working build to .bak', () => {
 })
 
 test('preserveRollbackBackup replaces a stale .bak from an older update', () => {
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-before-pack-'))
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'moor-before-pack-'))
   try {
     const appOutDir = path.join(tempRoot, 'win-unpacked')
     fs.mkdirSync(appOutDir, { recursive: true })
@@ -95,7 +95,7 @@ test('preserveRollbackBackup replaces a stale .bak from an older update', () => 
 test('preserveRollbackBackup refuses a partial tree missing the product exe', () => {
   // The corrupted partial state (interrupted prior pack) must NOT become
   // rollback material — it is exactly what cleanStaleAppOutDir exists to wipe.
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-before-pack-'))
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'moor-before-pack-'))
   try {
     const appOutDir = path.join(tempRoot, 'win-unpacked')
     fs.mkdirSync(appOutDir, { recursive: true })
@@ -118,7 +118,7 @@ test('preserveRollbackBackup ignores missing or invalid input', () => {
 })
 
 test('beforePack on win32 preserves the previous build instead of wiping it', async () => {
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-before-pack-'))
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'moor-before-pack-'))
   try {
     const appOutDir = path.join(tempRoot, 'win-unpacked')
     fs.mkdirSync(appOutDir, { recursive: true })
@@ -139,7 +139,7 @@ test('beforePack on win32 preserves the previous build instead of wiping it', as
 })
 
 test('beforePack on linux keeps the plain wipe (no .bak)', async () => {
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-before-pack-'))
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'moor-before-pack-'))
   try {
     const appOutDir = path.join(tempRoot, 'linux-unpacked')
     fs.mkdirSync(appOutDir, { recursive: true })

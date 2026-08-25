@@ -1,6 +1,6 @@
-import type { BillingBlock } from '@hermes/shared'
-import { registryBackendScopeKey } from '@hermes/shared'
-import type { HermesSkin } from '@hermes/shared/skin'
+import type { BillingBlock } from '@moor/shared'
+import { registryBackendScopeKey } from '@moor/shared'
+import type { MoorSkin } from '@moor/shared/skin'
 import type { QueryClient } from '@tanstack/react-query'
 import { type MutableRefObject, useCallback, useEffect, useRef } from 'react'
 
@@ -90,7 +90,7 @@ import { notifyWorkspaceChanged, toolChangedPath, toolMayMutateFiles } from '@/s
 // Leaf import (not the `@/themes` barrel) to avoid pulling the ThemeProvider
 // module graph into the gateway event hot path.
 import { ingestBackendSkin } from '@/themes/backend-sync'
-import type { RpcEvent } from '@/types/hermes'
+import type { RpcEvent } from '@/types/moor'
 
 import type { ClientSessionState } from '../../../types'
 import { finalizeInterruptedMessages } from '../use-prompt-actions/rewind'
@@ -148,7 +148,7 @@ function sessionInfoDescribesSelectedSession(storedSessionId: string | undefined
  * gateway forwards the structured descriptor built by `agent/billing_links.py`;
  * we cache it per-session (drives the in-chat banner) AND raise one sticky,
  * billing-specific toast — never the generic "Moor error" — with a smart CTA
- * (Nous → in-app Settings → Billing, other providers → their billing page).
+ * (Moor → in-app Settings → Billing, other providers → their billing page).
  */
 function surfaceBillingBlock(sessionId: string, raw: unknown): void {
   if (!raw || typeof raw !== 'object') {
@@ -173,8 +173,8 @@ function surfaceBillingBlock(sessionId: string, raw: unknown): void {
     id: `billing-block:${block.provider}`,
     kind: 'warning',
     icon: 'credit-card',
-    title: block.is_nous
-      ? translateNow('billingBlock.titleNous')
+    title: block.is_moor
+      ? translateNow('billingBlock.titleMoor')
       : translateNow('billingBlock.titleProvider', block.provider_label),
     message: firstBillingLine(block.message) || translateNow('billingBlock.fallbackMessage'),
     // Sticky: a credit wall blocks every turn until resolved.
@@ -259,7 +259,7 @@ interface GatewayEventDeps {
     runtimeSessionId?: string | null
   ) => Promise<void>
   queryClient: QueryClient
-  refreshHermesConfig: () => Promise<void>
+  refreshMoorConfig: () => Promise<void>
   scheduleSessionsRefresh: () => void
   sessionInterrupted: (sessionId: string) => boolean
   sessionStateByRuntimeIdRef: MutableRefObject<Map<string, ClientSessionState>>
@@ -293,7 +293,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
     finalizeInterimAssistantMessage,
     hydrateFromStoredSession,
     queryClient,
-    refreshHermesConfig,
+    refreshMoorConfig,
     scheduleSessionsRefresh,
     sessionInterrupted,
     sessionStateByRuntimeIdRef,
@@ -305,7 +305,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
 
   // session.info arrives in bursts (agent build ready + turn end + title /
   // MCP / compress edges within the same second). Each used to fire its own
-  // refreshHermesConfig — two REST calls (config + defaults) per event, per
+  // refreshMoorConfig — two REST calls (config + defaults) per event, per
   // turn, including for BACKGROUND sessions whose values the fetch can't even
   // apply. Coalesce to one trailing fetch per burst; the caller gates on
   // `apply` so background traffic doesn't schedule anything.
@@ -317,16 +317,16 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
     }
 
     if (typeof window === 'undefined') {
-      void refreshHermesConfig()
+      void refreshMoorConfig()
 
       return
     }
 
     configRefreshTimerRef.current = window.setTimeout(() => {
       configRefreshTimerRef.current = null
-      void refreshHermesConfig()
+      void refreshMoorConfig()
     }, 300)
-  }, [refreshHermesConfig])
+  }, [refreshMoorConfig])
 
   useEffect(
     () => () => {
@@ -427,7 +427,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
       if (event.type === 'gateway.ready') {
         // Seed the active skin into the desktop theme registry without applying,
         // so a fresh connect never overrides the user's persisted desktop theme.
-        ingestBackendSkin((payload as { skin?: HermesSkin } | undefined)?.skin, { apply: false })
+        ingestBackendSkin((payload as { skin?: MoorSkin } | undefined)?.skin, { apply: false })
         // Backends with the change watcher broadcast pet/cron/sessions change
         // events; consumers demote their legacy polls to slow backstops.
         setChangeEventsAvailable(Boolean((payload as { change_events?: boolean } | undefined)?.change_events))
@@ -437,7 +437,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
         // A runtime skin switch (Moor activating an authored skin, or `/skin`
         // on another surface). Only the active source+profile's change repaints.
         if (fromActiveSource()) {
-          ingestBackendSkin(payload as HermesSkin | undefined, { apply: true })
+          ingestBackendSkin(payload as MoorSkin | undefined, { apply: true })
         }
 
         return
@@ -748,7 +748,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
         if (apply) {
           reportInstallMethodWarning(payload?.install_warning)
           // Config refetch is only meaningful for the foreground context —
-          // everything refreshHermesConfig applies is either active-session
+          // everything refreshMoorConfig applies is either active-session
           // guarded or a composer/global pref. Background sessions' heartbeats
           // used to trigger it too (two REST calls each, every turn).
           scheduleConfigRefresh()
@@ -1370,7 +1370,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
         const requestId = typeof payload?.request_id === 'string' ? payload.request_id : ''
 
         if (requestId) {
-          const read = window.hermesDesktop?.readWindowBelow
+          const read = window.moorDesktop?.readWindowBelow
 
           const answer = (result: unknown) =>
             $gateway.get()?.request('window.read.respond', {

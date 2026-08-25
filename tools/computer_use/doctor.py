@@ -1,5 +1,5 @@
 """
-`hermes computer-use doctor` — thin client for cua-driver's `health_report` MCP tool.
+`moor computer-use doctor` — thin client for cua-driver's `health_report` MCP tool.
 
 cua-driver owns the health model (#1908 / be761fac on `main`). This module
 just drives the stdio JSON-RPC handshake, calls `health_report`, and
@@ -29,7 +29,7 @@ import subprocess
 import sys
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-from hermes_cli._subprocess_compat import windows_hide_flags
+from moor_cli._subprocess_compat import windows_hide_flags
 
 
 # Match the ALLOWED_STATUS_VALUES + ALLOWED_OVERALL_VALUES the cua-driver
@@ -844,7 +844,7 @@ def run_doctor(
 ) -> int:
     """Resolve the cua-driver binary, call `health_report`, render the result.
 
-    Honors `HERMES_CUA_DRIVER_CMD` via the shared runtime resolver, so the
+    Honors `MOOR_CUA_DRIVER_CMD` via the shared runtime resolver, so the
     doctor diagnoses what your `computer_use` toolset will actually invoke.
 
     On cua-driver 0.10.x, ``health_report`` may be risk-unclassified and
@@ -869,7 +869,7 @@ def run_doctor(
     if not binary:
         looked_for = driver_cmd or "cua-driver (PATH and canonical install paths)"
         print(f"cua-driver: not installed (looked for {looked_for!r}).")
-        print("  Run: hermes computer-use install")
+        print("  Run: moor computer-use install")
         return 2
 
     try:
@@ -884,10 +884,10 @@ def run_doctor(
 
     if json_output:
         # Additive envelope: preserve the upstream health_report keys and
-        # attach Moor identity under hermes_identity so existing parsers
+        # attach Moor identity under moor_identity so existing parsers
         # that only read overall/checks keep working.
         payload = dict(report)
-        payload["hermes_identity"] = identity
+        payload["moor_identity"] = identity
         json.dump(payload, sys.stdout, indent=2, sort_keys=True)
         sys.stdout.write("\n")
     else:

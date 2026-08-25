@@ -1,5 +1,5 @@
 {
-  "name": "hermes-whatsapp-bridge",
+  "name": "moor-whatsapp-bridge",
   "version": "1.0.0",
   "description": "WhatsApp bridge for Moor Agent using Baileys",
   "private": true,

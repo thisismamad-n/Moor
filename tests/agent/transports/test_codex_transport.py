@@ -675,7 +675,7 @@ class TestCodexBuildKwargs:
         names = [t.get("name") for t in kw.get("tools", []) if t.get("type") == "function"]
         assert "read_file" in names
         assert "web_search" not in names
-        assert "hermes_web_search" not in names
+        assert "moor_web_search" not in names
 
     def test_xai_renames_client_web_search_when_firecrawl_configured(self, transport, monkeypatch):
         """Configured Firecrawl (or any non-xai backend) must keep Moor
@@ -703,7 +703,7 @@ class TestCodexBuildKwargs:
         assert not any(t.get("type") == "web_search" for t in tools), tools
         names = [t.get("name") for t in tools if t.get("type") == "function"]
         assert "read_file" in names
-        assert "hermes_web_search" in names
+        assert "moor_web_search" in names
         assert "web_search" not in names
 
     def test_xai_normalize_maps_client_web_search_alias_back(self, transport, monkeypatch):
@@ -720,7 +720,7 @@ class TestCodexBuildKwargs:
                     response_item_id="fc_1",
                     function=SimpleNamespace(
                         name=codex_mod._XAI_CLIENT_WEB_SEARCH_ALIAS,
-                        arguments='{"query":"hermes"}',
+                        arguments='{"query":"moor"}',
                     ),
                 )
             ],
@@ -1021,7 +1021,7 @@ class TestCodexTransportXaiReasoningEffort:
         assert kw["reasoning"]["effort"] == "xhigh"
 
     @pytest.mark.parametrize("effort", ["max", "ultra"])
-    def test_grok_46_clamps_hermes_aliases_to_model_ceiling(self, transport, effort):
+    def test_grok_46_clamps_moor_aliases_to_model_ceiling(self, transport, effort):
         """Moor ladder aliases mean "this model's ceiling" — on grok-4.6
         that is xhigh, not one rung below it (#87279)."""
         kw = transport.build_kwargs(

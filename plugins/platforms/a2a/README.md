@@ -8,11 +8,11 @@ no `a2a-sdk` dependency.
 ## Enable
 
 ```bash
-hermes gateway setup      # pick A2A, or:
+moor gateway setup      # pick A2A, or:
 ```
 
 ```yaml
-# ~/.hermes/config.yaml
+# ~/.moor/config.yaml
 gateway:
   platforms:
     a2a:
@@ -65,8 +65,8 @@ via `tasks/get`.
   cannot invoke operator slash commands.
 - Outbound text is scrubbed of credential-shaped strings.
 - Push callbacks are SSRF-guarded and HMAC-SHA256 signed (`X-A2A-Signature`).
-- Every exchange is logged to `~/.hermes/a2a_audit.jsonl`.
-- Conversations persist to `~/.hermes/a2a_conversations/` — they survive context
+- Every exchange is logged to `~/.moor/a2a_audit.jsonl`.
+- Conversations persist to `~/.moor/a2a_conversations/` — they survive context
   compaction and restarts (`a2a_history` recalls them).
 
 ## Env vars

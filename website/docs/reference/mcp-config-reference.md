@@ -10,7 +10,7 @@ This page is the compact reference companion to the main MCP docs.
 
 For conceptual guidance, see:
 - [MCP (Model Context Protocol)](/user-guide/features/mcp)
-- [Use MCP with Moor](/guides/use-mcp-with-hermes)
+- [Use MCP with Moor](/guides/use-mcp-with-moor)
 
 ## Root config shape
 
@@ -82,7 +82,7 @@ mcp_servers:
       GITHUB_PERSONAL_ACCESS_TOKEN: "${env:GITHUB_TOKEN}"   # same as "${GITHUB_TOKEN}"
 ```
 
-Values resolve from the active profile's secret scope (falling back to the process environment), so put the secret in `~/.hermes/.env`. An unset variable keeps its literal placeholder.
+Values resolve from the active profile's secret scope (falling back to the process environment), so put the secret in `~/.moor/.env`. An unset variable keeps its literal placeholder.
 
 ### Context variables
 
@@ -333,7 +333,7 @@ mcp_servers:
 Behavior:
 - Moor uses the MCP SDK's OAuth 2.1 PKCE flow (metadata discovery, dynamic client registration, token exchange, and refresh)
 - On first connect, a browser window opens for authorization
-- Tokens are persisted to `~/.hermes/mcp-tokens/<server>.json` and reused across sessions
+- Tokens are persisted to `~/.moor/mcp-tokens/<server>.json` and reused across sessions
 - Token refresh is automatic; re-authorization only happens when refresh fails
 - Only applies to HTTP/StreamableHTTP transport (`url`-based servers)
 
@@ -342,7 +342,7 @@ Behavior:
 MCP vendors and docs can offer a one-click **"Add to Moor"** button that opens the Moor desktop app with a pre-filled server config, mirroring Cursor's `cursor://anysphere.cursor-deeplink/mcp/install` scheme:
 
 ```text
-hermes://mcp/install?name=NAME&config=BASE64
+moor://mcp/install?name=NAME&config=BASE64
 ```
 
 - `name` — the server name. Must match `^[A-Za-z0-9._-]{1,64}$`.
@@ -352,7 +352,7 @@ Example (JavaScript):
 
 ```js
 const config = { url: 'https://mcp.example.com/mcp' }
-const link = `hermes://mcp/install?name=example&config=${btoa(JSON.stringify(config))
+const link = `moor://mcp/install?name=example&config=${btoa(JSON.stringify(config))
   .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}`
 ```
 

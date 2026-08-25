@@ -14,16 +14,16 @@ from concurrent.futures import TimeoutError as FuturesTimeoutError
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 
 logger = logging.getLogger(__name__)
 
-SESSION_SCOPE = "hermes.session"
-TURN_SCOPE = "hermes.turn"
-LOGICAL_LLM_SCOPE = "hermes.logical_llm_call"
-RUNTIME_SCHEMA_KEY = "hermes.relay.schema_version"
-RUNTIME_SCHEMA_VERSION = "hermes.relay.runtime.v1"
-RUNTIME_INSTANCE_KEY = "hermes.relay.runtime_instance"
+SESSION_SCOPE = "moor.session"
+TURN_SCOPE = "moor.turn"
+LOGICAL_LLM_SCOPE = "moor.logical_llm_call"
+RUNTIME_SCHEMA_KEY = "moor.relay.schema_version"
+RUNTIME_SCHEMA_VERSION = "moor.relay.runtime.v1"
+RUNTIME_INSTANCE_KEY = "moor.relay.runtime_instance"
 _PROFILE_KEY_CACHE: dict[str, str] = {}
 
 # Bound for native scope lifecycle operations (push/pop/flush) that gate
@@ -327,7 +327,7 @@ class RelayRuntime:
                     session,
                     self.relay.scope.pop,
                     old_handle,
-                    output={"hermes.session.segment_reason": reason},
+                    output={"moor.session.segment_reason": reason},
                     metadata={
                         RUNTIME_SCHEMA_KEY: RUNTIME_SCHEMA_VERSION,
                         RUNTIME_INSTANCE_KEY: self.runtime_id,
@@ -345,8 +345,8 @@ class RelayRuntime:
             scope_metadata = {
                 RUNTIME_SCHEMA_KEY: RUNTIME_SCHEMA_VERSION,
                 RUNTIME_INSTANCE_KEY: self.runtime_id,
-                "hermes.session.segment": session.segment,
-                "hermes.session.segment_reason": reason,
+                "moor.session.segment": session.segment,
+                "moor.session.segment_reason": reason,
             }
             parent_handle = None
             if session.parent_session_id:
@@ -670,7 +670,7 @@ class RelayRuntime:
                         top,
                         output={
                             "outcome": "cancelled",
-                            "hermes.orphan_drain": True,
+                            "moor.orphan_drain": True,
                         },
                         metadata=metadata,
                     )
@@ -917,7 +917,7 @@ class RelayTurnContext:
 
 
 _CURRENT_TURN: contextvars.ContextVar[RelayTurnContext | None] = contextvars.ContextVar(
-    "hermes_relay_turn", default=None
+    "moor_relay_turn", default=None
 )
 
 # Depth of managed Relay callbacks executing on the current logical call path.
@@ -928,7 +928,7 @@ _CURRENT_TURN: contextvars.ContextVar[RelayTurnContext | None] = contextvars.Con
 # ContextVar so the marker follows contextvars.copy_context() into the worker
 # threads / per-thread loops that tools use for their internal async work.
 _MANAGED_CALLBACK_DEPTH: contextvars.ContextVar[int] = contextvars.ContextVar(
-    "hermes_relay_managed_callback_depth", default=0
+    "moor_relay_managed_callback_depth", default=0
 )
 
 
@@ -1016,7 +1016,7 @@ class RelaySessionCoordinator:
                     "model": model,
                 }
                 self._prepare_session(host, session_context)
-                metadata = {"hermes.execution_surface": platform or "unknown"}
+                metadata = {"moor.execution_surface": platform or "unknown"}
                 if parent_session_id and parent_session_id != session_id:
                     session = host.register_subagent(
                         {
@@ -1108,7 +1108,7 @@ class RelaySessionCoordinator:
                     metadata={
                         RUNTIME_SCHEMA_KEY: RUNTIME_SCHEMA_VERSION,
                         RUNTIME_INSTANCE_KEY: lease.host.runtime_id,
-                        "hermes.execution_surface": lease.platform or "unknown",
+                        "moor.execution_surface": lease.platform or "unknown",
                     },
                     timeout=_SCOPE_OP_TIMEOUT,
                 )
@@ -1595,7 +1595,7 @@ def get_host(
 
 def current_profile_key() -> str:
     """Return the canonical profile identity used for runtime isolation."""
-    home = get_hermes_home().expanduser()
+    home = get_moor_home().expanduser()
     if not home.is_absolute():
         return str(home.resolve())
     raw = str(home)

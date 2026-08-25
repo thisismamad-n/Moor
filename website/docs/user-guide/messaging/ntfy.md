@@ -4,11 +4,11 @@
 
 ntfy makes a great lightweight push channel for Moor: subscribe to a topic from the [ntfy mobile app](https://ntfy.sh/docs/subscribe/phone/), send messages to the topic to talk to the agent, get the response back on your phone.
 
-> Run `hermes gateway setup` and pick **ntfy** for a guided walk-through.
+> Run `moor gateway setup` and pick **ntfy** for a guided walk-through.
 
 ## Prerequisites
 
-- A topic name (any unique string — `hermes-myname-2026` works fine)
+- A topic name (any unique string — `moor-myname-2026` works fine)
 - The [ntfy mobile app](https://ntfy.sh/docs/subscribe/phone/) installed and subscribed to that topic
 - Optional: a self-hosted ntfy server, or an `ntfy.sh` account token for private/reserved topics
 
@@ -19,19 +19,19 @@ That's it. No SDK, no daemon, no Node.js. The adapter uses `httpx` which is alre
 ### Via setup wizard
 
 ```bash
-hermes gateway setup
+moor gateway setup
 ```
 
 Select **ntfy** and follow the prompts.
 
 ### Via environment variables
 
-Add these to `~/.hermes/.env`:
+Add these to `~/.moor/.env`:
 
 ```
-NTFY_TOPIC=hermes-myname-2026
-NTFY_ALLOWED_USERS=hermes-myname-2026
-NTFY_HOME_CHANNEL=hermes-myname-2026
+NTFY_TOPIC=moor-myname-2026
+NTFY_ALLOWED_USERS=moor-myname-2026
+NTFY_HOME_CHANNEL=moor-myname-2026
 ```
 
 | Variable | Required | Description |
@@ -62,13 +62,13 @@ In all cases, do not put sensitive data through ntfy unless the underlying topic
 
 ## Quick start — talk to your agent from your phone
 
-1. Pick a topic name: `hermes-myname-2026`
-2. On your phone: install the [ntfy app](https://ntfy.sh/docs/subscribe/phone/), tap **+**, enter `hermes-myname-2026`
+1. Pick a topic name: `moor-myname-2026`
+2. On your phone: install the [ntfy app](https://ntfy.sh/docs/subscribe/phone/), tap **+**, enter `moor-myname-2026`
 3. On the host:
    ```bash
-   echo 'NTFY_TOPIC=hermes-myname-2026' >> ~/.hermes/.env
-   echo 'NTFY_ALLOWED_USERS=hermes-myname-2026' >> ~/.hermes/.env
-   hermes gateway restart
+   echo 'NTFY_TOPIC=moor-myname-2026' >> ~/.moor/.env
+   echo 'NTFY_ALLOWED_USERS=moor-myname-2026' >> ~/.moor/.env
+   moor gateway restart
    ```
 4. From the ntfy app, send a message to the topic. The agent's reply lands as a push notification.
 
@@ -85,10 +85,10 @@ cronjob(
 )
 ```
 
-Or target a specific topic explicitly via the cron job's `deliver:` field, or from a shell script with the [`hermes send` CLI](/guides/pipe-script-output):
+Or target a specific topic explicitly via the cron job's `deliver:` field, or from a shell script with the [`moor send` CLI](/guides/pipe-script-output):
 
 ```bash
-hermes send ntfy:alerts-channel "Done!"
+moor send ntfy:alerts-channel "Done!"
 ```
 
 This works even when the cron runs out-of-process from the gateway — the plugin registers a `standalone_sender_fn` that opens its own HTTP connection.
@@ -110,7 +110,7 @@ Then point Moor at it:
 
 ```
 NTFY_SERVER_URL=https://ntfy.mydomain.com
-NTFY_TOPIC=hermes
+NTFY_TOPIC=moor
 NTFY_TOKEN=tk_abc123  # if you've set up access control
 ```
 

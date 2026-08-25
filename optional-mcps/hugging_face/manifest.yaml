@@ -1,4 +1,4 @@
-# Nous-approved MCP catalog entry.
+# Moor-approved MCP catalog entry.
 # Presence in this directory = approval. Merged via PR review.
 manifest_version: 1
 
@@ -30,5 +30,5 @@ suggest:
 
 post_install: |
   On first connection Moor opens a browser to authorize with
-  Hugging Face (or run `hermes mcp login hugging_face`). Approve access,
+  Hugging Face (or run `moor mcp login hugging_face`). Approve access,
   then restart the session so tools load.

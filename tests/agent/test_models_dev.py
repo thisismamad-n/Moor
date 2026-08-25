@@ -96,8 +96,8 @@ SAMPLE_REGISTRY = {
 
 class TestProviderMapping:
     def test_all_mapped_providers_are_strings(self):
-        for hermes_id, mdev_id in PROVIDER_TO_MODELS_DEV.items():
-            assert isinstance(hermes_id, str)
+        for moor_id, mdev_id in PROVIDER_TO_MODELS_DEV.items():
+            assert isinstance(moor_id, str)
             assert isinstance(mdev_id, str)
 
     def test_known_providers_mapped(self):
@@ -112,7 +112,7 @@ class TestProviderMapping:
         assert PROVIDER_TO_MODELS_DEV["xai-oauth"] == "xai"
 
     def test_unmapped_provider_not_in_dict(self):
-        assert "nous" not in PROVIDER_TO_MODELS_DEV
+        assert "moor" not in PROVIDER_TO_MODELS_DEV
 
 
 
@@ -652,7 +652,7 @@ class TestMirrorUrlOverride:
              patch.object(md, "_save_disk_cache"), \
              patch.object(md, "_load_etag", return_value=""), \
              patch.object(md, "_save_etag"), \
-             patch("hermes_cli.config.load_config_readonly", return_value=fake_config):
+             patch("moor_cli.config.load_config_readonly", return_value=fake_config):
             fetch_models_dev()
 
         call_args = mock_get.call_args
@@ -675,7 +675,7 @@ class TestMirrorUrlOverride:
              patch.object(md, "_save_disk_cache"), \
              patch.object(md, "_load_etag", return_value=""), \
              patch.object(md, "_save_etag"), \
-             patch("hermes_cli.config.load_config_readonly", return_value={}):
+             patch("moor_cli.config.load_config_readonly", return_value={}):
             fetch_models_dev()
 
         call_args = mock_get.call_args
@@ -700,7 +700,7 @@ class TestMirrorUrlOverride:
              patch.object(md, "_save_disk_cache"), \
              patch.object(md, "_load_etag", return_value=""), \
              patch.object(md, "_save_etag"), \
-             patch("hermes_cli.config.load_config_readonly", return_value=fake_config):
+             patch("moor_cli.config.load_config_readonly", return_value=fake_config):
             fetch_models_dev()
 
         call_args = mock_get.call_args
@@ -1217,9 +1217,9 @@ class TestModelOverrides:
         import importlib
 
         import agent.models_dev as md
-        import hermes_cli.config as hc
+        import moor_cli.config as hc
 
-        home = tmp_path / "hermes"
+        home = tmp_path / "moor"
         home.mkdir()
         (home / "config.yaml").write_text(
             "model_overrides:\n"
@@ -1228,7 +1228,7 @@ class TestModelOverrides:
             "      context_window: 524288\n",
             encoding="utf-8",
         )
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("MOOR_HOME", str(home))
 
         # Reset caches that memoize config paths (the override layer has
         # no local cache — it rides load_config_readonly's mtime cache).

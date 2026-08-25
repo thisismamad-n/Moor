@@ -3,10 +3,10 @@
 MCP (Model Context Protocol) Client Support
 
 Connects to external MCP servers via stdio, HTTP/StreamableHTTP, or SSE
-transport, discovers their tools, and registers them into the hermes-agent
+transport, discovers their tools, and registers them into the moor-agent
 tool registry so the agent can call them like any built-in tool.
 
-Configuration is read from ~/.hermes/config.yaml under the ``mcp_servers`` key.
+Configuration is read from ~/.moor/config.yaml under the ``mcp_servers`` key.
 The ``mcp`` Python package is optional -- if not installed, this module is a
 no-op and logs a debug message.
 
@@ -144,7 +144,7 @@ _OSV_MALWARE_CHECK_TIMEOUT_S = 12.0
 # corrupts the display and can hang the session.
 #
 # Instead we redirect every stdio MCP subprocess's stderr into a shared
-# per-profile log file (~/.hermes/logs/mcp-stderr.log), tagged with the
+# per-profile log file (~/.moor/logs/mcp-stderr.log), tagged with the
 # server name so individual servers remain debuggable.
 #
 # Fallback is os.devnull if opening the log file fails for any reason.
@@ -166,8 +166,8 @@ def _get_mcp_stderr_log() -> Any:
         if _mcp_stderr_log_fh is not None:
             return _mcp_stderr_log_fh
         try:
-            from hermes_constants import get_hermes_home
-            log_dir = get_hermes_home() / "logs"
+            from moor_constants import get_moor_home
+            log_dir = get_moor_home() / "logs"
             log_dir.mkdir(parents=True, exist_ok=True)
             log_path = log_dir / "mcp-stderr.log"
             # Line-buffered so server output lands on disk promptly; errors=
@@ -687,7 +687,7 @@ def _build_safe_env(user_env: Optional[dict]) -> dict:
     in every MCP server's ``env:`` block.
     """
     try:
-        from hermes_cli.env_loader import get_secret_source
+        from moor_cli.env_loader import get_secret_source
     except Exception:  # pragma: no cover — early bootstrap/import fallback
         get_secret_source = None
     env = {}
@@ -973,13 +973,13 @@ def _resolve_stdio_command(command: str, env: dict) -> tuple[str, dict]:
         if which_hit:
             resolved_command = which_hit
         elif resolved_command in {"npx", "npm", "node"}:
-            hermes_home = os.path.expanduser(
+            moor_home = os.path.expanduser(
                 os.getenv(
-                    "HERMES_HOME", os.path.join(os.path.expanduser("~"), ".hermes")
+                    "MOOR_HOME", os.path.join(os.path.expanduser("~"), ".moor")
                 )
             )
             candidates = [
-                os.path.join(hermes_home, "node", "bin", resolved_command),
+                os.path.join(moor_home, "node", "bin", resolved_command),
                 os.path.join(os.path.expanduser("~"), ".local", "bin", resolved_command),
                 # /usr/local/bin is the canonical install location for Node on
                 # Linux from-source builds, the upstream node:bookworm-slim
@@ -1325,7 +1325,7 @@ def _unwrap_exception_group(exc: BaseException) -> BaseException:
     unwrap to surface the real cause (e.g. ``BrokenPipeError`` on a dead
     stdio pipe, "401 Unauthorized" on an auth failure).
 
-    Adapted from :func:`hermes_cli.mcp_config._unwrap_exception_group` with
+    Adapted from :func:`moor_cli.mcp_config._unwrap_exception_group` with
     two extra behaviours needed on the runtime path:
 
     - **Fatal leaves re-raise.** A ``KeyboardInterrupt`` / ``SystemExit``
@@ -1565,7 +1565,7 @@ def _resolve_identity_header(server_name: str, config: dict):
             return None
         return (name.strip(), value)
     if value_from == "profile":
-        from hermes_cli.profiles import get_active_profile_name
+        from moor_cli.profiles import get_active_profile_name
         return (name.strip(), get_active_profile_name())
     logger.warning(
         "MCP server '%s': identity_header value_from must be 'static' or "
@@ -2252,7 +2252,7 @@ class ElicitationHandler:
         # normalizes the answer to one of accept / decline / cancel.
         #
         # The recv-loop task that fires this callback does NOT inherit
-        # the agent's contextvars (HERMES_SESSION_PLATFORM etc.). When
+        # the agent's contextvars (MOOR_SESSION_PLATFORM etc.). When
         # the MCP tool wrapper captured the agent's context onto
         # owner._pending_call_context we replay it here via
         # contextvars.Context.run so the gateway-platform detection in
@@ -2380,7 +2380,7 @@ class MCPServerTask:
         # contextvars snapshot of the agent task that's currently in
         # session.call_tool(). The MCP recv loop dispatches incoming
         # elicitation/create requests on a SEPARATE asyncio task whose
-        # context doesn't inherit HERMES_SESSION_PLATFORM, so the
+        # context doesn't inherit MOOR_SESSION_PLATFORM, so the
         # elicitation handler has no way to detect the gateway session
         # that triggered the call. Capturing the agent's context here
         # and replaying it inside the elicitation callback restores
@@ -2582,7 +2582,7 @@ class MCPServerTask:
         """Build a ``logging_callback`` for ``ClientSession``.
 
         Routes MCP ``notifications/message`` log notifications from the
-        server into Moor' logging (agent.log via hermes_logging), tagged
+        server into Moor' logging (agent.log via moor_logging), tagged
         with the server name.  Without this, the SDK's default callback
         silently discards them, so server-side warnings/errors during a
         tool call were invisible.  Port of anomalyco/opencode#34529.
@@ -2970,7 +2970,7 @@ class MCPServerTask:
         if not _ensure_mcp_sdk():
             raise ImportError(
                 f"MCP server '{self.name}' requires the 'mcp' Python SDK, but "
-                "it is not installed. Run `hermes setup` to install MCP support, "
+                "it is not installed. Run `moor setup` to install MCP support, "
                 "then retry."
             )
 
@@ -3061,7 +3061,7 @@ class MCPServerTask:
         # Redirect subprocess stderr into a shared log file so MCP servers
         # (FastMCP banners, slack-mcp startup JSON, etc.) don't dump onto
         # the user's TTY and corrupt the TUI.  Preserves debuggability via
-        # ~/.hermes/logs/mcp-stderr.log.
+        # ~/.moor/logs/mcp-stderr.log.
         _write_stderr_log_header(self.name)
         _errlog = _get_mcp_stderr_log()
         try:
@@ -3261,7 +3261,7 @@ class MCPServerTask:
                             '"method":"initialize",'
                             '"params":{"protocolVersion":"2025-03-26",'
                             '"capabilities":{},'
-                            '"clientInfo":{"name":"hermes-probe",'
+                            '"clientInfo":{"name":"moor-probe",'
                             '"version":"0.1"}}}'
                         ),
                     )
@@ -3900,14 +3900,14 @@ class MCPServerTask:
                         # listener on ``_reconnect_event`` — so a 401 on the
                         # very first connect left the server unrevivable for
                         # the life of the process, even after the user
-                        # re-authenticated with ``hermes mcp login``. Parking
+                        # re-authenticated with ``moor mcp login``. Parking
                         # keeps the task alive so the 300s self-probe (and an
                         # explicit /mcp refresh) can pick up fresh tokens.
                         if _is_auth_error(root):
                             logger.warning(
                                 "MCP server '%s' failed initial authentication, "
                                 "parking until credentials change; re-authenticate "
-                                "with `hermes mcp login %s` "
+                                "with `moor mcp login %s` "
                                 "(state: connecting → parked): %s: %s",
                                 self.name, self.name,
                                 type(root).__name__, root,
@@ -4743,8 +4743,8 @@ def _handle_auth_error_and_retry(
     _bump_server_error(server_name)
     return tool_error(
         f"MCP server '{server_name}' requires re-authentication. "
-        f"Run `hermes mcp login {server_name}` (or delete the tokens "
-        f"file under ~/.hermes/mcp-tokens/ and restart). Do NOT retry "
+        f"Run `moor mcp login {server_name}` (or delete the tokens "
+        f"file under ~/.moor/mcp-tokens/ and restart). Do NOT retry "
         f"this tool — ask the user to re-authenticate.",
         needs_reauth=True,
         server=server_name,
@@ -5046,10 +5046,10 @@ def _try_acquire_mcp_discovery_lock() -> Any:
     """
     global _MCP_DISCOVERY_LOCK_PATH
     try:
-        from hermes_constants import get_hermes_home
+        from moor_constants import get_moor_home
         if _MCP_DISCOVERY_LOCK_PATH is None:
             _MCP_DISCOVERY_LOCK_PATH = str(
-                get_hermes_home() / ".mcp-discovery.lock"
+                get_moor_home() / ".mcp-discovery.lock"
             )
         lock_path = _MCP_DISCOVERY_LOCK_PATH
     except Exception:
@@ -5209,7 +5209,7 @@ def _ensure_mcp_loop():
 
 
 def _wrap_with_home_override(coro: "Coroutine") -> "Coroutine":
-    """Carry the caller's context-local HERMES_HOME override into ``coro``.
+    """Carry the caller's context-local MOOR_HOME override into ``coro``.
 
     Returns ``coro`` unchanged when no override is active. Otherwise wraps
     it so the override is set inside the coroutine's own (task-local)
@@ -5217,24 +5217,24 @@ def _wrap_with_home_override(coro: "Coroutine") -> "Coroutine":
     carrying different scopes don't interfere.
     """
     try:
-        from hermes_constants import (
-            get_hermes_home_override,
-            reset_hermes_home_override,
-            set_hermes_home_override,
+        from moor_constants import (
+            get_moor_home_override,
+            reset_moor_home_override,
+            set_moor_home_override,
         )
 
-        home_override = get_hermes_home_override()
+        home_override = get_moor_home_override()
     except Exception:
         return coro
     if not home_override:
         return coro
 
     async def _scoped():
-        token = set_hermes_home_override(home_override)
+        token = set_moor_home_override(home_override)
         try:
             return await coro
         finally:
-            reset_hermes_home_override(token)
+            reset_moor_home_override(token)
 
     return _scoped()
 
@@ -5283,12 +5283,12 @@ def _run_on_mcp_loop(coro_or_factory, timeout: float = 30):
 
     coro = coro_or_factory() if callable(coro_or_factory) else coro_or_factory
 
-    # Propagate the context-local HERMES_HOME override onto the MCP loop.
+    # Propagate the context-local MOOR_HOME override onto the MCP loop.
     # Tasks scheduled via run_coroutine_threadsafe are created INSIDE the
     # loop thread, so they copy the loop thread's context — not the
     # scheduling thread's. A per-request profile scope (the dashboard's
     # ?profile= endpoints, e.g. the MCP "Test server" probe) would silently
-    # vanish here: OAuth token stores and any other get_hermes_home()
+    # vanish here: OAuth token stores and any other get_moor_home()
     # resolution inside the coroutine would read the process home instead
     # of the selected profile's. Re-establish the override inside the
     # task's own context (task-local — concurrent calls carrying different
@@ -5431,7 +5431,7 @@ def _warn_hidden_whitespace(server_name: str, config: dict) -> List[str]:
 def _filter_suspicious_mcp_servers(servers: Dict[str, dict]) -> Dict[str, dict]:
     """Drop exfiltration-shaped MCP configs before any stdio spawn path."""
     try:
-        from hermes_cli.mcp_security import validate_mcp_server_entry as _validate_mcp_server_entry
+        from moor_cli.mcp_security import validate_mcp_server_entry as _validate_mcp_server_entry
     except Exception:
         _validate_mcp_server_entry: Callable[[str, dict[str, Any]], list[str]] | None = None
 
@@ -5464,13 +5464,13 @@ def _load_mcp_config() -> Dict[str, dict]:
     ``timeout``, ``connect_timeout``, and ``auth`` overrides.
 
     ``${ENV_VAR}`` placeholders in string values are resolved from
-    ``os.environ`` (which includes ``~/.hermes/.env`` loaded at startup).
+    ``os.environ`` (which includes ``~/.moor/.env`` loaded at startup).
     """
     try:
-        from hermes_cli.config import load_config
+        from moor_cli.config import load_config
         from utils import env_var_enabled as _env_enabled
 
-        if _env_enabled("HERMES_SAFE_MODE"):
+        if _env_enabled("MOOR_SAFE_MODE"):
             return {}
         config = load_config()
         servers = config.get("mcp_servers")
@@ -5478,8 +5478,8 @@ def _load_mcp_config() -> Dict[str, dict]:
             servers = {}
         # Ensure .env vars are available for interpolation
         try:
-            from hermes_cli.env_loader import load_hermes_dotenv
-            load_hermes_dotenv()
+            from moor_cli.env_loader import load_moor_dotenv
+            load_moor_dotenv()
         except Exception:
             pass
         safe_servers: Dict[str, dict] = {}
@@ -5489,7 +5489,7 @@ def _load_mcp_config() -> Dict[str, dict]:
                 _warn_hidden_whitespace(name, interpolated)
                 safe_servers[name] = interpolated
         try:
-            from hermes_cli.plugins import discover_plugins, get_plugin_manager
+            from moor_cli.plugins import discover_plugins, get_plugin_manager
 
             discover_plugins()
             portable = get_plugin_manager().get_portable_mcp_servers()
@@ -7569,7 +7569,7 @@ def get_mcp_status() -> List[dict]:
 def probe_mcp_server_tools() -> Dict[str, List[tuple]]:
     """Temporarily connect to configured MCP servers and list their tools.
 
-    Designed for ``hermes tools`` interactive configuration — connects to each
+    Designed for ``moor tools`` interactive configuration — connects to each
     enabled server, grabs tool names and descriptions, then disconnects.
     Does NOT register tools in the Moor registry.
 
@@ -7940,7 +7940,7 @@ def _kill_orphaned_mcp_children(
     sessions are not disrupted.
 
     Sends SIGTERM, waits 2 seconds, then escalates to SIGKILL for any
-    survivors, avoiding shared-resource collisions when multiple hermes
+    survivors, avoiding shared-resource collisions when multiple moor
     processes run on the same host (each has its own ``_stdio_pids`` dict).
 
     On POSIX, signals are sent via ``os.killpg`` to the spawn-time pgid when

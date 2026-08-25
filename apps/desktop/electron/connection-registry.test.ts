@@ -78,7 +78,7 @@ test('uniqueLabel counts up (never "X 2 2") and clamps long candidates', () => {
 
 // --- backendScopeKey (composite pool keys) ---
 
-// The electron and @hermes/shared implementations MUST stay byte-identical —
+// The electron and @moor/shared implementations MUST stay byte-identical —
 // the renderer keys its socket registry with the shared copy while the main
 // process keys the backend pool with this one. This contract test is the
 // enforcement (see the NOTE on backendScopeKey).
@@ -86,7 +86,7 @@ test('backendScopeKey: electron and shared implementations agree everywhere', as
   // Non-literal specifier on purpose: tsconfig.electron.json's project
   // boundary excludes apps/shared sources, but vitest resolves the workspace
   // package fine at runtime — which is exactly what this test needs.
-  const shared = (await import(String('@hermes/shared'))) as {
+  const shared = (await import(String('@moor/shared'))) as {
     backendScopeKey: typeof backendScopeKey
     backendScopePrefix: typeof backendScopePrefix
     LOCAL_CONNECTION_ID: string
@@ -235,7 +235,7 @@ test('token only persists on token-auth remotes; oauth/cloud drop it', () => {
   assert.equal(oauth.token, undefined)
 
   const cloud = normalizeConnectionInput(
-    { kind: 'cloud', label: 'C', url: 'https://c.hermes.cloud', authMode: 'oauth', token: { enc: 'x' } },
+    { kind: 'cloud', label: 'C', url: 'https://c.moor.cloud', authMode: 'oauth', token: { enc: 'x' } },
     registry
   )
 
@@ -250,13 +250,13 @@ test('merge preserves fields the editor does not carry (org, ssh extras)', () =>
     id: 'c',
     kind: 'cloud' as const,
     label: 'Cloud',
-    org: 'nous',
+    org: 'moor',
     url: 'https://a.cloud'
   }
 
   const renamed = mergeConnectionInput({ id: 'c', kind: 'cloud', label: 'Renamed', url: 'https://a.cloud' }, cloud)
 
-  assert.equal(renamed.org, 'nous')
+  assert.equal(renamed.org, 'moor')
 
   const ssh = {
     host: 'homelab.lan',
@@ -265,14 +265,14 @@ test('merge preserves fields the editor does not carry (org, ssh extras)', () =>
     kind: 'ssh' as const,
     label: 'Box',
     port: 2222,
-    remoteHermesPath: '/opt/hermes',
+    remoteMoorPath: '/opt/moor',
     remoteProfile: 'research',
     user: 'k'
   }
 
   const labelOnly = mergeConnectionInput({ id: 's', kind: 'ssh', label: 'Renamed box' }, ssh)
 
-  assert.equal(labelOnly.remoteHermesPath, '/opt/hermes')
+  assert.equal(labelOnly.remoteMoorPath, '/opt/moor')
   assert.equal(labelOnly.remoteProfile, 'research')
   assert.equal(labelOnly.host, 'homelab.lan')
   assert.equal(labelOnly.user, 'k')
@@ -340,12 +340,12 @@ test('remote input normalizes URL and auth mode; cloud keeps org', () => {
   assert.equal(remote.authMode, 'token')
 
   const cloud = normalizeConnectionInput(
-    { kind: 'cloud', label: 'Cloud', url: 'https://foo.hermes.cloud', authMode: 'oauth', org: 'nous' },
+    { kind: 'cloud', label: 'Cloud', url: 'https://foo.moor.cloud', authMode: 'oauth', org: 'moor' },
     registry
   )
 
   assert.equal(cloud.kind, 'cloud')
-  assert.equal(cloud.org, 'nous')
+  assert.equal(cloud.org, 'moor')
   assert.equal(cloud.authMode, 'oauth')
 })
 
@@ -419,9 +419,9 @@ test('normalizeRegistry round-trips a valid registry unchanged in shape', () => 
         id: 'cloud-1',
         kind: 'cloud',
         label: 'Moor Cloud',
-        url: 'https://a.hermes.cloud',
+        url: 'https://a.moor.cloud',
         authMode: 'oauth',
-        org: 'nous'
+        org: 'moor'
       },
       { id: 'spark', kind: 'ssh', label: 'Spark', host: 'spark1', user: 'tek', port: 2222 }
     ]
@@ -465,14 +465,14 @@ test('migrate: v1 global remote becomes a labeled entry and the primary', () => 
 test('migrate: v1 cloud keeps cloud provenance + org', () => {
   const registry = migrateV1ToRegistry({
     mode: 'cloud',
-    remote: { url: 'https://a.hermes.cloud', authMode: 'oauth', org: 'nous' }
+    remote: { url: 'https://a.moor.cloud', authMode: 'oauth', org: 'moor' }
   })
 
   const cloud = registry.connections.find(c => c.kind === 'cloud')
 
   assert.ok(cloud)
   assert.equal(registry.primary, cloud.id)
-  assert.equal(cloud.org, 'nous')
+  assert.equal(cloud.org, 'moor')
 })
 
 test('migrate: per-profile overrides become extra sources, deduped by URL', () => {
@@ -613,7 +613,7 @@ test('normalizeConnectionInput keeps filtered headers on remote/cloud, drops the
     {
       kind: 'remote',
       label: 'CF box',
-      url: 'https://hermes.example.com',
+      url: 'https://moor.example.com',
       authMode: 'token',
       token: { enc: 'x' },
       headers: {
@@ -646,7 +646,7 @@ test('mergeConnectionInput inherits stored headers when the editor payload omits
     id: 'cf',
     kind: 'remote' as const,
     label: 'CF box',
-    url: 'https://hermes.example.com',
+    url: 'https://moor.example.com',
     authMode: 'token' as const,
     headers: { 'CF-Access-Client-Id': { encoding: 'safeStorage', value: 'id' } }
   }
@@ -666,7 +666,7 @@ test('connectionDialFieldsChanged: a header change recycles live backends', () =
     id: 'cf',
     kind: 'remote',
     label: 'CF box',
-    url: 'https://hermes.example.com',
+    url: 'https://moor.example.com',
     authMode: 'token',
     token: { enc: 'x' },
     headers: { 'CF-Access-Client-Id': { encoding: 'safeStorage', value: 'id' } }
@@ -693,7 +693,7 @@ test('normalizeRegistry preserves stored headers on remote entries (v2 additive 
         id: 'cf',
         kind: 'remote',
         label: 'CF box',
-        url: 'https://hermes.example.com',
+        url: 'https://moor.example.com',
         authMode: 'token',
         token: { enc: 'x' },
         headers: {
@@ -716,7 +716,7 @@ test('migrateV1ToRegistry carries v1 remote headers into the registry entry', ()
   const registry = migrateV1ToRegistry({
     mode: 'remote',
     remote: {
-      url: 'https://hermes.example.com',
+      url: 'https://moor.example.com',
       authMode: 'token',
       token: { enc: 'x' },
       headers: { 'CF-Access-Client-Id': { encoding: 'safeStorage', value: 'id' } }

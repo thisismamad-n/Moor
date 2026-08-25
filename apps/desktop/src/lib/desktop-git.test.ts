@@ -32,7 +32,7 @@ const api = vi.fn(async ({ path }: { path: string }) => {
 
 describe('desktop git facade', () => {
   beforeEach(() => {
-    vi.stubGlobal('window', { hermesDesktop: { api, git: localGit } })
+    vi.stubGlobal('window', { moorDesktop: { api, git: localGit } })
     $connection.set(null)
   })
 

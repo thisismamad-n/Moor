@@ -7,7 +7,7 @@ Proactive messaging (send, typing) uses the SDK's App.send() method.
 
 Requires:
     the ``teams`` extra (auto-installed by the gateway on first start, or
-    manually: ``<hermes-venv>/bin/pip install microsoft-teams-apps aiohttp``)
+    manually: ``<moor-venv>/bin/pip install microsoft-teams-apps aiohttp``)
     TEAMS_CLIENT_ID, TEAMS_CLIENT_SECRET, and TEAMS_TENANT_ID env vars
 
 Configuration in config.yaml:
@@ -538,8 +538,8 @@ async def _standalone_send(
     """Acquire a Bot Framework bearer token and POST a single message activity.
 
     Used by ``tools/send_message_tool._send_via_adapter`` when the gateway
-    runner is not in this process (e.g. ``hermes cron`` running as a
-    separate process from ``hermes gateway``).  Without this hook,
+    runner is not in this process (e.g. ``moor cron`` running as a
+    separate process from ``moor gateway``).  Without this hook,
     ``deliver=teams`` cron jobs fail with ``No live adapter for platform``.
 
     Configuration: requires ``TEAMS_CLIENT_ID``, ``TEAMS_CLIENT_SECRET``,
@@ -891,7 +891,7 @@ class TeamsAdapter(BasePlatformAdapter):
         ) as client:
             response = await client.get(
                 url,
-                headers={"User-Agent": "Mozilla/5.0 (compatible; HermesAgent/1.0)"},
+                headers={"User-Agent": "Mozilla/5.0 (compatible; MoorAgent/1.0)"},
             )
             response.raise_for_status()
             return response.content
@@ -1068,10 +1068,10 @@ class TeamsAdapter(BasePlatformAdapter):
 
         action = ctx.activity.value.action
         data = action.data or {}
-        hermes_action = data.get("hermes_action", "")
+        moor_action = data.get("moor_action", "")
         session_key = data.get("session_key", "")
 
-        if not hermes_action or not session_key:
+        if not moor_action or not session_key:
             return InvokeResponse(
                 status=200,
                 body=AdaptiveCardActionMessageResponse(value="Unknown action."),
@@ -1113,7 +1113,7 @@ class TeamsAdapter(BasePlatformAdapter):
             "approve_always": "always",
             "deny": "deny",
         }
-        choice = choice_map.get(hermes_action)
+        choice = choice_map.get(moor_action)
         if not choice:
             return InvokeResponse(
                 status=200,
@@ -1179,22 +1179,22 @@ class TeamsAdapter(BasePlatformAdapter):
         }
 
         actions = [ExecuteAction(
-            title="Allow Once", verb="hermes_approve",
-            data={**btn_data_base, "hermes_action": "approve_once"}, style="positive",
+            title="Allow Once", verb="moor_approve",
+            data={**btn_data_base, "moor_action": "approve_once"}, style="positive",
         )]
         if not smart_denied and allow_session:
             actions.append(ExecuteAction(
-                title="Allow Session", verb="hermes_approve",
-                data={**btn_data_base, "hermes_action": "approve_session"},
+                title="Allow Session", verb="moor_approve",
+                data={**btn_data_base, "moor_action": "approve_session"},
             ))
             if allow_permanent:
                 actions.append(ExecuteAction(
-                    title="Always Allow", verb="hermes_approve",
-                    data={**btn_data_base, "hermes_action": "approve_always"},
+                    title="Always Allow", verb="moor_approve",
+                    data={**btn_data_base, "moor_action": "approve_always"},
                 ))
         actions.append(ExecuteAction(
-            title="Deny", verb="hermes_approve",
-            data={**btn_data_base, "hermes_action": "deny"}, style="destructive",
+            title="Deny", verb="moor_approve",
+            data={**btn_data_base, "moor_action": "deny"}, style="destructive",
         ))
         body = [
             TextBlock(text="⚠️ Command Approval Required", wrap=True, weight="Bolder"),
@@ -1400,11 +1400,11 @@ class TeamsAdapter(BasePlatformAdapter):
 
 def interactive_setup() -> None:
     """Guide the user through Teams setup using the Teams CLI."""
-    from hermes_cli.config import (
+    from moor_cli.config import (
         get_env_value,
         save_env_value,
     )
-    from hermes_cli.cli_output import (
+    from moor_cli.cli_output import (
         prompt,
         prompt_yes_no,
         print_info,
@@ -1464,9 +1464,9 @@ def interactive_setup() -> None:
         print_warning("⚠️  Open access — anyone who can message the bot can command it.")
 
     print()
-    print_success("Teams configuration saved to ~/.hermes/.env")
+    print_success("Teams configuration saved to ~/.moor/.env")
     print_info("Install the app in Teams:  teams app install --id <teamsAppId>")
-    print_info("Restart the gateway:       hermes gateway restart")
+    print_info("Restart the gateway:       moor gateway restart")
 
 
 # ── Plugin entry point ────────────────────────────────────────────────────────

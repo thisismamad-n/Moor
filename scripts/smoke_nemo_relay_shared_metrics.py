@@ -27,15 +27,15 @@ SKILL_CANARY = "relay-smoke-private-agent-skill"
 INSTALLED_SKILL_CANARY = "relay-smoke-private-installed-skill"
 
 
-def _resolve_hermes_executable(hermes_repo: Path) -> Path:
+def _resolve_moor_executable(moor_repo: Path) -> Path:
     for relative_path in (
-        Path(".venv") / "bin" / "hermes",
-        Path(".venv") / "Scripts" / "hermes.exe",
+        Path(".venv") / "bin" / "moor",
+        Path(".venv") / "Scripts" / "moor.exe",
     ):
-        candidate = hermes_repo / relative_path
+        candidate = moor_repo / relative_path
         if candidate.is_file():
             return candidate
-    discovered = shutil.which("hermes")
+    discovered = shutil.which("moor")
     if discovered:
         return Path(discovered)
     raise SystemExit(
@@ -235,10 +235,10 @@ class _ModelHandler(BaseHTTPRequestHandler):
 def _arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--hermes-repo",
+        "--moor-repo",
         type=Path,
         default=Path.cwd(),
-        help="Moor source checkout containing .venv/bin/hermes",
+        help="Moor source checkout containing .venv/bin/moor",
     )
     parser.add_argument(
         "--relay-python",
@@ -250,7 +250,7 @@ def _arguments() -> argparse.Namespace:
         "--output-dir",
         type=Path,
         default=None,
-        help="Directory for the isolated HERMES_HOME and captured output",
+        help="Directory for the isolated MOOR_HOME and captured output",
     )
     return parser.parse_args()
 
@@ -298,31 +298,31 @@ def _validate_store(database_path: Path) -> list[dict[str, Any]]:
     for counter in counters:
         by_name.setdefault(counter["name"], []).append(counter)
     if set(by_name) != {
-        "hermes.client.active",
-        "hermes.model_route.count",
-        "hermes.skill.lifecycle.count",
-        "hermes.skill.load.count",
-        "hermes.task_run.finished",
-        "hermes.task_run.started",
-        "hermes.tool_call.count",
+        "moor.client.active",
+        "moor.model_route.count",
+        "moor.skill.lifecycle.count",
+        "moor.skill.load.count",
+        "moor.task_run.finished",
+        "moor.task_run.started",
+        "moor.tool_call.count",
     }:
         raise AssertionError(
             f"Unexpected SQLite counters:\n{json.dumps(counters, indent=2)}"
         )
-    if by_name["hermes.client.active"] != [
+    if by_name["moor.client.active"] != [
         {
-            "name": "hermes.client.active",
+            "name": "moor.client.active",
             "dimensions": {},
             "value": 1,
             "packaged_value": 1,
         }
     ]:
         raise AssertionError(
-            f"Unexpected client-active counter: {by_name['hermes.client.active']}"
+            f"Unexpected client-active counter: {by_name['moor.client.active']}"
         )
-    [model] = by_name["hermes.model_route.count"]
+    [model] = by_name["moor.model_route.count"]
     expected_model = {
-        "name": "hermes.model_route.count",
+        "name": "moor.model_route.count",
         "dimensions": {
             "model": MODEL_CANARY,
             "provider": "custom",
@@ -332,10 +332,10 @@ def _validate_store(database_path: Path) -> list[dict[str, Any]]:
     }
     if model != expected_model:
         raise AssertionError(
-            f"Unexpected model counter: {by_name['hermes.model_route.count']}"
+            f"Unexpected model counter: {by_name['moor.model_route.count']}"
         )
     expected_start = {
-        "name": "hermes.task_run.started",
+        "name": "moor.task_run.started",
         "dimensions": {
             "entrypoint": "interactive",
             "execution_surface": "cli",
@@ -343,11 +343,11 @@ def _validate_store(database_path: Path) -> list[dict[str, Any]]:
         "value": 1,
         "packaged_value": 1,
     }
-    if by_name["hermes.task_run.started"] != [expected_start]:
+    if by_name["moor.task_run.started"] != [expected_start]:
         raise AssertionError(
-            f"Unexpected task start: {by_name['hermes.task_run.started']}"
+            f"Unexpected task start: {by_name['moor.task_run.started']}"
         )
-    [terminal] = by_name["hermes.task_run.finished"]
+    [terminal] = by_name["moor.task_run.finished"]
     expected_terminal_dimensions = {
         "duration_bucket": terminal["dimensions"].get("duration_bucket"),
         "end_reason": "completed",
@@ -365,7 +365,7 @@ def _validate_store(database_path: Path) -> list[dict[str, Any]]:
         or terminal["packaged_value"] != 1
     ):
         raise AssertionError(f"Unexpected task terminal counter: {terminal}")
-    [tool] = by_name["hermes.tool_call.count"]
+    [tool] = by_name["moor.tool_call.count"]
     expected_tool_dimensions = {
         "approval_outcome": "not_required",
         "latency_bucket": tool["dimensions"].get("latency_bucket"),
@@ -380,7 +380,7 @@ def _validate_store(database_path: Path) -> list[dict[str, Any]]:
         or tool["packaged_value"] != 1
     ):
         raise AssertionError(f"Unexpected tool counter: {tool}")
-    lifecycle = by_name["hermes.skill.lifecycle.count"]
+    lifecycle = by_name["moor.skill.lifecycle.count"]
     expected_actions = {
         "archived",
         "created",
@@ -396,7 +396,7 @@ def _validate_store(database_path: Path) -> list[dict[str, Any]]:
         or any(counter["packaged_value"] != 1 for counter in lifecycle)
     ):
         raise AssertionError(f"Unexpected skill lifecycle counters: {lifecycle}")
-    loads = by_name["hermes.skill.load.count"]
+    loads = by_name["moor.skill.load.count"]
     expected_load_states = {
         ("first_use", "not_applicable", "1"),
         ("reused", "no_new_patch", "2"),
@@ -443,7 +443,7 @@ def _validate_packages(
         jsonschema.validate(package, schema)
         if set(package["resource"]) != {
             "architecture",
-            "hermes_version",
+            "moor_version",
             "install_method",
             "os_family",
         }:
@@ -467,37 +467,37 @@ def _validate_packages(
         for metric in package.get("metrics", []):
             metrics.setdefault(metric["name"], []).append(metric)
     if set(metrics) != {
-        "hermes.client.active",
-        "hermes.model_route.count",
-        "hermes.skill.lifecycle.count",
-        "hermes.skill.load.count",
-        "hermes.task_run.finished",
-        "hermes.task_run.started",
-        "hermes.tool_call.count",
+        "moor.client.active",
+        "moor.model_route.count",
+        "moor.skill.lifecycle.count",
+        "moor.skill.load.count",
+        "moor.task_run.finished",
+        "moor.task_run.started",
+        "moor.tool_call.count",
     }:
         raise AssertionError(
             f"Unexpected package metrics:\n{json.dumps(metrics, indent=2)}"
         )
-    if metrics["hermes.client.active"] != [
+    if metrics["moor.client.active"] != [
         {
-            "name": "hermes.client.active",
+            "name": "moor.client.active",
             "type": "counter",
             "dimensions": {},
             "value": 1,
         }
     ]:
         raise AssertionError(
-            f"Unexpected client-active metric: {metrics['hermes.client.active']}"
+            f"Unexpected client-active metric: {metrics['moor.client.active']}"
         )
-    [model] = metrics["hermes.model_route.count"]
+    [model] = metrics["moor.model_route.count"]
     if model["dimensions"] != {
         "model": MODEL_CANARY,
         "provider": "custom",
     } or model["value"] != 2:
         raise AssertionError(
-            f"Unexpected model metric: {metrics['hermes.model_route.count']}"
+            f"Unexpected model metric: {metrics['moor.model_route.count']}"
         )
-    [terminal] = metrics["hermes.task_run.finished"]
+    [terminal] = metrics["moor.task_run.finished"]
     if terminal["dimensions"] != {
         "duration_bucket": terminal["dimensions"].get("duration_bucket"),
         "end_reason": "completed",
@@ -510,7 +510,7 @@ def _validate_packages(
         "tool_call_count_bucket": "1",
     }:
         raise AssertionError(f"Unexpected task terminal metric: {terminal}")
-    [tool] = metrics["hermes.tool_call.count"]
+    [tool] = metrics["moor.tool_call.count"]
     if (
         tool["dimensions"]
         != {
@@ -523,7 +523,7 @@ def _validate_packages(
         or tool["dimensions"]["latency_bucket"] == "unknown"
     ):
         raise AssertionError(f"Unexpected tool metric: {tool}")
-    lifecycle = metrics["hermes.skill.lifecycle.count"]
+    lifecycle = metrics["moor.skill.lifecycle.count"]
     if {metric["dimensions"]["action"] for metric in lifecycle} != {
         "archived",
         "created",
@@ -534,7 +534,7 @@ def _validate_packages(
         "stale",
     }:
         raise AssertionError(f"Unexpected skill lifecycle metrics: {lifecycle}")
-    loads = metrics["hermes.skill.load.count"]
+    loads = metrics["moor.skill.load.count"]
     if {
         (
             metric["dimensions"]["reuse_state"],
@@ -553,9 +553,9 @@ def _validate_packages(
 
 def main() -> int:
     args = _arguments()
-    hermes_repo = args.hermes_repo.resolve()
+    moor_repo = args.moor_repo.resolve()
     relay_python = args.relay_python.resolve() if args.relay_python else None
-    hermes = _resolve_hermes_executable(hermes_repo)
+    moor = _resolve_moor_executable(moor_repo)
     if relay_python is not None and not any(
         (relay_python / "nemo_relay").glob("_native.*")
     ):
@@ -570,8 +570,8 @@ def main() -> int:
             raise SystemExit(f"Refusing to replace existing output directory: {root}")
         root.mkdir(parents=True)
     else:
-        root = Path(tempfile.mkdtemp(prefix="hermes-relay-shared-metrics-"))
-    home = root / "hermes-home"
+        root = Path(tempfile.mkdtemp(prefix="moor-relay-shared-metrics-"))
+    home = root / "moor-home"
     workdir = root / "workspace"
     workdir.mkdir()
     (workdir / TOOL_FILE).write_text(TOOL_RESULT_CANARY, encoding="utf-8")
@@ -608,15 +608,15 @@ def main() -> int:
     try:
         _write_config(home, server.server_port)
         env = os.environ.copy()
-        env["HERMES_HOME"] = str(home)
-        python_paths = [str(hermes_repo)]
+        env["MOOR_HOME"] = str(home)
+        python_paths = [str(moor_repo)]
         if relay_python is not None:
             python_paths.append(str(relay_python))
         python_paths.append(env.get("PYTHONPATH", ""))
         env["PYTHONPATH"] = os.pathsep.join(python_paths).rstrip(os.pathsep)
         result = subprocess.run(
             [
-                str(hermes),
+                str(moor),
                 "chat",
                 "--query",
                 PROMPT_CANARY,
@@ -642,8 +642,8 @@ def main() -> int:
         server.server_close()
         thread.join(timeout=5)
 
-    (root / "hermes.stdout.txt").write_text(result.stdout, encoding="utf-8")
-    (root / "hermes.stderr.txt").write_text(result.stderr, encoding="utf-8")
+    (root / "moor.stdout.txt").write_text(result.stdout, encoding="utf-8")
+    (root / "moor.stderr.txt").write_text(result.stderr, encoding="utf-8")
     if result.returncode != 0:
         raise AssertionError(
             f"Moor exited with {result.returncode}\n"
@@ -669,7 +669,7 @@ def main() -> int:
             sys.executable,
             "-c",
             "\n".join([
-                "from hermes_cli.observability import relay_shared_metrics",
+                "from moor_cli.observability import relay_shared_metrics",
                 "from tools.skill_usage import (",
                 "    STATE_ACTIVE, STATE_ARCHIVED, STATE_STALE, bump_patch,",
                 "    bump_use, record_created, record_installed, set_state,",
@@ -719,11 +719,11 @@ def main() -> int:
     counters = _validate_store(telemetry / "metrics.sqlite3")
     package_paths, packages = _validate_packages(
         telemetry / "outbox",
-        hermes_repo
-        / "hermes_cli"
+        moor_repo
+        / "moor_cli"
         / "observability"
         / "schemas"
-        / "hermes.shared_metrics.v2.schema.json",
+        / "moor.shared_metrics.v2.schema.json",
     )
 
     print("Moor -> NeMo Relay shared-metrics smoke test passed")

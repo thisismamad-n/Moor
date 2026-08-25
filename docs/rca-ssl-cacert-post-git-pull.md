@@ -1,17 +1,17 @@
-# RCA: SSL CA cert bundle corruption after `hermes update`
+# RCA: SSL CA cert bundle corruption after `moor update`
 
 **Status:** resolved by `fix(ssl): surface broken CA bundles before provider calls`
 **Severity:** P2 — degrades the agent into opaque provider/client failures until the user repairs deps or CA configuration.
 
 ## Summary
 
-A partial `hermes update`, interrupted venv repair, or stale CA-bundle environment variable can leave Python TLS configuration pointing at a missing, empty, or unloadable CA bundle. The first outbound HTTPS client creation or request can then fail with a raw `FileNotFoundError: [Errno 2] No such file or directory` or a low-level SSL error that does not name the broken CA path.
+A partial `moor update`, interrupted venv repair, or stale CA-bundle environment variable can leave Python TLS configuration pointing at a missing, empty, or unloadable CA bundle. The first outbound HTTPS client creation or request can then fail with a raw `FileNotFoundError: [Errno 2] No such file or directory` or a low-level SSL error that does not name the broken CA path.
 
 ## Root cause
 
 Moor uses OpenAI/httpx and requests-based clients for provider calls, model metadata, gateway delivery, and web tools. Those clients inherit CA bundle settings from:
 
-- `HERMES_CA_BUNDLE`
+- `MOOR_CA_BUNDLE`
 - `SSL_CERT_FILE`
 - `REQUESTS_CA_BUNDLE`
 - `CURL_CA_BUNDLE`
@@ -29,7 +29,7 @@ When the venv is partially refreshed, or when one of those env vars points at a 
 4. Builds an `ssl.SSLContext` from each checked bundle,
 5. Raises a typed `SSLConfigurationError` with a repair hint before httpx/OpenAI can raise a raw low-level error.
 
-`hermes_cli doctor` exposes the same check under `SSL / CA Certificates`, so users can diagnose the problem without starting a model session.
+`moor_cli doctor` exposes the same check under `SSL / CA Certificates`, so users can diagnose the problem without starting a model session.
 
 ## Recovery
 
@@ -51,4 +51,4 @@ For a custom/corporate CA setup, fix the env var so it points at a real PEM bund
 
 ## Environment escape hatch
 
-Set `HERMES_SKIP_SSL_GUARD=1` to bypass the preflight check. This is intended only for sandboxed or managed-trust environments where the Python CA path looks unusual but downstream clients are known to work.
+Set `MOOR_SKIP_SSL_GUARD=1` to bypass the preflight check. This is intended only for sandboxed or managed-trust environments where the Python CA path looks unusual but downstream clients are known to work.

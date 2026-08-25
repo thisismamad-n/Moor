@@ -68,7 +68,7 @@ export interface RegistryConnection {
   user?: string
   port?: number
   keyPath?: string
-  remoteHermesPath?: string
+  remoteMoorPath?: string
   remoteProfile?: string
 }
 
@@ -149,7 +149,7 @@ export function agentHandle(profile: string, connectionLabel: string, duplicated
  * profile names).
  *
  * NOTE: the renderer's socket registry uses the twin implementation in
- * apps/shared/src/backend-scope.ts (`@hermes/shared`) — tsconfig project
+ * apps/shared/src/backend-scope.ts (`@moor/shared`) — tsconfig project
  * boundaries prevent a single physical module here. The two are pinned
  * byte-identical by the cross-copy contract test in
  * connection-registry.test.ts; change BOTH or that test fails.
@@ -276,7 +276,7 @@ export interface UpdateEligibility {
 
 /**
  * Whether "Update all instances" may drive this connection. Moor Cloud
- * instances are platform-managed — we never run `hermes update` against them.
+ * instances are platform-managed — we never run `moor update` against them.
  * Local, remote, and ssh sources are all eligible (reachability and busy
  * checks happen at dispatch time, not here).
  */
@@ -321,7 +321,7 @@ export interface ConnectionInput {
   user?: string
   port?: number | string
   keyPath?: string
-  remoteHermesPath?: string
+  remoteMoorPath?: string
   remoteProfile?: string
 }
 
@@ -379,7 +379,7 @@ export function normalizeConnectionInput(input: ConnectionInput, registry: Conne
       user: input.user,
       port: input.port,
       keyPath: input.keyPath,
-      remoteHermesPath: input.remoteHermesPath,
+      remoteMoorPath: input.remoteMoorPath,
       remoteProfile: input.remoteProfile
     })
 
@@ -435,7 +435,7 @@ export function normalizeConnectionInput(input: ConnectionInput, registry: Conne
  * editor doesn't carry survive a save. Renaming a migrated cloud entry must
  * not drop its `org` (downstream update-fanout uses it to skip
  * platform-managed instances), and renaming an ssh entry must not drop
- * `remoteHermesPath`/`remoteProfile`. Only fields the payload explicitly
+ * `remoteMoorPath`/`remoteProfile`. Only fields the payload explicitly
  * carries (non-undefined) override; `token` is deliberately NOT merged here —
  * the caller owns secret handling.
  */
@@ -457,7 +457,7 @@ export function mergeConnectionInput(input: ConnectionInput, existing?: null | R
   inherit('org')
   inherit('host')
   inherit('keyPath')
-  inherit('remoteHermesPath')
+  inherit('remoteMoorPath')
   inherit('remoteProfile')
   // Headers inherit like other dial fields: an edit payload that omits the
   // field keeps the stored set; an explicit payload (even {}) is
@@ -499,7 +499,7 @@ export function connectionDialFieldsChanged(before: RegistryConnection, after: R
     'user',
     'port',
     'keyPath',
-    'remoteHermesPath',
+    'remoteMoorPath',
     'remoteProfile'
   ]
 

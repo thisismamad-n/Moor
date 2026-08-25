@@ -2,7 +2,7 @@
 
 **Status:** authoritative wire spec for the Chronos cron provider.
 **Audience:** the NAS-side implementer of the `agent-cron` endpoints
-(`nous-account-service`) and anyone debugging the managed-cron path.
+(`moor-account-service`) and anyone debugging the managed-cron path.
 
 Chronos lets a hosted Moor gateway **scale to zero** while idle and still
 fire cron jobs. Instead of an in-process 60-second ticker, the agent asks NAS
@@ -21,7 +21,7 @@ create/update/pause/resume/remove a cron job (agent side)
   │
   ▼
 ChronosCronScheduler.reconcile()        ── agent computes next_run_at
-  │  POST {portal}/api/agent-cron/provision   (auth: agent's Nous access token)
+  │  POST {portal}/api/agent-cron/provision   (auth: agent's Moor access token)
   ▼
 NAS arms a one-shot for fire_at         ── NAS owns the scheduler + its creds
   │
@@ -40,15 +40,15 @@ agent verifies the NAS JWT → store CAS claim → run_one_job → re-arm next o
 
 | Hop | Who calls whom | Auth mechanism | Verified by |
 |---|---|---|---|
-| 1 | agent → NAS (`provision`/`cancel`/`list`) | the agent's existing **Nous Portal access token** (Bearer) — for a hosted agent this is the **bootstrap-session token** NAS planted in `auth.json` (client `hermes-cli-vps`), NOT an `agent:*` client token | NAS (its normal agent-token path) |
+| 1 | agent → NAS (`provision`/`cancel`/`list`) | the agent's existing **Moor Portal access token** (Bearer) — for a hosted agent this is the **bootstrap-session token** NAS planted in `auth.json` (client `moor-cli-vps`), NOT an `agent:*` client token | NAS (its normal agent-token path) |
 | 2 | scheduler → NAS (`relay`) | the scheduler's request **signature** | NAS (the signature path it already has) |
 | 3 | NAS → agent (`/api/cron/fire`) | a **short-lived NAS-minted JWT** (`aud=agent:{instance_id}`, `purpose=cron_fire`) | agent (PyJWT against NAS JWKS) |
 
 > **Which token, exactly (hop 1).** A hosted agent never holds an `agent:{instance_id}`
 > OAuth client credential — that shape is minted only by the interactive dashboard
 > auth-code grant (a browser user). For all of its own outbound portal calls the
-> agent uses the **bootstrap-session access token** (`resolve_nous_access_token`),
-> minted under the bootstrap-only client `hermes-cli-vps` and seeded into the
+> agent uses the **bootstrap-session access token** (`resolve_moor_access_token`),
+> minted under the bootstrap-only client `moor-cli-vps` and seeded into the
 > container on first boot. NAS therefore must resolve the calling agent's instance
 > id from EITHER an `agent:{id}` client (self-hosted/dashboard callers) OR — for the
 > bootstrap token — from `AgentInstance.bootstrapSessionId` matching the token's
@@ -71,7 +71,7 @@ already performs.
 
 Arm (or re-arm, idempotently) exactly one one-shot for a job.
 
-- **Auth:** `Authorization: Bearer <agent Nous access token>`. NAS validates via
+- **Auth:** `Authorization: Bearer <agent Moor access token>`. NAS validates via
   its normal agent-token path and scopes the row to the calling agent/org.
 - **Request body:**
   ```json
@@ -129,7 +129,7 @@ Arm (or re-arm, idempotently) exactly one one-shot for a job.
 This is the agent endpoint NAS calls in Endpoint 3 step 3. Two hops on hosted
 deployments:
 
-1. **Dashboard app** (`hermes_cli/web_server.py`) — the agent's only public
+1. **Dashboard app** (`moor_cli/web_server.py`) — the agent's only public
    HTTP surface (the Fly proxy exposes exactly one port, the dashboard's). It
    is in `PUBLIC_API_PATHS` so the dashboard cookie gate lets the bearer-JWT
    callback through to the verifier. The dashboard verifies the JWT, resolves
@@ -183,7 +183,7 @@ There is deliberately no in-dashboard execution fallback. The verifier is
   `get_job` returns `None` after the final fire → the agent does **not** re-arm
   → the schedule stops cleanly with no orphaned one-shot.
 - **Multi-replica agents:** the store CAS makes the fire at-most-once across N
-  gateway replicas sharing one `HERMES_HOME` — exactly one replica runs each
+  gateway replicas sharing one `MOOR_HOME` — exactly one replica runs each
   fire.
 
 ## Reconcile (self-healing)
@@ -210,7 +210,7 @@ credentials. For hosted agents NAS sets these at provision time:
 | `cron.chronos.expected_audience` | this agent's JWT `aud` (`agent:{instance_id}`) |
 | `cron.chronos.nas_jwks_url` | NAS JWKS for verifying the fire JWT |
 
-If `callback_url` / `portal_url` is blank or the agent has no Nous login,
+If `callback_url` / `portal_url` is blank or the agent has no Moor login,
 `is_available()` returns False and the resolver falls back to the built-in
 in-process ticker — cron never loses its trigger.
 

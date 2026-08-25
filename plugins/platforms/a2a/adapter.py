@@ -80,9 +80,9 @@ def _default_agent_name() -> str:
         return name
     try:
         import socket
-        return f"hermes-{socket.gethostname()}"
+        return f"moor-{socket.gethostname()}"
     except Exception:
-        return "hermes-agent"
+        return "moor-agent"
 
 
 def _clean_slug(value: str) -> str:
@@ -103,24 +103,24 @@ def _join_url(base: str, prefix: str) -> str:
 
 def _active_profile_name() -> str:
     try:
-        from hermes_cli.profiles import get_active_profile_name
+        from moor_cli.profiles import get_active_profile_name
         return get_active_profile_name() or "default"
     except Exception:
-        return os.getenv("HERMES_PROFILE", "default") or "default"
+        return os.getenv("MOOR_PROFILE", "default") or "default"
 
 
 def _profile_home(profile: str) -> Optional[str]:
     try:
-        from hermes_cli.profiles import get_profile_dir
+        from moor_cli.profiles import get_profile_dir
         return str(get_profile_dir(profile))
     except Exception:
         if not profile or profile == "default":
             try:
-                from hermes_cli.config import get_hermes_home
-                return str(get_hermes_home())
+                from moor_cli.config import get_moor_home
+                return str(get_moor_home())
             except Exception:
                 return None
-        return os.path.expanduser(f"~/.hermes/profiles/{profile}")
+        return os.path.expanduser(f"~/.moor/profiles/{profile}")
 
 def _safe_context_slug(value: str, max_len: int = 96) -> str:
     """Sanitize attacker-provided context ids before using in session titles."""
@@ -481,7 +481,7 @@ class A2AAdapter(BasePlatformAdapter):
 
     def _load_global_a2a_config(self) -> dict:
         try:
-            from hermes_cli.config import load_config
+            from moor_cli.config import load_config
             cfg = load_config() or {}
             return cfg if isinstance(cfg, dict) else {}
         except Exception:
@@ -864,15 +864,15 @@ class A2AAdapter(BasePlatformAdapter):
         lock = self._forward_lock(key)
         with lock:
             session_id = self._profile_sessions.get(key) or self._lookup_forward_session(profile, session_title)
-            cmd = ["hermes", "chat", "-q", framed_text, "-Q", "--source", "a2a"]
+            cmd = ["moor", "chat", "-q", framed_text, "-Q", "--source", "a2a"]
             if session_id:
                 cmd.extend(["--resume", session_id])
 
             env = os.environ.copy()
             home = _profile_home(profile)
             if home:
-                env["HERMES_HOME"] = home
-            env["HERMES_A2A_PEER"] = peer
+                env["MOOR_HOME"] = home
+            env["MOOR_A2A_PEER"] = peer
             start = time.time()
             try:
                 proc = subprocess.run(

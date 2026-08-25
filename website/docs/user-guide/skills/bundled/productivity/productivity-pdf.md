@@ -17,7 +17,7 @@ Create, read, merge, fill, and secure PDF files.
 | Source | Bundled (installed by default) |
 | Path | `skills/productivity/pdf` |
 | Version | `1.0.0` |
-| Author | Nous Research |
+| Author | Moor inc. |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `pdf`, `documents`, `forms`, `reportlab`, `pypdf`, `pdfplumber` |
