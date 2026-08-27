@@ -13,6 +13,7 @@ import {
   installedAgentInstallScript,
   installRefForStamp,
   isPinnedCommit,
+  resolveBundledInstallScript,
   resolveInstallScript,
   resolveMarkerPinnedCommit,
   runBootstrap
@@ -262,12 +263,51 @@ test('resolveInstallScript rethrows when the 404 fallback is unavailable', async
         sourceRepoRoot: null,
         moorHome: home,
         emit: () => {},
+        _bundled: () => null,
         _download: async () => {
           throw new Error('Failed to download install.sh: HTTP 404')
         }
       }),
       /HTTP 404|Failed to download/
     )
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true })
+  }
+})
+
+test('resolveInstallScript prefers bundled install script when available', async () => {
+  const home = mkTmpHome()
+
+  try {
+    const logs: any[] = []
+    const dummyBundledPath = path.join(home, SCRIPT_NAME)
+    fs.writeFileSync(dummyBundledPath, '#!/bin/sh\necho bundled\n')
+
+    const result = await resolveInstallScript({
+      installStamp: { commit: 'a'.repeat(40) },
+      sourceRepoRoot: null,
+      moorHome: home,
+      emit: ev => logs.push(ev),
+      _bundled: () => dummyBundledPath
+    })
+
+    assert.equal(result.source, 'bundled')
+    assert.equal(result.path, dummyBundledPath)
+    assert.ok(logs.some(ev => /using bundled/.test(ev.line || '')))
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true })
+  }
+})
+
+test('resolveBundledInstallScript resolves valid custom or resources path', () => {
+  const home = mkTmpHome()
+
+  try {
+    const scriptPath = path.join(home, SCRIPT_NAME)
+    fs.writeFileSync(scriptPath, '#!/bin/sh\necho test\n')
+
+    assert.equal(resolveBundledInstallScript(scriptPath), scriptPath)
+    assert.equal(resolveBundledInstallScript('/nonexistent/path/here'), null)
   } finally {
     fs.rmSync(home, { recursive: true, force: true })
   }

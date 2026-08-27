@@ -759,6 +759,29 @@ function Install-Uv {
     Write-Info "Installing managed uv into $MoorHome\bin ..."
     New-Item -ItemType Directory -Path (Join-Path $MoorHome "bin") -Force | Out-Null
 
+    # Rung 0: Check for bundled uv binary (offline installer)
+    $bundledUvCandidates = @(
+        $(if ($env:MOOR_RESOURCES) { Join-Path $env:MOOR_RESOURCES "bin\uv.exe" }),
+        $(if ($env:MOOR_RESOURCES) { Join-Path $env:MOOR_RESOURCES "uv.exe" }),
+        (Join-Path $PSScriptRoot "..\bin\uv.exe"),
+        (Join-Path $PSScriptRoot "..\uv.exe"),
+        (Join-Path $PSScriptRoot "uv.exe")
+    )
+    foreach ($cand in $bundledUvCandidates) {
+        if ($cand -and (Test-Path -LiteralPath $cand -PathType Leaf)) {
+            Write-Info "Found bundled uv binary at $cand"
+            try {
+                Copy-Item -LiteralPath $cand -Destination $managedUv -Force
+                $script:UvCmd = $managedUv
+                $version = & $managedUv --version
+                Write-Success "Managed uv installed from bundle ($version)"
+                return $true
+            } catch {
+                Write-Warn "Could not copy bundled uv: $_"
+            }
+        }
+    }
+
     # UV_INSTALL_DIR tells the astral installer to place the binary
     # directly into $MoorHome\bin instead of ~/.local/bin.
     $prevEAP = $ErrorActionPreference
@@ -1995,10 +2018,62 @@ function Install-SystemPackages {
 # Installation
 # ============================================================================
 
+function Get-BundledRepositoryPath {
+    $candidates = @(
+        $env:MOOR_BUNDLED_REPO,
+        $(if ($env:MOOR_RESOURCES) { Join-Path $env:MOOR_RESOURCES "repo.zip" }),
+        $(if ($env:MOOR_RESOURCES) { Join-Path $env:MOOR_RESOURCES "moor-repo.zip" }),
+        (Join-Path $PSScriptRoot "..\repo.zip"),
+        (Join-Path $PSScriptRoot "repo.zip"),
+        (Join-Path $PSScriptRoot "..\..\repo.zip"),
+        (Join-Path $PSScriptRoot "..\moor-repo.zip"),
+        (Join-Path $PSScriptRoot "..\moor-agent.zip"),
+        (Join-Path "$env:LOCALAPPDATA\Programs\Moor\resources" "repo.zip"),
+        (Join-Path "$env:ProgramFiles\Moor\resources" "repo.zip"),
+        (Join-Path $PSScriptRoot "..\apps\desktop\build\repo.zip")
+    )
+    foreach ($cand in $candidates) {
+        if ($cand -and (Test-Path -LiteralPath $cand -PathType Leaf)) {
+            return (Resolve-Path -LiteralPath $cand).ProviderPath
+        }
+    }
+    return $null
+}
+
+function Get-BundledRepositoryDir {
+    $candidates = @(
+        $(if ($env:MOOR_RESOURCES) { Join-Path $env:MOOR_RESOURCES "moor-agent" }),
+        (Join-Path $PSScriptRoot "..\moor-agent")
+    )
+    foreach ($cand in $candidates) {
+        if ($cand -and (Test-Path -LiteralPath $cand -PathType Container) -and (Test-Path (Join-Path $cand "pyproject.toml"))) {
+            return (Resolve-Path -LiteralPath $cand).ProviderPath
+        }
+    }
+    return $null
+}
+
+function Expand-RepoArchive {
+    param(
+        [Parameter(Mandatory=$true)][string]$ZipPath,
+        [Parameter(Mandatory=$true)][string]$DestinationPath
+    )
+    New-Item -ItemType Directory -Force -Path $DestinationPath -ErrorAction SilentlyContinue | Out-Null
+    $tarCmd = Get-Command tar.exe -ErrorAction SilentlyContinue
+    if ($tarCmd) {
+        try {
+            & $tarCmd.Source -xf $ZipPath -C $DestinationPath 2>$null
+            if ($LASTEXITCODE -eq 0) { return }
+        } catch {}
+    }
+    Expand-Archive -LiteralPath $ZipPath -DestinationPath $DestinationPath -Force
+}
+
 function Install-Repository {
     Write-Info "Installing to $InstallDir..."
 
     $didUpdate = $false
+    $targetBranch = if ($Branch) { $Branch } else { "main" }
 
     if (Test-Path $InstallDir) {
         # Test-Path "$InstallDir\.git" returns True when .git is a file OR a
@@ -2050,6 +2125,7 @@ function Install-Repository {
             $prevEAP = $ErrorActionPreference
             $ErrorActionPreference = "Continue"
             $autostashRef = ""
+            $fetchSucceeded = $false
             try {
                 # This is a MANAGED checkout, not a repo the user edits. Git for
                 # Windows defaults to core.autocrlf=true, which renormalizes the
@@ -2087,60 +2163,121 @@ function Install-Repository {
                     }
                     $stashName = "moor-install-autostash-" + (Get-Date -Format "yyyyMMdd-HHmmss")
                     Write-Info "Local changes detected, stashing before update..."
-                    git -c windows.appendAtomically=false stash push --include-untracked -m "$stashName"
+                    git -c windows.appendAtomically=false stash push --include-untracked -m "$stashName" 2>$null
                     if ($LASTEXITCODE -eq 0) { $autostashRef = "stash@{0}" }
                 }
-                git -c windows.appendAtomically=false fetch origin $Branch
-                if ($LASTEXITCODE -ne 0) { throw "git fetch failed (exit $LASTEXITCODE)" }
+
+                git -c windows.appendAtomically=false fetch origin $targetBranch 2>$null
+                if ($LASTEXITCODE -eq 0) {
+                    $fetchSucceeded = $true
+                } elseif ($targetBranch -eq "master") {
+                    git -c windows.appendAtomically=false fetch origin main 2>$null
+                    if ($LASTEXITCODE -eq 0) {
+                        $targetBranch = "main"
+                        $fetchSucceeded = $true
+                    }
+                } elseif ($targetBranch -eq "main") {
+                    git -c windows.appendAtomically=false fetch origin master 2>$null
+                    if ($LASTEXITCODE -eq 0) {
+                        $targetBranch = "master"
+                        $fetchSucceeded = $true
+                    }
+                }
+
+                if (-not $fetchSucceeded) {
+                    # Offline or remote unreachable: check if bundled repository is available to sync
+                    $foundBundledZip = Get-BundledRepositoryPath
+                    $foundBundledDir = Get-BundledRepositoryDir
+                    if ($foundBundledZip) {
+                        Write-Info "Remote repository unreachable; updating from bundled repository archive at $foundBundledZip..."
+                        try {
+                            Expand-RepoArchive -ZipPath $foundBundledZip -DestinationPath $InstallDir
+                            Write-Success "Updated from bundled repository archive"
+                        } catch {
+                            Write-Warn "Could not extract bundled archive over existing install: $_"
+                        }
+                    } elseif ($foundBundledDir) {
+                        Write-Info "Remote repository unreachable; updating from bundled repository dir at $foundBundledDir..."
+                        try {
+                            Copy-Item -LiteralPath "$foundBundledDir\*" -Destination $InstallDir -Recurse -Force
+                            Write-Success "Updated from bundled repository directory"
+                        } catch {
+                            Write-Warn "Could not copy bundled dir over existing install: $_"
+                        }
+                    } else {
+                        Write-Warn "Could not fetch from remote origin (offline or remote ref not found). Using existing local repository on disk."
+                    }
+                }
+
                 # Precedence: Commit > Tag > Branch.  Commit and Tag check
                 # out as detached HEAD intentionally -- they're meant to be
                 # reproducible pins, not branches the user pulls into.
-                if ($Commit) {
-                    # Make sure we have the commit locally (a tag-less commit
-                    # SHA isn't always reachable from any one branch fetch).
-                    git -c windows.appendAtomically=false fetch origin $Commit
-                    # A commit pin must never move an existing install
-                    # BACKWARDS. moor-setup.exe bakes its build-time commit
-                    # into the binary (BUILD_PIN_COMMIT) and passes it as
-                    # -Commit on every install-mode run -- including the retry
-                    # the desktop's "Update didn't finish" screen kicks off. An
-                    # installer built months ago would otherwise rewind a
-                    # current checkout to its build commit, leaving ancient
-                    # code against a current venv (npm workspaces and Python
-                    # deps that no longer match: the #74xxx report). Skip the
-                    # pin when the target is already an ancestor of HEAD; a
-                    # fresh clone has no such ancestry and pins normally.
-                    $skipRollback = $false
-                    if (-not $ForceCommit) {
-                        git -c windows.appendAtomically=false merge-base --is-ancestor $Commit HEAD 2>$null
-                        $isAncestor = ($LASTEXITCODE -eq 0)
-                        $pinnedSha = (& git -c windows.appendAtomically=false rev-parse "$Commit^{commit}" 2>$null)
-                        $headSha = (& git -c windows.appendAtomically=false rev-parse HEAD 2>$null)
-                        $skipRollback = $isAncestor -and ($pinnedSha -ne $headSha)
+                if ($Commit -and ($Commit -notmatch '^0+$')) {
+                    $hasCommitLocally = $false
+                    $null = & git -c windows.appendAtomically=false rev-parse --verify "$Commit^{commit}" 2>&1
+                    if ($LASTEXITCODE -eq 0) { $hasCommitLocally = $true }
+                    if (-not $hasCommitLocally -and $fetchSucceeded) {
+                        git -c windows.appendAtomically=false fetch origin $Commit 2>$null
+                        if ($LASTEXITCODE -eq 0) { $hasCommitLocally = $true }
                     }
-                    if ($skipRollback) {
-                        Write-Warn "Ignoring -Commit $Commit`: the checkout is already newer."
-                        Write-Warn "Pinning to it would roll this install back. Pass -ForceCommit to override."
+                    if ($hasCommitLocally) {
+                        $skipRollback = $false
+                        if (-not $ForceCommit) {
+                            git -c windows.appendAtomically=false merge-base --is-ancestor $Commit HEAD 2>$null
+                            $isAncestor = ($LASTEXITCODE -eq 0)
+                            $pinnedSha = (& git -c windows.appendAtomically=false rev-parse "$Commit^{commit}" 2>$null)
+                            $headSha = (& git -c windows.appendAtomically=false rev-parse HEAD 2>$null)
+                            $skipRollback = $isAncestor -and ($pinnedSha -ne $headSha)
+                        }
+                        if ($skipRollback) {
+                            Write-Warn "Ignoring -Commit $Commit`: the checkout is already newer."
+                            Write-Warn "Pinning to it would roll this install back. Pass -ForceCommit to override."
+                        } else {
+                            git -c windows.appendAtomically=false checkout --detach $Commit 2>$null
+                            if ($LASTEXITCODE -ne 0) {
+                                Write-Warn "git checkout $Commit failed (exit $LASTEXITCODE); continuing with current checkout."
+                            }
+                        }
                     } else {
-                        git -c windows.appendAtomically=false checkout --detach $Commit
-                        if ($LASTEXITCODE -ne 0) { throw "git checkout $Commit failed (exit $LASTEXITCODE)" }
+                        Write-Warn "Commit $Commit not found locally or on remote origin; continuing with current checkout."
                     }
                 } elseif ($Tag) {
-                    git -c windows.appendAtomically=false fetch origin "refs/tags/${Tag}:refs/tags/${Tag}"
-                    git -c windows.appendAtomically=false checkout --detach "refs/tags/$Tag"
-                    if ($LASTEXITCODE -ne 0) { throw "git checkout tag $Tag failed (exit $LASTEXITCODE)" }
+                    $hasTagLocally = $false
+                    $null = & git -c windows.appendAtomically=false rev-parse --verify "refs/tags/$Tag" 2>&1
+                    if ($LASTEXITCODE -eq 0) { $hasTagLocally = $true }
+                    if (-not $hasTagLocally -and $fetchSucceeded) {
+                        git -c windows.appendAtomically=false fetch origin "refs/tags/${Tag}:refs/tags/${Tag}" 2>$null
+                        if ($LASTEXITCODE -eq 0) { $hasTagLocally = $true }
+                    }
+                    if ($hasTagLocally) {
+                        git -c windows.appendAtomically=false checkout --detach "refs/tags/$Tag" 2>$null
+                        if ($LASTEXITCODE -ne 0) {
+                            Write-Warn "git checkout tag $Tag failed (exit $LASTEXITCODE); continuing with current checkout."
+                        }
+                    } else {
+                        Write-Warn "Tag $Tag not found locally or on remote origin; continuing with current checkout."
+                    }
                 } else {
-                    git -c windows.appendAtomically=false checkout $Branch
-                    if ($LASTEXITCODE -ne 0) { throw "git checkout $Branch failed (exit $LASTEXITCODE)" }
-                    # Managed installs should follow origin/$Branch exactly. If
-                    # the checkout has diverged (or has local-only commits),
-                    # ff-only pull cannot succeed -- mirror ``moor update`` and
-                    # reset to the fetched remote so bootstrap/install can recover.
-                    git -c windows.appendAtomically=false pull --ff-only origin $Branch
-                    if ($LASTEXITCODE -ne 0) {
-                        Write-Warn "Fast-forward not possible; resetting managed install to origin/$Branch..."
-                        git -c windows.appendAtomically=false reset --hard "origin/$Branch"
-                        if ($LASTEXITCODE -ne 0) { throw "git reset --hard origin/$Branch failed (exit $LASTEXITCODE)" }
+                    $checkoutBranch = $targetBranch
+                    $hasBranch = $false
+                    $null = & git -c windows.appendAtomically=false rev-parse --verify "$checkoutBranch" 2>&1
+                    if ($LASTEXITCODE -eq 0) { $hasBranch = $true }
+                    if (-not $hasBranch) {
+                        $currentHead = (& git -c windows.appendAtomically=false rev-parse --abbrev-ref HEAD 2>$null)
+                        if ($currentHead -and $currentHead -ne "HEAD") {
+                            $checkoutBranch = $currentHead
+                        } else {
+                            $null = & git -c windows.appendAtomically=false rev-parse --verify "main" 2>&1
+                            if ($LASTEXITCODE -eq 0) { $checkoutBranch = "main" }
+                        }
+                    }
+                    git -c windows.appendAtomically=false checkout $checkoutBranch 2>$null
+                    if ($fetchSucceeded) {
+                        git -c windows.appendAtomically=false pull --ff-only origin $checkoutBranch 2>$null
+                        if ($LASTEXITCODE -ne 0) {
+                            Write-Warn "Fast-forward not possible; resetting managed install to origin/$checkoutBranch..."
+                            git -c windows.appendAtomically=false reset --hard "origin/$checkoutBranch" 2>$null
+                        }
                     }
                 }
 
@@ -2244,125 +2381,200 @@ function Install-Repository {
     if (-not $didUpdate) {
         $cloneSuccess = $false
 
-        # Fix Windows git "copy-fd: write returned: Invalid argument" error.
-        # Git for Windows can fail on atomic file operations (hook templates,
-        # config lock files) due to antivirus, OneDrive, or NTFS filter drivers.
-        # The -c flag injects config before any file I/O occurs.
-        Write-Info "Configuring git for Windows compatibility..."
-        $env:GIT_CONFIG_COUNT = "1"
-        $env:GIT_CONFIG_KEY_0 = "windows.appendAtomically"
-        $env:GIT_CONFIG_VALUE_0 = "false"
-        git config --global windows.appendAtomically false 2>$null
+        # 0. Check for a bundled repository archive or directory (offline / self-contained install).
+        # When running inside the Desktop app or standalone installer, the full
+        # repository is shipped alongside install.ps1 as repo.zip.
+        $foundBundledZip = Get-BundledRepositoryPath
+        $foundBundledDir = Get-BundledRepositoryDir
 
-        # Try SSH first, then HTTPS, with -c flag for atomic write fix
-        Write-Info "Trying SSH clone..."
-        $env:GIT_SSH_COMMAND = "ssh -o BatchMode=yes -o ConnectTimeout=5"
-        try {
-            Invoke-NativeWithRelaxedErrorAction { git -c windows.appendAtomically=false clone --depth 1 --branch $Branch $RepoUrlSsh $InstallDir }
-            if ($LASTEXITCODE -eq 0) { $cloneSuccess = $true }
-        } catch { }
-        $env:GIT_SSH_COMMAND = $null
-
-        if (-not $cloneSuccess) {
+        if ($foundBundledZip) {
+            Write-Info "Found bundled repository archive at $foundBundledZip"
             if (Test-Path $InstallDir) { Remove-Item -Recurse -Force $InstallDir -ErrorAction SilentlyContinue }
-            Write-Info "SSH failed, trying HTTPS..."
+            New-Item -ItemType Directory -Force -Path $InstallDir -ErrorAction SilentlyContinue | Out-Null
             try {
-                Invoke-NativeWithRelaxedErrorAction { git -c windows.appendAtomically=false clone --depth 1 --branch $Branch $RepoUrlHttps $InstallDir }
-                if ($LASTEXITCODE -eq 0) { $cloneSuccess = $true }
-            } catch { }
-        }
+                Write-Info "Extracting bundled repository archive into $InstallDir..."
+                Expand-RepoArchive -ZipPath $foundBundledZip -DestinationPath $InstallDir
+                Write-Success "Bundled repository extracted to $InstallDir"
 
-        # Fallback: download ZIP archive (bypasses git file I/O issues entirely)
-        if (-not $cloneSuccess) {
-            if (Test-Path $InstallDir) { Remove-Item -Recurse -Force $InstallDir -ErrorAction SilentlyContinue }
-            Write-Warn "Git clone failed -- downloading ZIP archive instead..."
-            try {
-                # Pick the ZIP URL for the most-specific ref the caller asked
-                # for.  GitHub supports archive URLs for commits, tags, and
-                # branches; we honour Commit > Tag > Branch.
-                if ($Commit) {
-                    $zipUrl = "https://github.com/NousResearch/hermes-agent/archive/$Commit.zip"
-                    $zipLabel = $Commit
-                } elseif ($Tag) {
-                    $zipUrl = "https://github.com/NousResearch/hermes-agent/archive/refs/tags/$Tag.zip"
-                    $zipLabel = $Tag
-                } else {
-                    $zipUrl = "https://github.com/NousResearch/hermes-agent/archive/refs/heads/$Branch.zip"
-                    $zipLabel = $Branch
-                }
-                $zipPath = "$env:TEMP\moor-agent-$zipLabel.zip"
-                $extractPath = "$env:TEMP\moor-agent-extract"
-
-                Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing
-                if (Test-Path $extractPath) { Remove-Item -Recurse -Force $extractPath }
-                Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
-
-                # GitHub ZIPs extract to repo-branch/ subdirectory
-                $extractedDir = Get-ChildItem $extractPath -Directory | Select-Object -First 1
-                if ($extractedDir) {
-                    New-Item -ItemType Directory -Force -Path (Split-Path $InstallDir) -ErrorAction SilentlyContinue | Out-Null
-                    Move-Item $extractedDir.FullName $InstallDir -Force
-                    Write-Success "Downloaded and extracted"
-
-                    # Initialize git repo so updates work later. A bare
-                    # `git init` leaves NO HEAD -- desktop's write-build-stamp
-                    # then hard-fails with "could not determine git commit"
-                    # (#50823 / #61657). Fetch the requested ref and force-check
-                    # it out (-f) so untracked ZIP files cannot block checkout.
-                    Push-Location $InstallDir
+                # Initialize git repository so git status / rev-parse / updates work
+                Push-Location $InstallDir
+                $prevGitEAP = $ErrorActionPreference
+                $ErrorActionPreference = "Continue"
+                try {
                     git -c windows.appendAtomically=false init 2>$null
                     git -c windows.appendAtomically=false config windows.appendAtomically false 2>$null
-                    # Pin autocrlf=false BEFORE the checkout below. Git for Windows
-                    # defaults to core.autocrlf=true, which would renormalize the
-                    # repo's LF text files to CRLF in the working tree during
-                    # `checkout -f FETCH_HEAD` -- leaving this freshly-created
-                    # managed checkout dirty vs HEAD and aborting the next
-                    # `moor update` (see the notes at the shared clone-path
-                    # config below and install.ps1:1461-1469). The later pin on
-                    # the shared path is idempotent and still covers git clones.
                     git -c windows.appendAtomically=false config core.autocrlf false 2>$null
                     git remote add origin $RepoUrlHttps 2>$null
-                    $fetchRef = if ($Commit) { $Commit } elseif ($Tag) { "refs/tags/$Tag" } else { $Branch }
-                    Write-Info "Fetching $fetchRef so the ZIP checkout has a resolvable HEAD..."
-                    $prevZipEAP = $ErrorActionPreference
-                    $ErrorActionPreference = "Continue"
-                    try {
-                        git -c windows.appendAtomically=false fetch --depth 1 origin $fetchRef 2>&1 | Out-Null
-                        if ($LASTEXITCODE -eq 0) {
-                            if ($Commit -or $Tag) {
-                                git -c windows.appendAtomically=false checkout -f --detach FETCH_HEAD 2>&1 | Out-Null
-                            } else {
-                                git -c windows.appendAtomically=false checkout -f -B $Branch FETCH_HEAD 2>&1 | Out-Null
-                            }
-                            if ($LASTEXITCODE -eq 0) {
-                                Write-Success "ZIP checkout pinned to $fetchRef"
-                            } else {
-                                # Checkout blocked, but FETCH_HEAD still has a SHA we can stamp with.
-                                $fetchSha = & git -c windows.appendAtomically=false rev-parse FETCH_HEAD 2>$null
-                                if ($LASTEXITCODE -eq 0 -and $fetchSha) {
-                                    if (-not $env:GITHUB_SHA) { $env:GITHUB_SHA = ("$fetchSha").Trim() }
-                                    Write-Warn "ZIP checkout failed; seeded GITHUB_SHA from FETCH_HEAD for desktop stamp"
-                                } else {
-                                    Write-Warn "ZIP extract succeeded but git checkout failed -- desktop build may need `$env:GITHUB_SHA"
-                                }
-                            }
-                        } else {
-                            Write-Warn "ZIP extract succeeded but git fetch of $fetchRef failed -- desktop build may need `$env:GITHUB_SHA"
-                        }
-                    } finally {
-                        $ErrorActionPreference = $prevZipEAP
-                    }
-                    Pop-Location
-                    Write-Success "Git repo initialized for future updates"
 
-                    $cloneSuccess = $true
+                    # Read commit from install-stamp.json if present next to script or in resources
+                    $resolvedStampCommit = $Commit
+                    if (-not $resolvedStampCommit -or ($resolvedStampCommit -match '^0+$')) {
+                        $stampCandidates = @(
+                            $(if ($env:MOOR_RESOURCES) { Join-Path $env:MOOR_RESOURCES "install-stamp.json" }),
+                            (Join-Path $PSScriptRoot "..\install-stamp.json"),
+                            (Join-Path $PSScriptRoot "install-stamp.json")
+                        )
+                        foreach ($sc in $stampCandidates) {
+                            if ($sc -and (Test-Path -LiteralPath $sc -PathType Leaf)) {
+                                try {
+                                    $stampJson = Get-Content -LiteralPath $sc -Raw | ConvertFrom-Json
+                                    if ($stampJson -and $stampJson.commit -and ($stampJson.commit -match '^[0-9a-fA-F]{7,40}$') -and ($stampJson.commit -notmatch '^0+$')) {
+                                        $resolvedStampCommit = $stampJson.commit
+                                        break
+                                    }
+                                } catch {}
+                            }
+                        }
+                    }
+
+                    $targetBranch = if ($Branch) { $Branch } else { "main" }
+                    git -c windows.appendAtomically=false config user.name "Moor" 2>$null
+                    git -c windows.appendAtomically=false config user.email "support@nousresearch.com" 2>$null
+                    git -c windows.appendAtomically=false symbolic-ref HEAD "refs/heads/$targetBranch" 2>$null
+                    git -c windows.appendAtomically=false commit --allow-empty -m "Moor offline install snapshot" 2>$null
+                    if ($resolvedStampCommit -and ($resolvedStampCommit -notmatch '^0+$')) {
+                        if (-not $env:GITHUB_SHA) { $env:GITHUB_SHA = $resolvedStampCommit }
+                    }
+                } catch {
+                    Write-Warn "Git initialization warning: $_"
+                } finally {
+                    $ErrorActionPreference = $prevGitEAP
+                    Pop-Location
                 }
 
-                # Cleanup temp files
-                Remove-Item -Force $zipPath -ErrorAction SilentlyContinue
-                Remove-Item -Recurse -Force $extractPath -ErrorAction SilentlyContinue
+                $cloneSuccess = $true
             } catch {
-                Write-Err "ZIP download also failed: $_"
+                Write-Warn "Extraction of bundled repository archive failed: $_"
+            }
+        } elseif ($foundBundledDir) {
+            Write-Info "Copying bundled repository from $foundBundledDir..."
+            if (Test-Path $InstallDir) { Remove-Item -Recurse -Force $InstallDir -ErrorAction SilentlyContinue }
+            Copy-Item -LiteralPath $foundBundledDir -Destination $InstallDir -Recurse -Force
+            $cloneSuccess = $true
+        }
+
+        # If bundled repository is not present or failed, fall back to network git clone & ZIP download
+        if (-not $cloneSuccess) {
+            # Fix Windows git "copy-fd: write returned: Invalid argument" error.
+            # Git for Windows can fail on atomic file operations (hook templates,
+            # config lock files) due to antivirus, OneDrive, or NTFS filter drivers.
+            # The -c flag injects config before any file I/O occurs.
+            Write-Info "Configuring git for Windows compatibility..."
+            $env:GIT_CONFIG_COUNT = "1"
+            $env:GIT_CONFIG_KEY_0 = "windows.appendAtomically"
+            $env:GIT_CONFIG_VALUE_0 = "false"
+            git config --global windows.appendAtomically false 2>$null
+
+            # Try SSH first, then HTTPS, with -c flag for atomic write fix
+            Write-Info "Trying SSH clone..."
+            $env:GIT_SSH_COMMAND = "ssh -o BatchMode=yes -o ConnectTimeout=5"
+            try {
+                Invoke-NativeWithRelaxedErrorAction { git -c windows.appendAtomically=false clone --depth 1 --branch $Branch $RepoUrlSsh $InstallDir }
+                if ($LASTEXITCODE -eq 0) { $cloneSuccess = $true }
+            } catch { }
+            $env:GIT_SSH_COMMAND = $null
+
+            if (-not $cloneSuccess) {
+                if (Test-Path $InstallDir) { Remove-Item -Recurse -Force $InstallDir -ErrorAction SilentlyContinue }
+                Write-Info "SSH failed, trying HTTPS..."
+                try {
+                    Invoke-NativeWithRelaxedErrorAction { git -c windows.appendAtomically=false clone --depth 1 --branch $Branch $RepoUrlHttps $InstallDir }
+                    if ($LASTEXITCODE -eq 0) { $cloneSuccess = $true }
+                } catch { }
+            }
+
+            # Fallback: download ZIP archive (bypasses git file I/O issues entirely)
+            if (-not $cloneSuccess) {
+                if (Test-Path $InstallDir) { Remove-Item -Recurse -Force $InstallDir -ErrorAction SilentlyContinue }
+                Write-Warn "Git clone failed -- downloading ZIP archive instead..."
+                try {
+                    # Pick the ZIP URL for the most-specific ref the caller asked
+                    # for.  GitHub supports archive URLs for commits, tags, and
+                    # branches; we honour Commit > Tag > Branch.
+                    if ($Commit) {
+                        $zipUrl = "https://github.com/NousResearch/hermes-agent/archive/$Commit.zip"
+                        $zipLabel = $Commit
+                    } elseif ($Tag) {
+                        $zipUrl = "https://github.com/NousResearch/hermes-agent/archive/refs/tags/$Tag.zip"
+                        $zipLabel = $Tag
+                    } else {
+                        $zipUrl = "https://github.com/NousResearch/hermes-agent/archive/refs/heads/$Branch.zip"
+                        $zipLabel = $Branch
+                    }
+                    $zipPath = "$env:TEMP\moor-agent-$zipLabel.zip"
+                    $extractPath = "$env:TEMP\moor-agent-extract"
+
+                    Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing
+                    if (Test-Path $extractPath) { Remove-Item -Recurse -Force $extractPath }
+                    Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
+
+                    # GitHub ZIPs extract to repo-branch/ subdirectory
+                    $extractedDir = Get-ChildItem $extractPath -Directory | Select-Object -First 1
+                    if ($extractedDir) {
+                        New-Item -ItemType Directory -Force -Path (Split-Path $InstallDir) -ErrorAction SilentlyContinue | Out-Null
+                        Move-Item $extractedDir.FullName $InstallDir -Force
+                        Write-Success "Downloaded and extracted"
+
+                        # Initialize git repo so updates work later. A bare
+                        # `git init` leaves NO HEAD -- desktop's write-build-stamp
+                        # then hard-fails with "could not determine git commit"
+                        # (#50823 / #61657). Fetch the requested ref and force-check
+                        # it out (-f) so untracked ZIP files cannot block checkout.
+                        Push-Location $InstallDir
+                        git -c windows.appendAtomically=false init 2>$null
+                        git -c windows.appendAtomically=false config windows.appendAtomically false 2>$null
+                        # Pin autocrlf=false BEFORE the checkout below. Git for Windows
+                        # defaults to core.autocrlf=true, which would renormalize the
+                        # repo's LF text files to CRLF in the working tree during
+                        # `checkout -f FETCH_HEAD` -- leaving this freshly-created
+                        # managed checkout dirty vs HEAD and aborting the next
+                        # `moor update` (see the notes at the shared clone-path
+                        # config below and install.ps1:1461-1469). The later pin on
+                        # the shared path is idempotent and still covers git clones.
+                        git -c windows.appendAtomically=false config core.autocrlf false 2>$null
+                        git remote add origin $RepoUrlHttps 2>$null
+                        $fetchRef = if ($Commit) { $Commit } elseif ($Tag) { "refs/tags/$Tag" } else { $Branch }
+                        Write-Info "Fetching $fetchRef so the ZIP checkout has a resolvable HEAD..."
+                        $prevZipEAP = $ErrorActionPreference
+                        $ErrorActionPreference = "Continue"
+                        try {
+                            git -c windows.appendAtomically=false fetch --depth 1 origin $fetchRef 2>&1 | Out-Null
+                            if ($LASTEXITCODE -eq 0) {
+                                if ($Commit -or $Tag) {
+                                    git -c windows.appendAtomically=false checkout -f --detach FETCH_HEAD 2>&1 | Out-Null
+                                } else {
+                                    git -c windows.appendAtomically=false checkout -f -B $Branch FETCH_HEAD 2>&1 | Out-Null
+                                }
+                                if ($LASTEXITCODE -eq 0) {
+                                    Write-Success "ZIP checkout pinned to $fetchRef"
+                                } else {
+                                    # Checkout blocked, but FETCH_HEAD still has a SHA we can stamp with.
+                                    $fetchSha = & git -c windows.appendAtomically=false rev-parse FETCH_HEAD 2>$null
+                                    if ($LASTEXITCODE -eq 0 -and $fetchSha) {
+                                        if (-not $env:GITHUB_SHA) { $env:GITHUB_SHA = ("$fetchSha").Trim() }
+                                        Write-Warn "ZIP checkout failed; seeded GITHUB_SHA from FETCH_HEAD for desktop stamp"
+                                    } else {
+                                        Write-Warn "ZIP extract succeeded but git checkout failed -- desktop build may need `$env:GITHUB_SHA"
+                                    }
+                                }
+                            } else {
+                                Write-Warn "ZIP extract succeeded but git fetch of $fetchRef failed -- desktop build may need `$env:GITHUB_SHA"
+                            }
+                        } finally {
+                            $ErrorActionPreference = $prevZipEAP
+                        }
+                        Pop-Location
+                        Write-Success "Git repo initialized for future updates"
+
+                        $cloneSuccess = $true
+                    }
+
+                    # Cleanup temp files
+                    Remove-Item -Force $zipPath -ErrorAction SilentlyContinue
+                    Remove-Item -Recurse -Force $extractPath -ErrorAction SilentlyContinue
+                } catch {
+                    Write-Err "ZIP download also failed: $_"
+                }
             }
         }
 
@@ -2373,42 +2585,70 @@ function Install-Repository {
 
     # Set per-repo config (harmless if it fails)
     Push-Location $InstallDir
-    git -c windows.appendAtomically=false config windows.appendAtomically false 2>$null
-    # Pin autocrlf=false on the managed clone so git never renormalizes the
-    # repo's LF text files to CRLF in the working tree. Without this, the very
-    # next `moor update` checkout aborts on a "dirty" tree the user never
-    # touched (see the update path above).
-    git -c windows.appendAtomically=false config core.autocrlf false 2>$null
+    try {
+        git -c windows.appendAtomically=false config windows.appendAtomically false 2>$null
+        # Pin autocrlf=false on the managed clone so git never renormalizes the
+        # repo's LF text files to CRLF in the working tree. Without this, the very
+        # next `moor update` checkout aborts on a "dirty" tree the user never
+        # touched (see the update path above).
+        git -c windows.appendAtomically=false config core.autocrlf false 2>$null
 
-    # Post-clone pin: when a clone (or ZIP-fallback init) just landed us on
-    # $Branch's tip, honour the higher-precedence $Commit / $Tag by checking
-    # the exact ref out as a detached HEAD.  Skipped for the in-place update
-    # path (above) since that already routed via the same precedence.
-    if (-not $didUpdate) {
-        # Same EAP=Continue wrap as the update path -- git fetch's 'From <url>'
-        # info line goes to stderr and would terminate the script under the
-        # global EAP=Stop otherwise.  We check $LASTEXITCODE for real errors.
-        $prevEAP = $ErrorActionPreference
-        $ErrorActionPreference = "Continue"
-        try {
-            if ($Commit) {
-                Write-Info "Pinning to commit $Commit..."
-                git -c windows.appendAtomically=false fetch origin $Commit
-                git -c windows.appendAtomically=false checkout --detach $Commit
-                if ($LASTEXITCODE -ne 0) {
-                    throw "git checkout $Commit failed (exit $LASTEXITCODE)"
+        # Post-clone pin: when a clone (or ZIP-fallback init) just landed us on
+        # $Branch's tip, honour the higher-precedence $Commit / $Tag by checking
+        # the exact ref out as a detached HEAD.  Skipped for the in-place update
+        # path (above) since that already routed via the same precedence.
+        if (-not $didUpdate) {
+            # Same EAP=Continue wrap as the update path -- git fetch's 'From <url>'
+            # info line goes to stderr and would terminate the script under the
+            # global EAP=Stop otherwise.  We check $LASTEXITCODE for real errors.
+            $prevEAP = $ErrorActionPreference
+            $ErrorActionPreference = "Continue"
+            try {
+                if ($Commit -and ($Commit -notmatch '^0+$')) {
+                    Write-Info "Pinning to commit $Commit..."
+                    $hasCommitLocally = $false
+                    $null = & git -c windows.appendAtomically=false rev-parse --verify "$Commit^{commit}" 2>&1
+                    if ($LASTEXITCODE -eq 0) { $hasCommitLocally = $true }
+                    if (-not $hasCommitLocally) {
+                        git -c windows.appendAtomically=false fetch origin $Commit 2>$null
+                        if ($LASTEXITCODE -eq 0) { $hasCommitLocally = $true }
+                    }
+                    if ($hasCommitLocally) {
+                        git -c windows.appendAtomically=false checkout --detach $Commit 2>$null
+                        if ($LASTEXITCODE -eq 0) {
+                            Write-Success "Pinned to commit $Commit"
+                        } else {
+                            Write-Warn "Could not checkout commit $Commit; staying on $targetBranch"
+                        }
+                    } else {
+                        Write-Warn "Commit $Commit not found on remote origin (or offline); continuing on $targetBranch."
+                    }
+                } elseif ($Tag) {
+                    Write-Info "Pinning to tag $Tag..."
+                    $hasTagLocally = $false
+                    $null = & git -c windows.appendAtomically=false rev-parse --verify "refs/tags/$Tag" 2>&1
+                    if ($LASTEXITCODE -eq 0) { $hasTagLocally = $true }
+                    if (-not $hasTagLocally) {
+                        git -c windows.appendAtomically=false fetch origin "refs/tags/${Tag}:refs/tags/${Tag}" 2>$null
+                        if ($LASTEXITCODE -eq 0) { $hasTagLocally = $true }
+                    }
+                    if ($hasTagLocally) {
+                        git -c windows.appendAtomically=false checkout --detach "refs/tags/$Tag" 2>$null
+                        if ($LASTEXITCODE -eq 0) {
+                            Write-Success "Pinned to tag $Tag"
+                        } else {
+                            Write-Warn "Could not checkout tag $Tag; staying on $targetBranch"
+                        }
+                    } else {
+                        Write-Warn "Tag $Tag not found on remote origin (or offline); continuing on $targetBranch."
+                    }
                 }
-            } elseif ($Tag) {
-                Write-Info "Pinning to tag $Tag..."
-                git -c windows.appendAtomically=false fetch origin "refs/tags/${Tag}:refs/tags/${Tag}"
-                git -c windows.appendAtomically=false checkout --detach "refs/tags/$Tag"
-                if ($LASTEXITCODE -ne 0) {
-                    throw "git checkout tag $Tag failed (exit $LASTEXITCODE)"
-                }
+            } finally {
+                $ErrorActionPreference = $prevEAP
             }
-        } finally {
-            $ErrorActionPreference = $prevEAP
         }
+    } finally {
+        Pop-Location
     }
 
     Write-Success "Repository ready"
@@ -3125,12 +3365,12 @@ function Write-BootstrapMarker {
         return
     }
 
-    # Resolve the pinned commit: explicit -Commit wins, otherwise read
-    # the checkout's HEAD via git. If git can't run, leave commit empty
+    # Resolve the pinned commit: explicit -Commit wins (unless all-zero fallback),
+    # otherwise read the checkout's HEAD via git. If git can't run, leave commit empty
     # and the marker will fail desktop validation (pinnedCommit.length
     # >= 7) -- better to be invalid than wrong.
     $pinnedCommit = $Commit
-    if (-not $pinnedCommit) {
+    if (-not $pinnedCommit -or ($pinnedCommit -match '^0+$')) {
         # PS 5.1 doesn't support the ?. null-conditional operator, so
         # check Get-Command's result explicitly before reading .Source.
         $gitCmd = Get-Command git -ErrorAction SilentlyContinue

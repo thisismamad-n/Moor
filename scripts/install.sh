@@ -1381,20 +1381,75 @@ clone_repo() {
                 autostash_ref="stash@{0}"
             fi
 
-            # Fetch only the target branch. A bare `git fetch origin` pulls
-            # every ref, and this repo carries thousands of auto-generated
-            # branches — on a non-single-branch checkout that turns each update
-            # into a multi-minute download that can stall the installer.
-            git remote set-branches origin "$BRANCH" 2>/dev/null || true
-            git fetch origin "$BRANCH"
-            git checkout "$BRANCH"
-            # Managed installs should follow origin/$BRANCH exactly. If the
-            # checkout has diverged (or has local-only commits), ff-only pull
-            # cannot succeed — mirror ``moor update`` and reset to the
-            # fetched remote so bootstrap/install can recover.
-            if ! git pull --ff-only origin "$BRANCH"; then
-                log_warn "Fast-forward not possible; resetting managed install to origin/$BRANCH..."
-                git reset --hard "origin/$BRANCH"
+            local fetch_succeeded=false
+            # Fetch only the target branch if remote is reachable.
+            local target_branch="${BRANCH:-main}"
+            git remote set-branches origin "$target_branch" 2>/dev/null || true
+            if git fetch origin "$target_branch" 2>/dev/null; then
+                fetch_succeeded=true
+            elif [ "$target_branch" = "master" ] && git fetch origin main 2>/dev/null; then
+                target_branch="main"
+                fetch_succeeded=true
+            elif [ "$target_branch" = "main" ] && git fetch origin master 2>/dev/null; then
+                target_branch="master"
+                fetch_succeeded=true
+            fi
+
+            if [ "$fetch_succeeded" = false ]; then
+                # Check for bundled repository archive or directory
+                local script_dir
+                script_dir="$(cd "$(dirname "$0")" && pwd)"
+                local bundled_candidates=(
+                    "$MOOR_BUNDLED_REPO"
+                    "${MOOR_RESOURCES:+$MOOR_RESOURCES/repo.zip}"
+                    "${MOOR_RESOURCES:+$MOOR_RESOURCES/moor-repo.zip}"
+                    "$script_dir/../repo.zip"
+                    "$script_dir/repo.zip"
+                    "$script_dir/../../repo.zip"
+                    "$script_dir/../moor-repo.zip"
+                    "$script_dir/../moor-agent.zip"
+                )
+                local found_zip=""
+                for cand in "${bundled_candidates[@]}"; do
+                    if [ -n "$cand" ] && [ -f "$cand" ]; then
+                        found_zip="$cand"
+                        break
+                    fi
+                done
+                if [ -n "$found_zip" ]; then
+                    log_info "Remote unreachable; updating from bundled repository archive at $found_zip..."
+                    local extract_tmp="/tmp/moor-repo-update-$$-$(date +%s)"
+                    mkdir -p "$extract_tmp"
+                    if unzip -q "$found_zip" -d "$extract_tmp" 2>/dev/null || (which python3 >/dev/null 2>&1 && python3 -m zipfile -e "$found_zip" "$extract_tmp"); then
+                        cp -R "$extract_tmp/"* "$INSTALL_DIR/" 2>/dev/null || true
+                        rm -rf "$extract_tmp" 2>/dev/null
+                        git add -A 2>/dev/null || true
+                        git commit -m "Moor offline update snapshot" 2>/dev/null || true
+                        log_success "Updated from bundled repository archive"
+                    else
+                        rm -rf "$extract_tmp" 2>/dev/null
+                    fi
+                else
+                    log_warn "Could not fetch from remote origin (offline or unreachable); using existing local repository on disk."
+                fi
+            fi
+
+            local checkout_branch="$target_branch"
+            if ! git rev-parse --verify "$checkout_branch" >/dev/null 2>&1; then
+                local current_head
+                current_head="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+                if [ -n "$current_head" ] && [ "$current_head" != "HEAD" ]; then
+                    checkout_branch="$current_head"
+                elif git rev-parse --verify main >/dev/null 2>&1; then
+                    checkout_branch="main"
+                fi
+            fi
+            git checkout "$checkout_branch" 2>/dev/null || true
+            if [ "$fetch_succeeded" = true ]; then
+                if ! git pull --ff-only origin "$checkout_branch" 2>/dev/null; then
+                    log_warn "Fast-forward not possible; resetting managed install to origin/$checkout_branch..."
+                    git reset --hard "origin/$checkout_branch" 2>/dev/null || true
+                fi
             fi
 
             if [ -n "$autostash_ref" ]; then
@@ -1458,70 +1513,116 @@ EOF
             exit 1
         fi
     else
-        # Try SSH first (for private repo access), fall back to HTTPS
-        # GIT_SSH_COMMAND disables interactive prompts and sets a short timeout
-        # so SSH fails fast instead of hanging when no key is configured.
-        log_info "Trying SSH clone..."
-        if GIT_SSH_COMMAND="ssh -o BatchMode=yes -o ConnectTimeout=5" \
-           git clone --depth 1 --branch "$BRANCH" "$REPO_URL_SSH" "$INSTALL_DIR" 2>/dev/null; then
-            log_success "Cloned via SSH"
-        else
-            rm -rf "$INSTALL_DIR" 2>/dev/null  # Clean up partial SSH clone
-            log_info "SSH failed, trying HTTPS..."
-            if git clone --depth 1 --branch "$BRANCH" "$REPO_URL_HTTPS" "$INSTALL_DIR"; then
-                log_success "Cloned via HTTPS"
+        CLONE_SUCCESS=false
+
+        # Check for bundled repository archive or directory (offline install)
+        SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+        BUNDLED_CANDIDATES=(
+            "$MOOR_BUNDLED_REPO"
+            "${MOOR_RESOURCES:+$MOOR_RESOURCES/repo.zip}"
+            "${MOOR_RESOURCES:+$MOOR_RESOURCES/moor-repo.zip}"
+            "$SCRIPT_DIR/../repo.zip"
+            "$SCRIPT_DIR/repo.zip"
+            "$SCRIPT_DIR/../../repo.zip"
+            "$SCRIPT_DIR/../moor-repo.zip"
+            "$SCRIPT_DIR/../moor-agent.zip"
+        )
+
+        FOUND_BUNDLED_ZIP=""
+        for cand in "${BUNDLED_CANDIDATES[@]}"; do
+            if [ -n "$cand" ] && [ -f "$cand" ]; then
+                FOUND_BUNDLED_ZIP="$cand"
+                break
+            fi
+        done
+
+        if [ -n "$FOUND_BUNDLED_ZIP" ]; then
+            log_info "Found bundled repository archive at $FOUND_BUNDLED_ZIP"
+            rm -rf "$INSTALL_DIR" 2>/dev/null
+            mkdir -p "$(dirname "$INSTALL_DIR")" 2>/dev/null
+            EXTRACT_TMP="/tmp/moor-repo-extract-$$-$(date +%s)"
+            mkdir -p "$EXTRACT_TMP"
+            if unzip -q "$FOUND_BUNDLED_ZIP" -d "$EXTRACT_TMP" 2>/dev/null || (which python3 >/dev/null 2>&1 && python3 -m zipfile -e "$FOUND_BUNDLED_ZIP" "$EXTRACT_TMP"); then
+                if [ -f "$EXTRACT_TMP/pyproject.toml" ]; then
+                    mv "$EXTRACT_TMP" "$INSTALL_DIR"
+                elif [ -d "$EXTRACT_TMP/"*/ ] && [ -f "$EXTRACT_TMP/"*"/pyproject.toml" ]; then
+                    mv "$EXTRACT_TMP/"*/ "$INSTALL_DIR"
+                    rm -rf "$EXTRACT_TMP" 2>/dev/null
+                else
+                    mv "$EXTRACT_TMP" "$INSTALL_DIR"
+                fi
+                log_success "Bundled repository extracted to $INSTALL_DIR"
+                cd "$INSTALL_DIR"
+                if which git >/dev/null 2>&1; then
+                    git init 2>/dev/null || true
+                    git remote add origin "$REPO_URL_HTTPS" 2>/dev/null || true
+                    if ! git rev-parse --verify HEAD >/dev/null 2>&1; then
+                        git config user.name "Moor" 2>/dev/null || true
+                        git config user.email "support@nousresearch.com" 2>/dev/null || true
+                        local init_branch="${BRANCH:-main}"
+                        git symbolic-ref HEAD "refs/heads/$init_branch" 2>/dev/null || true
+                        git commit --allow-empty -m "Moor offline install snapshot" 2>/dev/null || true
+                    fi
+                fi
+                CLONE_SUCCESS=true
             else
-                log_error "Failed to clone repository"
-                exit 1
+                rm -rf "$EXTRACT_TMP" 2>/dev/null
+                log_warn "Failed to extract bundled repository archive; falling back to git clone..."
+            fi
+        fi
+
+        if [ "$CLONE_SUCCESS" = false ]; then
+            # Try SSH first (for private repo access), fall back to HTTPS
+            log_info "Trying SSH clone..."
+            if GIT_SSH_COMMAND="ssh -o BatchMode=yes -o ConnectTimeout=5" \
+               git clone --depth 1 --branch "$BRANCH" "$REPO_URL_SSH" "$INSTALL_DIR" 2>/dev/null; then
+                log_success "Cloned via SSH"
+            else
+                rm -rf "$INSTALL_DIR" 2>/dev/null  # Clean up partial SSH clone
+                log_info "SSH failed, trying HTTPS..."
+                if git clone --depth 1 --branch "$BRANCH" "$REPO_URL_HTTPS" "$INSTALL_DIR"; then
+                    log_success "Cloned via HTTPS"
+                else
+                    log_error "Failed to clone repository"
+                    exit 1
+                fi
             fi
         fi
     fi
 
     cd "$INSTALL_DIR"
 
-    if [ -n "$INSTALL_COMMIT" ]; then
+    if [ -n "$INSTALL_COMMIT" ] && ! printf '%s' "$INSTALL_COMMIT" | grep -qE '^0+$'; then
         # Validate the commit argument: must look like a hex SHA (full 40-char
-        # or abbreviated 7-39 char). Reject anything else early so the user
-        # gets a clear error instead of a misleading git message (#87268).
+        # or abbreviated 7-39 char).
         if ! printf '%s' "$INSTALL_COMMIT" | grep -qE '^[0-9a-fA-F]{7,40}$'; then
             log_error "--commit expects a hex SHA (7-40 chars), got: $INSTALL_COMMIT"
             return 1
         fi
-        # A commit pin must never move an existing install BACKWARDS. The
-        # bootstrap installer bakes its build-time commit into the binary
-        # (BUILD_PIN_COMMIT) and passes it as --commit on every install-mode
-        # run -- including the one the desktop's failure screen retries. An
-        # installer built months ago would otherwise rewind a current checkout
-        # to its build commit, stranding the user on ancient code with a
-        # current venv. Only pin when the target is not already an ancestor of
-        # HEAD; a fresh clone has no such ancestry and pins normally.
-        if ! git cat-file -e "$INSTALL_COMMIT^{commit}" 2>/dev/null; then
-            if ! git fetch origin "$INSTALL_COMMIT"; then
-                log_error "Could not fetch commit $INSTALL_COMMIT from origin."
-                log_error "Abbreviated SHAs are not supported — use the full 40-char hash."
-                log_error "Find it with: git ls-remote origin | grep <short-sha>"
-                return 1
-            fi
+        local commit_found_locally=false
+        if git cat-file -e "$INSTALL_COMMIT^{commit}" 2>/dev/null || git rev-parse --verify "$INSTALL_COMMIT^{commit}" >/dev/null 2>&1; then
+            commit_found_locally=true
+        elif git fetch origin "$INSTALL_COMMIT" 2>/dev/null; then
+            commit_found_locally=true
         fi
-        if git rev-parse --verify --quiet HEAD >/dev/null 2>&1 \
-           && git merge-base --is-ancestor "$INSTALL_COMMIT" HEAD 2>/dev/null \
-           && [ "$(git rev-parse "$INSTALL_COMMIT^{commit}" 2>/dev/null)" != "$(git rev-parse HEAD)" ]; then
-            if [ "$FORCE_COMMIT" = true ]; then
-                log_warn "--force-commit: rolling this install back to $INSTALL_COMMIT."
-                if ! git checkout --detach "$INSTALL_COMMIT"; then
-                    log_error "Failed to detach at $INSTALL_COMMIT"
-                    return 1
+
+        if [ "$commit_found_locally" = true ]; then
+            if git rev-parse --verify --quiet HEAD >/dev/null 2>&1 \
+               && git merge-base --is-ancestor "$INSTALL_COMMIT" HEAD 2>/dev/null \
+               && [ "$(git rev-parse "$INSTALL_COMMIT^{commit}" 2>/dev/null)" != "$(git rev-parse HEAD)" ]; then
+                if [ "$FORCE_COMMIT" = true ]; then
+                    log_warn "--force-commit: rolling this install back to $INSTALL_COMMIT."
+                    git checkout --detach "$INSTALL_COMMIT" 2>/dev/null || true
+                else
+                    log_warn "Ignoring --commit $INSTALL_COMMIT: the checkout is already newer."
+                    log_warn "Pinning to it would roll this install back. Pass --force-commit to override."
                 fi
             else
-                log_warn "Ignoring --commit $INSTALL_COMMIT: the checkout is already newer."
-                log_warn "Pinning to it would roll this install back. Pass --force-commit to override."
+                log_info "Pinning checkout to commit $INSTALL_COMMIT..."
+                git checkout --detach "$INSTALL_COMMIT" 2>/dev/null || true
             fi
         else
-            log_info "Pinning checkout to commit $INSTALL_COMMIT..."
-            if ! git checkout --detach "$INSTALL_COMMIT"; then
-                log_error "Failed to detach at $INSTALL_COMMIT"
-                return 1
-            fi
+            log_warn "Commit $INSTALL_COMMIT not found locally or on origin; continuing with current checkout."
         fi
     fi
 

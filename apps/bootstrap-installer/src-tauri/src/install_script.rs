@@ -120,7 +120,33 @@ pub async fn resolve(
         }
     }
 
-    // 2. (Not implemented) bundled fallback.
+    // 2. Bundled fallback next to executable, in resources, or under moor_home.
+    let mut bundled_candidates = Vec::new();
+    if let Ok(current_exe) = std::env::current_exe() {
+        if let Some(exe_dir) = current_exe.parent() {
+            bundled_candidates.push(exe_dir.join("scripts").join(kind.filename()));
+            bundled_candidates.push(exe_dir.join(kind.filename()));
+            bundled_candidates.push(exe_dir.join("resources").join("scripts").join(kind.filename()));
+            bundled_candidates.push(exe_dir.join("resources").join(kind.filename()));
+        }
+    }
+    bundled_candidates.push(paths::moor_home().join("moor-agent").join("scripts").join(kind.filename()));
+
+    for cand in bundled_candidates {
+        if cand.is_file() {
+            emit_log(&format!(
+                "[bootstrap] using bundled {} at {}",
+                kind.filename(),
+                cand.display()
+            ));
+            return Ok(ResolvedScript {
+                path: cand,
+                source: ScriptSource::Bundled,
+                commit: pin.commit.clone(),
+                branch: pin.branch.clone(),
+            });
+        }
+    }
 
     // 3. Network. Pin must be a real commit or a branch ref.
     //

@@ -303,6 +303,23 @@ pub async fn run_script(
         cmd.env("MOOR_HOME", home);
     }
 
+    if let Ok(current_exe) = std::env::current_exe() {
+        if let Some(exe_dir) = current_exe.parent() {
+            cmd.env("MOOR_RESOURCES", exe_dir);
+            let repo_candidates = [
+                exe_dir.join("repo.zip"),
+                exe_dir.join("resources").join("repo.zip"),
+                exe_dir.join("moor-repo.zip"),
+            ];
+            for cand in repo_candidates {
+                if cand.is_file() {
+                    cmd.env("MOOR_BUNDLED_REPO", &cand);
+                    break;
+                }
+            }
+        }
+    }
+
     cmd.stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());

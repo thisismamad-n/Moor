@@ -246,8 +246,8 @@ Sizes: `default`, `xs`, `overlay` (titlebar glyph counts).
   action. Do not introduce a third icon set or mix styles within one control
   group.
 - **`BrandMark`** (`src/components/brand-mark.tsx`) is the brand glyph — the
-  `moor-girl` mark on a white tile, softly rounded, identical in light/dark.
-  It replaced scattered Sparkles glyphs in updates / onboarding / about. Use it
+  `Moor` mark on a white tile, softly rounded, identical in light/dark.
+  Always renders on white; use sparingly (settings / onboarding / updates). Use it
   for hero/brand moments; don't reintroduce decorative star/sparkle icons.
 
 ## Motion

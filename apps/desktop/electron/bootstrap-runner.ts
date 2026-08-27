@@ -187,6 +187,71 @@ function resolveLocalInstallScript(sourceRepoRoot) {
   }
 }
 
+function resolveBundledInstallScript(customPath?: string | null): string | null {
+  if (customPath) {
+    try {
+      if (fs.existsSync(customPath) && fs.statSync(customPath).isFile()) {
+        return customPath
+      }
+    } catch {
+      return null
+    }
+  }
+
+  const scriptName = installScriptName()
+  const candidates: (string | null | undefined)[] = [
+    process.resourcesPath ? path.join(process.resourcesPath, 'scripts', scriptName) : null,
+    process.resourcesPath ? path.join(process.resourcesPath, scriptName) : null,
+    process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'scripts', scriptName) : null,
+    path.join(__dirname, '..', '..', 'scripts', scriptName),
+    path.join(__dirname, '..', 'scripts', scriptName),
+    path.join(__dirname, 'scripts', scriptName),
+    path.join(process.cwd(), 'scripts', scriptName),
+    path.join(process.cwd(), 'resources', 'scripts', scriptName),
+  ]
+
+  for (const cand of candidates) {
+    if (cand) {
+      try {
+        if (fs.existsSync(cand) && fs.statSync(cand).isFile()) {
+          return cand
+        }
+      } catch {
+        // continue
+      }
+    }
+  }
+
+  return null
+}
+
+function resolveBundledRepoZip(): string | null {
+  const candidates: (string | null | undefined)[] = [
+    process.env.MOOR_BUNDLED_REPO,
+    process.resourcesPath ? path.join(process.resourcesPath, 'repo.zip') : null,
+    process.resourcesPath ? path.join(process.resourcesPath, 'moor-repo.zip') : null,
+    process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'repo.zip') : null,
+    path.join(process.cwd(), 'resources', 'repo.zip'),
+    path.join(process.cwd(), 'build', 'repo.zip'),
+    path.join(process.cwd(), 'apps', 'desktop', 'build', 'repo.zip'),
+    path.join(__dirname, '..', 'build', 'repo.zip'),
+    path.join(__dirname, '..', '..', 'build', 'repo.zip'),
+    path.join(__dirname, '..', '..', 'resources', 'repo.zip'),
+  ]
+  for (const cand of candidates) {
+    if (cand) {
+      try {
+        if (fs.existsSync(cand) && fs.statSync(cand).isFile()) {
+          return cand
+        }
+      } catch {
+        // continue
+      }
+    }
+  }
+  return null
+}
+
 function bootstrapCacheDir(moorHome) {
   return path.join(moorHome, 'bootstrap-cache')
 }
@@ -319,8 +384,9 @@ async function resolveInstallScript({
   sourceRepoRoot,
   moorHome,
   emit,
-  _download = downloadInstallScript
-}) {
+  _download = downloadInstallScript,
+  _bundled = resolveBundledInstallScript
+}: any) {
   // 1. Dev shortcut: prefer a local checkout's installer so we can iterate
   //    without pushing. SOURCE_REPO_ROOT comes from main.ts (path.resolve
   //    of APP_ROOT/../..).
@@ -332,11 +398,20 @@ async function resolveInstallScript({
     return { path: localScript, source: 'local', kind: installScriptKind() }
   }
 
-  // 2. Packaged path: download from GitHub at the install stamp's ref.
+  // 2. Bundled package shortcut: prefer installer shipped inside extraResources
+  const bundledScript = typeof _bundled === 'function' ? _bundled() : null
+  const installRef = installRefForStamp(installStamp)
+  const resolvedCommit = installRef?.pinned ? installRef.ref : null
+
+  if (bundledScript) {
+    emit({ type: 'log', line: `[bootstrap] using bundled ${installScriptName()} at ${bundledScript}` })
+
+    return { path: bundledScript, source: 'bundled', commit: resolvedCommit, kind: installScriptKind() }
+  }
+
+  // 3. Packaged path: download from GitHub at the install stamp's ref.
   // Non-git fallback builds carry an all-zero commit; treat that as an
   // unpinned branch ref instead of trying to fetch a non-existent SHA.
-  const installRef = installRefForStamp(installStamp)
-
   if (!installRef) {
     throw new Error(
       `Cannot resolve ${installScriptName()}: no SOURCE_REPO_ROOT and no install stamp. ` +
@@ -345,7 +420,6 @@ async function resolveInstallScript({
   }
 
   const cached = cachedScriptPath(moorHome, installRef.cacheKey)
-  const resolvedCommit = installRef.pinned ? installRef.ref : null
 
   try {
     await fsp.access(cached, fs.constants.R_OK)
@@ -372,6 +446,17 @@ async function resolveInstallScript({
 
     return { path: cached, source: 'download', commit: resolvedCommit, kind: installScriptKind() }
   } catch (err) {
+    if (bundledScript) {
+      emit({
+        type: 'log',
+        line:
+          `[bootstrap] GitHub fetch failed (${err.message}); ` +
+          `falling back to bundled ${installScriptName()} at ${bundledScript}`
+      })
+
+      return { path: bundledScript, source: 'bundled', commit: resolvedCommit, kind: installScriptKind() }
+    }
+
     // The pinned commit may not be fetchable from GitHub -- most commonly a
     // locally-built desktop app stamped to an unpushed HEAD (see
     // write-build-stamp.mjs fromLocalGit). Fall back to the installer that
@@ -470,7 +555,9 @@ function spawnPowerShell(scriptPath, args, { emit, stageName, abortSignal, moorH
           ...process.env,
           // Pass MOOR_HOME through so install.ps1 respects the caller's
           // choice rather than re-computing the default.
-          MOOR_HOME: moorHome || process.env.MOOR_HOME || ''
+          MOOR_HOME: moorHome || process.env.MOOR_HOME || '',
+          MOOR_RESOURCES: process.resourcesPath || process.env.MOOR_RESOURCES || '',
+          MOOR_BUNDLED_REPO: resolveBundledRepoZip() || ''
         }
       })
     )
@@ -566,7 +653,9 @@ function spawnBash(scriptPath, args, { emit, stageName, abortSignal, moorHome }:
       stdio: ['ignore', 'pipe', 'pipe'],
       env: {
         ...process.env,
-        MOOR_HOME: moorHome || process.env.MOOR_HOME || ''
+        MOOR_HOME: moorHome || process.env.MOOR_HOME || '',
+        MOOR_RESOURCES: process.resourcesPath || process.env.MOOR_RESOURCES || '',
+        MOOR_BUNDLED_REPO: resolveBundledRepoZip() || ''
       }
     })
 
@@ -671,6 +760,8 @@ function buildPinArgs(installStamp, { pinCommit = true } = {}) {
 
   if (installStamp && installStamp.branch) {
     args.push('-Branch', installStamp.branch)
+  } else {
+    args.push('-Branch', 'main')
   }
 
   return args
@@ -681,6 +772,8 @@ function buildPosixPinArgs({ installStamp, activeRoot, moorHome, pinCommit = tru
 
   if (installStamp && installStamp.branch) {
     args.push('--branch', installStamp.branch)
+  } else {
+    args.push('--branch', 'main')
   }
 
   if (pinCommit && installStamp && isPinnedCommit(installStamp.commit)) {
@@ -1029,6 +1122,7 @@ export {
   isPinnedCommit,
   // Exposed for testability
   parseStageResult,
+  resolveBundledInstallScript,
   resolveCheckoutHead,
   resolveInstallScript,
   resolveLocalInstallScript,
