@@ -3004,6 +3004,10 @@ function Install-Dependencies {
         # (Mirrors the same flag in scripts/install.sh::install_deps.)
         $env:UV_PROJECT_ENVIRONMENT = "$InstallDir\venv"
         Invoke-NativeWithRelaxedErrorAction { & $UvCmd sync --extra all --locked }
+        if ($LASTEXITCODE -ne 0) {
+            # If network sync failed or offline, retry with --offline using local cache
+            Invoke-NativeWithRelaxedErrorAction { & $UvCmd sync --extra all --locked --offline }
+        }
         if ($LASTEXITCODE -eq 0) {
             Write-Success "Main package installed (hash-verified via uv.lock)"
             $script:InstalledTier = "hash-verified (uv.lock)"
@@ -3011,7 +3015,7 @@ function Install-Dependencies {
             # complete, hash-verified install.
             $skipPipFallback = $true
         } else {
-            Write-Warn "uv.lock sync failed (lockfile may be stale), falling back to PyPI resolve..."
+            Write-Warn "uv.lock sync failed (lockfile may be stale or dependencies not cached), falling back to PyPI / cache resolve..."
             $skipPipFallback = $false
         }
     } else {
@@ -3077,15 +3081,19 @@ except Exception:
     $installed = $skipPipFallback
     if (-not $skipPipFallback) {
         foreach ($tier in $installTiers) {
-        Write-Info "Trying tier: $($tier.Name) ..."
-        Invoke-NativeWithRelaxedErrorAction { & $UvCmd pip install -e $tier.Spec }
-        if ($LASTEXITCODE -eq 0) {
-            Write-Success "Main package installed ($($tier.Name))"
-            $script:InstalledTier = $tier.Name
-            $installed = $true
-            break
-        }
-        Write-Warn "Tier '$($tier.Name)' failed (exit $LASTEXITCODE). Trying next tier..."
+            Write-Info "Trying tier: $($tier.Name) ..."
+            Invoke-NativeWithRelaxedErrorAction { & $UvCmd pip install -e $tier.Spec }
+            if ($LASTEXITCODE -ne 0) {
+                # Offline fallback: retry with --offline
+                Invoke-NativeWithRelaxedErrorAction { & $UvCmd pip install --offline -e $tier.Spec }
+            }
+            if ($LASTEXITCODE -eq 0) {
+                Write-Success "Main package installed ($($tier.Name))"
+                $script:InstalledTier = $tier.Name
+                $installed = $true
+                break
+            }
+            Write-Warn "Tier '$($tier.Name)' failed (exit $LASTEXITCODE). Trying next tier..."
         }
     }
     if (-not $installed) {

@@ -43,7 +43,17 @@ await build({
   outfile: mainOut,
   external,
   banner: {
-    js: "import { createRequire } from 'module'; const require = createRequire(import.meta.url);",
+    // Shim CJS globals (__dirname, __filename, require) that don't exist in
+    // ESM.  Without these the bundled electron-main.mjs crashes with
+    // "__dirname is not defined" on first launch / bootstrap (#50823).
+    js: [
+      "import { createRequire as __cr } from 'module';",
+      "import { fileURLToPath as __fu } from 'url';",
+      "import { dirname as __dn } from 'path';",
+      'const require = __cr(import.meta.url);',
+      'const __filename = __fu(import.meta.url);',
+      'const __dirname = __dn(__filename);',
+    ].join(' '),
   },
   define,
   logLevel: 'info',

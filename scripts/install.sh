@@ -1810,12 +1810,12 @@ install_deps() {
         #                  This respects the curation in pyproject.toml.
         # uv's own progress UI handles TTY detection and downgrades
         # gracefully when stdout/stderr aren't terminals.
-        if UV_PROJECT_ENVIRONMENT="$INSTALL_DIR/venv" $UV_CMD sync --extra all --locked; then
+        if UV_PROJECT_ENVIRONMENT="$INSTALL_DIR/venv" $UV_CMD sync --extra all --locked || UV_PROJECT_ENVIRONMENT="$INSTALL_DIR/venv" $UV_CMD sync --extra all --locked --offline; then
             log_success "Main package installed (hash-verified via uv.lock)"
             log_success "All dependencies installed"
             return 0
         fi
-        log_warn "uv.lock sync failed (see uv output above), falling back to PyPI resolve..."
+        log_warn "uv.lock sync failed (see uv output above), falling back to PyPI / cache resolve..."
     else
         log_info "uv.lock not found — falling back to PyPI resolve (no hash verification)"
     fi
@@ -1891,7 +1891,7 @@ PY
     install_tier() {
         local name="$1"; local spec="$2"
         log_info "Trying tier: $name ..."
-        if $UV_CMD pip install -e "$spec" 2>"$ALL_INSTALL_LOG"; then
+        if $UV_CMD pip install -e "$spec" 2>"$ALL_INSTALL_LOG" || $UV_CMD pip install --offline -e "$spec" 2>"$ALL_INSTALL_LOG"; then
             log_success "Main package installed ($name)"
             _installed=true
             _tier_name="$name"

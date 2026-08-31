@@ -142,3 +142,8 @@ def moor_portal_tags(session_id: str | None = None) -> List[str]:
     if effective:
         tags.append(conversation_tag(effective))
     return tags
+
+
+# Backwards compatibility alias for legacy plugins/callers
+nous_portal_tags = moor_portal_tags
+
