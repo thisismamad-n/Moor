@@ -353,12 +353,60 @@ ignore it.
 
 ---
 
-## 8. Decision framework — proceed vs ask the human
+## 8. Desktop executable & binary artwork rebranding checklist (CRITICAL)
+
+Upstream merges frequently pull in the stock upstream logo assets (such as the legacy anime girl icon with the "N" collar). Because binary image files (`.ico`, `.png`, `.icns`) cannot be transformed by text regex ladders, they require explicit asset tracking and compilation reminders.
+
+### Asset storage & auto-sync (`brand-assets/`)
+
+All canonical Moor artwork is permanently stored in `brand-assets/` at the repository root:
+- `brand-assets/icon.ico`: Multi-resolution Windows icon (256x256, 128x128, 64x64, 48x48, 32x32, 16x16) featuring the Moor Ant in an Apple-style white squircle.
+- `brand-assets/icon.png`: 1024x1024 master icon PNG with transparent outer corners.
+- `brand-assets/icon.icns`: Apple macOS bundle icon.
+- `brand-assets/logo.png`: 512x512 square logo.
+
+During Phase 5 (`ASSETS`), `scripts/rebrand.py` automatically copies these canonical files into all required destinations:
+- `apps/desktop/assets/` (`icon.ico`, `icon.png`, `icon.icns`)
+- `apps/bootstrap-installer/src-tauri/icons/` (`icon.ico`, `icon.icns`)
+- `apps/desktop/public/` (`apple-touch-icon.png`)
+- `website/static/img/` (`apple-touch-icon.png`, `logo.png`, `moor-logo.png`)
+
+### Load-bearing Windows `.exe` icon stamping
+
+The Windows packaging chain reads the icon from two distinct locations:
+1. **NSIS Installer (`Moor-<version>-win-x64.exe`)**:
+   `electron-builder` packages the installer using `apps/desktop/assets/icon.ico` (specified by `build.icon` in `apps/desktop/package.json`).
+2. **Unpacked Application (`Moor.exe`)**:
+   Because `build.win.signAndEditExecutable` is disabled to avoid the `winCodeSign` symlink crash, `apps/desktop/scripts/set-exe-identity.mjs` runs via the `afterPack` hook and directly invokes `rcedit` to stamp `apps/desktop/assets/icon.ico` and version metadata onto `Moor.exe`.
+
+### Routine post-rebrand action for desktop
+
+Whenever upstream changes are merged or brand artwork is refreshed:
+1. Ensure `brand-assets/` contains the canonical Moor ant icon files (`icon.ico`, `icon.png`, `icon.icns`, `logo.png`).
+2. Run `python scripts/rebrand.py` so the `ASSETS` phase overwrites any upstream image placeholders with Moor's artwork.
+3. Recompile the desktop executables:
+   ```powershell
+   cd apps/desktop
+   npm run dist:win:nsis   # packages release/Moor-<version>-win-x64.exe and win-unpacked/Moor.exe
+   ```
+   Or via the Moor CLI:
+   ```powershell
+   .venv\Scripts\python.exe -m moor_cli.main desktop --force-build --build-only
+   ```
+4. Verify the generated executable in `apps/desktop/release/`:
+   Check that `Moor-<version>-win-x64.exe` and `win-unpacked/Moor.exe` display the Moor Ant icon and carry Moor metadata (`ProductName: Moor`, `CompanyName: Moor inc.`).
+
+> [!WARNING]
+> **Windows Explorer Icon Cache Gotcha**: Windows Explorer aggressively caches `.exe` icon thumbnails in `%LOCALAPPDATA%\Microsoft\Windows\Explorer\thumbcache_*.db` keyed by the file's absolute path. If an `.exe` was previously viewed with an older icon, Explorer may continue rendering the cached thumbnail until the thumbnail cache is cleared, Explorer is restarted, or the file is copied/renamed (e.g. `Moor-Setup.exe`).
+
+---
+
+## 9. Decision framework — proceed vs ask the human
 
 **Proceed autonomously** (engine handles by design): upstream merges, new
 files containing brand terms, rule additions with selftest coverage,
 verification failures caused by engine gaps (fix the gap), lockfile/package
-name updates.
+name updates, binary artwork sync via `brand-assets/`.
 
 **Ask the human** before:
 - Changing the three-tier policy (e.g. "scorched-earth" renaming of
@@ -372,7 +420,7 @@ name updates.
 
 ---
 
-## 9. Quick reference
+## 10. Quick reference
 
 ```powershell
 # State check

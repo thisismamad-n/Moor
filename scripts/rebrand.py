@@ -302,15 +302,24 @@ LEGACY_ROOT_SCRIPT = "rebrand.py"
 # --------------------------------------------------------------------------
 
 ASSET_OVERRIDES = {
-    "icon.ico": ["apps/desktop/assets/icon.ico"],
-    "icon.icns": ["apps/desktop/assets/icon.icns"],
+    "icon.ico": [
+        "apps/desktop/assets/icon.ico",
+        "apps/bootstrap-installer/src-tauri/icons/icon.ico",
+    ],
+    "icon.icns": [
+        "apps/desktop/assets/icon.icns",
+        "apps/bootstrap-installer/src-tauri/icons/icon.icns",
+    ],
     "icon.png": [
         "apps/desktop/assets/icon.png",
         "apps/desktop/public/apple-touch-icon.png",
         "website/static/img/apple-touch-icon.png",
     ],
     "favicon.ico": ["web/public/favicon.ico", "website/static/img/favicon.ico"],
-    "logo.png": ["website/static/img/logo.png"],
+    "logo.png": [
+        "website/static/img/logo.png",
+        "website/static/img/moor-logo.png",
+    ],
     "banner.png": ["website/static/img/moor-agent-banner.png"],
     "mascot.jpg": [
         "apps/desktop/public/mascot.jpg",
