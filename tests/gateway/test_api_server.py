@@ -611,7 +611,9 @@ class TestDisconnectedAgentReap:
         adapter._active_run_agents["run_x"] = agent
 
         request = MagicMock()
+        request.headers = {}
         request.match_info = {"run_id": "run_x"}
+        adapter._run_owners["run_x"] = adapter._run_idempotency_scope(request)
         resp = await adapter._handle_stop_run(request)
         assert resp.status == 200
 
@@ -708,7 +710,10 @@ class TestHealthDetailedEndpoint:
             "active_agents": 2,
             "exit_reason": None,
             "updated_at": "2026-04-14T00:00:00Z",
-        }), patch("gateway.run._resolve_gateway_model", return_value="test/model"):
+        }), patch("gateway.run._resolve_gateway_model", return_value="test/model"), patch(
+            "gateway.readiness.shutil.disk_usage",
+            return_value=types.SimpleNamespace(total=100, used=25, free=75),
+        ):
             async with TestClient(TestServer(app)) as cli:
                 resp = await cli.get("/health/detailed")
                 assert resp.status == 200
@@ -870,12 +875,26 @@ class TestCapabilitiesEndpoint:
             assert data["features"]["chat_completions"] is True
             assert data["features"]["run_status"] is True
             assert data["features"]["run_events_sse"] is True
+            assert data["features"]["runs_idempotency"] == {
+                "supported": True,
+                "durable": True,
+                "retention_seconds": 86400,
+            }
             assert data["features"]["model_options"] is True
-            assert data["features"]["session_continuity_header"] == "X-Moor-Session-Id"
+            assert data["features"]["session_continuity_header"] == "X-moor-session-Id"
             assert data["endpoints"]["run_status"]["path"] == "/v1/runs/{run_id}"
             assert data["endpoints"]["model_options"] == {"method": "GET", "path": "/api/model/options"}
             assert data["endpoints"]["skills"] == {"method": "GET", "path": "/v1/skills"}
             assert data["endpoints"]["toolsets"] == {"method": "GET", "path": "/v1/toolsets"}
+
+    @pytest.mark.asyncio
+    async def test_capabilities_reports_in_memory_idempotency_fallback(self, adapter):
+        adapter._run_idempotency_store._db_path = None
+        app = _create_app(adapter)
+        async with TestClient(TestServer(app)) as cli:
+            response = await cli.get("/v1/capabilities")
+            data = await response.json()
+        assert data["features"]["runs_idempotency"]["durable"] is False
 
 
 # ---------------------------------------------------------------------------
@@ -2167,7 +2186,7 @@ class TestChatCompletionsAgentIncomplete:
             data = await resp.json()
             body = json.dumps(data)
             assert raw_secret not in body
-            assert raw_secret not in resp.headers.get("X-Moor-Error", "")
+            assert raw_secret not in resp.headers.get("X-moor-error", "")
             assert "OPENAI_API_KEY=" in body
             assert data["error"]["moor"]["failed"] is True
 
@@ -2305,7 +2324,7 @@ class TestConversationParameter:
 
 
 # ---------------------------------------------------------------------------
-# X-Moor-Session-Id header (session continuity)
+# X-moor-session-Id header (session continuity)
 # ---------------------------------------------------------------------------
 
 
@@ -2314,7 +2333,7 @@ class TestSessionIdHeader:
 
     @pytest.mark.asyncio
     async def test_traversal_session_id_header_rejected(self, auth_adapter):
-        """Security (#5958): a path-traversal X-Moor-Session-Id must be
+        """Security (#5958): a path-traversal X-moor-session-Id must be
         rejected with 400 so it can't reach the filesystem artifact paths
         (session snapshot / request dump) and escape the sessions dir."""
         app = _create_app(auth_adapter)
@@ -2323,7 +2342,7 @@ class TestSessionIdHeader:
                 for bad in ("../../../../etc/pwned", "/abs/path", "..\\win"):
                     resp = await cli.post(
                         "/v1/chat/completions",
-                        headers={"X-Moor-Session-Id": bad, "Authorization": "Bearer sk-secret"},
+                        headers={"X-moor-session-Id": bad, "Authorization": "Bearer sk-secret"},
                         json={"model": "moor-agent", "messages": [{"role": "user", "content": "hi"}]},
                     )
                     assert resp.status == 400, f"{bad!r} should be rejected"
@@ -2332,7 +2351,7 @@ class TestSessionIdHeader:
 
     @pytest.mark.asyncio
     async def test_provided_session_id_loads_history_from_db(self, auth_adapter):
-        """When X-Moor-Session-Id is provided, history comes from SessionDB not request body."""
+        """When X-moor-session-Id is provided, history comes from SessionDB not request body."""
         mock_result = {"final_response": "OK", "messages": [], "api_calls": 1}
         db_history = [
             {"role": "user", "content": "stored message 1"},
@@ -2348,7 +2367,7 @@ class TestSessionIdHeader:
 
                 resp = await cli.post(
                     "/v1/chat/completions",
-                    headers={"X-Moor-Session-Id": "existing-session", "Authorization": "Bearer sk-secret"},
+                    headers={"X-moor-session-Id": "existing-session", "Authorization": "Bearer sk-secret"},
                     # Request body has different history — should be ignored
                     json={
                         "model": "moor-agent",
@@ -2368,7 +2387,7 @@ class TestSessionIdHeader:
 
 
 # ---------------------------------------------------------------------------
-# X-Moor-Session-Key header (long-term memory scoping)
+# X-moor-session-Key header (long-term memory scoping)
 # ---------------------------------------------------------------------------
 
 
@@ -2401,7 +2420,7 @@ class TestSessionKeyHeader:
                 resp = await cli.post(
                     "/v1/chat/completions",
                     headers={
-                        "X-Moor-Session-Key": "agent:main:webui:dm:user-7",
+                        "X-moor-session-Key": "agent:main:webui:dm:user-7",
                         "Authorization": "Bearer sk-secret",
                     },
                     json={"model": "moor-agent", "messages": [{"role": "user", "content": "hi"}]},
@@ -2412,7 +2431,7 @@ class TestSessionKeyHeader:
 
     @pytest.mark.asyncio
     async def test_responses_endpoint_accepts_session_key(self, auth_adapter):
-        """Responses API honors the same X-Moor-Session-Key contract."""
+        """Responses API honors the same X-moor-session-Key contract."""
         mock_result = {"final_response": "ok", "messages": [], "api_calls": 1}
         app = _create_app(auth_adapter)
         async with TestClient(TestServer(app)) as cli:
@@ -2421,13 +2440,13 @@ class TestSessionKeyHeader:
                 resp = await cli.post(
                     "/v1/responses",
                     headers={
-                        "X-Moor-Session-Key": "webui:chan-1",
+                        "X-moor-session-Key": "webui:chan-1",
                         "Authorization": "Bearer sk-secret",
                     },
                     json={"model": "moor-agent", "input": "hello", "store": False},
                 )
             assert resp.status == 200
-            assert resp.headers.get("X-Moor-Session-Key") == "webui:chan-1"
+            assert resp.headers.get("X-moor-session-Key") == "webui:chan-1"
             call_kwargs = mock_run.call_args.kwargs
             assert call_kwargs["gateway_session_key"] == "webui:chan-1"
 
@@ -2439,7 +2458,7 @@ class TestSessionKeyHeader:
             resp = await cli.get("/v1/capabilities")
             assert resp.status == 200
             data = await resp.json()
-            assert data["features"]["session_key_header"] == "X-Moor-Session-Key"
+            assert data["features"]["session_key_header"] == "X-moor-session-Key"
 
 
 # ---------------------------------------------------------------------------

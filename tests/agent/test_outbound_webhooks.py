@@ -301,6 +301,23 @@ class TestPayload:
         assert payload["delivery_id"] == "did_1234"
         assert payload["timestamp"].endswith("Z")
 
+    def test_profile_field_reflects_bound_profile_home(self, tmp_path, monkeypatch):
+        """Receivers behind a multiplexed gateway need to know which profile
+        fired (#92674): ``profile`` follows the bound home at fire time."""
+        from moor_constants import reset_moor_home_override, set_moor_home_override
+
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
+        profile_home = tmp_path / "profiles" / "b"
+        profile_home.mkdir(parents=True)
+        token = set_moor_home_override(profile_home)
+        try:
+            body = outbound_webhooks._serialize_payload("on_session_end", {}, "did_1")
+        finally:
+            reset_moor_home_override(token)
+        assert json.loads(body)["profile"] == "b"
+        body = outbound_webhooks._serialize_payload("on_session_end", {}, "did_2")
+        assert json.loads(body)["profile"] == "default"
+
     def test_unserialisable_values_stringified(self):
         body = outbound_webhooks._serialize_payload(
             "on_session_end", {"weird": object()}, "did_1"
@@ -345,6 +362,46 @@ class TestRegistration:
         assert len(http_server.captured) == 1
 
 
+class TestForceReloadHomeScoping:
+    """Force-reloading one profile's plugin manager must restore that
+    profile's own outbound webhook and leave it firing exactly once —
+    the mirror of the shell-hook force-reload symmetry fix (#92682
+    review: outbound webhooks were the "same symptom class... after a
+    supported lifecycle transition instead of initial startup").
+    """
+
+    def test_force_reload_restores_webhook_and_fires_once(
+        self, monkeypatch, http_server,
+    ):
+        from moor_cli import plugins
+
+        cfg = _cfg({"url": _url(http_server), "events": ["on_session_end"]})
+        monkeypatch.setattr("moor_cli.config.load_config", lambda: cfg)
+
+        monkeypatch.setenv("MOOR_HOME", "/tmp/profile-b-webhook")
+        mgr_b = plugins.PluginManager()
+        plugins._plugin_manager = mgr_b
+        outbound_webhooks.register_from_config(cfg)
+        assert len(mgr_b._hooks.get("on_session_end", [])) == 1
+
+        # Force-reload: unload() wipes _hooks (config-owned webhook
+        # callbacks included, same as the ledger-driven plugin sweep), so
+        # without the fix the idempotence key alone would survive and a
+        # later register_from_config() call would see it and skip
+        # re-wiring — leaving the webhook silently inert.
+        mgr_b.unload()
+        assert mgr_b._hooks.get("on_session_end", []) == []
+
+        outbound_webhooks.re_register_config_hooks()
+        assert len(mgr_b._hooks.get("on_session_end", [])) == 1
+
+        plugins.get_plugin_manager().invoke_hook(
+            "on_session_end", session_id="s1",
+        )
+        assert outbound_webhooks.flush()
+        assert len(http_server.captured) == 1
+
+
 # ── E2E delivery against a real HTTP server ──────────────────────────────
 
 
@@ -383,12 +440,12 @@ class TestDelivery:
         assert payload["extra"]["completed"] is True
         assert payload["extra"]["model"] == "test-model"
 
-        assert req["headers"]["X-Moor-Event"] == "on_session_end"
-        assert req["headers"]["X-Moor-Delivery"]
+        assert req["headers"]["X-moor-event"] == "on_session_end"
+        assert req["headers"]["X-moor-delivery"]
         expected = hmac.new(
             secret.encode(), req["body"], hashlib.sha256
         ).hexdigest()
-        assert req["headers"]["X-Moor-Signature-256"] == f"sha256={expected}"
+        assert req["headers"]["X-moor-signature-256"] == f"sha256={expected}"
 
     def test_unsigned_delivery_has_no_signature_header(self, http_server):
         cfg = _cfg({"url": _url(http_server), "events": ["on_session_end"]})
@@ -400,7 +457,7 @@ class TestDelivery:
         assert outbound_webhooks.flush()
 
         assert len(http_server.captured) == 1
-        assert "X-Moor-Signature-256" not in http_server.captured[0]["headers"]
+        assert "X-moor-signature-256" not in http_server.captured[0]["headers"]
 
     def test_matcher_filters_tool_events(self, http_server):
         cfg = _cfg(
@@ -467,7 +524,7 @@ class TestDelivery:
         assert http_server.captured[0]["path"] == "/hook"
 
     def test_delivery_id_matches_header_and_body(self, http_server):
-        """The X-Moor-Delivery header and the signed body's delivery_id
+        """The X-moor-delivery header and the signed body's delivery_id
         must be the same value, or receiver-side dedupe breaks."""
         cfg = _cfg(
             {"url": _url(http_server), "events": ["on_session_end"],
@@ -482,7 +539,7 @@ class TestDelivery:
 
         req = http_server.captured[0]
         payload = json.loads(req["body"])
-        assert payload["delivery_id"] == req["headers"]["X-Moor-Delivery"]
+        assert payload["delivery_id"] == req["headers"]["X-moor-delivery"]
 
     def test_connection_error_does_not_raise(self):
         target = outbound_webhooks.WebhookTarget(

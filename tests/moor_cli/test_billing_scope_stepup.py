@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 import moor_cli.auth as auth
+import moor_cli.auth_moor as auth_moor
 from moor_cli.auth import (
     MOOR_BILLING_MANAGE_SCOPE,
     moor_token_has_billing_scope,
@@ -17,8 +18,28 @@ from moor_cli.auth import (
 # ---------------------------------------------------------------------------
 
 
+class TestMoorTokenHasBillingScope:
+    def test_true_when_scope_string_contains_billing_manage(self, monkeypatch):
+        monkeypatch.setattr(
+            auth, "get_provider_auth_state",
+            lambda pid: {"scope": f"openid {MOOR_BILLING_MANAGE_SCOPE} inference"},
+        )
+        assert moor_token_has_billing_scope() is True
 
+    def test_false_when_scope_missing_or_not_a_string(self, monkeypatch):
+        monkeypatch.setattr(auth, "get_provider_auth_state", lambda pid: {"scope": "openid inference"})
+        assert moor_token_has_billing_scope() is False
+        monkeypatch.setattr(auth, "get_provider_auth_state", lambda pid: {"scope": None})
+        assert moor_token_has_billing_scope() is False
+        monkeypatch.setattr(auth, "get_provider_auth_state", lambda pid: None)
+        assert moor_token_has_billing_scope() is False
 
+    def test_false_when_auth_state_lookup_raises(self, monkeypatch):
+        def _boom(pid):
+            raise RuntimeError("auth store unreadable")
+
+        monkeypatch.setattr(auth, "get_provider_auth_state", _boom)
+        assert moor_token_has_billing_scope() is False
 
 
 # ---------------------------------------------------------------------------
@@ -34,7 +55,9 @@ def _stub_persist(monkeypatch):
     monkeypatch.setattr(auth, "_save_provider_state", lambda *a, **kw: None)
     monkeypatch.setattr(auth, "_save_auth_store", lambda *a, **kw: "auth.json")
     monkeypatch.setattr(auth, "_write_shared_moor_state", lambda *a, **kw: None)
+    monkeypatch.setattr(auth_moor, "_write_shared_moor_state", lambda *a, **kw: None)
     monkeypatch.setattr(auth, "_sync_moor_pool_from_auth_store", lambda: None)
+    monkeypatch.setattr(auth_moor, "_sync_moor_pool_from_auth_store", lambda: None)
 
 
 class _NullCtx:
@@ -64,6 +87,7 @@ def test_step_up_requests_billing_scope_and_reuses_prior_urls(monkeypatch, _stub
         return {"scope": "inference:invoke tool:invoke billing:manage", "access_token": "t"}
 
     monkeypatch.setattr(auth, "_moor_device_code_login", _fake_login)
+    monkeypatch.setattr(auth_moor, "_moor_device_code_login", _fake_login)
 
     granted = step_up_moor_billing_scope()
     assert granted is True

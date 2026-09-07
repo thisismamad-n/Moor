@@ -69,7 +69,7 @@ class TestRefreshSkillGroup:
             )
 
         monkeypatch.setattr(
-            "moor_cli.commands.discord_skill_commands_by_category",
+            "moor_cli.commands_platforms.discord_skill_commands_by_category",
             fake_collector,
         )
 
@@ -113,7 +113,7 @@ class TestRegisterSkillGroupUsesInstanceState:
                 0,
             )
         monkeypatch.setattr(
-            "moor_cli.commands.discord_skill_commands_by_category",
+            "moor_cli.commands_platforms.discord_skill_commands_by_category",
             fake_collector,
         )
 

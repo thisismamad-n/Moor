@@ -320,7 +320,7 @@ EOF
 
 emit_manifest() {
     # Stage-Desktop is included only with --include-desktop, mirroring
-    # install.ps1: the signed bootstrap installer (Moor-Setup) passes it so
+    # install.ps1: the signed bootstrap installer (moor-setup) passes it so
     # a GUI install ends up with a launchable app; the Electron app's own
     # first-launch bootstrap and the CLI one-liner omit it (building the
     # desktop from inside the already-running app would clobber it).
@@ -473,7 +473,7 @@ get_command_link_display_dir() {
     fi
 }
 
-# Point a Moor-managed Node's `npm install -g` at a directory that is on
+# Point a moor-managed Node's `npm install -g` at a directory that is on
 # PATH. npm's default global prefix for a bundled Node is the Node dir itself,
 # so global package binaries land in $MOOR_HOME/node/bin — which is NOT on
 # PATH (only the command link dir is) and is wiped on every Node upgrade.
@@ -482,7 +482,7 @@ get_command_link_display_dir() {
 # survive upgrades. Scoped to the managed Node via its prefix-local global
 # npmrc, so the user's other Node installs and their ~/.npmrc are untouched.
 # Moor's own global installs pass an explicit --prefix and are unaffected.
-# Idempotent and a no-op when there is no Moor-managed npm, so calling it on
+# Idempotent and a no-op when there is no moor-managed npm, so calling it on
 # every install run repairs pre-existing installs, not just fresh ones.
 configure_managed_node_npm_prefix() {
     [ -x "$MOOR_HOME/node/bin/npm" ] || return 0
@@ -618,21 +618,64 @@ install_uv() {
 check_python() {
     if [ "$DISTRO" = "termux" ]; then
         log_info "Checking Termux Python..."
-        if command -v python >/dev/null 2>&1; then
-            PYTHON_PATH="$(command -v python)"
-            if "$PYTHON_PATH" -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)' 2>/dev/null; then
-                PYTHON_FOUND_VERSION="$("$PYTHON_PATH" --version 2>/dev/null)"
-                log_success "Python found: $PYTHON_FOUND_VERSION"
-                return 0
+        # Moor currently declares requires-python >=3.11,<3.14.  Termux can
+        # expose a newer default `python` before dependencies have compatible
+        # wheels, so do not accept the default interpreter until the upper bound
+        # is verified. Prefer the project's pinned minor when present, then
+        # other explicit compatible interpreters.
+        for python_cmd in python3.11 python3.12 python3.13 python; do
+            if command -v "$python_cmd" >/dev/null 2>&1; then
+                local candidate_path
+                candidate_path="$(command -v "$python_cmd")"
+                if "$candidate_path" -c 'import sys; raise SystemExit(0 if (3, 11) <= sys.version_info[:2] < (3, 14) else 1)' 2>/dev/null; then
+                    PYTHON_PATH="$candidate_path"
+                    PYTHON_FOUND_VERSION="$("$PYTHON_PATH" --version 2>/dev/null)"
+                    log_success "Python found: $PYTHON_FOUND_VERSION"
+                    return 0
+                fi
             fi
-        fi
+        done
 
         log_info "Installing Python via pkg..."
         pkg install -y python >/dev/null
         PYTHON_PATH="$(command -v python)"
-        PYTHON_FOUND_VERSION="$("$PYTHON_PATH" --version 2>/dev/null)"
-        log_success "Python installed: $PYTHON_FOUND_VERSION"
-        return 0
+        if "$PYTHON_PATH" -c 'import sys; raise SystemExit(0 if (3, 11) <= sys.version_info[:2] < (3, 14) else 1)' 2>/dev/null; then
+            PYTHON_FOUND_VERSION="$("$PYTHON_PATH" --version 2>/dev/null)"
+            log_success "Python installed: $PYTHON_FOUND_VERSION"
+            return 0
+        fi
+
+        # Termux's default `python` package is outside the supported range
+        # (e.g. 3.14.x before Rust transitives ship cp314 wheels). The Termux
+        # User Repository (TUR) publishes versioned CPython packages
+        # (python3.13, python3.11), so try to provision a supported
+        # interpreter from there before giving up.
+        PYTHON_FOUND_VERSION="$("$PYTHON_PATH" --version 2>/dev/null || true)"
+        log_warn "Termux Python $PYTHON_FOUND_VERSION is outside the supported range (>=3.11,<3.14)"
+        log_info "Trying the Termux User Repository (TUR) for a supported Python..."
+        pkg install -y tur-repo >/dev/null 2>&1 || true
+        local tur_pkg
+        for tur_pkg in python3.13 python3.12 python3.11; do
+            if ! pkg install -y "$tur_pkg" >/dev/null 2>&1; then
+                continue
+            fi
+            if ! command -v "$tur_pkg" >/dev/null 2>&1; then
+                continue
+            fi
+            local tur_path
+            tur_path="$(command -v "$tur_pkg")"
+            if "$tur_path" -c 'import sys; raise SystemExit(0 if (3, 11) <= sys.version_info[:2] < (3, 14) else 1)' 2>/dev/null; then
+                PYTHON_PATH="$tur_path"
+                PYTHON_FOUND_VERSION="$("$PYTHON_PATH" --version 2>/dev/null)"
+                log_success "Python installed from TUR: $PYTHON_FOUND_VERSION"
+                return 0
+            fi
+        done
+
+        log_error "Termux Python $PYTHON_FOUND_VERSION is not supported; Moor requires Python >=3.11,<3.14"
+        log_info "Install a supported interpreter and re-run this script:"
+        log_info "  pkg install tur-repo && pkg install python3.13"
+        exit 1
     fi
 
     log_info "Checking Python $PYTHON_VERSION..."
@@ -882,20 +925,30 @@ check_cxx_compiler() {
     return 1
 }
 
-# The dependency tree's real Node floor is >=22.22.0, set by react-router 8.3.0
-# (`engines.node`), with Vite ^8 next at `^20.19 || >=22.12`. Keep this in sync
-# with the root package.json — a gate looser than the manifest lets an install
-# proceed to a `npm ci` that then dies with EBADENGINE, and a gate stricter than
-# the manifest replaces a working user toolchain for nothing. Returns 0 when the
-# given `node --version` string clears the floor; anything below it is replaced
-# with the Moor-managed Node $NODE_VERSION.
+# The dependency tree supports Node 22.22+, 24.11+, and 26+. nanoid 6 excludes
+# Node 23 and 25 while its >=26 arm accepts later releases, and @babel/* 8.x
+# requires ^22.18.0 || >=24.11.0 — so accepting 23/25 or an early Node 24
+# here only defers the failure to `npm ci` under engine-strict. Keep this in
+# sync with the root package.json. Anything outside the supported lines is
+# replaced with the moor-managed Node $NODE_VERSION.
 node_satisfies_build() {
     local ver="${1#v}"
+    # Pre-release builds are rejected outright, however new they are. `node-pty`
+    # ships no Linux prebuild, so every install compiles it with node-gyp, which
+    # fetches the headers named by `process.release.headersUrl` — a URL only
+    # published for final releases. nodejs.org/dist/latest-v26.x currently
+    # serves node-v26.8.0-<os>-<arch>.tar.xz whose binary reports
+    # v26.8.0-alpha.0.0.0; its headers 404, and the install dies at
+    # `node-gyp rebuild` with the underlying error swallowed by the
+    # `node scripts/prebuild.js || node-gyp rebuild` fallback.
+    case "$ver" in *-*) return 1 ;; esac
     local major="${ver%%.*}"
     local minor="${ver#*.}"; minor="${minor%%.*}"
     case "$major" in ''|*[!0-9]*) return 1 ;; esac
     case "$minor" in ''|*[!0-9]*) minor=0 ;; esac
-    if [ "$major" -ge 22 ] && { [ "$major" -gt 22 ] || [ "$minor" -ge 22 ]; }; then return 0; fi
+    if [ "$major" -eq 22 ] && [ "$minor" -ge 22 ]; then return 0; fi
+    if [ "$major" -eq 24 ] && [ "$minor" -ge 11 ]; then return 0; fi
+    if [ "$major" -ge 26 ]; then return 0; fi
     return 1
 }
 
@@ -922,7 +975,7 @@ npm_supports_npmrc() {
 check_node() {
     log_info "Checking Node.js (for browser tools)..."
 
-    # Repair pre-existing Moor-managed installs where `npm install -g` lands
+    # Repair pre-existing moor-managed installs where `npm install -g` lands
     # off PATH. No-op when there's no managed Node, so this is safe to run on
     # every install — including re-runs that skip the Node (re)install below.
     configure_managed_node_npm_prefix
@@ -946,24 +999,24 @@ check_node() {
             return 0
         fi
         log_warn "npm $(npm --version) cannot honor this repo's .npmrc (npm 11.10-11.16 ignore"
-        log_warn "min-release-age-exclude) — installing Moor-managed Node $NODE_VERSION instead..."
+        log_warn "min-release-age-exclude) — installing moor-managed Node $NODE_VERSION instead..."
         install_node
         return
     fi
 
-    # Prefer a Moor-managed Node from a previous run over a too-old system one.
+    # Prefer a moor-managed Node from a previous run over a too-old system one.
     if [ -x "$MOOR_HOME/node/bin/node" ] && [ -x "$MOOR_HOME/node/bin/npm" ] \
         && node_satisfies_build "$("$MOOR_HOME/node/bin/node" --version)"; then
         export PATH="$MOOR_HOME/node/bin:$PATH"
-        log_success "Node.js $("$MOOR_HOME/node/bin/node" --version) found (Moor-managed)"
+        log_success "Node.js $("$MOOR_HOME/node/bin/node" --version) found (moor-managed)"
         HAS_NODE=true
         return 0
     fi
 
     if command -v node &> /dev/null && ! command -v npm &> /dev/null; then
-        log_warn "node found but npm is not on PATH (stray node symlink?) — installing Moor-managed Node $NODE_VERSION LTS..."
+        log_warn "node found but npm is not on PATH (stray node symlink?) — installing moor-managed Node $NODE_VERSION LTS..."
     elif command -v node &> /dev/null; then
-        log_warn "Node.js $(node --version) is too old (Moor requires Node >=26) — installing Moor-managed Node $NODE_VERSION..."
+        log_warn "Node.js $(node --version) is unsupported (Moor requires Node 22.22+, 24.11+, or 26+) — installing moor-managed Node $NODE_VERSION..."
     elif [ "$DISTRO" = "termux" ]; then
         log_info "Node.js not found — installing Node.js via pkg..."
     else
@@ -972,14 +1025,150 @@ check_node() {
     install_node
 }
 
+# Download and adopt one Node release line (e.g. 26) into ~/.moor/node/.
+#
+# Split out of install_node() so the caller can walk a list of candidate lines.
+# A line is rejected — and the caller should try an older one — when nodejs.org
+# publishes no tarball for this platform, when the download or extraction
+# fails, or when the tree it ships fails node_satisfies_build.
+#
+# Returns 0 with the tree in place, PATH exported and HAS_NODE=true; 1 when the
+# line is unusable. Nothing on disk is replaced until the candidate passes, so
+# a rejected line leaves any existing managed Node untouched.
+install_node_line() {
+    local node_line="$1"
+    local node_os="$2"
+    local node_arch="$3"
+
+    # Resolve the latest v${node_line}.x.x tarball name from the index page
+    local index_url="https://nodejs.org/dist/latest-v${node_line}.x/"
+    local tarball_name
+    tarball_name=$(curl -fsSL "$index_url" \
+        | grep -oE "node-v${node_line}\.[0-9]+\.[0-9]+-${node_os}-${node_arch}\.tar\.xz" \
+        | head -1)
+
+    # Fallback to .tar.gz if .tar.xz not available
+    if [ -z "$tarball_name" ]; then
+        tarball_name=$(curl -fsSL "$index_url" \
+            | grep -oE "node-v${node_line}\.[0-9]+\.[0-9]+-${node_os}-${node_arch}\.tar\.gz" \
+            | head -1)
+    fi
+
+    if [ -z "$tarball_name" ]; then
+        log_warn "Could not find Node.js $node_line binary for $node_os-$node_arch"
+        return 1
+    fi
+
+    local download_url="${index_url}${tarball_name}"
+    local tmp_dir
+    tmp_dir=$(mktemp -d)
+
+    log_info "Downloading $tarball_name..."
+    if ! curl -fsSL "$download_url" -o "$tmp_dir/$tarball_name"; then
+        log_warn "Download failed"
+        rm -rf "$tmp_dir"
+        return 1
+    fi
+
+    log_info "Extracting to ~/.moor/node/..."
+    if [[ "$tarball_name" == *.tar.xz ]]; then
+        tar xf "$tmp_dir/$tarball_name" -C "$tmp_dir"
+    else
+        tar xzf "$tmp_dir/$tarball_name" -C "$tmp_dir"
+    fi
+
+    local extracted_dir
+    extracted_dir=$(ls -d "$tmp_dir"/node-v* 2>/dev/null | head -1)
+
+    if [ ! -d "$extracted_dir" ]; then
+        log_warn "Extraction failed"
+        rm -rf "$tmp_dir"
+        return 1
+    fi
+
+    # Trust the binary, not the filename. A tarball named for a final release
+    # can still carry a pre-release build — latest-v26.x serves
+    # node-v26.8.0-<os>-<arch>.tar.xz whose `node --version` is
+    # v26.8.0-alpha.0.0.0 — and adopting it leaves node-pty unbuildable for the
+    # life of the install. Probe the extracted tree before it replaces anything.
+    local candidate_ver
+    candidate_ver=$("$extracted_dir/bin/node" --version 2>/dev/null)
+    if ! node_satisfies_build "$candidate_ver"; then
+        log_warn "Node.js ${candidate_ver:-unreadable} from ${index_url} cannot build native modules — trying an older release line..."
+        rm -rf "$tmp_dir"
+        return 1
+    fi
+
+    # Place into ~/.moor/node/ and symlink binaries into the same bin dir
+    # the moor command uses (get_command_link_dir): /usr/local/bin for root
+    # FHS installs, $PREFIX/bin on Termux, ~/.local/bin otherwise.
+    rm -rf "$MOOR_HOME/node"
+    mkdir -p "$MOOR_HOME"
+    mv "$extracted_dir" "$MOOR_HOME/node"
+    rm -rf "$tmp_dir"
+
+    # Node's official linux-x64 builds (observed: v26.7.0) link
+    # libatomic.so.1, which minimal Debian/Ubuntu images do not ship —
+    # the freshly downloaded binary then fails to start. Install the
+    # library up front, best-effort; the version probe below reports
+    # clearly if the binary still cannot run (#87460).
+    if [ "$OS" = "linux" ] && { [ "$DISTRO" = "ubuntu" ] || [ "$DISTRO" = "debian" ]; }; then
+        if command -v apt-get >/dev/null 2>&1; then
+            local sudo_cmd=""
+            if [ "$(id -u 2>/dev/null || echo 1000)" -ne 0 ]; then
+                command -v sudo >/dev/null 2>&1 && sudo_cmd="sudo"
+            fi
+            $sudo_cmd env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq libatomic1 >/dev/null 2>&1 || true
+        fi
+    fi
+
+    local node_link_dir
+    node_link_dir="$(get_command_link_dir)"
+    mkdir -p "$node_link_dir"
+    ln -sf "$MOOR_HOME/node/bin/node" "$node_link_dir/node"
+    ln -sf "$MOOR_HOME/node/bin/npm"  "$node_link_dir/npm"
+    ln -sf "$MOOR_HOME/node/bin/npx"  "$node_link_dir/npx"
+
+    configure_managed_node_npm_prefix
+
+    export PATH="$MOOR_HOME/node/bin:$PATH"
+
+    local installed_ver
+    if ! installed_ver=$("$MOOR_HOME/node/bin/node" --version 2>&1); then
+        # The adopted Node exists but cannot start (observed: missing
+        # libatomic.so.1 on minimal Debian/Ubuntu, #87460). Degrade loudly,
+        # surface the loader's real error, and remove the broken tree and
+        # bin links so later steps and retry runs start clean. Signal the
+        # caller to try an older release line rather than claiming success.
+        log_error "Downloaded Node.js failed to start:"
+        printf '%s\n' "$installed_ver" >&2
+        log_info "On Debian/Ubuntu the usual fix is: sudo apt-get install -y libatomic1"
+        rm -rf "$MOOR_HOME/node"
+        rm -f "$node_link_dir/node" "$node_link_dir/npm" "$node_link_dir/npx"
+        return 1
+    fi
+    log_success "Node.js $installed_ver installed to ~/.moor/node/"
+    HAS_NODE=true
+    return 0
+}
+
 install_node() {
     if [ "$DISTRO" = "termux" ]; then
         log_info "Installing Node.js via pkg..."
         if pkg install -y nodejs >/dev/null; then
             local installed_ver
-            installed_ver=$(node --version 2>/dev/null)
-            log_success "Node.js $installed_ver installed via pkg"
-            HAS_NODE=true
+            installed_ver=$(node --version 2>/dev/null || true)
+            if [ -n "$installed_ver" ]; then
+                log_success "Node.js $installed_ver installed via pkg"
+                HAS_NODE=true
+            else
+                # pkg succeeded but the binary cannot start — the same
+                # silent-success class the managed-download probe guards
+                # against (#87460). Degrade instead of claiming success.
+                log_error "Node.js installed via pkg failed to start:"
+                node --version >&2 || true
+                HAS_NODE=false
+            fi
         else
             log_warn "Failed to install Node.js via pkg"
             HAS_NODE=false
@@ -1012,79 +1201,21 @@ install_node() {
             ;;
     esac
 
-    # Resolve the latest v${NODE_VERSION}.x.x tarball name from the index page
-    local index_url="https://nodejs.org/dist/latest-v${NODE_VERSION}.x/"
-    local tarball_name
-    tarball_name=$(curl -fsSL "$index_url" \
-        | grep -oE "node-v${NODE_VERSION}\.[0-9]+\.[0-9]+-${node_os}-${node_arch}\.tar\.xz" \
-        | head -1)
+    # Try the target line first, then the two previous even-numbered (LTS)
+    # lines. Whether a line is usable cannot be known from its index page —
+    # see install_node_line — and stepping down beats adopting a Node that
+    # leaves every native dependency unbuildable.
+    local node_line
+    for node_line in "$NODE_VERSION" "$((NODE_VERSION - 2))" "$((NODE_VERSION - 4))"; do
+        if install_node_line "$node_line" "$node_os" "$node_arch"; then
+            return 0
+        fi
+    done
 
-    # Fallback to .tar.gz if .tar.xz not available
-    if [ -z "$tarball_name" ]; then
-        tarball_name=$(curl -fsSL "$index_url" \
-            | grep -oE "node-v${NODE_VERSION}\.[0-9]+\.[0-9]+-${node_os}-${node_arch}\.tar\.gz" \
-            | head -1)
-    fi
-
-    if [ -z "$tarball_name" ]; then
-        log_warn "Could not find Node.js $NODE_VERSION binary for $node_os-$node_arch"
-        log_info "Install manually: https://nodejs.org/en/download/"
-        HAS_NODE=false
-        return 0
-    fi
-
-    local download_url="${index_url}${tarball_name}"
-    local tmp_dir
-    tmp_dir=$(mktemp -d)
-
-    log_info "Downloading $tarball_name..."
-    if ! curl -fsSL "$download_url" -o "$tmp_dir/$tarball_name"; then
-        log_warn "Download failed"
-        rm -rf "$tmp_dir"
-        HAS_NODE=false
-        return 0
-    fi
-
-    log_info "Extracting to ~/.moor/node/..."
-    if [[ "$tarball_name" == *.tar.xz ]]; then
-        tar xf "$tmp_dir/$tarball_name" -C "$tmp_dir"
-    else
-        tar xzf "$tmp_dir/$tarball_name" -C "$tmp_dir"
-    fi
-
-    local extracted_dir
-    extracted_dir=$(ls -d "$tmp_dir"/node-v* 2>/dev/null | head -1)
-
-    if [ ! -d "$extracted_dir" ]; then
-        log_warn "Extraction failed"
-        rm -rf "$tmp_dir"
-        HAS_NODE=false
-        return 0
-    fi
-
-    # Place into ~/.moor/node/ and symlink binaries into the same bin dir
-    # the moor command uses (get_command_link_dir): /usr/local/bin for root
-    # FHS installs, $PREFIX/bin on Termux, ~/.local/bin otherwise.
-    rm -rf "$MOOR_HOME/node"
-    mkdir -p "$MOOR_HOME"
-    mv "$extracted_dir" "$MOOR_HOME/node"
-    rm -rf "$tmp_dir"
-
-    local node_link_dir
-    node_link_dir="$(get_command_link_dir)"
-    mkdir -p "$node_link_dir"
-    ln -sf "$MOOR_HOME/node/bin/node" "$node_link_dir/node"
-    ln -sf "$MOOR_HOME/node/bin/npm"  "$node_link_dir/npm"
-    ln -sf "$MOOR_HOME/node/bin/npx"  "$node_link_dir/npx"
-
-    configure_managed_node_npm_prefix
-
-    export PATH="$MOOR_HOME/node/bin:$PATH"
-
-    local installed_ver
-    installed_ver=$("$MOOR_HOME/node/bin/node" --version 2>/dev/null)
-    log_success "Node.js $installed_ver installed to ~/.moor/node/"
-    HAS_NODE=true
+    log_warn "No usable Node.js release line found for $node_os-$node_arch"
+    log_info "Install manually: https://nodejs.org/en/download/"
+    HAS_NODE=false
+    return 0
 }
 
 check_network_prerequisites() {
@@ -1381,75 +1512,20 @@ clone_repo() {
                 autostash_ref="stash@{0}"
             fi
 
-            local fetch_succeeded=false
-            # Fetch only the target branch if remote is reachable.
-            local target_branch="${BRANCH:-main}"
-            git remote set-branches origin "$target_branch" 2>/dev/null || true
-            if git fetch origin "$target_branch" 2>/dev/null; then
-                fetch_succeeded=true
-            elif [ "$target_branch" = "master" ] && git fetch origin main 2>/dev/null; then
-                target_branch="main"
-                fetch_succeeded=true
-            elif [ "$target_branch" = "main" ] && git fetch origin master 2>/dev/null; then
-                target_branch="master"
-                fetch_succeeded=true
-            fi
-
-            if [ "$fetch_succeeded" = false ]; then
-                # Check for bundled repository archive or directory
-                local script_dir
-                script_dir="$(cd "$(dirname "$0")" && pwd)"
-                local bundled_candidates=(
-                    "$MOOR_BUNDLED_REPO"
-                    "${MOOR_RESOURCES:+$MOOR_RESOURCES/repo.zip}"
-                    "${MOOR_RESOURCES:+$MOOR_RESOURCES/moor-repo.zip}"
-                    "$script_dir/../repo.zip"
-                    "$script_dir/repo.zip"
-                    "$script_dir/../../repo.zip"
-                    "$script_dir/../moor-repo.zip"
-                    "$script_dir/../moor-agent.zip"
-                )
-                local found_zip=""
-                for cand in "${bundled_candidates[@]}"; do
-                    if [ -n "$cand" ] && [ -f "$cand" ]; then
-                        found_zip="$cand"
-                        break
-                    fi
-                done
-                if [ -n "$found_zip" ]; then
-                    log_info "Remote unreachable; updating from bundled repository archive at $found_zip..."
-                    local extract_tmp="/tmp/moor-repo-update-$$-$(date +%s)"
-                    mkdir -p "$extract_tmp"
-                    if unzip -q "$found_zip" -d "$extract_tmp" 2>/dev/null || (which python3 >/dev/null 2>&1 && python3 -m zipfile -e "$found_zip" "$extract_tmp"); then
-                        cp -R "$extract_tmp/"* "$INSTALL_DIR/" 2>/dev/null || true
-                        rm -rf "$extract_tmp" 2>/dev/null
-                        git add -A 2>/dev/null || true
-                        git commit -m "Moor offline update snapshot" 2>/dev/null || true
-                        log_success "Updated from bundled repository archive"
-                    else
-                        rm -rf "$extract_tmp" 2>/dev/null
-                    fi
-                else
-                    log_warn "Could not fetch from remote origin (offline or unreachable); using existing local repository on disk."
-                fi
-            fi
-
-            local checkout_branch="$target_branch"
-            if ! git rev-parse --verify "$checkout_branch" >/dev/null 2>&1; then
-                local current_head
-                current_head="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
-                if [ -n "$current_head" ] && [ "$current_head" != "HEAD" ]; then
-                    checkout_branch="$current_head"
-                elif git rev-parse --verify main >/dev/null 2>&1; then
-                    checkout_branch="main"
-                fi
-            fi
-            git checkout "$checkout_branch" 2>/dev/null || true
-            if [ "$fetch_succeeded" = true ]; then
-                if ! git pull --ff-only origin "$checkout_branch" 2>/dev/null; then
-                    log_warn "Fast-forward not possible; resetting managed install to origin/$checkout_branch..."
-                    git reset --hard "origin/$checkout_branch" 2>/dev/null || true
-                fi
+            # Fetch only the target branch. A bare `git fetch origin` pulls
+            # every ref, and this repo carries thousands of auto-generated
+            # branches — on a non-single-branch checkout that turns each update
+            # into a multi-minute download that can stall the installer.
+            git remote set-branches origin "$BRANCH" 2>/dev/null || true
+            git fetch origin "$BRANCH"
+            git checkout "$BRANCH"
+            # Managed installs should follow origin/$BRANCH exactly. If the
+            # checkout has diverged (or has local-only commits), ff-only pull
+            # cannot succeed — mirror ``moor update`` and reset to the
+            # fetched remote so bootstrap/install can recover.
+            if ! git pull --ff-only origin "$BRANCH"; then
+                log_warn "Fast-forward not possible; resetting managed install to origin/$BRANCH..."
+                git reset --hard "origin/$BRANCH"
             fi
 
             if [ -n "$autostash_ref" ]; then
@@ -1513,116 +1589,120 @@ EOF
             exit 1
         fi
     else
-        CLONE_SUCCESS=false
-
-        # Check for bundled repository archive or directory (offline install)
-        SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-        BUNDLED_CANDIDATES=(
-            "$MOOR_BUNDLED_REPO"
-            "${MOOR_RESOURCES:+$MOOR_RESOURCES/repo.zip}"
-            "${MOOR_RESOURCES:+$MOOR_RESOURCES/moor-repo.zip}"
-            "$SCRIPT_DIR/../repo.zip"
-            "$SCRIPT_DIR/repo.zip"
-            "$SCRIPT_DIR/../../repo.zip"
-            "$SCRIPT_DIR/../moor-repo.zip"
-            "$SCRIPT_DIR/../moor-agent.zip"
-        )
-
-        FOUND_BUNDLED_ZIP=""
-        for cand in "${BUNDLED_CANDIDATES[@]}"; do
-            if [ -n "$cand" ] && [ -f "$cand" ]; then
-                FOUND_BUNDLED_ZIP="$cand"
-                break
-            fi
-        done
-
-        if [ -n "$FOUND_BUNDLED_ZIP" ]; then
-            log_info "Found bundled repository archive at $FOUND_BUNDLED_ZIP"
-            rm -rf "$INSTALL_DIR" 2>/dev/null
-            mkdir -p "$(dirname "$INSTALL_DIR")" 2>/dev/null
-            EXTRACT_TMP="/tmp/moor-repo-extract-$$-$(date +%s)"
-            mkdir -p "$EXTRACT_TMP"
-            if unzip -q "$FOUND_BUNDLED_ZIP" -d "$EXTRACT_TMP" 2>/dev/null || (which python3 >/dev/null 2>&1 && python3 -m zipfile -e "$FOUND_BUNDLED_ZIP" "$EXTRACT_TMP"); then
-                if [ -f "$EXTRACT_TMP/pyproject.toml" ]; then
-                    mv "$EXTRACT_TMP" "$INSTALL_DIR"
-                elif [ -d "$EXTRACT_TMP/"*/ ] && [ -f "$EXTRACT_TMP/"*"/pyproject.toml" ]; then
-                    mv "$EXTRACT_TMP/"*/ "$INSTALL_DIR"
-                    rm -rf "$EXTRACT_TMP" 2>/dev/null
-                else
-                    mv "$EXTRACT_TMP" "$INSTALL_DIR"
+        # Try SSH first (for private repo access), fall back to HTTPS
+        # GIT_SSH_COMMAND disables interactive prompts and sets a short timeout
+        # so SSH fails fast instead of hanging when no key is configured.
+        log_info "Trying SSH clone..."
+        if GIT_SSH_COMMAND="ssh -o BatchMode=yes -o ConnectTimeout=5" \
+           git clone --depth 1 --branch "$BRANCH" "$REPO_URL_SSH" "$INSTALL_DIR" 2>/dev/null; then
+            log_success "Cloned via SSH"
+        else
+            rm -rf "$INSTALL_DIR" 2>/dev/null  # Clean up partial SSH clone
+            log_info "SSH failed, trying HTTPS..."
+            # GitHub throttles packfile generation for large repos (this one:
+            # ~9.6k files at HEAD plus thousands of auto-generated branches)
+            # with repo-scoped HTTP 429s that are NOT client IP rate limits —
+            # an anonymous clone of a small repo succeeds and the API quota
+            # is untouched, but the single big pack behind `--depth 1` dies
+            # mid-transfer with "RPC failed; HTTP 429 / expected 'packfile'"
+            # (#89624, same throttle as the update path in #89287). Retry
+            # with backoff, then degrade to a blobless partial clone + fetch
+            # (many small packs instead of one big one — what gets past the
+            # throttle). Fully materialize the tree afterwards so the rest of
+            # the installer sees the normal files.
+            local clone_ok=false
+            local attempt=0
+            local max_attempts=4
+            for attempt in $(seq 1 "$max_attempts"); do
+                [ "$attempt" -gt 1 ] && log_info "Retrying HTTPS clone (attempt $attempt/$max_attempts)..."
+                if git clone --depth 1 --single-branch --branch "$BRANCH" \
+                     "$REPO_URL_HTTPS" "$INSTALL_DIR"; then
+                    clone_ok=true
+                    break
                 fi
-                log_success "Bundled repository extracted to $INSTALL_DIR"
-                cd "$INSTALL_DIR"
-                if which git >/dev/null 2>&1; then
-                    git init 2>/dev/null || true
-                    git remote add origin "$REPO_URL_HTTPS" 2>/dev/null || true
-                    if ! git rev-parse --verify HEAD >/dev/null 2>&1; then
-                        git config user.name "Moor" 2>/dev/null || true
-                        git config user.email "support@nousresearch.com" 2>/dev/null || true
-                        local init_branch="${BRANCH:-main}"
-                        git symbolic-ref HEAD "refs/heads/$init_branch" 2>/dev/null || true
-                        git commit --allow-empty -m "Moor offline install snapshot" 2>/dev/null || true
+                rm -rf "$INSTALL_DIR" 2>/dev/null  # partial clone is unusable
+                [ "$attempt" -lt "$max_attempts" ] && sleep $((attempt * 5))
+            done
+            if [ "$clone_ok" != true ]; then
+                log_info "Direct clone throttled — trying blobless partial clone..."
+                # --no-checkout keeps the clone itself to commits+trees (small,
+                # gets past the pack throttle). Without it the blob fetch runs
+                # inside `git clone`'s own checkout step, the throttle kills
+                # the whole clone, and this fallback degrades to one more
+                # failed clone. The blobs are fetched by the reset below — a
+                # separate request the retry can actually wrap.
+                if git clone --depth 1 --single-branch --filter=blob:none \
+                     --no-checkout --branch "$BRANCH" "$REPO_URL_HTTPS" "$INSTALL_DIR"; then
+                    # Materialize the working tree: on a --no-checkout clone
+                    # this reset is the step that fetches the blobs (several
+                    # small packs instead of one big one). Fail closed — a
+                    # half-materialized checkout must not report success and
+                    # hand the rest of the installer an unusable tree.
+                    if (cd "$INSTALL_DIR" \
+                        && (git reset --hard HEAD >/dev/null 2>&1 \
+                            || { sleep 5; git reset --hard HEAD >/dev/null 2>&1; })); then
+                        clone_ok=true
+                    else
+                        rm -rf "$INSTALL_DIR" 2>/dev/null  # unusable checkout
                     fi
-                fi
-                CLONE_SUCCESS=true
-            else
-                rm -rf "$EXTRACT_TMP" 2>/dev/null
-                log_warn "Failed to extract bundled repository archive; falling back to git clone..."
-            fi
-        fi
-
-        if [ "$CLONE_SUCCESS" = false ]; then
-            # Try SSH first (for private repo access), fall back to HTTPS
-            log_info "Trying SSH clone..."
-            if GIT_SSH_COMMAND="ssh -o BatchMode=yes -o ConnectTimeout=5" \
-               git clone --depth 1 --branch "$BRANCH" "$REPO_URL_SSH" "$INSTALL_DIR" 2>/dev/null; then
-                log_success "Cloned via SSH"
-            else
-                rm -rf "$INSTALL_DIR" 2>/dev/null  # Clean up partial SSH clone
-                log_info "SSH failed, trying HTTPS..."
-                if git clone --depth 1 --branch "$BRANCH" "$REPO_URL_HTTPS" "$INSTALL_DIR"; then
-                    log_success "Cloned via HTTPS"
                 else
-                    log_error "Failed to clone repository"
-                    exit 1
+                    rm -rf "$INSTALL_DIR" 2>/dev/null
                 fi
+            fi
+            if [ "$clone_ok" = true ]; then
+                log_success "Cloned via HTTPS"
+            else
+                log_error "Failed to clone repository"
+                exit 1
             fi
         fi
     fi
 
     cd "$INSTALL_DIR"
 
-    if [ -n "$INSTALL_COMMIT" ] && ! printf '%s' "$INSTALL_COMMIT" | grep -qE '^0+$'; then
+    if [ -n "$INSTALL_COMMIT" ]; then
         # Validate the commit argument: must look like a hex SHA (full 40-char
-        # or abbreviated 7-39 char).
+        # or abbreviated 7-39 char). Reject anything else early so the user
+        # gets a clear error instead of a misleading git message (#87268).
         if ! printf '%s' "$INSTALL_COMMIT" | grep -qE '^[0-9a-fA-F]{7,40}$'; then
             log_error "--commit expects a hex SHA (7-40 chars), got: $INSTALL_COMMIT"
             return 1
         fi
-        local commit_found_locally=false
-        if git cat-file -e "$INSTALL_COMMIT^{commit}" 2>/dev/null || git rev-parse --verify "$INSTALL_COMMIT^{commit}" >/dev/null 2>&1; then
-            commit_found_locally=true
-        elif git fetch origin "$INSTALL_COMMIT" 2>/dev/null; then
-            commit_found_locally=true
+        # A commit pin must never move an existing install BACKWARDS. The
+        # bootstrap installer bakes its build-time commit into the binary
+        # (BUILD_PIN_COMMIT) and passes it as --commit on every install-mode
+        # run -- including the one the desktop's failure screen retries. An
+        # installer built months ago would otherwise rewind a current checkout
+        # to its build commit, stranding the user on ancient code with a
+        # current venv. Only pin when the target is not already an ancestor of
+        # HEAD; a fresh clone has no such ancestry and pins normally.
+        if ! git cat-file -e "$INSTALL_COMMIT^{commit}" 2>/dev/null; then
+            if ! git fetch origin "$INSTALL_COMMIT"; then
+                log_error "Could not fetch commit $INSTALL_COMMIT from origin."
+                log_error "Abbreviated SHAs are not supported — use the full 40-char hash."
+                log_error "Find it with: git ls-remote origin | grep <short-sha>"
+                return 1
+            fi
         fi
-
-        if [ "$commit_found_locally" = true ]; then
-            if git rev-parse --verify --quiet HEAD >/dev/null 2>&1 \
-               && git merge-base --is-ancestor "$INSTALL_COMMIT" HEAD 2>/dev/null \
-               && [ "$(git rev-parse "$INSTALL_COMMIT^{commit}" 2>/dev/null)" != "$(git rev-parse HEAD)" ]; then
-                if [ "$FORCE_COMMIT" = true ]; then
-                    log_warn "--force-commit: rolling this install back to $INSTALL_COMMIT."
-                    git checkout --detach "$INSTALL_COMMIT" 2>/dev/null || true
-                else
-                    log_warn "Ignoring --commit $INSTALL_COMMIT: the checkout is already newer."
-                    log_warn "Pinning to it would roll this install back. Pass --force-commit to override."
+        if git rev-parse --verify --quiet HEAD >/dev/null 2>&1 \
+           && git merge-base --is-ancestor "$INSTALL_COMMIT" HEAD 2>/dev/null \
+           && [ "$(git rev-parse "$INSTALL_COMMIT^{commit}" 2>/dev/null)" != "$(git rev-parse HEAD)" ]; then
+            if [ "$FORCE_COMMIT" = true ]; then
+                log_warn "--force-commit: rolling this install back to $INSTALL_COMMIT."
+                if ! git checkout --detach "$INSTALL_COMMIT"; then
+                    log_error "Failed to detach at $INSTALL_COMMIT"
+                    return 1
                 fi
             else
-                log_info "Pinning checkout to commit $INSTALL_COMMIT..."
-                git checkout --detach "$INSTALL_COMMIT" 2>/dev/null || true
+                log_warn "Ignoring --commit $INSTALL_COMMIT: the checkout is already newer."
+                log_warn "Pinning to it would roll this install back. Pass --force-commit to override."
             fi
         else
-            log_warn "Commit $INSTALL_COMMIT not found locally or on origin; continuing with current checkout."
+            log_info "Pinning checkout to commit $INSTALL_COMMIT..."
+            if ! git checkout --detach "$INSTALL_COMMIT"; then
+                log_error "Failed to detach at $INSTALL_COMMIT"
+                return 1
+            fi
         fi
     fi
 
@@ -1670,6 +1750,30 @@ setup_venv() {
     fi
 
     log_success "Virtual environment ready (Python $PYTHON_VERSION)"
+}
+
+run_locked_uv_sync() {
+    # Bootstrap uv calls stay isolated from ambient config via UV_NO_CONFIG
+    # (#21269). A locked project sync is different: uv.lock records resolver
+    # settings from this checkout's [tool.uv], so hiding pyproject.toml makes
+    # uv 0.12+ reject the valid lock. Re-enable project discovery only for
+    # this subprocess while redirecting user/system config lookups to an empty
+    # directory. Keep HOME unchanged so caches, credentials, and git continue
+    # to work normally.
+    local project_env="$1"
+    local isolated_uv_config
+    local sync_rc
+    isolated_uv_config="$(mktemp -d)" || return 1
+
+    (
+        unset UV_NO_CONFIG UV_CONFIG_FILE
+        export XDG_CONFIG_HOME="$isolated_uv_config"
+        export XDG_CONFIG_DIRS="$isolated_uv_config"
+        UV_PROJECT_ENVIRONMENT="$project_env" $UV_CMD sync --extra all --locked || UV_PROJECT_ENVIRONMENT="$project_env" $UV_CMD sync --extra all --locked --offline
+    )
+    sync_rc=$?
+    rmdir "$isolated_uv_config" 2>/dev/null || true
+    return "$sync_rc"
 }
 
 install_deps() {
@@ -1810,12 +1914,25 @@ install_deps() {
         #                  This respects the curation in pyproject.toml.
         # uv's own progress UI handles TTY detection and downgrades
         # gracefully when stdout/stderr aren't terminals.
-        if UV_PROJECT_ENVIRONMENT="$INSTALL_DIR/venv" $UV_CMD sync --extra all --locked || UV_PROJECT_ENVIRONMENT="$INSTALL_DIR/venv" $UV_CMD sync --extra all --locked --offline; then
+        #
+        # Run the Tier-0 locked sync via run_locked_uv_sync: the global
+        # UV_NO_CONFIG export at script start (the #21269 sudo -u hygiene
+        # guard) also hides the project's own [tool.uv] policy —
+        # exclude-newer, its package exemptions, and override-dependencies —
+        # from uv. The resolver then runs under a different policy than the
+        # one uv.lock was resolved under, and --locked turns that mismatch
+        # fatal, so every fresh install fell through to the non-hash-verified
+        # PyPI tiers. The helper re-enables project config discovery for this
+        # one subprocess while keeping ambient user/system uv config hidden
+        # (redirected to an empty XDG dir), preserving the #21269 guarantee.
+        # Runtime code does the same before its locked syncs
+        # (moor_cli/managed_uv.py).
+        if run_locked_uv_sync "$INSTALL_DIR/venv"; then
             log_success "Main package installed (hash-verified via uv.lock)"
             log_success "All dependencies installed"
             return 0
         fi
-        log_warn "uv.lock sync failed (see uv output above), falling back to PyPI / cache resolve..."
+        log_warn "uv.lock sync failed (see uv output above), falling back to PyPI resolve..."
     else
         log_info "uv.lock not found — falling back to PyPI resolve (no hash verification)"
     fi
@@ -2190,7 +2307,7 @@ copy_config_templates() {
     # here is self-healing, but keep them in sync to avoid a churn on first run.
     if [ ! -f "$MOOR_HOME/SOUL.md" ]; then
         cat > "$MOOR_HOME/SOUL.md" << 'SOUL_EOF'
-You are Moor Agent, an intelligent AI assistant created by Moor inc.. You are helpful, knowledgeable, and direct. You assist users with a wide range of tasks including answering questions, writing and editing code, analyzing information, creative work, and executing actions via your tools. You communicate clearly, admit uncertainty when appropriate, and prioritize being genuinely useful over being verbose unless otherwise directed below. Be targeted and efficient in your exploration and investigations.
+You are Moor Agent, built by Moor inc.. Be direct: match the length of your reply to the weight of the ask — a one-line question gets a one-line answer, and finished work gets a short report of what changed, what's verified, and what's left, never a replay of the process. No filler ("Great question," "I'd be happy to"), no restating the request back, no re-summarizing what you already said, no narrating tool calls the user can see. Plain claims over adjectives; when unsure, say so plainly. Agree because it's right, not because the user said it. Depth is earned — give it when the user asks for detail, teaches, or the stakes demand it, not by default.
 SOUL_EOF
         log_success "Created ~/.moor/SOUL.md (edit to customize personality)"
     fi
@@ -2502,6 +2619,36 @@ configure_browser_env_from_system_browser() {
     log_success "Configured browser tools to use $browser_path"
 }
 
+# Select the npm workspaces a CLI install actually needs, into the
+# NODE_DEPS_WORKSPACE_ARGS array.
+#
+# A bare `npm install` at the repo root resolves package.json's `apps/*`
+# glob, which materializes apps/desktop — and with it node-pty, which ships
+# no Linux prebuild and falls back to `node-gyp rebuild`. On a host without
+# make/gcc that rebuild fails, and since #85297 made a failed npm install
+# fatal it aborts the whole install of a machine that will never launch
+# Electron or a PTY addon (#38311, #38772). Desktop dependencies are
+# installed by install_desktop(), reachable only via --include-desktop.
+#
+# Naming ui-tui/web excludes the unnamed apps/* workspaces, and
+# --include-workspace-root keeps the root's own devDependencies (the shared
+# ESLint flat config each workspace imports) from being pruned by the scoped
+# install — the same closure `moor update` installs
+# (moor_cli/main.py::_update_node_dependencies). Prebuilt/partial checkouts
+# can lack a workspace, and naming a missing one makes npm fail hard, so fall
+# back to a root-only install that still skips apps/*.
+node_deps_workspace_args() {
+    local install_dir="$1"
+    NODE_DEPS_WORKSPACE_ARGS=()
+    [ -f "$install_dir/ui-tui/package.json" ] && NODE_DEPS_WORKSPACE_ARGS+=(--workspace ui-tui)
+    [ -f "$install_dir/web/package.json" ] && NODE_DEPS_WORKSPACE_ARGS+=(--workspace web)
+    if [ "${#NODE_DEPS_WORKSPACE_ARGS[@]}" -eq 0 ]; then
+        NODE_DEPS_WORKSPACE_ARGS=(--workspaces=false)
+        return 0
+    fi
+    NODE_DEPS_WORKSPACE_ARGS+=(--include-workspace-root)
+}
+
 install_node_deps() {
     if [ "$HAS_NODE" = false ]; then
         log_info "Skipping Node.js dependencies (Node not installed)"
@@ -2524,9 +2671,12 @@ install_node_deps() {
         # installed", hiding the degradation from the user (#77003). Now it
         # fails the install outright instead of burying the warning (#85297).
         # Capture npm output so failures are diagnosable (#87340).
+        # Scoped to the workspaces a CLI install needs so apps/desktop's
+        # node-pty is never built here — see node_deps_workspace_args().
+        node_deps_workspace_args "$INSTALL_DIR"
         local npm_log
         npm_log="$(mktemp)"
-        if ! run_with_timeout "$NODE_DEPS_TIMEOUT" npm install --silent \
+        if ! run_with_timeout "$NODE_DEPS_TIMEOUT" npm install "${NODE_DEPS_WORKSPACE_ARGS[@]}" --silent \
                 >"$npm_log" 2>&1; then
             log_error "npm install failed or timed out; Node.js dependencies were not installed"
             if [ -s "$npm_log" ]; then
@@ -3320,8 +3470,8 @@ install_desktop() {
     # failure, not a silent skip — a silent skip yields a "complete" install
     # with no app and a confusing "couldn't find a built desktop" at launch.
     # Always re-resolve Node here. Stages run in separate processes, so we can't
-    # trust an earlier check; more importantly check_node now enforces the build
-    # floor (Node >=26) and prepends the Moor-managed Node to PATH, so
+    # trust an earlier check; more importantly check_node now enforces the
+    # supported Node lines and prepends the moor-managed Node to PATH, so
     # the build never runs on a too-old system Node — the cause of the opaque
     # "Build desktop app … exit code 1" failure (Vite crashes on old Node).
     check_node
@@ -3618,7 +3768,7 @@ run_stage_body() {
             detect_os
             resolve_install_layout
             require_install_dir
-            # Each stage runs in its own process, so the Moor-managed Node
+            # Each stage runs in its own process, so the moor-managed Node
             # provisioned during prerequisites/node-deps (at $MOOR_HOME/node/bin)
             # isn't on PATH here. check_node re-adds it (or installs if missing)
             # so install_desktop can find npm instead of silently skipping.

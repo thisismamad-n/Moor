@@ -23,7 +23,7 @@ unmodified.
 Original work
 -------------
 
-The Moor-side plugin glue code (__init__.py, plugin.yaml, README.md,
+The moor-side plugin glue code (__init__.py, plugin.yaml, README.md,
 tests) is original work by Moor inc. and is licensed under the MIT
 License that applies to the rest of the moor-agent project, except
 where it imports from patterns.py — that import does not change the

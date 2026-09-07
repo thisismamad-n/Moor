@@ -19,13 +19,9 @@ from unittest.mock import patch
 import pytest
 
 import moor_state
-from moor_state import (
-    SessionDB,
-    WalUnsupportedError,
-    apply_wal_with_fallback,
-    format_session_db_unavailable,
-    get_last_init_error,
-)
+import moor_state_wal
+from moor_state import SessionDB, format_session_db_unavailable, get_last_init_error
+from moor_state_wal import WalUnsupportedError, apply_wal_with_fallback
 
 
 # ``sqlite3.Connection.execute`` is a C-level slot and can't be monkeypatched
@@ -88,20 +84,20 @@ def _reset_last_init_error():
 @pytest.fixture(autouse=True)
 def _reset_wal_fallback_warned_paths():
     """Reset the WAL-fallback warned-paths set so dedup doesn't leak between tests."""
-    moor_state._wal_fallback_warned_paths.clear()
+    moor_state_wal._wal_fallback_warned_paths.clear()
     yield
-    moor_state._wal_fallback_warned_paths.clear()
+    moor_state_wal._wal_fallback_warned_paths.clear()
 
 
 @pytest.fixture(autouse=True)
 def _assume_fixed_sqlite(monkeypatch):
     """NFS-fallback tests assume a SQLite build without the WAL-reset bug."""
     monkeypatch.setattr(
-        moor_state, "is_sqlite_wal_reset_vulnerable", lambda version_info=None: False
+        moor_state_wal, "is_sqlite_wal_reset_vulnerable", lambda version_info=None: False
     )
-    moor_state._wal_reset_bug_warned_paths.clear()
+    moor_state_wal._wal_reset_bug_warned_paths.clear()
     yield
-    moor_state._wal_reset_bug_warned_paths.clear()
+    moor_state_wal._wal_reset_bug_warned_paths.clear()
 
 
 class TestApplyWalWithFallback:

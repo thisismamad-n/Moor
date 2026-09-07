@@ -13,7 +13,7 @@ import {
   POSIX_SANE_PATH_ENTRIES
 } from './backend-env'
 
-test('desktop backend PATH adds Moor-managed bins and missing POSIX sane entries', () => {
+test('desktop backend PATH adds moor-managed bins and missing POSIX sane entries', () => {
   const result = buildDesktopBackendPath({
     moorHome: '/Users/test/.moor',
     venvRoot: '/Users/test/.moor/moor-agent/venv',

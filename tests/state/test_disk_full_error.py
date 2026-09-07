@@ -5,7 +5,7 @@ from __future__ import annotations
 import errno
 import sqlite3
 
-from moor_state import is_disk_full_error
+from moor_state_errors import is_disk_full_error
 
 
 def test_enospc_oserror():

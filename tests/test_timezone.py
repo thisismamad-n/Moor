@@ -21,10 +21,8 @@ import moor_time
 
 
 def _reset_moor_time_cache():
-    """Reset the moor_time module cache (replacement for removed reset_cache)."""
-    moor_time._cached_tz = None
-    moor_time._cached_tz_name = None
-    moor_time._cache_resolved = False
+    """Reset the moor_time module cache."""
+    moor_time.reset_cache()
 
 
 # =========================================================================
@@ -86,11 +84,86 @@ class TestGetTimezone:
         assert isinstance(tz, ZoneInfo)
         assert str(tz) == "Europe/London"
 
+    def test_cache_isolated_by_active_profile_config(self, tmp_path, monkeypatch):
+        """Switching MOOR_HOME must not reuse another profile's timezone."""
+        first_home = tmp_path / "first"
+        second_home = tmp_path / "second"
+        first_home.mkdir()
+        second_home.mkdir()
+        (first_home / "config.yaml").write_text("timezone: Asia/Tokyo\n", encoding="utf-8")
+        (second_home / "config.yaml").write_text(
+            "timezone: America/New_York\n", encoding="utf-8"
+        )
+        monkeypatch.delenv("MOOR_TIMEZONE", raising=False)
 
+        monkeypatch.setenv("MOOR_HOME", str(first_home))
+        assert str(moor_time.get_timezone()) == "Asia/Tokyo"
 
+        # Multiplexed profile runtime scopes switch MOOR_HOME in one process.
+        monkeypatch.setenv("MOOR_HOME", str(second_home))
+        assert str(moor_time.get_timezone()) == "America/New_York"
+
+        # Switching BACK must return the first profile's zone (per-identity
+        # entries stay hot; no single-slot ping-pong).
+        monkeypatch.setenv("MOOR_HOME", str(first_home))
+        assert str(moor_time.get_timezone()) == "Asia/Tokyo"
+
+    def test_concurrent_profile_resolution_never_mixes_zones(
+        self, tmp_path, monkeypatch
+    ):
+        """Racing profile-scoped threads must never observe a foreign zone.
+
+        The multiplex cron ticker lets profile-A work (mark_job_run /
+        compute_next_run) overlap the ticker advancing to profile B. The
+        cache publication must be atomic per identity: identity A can never
+        be paired with profile B's ZoneInfo (#97905 review finding on
+        PR #92489).
+        """
+        import threading
+
+        from moor_constants import (
+            reset_moor_home_override,
+            set_moor_home_override,
+        )
+
+        zones = {"a": "Asia/Tokyo", "b": "America/New_York"}
+        homes = {}
+        for key, zone in zones.items():
+            home = tmp_path / key
+            home.mkdir()
+            (home / "config.yaml").write_text(
+                f"timezone: {zone}\n", encoding="utf-8"
+            )
+            homes[key] = home
+        monkeypatch.delenv("MOOR_TIMEZONE", raising=False)
+
+        errors = []
+        barrier = threading.Barrier(2)
+
+        def worker(key: str) -> None:
+            barrier.wait()
+            for _ in range(200):
+                token = set_moor_home_override(str(homes[key]))
+                try:
+                    tz = moor_time.get_timezone()
+                    if str(tz) != zones[key]:
+                        errors.append((key, str(tz)))
+                        return
+                finally:
+                    reset_moor_home_override(token)
+
+        threads = [
+            threading.Thread(target=worker, args=(key,)) for key in zones
+        ]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        assert not errors, f"foreign timezone observed: {errors}"
 
 
 # =========================================================================
+
 # execute_code child env — TZ injection
 # =========================================================================
 
@@ -176,11 +249,11 @@ class TestCronTimezone:
         _reset_moor_time_cache()
         os.environ.pop("MOOR_TIMEZONE", None)
 
-    def test_parse_schedule_duration_uses_tz_aware_now(self):
-        """parse_schedule('30m') should produce a tz-aware run_at."""
+    def test_parse_schedule_one_shot_duration_uses_tz_aware_now(self):
+        """parse_schedule('in 30m') should produce a tz-aware run_at."""
         os.environ["MOOR_TIMEZONE"] = "Asia/Kolkata"
         from cron.jobs import parse_schedule
-        result = parse_schedule("30m")
+        result = parse_schedule("in 30m")
         run_at = datetime.fromisoformat(result["run_at"])
         # The stored timestamp should be tz-aware
         assert run_at.tzinfo is not None

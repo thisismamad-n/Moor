@@ -15,7 +15,7 @@ Gateway to 400+ genomics and computational biology skills.
 | | |
 |---|---|
 | Source | Optional — install with `moor skills install official/research/bioinformatics` |
-| Path | `optional-skills/research/bioinformatics` |
+| Path | `optional-skills/research\bioinformatics` |
 | Version | `1.0.0` |
 | Author | Teknium (teknium1), Moor Agent |
 | License | MIT |
@@ -63,7 +63,7 @@ This skill is a gateway to two open-source bioinformatics skill libraries. Inste
    # ClawBio — each skill is at: skills/<skill-name>/
    cat /tmp/ClawBio/skills/pharmgx-reporter/README.md
    ```
-4. Follow the fetched skill as reference material. These are NOT Moor-format skills — treat them as expert domain guides. They contain correct parameters, proper tool flags, and validated pipelines.
+4. Follow the fetched skill as reference material. These are NOT moor-format skills — treat them as expert domain guides. They contain correct parameters, proper tool flags, and validated pipelines.
 
 ## Skill Index by Domain
 

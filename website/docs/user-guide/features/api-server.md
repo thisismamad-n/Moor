@@ -206,7 +206,7 @@ and it does not do pricing or capability enrichment.
 
 ### GET /api/model/options
 
-Moor-aware clients can request the same curated provider/model inventory used
+moor-aware clients can request the same curated provider/model inventory used
 by the dashboard and TUI. This route uses the API server's normal bearer
 authentication and returns provider rows, model capability hints, and pricing
 metadata that do not belong in the OpenAI-compatible `/v1/models` response:
@@ -234,7 +234,7 @@ curl \
 
 Use `/v1/models` when an OpenAI-compatible client only needs a model name to
 send back in chat/responses requests. Use `/api/model/options` when an
-authenticated UI needs the richer Moor-specific picker metadata.
+authenticated UI needs the richer moor-specific picker metadata.
 
 ### GET /v1/capabilities
 
@@ -391,7 +391,7 @@ gateway:
       direct_model_requests: true
 ```
 
-Requests that include an explicit `provider` — and the Moor-native
+Requests that include an explicit `provider` — and the moor-native
 `/v1/runs` and session-chat endpoints — always honor the requested model
 regardless of this flag.
 
@@ -444,6 +444,13 @@ Create a new agent run. Returns a `run_id` that can be used to subscribe to prog
 
 Runs accept a simple `input` string and optional `session_id`, `instructions`, `conversation_history`, or `previous_response_id`. When `session_id` is provided, Moor surfaces it in the run status so external UIs can correlate runs with their own conversation IDs.
 
+For safely retryable creation, send an `Idempotency-Key` header (1–255 visible ASCII characters). Moor durably reserves the key before starting work. An identical retry returns the original `run_id` with HTTP 202 and `Idempotency-Replayed: true`, including after a gateway restart and after the run has completed, failed, or been cancelled. Reusing the same key with a different JSON payload returns HTTP 409 with code `idempotency_key_conflict`. Keys are isolated by authenticated API profile/credential and retained for 24 hours after their last status update; clients should use unique, unguessable keys and must not reuse them for unrelated operations. Requests without the header retain the legacy behavior and always create a new run.
+
+When `session_id` identifies an existing Moor session and no explicit
+`conversation_history` or `previous_response_id` is supplied, the run loads
+that session's active transcript. Session turn leases serialize concurrent
+writers and refresh the transcript after a contended wait.
+
 ### GET /v1/runs/\{run_id\}
 
 Poll the current run state. This is useful for dashboards that need status without holding an SSE connection open, or for UIs that reconnect after navigation.
@@ -470,8 +477,9 @@ When the agent delegates work to background subagents, the stream also carries
 `subagent.start` and `subagent.complete` lifecycle events, so clients can
 observe delegation outcomes — including timeouts and failures — instead of the
 run going silent while a child works. The `subagent.complete` payload carries
-the child's status, summary, duration, token/cost figures, and a
-`child_session_id` for correlation; free-text fields pass forced secret
+the child's status, summary, duration, token/cost figures, a
+`child_session_id` for correlation, and the `delegation_id` of the batch it
+belongs to (so concurrent or nested fan-outs stay distinguishable); free-text fields pass forced secret
 redaction before leaving the process. Per-tool child events
 (`subagent.tool`, progress ticks) are intentionally **not** forwarded — they
 are high-volume UI noise; use the per-child live transcript files for
@@ -577,18 +585,18 @@ curl http://localhost:8642/v1/toolsets \
 
 `/v1/skills` returns the same metadata the skills hub uses internally. `/v1/toolsets` returns toolsets resolved for the `api_server` platform with the concrete `tools` list each one expands to. Both are advertised under `endpoints.*` in `/v1/capabilities`.
 
-## Long-term memory scoping (`X-Moor-Session-Key`)
+## Long-term memory scoping (`X-moor-session-Key`)
 
-Multi-user frontends like Open WebUI need a stable per-channel identifier for long-term memory (Honcho, etc.) that is **independent** of the transcript-scoped `X-Moor-Session-Id` (which rotates on `/new`). Pass `X-Moor-Session-Key` on `/v1/chat/completions`, `/v1/responses`, or `/v1/runs` and Moor threads it through to `AIAgent(gateway_session_key=...)`, where the Honcho memory provider uses it to derive a stable scope.
+Multi-user frontends like Open WebUI need a stable per-channel identifier for long-term memory (Honcho, etc.) that is **independent** of the transcript-scoped `X-moor-session-Id` (which rotates on `/new`). Pass `X-moor-session-Key` on `/v1/chat/completions`, `/v1/responses`, or `/v1/runs` and Moor threads it through to `AIAgent(gateway_session_key=...)`, where the Honcho memory provider uses it to derive a stable scope.
 
 ```http
 POST /v1/chat/completions HTTP/1.1
 Authorization: Bearer ***
-X-Moor-Session-Id: transcript-alpha
-X-Moor-Session-Key: agent:main:webui:dm:user-42
+X-moor-session-Id: transcript-alpha
+X-moor-session-Key: agent:main:webui:dm:user-42
 ```
 
-Rules: max 256 chars, control characters (`\r`, `\n`, `\x00`) are rejected, and the value is echoed back on responses (JSON + SSE). `/v1/capabilities` advertises support via `"session_key_header": "X-Moor-Session-Key"`. Without the key, Honcho's `per-session` strategy produces a different scope per `session_id` — exactly the behavior Moor had before.
+Rules: max 256 chars, control characters (`\r`, `\n`, `\x00`) are rejected, and the value is echoed back on responses (JSON + SSE). `/v1/capabilities` advertises support via `"session_key_header": "X-moor-session-Key"`. Without the key, Honcho's `per-session` strategy produces a different scope per `session_id` — exactly the behavior Moor had before.
 
 ## System Prompt Handling
 
@@ -621,6 +629,10 @@ to the routed profile**:
 - Unprefixed routes and `/p/default/...` keep using the default profile's key.
 - A named profile with no `API_SERVER_KEY` of its own fails closed — its
   prefix is unreachable until you set one.
+- Runs are per-profile scoped: `/v1/runs/{run_id}` and its `events`, `stop`,
+  `steer`, and `approval` routes only answer for the profile that created
+  the run (including runs started via `/api/sessions/{id}/chat/stream`);
+  another profile's run id returns `404`, never `403`.
 
 :::warning Breaking change (July 2026)
 Before this fix, a valid default-profile key was accepted on any

@@ -18,7 +18,7 @@ from unittest.mock import patch
 
 import pytest
 
-import moor_cli.commands as commands_mod
+import moor_cli.commands_completion as commands_mod
 
 
 def _reset_personalities_memo():

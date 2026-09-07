@@ -13,7 +13,7 @@ Moor injects project-level instructions into the system prompt by reading contex
 
 ### Pick the right one
 
-- **Use `.moor.md`** when you want Moor-specific behavior that lives above the cwd (root + subtree), or when you want rules to inherit from a parent directory. The parent walk stops at the git root, so a home-level `.moor.md` won't leak into every project (a git repo's root is the boundary).
+- **Use `.moor.md`** when you want moor-specific behavior that lives above the cwd (root + subtree), or when you want rules to inherit from a parent directory. The parent walk stops at the git root, so a home-level `.moor.md` won't leak into every project (a git repo's root is the boundary).
 - **Use `AGENTS.md`** when the same project will also be worked on by other agents (Codex, Claude Code, OpenCode). Those tools all have their own conventions for `AGENTS.md`, and the "cwd only" contract keeps the file portable.
 - **Don't put project rules in `~/.moor/AGENTS.md`** (or any other home-level location). When Moor runs with that directory as cwd, the file loads — but only for that one directory. For cross-project context, use `SOUL.md` (in `$MOOR_HOME`, identity-only) or install a skill via `moor skills install`.
 

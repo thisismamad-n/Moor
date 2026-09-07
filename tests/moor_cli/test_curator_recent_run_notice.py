@@ -31,12 +31,12 @@ def curator_env(tmp_path, monkeypatch, capsys):
     importlib.reload(moor_constants)
     from agent import curator
     importlib.reload(curator)
-    from moor_cli import main as moor_main
-    importlib.reload(moor_main)
+    from moor_cli import update_cmd_maint
+    importlib.reload(update_cmd_maint)
 
     yield {
         "curator": curator,
-        "main": moor_main,
+        "main": update_cmd_maint,
         "capsys": capsys,
     }
 

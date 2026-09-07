@@ -9,7 +9,7 @@ import pytest
 import yaml
 
 from moor_cli.config import migrate_config
-from moor_cli.doctor import collect_relay_plugin_cutover_findings
+from moor_cli.doctor_config import collect_relay_plugin_cutover_findings
 from moor_cli.relay_plugin_cutover import RELAY_PLUGINS_CONFIG_ENV
 
 

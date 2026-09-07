@@ -7,7 +7,7 @@
 #
 # Strategy (first hit wins — respects the user's existing tooling):
 #   1. modern `node` already on PATH
-#   2. ~/.moor/node/ from a prior Moor-managed install
+#   2. ~/.moor/node/ from a prior moor-managed install
 #   3. fnm, proto, nvm (in that order) if the user already uses a version manager
 #   4. Termux `pkg`, macOS Homebrew
 #   5. pinned nodejs.org tarball into ~/.moor/node/ (always works, zero shell rc edits)
@@ -57,7 +57,7 @@ _nb_get_link_dir() {
     fi
 }
 
-# Redirect a Moor-managed Node's `npm install -g` to the command link dir
+# Redirect a moor-managed Node's `npm install -g` to the command link dir
 # (already on PATH) instead of the default $MOOR_HOME/node/bin, which is off
 # PATH and wiped on every Node upgrade. Scoped to the managed Node via its
 # prefix-local global npmrc; the user's other Node installs / ~/.npmrc are
@@ -163,8 +163,20 @@ _nb_ensure_bundled_npm_range() {
     return 1
 }
 
+# A pre-release Node (…-alpha/-beta/-rc/-pre/-nightly) never counts as modern,
+# however high its major. nodejs.org publishes a headers tarball only for final
+# releases, so node-gyp cannot build node-pty — which has no Linux prebuild —
+# against one. Mirrors node_satisfies_build() in install.sh.
+_nb_node_is_prerelease() {
+    case "$(node --version 2>/dev/null)" in
+        *-*) return 0 ;;
+        *)   return 1 ;;
+    esac
+}
+
 _nb_have_modern_node() {
     command -v node >/dev/null 2>&1 || return 1
+    _nb_node_is_prerelease && return 1
     [ "$(_nb_node_major)" -ge "$MOOR_NODE_MIN_VERSION" ]
 }
 
@@ -295,6 +307,18 @@ _nb_install_bundled_node() {
         return 1
     fi
 
+    # Trust the binary, not the filename: a tarball named for a final release
+    # can still carry a pre-release build (latest-v26.x serves
+    # node-v26.8.0-<os>-<arch>.tar.xz stamped v26.8.0-alpha.0.0.0). Probe it
+    # before it replaces a working managed tree.
+    case "$("$extracted/bin/node" --version 2>/dev/null)" in
+        *-*)
+            _nb_warn "Node $("$extracted/bin/node" --version 2>/dev/null) is a pre-release build — native modules cannot be built against it"
+            rm -rf "$tmp"
+            return 1
+            ;;
+    esac
+
     mkdir -p "$MOOR_HOME"
     rm -rf "$MOOR_HOME/node"
     mv "$extracted" "$MOOR_HOME/node"
@@ -326,7 +350,7 @@ _nb_install_bundled_node() {
 }
 
 # ---------------------------------------------------------------------------
-# Heal a broken Moor-managed Node tree (partial upgrade / missing lib/)
+# Heal a broken moor-managed Node tree (partial upgrade / missing lib/)
 # ---------------------------------------------------------------------------
 
 _nb_managed_tool_broken() {
@@ -382,7 +406,7 @@ heal_managed_node() {
     if ! _nb_managed_node_needs_heal; then
         return 0
     fi
-    _nb_log "Moor-managed Node is broken — redownloading to $MOOR_HOME/node/..."
+    _nb_log "moor-managed Node is broken — redownloading to $MOOR_HOME/node/..."
     _nb_install_bundled_node
 }
 
@@ -406,7 +430,7 @@ ensure_node() {
     if [ -x "$MOOR_HOME/node/bin/node" ]; then
         export PATH="$MOOR_HOME/node/bin:$PATH"
         if _nb_have_modern_node; then
-            _nb_ok "Node $(node --version) found (Moor-managed)"
+            _nb_ok "Node $(node --version) found (moor-managed)"
             MOOR_NODE_AVAILABLE=true
             # A tree from an older install still carries that Node major's
             # bundled npm, and the upgrade in _nb_install_bundled_node is

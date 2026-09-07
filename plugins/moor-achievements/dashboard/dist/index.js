@@ -50,7 +50,7 @@
 
   function api(path, options) {
     // Delegate to the host SDK's fetchJSON so auth is handled correctly in
-    // BOTH dashboard modes: loopback (X-Moor-Session-Token header) and
+    // BOTH dashboard modes: loopback (X-moor-session-Token header) and
     // gated OAuth (moor_session_at cookie via credentials:'include').
     // Hand-rolling fetch + reading window.__MOOR_SESSION_TOKEN__ directly
     // 401s in gated mode (the token isn't injected there). fetchJSON throws

@@ -37,6 +37,6 @@ except (ModuleNotFoundError, ImportError):
         Mirrors ``moor_constants.display_moor_home()``."""
         home = get_moor_home()
         try:
-            return "~/" + str(home.relative_to(Path.home()))
+            return "~/" + home.relative_to(Path.home()).as_posix()
         except ValueError:
             return str(home)

@@ -9,6 +9,7 @@ working model configured (consumer-onboarding audit finding #7, Aug 2026).
 from unittest.mock import patch
 
 from moor_cli.auth import AuthError
+from moor_cli import moor_subscription
 
 
 def _summary_output(capsys, provider_ready: bool):
@@ -25,7 +26,7 @@ def _summary_output(capsys, provider_ready: bool):
 
     # Keep the summary fast/hermetic: stub the heavier feature probes.
     with patch("moor_cli.auth.resolve_provider", resolver), \
-         patch.object(setup_mod, "get_moor_subscription_features") as feats:
+         patch.object(moor_subscription, "get_moor_subscription_features") as feats:
         feats.side_effect = Exception("stubbed")
         try:
             setup_mod._print_setup_summary({}, "/tmp/nowhere")

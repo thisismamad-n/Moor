@@ -247,7 +247,7 @@ not a bug.
 
 **Workaround — opt the variable back in explicitly.** Both routes pass the
 variable through `execute_code` *and* `terminal` children, and neither weakens
-the secret-stripping guarantee (Moor-managed provider credentials can never
+the secret-stripping guarantee (moor-managed provider credentials can never
 be re-allowed this way):
 
 1. **Per-machine, in `config.yaml`** — add the exact variable name to the

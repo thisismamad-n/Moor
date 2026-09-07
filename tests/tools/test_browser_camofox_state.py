@@ -1,4 +1,4 @@
-"""Tests for Moor-managed Camofox state helpers."""
+"""Tests for moor-managed Camofox state helpers."""
 
 from unittest.mock import patch
 

@@ -15,7 +15,7 @@ Import an OpenClaw setup (memories, skills) into Moor.
 | | |
 |---|---|
 | Source | Optional — install with `moor skills install official/migration/openclaw-migration` |
-| Path | `optional-skills/migration/openclaw-migration` |
+| Path | `optional-skills/migration\openclaw-migration` |
 | Version | `1.0.0` |
 | Author | Moor Agent (Moor inc.) |
 | License | MIT |
@@ -56,7 +56,7 @@ It uses `scripts/openclaw_to_moor.py` to:
 - import `SOUL.md` into the Moor home directory as `SOUL.md`
 - transform OpenClaw `MEMORY.md` and `USER.md` into Moor memory entries
 - merge OpenClaw command approval patterns into Moor `command_allowlist`
-- migrate Moor-compatible messaging settings such as `TELEGRAM_ALLOWED_USERS`, and map OpenClaw workspace settings to Moor working-directory configuration
+- migrate moor-compatible messaging settings such as `TELEGRAM_ALLOWED_USERS`, and map OpenClaw workspace settings to Moor working-directory configuration
 - copy OpenClaw skills into `~/.moor/skills/openclaw-imports/`
 - optionally copy the OpenClaw workspace instructions file into a chosen Moor workspace
 - mirror compatible workspace assets such as `workspace/tts/` into `~/.moor/tts/`
@@ -82,7 +82,7 @@ Before running the helper:
 3. Only use `find` as a fallback if the installed location is missing or the skill was moved manually.
 4. When calling the terminal tool, do not pass `workdir: "~"`. Use an absolute directory such as the user's home directory, or omit `workdir` entirely.
 
-With `--migrate-secrets`, it will also import a small allowlisted set of Moor-compatible secrets, currently:
+With `--migrate-secrets`, it will also import a small allowlisted set of moor-compatible secrets, currently:
 
 - `TELEGRAM_BOT_TOKEN`
 
@@ -247,37 +247,37 @@ The helper script still supports category-level `--include` / `--exclude`, but t
 Dry run with full discovery:
 
 ```bash
-python3 ~/.moor/skills/migration/openclaw-migration/scripts/openclaw_to_moor.py
+python ~/.moor/skills/migration/openclaw-migration/scripts/openclaw_to_moor.py
 ```
 
 When using the terminal tool, prefer an absolute invocation pattern such as:
 
 ```json
-{"command":"python3 /home/USER/.moor/skills/migration/openclaw-migration/scripts/openclaw_to_moor.py","workdir":"/home/USER"}
+{"command":"python /home/USER/.moor/skills/migration/openclaw-migration/scripts/openclaw_to_moor.py","workdir":"/home/USER"}
 ```
 
 Dry run with the user-data preset:
 
 ```bash
-python3 ~/.moor/skills/migration/openclaw-migration/scripts/openclaw_to_moor.py --preset user-data
+python ~/.moor/skills/migration/openclaw-migration/scripts/openclaw_to_moor.py --preset user-data
 ```
 
 Execute a user-data migration:
 
 ```bash
-python3 ~/.moor/skills/migration/openclaw-migration/scripts/openclaw_to_moor.py --execute --preset user-data --skill-conflict skip
+python ~/.moor/skills/migration/openclaw-migration/scripts/openclaw_to_moor.py --execute --preset user-data --skill-conflict skip
 ```
 
 Execute a full compatible migration:
 
 ```bash
-python3 ~/.moor/skills/migration/openclaw-migration/scripts/openclaw_to_moor.py --execute --preset full --migrate-secrets --skill-conflict skip
+python ~/.moor/skills/migration/openclaw-migration/scripts/openclaw_to_moor.py --execute --preset full --migrate-secrets --skill-conflict skip
 ```
 
 Execute with workspace instructions included:
 
 ```bash
-python3 ~/.moor/skills/migration/openclaw-migration/scripts/openclaw_to_moor.py --execute --preset user-data --skill-conflict rename --workspace-target "/absolute/workspace/path"
+python ~/.moor/skills/migration/openclaw-migration/scripts/openclaw_to_moor.py --execute --preset user-data --skill-conflict rename --workspace-target "/absolute/workspace/path"
 ```
 
 Do not use `$PWD` or the home directory as the workspace target by default. Ask for an explicit workspace path first.

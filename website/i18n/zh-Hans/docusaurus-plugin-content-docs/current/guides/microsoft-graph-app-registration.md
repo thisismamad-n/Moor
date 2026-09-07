@@ -97,17 +97,17 @@ Microsoft 专门为 Teams 提供了**应用程序访问策略**（Application Ac
 ```powershell
 # Create a policy scoped to the Moor app
 New-CsApplicationAccessPolicy `
-  -Identity "Moor-Meeting-Pipeline-Policy" `
+  -Identity "moor-meeting-Pipeline-Policy" `
   -AppIds "<MSGRAPH_CLIENT_ID>" `
   -Description "Restrict Moor meeting pipeline to allow-listed users"
 
 # Grant the policy to specific users whose meetings the pipeline may read
 Grant-CsApplicationAccessPolicy `
-  -PolicyName "Moor-Meeting-Pipeline-Policy" `
+  -PolicyName "moor-meeting-Pipeline-Policy" `
   -Identity "alice@example.com"
 
 Grant-CsApplicationAccessPolicy `
-  -PolicyName "Moor-Meeting-Pipeline-Policy" `
+  -PolicyName "moor-meeting-Pipeline-Policy" `
   -Identity "bob@example.com"
 ```
 

@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 from types import SimpleNamespace
 
 from cli import MoorCLI
-from moor_cli.main import cmd_insights
+from moor_cli.main_agent_cmds import cmd_insights
 
 
 class _InsightsEngineStub:

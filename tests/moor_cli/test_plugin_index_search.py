@@ -288,7 +288,7 @@ class TestResolveName:
         assert entry is not None and entry.repo == "NousResearch/hermes-media-studio"
 
     def test_case_insensitive(self):
-        entry, _ = resolve_name(self.entries, "Moor-Media-Studio")
+        entry, _ = resolve_name(self.entries, "moor-media-Studio")
         assert entry is not None
 
     def test_unique_partial(self):

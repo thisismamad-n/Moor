@@ -15,7 +15,7 @@ Gmail, Calendar, Drive, Docs, Sheets via gws CLI or Python.
 | | |
 |---|---|
 | Source | Bundled (installed by default) |
-| Path | `skills/productivity/google-workspace` |
+| Path | `skills/productivity\google-workspace` |
 | Version | `1.2.0` |
 | Author | Moor inc. |
 | License | MIT |
@@ -31,7 +31,7 @@ The following is the complete skill definition that Moor loads when this skill i
 
 # Google Workspace
 
-Gmail, Calendar, Drive, Contacts, Sheets, and Docs — through Moor-managed OAuth and a thin CLI wrapper. When `gws` is installed, the skill uses it as the execution backend for broader Google Workspace coverage; otherwise it falls back to the bundled Python client implementation.
+Gmail, Calendar, Drive, Contacts, Sheets, and Docs — through moor-managed OAuth and a thin CLI wrapper. When `gws` is installed, the skill uses it as the execution backend for broader Google Workspace coverage; otherwise it falls back to the bundled Python client implementation.
 
 ## References
 

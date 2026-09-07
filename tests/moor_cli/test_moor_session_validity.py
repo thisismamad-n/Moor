@@ -5,6 +5,7 @@ import json
 import time
 
 import moor_cli.auth as auth
+import moor_cli.auth_moor as auth_moor
 from moor_cli.auth import (
     MOOR_SESSION_TERMINAL,
     MOOR_SESSION_UNKNOWN,
@@ -41,6 +42,11 @@ def _block_live_auth(monkeypatch):
     monkeypatch.setattr(auth, "get_moor_auth_status", _fail_if_live_auth_is_used)
     monkeypatch.setattr(
         auth,
+        "resolve_moor_runtime_credentials",
+        _fail_if_live_auth_is_used,
+    )
+    monkeypatch.setattr(
+        auth_moor,
         "resolve_moor_runtime_credentials",
         _fail_if_live_auth_is_used,
     )

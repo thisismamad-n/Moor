@@ -319,6 +319,8 @@ If this happens on the first long conversation, Moor may have the wrong context 
 
 Look at the CLI startup line — it shows the detected context length (e.g., `📊 Context limit: 128000 tokens`). You can also check with `/usage` during a session.
 
+**Local servers (llama.cpp, Ollama) that go silent instead of erroring:** when a provider rejects a request as too large, Moor compacts the conversation and rebuilds the request. Moor re-measures the *complete* rebuilt request (system prompt + tool schemas + messages) before retrying, and runs further bounded compaction passes if it is still over the threshold. If the request still cannot fit, the turn ends with `Context length exceeded: compression could not reduce the rebuilt request below the safe threshold` rather than sending an oversized request that llama.cpp would silently truncate (`stop processing: n_tokens = 65535, truncated = 1` in the server log). If you hit that message, the fix is almost always the configured `context_length` above: make it match the server's actual `-c` / `--ctx-size`.
+
 To fix context detection, set it explicitly:
 
 ```yaml
@@ -818,7 +820,7 @@ rsync -av --exclude='moor-agent' ~/.moor/ newmachine:~/.moor/
 
 **Scenario:** After running the Moor installer, `source ~/.zshrc` gives a permission denied error.
 
-**Cause:** This usually happens when `~/.zshrc` (or `~/.bashrc`) has incorrect file permissions, or when the installer couldn't write to it cleanly. It's not a Moor-specific issue — it's a shell config permissions problem.
+**Cause:** This usually happens when `~/.zshrc` (or `~/.bashrc`) has incorrect file permissions, or when the installer couldn't write to it cleanly. It's not a moor-specific issue — it's a shell config permissions problem.
 
 **Solution:**
 ```bash
@@ -866,5 +868,5 @@ If using OpenRouter, make sure your API key has credits. A 400 from OpenRouter o
 If your issue isn't covered here:
 
 1. **Search existing issues:** [GitHub Issues](https://github.com/NousResearch/hermes-agent/issues)
-2. **Ask the community:** [Moor inc. Discord](https://discord.gg/NousResearch)
+2. **Ask the community:** [Moor inc. Discord](https://discord.gg/nousresearch)
 3. **File a bug report:** Include your OS, Python version (`python3 --version`), Moor version (`moor --version`), and the full error message

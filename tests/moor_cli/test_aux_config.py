@@ -15,14 +15,7 @@ from __future__ import annotations
 import pytest
 
 from moor_cli.config import DEFAULT_CONFIG, load_config
-from moor_cli.main import (
-    _AUX_TASKS,
-    _DELEGATION_TASK_KEY,
-    _delegation_cfg_as_task,
-    _format_aux_current,
-    _reset_aux_to_auto,
-    _save_aux_choice,
-)
+from moor_cli.main_provider_setup import _AUX_TASKS, _DELEGATION_TASK_KEY, _delegation_cfg_as_task, _format_aux_current, _reset_aux_to_auto, _save_aux_choice
 
 
 # ── Default config ──────────────────────────────────────────────────────────
@@ -164,9 +157,9 @@ def test_delegation_cfg_as_task_projection():
     """Projection renders empty provider as auto via _format_aux_current."""
     assert _format_aux_current(_delegation_cfg_as_task({})) == "auto"
     shaped = _delegation_cfg_as_task(
-        {"delegation": {"provider": "moor", "model": "Moor-4.5"}}
+        {"delegation": {"provider": "moor", "model": "Hermes-4.5"}}
     )
-    assert _format_aux_current(shaped) == "moor · Moor-4.5"
+    assert _format_aux_current(shaped) == "moor · Hermes-4.5"
     # Non-dict delegation section must not crash
     assert _format_aux_current(_delegation_cfg_as_task({"delegation": "bogus"})) == "auto"
 
@@ -179,6 +172,7 @@ def test_leave_unchanged_replaces_cancel_label(tmp_path, monkeypatch):
     (tmp_path / ".moor").mkdir(exist_ok=True)
 
     from moor_cli import main as main_mod
+    import moor_cli.main_provider_setup as moor_cli_main_provider_setup
 
     captured: list[list[str]] = []
 
@@ -191,6 +185,7 @@ def test_leave_unchanged_replaces_cancel_label(tmp_path, monkeypatch):
         raise AssertionError("Leave unchanged not in provider list")
 
     monkeypatch.setattr(main_mod, "_prompt_provider_choice", fake_prompt)
+    monkeypatch.setattr(moor_cli_main_provider_setup, "_prompt_provider_choice", fake_prompt)
 
     main_mod.select_provider_and_model()
 

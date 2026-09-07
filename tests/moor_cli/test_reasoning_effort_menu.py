@@ -1,4 +1,4 @@
-from moor_cli.main import _prompt_reasoning_effort_selection
+from moor_cli.main_provider_setup import _prompt_reasoning_effort_selection
 
 
 def test_reasoning_menu_orders_minimal_before_low(monkeypatch):

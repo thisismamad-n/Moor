@@ -63,7 +63,7 @@ def test_run_xai_oauth_login_from_setup_does_not_hijack_active_provider(
     monkeypatch.setattr("moor_cli.auth._is_remote_session", lambda: True)
 
     from moor_cli.auth import is_source_suppressed, suppress_credential_source
-    from moor_cli.setup import _run_xai_oauth_login_from_setup
+    from moor_cli.setup_tts import _run_xai_oauth_login_from_setup
 
     suppress_credential_source("xai-oauth", "device_code")
     assert is_source_suppressed("xai-oauth", "device_code") is True

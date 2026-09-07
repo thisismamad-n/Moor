@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
-from moor_cli.models import validate_requested_model
+from moor_cli.models_validate import validate_requested_model
 
 
 class TestMiniMaxModelValidation:

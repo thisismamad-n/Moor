@@ -15,7 +15,7 @@ Delegate coding to OpenHands CLI (model-agnostic, LiteLLM).
 | | |
 |---|---|
 | Source | Optional — install with `moor skills install official/autonomous-ai-agents/openhands` |
-| Path | `optional-skills/autonomous-ai-agents/openhands` |
+| Path | `optional-skills/autonomous-ai-agents\openhands` |
 | Version | `0.1.0` |
 | Author | Tim Koepsel (xzessmedia), Moor Agent |
 | License | MIT |
@@ -41,7 +41,7 @@ This skill is the headless-mode wrapper for batch / one-shot delegation. The int
 - User wants a coding agent that can run on a non-Anthropic / non-OpenAI provider (DeepSeek, Qwen, Ollama, vLLM, Moor, etc.) — sibling skills `claude-code` and `codex` are tied to one vendor.
 - Multi-step file edits + shell commands inside a workspace.
 
-For Claude-native, prefer `claude-code`. For OpenAI-native, prefer `codex`. For Moor-native subagents, use `delegate_task`.
+For Claude-native, prefer `claude-code`. For OpenAI-native, prefer `codex`. For moor-native subagents, use `delegate_task`.
 
 ## Prerequisites
 

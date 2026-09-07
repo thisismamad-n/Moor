@@ -326,7 +326,7 @@ export const af: Translations = {
     enableRuntime: "Aktiveer",
     forceReinstall: "Forseer herinstallasie (skrap eers bestaande gids)",
     headline:
-      "Ontdek, installeer, aktiveer en werk Moor-inproppe op (`moor plugins` ekwivalent).",
+      "Ontdek, installeer, aktiveer en werk moor-inproppe op (`moor plugins` ekwivalent).",
     identifierLabel: "Git-URL of owner/repo",
     inactive: "onaktief",
     installBtn: "Installeer",
@@ -469,6 +469,8 @@ export const af: Translations = {
     copyCliCommand: "Kopieer CLI-opdrag (vir ekstern / terugval)",
     connect: "Koppel",
     sessionExpires: "Sessie verval oor {time}",
+    sessionExpiredNoError:
+      "Aanmelding het verval sonder om die verskaffer te bereik. Dit beteken gewoonlik dat die aanmeldbladsy in die oop oortjie vasgeval het ('n bedienerkant-probleem) — voltooi die aanmelding daar en klik dan Probeer weer. As dit aanhou misluk, gebruik eerder 'n API-sleutel of die CLI.",
     initiatingLogin: "Aanmeldvloei word begin…",
     exchangingCode: "Kode word vir tokens omgeruil…",
     connectedClosing: "Gekoppel! Besig om toe te maak…",
@@ -505,9 +507,9 @@ export const af: Translations = {
       kicker: "Agentic Gamerscore",
       title: "Moor Achievements",
       subtitle:
-        "Versamelbare Moor-kentekens wat verdien word uit werklike sessiegeskiedenis. Bekende, onvoltooide prestasies word as Ontdek vertoon; Geheime prestasies bly verborge totdat die eerste ooreenstemmende gedrag verskyn.",
+        "Versamelbare moor-kentekens wat verdien word uit werklike sessiegeskiedenis. Bekende, onvoltooide prestasies word as Ontdek vertoon; Geheime prestasies bly verborge totdat die eerste ooreenstemmende gedrag verskyn.",
       scan_subtitle:
-        "Moor-sessiegeskiedenis word geskandeer. Die eerste skandering kan 5–10 sekondes neem op groot geskiedenisse.",
+        "moor-sessiegeskiedenis word geskandeer. Die eerste skandering kan 5–10 sekondes neem op groot geskiedenisse.",
     },
     actions: {
       rescan: "Herskandeer",

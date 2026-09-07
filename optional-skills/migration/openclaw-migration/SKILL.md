@@ -38,7 +38,7 @@ It uses `scripts/openclaw_to_moor.py` to:
 - import `SOUL.md` into the Moor home directory as `SOUL.md`
 - transform OpenClaw `MEMORY.md` and `USER.md` into Moor memory entries
 - merge OpenClaw command approval patterns into Moor `command_allowlist`
-- migrate Moor-compatible messaging settings such as `TELEGRAM_ALLOWED_USERS`, and map OpenClaw workspace settings to Moor working-directory configuration
+- migrate moor-compatible messaging settings such as `TELEGRAM_ALLOWED_USERS`, and map OpenClaw workspace settings to Moor working-directory configuration
 - copy OpenClaw skills into `~/.moor/skills/openclaw-imports/`
 - optionally copy the OpenClaw workspace instructions file into a chosen Moor workspace
 - mirror compatible workspace assets such as `workspace/tts/` into `~/.moor/tts/`
@@ -64,7 +64,7 @@ Before running the helper:
 3. Only use `find` as a fallback if the installed location is missing or the skill was moved manually.
 4. When calling the terminal tool, do not pass `workdir: "~"`. Use an absolute directory such as the user's home directory, or omit `workdir` entirely.
 
-With `--migrate-secrets`, it will also import a small allowlisted set of Moor-compatible secrets, currently:
+With `--migrate-secrets`, it will also import a small allowlisted set of moor-compatible secrets, currently:
 
 - `TELEGRAM_BOT_TOKEN`
 

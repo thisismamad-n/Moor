@@ -26,7 +26,7 @@
  * satisfied by a "fix" that drops the token on the floor; (2) alone is
  * satisfied by the bug itself. So (2) is verified through the app's own
  * connection test against a fake gateway that records the
- * `X-Moor-Session-Token` header it receives — a dropped or mangled token
+ * `X-moor-session-Token` header it receives — a dropped or mangled token
  * cannot produce that header.
  *
  * (3) is orthogonal to (1) and invisible to it: safeStorage keeps the token
@@ -150,7 +150,7 @@ const STABLE_APP_NAME = 'MoorE2EAtRestStorage'
 
 interface FakeGateway {
   url: string
-  /** Every `X-Moor-Session-Token` value the app has sent us. */
+  /** Every `X-moor-session-Token` value the app has sent us. */
   sessionTokens: string[]
   close: () => Promise<void>
 }
@@ -523,9 +523,18 @@ test.afterEach(async () => {
 })
 
 test.describe('remote gateway session token at rest', () => {
-  test('a newly configured token is never written to userData in plaintext, and still works after restart', async () => {
+  test('with keychain encryption opted IN, a newly configured token is never written to userData in plaintext, and still works after restart', async () => {
     const fake = gateway!
     sandbox = createSandbox('at-rest-fresh')
+
+    // Keychain-backed encryption is opt-in (default OFF — see
+    // electron/secret-storage-policy.ts). This test covers the opted-IN
+    // posture, so seed the policy the way the Settings toggle writes it.
+    fs.writeFileSync(
+      path.join(sandbox.userDataDir, 'secure-token-storage.json'),
+      JSON.stringify({ migrated: true, on: true }),
+      'utf8',
+    )
 
     const first = await launchAgainst(sandbox)
     app = first.app
@@ -642,6 +651,63 @@ test.describe('remote gateway session token at rest', () => {
     // The gateway is the witness: the app decrypted its stored blob and put
     // the original secret on the wire. A dropped, truncated, or re-encoded
     // token cannot produce this.
+    expect(
+      fake.sessionTokens.slice(before),
+      'the app must send the exact stored token to the gateway after a restart',
+    ).toContain(SENTINEL_TOKEN)
+  })
+
+  /**
+   * The DEFAULT posture: keychain encryption opted out (no policy file at
+   * all). Saving a token must (a) succeed without ever touching safeStorage
+   * — this is the whole point of the opt-in: no macOS Keychain dialog on
+   * machines with a broken login keychain — (b) store the token with a
+   * non-safeStorage encoding at 0600, and (c) round-trip it across a
+   * restart. The plaintext-on-disk trade-off is the user's chosen (default)
+   * mode; owner-only file bits remain the at-rest boundary.
+   */
+  test('with the default policy (no keychain), a token saves without secure storage, is owner-only on disk, and survives a restart', async () => {
+    const fake = gateway!
+    sandbox = createSandbox('at-rest-default')
+
+    const first = await launchAgainst(sandbox)
+    app = first.app
+
+    const userDataDir = await resolveUserDataDir(app)
+    const connectionFile = path.join(userDataDir, 'connection.json')
+
+    // Must succeed regardless of host keyring state — the default policy
+    // never consults safeStorage, so "no keyring" cannot refuse the save.
+    const saved = await saveRemoteToken(first.page, fake.url, SENTINEL_TOKEN)
+
+    expect(saved.error, 'the default (opted-out) policy must save without secure storage').toBeNull()
+    expect(saved.config?.remoteTokenSet).toBe(true)
+
+    // Not a safeStorage blob, and owner-only on disk.
+    expect(storedTokenEncoding(connectionFile)).not.toBe('safeStorage')
+    expectOwnerOnlyMode(
+      connectionFile,
+      'connection.json is group/other-accessible; owner-only bits are the at-rest boundary for opted-out storage',
+    )
+
+    // Round trip across a restart, same witness as the opted-in test.
+    await app.close().catch(() => undefined)
+    app = null
+
+    const second = await launchAgainst(sandbox)
+    app = second.app
+
+    const reread = await second.page.evaluate(async () => {
+      const desktop = (window as unknown as { moorDesktop: any }).moorDesktop
+
+      return desktop.getConnectionConfig()
+    })
+
+    expect(reread.remoteTokenSet, 'the stored token must survive a restart').toBe(true)
+
+    const before = fake.sessionTokens.length
+    await exerciseStoredToken(second.page, fake.url)
+
     expect(
       fake.sessionTokens.slice(before),
       'the app must send the exact stored token to the gateway after a restart',

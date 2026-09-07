@@ -38,7 +38,7 @@ declare global {
     __MOOR_AUTH_REQUIRED__?: boolean;
   }
 }
-const SESSION_HEADER = "X-Moor-Session-Token";
+const SESSION_HEADER = "X-moor-session-Token";
 
 function setSessionHeader(headers: Headers, token: string): void {
   if (!headers.has(SESSION_HEADER)) {
@@ -79,6 +79,10 @@ const PROFILE_SCOPED_PREFIXES = [
   "/api/messaging/platforms",
   "/api/messaging/telegram/onboarding",
   "/api/messaging/whatsapp/onboarding",
+  // OAuth/account state is profile-owned too: status, login sessions, polling,
+  // cancellation, and disconnect must all follow the selected management
+  // profile rather than silently targeting the dashboard process's profile.
+  "/api/providers/oauth",
   "/api/model/info",
   "/api/model/set",
   "/api/model/auxiliary",
@@ -231,7 +235,7 @@ export async function buildWsAuthParam(): Promise<[string, string]> {
  * the caller can read ``.blob()`` / ``.formData()`` / stream it.
  *
  * Auth, in both modes, exactly as ``fetchJSON`` does it:
- *  - loopback / ``--insecure``: attach the ``X-Moor-Session-Token`` header.
+ *  - loopback / ``--insecure``: attach the ``X-moor-session-Token`` header.
  *  - gated OAuth: no token header (it's absent by design); the
  *    ``moor_session_at`` cookie rides along via ``credentials: 'include'``.
  *
@@ -1944,6 +1948,9 @@ export interface SessionInfo {
   output_tokens: number;
   preview: string | null;
   parent_session_id?: string | null;
+  /** Owning profile stamped by the list/detail endpoints (the store the row
+   * was read from). Absent on search-endpoint rows, which carry no stamp. */
+  profile?: string;
 }
 
 export interface SessionLatestDescendantResponse {

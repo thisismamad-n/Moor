@@ -15,7 +15,7 @@ Read the live Moor desktop DOM/CSS over CDP.
 | | |
 |---|---|
 | Source | Bundled (installed by default) |
-| Path | `skills/software-development/inspecting-moor-desktop-dom` |
+| Path | `skills/software-development\inspecting-moor-desktop-dom` |
 | Version | `1.0.0` |
 | Author | Moor Agent |
 | License | MIT |

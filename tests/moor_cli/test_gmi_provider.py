@@ -250,17 +250,17 @@ class TestGmiAuxiliary:
         # for traffic attribution. The generic profile-fallback branch in
         # resolve_provider_client should carry it through to the OpenAI client.
         headers = mock_openai.call_args.kwargs.get("default_headers", {})
-        assert headers.get("User-Agent", "").startswith("MoorAgent/")
+        assert headers.get("User-Agent", "").startswith("HermesAgent/")
 
     def test_gmi_profile_declares_moor_user_agent(self):
-        """The GMI plugin sets a MoorAgent/<ver> User-Agent on its profile."""
+        """The GMI plugin sets a HermesAgent/<ver> User-Agent on its profile."""
         from providers import get_provider_profile
 
         profile = get_provider_profile("gmi")
         assert profile is not None
         ua = profile.default_headers.get("User-Agent", "")
-        assert ua.startswith("MoorAgent/"), (
-            f"expected GMI profile User-Agent to start with 'MoorAgent/', got {ua!r}"
+        assert ua.startswith("HermesAgent/"), (
+            f"expected GMI profile User-Agent to start with 'HermesAgent/', got {ua!r}"
         )
 
 
@@ -316,7 +316,7 @@ class TestGmiMainFlow:
             "builtins.input",
             return_value="",
         ):
-            from moor_cli.main import _model_flow_api_key_provider
+            from moor_cli.model_setup_flows import _model_flow_api_key_provider
 
             _model_flow_api_key_provider(load_config(), "gmi", "old-model")
 

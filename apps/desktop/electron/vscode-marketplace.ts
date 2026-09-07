@@ -133,7 +133,7 @@ async function queryGallery(payload, { maxBytes = 4 * 1024 * 1024 } = {}) {
       Accept: 'application/json;api-version=3.0-preview.1',
       'Content-Type': 'application/json',
       'Content-Length': Buffer.byteLength(body),
-      'User-Agent': 'Moor-Desktop'
+      'User-Agent': 'moor-desktop'
     },
     body,
     maxBytes
@@ -326,7 +326,7 @@ async function fetchMarketplaceThemes(id) {
   }
 
   const { displayName, vsixUrl } = await resolveExtension(trimmed)
-  const vsix = await request(vsixUrl, { headers: { 'User-Agent': 'Moor-Desktop' } })
+  const vsix = await request(vsixUrl, { headers: { 'User-Agent': 'moor-desktop' } })
   const themes = extractThemes(vsix)
 
   return { extensionId: trimmed, displayName, themes }

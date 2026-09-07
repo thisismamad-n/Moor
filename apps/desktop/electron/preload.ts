@@ -10,16 +10,22 @@ import { contextBridge, ipcRenderer, webFrame, webUtils } from 'electron'
 const translucencySupport = ipcRenderer.sendSync('moor:translucency:support')
 const hudWindowing = ipcRenderer.sendSync('moor:hud:windowing')
 const hudNativeDrag = hudWindowing?.nativeDrag === true
+const launchFlags = ipcRenderer.sendSync('moor:launch-flags')
 
 contextBridge.exposeInMainWorld('moorDesktop', {
   glassSupported: translucencySupport?.glass === true,
   translucencySupported: translucencySupport?.translucency === true,
-  getConnection: profile => ipcRenderer.invoke('moor:connection', profile),
+  // Launch-flag fact: the app was started with --local, so the renderer may
+  // show the local-models surfaces. Static for the window's lifetime.
+  localModelsEnabled: launchFlags?.localModels === true,
+  getConnection: (profile, opts) => ipcRenderer.invoke('moor:connection', profile, opts),
   // Registry-scoped backend resolution: { connectionId, profile } → descriptor.
   getConnectionFor: payload => ipcRenderer.invoke('moor:connection:for', payload),
   getProfileRoutes: profiles => ipcRenderer.invoke('moor:plugin-profile-routes', profiles),
   revalidateConnection: () => ipcRenderer.invoke('moor:connection:revalidate'),
   touchBackend: profile => ipcRenderer.invoke('moor:backend:touch', profile),
+  getPoolLimits: () => ipcRenderer.invoke('moor:pool-limits:get'),
+  setPoolLimits: limits => ipcRenderer.invoke('moor:pool-limits:set', limits),
   getGatewayWsUrl: profile => ipcRenderer.invoke('moor:gateway:ws-url', profile),
   // Registry-scoped fresh WS URL: { connectionId, profile } → result shape of
   // getGatewayWsUrl, minted against that connection's backend.
@@ -29,6 +35,13 @@ contextBridge.exposeInMainWorld('moorDesktop', {
   openSessionWindow: (sessionId, opts) => ipcRenderer.invoke('moor:window:openSession', sessionId, opts),
   openSessionInTerminal: (sessionId, opts) => ipcRenderer.invoke('moor:window:openInTerminal', sessionId, opts),
   openWindow: () => ipcRenderer.invoke('moor:window:openInstance'),
+  openBrowserWindow: tabId => ipcRenderer.invoke('moor:window:openBrowser', tabId),
+  onBrowserPopoutClosed: callback => {
+    const listener = (_event, tabId) => callback(tabId)
+    ipcRenderer.on('moor:browser-popout:closed', listener)
+
+    return () => ipcRenderer.removeListener('moor:browser-popout:closed', listener)
+  },
   claimAmbientCue: key => ipcRenderer.invoke('moor:ambient:claim', key),
   wakeIndicator: {
     getState: () => ipcRenderer.invoke('moor:wake-indicator:get'),
@@ -77,11 +90,14 @@ contextBridge.exposeInMainWorld('moorDesktop', {
       clientPlacement: hudWindowing?.clientPlacement !== false,
       controlDrag: hudWindowing?.controlDrag === true,
       nativeDrag: hudNativeDrag,
+      solid: hudWindowing?.solid === true,
       workspaceTransfer: hudWindowing?.workspaceTransfer === true
     },
     open: request => ipcRenderer.invoke('moor:hud:open', request),
     close: () => ipcRenderer.invoke('moor:hud:close'),
     setIgnoreMouse: ignore => ipcRenderer.send('moor:hud:ignore-mouse', ignore),
+    beginMove: () => ipcRenderer.send('moor:hud:begin-move'),
+    endMove: () => ipcRenderer.send('moor:hud:end-move'),
     moveBy: delta => ipcRenderer.send('moor:hud:move-by', delta),
     setWorkspaceTransfer: transferring => ipcRenderer.send('moor:hud:workspace-transfer', transferring),
     setBounds: bounds => ipcRenderer.send('moor:hud:set-bounds', bounds),
@@ -165,6 +181,10 @@ contextBridge.exposeInMainWorld('moorDesktop', {
   saveConnectionConfig: payload => ipcRenderer.invoke('moor:connection-config:save', payload),
   applyConnectionConfig: payload => ipcRenderer.invoke('moor:connection-config:apply', payload),
   testConnectionConfig: payload => ipcRenderer.invoke('moor:connection-config:test', payload),
+  // Opt-in OS-keychain encryption for stored gateway secrets (default off —
+  // see secret-storage-policy.ts). get never touches the OS keychain.
+  getSecretStorageEncryption: () => ipcRenderer.invoke('moor:secret-storage:get'),
+  setSecretStorageEncryption: (on: boolean) => ipcRenderer.invoke('moor:secret-storage:set', on),
   // v2 multi-connection registry: named agent sources (local / remote / cloud / ssh).
   connections: {
     list: () => ipcRenderer.invoke('moor:connections:list'),
@@ -174,6 +194,7 @@ contextBridge.exposeInMainWorld('moorDesktop', {
     setLaunchMode: mode => ipcRenderer.invoke('moor:connections:set-launch-mode', mode),
     setLastUsed: id => ipcRenderer.invoke('moor:connections:set-last-used', id),
     test: id => ipcRenderer.invoke('moor:connections:test', id),
+    updateManaged: id => ipcRenderer.invoke('moor:connections:update-managed', id),
     // Fan out `moor update` to every eligible registered connection.
     // Optional excludeIds skips rows the caller updates through another path.
     updateAll: options => ipcRenderer.invoke('moor:connections:update-all', options),
@@ -203,6 +224,7 @@ contextBridge.exposeInMainWorld('moorDesktop', {
   },
   profile: {
     get: () => ipcRenderer.invoke('moor:profile:get'),
+    remember: name => ipcRenderer.invoke('moor:profile:remember', name),
     set: name => ipcRenderer.invoke('moor:profile:set', name)
   },
   api: request => ipcRenderer.invoke('moor:api', request),
@@ -233,7 +255,8 @@ contextBridge.exposeInMainWorld('moorDesktop', {
 
     return () => ipcRenderer.removeListener('moor:context-menu-spellcheck', listener)
   },
-  saveImageBuffer: (data, ext) => ipcRenderer.invoke('moor:saveImageBuffer', { data, ext }),
+  saveImageBuffer: (data, ext, name) => ipcRenderer.invoke('moor:saveImageBuffer', { data, ext, name }),
+  capturePreview: payload => ipcRenderer.invoke('moor:capturePreview', payload),
   saveClipboardImage: () => ipcRenderer.invoke('moor:saveClipboardImage'),
   getPathForFile: file => {
     try {
@@ -254,8 +277,17 @@ contextBridge.exposeInMainWorld('moorDesktop', {
   setDisableF12: blocked => ipcRenderer.send('moor:devtools:disable-f12', blocked),
   setPreviewShortcutActive: active => ipcRenderer.send('moor:previewShortcutActive', Boolean(active)),
   openExternal: url => ipcRenderer.invoke('moor:openExternal', url),
+  mcpOauth: {
+    // One-shot loopback listener for MCP OAuth against remote backends: bind
+    // on this machine, hand redirectUri to mcp.servers.oauth.start, then wait
+    // for the provider redirect and relay code/state via oauth.callback.
+    listen: () => ipcRenderer.invoke('moor:mcp-oauth:listen'),
+    wait: (id, timeoutMs) => ipcRenderer.invoke('moor:mcp-oauth:wait', id, timeoutMs),
+    cancel: id => ipcRenderer.invoke('moor:mcp-oauth:cancel', id)
+  },
   openPreviewInBrowser: url => ipcRenderer.invoke('moor:openPreviewInBrowser', url),
   reachPreviewUrl: url => ipcRenderer.invoke('moor:preview:reach', url),
+  setActiveConnectionRoute: route => ipcRenderer.send('moor:connection:active-route', route),
   fetchLinkTitle: url => ipcRenderer.invoke('moor:fetchLinkTitle', url),
   resolveFavicon: url => ipcRenderer.invoke('moor:resolveFavicon', url),
   sanitizeWorkspaceCwd: cwd => ipcRenderer.invoke('moor:workspace:sanitize', cwd),
@@ -325,6 +357,7 @@ contextBridge.exposeInMainWorld('moorDesktop', {
     }
   },
   terminal: {
+    attach: id => ipcRenderer.invoke('moor:terminal:attach', id),
     cwd: id => ipcRenderer.invoke('moor:terminal:cwd', id),
     dispose: id => ipcRenderer.invoke('moor:terminal:dispose', id),
     resize: (id, size) => ipcRenderer.invoke('moor:terminal:resize', id, size),
@@ -449,6 +482,7 @@ contextBridge.exposeInMainWorld('moorDesktop', {
   // reload mid-bootstrap.
   getBootstrapState: () => ipcRenderer.invoke('moor:bootstrap:get'),
   continueBootstrapLocal: () => ipcRenderer.invoke('moor:bootstrap:continue-local'),
+  recycleBackend: profile => ipcRenderer.invoke('moor:backend:recycle', profile),
   resetBootstrap: () => ipcRenderer.invoke('moor:bootstrap:reset'),
   repairBootstrap: () => ipcRenderer.invoke('moor:bootstrap:repair'),
   cancelBootstrap: () => ipcRenderer.invoke('moor:bootstrap:cancel'),
@@ -459,6 +493,7 @@ contextBridge.exposeInMainWorld('moorDesktop', {
     return () => ipcRenderer.removeListener('moor:bootstrap:event', listener)
   },
   getVersion: () => ipcRenderer.invoke('moor:version'),
+  relaunchApp: () => ipcRenderer.invoke('moor:app:relaunch'),
   getRemoteDisplayReason: () => ipcRenderer.invoke('moor:get-remote-display-reason'),
   uninstall: {
     summary: () => ipcRenderer.invoke('moor:uninstall:summary'),

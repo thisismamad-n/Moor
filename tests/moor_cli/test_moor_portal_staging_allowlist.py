@@ -85,6 +85,7 @@ class TestResolveAccessTokenEnvOverrideWins:
         return auth_file
 
     def _run_and_capture(self, monkeypatch, auth):
+        import moor_cli.auth_moor as auth_moor
         seen_portal_urls = []
 
         # The resolve memo is module-level state; clear it so each test's
@@ -101,6 +102,7 @@ class TestResolveAccessTokenEnvOverrideWins:
             }
 
         monkeypatch.setattr(auth, "_refresh_access_token", _fake_refresh)
+        monkeypatch.setattr(auth_moor, "_refresh_access_token", _fake_refresh)
 
         caplog_records = []
         logger = logging.getLogger("moor_cli.auth")

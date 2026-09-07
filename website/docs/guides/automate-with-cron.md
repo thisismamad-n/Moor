@@ -40,7 +40,7 @@ URL = "https://example.com/pricing"
 STATE_FILE = os.path.expanduser("~/.moor/scripts/.watch-site-state.json")
 
 # Fetch current content
-req = urllib.request.Request(URL, headers={"User-Agent": "Moor-Monitor/1.0"})
+req = urllib.request.Request(URL, headers={"User-Agent": "moor-monitor/1.0"})
 content = urllib.request.urlopen(req, timeout=30).read().decode()
 current_hash = hashlib.sha256(content.encode()).hexdigest()
 
@@ -72,6 +72,10 @@ Set up the cron job:
 
 :::tip The [SILENT] Trick
 For cron monitoring jobs, instruct the agent to respond with only `[SILENT]` when nothing changed. Cron delivery treats `[SILENT]` as the quiet marker, so you only get notified when something actually happens — no spam on quiet hours.
+:::
+
+:::tip Keeping failure notices out of shared channels
+`[SILENT]` only applies to successful runs — when a job hard-fails, the engine posts a `⚠️ Cron 'X' failed…` notice to the job's delivery target. For jobs that deliver into busy shared channels, set `--failure-deliver local` to suppress those notices entirely (run state stays visible in `moor cron list` and run history), or point failures at an ops channel with `--failure-deliver slack:C_OPS`. Same grammar as `--deliver`; omit it and failures follow `--deliver` as before.
 :::
 
 ---

@@ -22,11 +22,8 @@ from pathlib import Path
 
 import pytest
 
-from moor_state import (
-    CompressionSessionBusyError,
-    SessionCompressionInProgressError,
-    SessionDB,
-)
+from moor_state import SessionCompressionInProgressError, SessionDB
+from moor_state_errors import CompressionSessionBusyError
 
 
 @pytest.fixture

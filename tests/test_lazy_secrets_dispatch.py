@@ -17,6 +17,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from moor_cli import update_cmd
 
 
 def _run_moor(args: list[str], timeout: int = 30) -> subprocess.CompletedProcess[str]:
@@ -187,8 +188,8 @@ import moor_cli.main as m
 # without doing network I/O.  cmd_update (in main.py) calls
 # _self()._cmd_update_check(branch=..., branch_explicit=...) where _self()
 # resolves the moor_cli.main module's lazily re-exported attribute —
-# so the patch must land on moor_cli.main._cmd_update_check.
-with patch('moor_cli.main._cmd_update_check', capture_update_check):
+# so the patch must land on update_cmd._cmd_update_check.
+with patch('moor_cli.update_cmd._cmd_update_check', capture_update_check):
     try:
         m.main()
     except SystemExit as e:

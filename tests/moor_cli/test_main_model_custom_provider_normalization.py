@@ -2,11 +2,11 @@
 
 from unittest.mock import patch
 
-from moor_cli.web_server import _normalize_main_model_assignment
+from moor_cli.web_server_config import _normalize_main_model_assignment
 
 
 def _normalize(config, provider, model="vendor/model-a"):
-    with patch("moor_cli.web_server.load_config", return_value=config):
+    with patch("moor_cli.config.load_config", return_value=config):
         return _normalize_main_model_assignment(provider, model)
 
 

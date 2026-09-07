@@ -30,6 +30,7 @@ from unittest.mock import patch
 import pytest
 
 import tools.approval as approval_module
+from tools import approval_context
 from cli import MoorCLI
 
 
@@ -41,7 +42,7 @@ def _clear_approval_state(monkeypatch):
     """Clear the YOLO bypass + env var around every test so cases are independent."""
     monkeypatch.delenv("MOOR_YOLO_MODE", raising=False)
     # The value is intentionally frozen at tools.approval import time. Local
-    # Moor-driven test runs may inherit MOOR_YOLO_MODE=1 from the parent
+    # moor-driven test runs may inherit MOOR_YOLO_MODE=1 from the parent
     # agent process, so make the default test state hermetic; the one test that
     # covers startup-frozen YOLO explicitly patches it back to True.
     monkeypatch.setattr(approval_module, "_YOLO_MODE_FROZEN", False)
@@ -167,7 +168,7 @@ class TestToggleYoloEndToEnd:
     def test_toggle_yolo_bypasses_dangerous_command_check(self):
         stand_in = _make_stand_in()
 
-        token = approval_module.set_current_session_key(SESSION_KEY)
+        token = approval_context.set_current_session_key(SESSION_KEY)
         try:
             with patch("cli._cprint"):
                 MoorCLI._toggle_yolo(stand_in)  # YOLO ON
@@ -179,7 +180,7 @@ class TestToggleYoloEndToEnd:
                 f"YOLO toggle should auto-approve dangerous commands, got: {result}"
             )
         finally:
-            approval_module.reset_current_session_key(token)
+            approval_context.reset_current_session_key(token)
 
 
 

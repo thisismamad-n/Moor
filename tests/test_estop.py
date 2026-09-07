@@ -25,7 +25,7 @@ from agent import estop
 def moor_home(tmp_path, monkeypatch):
     """Point MOOR_HOME at a temp dir and reset estop module log state."""
     monkeypatch.setenv("MOOR_HOME", str(tmp_path))
-    estop._reset_log_state_for_tests()
+    estop._logged_components.clear()
     return tmp_path
 
 
@@ -164,7 +164,7 @@ def test_cron_tick_resumes_after_disengage(moor_home, monkeypatch):
 
 
 def test_kanban_dispatch_blocked_when_engaged(moor_home):
-    from gateway.kanban_watchers import _kanban_dispatch_allowed
+    from gateway.kanban_watchers_common import _kanban_dispatch_allowed
 
     assert _kanban_dispatch_allowed() is True
     estop.engage(reason="test")
@@ -376,3 +376,31 @@ def test_pause_command_registered_for_gateway():
     assert "pause" in GATEWAY_KNOWN_COMMANDS
     # Must be dispatchable while an agent is running (in-band emergency stop).
     assert cmd.busy_policy == "dispatch"
+
+
+def test_profile_gateway_honors_canonical_root_estop(tmp_path, monkeypatch):
+    """fleet-analyst-class: MOOR_HOME is a profile dir; pause lives at root.
+
+    A process launched with MOOR_HOME=~/.moor/profiles/fleet-analyst must
+    still treat ~/.moor/ESTOP as engaged. Otherwise `moor pause` is not
+    a global emergency stop (t_7b65ff88).
+    """
+    root = tmp_path / "moor-root"
+    profile = root / "profiles" / "fleet-analyst"
+    profile.mkdir(parents=True)
+    monkeypatch.setenv("MOOR_HOME", str(profile))
+    estop._logged_components.clear()
+
+    assert estop.is_engaged() is False
+    (root / "ESTOP").write_text("{\"reason\": \"thundering herd\"}\n", encoding="utf-8")
+    assert estop.is_engaged() is True
+    assert estop.paused_reply() is not None
+    assert "paused" in estop.paused_reply().lower()
+    # Profile-local engage still works and is independent.
+    estop.engage(reason="local")
+    assert (profile / "ESTOP").exists()
+    assert estop.is_engaged() is True
+    (root / "ESTOP").unlink()
+    assert estop.is_engaged() is True  # still held by profile sentinel
+    estop.disengage()
+    assert estop.is_engaged() is False

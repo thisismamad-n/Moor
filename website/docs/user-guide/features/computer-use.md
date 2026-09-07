@@ -99,34 +99,19 @@ or add `computer_use` to your enabled toolsets in `~/.moor/config.yaml`.
 ## Permission modes and logged-in browser profiles
 
 Moor maps its existing approval UX onto cua-driver's immutable runtime
-modes. Permission mode, capability manifest approval, and the existing-profile
-grant are launch settings. They cannot change after the runtime starts:
+modes. Permission mode and capability manifest approval are launch settings.
+They cannot change after the runtime starts:
 
-| Moor session | cua-driver mode | Human intervention | `existing_profile` |
-|---|---|---|---|
-| Manual or smart approvals (default) | `standard` | Normal Moor approvals; Cua stops at its protected boundary | Refuses unless `computer_use.grant_existing_profile: true` (one-time config opt-in) |
-| `computer_use.permission_mode: bounded` + reviewed manifest | private `bounded` daemon | You review and approve the capability manifest once, at launch | Allowed only within the manifest's declared profiles/origins/tools; everything else fails closed |
-| `--yolo`, `/yolo`, or `approvals.mode: off` | private `unrestricted` daemon | One explicit Moor risk acceptance; no runtime Cua prompts | Refuses unless `computer_use.grant_existing_profile: true`; YOLO does not substitute for this grant |
+| Moor session | cua-driver mode | Human intervention |
+|---|---|---|
+| Manual or smart approvals (default) | `standard` | Normal Moor approvals; Cua stops at its protected boundary |
+| `computer_use.permission_mode: bounded` + reviewed manifest | private `bounded` daemon | You review and approve the capability manifest once, at launch |
+| `--yolo`, `/yolo`, or `approvals.mode: off` | private `unrestricted` daemon | One explicit Moor risk acceptance; no runtime Cua prompts |
 
-### Attaching to your signed-in browser
-
-The agent can drive a Chrome/Edge window you already have open — including a
-signed-in profile — **without restarting the browser, copying the profile, or
-touching your tabs**. Because DevTools access exposes that profile's live
-pages, cookies, and storage, cua-driver requires an explicit human grant that
-ordinary tool approval cannot substitute for. You opt in once, in config.yaml:
-
-```yaml
-computer_use:
-  grant_existing_profile: true
-```
-
-Moor then launches the cua-driver runtime with the trusted-launcher grant
-(`--grant existing-profile`), and
-`cua_browser_prepare` with an existing profile succeeds against the exact
-`(pid, window_id)` the agent proves. Leave it `false` (the default) and
-existing-profile attachment fails closed; driver-owned isolated profiles work
-either way and are what the agent prefers.
+Browser work — including pages in a signed-in profile — goes through the
+`browser` toolset (`browser_exec`), not `computer_use`. The former
+`computer_use.grant_existing_profile` opt-in was removed along with the typed
+browser route; a leftover key in config.yaml is ignored.
 
 ### Bounded mode for repeatable automation
 
@@ -149,19 +134,31 @@ the manifest fails closed inside cua-driver. A missing or unreadable manifest
 fails loudly at session start rather than silently downgrading. Session YOLO
 still overrides bounded for that one session.
 
+On macOS, private-session daemons launch through the installed
+`CuaDriver.app` bundle (so permission grants attribute to the driver's own
+identity instead of resetting with every Moor build), and Moor verifies
+the bundle's code signature — exact `com.trycua.driver` identifier and the
+official signing team — before launching it. If you build cua-driver from
+source (unsigned), opt in explicitly:
+
+```yaml
+# config.yaml
+computer_use:
+  allow_unsigned_driver: true   # local driver development only
+```
+
 Each MCP transport owns a private lifecycle session inside its runtime. A
 public session name is only a label for cursor identity and session-scoped
 state. It does not select, share, or keep a runtime alive. Turning `/yolo` off,
 resetting or closing the Moor session, cancellation cleanup, or process exit
 closes that transport session. Moor also stops private runtimes that it
-launched for bounded, unrestricted, or existing-profile access. One Moor
-conversation cannot change another runtime's mode or grants. On macOS, a
-standard runtime with an existing-profile grant uses a fresh CuaDriver.app
-daemon on a private socket. Bounded and unrestricted modes use a private
+launched for bounded or unrestricted access. One Moor
+conversation cannot change another runtime's mode or grants. Bounded and
+unrestricted modes use a private
 embedded service under the Moor host identity.
 
 `smart` approval remains `standard`: an LLM classification cannot stand in for
-a reviewed manifest or a launch-time grant.
+a reviewed manifest.
 
 <div class="alert alert--warning">
 
@@ -217,6 +214,15 @@ Moor run declares a public cua-driver **session name** (something like
 concurrent runs and subagents get distinct cursors. The MCP transport owns the
 private lifecycle session inside the runtime; the public name does not.
 
+The overlay cursor is cosmetic — captures, clicks, and typing all work
+without it. Moor disables it automatically where it is a known failure
+mode: macOS (idle CPU burn), headless Linux / WSL2 / containers, and
+**Linux X11 desktops** (the overlay is a fullscreen always-on-top window
+that can get stuck over every workspace after an unclean session end,
+wedging desktop input). Linux Wayland and Windows keep the overlay. Set
+`computer_use.no_overlay: false` in `config.yaml` to force the cursor on
+(or `true` to force it off) on any platform.
+
 Tune the cursor with `cua-driver`'s CLI flags or the runtime
 `set_agent_cursor_style` MCP tool — see
 [cua.ai/docs/how-to-guides/driver/personalize-cursor](https://cua.ai/docs/how-to-guides/driver/personalize-cursor)
@@ -227,7 +233,7 @@ halo).
 ## Going deeper — the cua-driver skill pack
 
 Moor keeps its wrapper skill (`skills/autonomous-ai-agents/computer-use/SKILL.md`)
-focused on the Moor-side `computer_use` workflow and action vocabulary. For
+focused on the moor-side `computer_use` workflow and action vocabulary. For
 platform details, recording semantics, browser page interaction, and other
 deep Cua behavior, install the skill pack that the cua-driver team ships and
 maintains directly:
@@ -422,8 +428,18 @@ Permission mode and manifest (see
 computer_use:
   permission_mode: standard        # standard (default) | bounded
   capability_manifest: ""          # capability manifest path, required for bounded
-  grant_existing_profile: false    # opt-in: attach in standard or unrestricted mode
 ```
+
+On Linux, native Wayland support remains an explicit opt-in. Moor passes the
+opt-in to every cua-driver process, including gateway sessions, only when that
+process also has `WAYLAND_DISPLAY`:
+
+```yaml
+computer_use:
+  native_wayland: true
+```
+
+Restart a running gateway after changing this setting.
 
 Override the driver binary path (tests / CI / local builds):
 
@@ -583,7 +599,7 @@ autostart pattern — see
 
 ## See also
 
-- **Moor-side skill** — `skills/autonomous-ai-agents/computer-use/SKILL.md` — teaches the
+- **moor-side skill** — `skills/autonomous-ai-agents/computer-use/SKILL.md` — teaches the
   Moor `computer_use` action vocabulary; this is what the agent loads.
 - **cua-driver skill pack** — for platform-specific deep dives
   (macOS no-foreground contract, Windows UIA + Session 0, Linux AT-SPI

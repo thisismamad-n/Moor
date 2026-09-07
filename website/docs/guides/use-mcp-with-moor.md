@@ -216,7 +216,7 @@ There are two categories of MCP-exposed functionality in Moor:
   - `tools.include`
   - `tools.exclude`
 
-2. Moor-added utility wrappers
+2. moor-added utility wrappers
 - filtered with:
   - `tools.resources`
   - `tools.prompts`

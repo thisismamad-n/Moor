@@ -15,7 +15,7 @@ Query Polymarket: markets, prices, orderbooks, history.
 | | |
 |---|---|
 | Source | Optional — install with `moor skills install official/finance/polymarket` |
-| Path | `optional-skills/finance/polymarket` |
+| Path | `optional-skills/finance\polymarket` |
 | Version | `1.0.0` |
 | Author | Moor Agent + Teknium |
 | License | MIT |

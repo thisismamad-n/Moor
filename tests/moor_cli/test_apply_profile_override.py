@@ -19,7 +19,7 @@ from types import SimpleNamespace
 
 def _run_apply_profile_override(
     tmp_path, monkeypatch, *, moor_home: str | None, active_profile: str | None,
-    argv: list[str] | None = None,
+    argv: list[str] | None = None, extra_env: dict[str, str] | None = None,
 ):
     """Run _apply_profile_override in isolation.
 
@@ -42,6 +42,19 @@ def _run_apply_profile_override(
         monkeypatch.delenv("MOOR_HOME", raising=False)
 
     monkeypatch.setattr(sys, "argv", argv or ["moor", "gateway", "start"])
+
+    # Scrub supervisor markers the host environment may carry (systemd-run
+    # CI runners export INVOCATION_ID) so each test controls them explicitly.
+    for var in (
+        "MOOR_SUPERVISED_CHILD",
+        "MOOR_S6_SUPERVISED_CHILD",
+        "INVOCATION_ID",
+        "MOOR_GATEWAY_EXTERNAL_SUPERVISOR",
+    ):
+        monkeypatch.delenv(var, raising=False)
+
+    for key, value in (extra_env or {}).items():
+        monkeypatch.setenv(key, value)
 
     from moor_cli.main import _apply_profile_override
     _apply_profile_override()
@@ -164,3 +177,112 @@ class TestSupervisedChildIgnoresStickyProfile:
         assert result is not None
         assert result.endswith("coder")
 
+
+
+class TestGeneralizedSupervisorMarkers:
+    """Regression tests for issue #74872.
+
+    A systemd/launchd/Scheduled-Task supervised gateway launch pins its
+    profile identity via the unit's MOOR_HOME (root home for the default
+    profile). It must NEVER follow the sticky ``active_profile`` file —
+    otherwise the default-profile gateway silently assumes another profile's
+    identity (logs + Telegram bot token) and double-polls that profile's
+    token. Markers: MOOR_SUPERVISED_CHILD (generalized, exported by
+    generated units), INVOCATION_ID (systemd, gateway commands only), and
+    MOOR_GATEWAY_EXTERNAL_SUPERVISOR (explicit opt-in).
+    """
+
+    def _root_home(self, tmp_path):
+        moor_root = tmp_path / ".moor"
+        moor_root.mkdir(parents=True, exist_ok=True)
+        return moor_root
+
+    def test_supervised_child_marker_skips_active_profile(
+        self, tmp_path, monkeypatch
+    ):
+        """MOOR_SUPERVISED_CHILD=1 + root MOOR_HOME must keep the
+        default profile's home even when active_profile names another
+        profile (the #74872 identity-assumption vector)."""
+        moor_root = self._root_home(tmp_path)
+        result = _run_apply_profile_override(
+            tmp_path,
+            monkeypatch,
+            moor_home=str(moor_root),
+            active_profile="telegram_nick",
+            argv=["moor", "gateway", "run"],
+            extra_env={"MOOR_SUPERVISED_CHILD": "1"},
+        )
+        assert result == str(moor_root), (
+            f"supervised default gateway was redirected to {result!r}"
+        )
+
+    def test_systemd_invocation_id_skips_active_profile_for_gateway(
+        self, tmp_path, monkeypatch
+    ):
+        """INVOCATION_ID (systemd service child) must suppress the sticky
+        redirect for gateway commands — covers units installed before the
+        MOOR_SUPERVISED_CHILD marker existed."""
+        moor_root = self._root_home(tmp_path)
+        result = _run_apply_profile_override(
+            tmp_path,
+            monkeypatch,
+            moor_home=str(moor_root),
+            active_profile="telegram_nick",
+            argv=["moor", "gateway", "run"],
+            extra_env={"INVOCATION_ID": "deadbeef" * 4},
+        )
+        assert result == str(moor_root)
+
+    def test_invocation_id_does_not_affect_non_gateway_commands(
+        self, tmp_path, monkeypatch
+    ):
+        """INVOCATION_ID leaks into every descendant of a systemd-launched
+        process (CI runners, user services). Non-gateway commands must keep
+        honoring the sticky active_profile."""
+        moor_root = self._root_home(tmp_path)
+        result = _run_apply_profile_override(
+            tmp_path,
+            monkeypatch,
+            moor_home=str(moor_root),
+            active_profile="coder",
+            argv=["moor", "chat"],
+            extra_env={"INVOCATION_ID": "deadbeef" * 4},
+        )
+        assert result is not None
+        assert result.endswith("coder")
+
+    def test_external_supervisor_marker_skips_active_profile(
+        self, tmp_path, monkeypatch
+    ):
+        moor_root = self._root_home(tmp_path)
+        result = _run_apply_profile_override(
+            tmp_path,
+            monkeypatch,
+            moor_home=str(moor_root),
+            active_profile="telegram_nick",
+            argv=["moor", "gateway", "run"],
+            extra_env={"MOOR_GATEWAY_EXTERNAL_SUPERVISOR": "1"},
+        )
+        assert result == str(moor_root)
+
+    def test_generated_systemd_unit_exports_supervised_marker(
+        self, tmp_path, monkeypatch
+    ):
+        """The generated systemd unit must carry the marker so fresh installs
+        are protected without relying on the INVOCATION_ID heuristic."""
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / "home"))
+        (tmp_path / "home").mkdir()
+        from moor_cli.gateway import generate_systemd_unit
+
+        unit = generate_systemd_unit()
+        assert 'Environment="MOOR_SUPERVISED_CHILD=1"' in unit
+
+    def test_generated_launchd_plist_exports_supervised_marker(
+        self, tmp_path, monkeypatch
+    ):
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / "home"))
+        (tmp_path / "home").mkdir()
+        from moor_cli.gateway import generate_launchd_plist
+
+        plist = generate_launchd_plist()
+        assert "<key>MOOR_SUPERVISED_CHILD</key>" in plist

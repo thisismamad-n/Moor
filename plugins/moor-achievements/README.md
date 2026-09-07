@@ -21,7 +21,7 @@ Moor Achievements scans local Moor sessions and unlocks badges based on real age
 - autonomous tool chains
 - debugging and recovery patterns
 - vibe-coding file edits
-- Moor-native skills, memory, cron, and plugin usage
+- moor-native skills, memory, cron, and plugin usage
 - web research and browser automation
 - model/provider workflows
 - lifestyle patterns such as weekend or night sessions

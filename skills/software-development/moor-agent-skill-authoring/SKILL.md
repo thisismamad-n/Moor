@@ -8,7 +8,7 @@ platforms: [linux, macos, windows]
 metadata:
   moor:
     tags: [skills, authoring, moor-agent, conventions, skill-md]
-    related_skills: [plan, requesting-code-review]
+    related_skills: [requesting-code-review]
 ---
 
 # Authoring moor-agent Skills (in-repo)

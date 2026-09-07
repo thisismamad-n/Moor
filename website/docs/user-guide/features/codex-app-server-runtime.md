@@ -347,7 +347,7 @@ What translates:
 | `enabled: false` | `enabled = false` |
 
 What's not migrated:
-- Moor-specific keys like `sampling` (Codex's MCP client has no equivalent — these are dropped with a per-server warning).
+- moor-specific keys like `sampling` (Codex's MCP client has no equivalent — these are dropped with a per-server warning).
 
 ## Native Codex plugin migration
 

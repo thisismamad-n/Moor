@@ -8,7 +8,8 @@ import time
 
 import pytest
 
-from moor_state import SCHEMA_VERSION, SessionDB
+from moor_state import SessionDB
+from moor_state_common import SCHEMA_VERSION
 
 
 @pytest.fixture()

@@ -90,7 +90,7 @@ This is the standalone command. The terminal-auth flow (`moor acp --setup`) also
 What it does:
 
 - Installs Node.js 26 into `~/.moor/node/` if missing
-- `npm install -g agent-browser @askjo/camofox-browser` into that prefix (no sudo needed — `npm`'s `--prefix` points at the user-writable Moor-managed Node)
+- `npm install -g agent-browser @askjo/camofox-browser` into that prefix (no sudo needed — `npm`'s `--prefix` points at the user-writable moor-managed Node)
 - Installs Playwright Chromium, or uses a detected system Chrome/Chromium when available
 
 The bootstrap is idempotent — re-running it is fast and skips work that's already done.
@@ -252,7 +252,7 @@ means its provider has no credentials configured on the Moor side.
 Entry IDs take the form `provider:model` (e.g. `openrouter:z-ai/glm-5.1`), or
 `custom:<name>:<model>` for custom OpenAI-compatible endpoints defined in
 `config.yaml`. Picking a model applies to that agent's session; it does not
-change your Moor-wide default — use `moor model` for that.
+change your moor-wide default — use `moor model` for that.
 
 #### Keep Buzz agents owner-only
 

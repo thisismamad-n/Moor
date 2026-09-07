@@ -63,11 +63,11 @@ MIGRATION_OPTION_METADATA: Dict[str, Dict[str, str]] = {
     },
     "messaging-settings": {
         "label": "Messaging settings",
-        "description": "Import Moor-compatible messaging settings such as allowlists and working directory.",
+        "description": "Import moor-compatible messaging settings such as allowlists and working directory.",
     },
     "secret-settings": {
         "label": "Allowlisted secrets",
-        "description": "Import the small allowlist of Moor-compatible secrets when explicitly enabled.",
+        "description": "Import the small allowlist of moor-compatible secrets when explicitly enabled.",
     },
     "command-allowlist": {
         "label": "Command allowlist",
@@ -1501,7 +1501,7 @@ class Migrator:
         if additions:
             self.merge_env_values(additions, "messaging-settings", self.source_root / "openclaw.json")
         else:
-            self.record("messaging-settings", self.source_root / "openclaw.json", self.target_root / ".env", "skipped", "No Moor-compatible messaging settings found")
+            self.record("messaging-settings", self.source_root / "openclaw.json", self.target_root / ".env", "skipped", "No moor-compatible messaging settings found")
 
     def handle_secret_settings(self, config: Optional[Dict[str, Any]] = None) -> None:
         config = config or self.load_openclaw_config()
@@ -1545,7 +1545,7 @@ class Migrator:
                 self.source_root / "openclaw.json",
                 self.target_root / ".env",
                 "skipped",
-                "No allowlisted Moor-compatible secrets found",
+                "No allowlisted moor-compatible secrets found",
                 supported_targets=sorted(SUPPORTED_SECRET_TARGETS),
             )
 
@@ -2217,8 +2217,8 @@ class Migrator:
                 self.archive_path(candidate, reason="No direct Moor destination; archived for manual review")
 
         partially_extracted = [
-            ("openclaw.json", "Selected Moor-compatible values were extracted; raw OpenClaw config was not copied."),
-            ("credentials/telegram-default-allowFrom.json", "Selected Moor-compatible values were extracted; raw credentials file was not copied."),
+            ("openclaw.json", "Selected moor-compatible values were extracted; raw OpenClaw config was not copied."),
+            ("credentials/telegram-default-allowFrom.json", "Selected moor-compatible values were extracted; raw credentials file was not copied."),
         ]
         for rel, reason in partially_extracted:
             candidate = self.source_root / rel
@@ -3054,7 +3054,7 @@ class Migrator:
             "If you skip this step and notice the agent getting confused about workspaces",
             "or todo lists, run `moor claw cleanup` to fix it.",
             "",
-            "## Moor-Specific Setup",
+            "## moor-specific Setup",
             "",
             "After migration, you may want to:",
             "- Run `moor claw cleanup` to archive the OpenClaw directory (prevents state confusion)",
@@ -3120,7 +3120,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--migrate-secrets",
         action="store_true",
-        help="Import a narrow allowlist of Moor-compatible secrets into the target env file",
+        help="Import a narrow allowlist of moor-compatible secrets into the target env file",
     )
     parser.add_argument(
         "--skill-conflict",

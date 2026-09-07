@@ -14,7 +14,7 @@ import sqlite3
 
 import pytest
 
-from moor_state import is_sqlite_wal_reset_vulnerable
+from moor_state_wal import is_sqlite_wal_reset_vulnerable
 from tests.conftest import _wal_is_usable
 
 

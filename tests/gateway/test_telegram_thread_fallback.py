@@ -1,6 +1,6 @@
 """Tests for Telegram topic/thread routing fallbacks.
 
-Supergroup forum topics route with ``message_thread_id``. Moor-created
+Supergroup forum topics route with ``message_thread_id``. moor-created
 private DM topic lanes are different: live Telegram testing showed they only
 stay in the expected lane when sends include both the private topic
 ``message_thread_id`` and a ``reply_to_message_id`` anchor to the triggering
@@ -99,6 +99,7 @@ _fake_telegram_ext = types.ModuleType("telegram.ext")
 _fake_telegram_ext.Application = object
 _fake_telegram_ext.CommandHandler = object
 _fake_telegram_ext.CallbackQueryHandler = object
+_fake_telegram_ext.InlineQueryHandler = object
 _fake_telegram_ext.MessageHandler = object
 _fake_telegram_ext.TypeHandler = object
 _fake_telegram_ext.ContextTypes = SimpleNamespace(DEFAULT_TYPE=object)

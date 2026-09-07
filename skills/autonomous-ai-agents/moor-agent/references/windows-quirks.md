@@ -26,13 +26,13 @@ a UTF-8 BOM (Notepad does this). Re-save as UTF-8 without BOM;
 `AF_INET` socket. Root cause is usually Moor's env scrubber dropping
 `SYSTEMROOT`/`WINDIR`/`COMSPEC` (Python's `socket` needs `SYSTEMROOT` to find
 `mswsock.dll`), not a broken Winsock LSP. The `_WINDOWS_ESSENTIAL_ENV_VARS`
-allowlist in `tools/code_execution_tool.py` covers it; if you still hit it,
+allowlist in `tools/code_execution_env.py` covers it; if you still hit it,
 echo `os.environ` inside an `execute_code` block to confirm `SYSTEMROOT` is set.
 
 ### Testing on Windows
 
 `scripts/run_tests.sh` is POSIX-only (expects `.venv/bin/activate`); the
-Moor-installed `venv/Scripts/` has no pip/pytest (stripped for size).
+moor-installed `venv/Scripts/` has no pip/pytest (stripped for size).
 Install pytest into a system Python and run directly (the repo no longer
 uses pytest-xdist; the canonical runner does per-file subprocess isolation,
 which the POSIX-only wrapper handles):

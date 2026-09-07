@@ -1244,7 +1244,7 @@ hooks_auto_accept: false         # See "Consent model" below
 ```jsonc
 // Block a pre_tool_call (both shapes accepted; normalised internally):
 {"decision": "block", "reason":  "Forbidden: rm -rf"}   // Claude-Code style
-{"action":   "block", "message": "Forbidden: rm -rf"}   // Moor-canonical
+{"action":   "block", "message": "Forbidden: rm -rf"}   // moor-canonical
 
 // Inject context for pre_llm_call:
 {"context": "Today is Friday, 2026-04-17"}

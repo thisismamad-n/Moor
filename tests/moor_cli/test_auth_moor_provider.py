@@ -184,6 +184,7 @@ def test_resolve_moor_runtime_credentials_invoke_jwt_is_idempotent(
     monkeypatch,
 ):
     import moor_cli.auth as auth_mod
+    import moor_cli.auth_moor as auth_moor
 
     moor_home = tmp_path / "moor"
     moor_home.mkdir(parents=True, exist_ok=True)
@@ -232,8 +233,14 @@ def test_resolve_moor_runtime_credentials_invoke_jwt_is_idempotent(
     sync_calls = []
 
     monkeypatch.setattr(auth_mod, "_write_shared_moor_state", _unexpected_shared_write)
+    monkeypatch.setattr(auth_moor, "_write_shared_moor_state", _unexpected_shared_write)
     monkeypatch.setattr(
         auth_mod,
+        "_sync_moor_pool_from_auth_store",
+        lambda: sync_calls.append(True),
+    )
+    monkeypatch.setattr(
+        auth_moor,
         "_sync_moor_pool_from_auth_store",
         lambda: sync_calls.append(True),
     )
@@ -351,6 +358,7 @@ def test_moor_inference_auth_logs_do_not_include_secret_values(
     caplog,
 ):
     import moor_cli.auth as auth_mod
+    import moor_cli.auth_moor as auth_moor
 
     moor_home = tmp_path / "moor"
     token = _invoke_jwt(seconds=3600)
@@ -377,6 +385,7 @@ def test_moor_inference_auth_logs_do_not_include_secret_values(
         }
 
     monkeypatch.setattr(auth_mod, "_refresh_access_token", _fake_refresh_access_token)
+    monkeypatch.setattr(auth_moor, "_refresh_access_token", _fake_refresh_access_token)
 
     caplog.set_level(logging.DEBUG, logger="moor_cli.auth")
     auth_mod.resolve_moor_runtime_credentials(
@@ -499,7 +508,9 @@ class TestLoginMoorSkipKeepsCurrent:
     def _patch_login_internals(self, monkeypatch, *, prompt_returns):
         """Patch OAuth + model-list + prompt so _login_moor doesn't hit network."""
         import moor_cli.auth as auth_mod
+        import moor_cli.auth_moor as auth_moor
         import moor_cli.models as models_mod
+        from moor_cli import models_pricing
         import moor_cli.moor_subscription as ns
 
         fake_auth_state = {
@@ -515,10 +526,14 @@ class TestLoginMoorSkipKeepsCurrent:
             lambda **kwargs: dict(fake_auth_state),
         )
         monkeypatch.setattr(
+            auth_moor, "_moor_device_code_login",
+            lambda **kwargs: dict(fake_auth_state),
+        )
+        monkeypatch.setattr(
             auth_mod, "_prompt_model_selection",
             lambda *a, **kw: prompt_returns,
         )
-        monkeypatch.setattr(models_mod, "get_pricing_for_provider", lambda p: {})
+        monkeypatch.setattr(models_pricing, "get_pricing_for_provider", lambda p: {})
         free_tier_calls = []
 
         def _check_moor_free_tier(**kwargs):
@@ -962,6 +977,7 @@ def test_try_import_shared_rehydrates_on_success(shared_store_env, monkeypatch):
     every field persist_moor_credentials() needs.
     """
     from moor_cli import auth as auth_mod
+    import moor_cli.auth_moor as auth_moor
 
     auth_mod._write_shared_moor_state(_full_state_fixture())
     fresh_jwt = _invoke_jwt(seconds=7200)
@@ -978,6 +994,7 @@ def test_try_import_shared_rehydrates_on_success(shared_store_env, monkeypatch):
         }
 
     monkeypatch.setattr(auth_mod, "refresh_moor_oauth_from_state", _fake_refresh)
+    monkeypatch.setattr(auth_moor, "refresh_moor_oauth_from_state", _fake_refresh)
 
     result = auth_mod._try_import_shared_moor_state()
 
@@ -1031,6 +1048,7 @@ class TestStalePortalBaseUrlMigration:
     ):
         """An allowlisted production host is still unsafe over plain HTTP."""
         from moor_cli import auth as auth_mod
+        import moor_cli.auth_moor as auth_moor
 
         moor_home = tmp_path / "moor"
         monkeypatch.setenv("MOOR_HOME", str(moor_home))
@@ -1065,6 +1083,9 @@ class TestStalePortalBaseUrlMigration:
         monkeypatch.setattr(
             auth_mod, "_refresh_access_token", _fake_refresh_access_token
         )
+        monkeypatch.setattr(
+            auth_moor, "_refresh_access_token", _fake_refresh_access_token
+        )
 
         auth_mod.resolve_moor_runtime_credentials()
         assert refresh_calls == [auth_mod.DEFAULT_MOOR_PORTAL_URL]
@@ -1098,7 +1119,7 @@ class TestMoorDeviceAuthTimeoutMessage:
 
 def test_poll_for_token_timeout_raises_actionable_message():
     """The poll deadline must raise the CAPTCHA-aware guidance at the SOURCE,
-    so both the CLI login and the dashboard poller (web_server._moor_poller,
+    so both the CLI login and the dashboard poller (web_server_oauth._moor_poller,
     which surfaces str(e) to the UI) inherit it."""
     import httpx
     import pytest

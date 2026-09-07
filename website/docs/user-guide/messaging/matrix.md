@@ -553,7 +553,7 @@ To find a Room ID: in Element, go to the room → **Settings** → **Advanced** 
 
 Moor supports the same gateway commands in Matrix that it supports on other
 messaging platforms, including `/commands`, `/model`, `/stop`, `/queue`,
-`/steer`, `/goal`, `/subgoal`, `/background`, `/bg`, `/btw`, `/tasks`, and
+`/steer`, `/goal`, `/subgoal`, `/bg`, `/btw`, `/tasks`, and
 `/yolo`.
 
 Some Matrix clients reserve leading `/` for local client commands and may not
@@ -848,7 +848,7 @@ The host side needs:
 Proxy mode is not limited to Matrix. Any platform adapter can use it — set `GATEWAY_PROXY_URL` on any gateway instance and it will forward to the remote agent instead of running one locally. This is useful for any deployment where the platform adapter needs to run in a different environment from the agent (network isolation, E2EE requirements, resource constraints).
 
 :::tip
-Session continuity is maintained via the `X-Moor-Session-Id` header. The host's API server tracks sessions by this ID, so conversations persist across messages just like they would with a local agent.
+Session continuity is maintained via the `X-moor-session-Id` header. The host's API server tracks sessions by this ID, so conversations persist across messages just like they would with a local agent.
 :::
 
 :::note

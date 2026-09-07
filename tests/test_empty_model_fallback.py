@@ -27,16 +27,16 @@ class TestGetDefaultModelForProvider:
 
         with patch(
             "moor_cli.model_catalog.get_default_model_from_cache",
-            return_value="qwen/qwen3.8-max",
+            return_value="qwen/qwen3.8-max-0902",
         ):
             assert (
                 models_mod.get_preferred_silent_default_model("moor")
-                == "qwen/qwen3.8-max"
+                == "qwen/qwen3.8-max-0902"
             )
-            # moor catalog carries qwen3.8-max, so the full resolver follows.
+            # moor catalog carries qwen3.8-max-0902, so the full resolver follows.
             assert (
                 models_mod.get_default_model_for_provider("moor")
-                == "qwen/qwen3.8-max"
+                == "qwen/qwen3.8-max-0902"
             )
 
 

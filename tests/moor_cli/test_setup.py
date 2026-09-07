@@ -129,7 +129,7 @@ def test_select_provider_and_model_warns_if_named_custom_provider_disappears(
 
 
 def test_modal_setup_persists_direct_mode_when_user_chooses_their_own_account(tmp_path, monkeypatch):
-    monkeypatch.setattr("moor_cli.setup.managed_moor_tools_enabled", lambda: True)
+    monkeypatch.setattr("tools.tool_backend_helpers.managed_moor_tools_enabled", lambda: True)
     monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     monkeypatch.delenv("MODAL_TOKEN_ID", raising=False)
     monkeypatch.delenv("MODAL_TOKEN_SECRET", raising=False)
@@ -146,9 +146,8 @@ def test_modal_setup_persists_direct_mode_when_user_chooses_their_own_account(tm
 
     monkeypatch.setattr("moor_cli.setup.prompt_choice", fake_prompt_choice)
     monkeypatch.setattr("moor_cli.setup.prompt", lambda *args, **kwargs: next(prompt_values))
-    monkeypatch.setattr("moor_cli.setup._prompt_container_resources", lambda config: None)
     monkeypatch.setattr(
-        "moor_cli.setup.get_moor_subscription_features",
+        "moor_cli.moor_subscription.get_moor_subscription_features",
         lambda config: type("Features", (), {"moor_auth_present": True})(),
     )
     monkeypatch.setitem(

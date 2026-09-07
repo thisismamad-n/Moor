@@ -1,4 +1,4 @@
-"""Regression tests for the Moor-managed Node's npm global prefix.
+"""Regression tests for the moor-managed Node's npm global prefix.
 
 When the installer falls back to a bundled Node under ``$MOOR_HOME/node``,
 npm's default global prefix is that Node dir, so ``npm install -g <pkg>``

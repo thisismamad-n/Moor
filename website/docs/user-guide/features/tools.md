@@ -178,7 +178,7 @@ From a linked Vercel project directory:
 VERCEL_OIDC_TOKEN="$(vc project token)" moor chat
 ```
 
-With `container_persistent: true`, Moor uses Vercel snapshots to preserve filesystem state across sandbox recreation for the same task. This can include Moor-synced credentials, skills, and cache files inside the sandbox. Snapshots do not preserve live processes, PID space, or the same live sandbox identity.
+With `container_persistent: true`, Moor uses Vercel snapshots to preserve filesystem state across sandbox recreation for the same task. This can include moor-synced credentials, skills, and cache files inside the sandbox. Snapshots do not preserve live processes, PID space, or the same live sandbox identity.
 
 Background terminal commands use Moor' generic non-local process flow: spawn, poll, wait, log, and kill work through the normal process tool while the sandbox is alive, but Moor does not provide native Vercel detached-process recovery after cleanup or restart.
 

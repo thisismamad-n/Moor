@@ -87,7 +87,7 @@ def _set_registry(monkeypatch, entries: List[Dict[str, Any]]) -> None:
 
 def _set_builtins(monkeypatch, keys: List[str]) -> None:
     monkeypatch.setattr(
-        "moor_cli.main._AUX_TASKS", [(k, k.title(), "") for k in keys]
+        "moor_cli.main_provider_setup._AUX_TASKS", [(k, k.title(), "") for k in keys]
     )
 
 

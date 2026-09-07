@@ -177,7 +177,7 @@ class TestFreshInstall:
             m = _enter_fresh_install_patches(
                 stack,
                 prompt=("moor_cli.setup.prompt_choice", {"return_value": 0}),
-                first="moor_cli.setup._run_first_time_quick_setup",
+                first="moor_cli.setup_quick._run_first_time_quick_setup",
             )
             from moor_cli.setup import run_setup_wizard
             from moor_cli import setup as setup_mod
@@ -199,7 +199,7 @@ class TestFreshInstall:
             m = _enter_fresh_install_patches(
                 stack,
                 prompt=("moor_cli.setup.prompt_choice", {"return_value": 2}),
-                blank="moor_cli.setup._run_blank_slate_setup",
+                blank="moor_cli.setup_quick._run_blank_slate_setup",
             )
             from moor_cli import setup as setup_mod
 

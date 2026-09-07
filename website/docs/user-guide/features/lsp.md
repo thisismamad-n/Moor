@@ -205,7 +205,7 @@ Go binaries come from `go install` with `GOBIN` pointed at the
 staging dir.
 
 Nothing is ever installed to `/usr/local/`, `~/.local/`, or any other
-shared location — the staging dir is fully Moor-owned and is
+shared location — the staging dir is fully moor-owned and is
 removed when you reset the profile.
 
 ## Performance characteristics
@@ -236,6 +236,12 @@ one language-server process per workspace forever. A reaped server is
 respawned automatically on the next relevant file operation. Set
 `idle_timeout: 0` to disable reaping and hold every server's index warm
 for the life of the process.
+
+Servers that support multi-root workspaces (currently pyright) run as a
+**single process** per Moor process: the first Python project spawns
+it, and every further project root — for example sibling git worktrees
+edited by parallel subagents — is attached to that same server as an
+additional workspace folder instead of starting another copy.
 
 ## Disabling
 

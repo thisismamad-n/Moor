@@ -80,7 +80,7 @@
 
   /* Data-series accents — consumed by Analytics + Models pages for the
      input-vs-output token visualisations (chart bars, table values,
-     legend swatches). Defaults are tuned for the Moor-teal LENS_0
+     legend swatches). Defaults are tuned for the moor-teal LENS_0
      look: cream input + emerald-400 output read as warm/cool against
      the dark canvas. Themes override via ThemeProvider, which emits
      these as `--series-input-token` / `--series-output-token`. */

@@ -6,7 +6,7 @@ description: "Build wrapper CLIs that extend the Moor TUI with custom widgets, k
 
 # Extending the CLI
 
-Moor exposes protected extension hooks on `MoorCLI` so wrapper CLIs can add widgets, keybindings, and layout customizations without overriding the 1000+ line `run()` method. This keeps your extension decoupled from internal changes.
+Moor exposes protected extension hooks on `MoorCLI` so wrapper CLIs can add widgets, keybindings, and layout customizations without overriding the `run()` method or the TUI construction in `moor_cli/cli_tui_mixin.py` (where these hooks are defined; `MoorCLI` in `cli.py` mixes it in). This keeps your extension decoupled from internal changes.
 
 ## Extension points
 

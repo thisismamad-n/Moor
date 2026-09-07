@@ -9,12 +9,9 @@ import json
 from unittest.mock import patch, MagicMock
 
 from moor_cli import models as models_module
-from moor_cli.models import (
-    VERCEL_AI_GATEWAY_MODELS,
-    _ai_gateway_model_is_free,
-    fetch_ai_gateway_models,
-    fetch_ai_gateway_pricing,
-)
+from moor_cli import models_pricing
+from moor_cli.models import VERCEL_AI_GATEWAY_MODELS, _ai_gateway_model_is_free, fetch_ai_gateway_models
+from moor_cli.models_pricing import fetch_ai_gateway_pricing
 
 
 def _mock_urlopen(payload):
@@ -29,7 +26,7 @@ def _mock_urlopen(payload):
 
 def _reset_caches():
     models_module._ai_gateway_catalog_cache = None
-    models_module._pricing_cache.clear()
+    models_pricing._pricing_cache.clear()
 
 
 def test_ai_gateway_pricing_translates_input_output_to_prompt_completion():

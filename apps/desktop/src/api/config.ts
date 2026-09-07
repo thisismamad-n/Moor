@@ -99,6 +99,18 @@ export function saveMoorConfig(config: MoorConfigRecord, profile?: null | string
   })
 }
 
+/** Capability-scoped counterpart of saveMoorConfig — writes the config of
+ *  the profile/connection the Capabilities scope selector points at (possibly
+ *  on another registered gateway), mirroring getMoorConfigRecord. */
+export function saveMoorConfigRecord(config: MoorConfigRecord, profile?: ProfileScope): Promise<{ ok: boolean }> {
+  return window.moorDesktop.api<{ ok: boolean }>({
+    ...capabilityScoped(profile),
+    path: '/api/config',
+    method: 'PUT',
+    body: { config }
+  })
+}
+
 export function getEnvVars(profile?: null | string): Promise<Record<string, EnvVarInfo>> {
   return moorApi<Record<string, EnvVarInfo>>({
     ...profileScoped(profile),

@@ -35,10 +35,8 @@ import sys
 from pathlib import Path
 
 import moor_state
-from moor_state import (
-    _connect_repair_durable,
-    repair_state_db_schema,
-)
+from moor_state import repair_state_db_schema
+from moor_state_repair import _connect_repair_durable
 
 
 def _make_db(tmp_path: Path) -> Path:
@@ -102,8 +100,12 @@ def test_repair_path_has_no_bare_connects() -> None:
     Source-level guard: the bare form is exactly what regressed, and a unit
     test on the helper alone would not notice a sixth site being added.
     """
-    source = Path(moor_state.__file__).read_text(encoding="utf-8")
-    tree = ast.parse(source, filename=str(moor_state.__file__))
+    # The repair/probe helpers live in moor_state_repair; moor_state only
+    # re-imports them.
+    import moor_state_repair
+
+    source = Path(moor_state_repair.__file__).read_text(encoding="utf-8")
+    tree = ast.parse(source, filename=str(moor_state_repair.__file__))
 
     def is_db_path_connect(node: ast.AST) -> bool:
         if not isinstance(node, ast.Call):

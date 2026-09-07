@@ -45,7 +45,7 @@ def test_moor_wires_fireworks_client():
 
 
 def test_fireworks_basic_chat_through_runtime():
-    """A single-turn completion via the Moor-resolved client returns text."""
+    """A single-turn completion via the moor-resolved client returns text."""
     client, model = _resolve_runtime_client()
 
     response = client.chat.completions.create(

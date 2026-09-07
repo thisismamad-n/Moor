@@ -18,6 +18,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from moor_cli import main as moor_main
+from moor_cli import update_cmd
 
 
 # ---------------------------------------------------------------------------
@@ -31,7 +32,7 @@ def test_capture_head_sha_returns_stripped_sha(monkeypatch, tmp_path):
 
     monkeypatch.setattr(moor_main.subprocess, "run", fake_run)
 
-    assert moor_main._capture_head_sha(["git"], tmp_path) == "deadbeefcafe"
+    assert update_cmd._capture_head_sha(["git"], tmp_path) == "deadbeefcafe"
 
 
 # ---------------------------------------------------------------------------
@@ -54,7 +55,7 @@ def _populate_critical_tree(root: Path, *, broken_file: str | None = None) -> No
         ">>>>>>> 0b6d673e7\n"
         "}\n"
     )
-    for relpath in moor_main._UPDATE_CRITICAL_FILES:
+    for relpath in update_cmd._UPDATE_CRITICAL_FILES:
         path = root / relpath
         path.parent.mkdir(parents=True, exist_ok=True)
         if relpath == broken_file:
@@ -69,14 +70,14 @@ def test_validate_critical_files_syntax_tolerates_missing_files(tmp_path):
     """A refactor may legitimately remove one of the critical files — the
     guard should skip missing files, not falsely flag the install as broken."""
     # Populate everything except moor_constants.py
-    for relpath in moor_main._UPDATE_CRITICAL_FILES:
+    for relpath in update_cmd._UPDATE_CRITICAL_FILES:
         if relpath == "moor_constants.py":
             continue
         path = tmp_path / relpath
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("# stub\n")
 
-    ok, failing_path, error = moor_main._validate_critical_files_syntax(tmp_path)
+    ok, failing_path, error = update_cmd._validate_critical_files_syntax(tmp_path)
 
     assert ok is True
     assert failing_path is None

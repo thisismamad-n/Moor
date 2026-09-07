@@ -126,7 +126,7 @@ semantics.
 
 ## Verification contract
 
-The implementation is covered with real temporary-Moor-home tests for:
+The implementation is covered with real temporary-moor-home tests for:
 
 - fixture-plugin discovery and config/state round trips;
 - canonical `settings` writes and legacy `config` read fallback;

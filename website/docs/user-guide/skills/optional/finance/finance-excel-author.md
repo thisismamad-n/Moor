@@ -15,7 +15,7 @@ Build auditable financial workbooks headless via openpyxl.
 | | |
 |---|---|
 | Source | Optional — install with `moor skills install official/finance/excel-author` |
-| Path | `optional-skills/finance/excel-author` |
+| Path | `optional-skills/finance\excel-author` |
 | Version | `1.0.0` |
 | Author | Anthropic (adapted by Moor inc.) |
 | License | Apache-2.0 |

@@ -125,7 +125,7 @@ class TestProviderModelIdsPreferred:
             return None
 
         with (
-            patch("moor_cli.main._prompt_api_key", return_value=("sk-kimi-test", False)),
+            patch("moor_cli.main_provider_setup._prompt_api_key", return_value=("sk-kimi-test", False)),
             patch("moor_cli.auth._prompt_model_selection", side_effect=fake_select),
             patch("moor_cli.config.get_env_value", return_value=""),
             patch("moor_cli.config.save_env_value"),

@@ -11,10 +11,8 @@ import sqlite3
 
 import pytest
 
-from moor_state import (
-    CompressionSessionClosedError,
-    SessionDB,
-)
+from moor_state import SessionDB
+from moor_state_errors import CompressionSessionClosedError
 
 
 @pytest.fixture()

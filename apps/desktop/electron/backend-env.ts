@@ -61,7 +61,7 @@ function appendUniquePathEntries(entries, { delimiter = path.delimiter } = {}) {
 }
 
 /**
- * Moor-managed Node.js directories, in preferred lookup order.
+ * moor-managed Node.js directories, in preferred lookup order.
  *
  * There are two on-disk layouts. `scripts/install.ps1` unpacks portable Node
  * straight into `%LOCALAPPDATA%\moor\node` (node.exe at the root, no `bin\`);

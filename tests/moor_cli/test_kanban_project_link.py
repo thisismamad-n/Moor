@@ -8,12 +8,13 @@ import os
 import pytest
 
 from moor_cli import kanban_db as kb
+from moor_cli import kanban_db_connect as kbc
 from moor_cli import projects_db as pdb
 
 
 @pytest.fixture
 def kanban_conn(tmp_path):
-    c = kb.connect(db_path=tmp_path / "kanban.db")
+    c = kbc.connect(db_path=tmp_path / "kanban.db")
     try:
         yield c
     finally:

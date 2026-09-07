@@ -21,7 +21,7 @@ use tokio::sync::Mutex;
 /// How the installer was invoked. Resolved once from the process args in
 /// `run()` and exposed to the frontend via `get_mode` so it can route to the
 /// install flow (first-run onboarding) or the update flow (driven by the
-/// desktop app handing off via `Moor-Setup.exe --update`).
+/// desktop app handing off via `moor-setup.exe --update`).
 ///
 /// Bare launch (double-click, first-run) => Install.
 /// `--update` (spawned by the desktop's "Update" button) => Update.

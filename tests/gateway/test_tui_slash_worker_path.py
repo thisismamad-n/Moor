@@ -3,7 +3,7 @@
 When the gateway is launched by the Desktop/Dashboard app it can inherit a
 minimal PATH (/usr/local/sbin:/usr/local/bin:/usr/bin:/bin:/sbin:/usr/sbin)
 that omits the Moor venv bin dir and ~/.local/bin. The spawned
-tui_gateway.slash_worker then cannot resolve Moor-managed CLIs such as
+tui_gateway.slash_worker then cannot resolve moor-managed CLIs such as
 browser-use/uvx via shutil.which, breaking browser_exec.
 
 `tui_gateway.server._prepend_tool_paths` prepends those two directories to

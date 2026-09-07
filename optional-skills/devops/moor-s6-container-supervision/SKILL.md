@@ -176,4 +176,4 @@ Check whether something is invoking `s6-svscanctl -t` or `/run/s6/basedir/bin/ha
 ## Related skills
 
 - `moor-agent-dev`: General moor-agent codebase navigation
-- `moor-tool-quirks`: Specific Moor-tool workarounds (sed/grep/etc.) — load when debugging the s6 stack's interaction with moor built-in tools.
+- `moor-tool-quirks`: Specific moor-tool workarounds (sed/grep/etc.) — load when debugging the s6 stack's interaction with moor built-in tools.

@@ -648,7 +648,7 @@ Moor automatically registers installed skills as **native Discord Application Co
 - Each skill becomes a Discord slash command (e.g., `/code-review`, `/ascii-art`)
 - Skills accept an optional `args` string parameter
 - Discord has a limit of 100 application commands per bot — if you have more skills than available slots, extra skills are skipped with a warning in the logs
-- Skills are registered during bot startup alongside built-in commands like `/model`, `/reset`, and `/background`
+- Skills are registered during bot startup alongside built-in commands like `/model`, `/reset`, and `/bg`
 
 No extra configuration is needed — any skill installed via `moor skills install` is automatically registered as a Discord slash command on the next gateway restart.
 
@@ -824,7 +824,7 @@ If the gateway log says Discord is connected and REST API checks work, but every
 No Discord access policy configured; inbound Discord messages will be denied by default.
 ```
 
-Moor 0.18 intentionally fails closed on externally reachable adapters. A Discord bot with no `DISCORD_ALLOWED_USERS`, no `DISCORD_ALLOWED_ROLES`, no `DISCORD_ALLOWED_CHANNELS`, and no explicit allow-all flag will connect successfully but deny inbound users before normal message handling.
+Hermes 0.18 intentionally fails closed on externally reachable adapters. A Discord bot with no `DISCORD_ALLOWED_USERS`, no `DISCORD_ALLOWED_ROLES`, no `DISCORD_ALLOWED_CHANNELS`, and no explicit allow-all flag will connect successfully but deny inbound users before normal message handling.
 
 ### "Privileged intents" / `PrivilegedIntentsRequired` error on startup
 

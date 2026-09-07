@@ -1,4 +1,4 @@
-"""Session <-> workspace grouping key (moor_state.workspace_key).
+"""Session <-> workspace grouping key (moor_state_sessions.workspace_key).
 
 The key is what `moor sessions list --workspace` groups/filters on. It is a
 coarse workspace identity derived from fields already recorded on sessions
@@ -6,7 +6,8 @@ coarse workspace identity derived from fields already recorded on sessions
 NOT part of the key.
 """
 
-from moor_state import workspace_key
+import moor_state_sessions
+from moor_state_sessions import workspace_key
 
 
 def test_repo_root_is_the_key_when_known():

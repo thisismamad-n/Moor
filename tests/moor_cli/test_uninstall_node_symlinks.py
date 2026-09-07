@@ -3,7 +3,7 @@
 Regression for #34536: the POSIX installer drops node/npm/npx symlinks in
 ~/.local/bin pointing into $MOOR_HOME/node and prepends ~/.local/bin to
 PATH, shadowing an existing nvm. Uninstall must remove those symlinks, but
-only when they still resolve into the Moor-managed node dir.
+only when they still resolve into the moor-managed node dir.
 """
 
 import os

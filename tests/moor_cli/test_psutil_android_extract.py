@@ -17,6 +17,7 @@ from moor_cli.psutil_android import (
     PsutilAndroidInstallError,
     prepare_patched_psutil_sdist,
 )
+from moor_cli import update_cmd
 
 
 def _add_dir(tf: tarfile.TarFile, name: str) -> None:
@@ -87,7 +88,7 @@ def test_install_psutil_android_compat_uses_patched_tree(tmp_path):
 
     with patch("urllib.request.urlretrieve", side_effect=fake_urlretrieve), \
          patch.object(moor_main, "_run_install_with_heartbeat", side_effect=fake_run_install):
-        moor_main._install_psutil_android_compat(
+        update_cmd._install_psutil_android_compat(
             ["uv", "pip"],
             env={"MOOR_TEST": "1"},
         )

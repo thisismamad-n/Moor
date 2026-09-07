@@ -60,8 +60,9 @@ agent:
     monkeypatch.setenv("MOOR_HOME", str(root))
 
     from moor_cli import kanban_db as kb
+    from moor_cli import kanban_db_dispatch as kbd
 
-    monkeypatch.setattr(kb, "_resolve_moor_argv", lambda: ["moor"])
+    monkeypatch.setattr(kbd, "_resolve_moor_argv", lambda: ["moor"])
 
     captured = {}
 
@@ -78,7 +79,7 @@ agent:
 
     workspace = tmp_path / "workspace"
     workspace.mkdir()
-    pid = kb._default_spawn(_make_task(kb, assignee="elias"), str(workspace))
+    pid = kbd._default_spawn(_make_task(kb, assignee="elias"), str(workspace))
 
     assert pid == 4242
     assert captured["env"]["MOOR_HOME"] == str(profile)
@@ -102,9 +103,10 @@ def test_default_spawn_model_override_survives_real_cli_parse(monkeypatch, tmp_p
     monkeypatch.setenv("MOOR_HOME", str(root))
 
     from moor_cli import kanban_db as kb
+    from moor_cli import kanban_db_dispatch as kbd
     from moor_cli._parser import build_top_level_parser
 
-    monkeypatch.setattr(kb, "_resolve_moor_argv", lambda: ["moor"])
+    monkeypatch.setattr(kbd, "_resolve_moor_argv", lambda: ["moor"])
     captured = {}
 
     class FakeProc:
@@ -120,7 +122,7 @@ def test_default_spawn_model_override_survives_real_cli_parse(monkeypatch, tmp_p
     workspace.mkdir()
     task = _make_task(kb, assignee="elias")
     task.model_override = "gpt-5.6-sol"
-    kb._default_spawn(task, str(workspace))
+    kbd._default_spawn(task, str(workspace))
 
     parser, _subparsers, _chat_parser = build_top_level_parser()
     # Profile selection is attached by the outer CLI bootstrap rather than
@@ -153,8 +155,9 @@ toolsets:
     monkeypatch.setenv("MOOR_HOME", str(root))
 
     from moor_cli import kanban_db as kb
+    from moor_cli import kanban_db_dispatch as kbd
 
-    resolved = kb._resolve_worker_cli_toolsets(str(profile))
+    resolved = kbd._resolve_worker_cli_toolsets(str(profile))
 
     assert resolved is not None
     assert "terminal" in resolved

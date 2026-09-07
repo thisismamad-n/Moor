@@ -7,11 +7,11 @@ edition = "2021"
 rust-version = "1.77"
 
 # Rename the output binary so the distributed artifact is literally
-# `Moor-Setup.exe` on disk — not `moor-bootstrap.exe`. Grandma sees
+# `moor-setup.exe` on disk — not `moor-bootstrap.exe`. Grandma sees
 # what we hand her, period. Tauri honors [[bin]] over [package].name
 # for the produced executable name.
 [[bin]]
-name = "Moor-Setup"
+name = "moor-setup"
 path = "src/main.rs"
 
 # The library target name MUST match the `withGlobalTauri` binding name that
@@ -61,6 +61,7 @@ uuid = { version = "1", features = ["v4"] }
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.59", features = [
     "Win32_Foundation",
+    "Win32_System_Diagnostics_ToolHelp",
     "Win32_System_Threading",
     "Win32_System_Console",
     "Win32_UI_WindowsAndMessaging",

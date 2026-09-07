@@ -4,7 +4,7 @@ subprocess environment like every other cua-driver spawn site.
 ``_CuaDriverSession._call_tool_via_cli()`` (the EAGAIN/silent-empty MCP
 fallback) invoked ``subprocess.run`` with no ``env=`` at all, so the
 third-party ``cua-driver`` binary inherited the full, unsanitized parent
-environment — including provider API keys and other Moor-managed
+environment — including provider API keys and other moor-managed
 secrets that ``_lifecycle_coro``'s primary MCP spawn already strips via
 ``_sanitize_subprocess_env(cua_driver_child_env())``.
 """
@@ -12,7 +12,7 @@ secrets that ``_lifecycle_coro``'s primary MCP spawn already strips via
 import json
 from unittest.mock import MagicMock
 
-from tools.computer_use.cua_backend import _CuaDriverSession
+from tools.computer_use.cua_backend_session import _CuaDriverSession
 
 
 def _make_session() -> _CuaDriverSession:
@@ -34,7 +34,7 @@ def test_cli_fallback_strips_provider_secret_from_subprocess_env(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "«redacted:sk-…»")
     monkeypatch.setenv("PATH", "/usr/bin:/bin")
     monkeypatch.setattr(
-        "tools.computer_use.cua_backend.resolve_cua_driver_cmd",
+        "tools.computer_use.cua_backend_driver.resolve_cua_driver_cmd",
         lambda: "/resolved/cua-driver",
     )
 

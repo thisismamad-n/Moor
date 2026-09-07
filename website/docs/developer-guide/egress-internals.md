@@ -22,7 +22,8 @@ moor_cli/proxy_cli.py               Wizard + slash command handlers.
                                        status,disable,config}`.  Wires the
                                        core module into argparse.
 
-moor_cli/main.py:_dispatch_egress   Top-level subparser dispatcher.
+moor_cli/subcommands/egress.py:_dispatch_egress
+                                       Top-level subparser dispatcher.
                                        dest='egress_command' (intentionally
                                        disjoint from the inbound OAuth
                                        `moor proxy` subparser, which uses

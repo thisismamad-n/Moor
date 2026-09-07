@@ -4,7 +4,8 @@ import os
 import pytest
 from moor_constants import set_moor_home_override, reset_moor_home_override
 
-from moor_cli.main import _read_ssh_session_token_file, cmd_dashboard
+from moor_cli.main import cmd_dashboard
+from moor_cli.main_dashboard import _read_ssh_session_token_file
 from moor_cli.subcommands.dashboard import build_dashboard_parser
 
 

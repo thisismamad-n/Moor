@@ -26,6 +26,7 @@ import types
 from unittest.mock import MagicMock, patch
 
 from moor_cli import main as cli_main
+from moor_cli import update_cmd
 
 
 class _FakeNoSuchProcess(Exception):

@@ -9,7 +9,8 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from moor_cli.web_server import MoaConfigPayload, MoaModelSlot, MoaPresetPayload, set_moa_models
+from moor_cli.web_models import MoaConfigPayload, MoaModelSlot, MoaPresetPayload
+from moor_cli.web_routers.models import set_moa_models
 
 
 def _base_payload(**overrides) -> MoaConfigPayload:
@@ -66,9 +67,9 @@ class TestSetMoaModelsPreservesUndeclaredKeys:
         payload = _base_payload()
 
         with (
-            patch("moor_cli.web_server.load_config", side_effect=fake_load_config),
-            patch("moor_cli.web_server.save_config", side_effect=fake_save_config),
-            patch("moor_cli.web_server._profile_scope"),
+            patch("moor_cli.config.load_config", side_effect=fake_load_config),
+            patch("moor_cli.config.save_config", side_effect=fake_save_config),
+            patch("moor_cli.web_server_profiles._profile_scope"),
         ):
             set_moa_models(payload)
 

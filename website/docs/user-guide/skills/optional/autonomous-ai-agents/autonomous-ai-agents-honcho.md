@@ -15,7 +15,7 @@ Configure and troubleshoot Honcho memory for Moor.
 | | |
 |---|---|
 | Source | Optional — install with `moor skills install official/autonomous-ai-agents/honcho` |
-| Path | `optional-skills/autonomous-ai-agents/honcho` |
+| Path | `optional-skills/autonomous-ai-agents\honcho` |
 | Version | `2.0.0` |
 | Author | Moor Agent |
 | License | MIT |

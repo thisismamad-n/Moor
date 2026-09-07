@@ -77,9 +77,8 @@ def test_background_and_main_agent_paths_call_refresh():
     """
     from pathlib import Path
 
-    source = (
-        Path(__file__).resolve().parent.parent.parent / "gateway" / "run.py"
-    ).read_text(encoding="utf-8")
+    _gw = Path(__file__).resolve().parent.parent.parent / "gateway"
+    source = "\n".join(p.read_text(encoding="utf-8") for p in sorted(_gw.glob("run*.py")))
     # The agent-construction site inside TurnRunner.run_sync (extracted from
     # the old _run_agent_inner closure) references the runner as
     # ``self._runner``; the background-agent site still uses bare ``self``.
@@ -110,11 +109,11 @@ def test_load_fallback_model_static_unchanged_contract(tmp_path, monkeypatch):
         "    model: deepseek-v4-flash\n"
         "fallback_model:\n"
         "  provider: moor\n"
-        "  model: Moor-4\n"
+        "  model: Hermes-4\n"
     )
 
     chain = GatewayRunner._load_fallback_model()
     assert chain == [
         {"provider": "deepseek", "model": "deepseek-v4-flash"},
-        {"provider": "moor", "model": "Moor-4"},
+        {"provider": "moor", "model": "Hermes-4"},
     ]

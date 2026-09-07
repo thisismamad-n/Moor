@@ -54,7 +54,7 @@ class TestBuildLearnPrompt:
         # author is always the literal Moor, never the host/OS identity (#52368).
         assert "author: always the literal value `moor`" in std
         assert "never fill it from the host" in std
-        # #2 Moor-tool framing names the wrapped tools, not shell utilities.
+        # #2 moor-tool framing names the wrapped tools, not shell utilities.
         for tool in ("read_file", "search_files", "patch", "write_file"):
             assert tool in std
         # #6 scripts/references/templates layout.

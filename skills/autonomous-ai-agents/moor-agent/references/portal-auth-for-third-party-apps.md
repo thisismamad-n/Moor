@@ -43,7 +43,7 @@ extends to other apps on the same machine.
 
 What Moor Agent has that *feels* like OAuth — `moor login --provider moor`
 opening a browser, user signs in, token lands in `~/.moor/auth.json` — is a
-**Moor-specific browser flow**. Under the hood it produces a credential
+**moor-specific browser flow**. Under the hood it produces a credential
 Moor uses as a bearer. It is not a public OAuth provider that Karakeep et al.
 can implement a client for, because it isn't an OAuth provider at all from the
 outside.

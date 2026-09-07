@@ -21,7 +21,7 @@ Extract transcripts from YouTube videos and convert them into useful formats.
 
 ## Setup
 
-Use `uv` so the dependency is installed into the same Moor-managed environment
+Use `uv` so the dependency is installed into the same moor-managed environment
 that runs the helper script:
 
 ```bash

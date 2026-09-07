@@ -326,7 +326,7 @@ export const de: Translations = {
     enableRuntime: "Aktivieren",
     forceReinstall: "Neuinstallation erzwingen (bestehenden Ordner zuerst löschen)",
     headline:
-      "Moor-Plugins entdecken, installieren, aktivieren und aktualisieren (entspricht `moor plugins`).",
+      "moor-plugins entdecken, installieren, aktivieren und aktualisieren (entspricht `moor plugins`).",
     identifierLabel: "Git-URL oder owner/repo",
     inactive: "inaktiv",
     installBtn: "Installieren",
@@ -469,6 +469,8 @@ export const de: Translations = {
     copyCliCommand: "CLI-Befehl kopieren (für extern / Fallback)",
     connect: "Verbinden",
     sessionExpires: "Sitzung läuft in {time} ab",
+    sessionExpiredNoError:
+      "Die Anmeldung ist abgelaufen, ohne den Anbieter zu erreichen. Das bedeutet meist, dass die Anmeldeseite im geöffneten Tab hängen geblieben ist (serverseitiges Problem) — schließen Sie die Anmeldung dort ab und klicken Sie dann auf Erneut versuchen. Wenn es weiterhin fehlschlägt, verwenden Sie stattdessen einen API-Schlüssel oder die CLI.",
     initiatingLogin: "Login-Ablauf wird gestartet…",
     exchangingCode: "Code wird gegen Tokens getauscht…",
     connectedClosing: "Verbunden! Wird geschlossen…",
@@ -504,9 +506,9 @@ export const de: Translations = {
       kicker: "Agentic Gamerscore",
       title: "Moor Achievements",
       subtitle:
-        "Sammelbare Moor-Abzeichen, verdient durch echten Sitzungsverlauf. Bekannte, noch nicht abgeschlossene Achievements werden als Entdeckt angezeigt; geheime Achievements bleiben verborgen, bis das erste passende Verhalten auftritt.",
+        "Sammelbare moor-abzeichen, verdient durch echten Sitzungsverlauf. Bekannte, noch nicht abgeschlossene Achievements werden als Entdeckt angezeigt; geheime Achievements bleiben verborgen, bis das erste passende Verhalten auftritt.",
       scan_subtitle:
-        "Moor-Sitzungsverlauf wird gescannt. Der erste Scan kann bei umfangreichem Verlauf 5–10 Sekunden dauern.",
+        "moor-sitzungsverlauf wird gescannt. Der erste Scan kann bei umfangreichem Verlauf 5–10 Sekunden dauern.",
     },
     actions: {
       rescan: "Neu scannen",

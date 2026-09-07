@@ -3,7 +3,8 @@
 from types import SimpleNamespace
 
 from agent.conversation_compression import recover_rotated_compression_session
-from moor_state import CompressionSessionClosedError, SessionDB
+from moor_state import SessionDB
+from moor_state_errors import CompressionSessionClosedError
 
 
 def test_recover_rotated_compression_session_reopens_legacy_orphan(tmp_path):

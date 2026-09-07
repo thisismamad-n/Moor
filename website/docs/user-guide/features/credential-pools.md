@@ -192,7 +192,7 @@ Moor automatically discovers credentials from multiple sources and seeds the poo
 
 Auto-seeded entries are updated on each pool load — if you remove an env var, its pool entry is automatically pruned. Manual entries (added via `moor auth add`) are never auto-pruned.
 
-Borrowed runtime secrets (for example env vars, Bitwarden/Vault/keyring/systemd references, and custom config values) are reference-only at the `auth.json` boundary. Moor can use the resolved value in memory for the current run, but it persists only metadata such as the source ref, label, status, request counters, and a non-reversible fingerprint. Manual entries and Moor-owned OAuth/device-code state keep the durable tokens they need to refresh.
+Borrowed runtime secrets (for example env vars, Bitwarden/Vault/keyring/systemd references, and custom config values) are reference-only at the `auth.json` boundary. Moor can use the resolved value in memory for the current run, but it persists only metadata such as the source ref, label, status, request counters, and a non-reversible fingerprint. Manual entries and moor-owned OAuth/device-code state keep the durable tokens they need to refresh.
 
 ## Delegation & Subagent Sharing
 
@@ -208,6 +208,8 @@ This means subagents benefit from the same rate-limit resilience as the parent, 
 
 The credential pool uses a threading lock for all state mutations (`select()`, `mark_exhausted_and_rotate()`, `try_refresh_current()`, `mark_used()`). This ensures safe concurrent access when the gateway handles multiple chat sessions simultaneously.
 
+Across processes (many subagents, a gateway plus a CLI, cron jobs), OAuth refreshes are serialized through a file lock on `auth.json`. When one shared OAuth grant expires under many concurrent processes, exactly one process performs the refresh; the others detect that the on-disk token no longer matches the one that failed and adopt it instead of rotating the single-use refresh token again. A process that loses the lock race keeps its entry healthy and retries — lock contention is never recorded as a credential failure.
+
 ## Architecture
 
 For the full data flow diagram, see [`docs/credential-pool-flow.excalidraw`](https://excalidraw.com/#json=2Ycqhqpi6f12E_3ITyiwh,c7u9jSt5BwrmiVzHGbm87g) in the repository.
@@ -217,7 +219,7 @@ The credential pool integrates at the provider resolution layer:
 1. **`agent/credential_pool.py`** — Pool manager: storage, selection, rotation, cooldowns
 2. **`moor_cli/auth_commands.py`** — CLI commands and interactive wizard
 3. **`moor_cli/runtime_provider.py`** — Pool-aware credential resolution
-4. **`run_agent.py`** — Error recovery: 429/402/401 → pool rotation → fallback
+4. **`agent/turn_api_error.py`** — Error recovery: 429/402/401 → pool rotation → fallback
 
 ## Storage
 
