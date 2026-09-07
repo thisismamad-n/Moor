@@ -213,6 +213,13 @@ LADDER: list[tuple[str, str]] = [
     (r"HERMESPENTEST", "MOORPENTEST"),               # pentest reflection marker
     (r"hermes%3A", "moor%3A"),                       # URL-encoded @hermes: in matrix doc examples
     (r"\bHermest\b", "Moort"),                       # inflected translation (hu: "a Hermest")
+    (r"hermesroom", "moorroom"),                     # API server room grant auth scheme
+    (r"HermesRoom", "MoorRoom"),
+    (r"hermeslocal", "moorlocal"),                   # desktop cert generation pass
+    (r"HermesLocal", "MoorLocal"),
+    (r"hermesctl", "moorctl"),                       # command fixture in FTS tests
+    (r"HermesCtl", "MoorCtl"),
+    (r"shermesa", "smoora"),                         # process token boundary test fixture
     # Catch-alls for any remaining prefix forms (prose, quotes, braces,
     # f-strings, regex literals) — everything legitimate above is already
     # handled; whatever is left is brand text.

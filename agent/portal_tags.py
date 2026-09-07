@@ -144,6 +144,6 @@ def moor_portal_tags(session_id: str | None = None) -> List[str]:
     return tags
 
 
-# Backwards compatibility alias for legacy plugins/callers
-nous_portal_tags = moor_portal_tags
+# LEGACY-PORTAL-TAGS: Backwards compatibility alias for legacy plugins/callers
+nous_portal_tags = moor_portal_tags  # LEGACY-PORTAL-TAGS: legacy alias
 

@@ -37,15 +37,8 @@ import fs from 'node:fs'
 import fsp from 'node:fs/promises'
 import https from 'node:https'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 
 import { hiddenWindowsChildOptions } from './windows-child-options'
-
-// ESM shim: __dirname is not available in ES modules. Derive it from
-// import.meta.url so the bundled electron-main.mjs (format: esm) works
-// correctly on fresh installs where this is the first code to run.
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
 
 const IS_WINDOWS = process.platform === 'win32'
 

@@ -26,6 +26,17 @@ CASES_PRISTINE = [
      "MoorProfile uses moor_portal_tags and MOOR_TIMEOUT"),
     ("the moor-agent project and moor-cli config",
      "the moor-agent project and moor-cli config"),
+    ("scheme == 'moorroom' and pass:moorlocal",
+     "scheme == 'moorroom' and pass:moorlocal"),
+    ("run ('moorctl', 'serve') with smoora",
+     "run ('moorctl', 'serve') with smoora"),
+]
+
+CASES_TRANSFORM = [
+    ("scheme == 'hermesroom' and pass:hermeslocal",
+     "scheme == 'moorroom' and pass:moorlocal"),
+    ("run ('hermesctl', 'serve') with shermesa",
+     "run ('moorctl', 'serve') with smoora"),
 ]
 
 CASES_PROTECTED = [
@@ -100,6 +111,13 @@ def main() -> int:
         else:
             fail += 1
             print(f"FAIL heal: {src!r}\n  got  {got!r}\n  want {want!r}")
+    for src, want in CASES_TRANSFORM:
+        got = rb.transform_text(src, None)
+        if got == want:
+            ok += 1
+        else:
+            fail += 1
+            print(f"FAIL transform: {src!r}\n  got  {got!r}\n  want {want!r}")
     src, want = FORK_CASE
     got = rb.transform_text(src, "acme/moor")
     if got == want:
