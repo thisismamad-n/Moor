@@ -504,6 +504,9 @@ contextBridge.exposeInMainWorld('moorDesktop', {
     apply: opts => ipcRenderer.invoke('moor:updates:apply', opts),
     getBranch: () => ipcRenderer.invoke('moor:updates:branch:get'),
     setBranch: name => ipcRenderer.invoke('moor:updates:branch:set', name),
+    getTokenConfig: () => ipcRenderer.invoke('moor:updates:token:get'),
+    setTokenConfig: (payload: { pat?: string; repo?: string }) => ipcRenderer.invoke('moor:updates:token:set', payload),
+    verifyToken: (customPat?: string) => ipcRenderer.invoke('moor:updates:token:verify', customPat),
     onProgress: callback => {
       const listener = (_event, payload) => callback(payload)
       ipcRenderer.on('moor:updates:progress', listener)

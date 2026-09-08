@@ -391,7 +391,7 @@ import {
 } from './update-count'
 import { waitForUpdateClearance } from './update-gate'
 import { readLiveUpdateMarker, updateHandoffConflict, writeUpdateMarker } from './update-marker'
-import { isOfficialSshRemote, OFFICIAL_REPO_HTTPS_URL } from './update-remote'
+import { isOfficialSshRemote, OFFICIAL_REPO_HTTPS_URL, resolveGitAuthArgs, resolveUpdateAuthHeaders } from './update-remote'
 import {
   collectRelaunchArgs,
   observeUpdaterHandoff,
@@ -2964,14 +2964,25 @@ function recentMoorLog() {
 
 // ─── Self-update (git-pull against the running backend's moor root) ──────
 
-function readDesktopUpdateConfig() {
+function readDesktopUpdateConfig(): { branch: string; pat?: string; repo?: string } {
   try {
     const parsed = JSON.parse(fs.readFileSync(DESKTOP_UPDATE_CONFIG_PATH, 'utf8'))
     const branch = typeof parsed?.branch === 'string' ? parsed.branch.trim() : ''
+    const envPat = (process.env.GITHUB_TOKEN || process.env.GH_TOKEN || '').trim()
+    const pat = typeof parsed?.pat === 'string' ? parsed.pat.trim() : envPat
+    const repo = typeof parsed?.repo === 'string' ? parsed.repo.trim() : ''
 
-    return { branch: branch || DEFAULT_UPDATE_BRANCH }
+    return {
+      branch: branch || DEFAULT_UPDATE_BRANCH,
+      pat: pat || undefined,
+      repo: repo || undefined
+    }
   } catch {
-    return { branch: DEFAULT_UPDATE_BRANCH }
+    const envPat = (process.env.GITHUB_TOKEN || process.env.GH_TOKEN || '').trim()
+    return {
+      branch: DEFAULT_UPDATE_BRANCH,
+      pat: envPat || undefined
+    }
   }
 }
 
@@ -2983,7 +2994,7 @@ function writeFileAtomic(targetPath, data, encoding?: BufferEncoding) {
   fs.renameSync(tmp, targetPath)
 }
 
-function writeDesktopUpdateConfig(config) {
+function writeDesktopUpdateConfig(config: { branch?: string; pat?: string; repo?: string }) {
   fs.mkdirSync(path.dirname(DESKTOP_UPDATE_CONFIG_PATH), { recursive: true })
   writeFileAtomic(DESKTOP_UPDATE_CONFIG_PATH, JSON.stringify(config, null, 2))
 }
@@ -3138,7 +3149,9 @@ async function resolveHealedBranch(updateRoot, branch) {
 
 async function checkUpdates() {
   const updateRoot = resolveUpdateRoot()
-  let { branch } = readDesktopUpdateConfig()
+  const config = readDesktopUpdateConfig()
+  const { pat, repo } = config
+  let branch = config.branch
   const gitDir = path.join(updateRoot, '.git')
 
   if (!directoryExists(gitDir)) {
@@ -3153,13 +3166,20 @@ async function checkUpdates() {
 
   branch = await resolveHealedBranch(updateRoot, branch)
   const originUrl = await getOriginUrl(updateRoot)
+  const authArgs = resolveGitAuthArgs(pat)
+  const authEnv = pat ? { GITHUB_TOKEN: pat, GH_TOKEN: pat } : {}
+  const targetRemoteUrl = repo
+    ? (repo.startsWith('http') || repo.startsWith('git@') ? repo : `https://github.com/${repo}.git`)
+    : (isOfficialSshRemote(originUrl) ? OFFICIAL_REPO_HTTPS_URL : originUrl)
 
-  if (isOfficialSshRemote(originUrl)) {
-    const git = args => runGit(args, { cwd: updateRoot }).then(r => r.stdout.trim())
+  const isOfficial = isOfficialSshRemote(originUrl) || Boolean(repo)
+
+  if (isOfficial) {
+    const git = args => runGit(args, { cwd: updateRoot, env: authEnv }).then(r => r.stdout.trim())
 
     const [currentSha, target, dirtyStr, currentBranch] = await Promise.all([
       git(['rev-parse', 'HEAD']),
-      runGit(['ls-remote', OFFICIAL_REPO_HTTPS_URL, `refs/heads/${branch}`], { cwd: updateRoot }),
+      runGit([...authArgs, 'ls-remote', targetRemoteUrl, `refs/heads/${branch}`], { cwd: updateRoot, env: authEnv }),
       git(['status', '--porcelain']),
       git(['rev-parse', '--abbrev-ref', 'HEAD'])
     ])
@@ -3167,11 +3187,19 @@ async function checkUpdates() {
     const targetSha = firstLine(target.stdout).split(/\s+/)[0] || ''
 
     if (target.code !== 0 || !targetSha) {
+      const errText = (target.stderr || '').toLowerCase()
+      const isAuthError =
+        errText.includes('401') ||
+        errText.includes('403') ||
+        errText.includes('authentication') ||
+        errText.includes('permission denied') ||
+        errText.includes('could not read username')
+
       return {
         supported: true,
         branch,
-        error: 'fetch-failed',
-        message: firstLine(target.stderr) || 'git ls-remote failed.',
+        error: isAuthError ? 'auth-required' : 'fetch-failed',
+        message: firstLine(target.stderr) || (isAuthError ? 'Private repository access requires a Personal Access Token (PAT).' : 'git ls-remote failed.'),
         moorRoot: updateRoot,
         fetchedAt: Date.now()
       }
@@ -3188,7 +3216,7 @@ async function checkUpdates() {
 
     const sshBehind = tipsEqual
       ? 0
-      : await fetchCompareBehindCount({ currentSha, originUrl: OFFICIAL_REPO_HTTPS_URL, targetSha })
+      : await fetchCompareBehindCount({ currentSha, originUrl: targetRemoteUrl, targetSha, pat })
 
     const upToDate = tipsEqual || sshBehind === 0
 
@@ -3213,20 +3241,28 @@ async function checkUpdates() {
   // check reports 'fetch-failed' forever — git never removes these itself.
   await clearStaleGitLocks(updateRoot)
 
-  const fetched = await runGit(['fetch', '--quiet', 'origin', branch], { cwd: updateRoot })
+  const fetched = await runGit([...authArgs, 'fetch', '--quiet', 'origin', branch], { cwd: updateRoot, env: authEnv })
 
   if (fetched.code !== 0) {
+    const errText = (fetched.stderr || '').toLowerCase()
+    const isAuthError =
+      errText.includes('401') ||
+      errText.includes('403') ||
+      errText.includes('authentication') ||
+      errText.includes('permission denied') ||
+      errText.includes('could not read username')
+
     return {
       supported: true,
       branch,
-      error: 'fetch-failed',
-      message: firstLine(fetched.stderr) || 'git fetch failed.',
+      error: isAuthError ? 'auth-required' : 'fetch-failed',
+      message: firstLine(fetched.stderr) || (isAuthError ? 'Private repository access requires a Personal Access Token (PAT).' : 'git fetch failed.'),
       moorRoot: updateRoot,
       fetchedAt: Date.now()
     }
   }
 
-  const git = args => runGit(args, { cwd: updateRoot }).then(r => r.stdout.trim())
+  const git = args => runGit(args, { cwd: updateRoot, env: authEnv }).then(r => r.stdout.trim())
 
   const [currentSha, targetSha, dirtyStr, currentBranch, shallowStr] = await Promise.all([
     git(['rev-parse', 'HEAD']),
@@ -3262,7 +3298,7 @@ async function checkUpdates() {
   // offline, rate-limited, or non-GitHub origins keep the honest null
   // ("update available", no fabricated number).
   if (behind === null) {
-    behind = await fetchCompareBehindCount({ currentSha, originUrl, targetSha })
+    behind = await fetchCompareBehindCount({ currentSha, originUrl, targetSha, pat })
   }
 
   // behind === null means "update available, exact count unknown" (shallow
@@ -3291,12 +3327,24 @@ async function checkUpdates() {
 // tested); this wrapper only does the bounded network call. Any failure —
 // offline, 4xx/5xx, rate limit, shape surprise — returns null so callers keep
 // the honest "update available, count unknown" state.
-async function fetchCompareBehindCount({ currentSha, originUrl, targetSha }) {
+async function fetchCompareBehindCount({
+  currentSha,
+  originUrl,
+  targetSha,
+  pat
+}: {
+  currentSha: string
+  originUrl: string
+  targetSha: string
+  pat?: string
+}) {
   const url = compareApiUrl({ currentSha, originUrl, targetSha })
 
   if (!url) {
     return null
   }
+
+  const authHeaders = resolveUpdateAuthHeaders(pat)
 
   try {
     const payload = await new Promise((resolve, reject) => {
@@ -3306,7 +3354,8 @@ async function fetchCompareBehindCount({ currentSha, originUrl, targetSha }) {
           headers: {
             Accept: 'application/vnd.github+json',
             // GitHub requires a UA on api.github.com; requests without one 403.
-            'User-Agent': 'moor-desktop-update-check'
+            'User-Agent': 'moor-desktop-update-check',
+            ...authHeaders
           },
           timeout: 10_000
         },
@@ -3338,6 +3387,83 @@ async function fetchCompareBehindCount({ currentSha, originUrl, targetSha }) {
   } catch {
     return null
   }
+}
+
+async function verifyGitHubToken(
+  token: string,
+  repo?: string
+): Promise<{ ok: boolean; message?: string; login?: string; repoAccess?: boolean }> {
+  return new Promise(resolve => {
+    const headers: Record<string, string> = {
+      Accept: 'application/vnd.github+json',
+      'User-Agent': 'moor-desktop-update-check',
+      Authorization: `Bearer ${token}`
+    }
+
+    const req = https.get('https://api.github.com/user', { headers, timeout: 8000 }, res => {
+      const chunks: Buffer[] = []
+      res.on('data', chunk => chunks.push(chunk))
+      res.on('end', () => {
+        if (res.statusCode === 200) {
+          try {
+            const data = JSON.parse(Buffer.concat(chunks).toString('utf8'))
+            const login = (data.login as string) || 'authenticated-user'
+
+            if (repo && repo.includes('/')) {
+              const cleanRepo = repo.replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '')
+              const repoReq = https.get(`https://api.github.com/repos/${cleanRepo}`, { headers, timeout: 8000 }, rRes => {
+                if (rRes.statusCode === 200) {
+                  resolve({
+                    ok: true,
+                    login,
+                    repoAccess: true,
+                    message: `Connected as @${login} with access to ${cleanRepo}`
+                  })
+                } else if (rRes.statusCode === 404) {
+                  resolve({
+                    ok: false,
+                    login,
+                    repoAccess: false,
+                    message: `Connected as @${login}, but "${cleanRepo}" was not found or lacks token permissions.`
+                  })
+                } else {
+                  resolve({
+                    ok: false,
+                    login,
+                    repoAccess: false,
+                    message: `Token verified for @${login}, but repo check returned HTTP ${rRes.statusCode}.`
+                  })
+                }
+              })
+              repoReq.on('error', () => resolve({ ok: true, login, message: `Connected as @${login}` }))
+              repoReq.on('timeout', () => {
+                repoReq.destroy()
+                resolve({ ok: true, login, message: `Connected as @${login}` })
+              })
+            } else {
+              resolve({ ok: true, login, message: `Successfully connected to GitHub as @${login}` })
+            }
+          } catch {
+            resolve({ ok: true, message: 'Valid token accepted by GitHub.' })
+          }
+        } else if (res.statusCode === 401) {
+          resolve({ ok: false, message: 'Invalid or expired GitHub Personal Access Token (401 Unauthorized).' })
+        } else if (res.statusCode === 403) {
+          resolve({ ok: false, message: 'GitHub API rate limit exceeded or access forbidden (403 Forbidden).' })
+        } else {
+          resolve({ ok: false, message: `GitHub API returned HTTP ${res.statusCode}` })
+        }
+      })
+    })
+
+    req.on('timeout', () => {
+      req.destroy()
+      resolve({ ok: false, message: 'Connection to GitHub API timed out.' })
+    })
+    req.on('error', err => {
+      resolve({ ok: false, message: `Network error: ${err.message}` })
+    })
+  })
 }
 
 async function readCommitLog(cwd, branch, isShallow) {
@@ -17575,10 +17701,53 @@ ipcMain.handle('moor:updates:apply', async (_event, payload) =>
 ipcMain.handle('moor:updates:branch:get', async () => readDesktopUpdateConfig())
 
 ipcMain.handle('moor:updates:branch:set', async (_event, name) => {
+  const current = readDesktopUpdateConfig()
   const branch = typeof name === 'string' && name.trim() ? name.trim() : DEFAULT_UPDATE_BRANCH
-  writeDesktopUpdateConfig({ branch })
+  const updated = { ...current, branch }
+  writeDesktopUpdateConfig(updated)
 
   return { branch }
+})
+
+ipcMain.handle('moor:updates:token:get', async () => {
+  const cfg = readDesktopUpdateConfig()
+  return {
+    branch: cfg.branch,
+    repo: cfg.repo || '',
+    hasPat: Boolean(cfg.pat),
+    maskedPat: cfg.pat ? (cfg.pat.length > 8 ? `...${cfg.pat.slice(-4)}` : '••••••••') : ''
+  }
+})
+
+ipcMain.handle('moor:updates:token:set', async (_event, payload: { pat?: string; repo?: string }) => {
+  const current = readDesktopUpdateConfig()
+  const updated = {
+    ...current,
+    pat: typeof payload?.pat === 'string' ? payload.pat.trim() : current.pat,
+    repo: typeof payload?.repo === 'string' ? payload.repo.trim() : current.repo
+  }
+  if (payload?.pat === '') {
+    delete updated.pat
+  }
+  if (payload?.repo === '') {
+    delete updated.repo
+  }
+  writeDesktopUpdateConfig(updated)
+  return {
+    branch: updated.branch,
+    repo: updated.repo || '',
+    hasPat: Boolean(updated.pat),
+    maskedPat: updated.pat ? (updated.pat.length > 8 ? `...${updated.pat.slice(-4)}` : '••••••••') : ''
+  }
+})
+
+ipcMain.handle('moor:updates:token:verify', async (_event, customPat?: string) => {
+  const cfg = readDesktopUpdateConfig()
+  const tokenToTest = typeof customPat === 'string' && customPat.trim() ? customPat.trim() : (cfg.pat || '')
+  if (!tokenToTest) {
+    return { ok: false, message: 'No Personal Access Token provided.' }
+  }
+  return await verifyGitHubToken(tokenToTest, cfg.repo)
 })
 
 // Resolve the canonical Moor version (the one `release.py` bumps in

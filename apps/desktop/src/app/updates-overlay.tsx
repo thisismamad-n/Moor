@@ -17,13 +17,16 @@ import { Progress } from '@/components/ui/progress'
 import type { DesktopUpdateBlocker, DesktopUpdateCommit, DesktopUpdateStage, DesktopUpdateStatus } from '@/global'
 import { useI18n } from '@/i18n'
 import { buildCommitChangelog, type CommitGroup } from '@/lib/commit-changelog'
-import { AlertCircle, Check, Copy, Terminal } from '@/lib/icons'
+import { AlertCircle, Check, Copy, KeyRound, Terminal } from '@/lib/icons'
 import { resolveUpdateCopy, type UpdateTarget } from '@/lib/update-copy'
 import { cn } from '@/lib/utils'
 import {
   $backendUpdateApply,
   $backendUpdateChecking,
   $backendUpdateStatus,
+  $moorTokenConfig,
+  $moorTokenVerifying,
+  $moorTokenVerifyResult,
   $updateApply,
   $updateChecking,
   $updateOverlayOpen,
@@ -33,9 +36,12 @@ import {
   applyUpdates,
   checkBackendUpdates,
   checkUpdates,
+  loadMoorTokenConfig,
   resetUpdateApplyState,
+  saveMoorTokenConfig,
   setUpdateOverlayOpen,
-  type UpdateApplyState
+  type UpdateApplyState,
+  verifyMoorToken
 } from '@/store/updates'
 
 function totalItems(groups: readonly CommitGroup[]) {
@@ -68,6 +74,7 @@ export function UpdatesOverlay() {
 
   const behind = status?.behind ?? 0
   const updateAvailable = status?.updateAvailable || behind > 0
+  const [showTokenConfig, setShowTokenConfig] = useState(false)
 
   const phase: 'idle' | 'applying' | 'manual' | 'guiSkew' | 'error' =
     apply.stage === 'manual'
@@ -94,6 +101,9 @@ export function UpdatesOverlay() {
       (apply.stage === 'error' || apply.stage === 'restart' || apply.stage === 'manual' || apply.stage === 'guiSkew')
     ) {
       resetUpdateApplyState()
+    }
+    if (!next) {
+      setShowTokenConfig(false)
     }
   }
 
@@ -131,21 +141,139 @@ export function UpdatesOverlay() {
           <ErrorView message={apply.message} onDismiss={() => handleClose(false)} onRetry={handleInstall} />
         ) : null}
 
-        {phase === 'idle' && (
+        {phase === 'idle' && (showTokenConfig || (!isBackend && status?.error === 'auth-required')) ? (
+          <TokenAuthView
+            message={status?.error === 'auth-required' ? status?.message : undefined}
+            onDone={() => {
+              setShowTokenConfig(false)
+              void check()
+            }}
+          />
+        ) : phase === 'idle' ? (
           <IdleView
             behind={behind}
             checking={checking}
             commits={status?.commits ?? []}
             onInstall={handleInstall}
             onLater={() => handleClose(false)}
+            onOpenTokenConfig={() => setShowTokenConfig(true)}
             onRetryCheck={() => void check()}
             status={status}
             target={target}
             updateAvailable={updateAvailable}
           />
-        )}
+        ) : null}
       </DialogContent>
     </Dialog>
+  )
+}
+
+function TokenAuthView({
+  onDone,
+  message
+}: {
+  onDone: () => void
+  message?: string
+}) {
+  const tokenConfig = useStore($moorTokenConfig)
+  const verifying = useStore($moorTokenVerifying)
+  const verifyResult = useStore($moorTokenVerifyResult)
+
+  const [patInput, setPatInput] = useState('')
+  const [repoInput, setRepoInput] = useState(tokenConfig.repo || 'moor-inc/moor')
+  const [savedSuccess, setSavedSuccess] = useState(false)
+
+  useEffect(() => {
+    void loadMoorTokenConfig()
+  }, [])
+
+  const handleSaveAndVerify = async () => {
+    setSavedSuccess(false)
+    const patToSave = patInput.trim() || undefined
+    const repoToSave = repoInput.trim() || undefined
+    await saveMoorTokenConfig({ pat: patToSave, repo: repoToSave })
+    if (patToSave) {
+      const res = await verifyMoorToken(patToSave)
+      if (res.ok) {
+        setSavedSuccess(true)
+        setTimeout(() => {
+          onDone()
+        }, 1200)
+      }
+    } else {
+      setSavedSuccess(true)
+      setTimeout(() => {
+        onDone()
+      }, 800)
+    }
+  }
+
+  return (
+    <div className="grid gap-4 px-6 pb-6 pt-7">
+      <div className="flex flex-col items-center gap-2 text-center">
+        <BrandMark className="size-14" />
+        <DialogTitle className="text-lg font-semibold tracking-tight">Moor Repository Access</DialogTitle>
+        <DialogDescription className="text-xs text-muted-foreground">
+          {message || 'Moor is hosted in a private repository. Configure a GitHub Personal Access Token (PAT) with repository read scope.'}
+        </DialogDescription>
+      </div>
+
+      <div className="space-y-3 rounded-lg border border-border/60 bg-muted/30 p-3 text-xs">
+        <div>
+          <label className="mb-1 block font-medium text-foreground">Personal Access Token (PAT)</label>
+          <input
+            className="w-full rounded-md border border-input bg-background px-3 py-1.5 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            onChange={e => setPatInput(e.target.value)}
+            placeholder={tokenConfig.hasPat ? `Configured (${tokenConfig.maskedPat})` : 'ghp_... or github_pat_...'}
+            type="password"
+            value={patInput}
+          />
+          <p className="mt-1 text-[0.6875rem] text-muted-foreground">
+            Fine-grained or classic token with repo contents read access.
+          </p>
+        </div>
+
+        <div>
+          <label className="mb-1 block font-medium text-foreground">Repository Target</label>
+          <input
+            className="w-full rounded-md border border-input bg-background px-3 py-1.5 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            onChange={e => setRepoInput(e.target.value)}
+            placeholder="moor-inc/moor"
+            value={repoInput}
+          />
+        </div>
+
+        {verifyResult && (
+          <div
+            className={cn(
+              'rounded-md px-3 py-2 text-xs',
+              verifyResult.ok
+                ? 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                : 'border border-destructive/30 bg-destructive/10 text-destructive'
+            )}
+          >
+            {verifyResult.message}
+          </div>
+        )}
+
+        {savedSuccess && (
+          <div className="flex items-center gap-1.5 text-xs text-emerald-400">
+            <Check className="size-3.5" />
+            <span>Token verified and saved successfully!</span>
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center justify-end gap-2 pt-1">
+        <Button onClick={onDone} size="sm" variant="ghost">
+          Cancel
+        </Button>
+        <Button disabled={verifying} onClick={handleSaveAndVerify} size="sm">
+          {verifying ? <Loader className="mr-1.5 size-3" /> : null}
+          {verifying ? 'Verifying…' : 'Save & Verify'}
+        </Button>
+      </div>
+    </div>
   )
 }
 
@@ -155,6 +283,7 @@ function IdleView({
   commits,
   onInstall,
   onLater,
+  onOpenTokenConfig,
   onRetryCheck,
   status,
   target,
@@ -165,6 +294,7 @@ function IdleView({
   commits: readonly DesktopUpdateCommit[]
   onInstall: () => void
   onLater: () => void
+  onOpenTokenConfig: () => void
   onRetryCheck: () => void
   status: DesktopUpdateStatus | null
   target: UpdateTarget
@@ -210,11 +340,17 @@ function IdleView({
     return (
       <CenteredStatus
         action={
-          <Button disabled={checking} onClick={onRetryCheck} size="sm">
-            {u.tryAgain}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button disabled={checking} onClick={onRetryCheck} size="sm">
+              {u.tryAgain}
+            </Button>
+            <Button onClick={onOpenTokenConfig} size="sm" variant="outline">
+              <KeyRound className="mr-1.5 size-3" />
+              Configure PAT
+            </Button>
+          </div>
         }
-        body={u.connectionRetry}
+        body={status.message || u.connectionRetry}
         icon={<ErrorIcon />}
         title={u.checkFailedTitle}
       />
@@ -223,11 +359,24 @@ function IdleView({
 
   if (!updateAvailable) {
     return (
-      <CenteredStatus
-        body={target === 'backend' ? u.latestBodyBackend : u.latestBody}
-        icon={<BrandMark className="size-12" />}
-        title={u.allSetTitle}
-      />
+      <div className="flex flex-col items-center">
+        <CenteredStatus
+          body={target === 'backend' ? u.latestBodyBackend : u.latestBody}
+          icon={<BrandMark className="size-12" />}
+          title={u.allSetTitle}
+        />
+        <div className="pb-4">
+          <Button
+            className="text-[0.6875rem] text-muted-foreground hover:text-foreground"
+            onClick={onOpenTokenConfig}
+            size="xs"
+            variant="ghost"
+          >
+            <KeyRound className="mr-1.5 size-3" />
+            Moor Repository & PAT
+          </Button>
+        </div>
+      </div>
     )
   }
 
@@ -270,9 +419,21 @@ function IdleView({
         <Button className="font-semibold" onClick={onInstall} size="lg">
           {u.updateNow}
         </Button>
-        <Button className="font-medium" onClick={onLater} type="button" variant="text">
-          {u.maybeLater}
-        </Button>
+        <div className="flex items-center justify-between">
+          <Button
+            className="text-[0.6875rem] text-muted-foreground hover:text-foreground"
+            onClick={onOpenTokenConfig}
+            size="xs"
+            type="button"
+            variant="ghost"
+          >
+            <KeyRound className="mr-1 size-3" />
+            Repository Access (PAT)
+          </Button>
+          <Button className="font-medium" onClick={onLater} type="button" variant="text">
+            {u.maybeLater}
+          </Button>
+        </div>
       </div>
 
       {remaining > 0 && <p className="text-center text-xs text-muted-foreground">{u.moreChanges(remaining)}</p>}

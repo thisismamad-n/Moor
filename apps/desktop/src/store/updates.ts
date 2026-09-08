@@ -74,6 +74,71 @@ export const resetUpdateApplyState = () => {
   $backendUpdateApply.set(IDLE)
 }
 
+export interface MoorTokenConfigState {
+  branch: string
+  repo: string
+  hasPat: boolean
+  maskedPat: string
+}
+
+export const $moorTokenConfig = atom<MoorTokenConfigState>({
+  branch: 'main',
+  repo: '',
+  hasPat: false,
+  maskedPat: ''
+})
+
+export const $moorTokenVerifying = atom<boolean>(false)
+export const $moorTokenVerifyResult = atom<{ ok: boolean; message?: string } | null>(null)
+
+export async function loadMoorTokenConfig(): Promise<MoorTokenConfigState | null> {
+  const bridge = window.moorDesktop?.updates
+  if (!bridge?.getTokenConfig) {
+    return null
+  }
+  try {
+    const config = await bridge.getTokenConfig()
+    $moorTokenConfig.set(config)
+    return config
+  } catch {
+    return null
+  }
+}
+
+export async function saveMoorTokenConfig(cfg: { pat?: string; repo?: string }): Promise<MoorTokenConfigState | null> {
+  const bridge = window.moorDesktop?.updates
+  if (!bridge?.setTokenConfig) {
+    return null
+  }
+  try {
+    const updated = await bridge.setTokenConfig(cfg)
+    $moorTokenConfig.set(updated)
+    void checkUpdates()
+    return updated
+  } catch {
+    return null
+  }
+}
+
+export async function verifyMoorToken(customPat?: string): Promise<{ ok: boolean; message?: string }> {
+  const bridge = window.moorDesktop?.updates
+  if (!bridge?.verifyToken) {
+    return { ok: false, message: 'Bridge unavailable' }
+  }
+  $moorTokenVerifying.set(true)
+  try {
+    const res = await bridge.verifyToken(customPat)
+    $moorTokenVerifyResult.set(res)
+    return res
+  } catch (err) {
+    const res = { ok: false, message: err instanceof Error ? err.message : String(err) }
+    $moorTokenVerifyResult.set(res)
+    return res
+  } finally {
+    $moorTokenVerifying.set(false)
+  }
+}
+
 const UPDATE_TOAST_ID = 'desktop-update-available'
 // Time-based snooze instead of per-sha dismissal: this repo lands ~100 commits
 // a day, so a "don't show this exact sha again" guard re-popped the toast on

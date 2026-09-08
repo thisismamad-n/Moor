@@ -448,3 +448,184 @@ npm install --ignore-scripts
 second run 0 rewrites/0 renames → `--verify` all gates green (0 unexpected
 residuals, packaging OK, BOM parity OK, compileall OK, imports OK) →
 `moor --version` works.
+
+---
+
+## 11. Desktop visual brand system & private repository PAT update architecture
+
+Moor Desktop is an independent, executive workstation and must never resemble a generic Hermes or VS Code clone. To ensure downstream merges and the rebrand pipeline do not degrade or revert Moor's visual and update architecture, the following invariants are canonized as part of the official Moor brand.
+
+### A. The Moor Visual Brand System
+
+#### 1. Cyber-Obsidian & Electric Cobalt Palette
+The Moor interface communicates computational authority and technical precision. The design system enforces high-contrast brutalist surfaces, architectural hairlines, and vivid cobalt/cyan energy states.
+
+| Token Role | Dark Theme (`moor` / `cyber-obsidian`) | Light Theme (`titanium-paper`) | Purpose & Application |
+|---|---|---|---|
+| **Background / Canvas** | `#090b10` | `#f8fafc` | Deep cosmic obsidian base; ultra-clean titanium canvas |
+| **Surface / Glass Elevation** | `#11141c` | `#ffffff` | Elevated panels, sidebars, context headers, modals |
+| **Card Base** | `#161b26` | `#f1f5f9` | Interactive cards, code blocks, preset cards, status items |
+| **Border / Hairline** | `#1e2532` | `#e2e8f0` | Subtle structural dividers (0.5px - 1px) |
+| **Border Active / Focus** | `#283344` | `#cbd5e1` | Hovered or focused containers |
+| **Brand Primary** | `#2563eb` | `#1d4ed8` | Electric cobalt; primary buttons, active indicators |
+| **Brand Glow / Accent** | `#3b82f6` | `#2563eb` | Hover highlights, active tab underline, focus rings |
+| **Ion Accent (Cyan)** | `#06b6d4` | `#0891b2` | Sensory antennae, AI status nodes, latency indicators |
+| **Text Primary** | `#f1f5f9` | `#0f172a` | High-contrast readability for headers and body text |
+| **Text Secondary** | `#94a3b8` | `#475569` | Metadata, chips, secondary labels |
+| **Text Muted** | `#64748b` | `#94a3b8` | Hotkey badges, inactive tabs, timestamps |
+| **Status Warning / Amber** | `#f59e0b` | `#d97706` | PAT authentication alerts, pending audits |
+| **Status Success / Emerald** | `#10b981` | `#059669` | Validated credentials, ready state, passing tests |
+| **Status Error / Crimson** | `#ef4444` | `#dc2626` | Test failures, network errors, expired tokens |
+
+#### 2. Moor Core Brand Emblem (`MoorAntIcon`)
+All legacy anime character artwork and plain rounded squircles are replaced by the official Moor Ant Emblem (`apps/desktop/src/components/brand-mark.tsx`).
+- **Vector Geometry**:
+  - Head: Angular cybernetic crest with a high-contrast eye slit.
+  - Antennae: Forward-reaching dual sensory arcs angled at 38° with glowing ionic terminals (`#06b6d4`).
+  - Thorax: Segmented hexagonal armor chassis with high-stress structural joints.
+  - Abdomen: Deep tapered hydraulic shell with dual cybernetic energy conduits.
+  - Center Node: Glowing cobalt-cyan circular core (`#06b6d4` / `#38bdf8`) with radial energy gradients.
+  - Legs: Articulated three-joint stance lines projecting stability and speed.
+- **Rendering Modes**:
+  - Dark Mode: Obsidian body paths with Electric Cobalt borders, hyper-cyan antennae accents, and cobalt core glow.
+  - Light Mode: Deep midnight-slate geometry with crisp cobalt stroke accents.
+
+#### 3. Global Orientation Header ("Never Get Lost")
+Mounted at the top of the desktop workstation shell (`apps/desktop/src/app/shell/global-orientation-header.tsx`), providing persistent context regardless of scroll position or sub-pane navigation:
+- **Active Session Lineage**: Renders active conversation title, ancestor lineage indicator, and session lock state.
+- **Project CWD Chip**: Shows active workspace directory with 1-click clipboard copy (`Ctrl+Click` opens in OS file explorer) and toast feedback.
+- **Connection Mode & Latency Pill**: Real-time indicator displaying `Local` (green), `Remote` (cyan), or `Cloud` (purple) with live ping latency (e.g. `24ms`).
+- **Active Model Badge**: Crisp pill showing the resolved LLM (e.g., `anthropic/claude-3-7-sonnet`, `deepseek-r1`).
+- **Execution State**: Dynamic indicator showing `READY` or pulsing `EXEC` during active agent turns.
+- **Stable Tab Navigation `[1]`-`[5]`**: Stable top tabs (`[1] Chat`, `[2] Skills`, `[3] Artifacts`, `[4] Messaging`, `[5] Terminal`) that never shift positions, featuring live status badges (e.g. pending audit count, unread count) and keyboard hotkey indicators `[1]`-`[5]`.
+
+#### 4. 1-Click Quick-Start Preset Cards
+Empty chat thread states (`apps/desktop/src/components/chat/intro.tsx`) display instant actionable preset cards:
+- **Codebase Deep Inspection** (`/inspect`): Analyzes system architecture, file dependencies, and project invariants.
+- **Security & Quality Audit** (`/audit`): Audits security vulnerabilities, lint issues, dead code, and code health.
+- **Test Suite Runner** (`run tests`): Triggers project test suites and reports structured failures.
+- **Autonomous Goal Runner** (`/goal`): Initiates multi-step, self-verifying autonomous task execution.
+
+#### 5. Keyboard Shortcuts Cheatsheet Modal (`?`)
+Global hotkey listener modal (`apps/desktop/src/components/keyboard-shortcuts-modal.tsx`):
+- Pressing `?` anywhere in the app (outside active text inputs) opens the cheatsheet modal.
+- Tab hotkeys `1` - `5` switch between workstation tabs instantly.
+- Execution shortcuts (`Ctrl+Enter` to run, `Ctrl+N` for new session, `Ctrl+Shift+A` to focus agent, `Escape` to close).
+
+#### 6. Strict Zero-Emoji Directive
+Emojis are strictly banned across the Moor desktop interface.
+- Never use emojis in UI text, status indicators, tabs, buttons, or toast notifications.
+- All icons must use clean, scalable Lucide SVG components (e.g., `<Radio />`, `<Terminal />`, `<Layers />`, `<Shield />`, `<Key />`).
+
+---
+
+### B. Private Repository & Personal Access Token (PAT) Update Architecture
+
+#### 1. Why Upstream Update Checks Fail
+Upstream Hermes assumes public GitHub repository access (`NousResearch/hermes-agent`). Because Moor is maintained in a private repository (`github.com/moor-inc/moor` or internal git remote):
+- Anonymous `git ls-remote` or `git fetch` operations fail with `401 Unauthorized`, `403 Forbidden`, or attempt to spawn interactive terminal SSH passphrase prompts that freeze desktop background workers.
+- Anonymous requests to the GitHub Compare API fail with `404 Not Found` or `401 Bad credentials`.
+
+#### 2. PAT Storage & Configuration Schema
+- **Storage File**: `%APPDATA%\Moor\updates.json` (Windows), `~/.config/Moor/updates.json` (Linux), `~/Library/Application Support/Moor/updates.json` (macOS).
+- **JSON Schema**:
+  ```json
+  {
+    "branch": "main",
+    "pat": "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "repo": "moor-inc/moor"
+  }
+  ```
+- **Environment Fallback**: If no token is saved in `updates.json`, the update engine falls back to `GITHUB_TOKEN`, `GH_TOKEN`, or `MOOR_GITHUB_TOKEN` from `process.env`.
+
+#### 3. Non-Interactive Git CLI Authentication
+To authenticate git subprocesses without modifying local git credentials or writing tokens to `.git/config`:
+- The Electron main process injects git CLI arguments via `-c http.extraHeader="AUTHORIZATION: bearer <token>"`:
+  ```typescript
+  // apps/desktop/electron/update-remote.ts
+  export function resolveGitAuthArgs(pat?: string): string[] {
+    if (!pat?.trim()) return [];
+    return ['-c', `http.extraHeader=AUTHORIZATION: bearer ${pat.trim()}`];
+  }
+  ```
+- Commands run with `GITHUB_TOKEN` and `GH_TOKEN` populated in `process.env`, and with `GIT_TERMINAL_PROMPT=0` to block GUI credential dialogs:
+  ```typescript
+  // apps/desktop/electron/main.ts
+  const authArgs = resolveGitAuthArgs(tokenConfig.pat);
+  await execFileAsync('git', [...authArgs, 'fetch', '--quiet', remoteName, branch], { env: authEnv });
+  ```
+
+#### 4. GitHub Compare API Authentication
+When comparing commits via the REST API (`api.github.com/repos/{owner}/{repo}/compare/{base}...{head}`):
+- Electron injects `Authorization: Bearer <token>` in the HTTP headers:
+  ```typescript
+  // apps/desktop/electron/update-remote.ts
+  export function resolveUpdateAuthHeaders(pat?: string): Record<string, string> {
+    const headers: Record<string, string> = {
+      'User-Agent': 'Moor-Desktop-Updater/1.0',
+      'Accept': 'application/vnd.github.v3+json',
+    };
+    if (pat?.trim()) {
+      headers['Authorization'] = `Bearer ${pat.trim()}`;
+    }
+    return headers;
+  }
+  ```
+
+#### 5. In-App Token Configuration & Live Verification
+- **Updates Overlay** (`apps/desktop/src/app/updates-overlay.tsx`):
+  - When updates fail with `auth-required`, the overlay transitions to `TokenAuthView` prompting for a Personal Access Token with `repo` scope.
+  - Provides a 1-click **Verify Access** button that queries `GET https://api.github.com/user` and `GET https://api.github.com/repos/{owner}/{repo}` to confirm token validity and scope before saving.
+- **Settings → About** (`apps/desktop/src/app/settings/about-settings.tsx`):
+  - Houses the permanent `MoorPatConfigCard` where users can view masked token status, test connection, update their PAT, or configure custom repository URLs.
+- **Status Bar Integration** (`apps/desktop/src/app/shell/hooks/use-statusbar-items.tsx`):
+  - Displays `Moor: PAT Needed` with an amber warning badge when private repository access requires authentication.
+
+---
+
+### C. Canonized Desktop Files & Merge Preservation Matrix
+
+When merging upstream changes or resolving conflicts in the desktop subsystem, preserve Moor's visual and update architecture across the following canonical files:
+
+| Area | Canonical Moor Files | Invariant to Protect |
+|---|---|---|
+| **Update Architecture** | `apps/desktop/electron/update-remote.ts`<br>`apps/desktop/electron/update-count.ts`<br>`apps/desktop/electron/main.ts`<br>`apps/desktop/electron/preload.ts` | Moor canonical repo (`moor-inc/moor`), PAT injection via `resolveGitAuthArgs` and `resolveUpdateAuthHeaders`, IPC channels `moor:updates:token:*`. |
+| **Brand Identity** | `apps/desktop/src/components/brand-mark.tsx`<br>`apps/desktop/assets/` | Moor Ant emblem vector and asset branding (`icon.ico`, `icon.png`, `logo.png`). Never revert to anime or generic squircle icons. |
+| **Color System** | `apps/desktop/src/themes/presets.ts`<br>`apps/desktop/src/styles.css` | Cyber-Obsidian & Electric Cobalt theme palette tokens. Never revert to plain VS Code theme colors. |
+| **Orientation & Workflow** | `apps/desktop/src/app/shell/global-orientation-header.tsx`<br>`apps/desktop/src/app/contrib/controller.tsx` | Global orientation header with active session, project CWD, connection mode pill, and stable `[1]`-`[5]` tab navigation with live badges. |
+| **Quick Start** | `apps/desktop/src/components/chat/intro.tsx` | 1-Click Quick-Start Preset Cards (`/inspect`, `/audit`, `run tests`, `/goal`). |
+| **Shortcuts** | `apps/desktop/src/components/keyboard-shortcuts-modal.tsx` | Interactive `?` hotkey cheatsheet modal. |
+| **Token Management** | `apps/desktop/src/app/updates-overlay.tsx`<br>`apps/desktop/src/app/settings/about-settings.tsx`<br>`apps/desktop/src/store/updates.ts` | PAT token entry, private repo URL override, and live PAT verification. |
+
+---
+
+### D. Upstream Merge Conflict Resolution Guide
+
+Whenever merging changes from upstream Hermes (`NousResearch/hermes-agent`):
+
+1. **Protect Electron Main & Update Logic**:
+   - Inspect diffs in `apps/desktop/electron/main.ts`. Upstream changes to `checkUpdates()` must NOT overwrite `resolveGitAuthArgs` or `fetchCompareBehindCount` auth headers.
+   - Ensure IPC handlers `moor:updates:token:get`, `moor:updates:token:set`, and `moor:updates:token:verify` remain registered.
+2. **Protect Theme & Brand Marks**:
+   - In `apps/desktop/src/themes/presets.ts`, keep `moorTheme` / `cyber-obsidian` color values intact.
+   - In `apps/desktop/src/components/brand-mark.tsx`, preserve the `MoorAntIcon` SVG markup.
+3. **Protect Orientation Header & Shell**:
+   - In `apps/desktop/src/app/contrib/controller.tsx`, ensure `<GlobalOrientationHeader />` remains mounted above `<LayoutTreeRoot />`.
+   - Ensure `<KeyboardShortcutsModal />` remains mounted in the controller.
+4. **Run Desktop & Rebrand Verification Commands**:
+   ```powershell
+   # 1. Run Electron unit tests
+   cd apps/desktop
+   npx vitest run electron/update-remote.test.ts
+   npx vitest run electron/update-count.test.ts
+
+   # 2. Check TypeScript types (both Electron and Renderer)
+   npx tsc -p tsconfig.electron.json --noEmit
+   npx tsc -p . --noEmit
+
+   # 3. From repository root, run rebrand verification
+   cd ../..
+   python scripts/rebrand_selftest.py
+   python scripts/rebrand.py --verify
+   ```
+

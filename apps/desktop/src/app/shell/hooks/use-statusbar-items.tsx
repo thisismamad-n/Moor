@@ -22,6 +22,7 @@ import {
   FolderOpen,
   Globe,
   Hash,
+  KeyRound,
   Layers3,
   Loader2,
   Terminal,
@@ -340,18 +341,26 @@ export function useStatusbarItems({
       version: desktopVersion?.appVersion
     })
 
+    const isAuthRequired = updateStatus?.error === 'auth-required'
+
     return {
-      className: status.hasUpdate ? 'text-primary hover:text-primary' : undefined,
-      detail: status.detail,
-      hidden: status.unknown,
-      icon: applying ? <Loader2 className="size-3 animate-spin" /> : <Hash className="size-3" />,
+      className: isAuthRequired
+        ? 'text-amber-500 hover:text-amber-400 font-medium'
+        : status.hasUpdate
+          ? 'text-primary hover:text-primary'
+          : undefined,
+      detail: isAuthRequired ? 'Token Required' : status.detail,
+      hidden: status.unknown && !isAuthRequired,
+      icon: applying ? <Loader2 className="size-3 animate-spin" /> : isAuthRequired ? <KeyRound className="size-3 text-amber-500" /> : <Hash className="size-3" />,
       id: 'version-client',
-      label: status.label,
+      label: isAuthRequired ? 'Moor: PAT Needed' : status.label,
       // Update state is not a preference: hiding it is how a user misses that
       // their client is behind. Listed in the menu, but locked on.
       lockedVisible: true,
       onSelect: () => openUpdateOverlayFor('client'),
-      title: status.tooltip,
+      title: isAuthRequired
+        ? 'Private repository update check requires a Personal Access Token (PAT). Click to configure.'
+        : status.tooltip,
       toggleLabel: copy.toggleVersion,
       variant: 'action'
     }
@@ -365,6 +374,7 @@ export function useStatusbarItems({
     updateStatus?.behind,
     updateStatus?.branch,
     updateStatus?.currentSha,
+    updateStatus?.error,
     updateStatus?.updateAvailable
   ])
 

@@ -92,6 +92,8 @@ import { AppContextMenu } from '../context-menu/app-context-menu'
 import { HudShell } from '../hud/hud-shell'
 import { $terminalTakeover, setTerminalTakeover } from '../right-sidebar/store'
 import { $workspaceIsPage } from '../routes'
+import { GlobalOrientationHeader } from '../shell/global-orientation-header'
+import { KeyboardShortcutsModal } from '@/components/keyboard-shortcuts-modal'
 
 import { FilesPane, LogsPane, ReviewPaneContent } from './panes'
 import { ContribWiring, WiredPane } from './wiring'
@@ -914,10 +916,15 @@ export function ContribController() {
             />
           </div>
 
+          <GlobalOrientationHeader />
+
           <LayoutTreeRoot />
 
           {/* "Close running tab?" — the busy/input-blocked tile close gate. */}
           <SessionTileCloseConfirm />
+
+          {/* Global Keyboard Shortcuts Cheatsheet Modal */}
+          <KeyboardShortcutsModal />
 
           {/* The REAL statusbar (model pill, command center, agents, …) with
               statusBar.left/right contributions merged in. Unmounted — not

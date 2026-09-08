@@ -12,8 +12,9 @@
  * testable without booting Electron (main.ts requires('electron') at load).
  */
 
-const OFFICIAL_REPO_HTTPS_URL = 'https://github.com/NousResearch/hermes-agent.git'
-const OFFICIAL_REPO_CANONICAL = 'github.com/nousresearch/hermes-agent'
+const OFFICIAL_REPO_HTTPS_URL = 'https://github.com/moor-inc/moor.git'
+const OFFICIAL_REPO_CANONICAL = 'github.com/moor-inc/moor'
+const LEGACY_UPSTREAM_CANONICAL = 'github.com/nousresearch/hermes-agent'
 
 // Normalize common GitHub remote URL forms to `host/owner/repo` (lowercased,
 // no trailing slash, no .git suffix) so SSH and HTTPS forms of the same repo
@@ -37,7 +38,10 @@ function canonicalGitHubRemote(url) {
         value = `${parsed.hostname}${parsed.pathname}`
       }
     } catch {
-      // Leave non-URL forms unchanged.
+      // If given owner/repo directly without scheme
+      if (/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(value)) {
+        value = `github.com/${value}`
+      }
     }
   }
 
@@ -58,8 +62,44 @@ function isSshRemote(url) {
   return value.startsWith('git@') || value.startsWith('ssh://')
 }
 
-function isOfficialSshRemote(url) {
-  return isSshRemote(url) && canonicalGitHubRemote(url) === OFFICIAL_REPO_CANONICAL
+function isOfficialSshRemote(url?: string | null, customCanonical?: string | null): boolean {
+  const canonical = canonicalGitHubRemote(url)
+  const official = customCanonical ? String(customCanonical).toLowerCase() : OFFICIAL_REPO_CANONICAL
+
+  return isSshRemote(url) && (canonical === official || canonical === LEGACY_UPSTREAM_CANONICAL || canonical === OFFICIAL_REPO_CANONICAL)
 }
 
-export { canonicalGitHubRemote, isOfficialSshRemote, isSshRemote, OFFICIAL_REPO_CANONICAL, OFFICIAL_REPO_HTTPS_URL }
+function resolveGitAuthArgs(token?: string | null): string[] {
+  const clean = String(token || '').trim()
+  if (!clean) {
+    return []
+  }
+
+  return ['-c', `http.extraHeader=AUTHORIZATION: bearer ${clean}`]
+}
+
+function resolveUpdateAuthHeaders(token?: string | null): Record<string, string> {
+  const headers: Record<string, string> = {
+    Accept: 'application/vnd.github+json',
+    'User-Agent': 'moor-desktop-update-check'
+  }
+
+  const clean = String(token || '').trim()
+  if (clean) {
+    headers.Authorization = `Bearer ${clean}`
+  }
+
+  return headers
+}
+
+export {
+  canonicalGitHubRemote,
+  isOfficialSshRemote,
+  isSshRemote,
+  LEGACY_UPSTREAM_CANONICAL,
+  OFFICIAL_REPO_CANONICAL,
+  OFFICIAL_REPO_HTTPS_URL,
+  resolveGitAuthArgs,
+  resolveUpdateAuthHeaders
+}
+

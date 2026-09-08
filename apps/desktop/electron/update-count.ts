@@ -66,10 +66,12 @@ function canonicalRemoteForCompare(originUrl) {
 
   const match =
     /^git@github\.com:([^/]+\/[^/]+?)(?:\.git)?\/?$/i.exec(value) ||
-    /^(?:ssh:\/\/git@|https:\/\/|http:\/\/)github\.com\/([^/]+\/[^/]+?)(?:\.git)?\/?$/i.exec(value)
+    /^(?:ssh:\/\/git@|https:\/\/|http:\/\/)github\.com\/([^/]+\/[^/]+?)(?:\.git)?\/?$/i.exec(value) ||
+    /^(?:github\.com\/)?([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+?)(?:\.git)?\/?$/i.exec(value)
 
   return match ? match[1] : null
 }
+
 
 // `ahead_by` counts target commits not reachable from current — the behind
 // count. `status` is "ahead" / "behind" / "diverged" / "identical" relative to

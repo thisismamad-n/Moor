@@ -1,6 +1,9 @@
 import { useState } from 'react'
 
+import { BrandMark } from '@/components/brand-mark'
+import { Cpu, Layers3, Terminal, Zap } from '@/lib/icons'
 import { capitalize, normalize } from '@/lib/text'
+import { cn } from '@/lib/utils'
 
 import introCopyJsonl from './intro-copy.jsonl?raw'
 import { Wordmark } from './wordmark'
@@ -157,19 +160,111 @@ function resolveCopy(personality?: string, seed?: number): IntroCopy {
   return pickCopy(copies, seed)
 }
 
+interface PresetCard {
+  id: string
+  title: string
+  command: string
+  prompt: string
+  description: string
+  icon: typeof Cpu
+}
+
+const PRESET_CARDS: PresetCard[] = [
+  {
+    id: 'inspect',
+    title: 'Inspect Architecture',
+    command: '/inspect',
+    prompt: '/inspect map codebase architecture, entry points and boundaries',
+    description: 'Map module boundaries, entry points & active invariants',
+    icon: Cpu
+  },
+  {
+    id: 'audit',
+    title: 'Security & Quality Audit',
+    command: '/audit',
+    prompt: '/audit verify recent changes for security and contract integrity',
+    description: 'Audit changes for security, regressions & standard contracts',
+    icon: Layers3
+  },
+  {
+    id: 'tests',
+    title: 'Execute Test Suite',
+    command: 'run tests',
+    prompt: 'scripts/run_tests.sh',
+    description: 'Run tests with subprocess isolation & verify contract integrity',
+    icon: Terminal
+  },
+  {
+    id: 'goal',
+    title: 'Autonomous Objective',
+    command: '/goal',
+    prompt: '/goal ',
+    description: 'Run deep autonomous loop until goal is fully verified',
+    icon: Zap
+  }
+]
+
+function applyPresetPrompt(promptText: string) {
+  const input = document.querySelector<HTMLElement>('[data-slot="composer-rich-input"]')
+  if (!input) return
+  input.focus()
+  input.textContent = promptText
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+  const range = document.createRange()
+  const selection = window.getSelection()
+  range.selectNodeContents(input)
+  range.collapse(false)
+  selection?.removeAllRanges()
+  selection?.addRange(range)
+}
+
 export function Intro({ personality, seed }: IntroProps) {
   const [mountSeed] = useState(() => Math.floor(Math.random() * 100000))
   const copy = resolveCopy(personality, mountSeed + (seed ?? 0))
 
   return (
     <div
-      className="pointer-events-none flex w-full min-w-0 flex-col items-center justify-center px-0.5 py-6 text-center text-muted-foreground sm:px-6 lg:px-8"
+      className="flex w-full min-w-0 flex-col items-center justify-center px-4 py-8 text-center text-muted-foreground sm:px-6 lg:px-8"
       data-slot="aui_intro"
     >
-      <div className="w-full min-w-0">
-        <Wordmark className="mb-1" text={WORDMARK} />
+      <div className="flex flex-col items-center w-full max-w-xl min-w-0 pointer-events-none">
+        <BrandMark className="mb-4 size-16" />
+        <Wordmark className="mb-2" text={WORDMARK} />
+        <p className="m-0 text-center leading-normal tracking-tight text-sm text-muted-foreground max-w-md">
+          {copy.body}
+        </p>
 
-        <p className="m-0 text-center leading-normal tracking-tight">{copy.body}</p>
+        {/* 1-Click Quick-Start Preset Cards */}
+        <div className="mt-8 grid w-full grid-cols-1 gap-2.5 sm:grid-cols-2 pointer-events-auto text-left">
+          {PRESET_CARDS.map(preset => {
+            const Icon = preset.icon
+            return (
+              <button
+                key={preset.id}
+                className={cn(
+                  'group flex flex-col justify-between rounded-xl border p-3.5 transition-all duration-200 text-left cursor-pointer',
+                  'border-border/70 bg-card/60 hover:border-primary/50 hover:bg-card/90 hover:shadow-xs active:scale-[0.99]',
+                  'dark:border-cyan-500/20 dark:bg-[#11141c]/70 dark:hover:border-cyan-500/40 dark:hover:shadow-[0_0_20px_rgba(37,99,235,0.15)]'
+                )}
+                onClick={() => applyPresetPrompt(preset.prompt)}
+                type="button"
+              >
+                <div className="flex items-center justify-between w-full mb-1.5">
+                  <span className="flex items-center gap-1.5 font-semibold text-xs text-foreground group-hover:text-primary transition-colors">
+                    <Icon className="size-3.5 text-primary/80" />
+                    {preset.title}
+                  </span>
+                  <span className="font-mono text-[0.625rem] rounded border border-border/60 bg-muted/40 px-1.5 py-0.5 text-muted-foreground group-hover:border-primary/40 group-hover:text-primary">
+                    {preset.command}
+                  </span>
+                </div>
+                <p className="text-[0.6875rem] text-muted-foreground leading-snug line-clamp-2">
+                  {preset.description}
+                </p>
+              </button>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

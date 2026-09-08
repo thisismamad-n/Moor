@@ -527,6 +527,9 @@ declare global {
         apply: (opts?: DesktopUpdateApplyOptions) => Promise<DesktopUpdateApplyResult>
         getBranch: () => Promise<{ branch: string }>
         setBranch: (name: string) => Promise<{ branch: string }>
+        getTokenConfig: () => Promise<DesktopUpdateTokenConfig>
+        setTokenConfig: (cfg: { pat?: string; repo?: string }) => Promise<DesktopUpdateTokenConfig>
+        verifyToken: (customPat?: string) => Promise<DesktopUpdateTokenVerifyResult>
         onProgress: (callback: (payload: DesktopUpdateProgress) => void) => () => void
       }
       uninstall: {
@@ -656,6 +659,20 @@ export interface DesktopUpdateStatus {
   commits?: DesktopUpdateCommit[]
   dirty?: boolean
   fetchedAt?: number
+}
+
+export interface DesktopUpdateTokenConfig {
+  branch: string
+  repo: string
+  hasPat: boolean
+  maskedPat: string
+}
+
+export interface DesktopUpdateTokenVerifyResult {
+  ok: boolean
+  message?: string
+  login?: string
+  repoAccess?: boolean
 }
 
 export type DesktopUpdateDirtyStrategy = 'abort' | 'stash' | 'force'
