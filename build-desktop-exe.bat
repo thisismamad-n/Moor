@@ -41,6 +41,8 @@ if not defined PS_CMD (
 
 echo [INFO] Using PowerShell engine: %PS_CMD%
 echo [INFO] Starting build script: scripts\build-desktop-exe.ps1
+echo [INFO] Offline-first build: repo.zip + install.ps1/sh are staged into
+echo [INFO] the .exe automatically (no network needed on first launch).
 echo.
 
 REM Execute build script with bypassed execution policy and forward any passed arguments

@@ -38,6 +38,11 @@
     "longDescription": "Installs Moor Agent on your machine. Drives scripts/install.ps1 (Windows) and scripts/install.sh (macOS/Linux).",
     "publisher": "Moor inc.",
     "copyright": "Copyright © 2026 Moor inc.",
+    "resources": [
+      "../../../scripts/install.ps1",
+      "../../../scripts/install.sh",
+      "../../desktop/build/repo.zip"
+    ],
     "targets": [
       "app",
       "dmg",

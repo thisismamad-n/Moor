@@ -40,6 +40,12 @@ pub struct StartBootstrapArgs {
     pub commit: Option<String>,
     /// Optional override for the branch pin. Defaults to `BUILD_PIN_BRANCH`.
     pub branch: Option<String>,
+    /// Optional `OWNER/REPO` override for the install-script download
+    /// fallback. Defaults to the build-time `BUILD_PIN_REPO` (Moor fork slug
+    /// when built from the Moor repo, upstream otherwise). Only matters when
+    /// no bundled/cached script satisfies the request.
+    #[serde(default)]
+    pub repo: Option<String>,
     /// Include Stage-Desktop (build apps/desktop) in the manifest. The
     /// signed bootstrap installer passes true; the deprecated Electron-side
     /// bootstrap-runner passes false to avoid building-while-running.
@@ -453,6 +459,7 @@ async fn run_bootstrap(
     let pin = Pin {
         commit: args.commit.or_else(|| option_env_string("BUILD_PIN_COMMIT")),
         branch: args.branch.or_else(|| option_env_string("BUILD_PIN_BRANCH")),
+        repo: args.repo.or_else(|| option_env_string("BUILD_PIN_REPO")),
     };
 
     tracing::info!(
@@ -1090,6 +1097,7 @@ mod tests {
         let pin = Pin {
             commit: Some("abcdef1234567890".to_string()),
             branch: Some("main".to_string()),
+            ..Default::default()
         };
 
         let marker =
@@ -1116,6 +1124,7 @@ mod tests {
         let pin = Pin {
             commit: Some("abcdef1234567890".to_string()),
             branch: Some("main".to_string()),
+            ..Default::default()
         };
 
         write_bootstrap_complete_marker(&root, &pin).expect("marker write should succeed");
@@ -1163,6 +1172,7 @@ mod tests {
         let pin = Pin {
             commit: Some("abcdef1234567890".to_string()),
             branch: Some("main".to_string()),
+            ..Default::default()
         };
 
         let err = write_bootstrap_complete_marker(&not_a_dir, &pin)

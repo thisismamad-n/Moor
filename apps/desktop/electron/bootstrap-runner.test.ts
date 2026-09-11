@@ -12,11 +12,14 @@ import {
   hasExistingGitCheckout,
   installedAgentInstallScript,
   installRefForStamp,
+  installScriptUrl,
   isPinnedCommit,
   resolveBundledInstallScript,
   resolveInstallScript,
+  resolveInstallScriptRepo,
   resolveMarkerPinnedCommit,
-  runBootstrap
+  runBootstrap,
+  UPSTREAM_INSTALL_REPO
 } from './bootstrap-runner'
 
 const SCRIPT_NAME = process.platform === 'win32' ? 'install.ps1' : 'install.sh'
@@ -310,5 +313,78 @@ test('resolveBundledInstallScript resolves valid custom or resources path', () =
     assert.equal(resolveBundledInstallScript('/nonexistent/path/here'), null)
   } finally {
     fs.rmSync(home, { recursive: true, force: true })
+  }
+})
+
+test('resolveInstallScriptRepo prefers the stamp repo, then env, then upstream', () => {
+  const savedRepo = process.env.MOOR_GITHUB_REPO
+  const savedFork = process.env.MOOR_GITHUB_FORK
+
+  try {
+    delete process.env.MOOR_GITHUB_REPO
+    delete process.env.MOOR_GITHUB_FORK
+
+    // Packaged Moor builds bake their own slug into install-stamp.json.
+    assert.equal(
+      resolveInstallScriptRepo({ commit: 'a'.repeat(40), branch: 'main', repo: 'moor-inc/moor' }),
+      'moor-inc/moor'
+    )
+    // Legacy stamps without a repo field keep the old behaviour.
+    assert.equal(resolveInstallScriptRepo({ commit: 'a'.repeat(40) }), UPSTREAM_INSTALL_REPO)
+    assert.equal(resolveInstallScriptRepo(null), UPSTREAM_INSTALL_REPO)
+
+    // Explicit runtime override beats the default (private Moor forks).
+    process.env.MOOR_GITHUB_REPO = 'moor-inc/moor-private'
+    assert.equal(resolveInstallScriptRepo(null), 'moor-inc/moor-private')
+
+    // ...but never the baked stamp.
+    delete process.env.MOOR_GITHUB_REPO
+    process.env.MOOR_GITHUB_FORK = 'moor-inc/moor-fork'
+    assert.equal(
+      resolveInstallScriptRepo({ commit: 'a'.repeat(40), repo: 'moor-inc/moor' }),
+      'moor-inc/moor'
+    )
+  } finally {
+    if (savedRepo === undefined) {
+      delete process.env.MOOR_GITHUB_REPO
+    } else {
+      process.env.MOOR_GITHUB_REPO = savedRepo
+    }
+    if (savedFork === undefined) {
+      delete process.env.MOOR_GITHUB_FORK
+    } else {
+      process.env.MOOR_GITHUB_FORK = savedFork
+    }
+  }
+})
+
+test('installScriptUrl carries the resolved repo slug, not a hardcoded one', () => {
+  const savedRepo = process.env.MOOR_GITHUB_REPO
+  const savedFork = process.env.MOOR_GITHUB_FORK
+
+  try {
+    delete process.env.MOOR_GITHUB_REPO
+    delete process.env.MOOR_GITHUB_FORK
+
+    const commit = 'd'.repeat(40)
+    assert.equal(
+      installScriptUrl(commit, 'install.ps1', { commit, repo: 'moor-inc/moor' }),
+      `https://raw.githubusercontent.com/moor-inc/moor/${commit}/scripts/install.ps1`
+    )
+    assert.equal(
+      installScriptUrl('main', 'install.sh', null),
+      `https://raw.githubusercontent.com/${UPSTREAM_INSTALL_REPO}/main/scripts/install.sh`
+    )
+  } finally {
+    if (savedRepo === undefined) {
+      delete process.env.MOOR_GITHUB_REPO
+    } else {
+      process.env.MOOR_GITHUB_REPO = savedRepo
+    }
+    if (savedFork === undefined) {
+      delete process.env.MOOR_GITHUB_FORK
+    } else {
+      process.env.MOOR_GITHUB_FORK = savedFork
+    }
   }
 })

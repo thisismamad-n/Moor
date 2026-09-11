@@ -9,12 +9,22 @@
  *     "schemaVersion": 1,
  *     "commit":        "<40-char SHA>",
  *     "branch":        "<branch name>",
+ *     "repo":          "<OWNER/REPO GitHub slug the scripts/repo were built from>",
  *     "builtAt":       "<ISO 8601 UTC timestamp>",
  *     "dirty":         true|false,
  *     "source":        "ci" | "local" | "fallback"
  *   }
  *
- * Source preference order:
+ * The `repo` field is what makes first-launch bootstrap fork-aware: the
+ * Electron bootstrap runner (bootstrap-runner.ts) and the Tauri bootstrap
+ * installer (install_script.rs) resolve install.ps1/install.sh download URLs
+ * from it instead of a hardcoded upstream slug.  Precedence:
+ *   1. $MOOR_GITHUB_REPO / $MOOR_GITHUB_FORK (explicit Moor fork override)
+ *   2. $GITHUB_REPOSITORY (CI canonical slug)
+ *   3. `git remote get-url origin` parsed to OWNER/REPO (local builds)
+ *   4. UPSTREAM_REPO fallback (non-git trees; preserves legacy behaviour)
+ *
+ * Source preference order (commit/branch):
  *   1. CI env vars ($GITHUB_SHA / $GITHUB_REF_NAME) -- avoid edge cases with
  *      shallow clones, detached HEADs, etc. in CI.
  *   2. Local `git rev-parse` against the parent repo (../..).
@@ -33,6 +43,9 @@ import { execSync } from "child_process"
 import { isMain } from "./utils.mjs"
 
 const STAMP_SCHEMA_VERSION = 1
+
+/** Upstream slug kept as the last-resort default so legacy builds keep working. */
+export const UPSTREAM_REPO = 'NousResearch/hermes-agent'
 
 /** All-zero placeholder used when no real commit can be resolved. */
 export const FALLBACK_COMMIT = "0000000000000000000000000000000000000000"
@@ -98,6 +111,42 @@ export function fromFallback(branch = FALLBACK_BRANCH) {
 }
 
 /**
+ * Parse a git remote URL to an `OWNER/REPO` slug.  Handles the three common
+ * forms (https, scp-like ssh, ssh://).  Returns null when unparseable so the
+ * caller falls through to the next repo-resolution rung.
+ */
+export function parseRepoSlug(remoteUrl) {
+  if (!remoteUrl || typeof remoteUrl !== "string") return null
+  const trimmed = remoteUrl.trim()
+  const m =
+    trimmed.match(/github\.com[:/]([^/\s]+\/[^/\s]+?)(?:\.git)?\s*$/i)
+  if (!m) return null
+  // Guard against trailing path segments (e.g. /tree/main pasted by accident).
+  const slug = m[1].replace(/\/+$/, "")
+  if (!/^[^/\s]+\/[^/\s]+$/.test(slug) || slug.includes("/tree/")) return null
+  return slug
+}
+
+/**
+ * Resolve the `OWNER/REPO` slug the packaged app should fetch install
+ * scripts from when no bundled copy satisfies the request.  Pure enough for
+ * unit tests: inject env / execFn / repoRoot.
+ */
+export function resolveRepoSlug({
+  env = process.env,
+  repoRoot = REPO_ROOT,
+  execFn = tryExec,
+} = {}) {
+  const explicit =
+    (env.MOOR_GITHUB_REPO || "").trim() || (env.MOOR_GITHUB_FORK || "").trim()
+  if (explicit) return explicit.replace(/\/+$/, "")
+  const ciRepo = (env.GITHUB_REPOSITORY || "").trim()
+  if (ciRepo && /^[^/\s]+\/[^/\s]+$/.test(ciRepo)) return ciRepo
+  const remote = execFn("git remote get-url origin", { cwd: repoRoot })
+  return parseRepoSlug(remote) || UPSTREAM_REPO
+}
+
+/**
  * Resolve the install stamp without writing it.  Pure enough for unit tests:
  * inject env / execFn / repoRoot to simulate CI, local git, or no-git trees.
  */
@@ -107,7 +156,8 @@ export function resolveStamp({
   execFn = tryExec,
   fallbackBranch = FALLBACK_BRANCH
 } = {}) {
-  return fromCI(env) || fromLocalGit(repoRoot, execFn) || fromFallback(fallbackBranch)
+  const base = fromCI(env) || fromLocalGit(repoRoot, execFn) || fromFallback(fallbackBranch)
+  return { ...base, repo: resolveRepoSlug({ env, repoRoot, execFn }) }
 }
 
 export function isFallbackCommit(commit) {
@@ -153,6 +203,7 @@ function main() {
     schemaVersion: STAMP_SCHEMA_VERSION,
     commit: stamp.commit,
     branch: stamp.branch,
+    repo: stamp.repo || UPSTREAM_REPO,
     builtAt: new Date().toISOString(),
     dirty: stamp.dirty,
     source: stamp.source
@@ -166,6 +217,7 @@ function main() {
       " -> " +
       stamp.commit.slice(0, 12) +
       (stamp.branch ? " (" + stamp.branch + ")" : "") +
+      " [" + (stamp.repo || UPSTREAM_REPO) + "]" +
       (stamp.dirty ? " [DIRTY]" : "") +
       (stamp.source === "fallback" ? " [FALLBACK]" : "")
   )

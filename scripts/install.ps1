@@ -33,6 +33,16 @@ param(
     [string]$MoorHome = $(if ($env:MOOR_HOME) { $env:MOOR_HOME } else { "$env:LOCALAPPDATA\moor" }),
     [string]$InstallDir = $(if ($env:MOOR_HOME) { "$env:MOOR_HOME\moor-agent" } else { "$env:LOCALAPPDATA\moor\moor-agent" }),
 
+    # Offline bundle: path to a repo.zip snapshot of the Moor source tree,
+    # shipped INSIDE the desktop .exe / Moor-Setup.exe (extraResources) and
+    # staged by apps/desktop/scripts/stage-offline-bundle.mjs. When it points
+    # at an existing file, the repository stage unpacks it instead of
+    # git-cloning — first launch reaches (and passes) the repository stage
+    # with no network. Env fallback so GUI drivers that only set the
+    # environment (Electron bootstrap-runner.ts, Tauri powershell.rs) don't
+    # need the CLI flag.
+    [string]$BundledRepo = $(if ($env:MOOR_BUNDLED_REPO) { $env:MOOR_BUNDLED_REPO } else { "" }),
+
     # --- Stage protocol (additive; default invocation behaves as before) ----
     # See the "Stage protocol" section near the bottom of the file for the
     # full contract.  Intended for programmatic drivers (the desktop GUI's
@@ -2379,6 +2389,46 @@ function Install-Repository {
 
     if (-not $didUpdate) {
         $cloneSuccess = $false
+        $script:BundledRepoUsed = $false
+
+        # OFFLINE BUNDLE (first rung, before any network): unpack the repo.zip
+        # snapshot shipped inside the desktop .exe instead of cloning. The zip
+        # stores paths relative to the repo root (see
+        # apps/desktop/scripts/bundle-repo-archive.mjs), so there is no
+        # wrapper directory to peel off — copy the tree straight over.
+        $bundledZip = $BundledRepo
+        if ([string]::IsNullOrWhiteSpace($bundledZip)) { $bundledZip = $env:MOOR_BUNDLED_REPO }
+        if (-not [string]::IsNullOrWhiteSpace($bundledZip) -and (Test-Path -LiteralPath $bundledZip)) {
+            Write-Info "Unpacking bundled Moor repository (offline, no download)..."
+            try {
+                if (Test-Path $InstallDir) { Remove-Item -Recurse -Force $InstallDir -ErrorAction SilentlyContinue }
+                $expandTmp = "$env:TEMP\moor-bundled-extract"
+                if (Test-Path $expandTmp) { Remove-Item -Recurse -Force $expandTmp -ErrorAction SilentlyContinue }
+                Expand-Archive -Path $bundledZip -DestinationPath $expandTmp -Force
+                New-Item -ItemType Directory -Force -Path (Split-Path $InstallDir) -ErrorAction SilentlyContinue | Out-Null
+                New-Item -ItemType Directory -Force -Path $InstallDir -ErrorAction SilentlyContinue | Out-Null
+                Copy-Item -Path "$expandTmp\*" -Destination $InstallDir -Recurse -Force
+                Remove-Item -Recurse -Force $expandTmp -ErrorAction SilentlyContinue
+                # Give the snapshot a local git identity WITHOUT touching the
+                # network: `git init` + a snapshot commit so HEAD resolves for
+                # later stages/markers, `origin` set for future ONLINE updates.
+                # No fetch here — that is the whole point of offline mode.
+                Push-Location $InstallDir
+                try {
+                    git -c windows.appendAtomically=false init -q 2>$null
+                    git -c windows.appendAtomically=false config windows.appendAtomically false 2>$null
+                    git -c windows.appendAtomically=false config core.autocrlf false 2>$null
+                    git remote add origin $RepoUrlHttps 2>$null
+                    git -c windows.appendAtomically=false -c user.name=moor -c user.email=moor@localhost add -A 2>$null
+                    git -c windows.appendAtomically=false -c user.name=moor -c user.email=moor@localhost commit -qm "bundled offline snapshot" 2>$null
+                } finally { Pop-Location }
+                $cloneSuccess = $true
+                $script:BundledRepoUsed = $true
+                Write-Success "Unpacked bundled repository (no download needed)"
+            } catch {
+                Write-Warn "Bundled repository unpack failed ($_); falling back to git clone..."
+            }
+        }
 
         # Fix Windows git "copy-fd: write returned: Invalid argument" error.
         # Git for Windows can fail on atomic file operations (hook templates,
@@ -2390,14 +2440,17 @@ function Install-Repository {
         $env:GIT_CONFIG_VALUE_0 = "false"
         git config --global windows.appendAtomically false 2>$null
 
-        # Try SSH first, then HTTPS, with -c flag for atomic write fix
-        Write-Info "Trying SSH clone..."
-        $env:GIT_SSH_COMMAND = "ssh -o BatchMode=yes -o ConnectTimeout=5"
-        try {
-            Invoke-NativeWithRelaxedErrorAction { git -c windows.appendAtomically=false clone --depth 1 --branch $Branch $RepoUrlSsh $InstallDir }
-            if ($LASTEXITCODE -eq 0) { $cloneSuccess = $true }
-        } catch { }
-        $env:GIT_SSH_COMMAND = $null
+        # Try SSH first, then HTTPS, with -c flag for atomic write fix.
+        # Skipped entirely when the offline bundle already landed the tree.
+        if (-not $cloneSuccess) {
+            Write-Info "Trying SSH clone..."
+            $env:GIT_SSH_COMMAND = "ssh -o BatchMode=yes -o ConnectTimeout=5"
+            try {
+                Invoke-NativeWithRelaxedErrorAction { git -c windows.appendAtomically=false clone --depth 1 --branch $Branch $RepoUrlSsh $InstallDir }
+                if ($LASTEXITCODE -eq 0) { $cloneSuccess = $true }
+            } catch { }
+            $env:GIT_SSH_COMMAND = $null
+        }
 
         if (-not $cloneSuccess) {
             if (Test-Path $InstallDir) { Remove-Item -Recurse -Force $InstallDir -ErrorAction SilentlyContinue }
@@ -2519,8 +2572,10 @@ function Install-Repository {
     # Post-clone pin: when a clone (or ZIP-fallback init) just landed us on
     # $Branch's tip, honour the higher-precedence $Commit / $Tag by checking
     # the exact ref out as a detached HEAD.  Skipped for the in-place update
-    # path (above) since that already routed via the same precedence.
-    if (-not $didUpdate) {
+    # path (above) since that already routed via the same precedence, AND for
+    # offline-bundle unpacks — the snapshot IS the stamped tree, and any fetch
+    # here would reintroduce the network dependency offline mode removes.
+    if ((-not $didUpdate) -and (-not $script:BundledRepoUsed)) {
         # Same EAP=Continue wrap as the update path -- git fetch's 'From <url>'
         # info line goes to stderr and would terminate the script under the
         # global EAP=Stop otherwise.  We check $LASTEXITCODE for real errors.

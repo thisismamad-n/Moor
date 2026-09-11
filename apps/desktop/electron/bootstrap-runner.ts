@@ -46,6 +46,41 @@ const STAMP_COMMIT_RE = /^[0-9a-f]{7,40}$/i
 const FALLBACK_COMMIT_RE = /^0{7,40}$/
 const FALLBACK_BRANCH = 'main'
 
+/**
+ * Last-resort download source when the packaged app has no bundled install
+ * script AND no usable cache.  Kept as upstream so legacy builds keep working;
+ * real Moor builds bake their own slug into install-stamp.json (`repo`) via
+ * scripts/write-build-stamp.mjs, which takes precedence (see
+ * resolveInstallScriptRepo).  Previously hardcoded inline at the download
+ * call site, which is how the pre-rebrand slug survived here while the rest
+ * of the app said Moor.
+ */
+const UPSTREAM_INSTALL_REPO = 'NousResearch/hermes-agent'
+
+/**
+ * Which GitHub `OWNER/REPO` to download install.ps1/sh from when the network
+ * path is unavoidable.  Precedence: packaged stamp's `repo` (fork-aware at
+ * build time) -> explicit runtime override ($MOOR_GITHUB_REPO /
+ * $MOOR_GITHUB_FORK, for private Moor forks) -> upstream default.
+ */
+function resolveInstallScriptRepo(installStamp): string {
+  const stamped =
+    installStamp && typeof installStamp.repo === 'string' ? installStamp.repo.trim().replace(/\/+$/, '') : ''
+  if (stamped) {
+    return stamped
+  }
+  const override =
+    (process.env.MOOR_GITHUB_REPO || '').trim() || (process.env.MOOR_GITHUB_FORK || '').trim()
+  if (override) {
+    return override.replace(/\/+$/, '')
+  }
+  return UPSTREAM_INSTALL_REPO
+}
+
+function installScriptUrl(ref, scriptName, installStamp): string {
+  return `https://raw.githubusercontent.com/${resolveInstallScriptRepo(installStamp)}/${ref}/scripts/${scriptName}`
+}
+
 function isPinnedCommit(commit) {
   return typeof commit === 'string' && STAMP_COMMIT_RE.test(commit) && !FALLBACK_COMMIT_RE.test(commit)
 }
@@ -292,18 +327,26 @@ function cachedScriptPath(moorHome, commit) {
   return path.join(bootstrapCacheDir(moorHome), `install-${commit}.${process.platform === 'win32' ? 'ps1' : 'sh'}`)
 }
 
-function downloadInstallScript(ref, destPath) {
+function downloadInstallScript(ref, destPath, installStamp?: any) {
   // Fetch from GitHub raw at the install ref. Normal production builds pass a
   // pinned SHA (immutable). Non-git fallback builds pass an unpinned branch
   // ref so local builds can still bootstrap without pretending the all-zero
   // placeholder is a real GitHub commit.
+  //
+  // OFFLINE NOTE: this network path is the LAST resort. Packaged builds ship
+  // build/offline-scripts/install.ps1|sh + build/repo.zip as extraResources
+  // (see apps/desktop/scripts/stage-offline-bundle.mjs), which
+  // resolveInstallScript prefers as `bundled`. Reaching here on a packaged
+  // build means the .exe was built without the offline bundle — rebuild via
+  // the 1-click build-desktop-exe.bat. The wrapped errors below say so.
   const scriptName = installScriptName()
-  const url = `https://raw.githubusercontent.com/NousResearch/hermes-agent/${ref}/scripts/${scriptName}`
+  const url = installScriptUrl(ref, scriptName, installStamp)
 
   return new Promise((resolve, reject) => {
     fs.mkdirSync(path.dirname(destPath), { recursive: true })
     const tmpPath = destPath + '.tmp'
     const out = fs.createWriteStream(tmpPath)
+    const networkHint = ` (no bundled ${scriptName} in this build and the network failed — offline machines need an .exe built with the offline bundle: rebuild via build-desktop-exe.bat)`
     https
       .get(url, res => {
         if (res.statusCode === 301 || res.statusCode === 302) {
@@ -346,7 +389,11 @@ function downloadInstallScript(ref, destPath) {
             void 0
           }
 
-          reject(new Error(`Failed to download ${scriptName}: HTTP ${res.statusCode} from ${url}`))
+          reject(
+            new Error(
+              `Failed to download ${scriptName}: HTTP ${res.statusCode} from ${url}.${res.statusCode === 429 ? ' The host is throttling this machine — Retry in a minute,' : ''} or rebuild the .exe with the offline bundle (build-desktop-exe.bat) so first launch needs no download.`
+            )
+          )
 
           return
         }
@@ -374,7 +421,11 @@ function downloadInstallScript(ref, destPath) {
           void 0
         }
 
-        reject(err)
+        reject(
+          new Error(
+            `Failed to download ${scriptName} from ${url}: ${err.message || err}.${networkHint}`
+          )
+        )
       })
   })
 }
@@ -441,7 +492,7 @@ async function resolveInstallScript({
   })
 
   try {
-    await _download(installRef.ref, cached)
+    await _download(installRef.ref, cached, installStamp)
     emit({ type: 'log', line: `[bootstrap] saved to ${cached}` })
 
     return { path: cached, source: 'download', commit: resolvedCommit, kind: installScriptKind() }
@@ -483,7 +534,17 @@ async function resolveInstallScript({
       }
     }
 
-    throw err
+    // Fresh machine, no bundled script, no cache, no prior install, no
+    // network: say exactly that, and how to fix it (rebuild WITH the bundle).
+    const fetchMsg = err && err.message ? err.message : String(err)
+    if (/Failed to download/.test(fetchMsg)) {
+      throw err
+    }
+    throw new Error(
+      `Failed to download ${installScriptName()} (${fetchMsg}). ` +
+        'This build carries no bundled installer and the network fetch failed — ' +
+        'offline first-launch needs an .exe built with the offline bundle (build-desktop-exe.bat).'
+    )
   }
 }
 
@@ -1119,13 +1180,16 @@ export {
   hasExistingGitCheckout,
   installedAgentInstallScript,
   installRefForStamp,
+  installScriptUrl,
   isPinnedCommit,
   // Exposed for testability
   parseStageResult,
   resolveBundledInstallScript,
   resolveCheckoutHead,
   resolveInstallScript,
+  resolveInstallScriptRepo,
   resolveLocalInstallScript,
   resolveMarkerPinnedCommit,
-  runBootstrap
+  runBootstrap,
+  UPSTREAM_INSTALL_REPO
 }

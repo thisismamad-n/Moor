@@ -76,6 +76,14 @@ BRANCH="main"
 INSTALL_COMMIT=""
 FORCE_COMMIT=false
 ENSURE_DEPS=""
+# Offline bundle: path to a repo.zip snapshot of the Moor source tree, shipped
+# INSIDE the desktop app / Moor-Setup bundle (see
+# apps/desktop/scripts/stage-offline-bundle.mjs). When it points at an
+# existing file, clone_repo() unpacks it instead of git-cloning — first launch
+# reaches (and passes) the repository stage with no network. Defaults from the
+# environment so GUI drivers (Electron bootstrap-runner, Tauri powershell.rs)
+# don't need the CLI flag.
+BUNDLED_REPO="${MOOR_BUNDLED_REPO:-}"
 
 MANIFEST_MODE=false
 STAGE_NAME=""
@@ -160,6 +168,10 @@ while [[ $# -gt 0 ]]; do
             ENSURE_DEPS="$2"
             shift 2
             ;;
+        --bundled-repo)
+            BUNDLED_REPO="$2"
+            shift 2
+            ;;
 
         -h|--help)
             echo "Moor Agent Installer"
@@ -186,6 +198,9 @@ while [[ $# -gt 0 ]]; do
             echo "  --dir PATH     Installation directory"
             echo "                   default (non-root):  ~/.moor/moor-agent"
             echo "                   default (root, Linux): /usr/local/lib/moor-agent"
+            echo "  --bundled-repo PATH  Unpack this repo.zip snapshot instead of"
+            echo "                   git-cloning (offline installs; defaults from"
+            echo "                   \$MOOR_BUNDLED_REPO when set)"
             echo "  --moor-home PATH  Data directory (default: ~/.moor, or \$MOOR_HOME)"
             echo "  -h, --help     Show this help"
             echo ""
@@ -1589,6 +1604,35 @@ EOF
             exit 1
         fi
     else
+        # OFFLINE BUNDLE (first rung, before any network): unpack the repo.zip
+        # snapshot shipped inside the desktop app instead of cloning. The zip
+        # stores paths relative to the repo root (see
+        # apps/desktop/scripts/bundle-repo-archive.mjs), so there is no
+        # wrapper directory to peel off.
+        BUNDLED_REPO_USED=false
+        if [ -n "${BUNDLED_REPO:-}" ] && [ -f "$BUNDLED_REPO" ]; then
+            log_info "Unpacking bundled Moor repository (offline, no download)..."
+            if command -v unzip >/dev/null 2>&1; then
+                rm -rf "$INSTALL_DIR"
+                mkdir -p "$INSTALL_DIR"
+                if unzip -q "$BUNDLED_REPO" -d "$INSTALL_DIR"; then
+                    (cd "$INSTALL_DIR" \
+                        && git init -q 2>/dev/null \
+                        && git config core.autocrlf false 2>/dev/null \
+                        && git remote add origin "$REPO_URL_HTTPS" 2>/dev/null \
+                        && git -c user.name=moor -c user.email=moor@localhost add -A 2>/dev/null \
+                        && git -c user.name=moor -c user.email=moor@localhost commit -qm "bundled offline snapshot" 2>/dev/null) || true
+                    BUNDLED_REPO_USED=true
+                    log_success "Unpacked bundled repository (no download needed)"
+                else
+                    log_warn "Bundled repository unpack failed; falling back to git clone..."
+                    rm -rf "$INSTALL_DIR" 2>/dev/null
+                fi
+            else
+                log_warn "\$BUNDLED_REPO is set but 'unzip' is missing; falling back to git clone..."
+            fi
+        fi
+        if [ "$BUNDLED_REPO_USED" != true ]; then
         # Try SSH first (for private repo access), fall back to HTTPS
         # GIT_SSH_COMMAND disables interactive prompts and sets a short timeout
         # so SSH fails fast instead of hanging when no key is configured.
@@ -1656,10 +1700,18 @@ EOF
                 exit 1
             fi
         fi
+        fi
     fi
 
     cd "$INSTALL_DIR"
 
+    # Offline-bundle unpacks skip commit pinning: the snapshot IS the stamped
+    # tree, and any fetch here would reintroduce the network dependency
+    # offline mode removes.
+    if [ "$BUNDLED_REPO_USED" = true ] && [ -n "$INSTALL_COMMIT" ]; then
+        log_info "Offline bundle provides the stamped tree; skipping --commit pin."
+        INSTALL_COMMIT=""
+    fi
     if [ -n "$INSTALL_COMMIT" ]; then
         # Validate the commit argument: must look like a hex SHA (full 40-char
         # or abbreviated 7-39 char). Reject anything else early so the user

@@ -56,6 +56,14 @@ moor
 
 The Moor Desktop App is located in `apps/desktop`. You can either launch it directly from the CLI or build a standalone installer.
 
+> **Offline-first builds:** every `.exe` produced by the 1-click compiler
+> (`build-desktop-exe.bat`) or `npm run build` now ships the installer scripts
+> (`install.ps1`/`install.sh`) **and** a full `repo.zip` of the Moor source
+> tree *inside* the executable, so first launch needs no network to reach and
+> pass the `repository` stage. See `OFFLINE_DESKTOP_BUNDLE.md` for the full
+> architecture, what still needs the network on virgin machines, and how to
+> verify an offline install.
+
 ### Method A: Launch directly (Recommended)
 If you have installed the CLI (Step 1) and your `.venv` is activated, you can build and launch the Desktop UI with a single command:
 ```bash

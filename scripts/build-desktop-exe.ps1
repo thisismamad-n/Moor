@@ -10,6 +10,16 @@
       - unpacked:  Unpacked directory containing runnable Moor.exe
       - all:       Compiles installer, portable, and unpacked targets
 
+    OFFLINE-FIRST: every build stages the offline first-launch bundle
+    (apps/desktop/build/repo.zip + build/offline-scripts/install.ps1|sh +
+    build/install-stamp.json, see apps/desktop/scripts/stage-offline-bundle.mjs)
+    and ships it INSIDE the .exe via electron-builder extraResources. First
+    launch therefore unpacks the Moor tree from the .exe itself instead of
+    downloading install.ps1 / git-cloning from GitHub, so the app installs on
+    a fully offline desktop. The build FAILS LOUDLY if the bundle is missing
+    or stale — a .exe without it is exactly the "Moor couldn't start / Failed
+    to download install.ps1: HTTP 429" failure.
+
     Zero Emojis Directive: All logging and output strictly adheres to ASCII formatting.
 
 .PARAMETER Target
@@ -368,6 +378,27 @@ try {
     Pop-Location
 }
 Write-LogOk "Frontend assets and Electron main bundle compiled successfully"
+
+# --- Step 1b: Verify offline first-launch bundle ---
+# `npm run build` already ran write-build-stamp + stage-offline-bundle, but
+# verify AGAIN as a separate loud gate: if repo.zip / staged install scripts /
+# stamp are missing or stale here, electron-builder would still package an
+# .exe that MUST phone home on first launch (the offline 429 failure). Fail
+# the build instead of shipping that .exe.
+Write-LogInfo "Verifying offline first-launch bundle (repo.zip + install scripts + stamp)..."
+Push-Location $DesktopDir
+try {
+    & node scripts/stage-offline-bundle.mjs --verify
+    if ($LASTEXITCODE -ne 0) {
+        Write-LogError "Offline bundle verification failed with exit code $LASTEXITCODE"
+        exit $LASTEXITCODE
+    }
+} finally {
+    Pop-Location
+}
+$OfflineManifest = Get-Content (Join-Path $DesktopDir "build\offline-manifest.json") -Raw | ConvertFrom-Json
+$RepoZipMB = [math]::Round($OfflineManifest.repoZip.bytes / (1024 * 1024), 2)
+Write-LogOk "Offline bundle verified: repo.zip ($($OfflineManifest.repoZip.files) files, $RepoZipMB MB) + $($OfflineManifest.scripts.Count) install scripts + stamp $($OfflineManifest.stamp.commit.Substring(0,12)) [$($OfflineManifest.stamp.repo)]"
 
 # --- Step 2: Package with electron-builder ---
 $ArchFlag = "--$Arch"

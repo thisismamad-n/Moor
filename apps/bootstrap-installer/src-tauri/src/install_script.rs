@@ -63,6 +63,33 @@ impl ScriptKind {
     }
 }
 
+/// Last-resort download source when the installer carries no bundled script
+/// and no usable cache.  Kept as upstream so legacy builds keep working; real
+/// Moor builds bake their own slug at compile time (`BUILD_PIN_REPO` from
+/// build.rs) or override it at runtime (`$MOOR_GITHUB_REPO`).  Previously
+/// hardcoded inline in `download()`, which is how the pre-rebrand slug
+/// survived here while the rest of the app said Moor.
+pub const UPSTREAM_INSTALL_REPO: &str = "NousResearch/hermes-agent";
+
+/// Which GitHub `OWNER/REPO` to download install.ps1/sh from when the network
+/// path is unavoidable.  Precedence: baked/runtime pin (`pin.repo`) ->
+/// explicit runtime override (`$MOOR_GITHUB_REPO` / `$MOOR_GITHUB_FORK`) ->
+/// upstream default.
+pub fn resolve_install_repo(pin: &Pin) -> String {
+    if let Some(r) = pin.repo.as_ref().map(|s| s.trim()).filter(|s| !s.is_empty()) {
+        return r.trim_end_matches('/').to_string();
+    }
+    for var in ["MOOR_GITHUB_REPO", "MOOR_GITHUB_FORK"] {
+        if let Ok(v) = std::env::var(var) {
+            let v = v.trim().to_string();
+            if !v.is_empty() {
+                return v.trim_end_matches('/').to_string();
+            }
+        }
+    }
+    UPSTREAM_INSTALL_REPO.to_string()
+}
+
 /// Validates a string looks like a git SHA (7+ hex chars). Mirrors
 /// `STAMP_COMMIT_RE` from bootstrap-runner.ts.
 fn is_valid_commit(s: &str) -> bool {
@@ -188,18 +215,20 @@ pub async fn resolve(
             });
         }
         CachePlan::Fetch { stale_ok } => {
+            let repo = resolve_install_repo(pin);
             emit_log(&format!(
-                "[bootstrap] downloading {} for {} {} from GitHub",
+                "[bootstrap] downloading {} for {} {} from GitHub ({})",
                 kind.filename(),
                 if immutable {
                     "commit"
                 } else {
                     "mutable ref"
                 },
-                truncate_ref(&commit_or_ref)
+                truncate_ref(&commit_or_ref),
+                repo,
             ));
 
-            match download(kind, &commit_or_ref, &cached).await {
+            match download(kind, &commit_or_ref, &cached, &repo).await {
                 Ok(()) => {
                     emit_log(&format!("[bootstrap] cached to {}", cached.display()));
                     Ok(ResolvedScript {
@@ -235,6 +264,10 @@ pub async fn resolve(
 pub struct Pin {
     pub commit: Option<String>,
     pub branch: Option<String>,
+    /// `OWNER/REPO` slug for the network fallback (baked at compile time via
+    /// `BUILD_PIN_REPO` or overridden at runtime).  `None` means "upstream
+    /// default" — see `resolve_install_repo`.
+    pub repo: Option<String>,
 }
 
 fn cached_path(kind: ScriptKind, commit_or_ref: &str) -> PathBuf {
@@ -348,9 +381,10 @@ fn upgrade_cached_script(kind: ScriptKind, cached: &Path, emit_log: &impl Fn(&st
 /// black-holed connection (captive portal, hung proxy, silently dropped
 /// packets) never errors — the whole bootstrap would hang here instead of
 /// falling back to the cached script.
-async fn download(kind: ScriptKind, commit_or_ref: &str, dest_path: &Path) -> Result<()> {
+async fn download(kind: ScriptKind, commit_or_ref: &str, dest_path: &Path, repo: &str) -> Result<()> {
     let url = format!(
-        "https://raw.githubusercontent.com/NousResearch/hermes-agent/{}/scripts/{}",
+        "https://raw.githubusercontent.com/{}/{}/scripts/{}",
+        repo,
         commit_or_ref,
         kind.filename()
     );
@@ -382,7 +416,7 @@ async fn download(kind: ScriptKind, commit_or_ref: &str, dest_path: &Path) -> Re
 
     if !response.status().is_success() {
         return Err(anyhow!(
-            "Failed to download {}: HTTP {} from {}",
+            "Failed to download {}: HTTP {} from {} (offline? rebuild Moor-Setup with the offline bundle so first launch needs no download)",
             kind.filename(),
             response.status(),
             url
@@ -420,6 +454,20 @@ async fn download(kind: ScriptKind, commit_or_ref: &str, dest_path: &Path) -> Re
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn resolve_install_repo_prefers_pin_then_upstream() {
+        // Baked pin wins (Moor fork builds stamp their own slug here).
+        let pinned = Pin {
+            commit: None,
+            branch: Some("main".to_string()),
+            repo: Some("moor-inc/moor".to_string()),
+        };
+        assert_eq!(resolve_install_repo(&pinned), "moor-inc/moor");
+
+        // No pin -> upstream default (legacy behaviour preserved).
+        assert_eq!(resolve_install_repo(&Pin::default()), UPSTREAM_INSTALL_REPO);
+    }
 
     #[test]
     fn is_valid_commit_accepts_short_and_full_shas() {

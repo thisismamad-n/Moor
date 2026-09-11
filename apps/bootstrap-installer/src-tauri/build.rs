@@ -33,6 +33,7 @@ fn main() {
 
     let commit = resolve_commit_pin();
     let branch = resolve_branch_pin();
+    let repo = resolve_repo_pin();
 
     if let Some(c) = &commit {
         println!("cargo:rustc-env=BUILD_PIN_COMMIT={c}");
@@ -50,6 +51,15 @@ fn main() {
                  set MOOR_BUILD_PIN_COMMIT for an immutable pin)"
             ),
         }
+    }
+    // Bake the OWNER/REPO slug the installer downloads install.ps1/sh from
+    // when no bundled script satisfies the request.  Explicit override first
+    // (Moor fork builds), then CI slug, then origin remote, then upstream —
+    // so Moor-branded builds never fetch from the pre-rebrand remote by
+    // accident, while legacy/upstream checkouts keep working unchanged.
+    if let Some(r) = &repo {
+        println!("cargo:rustc-env=BUILD_PIN_REPO={r}");
+        println!("cargo:warning=moor-bootstrap: install-script repo {r}");
     }
     if commit.is_none() && branch.is_none() {
         // Fail loudly rather than silently produce a binary that errors
@@ -81,6 +91,10 @@ fn main() {
     }
     println!("cargo:rerun-if-env-changed=MOOR_BUILD_PIN_COMMIT");
     println!("cargo:rerun-if-env-changed=MOOR_BUILD_PIN_BRANCH");
+    println!("cargo:rerun-if-env-changed=MOOR_BUILD_PIN_REPO");
+    println!("cargo:rerun-if-env-changed=MOOR_GITHUB_REPO");
+    println!("cargo:rerun-if-env-changed=MOOR_GITHUB_FORK");
+    println!("cargo:rerun-if-env-changed=GITHUB_REPOSITORY");
 
     // -----------------------------------------------------------------
     // Tauri windows manifest. See moor-setup.manifest for rationale —
@@ -164,6 +178,57 @@ fn resolve_branch_pin() -> Option<String> {
     } else {
         Some(s)
     }
+}
+
+/// Resolve the OWNER/REPO slug baked as BUILD_PIN_REPO: explicit Moor
+/// override > CI slug > origin remote > upstream default.  Always returns
+/// Some (the default keeps legacy builds working); the download path only
+/// needs it when the network fallback fires.
+fn resolve_repo_pin() -> Option<String> {
+    for var in ["MOOR_BUILD_PIN_REPO", "MOOR_GITHUB_REPO", "MOOR_GITHUB_FORK"] {
+        if let Ok(v) = std::env::var(var) {
+            let v = v.trim().trim_end_matches('/').to_string();
+            if !v.is_empty() {
+                return Some(v);
+            }
+        }
+    }
+    if let Ok(v) = std::env::var("GITHUB_REPOSITORY") {
+        let v = v.trim().to_string();
+        if !v.is_empty() && v.contains('/') {
+            return Some(v);
+        }
+    }
+    if let Ok(out) = Command::new("git")
+        .args(["remote", "get-url", "origin"])
+        .output()
+    {
+        if out.status.success() {
+            if let Ok(s) = String::from_utf8(out.stdout) {
+                if let Some(slug) = parse_github_slug(s.trim()) {
+                    return Some(slug);
+                }
+            }
+        }
+    }
+    Some("NousResearch/hermes-agent".to_string())
+}
+
+/// Parse `https://github.com/O/R(.git)`, `git@github.com:O/R(.git)` and
+/// `ssh://git@github.com/O/R(.git)` to `O/R`.  None when unparseable.
+fn parse_github_slug(remote_url: &str) -> Option<String> {
+    let lower = remote_url.to_lowercase();
+    let pos = lower.find("github.com")?;
+    let rest = &remote_url[pos + "github.com".len()..];
+    let path = rest.trim_start_matches([':', '/']);
+    let path = path.strip_suffix(".git").unwrap_or(path);
+    let mut parts = path.split('/');
+    let owner = parts.next()?.trim();
+    let repo = parts.next()?.trim();
+    if owner.is_empty() || repo.is_empty() || repo.contains('/') {
+        return None;
+    }
+    Some(format!("{owner}/{repo}"))
 }
 
 fn locate_git_dir() -> Option<std::path::PathBuf> {

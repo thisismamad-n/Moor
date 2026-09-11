@@ -8,7 +8,10 @@ import {
   fromFallback,
   fromLocalGit,
   isFallbackCommit,
-  resolveStamp
+  parseRepoSlug,
+  resolveRepoSlug,
+  resolveStamp,
+  UPSTREAM_REPO
 } from './write-build-stamp.mjs'
 
 test('fromCI reads GITHUB_SHA / GITHUB_REF_NAME', () => {
@@ -81,6 +84,40 @@ test('resolveStamp falls back when neither CI nor git is available', () => {
     commit: FALLBACK_COMMIT,
     branch: FALLBACK_BRANCH,
     dirty: false,
-    source: 'fallback'
+    source: 'fallback',
+    repo: UPSTREAM_REPO
   })
+})
+
+test('parseRepoSlug handles https, ssh, and ssh-url remotes', () => {
+  assert.equal(parseRepoSlug('https://github.com/moor-inc/moor.git'), 'moor-inc/moor')
+  assert.equal(parseRepoSlug('https://github.com/NousResearch/hermes-agent'), 'NousResearch/hermes-agent')
+  assert.equal(parseRepoSlug('git@github.com:moor-inc/moor.git'), 'moor-inc/moor')
+  assert.equal(parseRepoSlug('ssh://git@github.com/moor-inc/moor.git'), 'moor-inc/moor')
+  assert.equal(parseRepoSlug('not-a-remote'), null)
+  assert.equal(parseRepoSlug(''), null)
+})
+
+test('resolveRepoSlug prefers explicit Moor override over CI over origin', () => {
+  const noGit = () => null
+  assert.equal(
+    resolveRepoSlug({ env: { MOOR_GITHUB_REPO: 'moor-inc/moor' }, execFn: noGit }),
+    'moor-inc/moor'
+  )
+  assert.equal(
+    resolveRepoSlug({ env: { MOOR_GITHUB_FORK: 'moor-inc/moor' }, execFn: noGit }),
+    'moor-inc/moor'
+  )
+  assert.equal(
+    resolveRepoSlug({ env: { GITHUB_REPOSITORY: 'moor-inc/moor' }, execFn: noGit }),
+    'moor-inc/moor'
+  )
+  assert.equal(
+    resolveRepoSlug({
+      env: {},
+      execFn: cmd => (cmd === 'git remote get-url origin' ? 'git@github.com:moor-inc/moor.git' : null)
+    }),
+    'moor-inc/moor'
+  )
+  assert.equal(resolveRepoSlug({ env: {}, execFn: noGit }), UPSTREAM_REPO)
 })
