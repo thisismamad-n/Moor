@@ -69,7 +69,7 @@ class GatewayKanbanWatchersMixin:
         one tick's failure never stops the next.
         """
         try:
-            from hermes_cli.config import load_config as _load_config
+            from moor_cli.config import load_config as _load_config
 
             cfg = _load_config()
             kanban_cfg = cfg.get("kanban", {}) if isinstance(cfg, dict) else {}
@@ -310,7 +310,7 @@ class GatewayKanbanWatchersMixin:
                         "kanban dispatcher stuck: ready queue non-empty for "
                         "%d consecutive ticks but 0 workers spawned.%s Check "
                         "profile health (venv, PATH, credentials) and "
-                        "`hermes kanban list --status ready`.",
+                        "`moor kanban list --status ready`.",
                         bad_ticks, f" Last tick held back: {held}." if held else "",
                     )
                     last_warn_at = now

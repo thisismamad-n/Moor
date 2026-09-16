@@ -16,9 +16,9 @@ from contextlib import contextmanager
 from typing import Any, Callable, Optional
 
 from agent.redact import redact_sensitive_text
-from hermes_cli.goals import judge_goal
+from moor_cli.goals import judge_goal
 from tools.registry import no_cache_check_fn, registry, tool_error
-from hermes_cli.config import cfg_get, load_config
+from moor_cli.config import cfg_get, load_config
 from tools.kanban_tools_schemas import (
     KANBAN_ATTACH_SCHEMA,
     KANBAN_ATTACH_URL_SCHEMA, KANBAN_ATTACHMENTS_SCHEMA, KANBAN_BLOCK_SCHEMA, KANBAN_COMMENT_SCHEMA,
@@ -50,7 +50,7 @@ def _profile_has_kanban_toolset() -> bool:
             return False
         # Offer-time skill discovery has no platform selection. A saved opt-in
         # makes the playbook relevant; actual schemas still use the scope above.
-        from hermes_cli.tools_config import _get_platform_tools
+        from moor_cli.tools_config import _get_platform_tools
 
         platforms = config.get("platform_toolsets") or {}
         return any(
@@ -603,7 +603,7 @@ def _handle_complete(args: dict, **kw) -> str:
             # worker is executing: refusing here is what keeps that worker's run open.
             return tool_error(
                 f"kanban_complete refused: {claim_err}. Nothing changed. Wait for the worker "
-                f"to finish, or an operator can run `hermes kanban complete --force {tid}`.")
+                f"to finish, or an operator can run `moor kanban complete --force {tid}`.")
         except kb.HallucinatedCardsError as hall_err:
             # The gate runs before the write txn, so the task was NOT mutated;
             # say so explicitly or the model treats the error as terminal and
@@ -671,7 +671,7 @@ def _handle_request_review(args: dict, **kw) -> str:
     # Reviewer is model-supplied free text stored durably on the event payload.
     reviewer = _redact_opt(args.get("reviewer") or None)
     if reviewer:
-        from hermes_cli.profiles import list_profile_names, profile_exists
+        from moor_cli.profiles import list_profile_names, profile_exists
 
         # A non-profile reviewer would park the card in `review` on an assignee
         # the dispatcher can never spawn (#106163).
@@ -874,12 +874,12 @@ def _handle_create(args: dict, **kw) -> str:
     parents = _coerce_str_list(args.get("parents") or [], "parents", "task ids")
     with _board(args.get("board")) as (kb, conn):
         from tools.async_delegation import _current_origin_session_id
-        self_tid = (os.environ.get("HERMES_KANBAN_TASK")
+        self_tid = (os.environ.get("MOOR_KANBAN_TASK")
                     if _is_dispatcher_owned_worker() else None)
         self_task = kb.get_task(conn, self_tid) if self_tid else None
         # The worker/API runtime may be transient; the owning task's origin is durable.
         session_id = (args.get("session_id") or (self_task.session_id if self_task else None)
-                      or _current_origin_session_id() or os.environ.get("HERMES_SESSION_ID"))
+                      or _current_origin_session_id() or os.environ.get("MOOR_SESSION_ID"))
         if project_id is None and workspace_kind is None and workspace_path is None:
             if self_task is not None and self_task.project_id:
                 project_id, project_source_task_id = self_task.project_id, self_task.id
@@ -933,8 +933,8 @@ def _resolve_notify_target() -> Optional[dict[str, Any]]:
     delivery_metadata: dict[str, Any] = {
         k: v for k, v in (
             ("thread_id", thread_id), ("chat_type", chat_type),
-            ("scope_id", env("HERMES_SESSION_SCOPE_ID", "")),
-            ("parent_chat_id", env("HERMES_SESSION_PARENT_CHAT_ID", "")),
+            ("scope_id", env("MOOR_SESSION_SCOPE_ID", "")),
+            ("parent_chat_id", env("MOOR_SESSION_PARENT_CHAT_ID", "")),
         ) if v}
     if (platform.lower() == "telegram" and thread_id
             and (chat_type or "").lower() in {"dm", "direct", "private"}):
@@ -967,7 +967,7 @@ def _maybe_auto_subscribe(conn: Any, task_id: str) -> bool:
         target = _resolve_notify_target()
         if target is None:
             return False  # CLI / cron / test — no persistent channel
-        from hermes_cli import kanban_db_notify as _kbn
+        from moor_cli import kanban_db_notify as _kbn
         # Inheritance and explicit subscriptions already encode the delivery policy.
         # Auto-subscribe must not turn a passive destination into an agent wake.
         if any(sub["platform"] == target["platform"] and sub["chat_id"] == target["chat_id"]

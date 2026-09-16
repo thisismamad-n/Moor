@@ -182,9 +182,9 @@ class TestTelegramBotCommands:
         """Stubbed registry entry with em/en dashes comes back hyphenated."""
         fake = CommandDef(name="dashy", description="does a \u2014 b \u2013 c",
                           category="Session")
-        monkeypatch.setattr("hermes_cli.commands_platforms._gateway_available_commands",
+        monkeypatch.setattr("moor_cli.commands_platforms._gateway_available_commands",
                             lambda: [fake])
-        monkeypatch.setattr("hermes_cli.commands_platforms._iter_plugin_command_entries",
+        monkeypatch.setattr("moor_cli.commands_platforms._iter_plugin_command_entries",
                             lambda: iter([]))
         assert ("dashy", "does a - b - c") in telegram_bot_commands(
             include_plugins=False)
@@ -304,7 +304,7 @@ class TestGatewayConfigGate:
         # Write a config with the gate off (default)
         config_file = tmp_path / "config.yaml"
         config_file.write_text("display:\n  tool_progress_command: false\n", encoding="utf-8")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
 
         lines = gateway_help_lines()
         joined = "\n".join(lines)
@@ -314,7 +314,7 @@ class TestGatewayConfigGate:
     def test_config_gate_included_in_slack_when_on(self, tmp_path, monkeypatch):
         config_file = tmp_path / "config.yaml"
         config_file.write_text("display:\n  tool_progress_command: true\n", encoding="utf-8")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
 
         mapping = slack_subcommand_map()
         assert "verbose" in mapping

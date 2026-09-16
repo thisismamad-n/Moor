@@ -27,16 +27,16 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _MEMORY_PLUGINS_DIR = Path(__file__).parent
-ENTRY_POINTS_GROUP = "hermes_agent.memory_providers"
-# Per Hermes home (plugin managers are per home too): pruning under one multiplexed profile must
+ENTRY_POINTS_GROUP = "moor_agent.memory_providers"
+# Per Moor home (plugin managers are per home too): pruning under one multiplexed profile must
 # only retract that profile's provider skills, never a sibling profile's.
 _REGISTERED_MEMORY_PROVIDER_SKILLS: dict[str, dict[str, Path]] = {}
 
 
 def _registered_skills_for_active_home() -> dict[str, Path]:
-    from hermes_constants import hermes_home_key
+    from moor_constants import moor_home_key
 
-    return _REGISTERED_MEMORY_PROVIDER_SKILLS.setdefault(hermes_home_key(), {})
+    return _REGISTERED_MEMORY_PROVIDER_SKILLS.setdefault(moor_home_key(), {})
 
 # Synthetic parent package so user-installed providers don't collide with bundled ones.
 _USER_NAMESPACE = "_moor_user_memory"

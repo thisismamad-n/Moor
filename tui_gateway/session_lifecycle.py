@@ -139,7 +139,7 @@ def _transfer_active_session_slot(sid: str, session: dict, *, new_session_id: st
     if lease is None:
         return True
     try:
-        from hermes_cli.active_sessions import transfer_active_session
+        from moor_cli.active_sessions import transfer_active_session
         if transfer_active_session(lease, session_id=new_session_id, metadata={
                 "live_session_id": sid, "bot_live_delivery_consumer": True}):
             return True
@@ -240,7 +240,7 @@ def _finalize_session(session: dict | None, end_reason: str = "tui_close") -> No
     with _session_profile_runtime_scope(session):
         if agent is not None:
             with contextlib.suppress(Exception):
-                from hermes_cli.lifecycle import invoke_hook
+                from moor_cli.lifecycle import invoke_hook
                 invoke_hook(
                     "on_session_end", completed=False, interrupted=True,
                     session_id=getattr(agent, "session_id", None) or session.get("session_key", ""),
@@ -349,9 +349,9 @@ def _pop_session_by_id(sid: str) -> dict | None:
     with _sessions_lock:
         session = _sessions.pop(sid, None)
         if session is not None:
-            from hermes_constants import get_hermes_home
+            from moor_constants import get_moor_home
 
-            home = str(Path(session.get("profile_home") or get_hermes_home()).resolve())
+            home = str(Path(session.get("profile_home") or get_moor_home()).resolve())
             last_active = time.time() if session.get("running") else float(session.get("last_active") or 0)
             _closed_session_activity[home] = max(_closed_session_activity.get(home, 0), last_active)
             session["_closing"] = True
@@ -424,7 +424,7 @@ def _interrupt_session_turn(sid: str, session: dict, *, request_id: str | None =
         # live TUI/desktop turn is the same "loop is gone" event for plugins holding per-turn external
         # resources. Observer-only; dispatch failures never break the interrupt.
         try:
-            from hermes_cli.plugins import invoke_hook as _invoke_hook
+            from moor_cli.plugins import invoke_hook as _invoke_hook
             _invoke_hook(
                 "agent_loop_stopped", session_key=session.get("session_key", ""), platform="tui",
                 reason="user_stop", invalidation_reason="session_interrupt",

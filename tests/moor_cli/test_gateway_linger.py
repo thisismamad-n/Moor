@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-import hermes_cli.gateway as gateway
+import moor_cli.gateway as gateway
 
 
 class TestEnsureLingerEnabled:
@@ -174,11 +174,11 @@ def test_systemd_install_calls_linger_helper(monkeypatch, tmp_path, capsys):
 def test_systemd_install_targets_linger_at_system_service_user(monkeypatch, tmp_path, user):
     """Fresh --system install enables linger for the unit's User= — root too, since restart-safe
     workers always cross systemd-run --user."""
-    unit_path = tmp_path / "systemd" / "hermes-gateway.service"
+    unit_path = tmp_path / "systemd" / "moor-gateway.service"
     helper_calls = []
 
     monkeypatch.setattr(gateway, "_require_root_for_system_service", lambda action: None)
-    monkeypatch.setattr(gateway, "has_legacy_hermes_units", lambda: False)
+    monkeypatch.setattr(gateway, "has_legacy_moor_units", lambda: False)
     monkeypatch.setattr(gateway, "get_systemd_unit_path", lambda system=False: unit_path)
     monkeypatch.setattr(
         gateway,
@@ -198,15 +198,15 @@ def test_systemd_install_targets_linger_at_system_service_user(monkeypatch, tmp_
 @pytest.mark.parametrize("unit_is_current", [True, False])
 def test_existing_system_install_repairs_linger_for_configured_user(monkeypatch, tmp_path, unit_is_current):
     """Re-running install on an affected system service provisions linger for the unit's User=."""
-    unit_path = tmp_path / "systemd" / "hermes-gateway.service"
+    unit_path = tmp_path / "systemd" / "moor-gateway.service"
     unit_path.parent.mkdir(parents=True)
     unit_path.write_text("[Service]\nUser=alice\n", encoding="utf-8")
     helper_calls = []
 
     monkeypatch.setattr(gateway, "_require_root_for_system_service", lambda action: None)
-    monkeypatch.setattr(gateway, "has_legacy_hermes_units", lambda: False)
+    monkeypatch.setattr(gateway, "has_legacy_moor_units", lambda: False)
     monkeypatch.setattr(gateway, "get_systemd_unit_path", lambda system=False: unit_path)
-    monkeypatch.setattr(gateway, "_sync_hermes_home_from_systemd_unit", lambda system=False: None)
+    monkeypatch.setattr(gateway, "_sync_moor_home_from_systemd_unit", lambda system=False: None)
     monkeypatch.setattr(gateway, "systemd_unit_is_current", lambda system=False: unit_is_current)
     monkeypatch.setattr(gateway, "refresh_systemd_unit_if_needed", lambda system=False: None)
     monkeypatch.setattr(gateway, "_run_systemctl", lambda *args, **kwargs: None)
@@ -221,13 +221,13 @@ def test_existing_system_install_repairs_linger_for_configured_user(monkeypatch,
 def test_systemd_install_repair_path_keeps_linger_guarantee(monkeypatch, tmp_path, system):
     """Repairing a stale unit used to return before the linger step, so an upgraded headless
     user service died at logout (#12863). System scope never touches user linger."""
-    unit_path = tmp_path / "hermes-gateway.service"
+    unit_path = tmp_path / "moor-gateway.service"
     unit_path.write_text("old unit\n", encoding="utf-8")
     monkeypatch.setattr(gateway, "get_systemd_unit_path", lambda system=False: unit_path)
     monkeypatch.setattr(gateway, "systemd_unit_is_current", lambda system=False: False)
-    monkeypatch.setattr(gateway, "has_legacy_hermes_units", lambda: False)
+    monkeypatch.setattr(gateway, "has_legacy_moor_units", lambda: False)
     monkeypatch.setattr(gateway, "_require_root_for_system_service", lambda _action: None)
-    monkeypatch.setattr(gateway, "_sync_hermes_home_from_systemd_unit", lambda system=False: None)
+    monkeypatch.setattr(gateway, "_sync_moor_home_from_systemd_unit", lambda system=False: None)
     monkeypatch.setattr(gateway, "_read_systemd_user_from_unit", lambda path: None)
     monkeypatch.setattr(gateway, "refresh_systemd_unit_if_needed", lambda system=False: None)
     monkeypatch.setattr(gateway, "_run_systemctl", lambda *args, **kwargs: None)

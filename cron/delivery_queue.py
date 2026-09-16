@@ -22,8 +22,8 @@ from typing import Any, Callable, Iterator, Optional
 
 from agent.redact import redact_sensitive_text
 from cron.executions import _owner_is_live, _process_start_time
-from hermes_constants import get_hermes_home
-from hermes_time import now as _hermes_now
+from moor_constants import get_moor_home
+from moor_time import now as _moor_now
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ def _path() -> Path:
 
 
 def _initialize_schema(conn: sqlite3.Connection) -> None:
-    from hermes_cli.sqlite_util import add_column_if_missing
+    from moor_cli.sqlite_util import add_column_if_missing
 
     conn.execute(
         """CREATE TABLE IF NOT EXISTS deliveries (
@@ -111,12 +111,12 @@ def _initialize_schema(conn: sqlite3.Connection) -> None:
 
 def _connect() -> sqlite3.Connection:
     # Late imports: a scheduler daemon that outlives an on-disk upgrade already has the OLD
-    # ``hermes_cli.sqlite_util`` / ``cron.jobs`` cached, so new names must be resolved at call time,
+    # ``moor_cli.sqlite_util`` / ``cron.jobs`` cached, so new names must be resolved at call time,
     # not at import time (the guarantee cron/ledger.py used to carry, see e24c8499).
-    from hermes_cli.sqlite_util import open_db
+    from moor_cli.sqlite_util import open_db
 
     path = _path()
-    conn = open_db(path, db_label="cron/deliveries.db", synchronous_full=True, initialize=_initialize_schema)
+    conn = open_db(path, db_label="cron/deliveries.db", synchromoor_full=True, initialize=_initialize_schema)
     try:
         path.chmod(0o600)
     except OSError:
@@ -129,7 +129,7 @@ def _transaction() -> Iterator[sqlite3.Connection]:
     # Pruning is done explicitly by the paths that create terminal
     # rows (_finish / recover_abandoned / _terminalize_wait_timeout);
     # read-only polls must not pay for a full-table UPDATE + COUNT.
-    from hermes_cli.sqlite_util import transaction
+    from moor_cli.sqlite_util import transaction
 
     with _lock, transaction(_connect()) as conn:
         yield conn

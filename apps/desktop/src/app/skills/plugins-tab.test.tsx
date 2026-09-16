@@ -122,13 +122,13 @@ describe('PluginsTab', () => {
 
   it('renders a unified package as ONE row with a Desktop switch and an Agent switch', () => {
     $pluginRecords.set({
-      media: { id: 'media', name: 'Media Studio', kind: 'disk', status: 'loaded', packageName: 'hermes-media-studio' }
+      media: { id: 'media', name: 'Media Studio', kind: 'disk', status: 'loaded', packageName: 'moor-media-studio' }
     })
     $agentPlugins.set([
       {
         description: '',
-        key: 'hermes-media-studio',
-        name: 'hermes-media-studio',
+        key: 'moor-media-studio',
+        name: 'moor-media-studio',
         source: 'git',
         status: 'disabled',
         version: '1'
@@ -153,7 +153,7 @@ describe('PluginsTab', () => {
         name: 'Media Studio',
         kind: 'disk',
         status: 'loaded',
-        packageName: 'hermes-media-studio',
+        packageName: 'moor-media-studio',
         packageOrigin: { repo: 'https://github.com/NousResearch/hermes-media-studio.git', sha: 'abc' }
       }
     })
@@ -175,7 +175,7 @@ describe('PluginsTab', () => {
 
   it('disables "Install here" when the package has no known origin (hand-copied folder)', () => {
     $pluginRecords.set({
-      media: { id: 'media', name: 'Media Studio', kind: 'disk', status: 'loaded', packageName: 'hermes-media-studio' }
+      media: { id: 'media', name: 'Media Studio', kind: 'disk', status: 'loaded', packageName: 'moor-media-studio' }
     })
 
     renderPlugins({ profile: 'workbot', scopeLabel: 'workbot' })

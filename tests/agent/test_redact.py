@@ -1018,7 +1018,7 @@ class TestTerminalOutputRedaction:
         assert _command_reads_secret_file("cat -n .env")
         assert _command_reads_secret_file("cat -A .env")
         # With paths
-        assert _command_reads_secret_file("cat ~/.hermes/.env")
+        assert _command_reads_secret_file("cat ~/.moor/.env")
         assert _command_reads_secret_file("cat /home/user/project/.env")
         assert _command_reads_secret_file("cat ./config/.env.local")
         # In a pipeline / sequence
@@ -1112,9 +1112,9 @@ class TestTerminalOutputRedaction:
     @pytest.mark.parametrize(
         ("command", "output", "secret"),
         [
-            ("cat ~/.hermes/config.yaml", "api_key: hermesConfigSecret123", "hermesConfigSecret123"),
+            ("cat ~/.moor/config.yaml", "api_key: moorConfigSecret123", "moorConfigSecret123"),
             (
-                "head ~/.hermes/profiles/work/config.yaml",
+                "head ~/.moor/profiles/work/config.yaml",
                 "provider.token=profileConfigSecret456",
                 "profileConfigSecret456",
             ),
@@ -1127,17 +1127,17 @@ class TestTerminalOutputRedaction:
             ),
             ("sed -n '1,20p' ~/.zprofile", "api_key: zprofileSecret789", "zprofileSecret789"),
             (
-                'cat "$HERMES_HOME/config.yaml"',
+                'cat "$MOOR_HOME/config.yaml"',
                 "SERVICE_TOKEN=variablePathSecret123456789",
                 "variablePathSecret123456789",
             ),
             (
-                'cat "${HERMES_HOME}/config.yaml"',
+                'cat "${MOOR_HOME}/config.yaml"',
                 "SERVICE_TOKEN=variablePathSecret123456789",
                 "variablePathSecret123456789",
             ),
             (
-                "cat $HOME/.hermes/config.yaml",
+                "cat $HOME/.moor/config.yaml",
                 "SERVICE_TOKEN=homeVariablePathSecret123456",
                 "homeVariablePathSecret123456",
             ),
@@ -1147,7 +1147,7 @@ class TestTerminalOutputRedaction:
                 "awkQuotedSecret123",
             ),
             (
-                "grep 'foo|bar' ~/.hermes/config.yaml",
+                "grep 'foo|bar' ~/.moor/config.yaml",
                 "SERVICE_TOKEN=grepQuotedSecret456",
                 "grepQuotedSecret456",
             ),
@@ -1163,8 +1163,8 @@ class TestTerminalOutputRedaction:
         [
             "cat config.yaml",
             "cat /project/config.yaml",
-            "cat ~/.hermes/config.example.yaml",
-            "cat ~/.hermes/config.template.yaml",
+            "cat ~/.moor/config.example.yaml",
+            "cat ~/.moor/config.template.yaml",
             "cat ~/.bashrc.example",
             'cat "$OTHER/config.yaml"',
             "grep TOKEN app.py",
@@ -1330,18 +1330,18 @@ class TestSecretFileAssignmentRedaction:
         assert time.perf_counter() - started < 1.0
 
 
-class TestHermesHomePathClassification:
-    """``_is_secret_file_arg`` must see the RESOLVED Hermes home: a managed Windows home
-    (``%LOCALAPPDATA%\\hermes``) has no ``.hermes`` segment and a resolved path never spells
-    ``$HERMES_HOME``, so the literal test alone classified its ``config.yaml`` as ordinary YAML."""
+class TestMoorHomePathClassification:
+    """``_is_secret_file_arg`` must see the RESOLVED Moor home: a managed Windows home
+    (``%LOCALAPPDATA%\\moor``) has no ``.moor`` segment and a resolved path never spells
+    ``$MOOR_HOME``, so the literal test alone classified its ``config.yaml`` as ordinary YAML."""
 
     def test_resolved_home_config_is_secret_bearing_but_project_config_is_not(self, tmp_path, monkeypatch):
         import agent.file_safety as file_safety
         from agent.redact import _is_secret_file_arg
 
-        home = tmp_path / "hermes"  # no ".hermes" segment
-        monkeypatch.setattr(file_safety, "_hermes_home_path", lambda: home)
-        monkeypatch.setattr(file_safety, "_hermes_root_path", lambda: home)
+        home = tmp_path / "moor"  # no ".moor" segment
+        monkeypatch.setattr(file_safety, "_moor_home_path", lambda: home)
+        monkeypatch.setattr(file_safety, "_moor_root_path", lambda: home)
         assert _is_secret_file_arg(str(home / "config.yaml"))
         assert _is_secret_file_arg(str(home / "profiles" / "coder" / "config.yaml"))
         assert _is_secret_file_arg(str(home / "backups" / "config" / "config.yaml.good.20260914-184559"))

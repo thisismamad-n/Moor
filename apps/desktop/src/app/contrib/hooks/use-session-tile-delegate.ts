@@ -23,7 +23,7 @@ import {
   sessionTileOwnerRoute,
   setSessionTileDelegate
 } from '@/store/session-states'
-import type { SessionResumeResult } from '@/types/hermes'
+import type { SessionResumeResult } from '@/types/moor'
 
 import type { usePromptActions } from '../../session/hooks/use-prompt-actions'
 import { singleFlightSessionResume } from '../../session/hooks/use-prompt-actions/single-flight-resume'

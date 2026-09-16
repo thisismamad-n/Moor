@@ -1509,7 +1509,7 @@ class TestBuildSafeEnv:
         """Under multiplex the stdio child gets the ROUTED profile's value for a source-tagged name,
         never the launch profile's os.environ copy; a name the profile lacks is omitted."""
         from agent.secret_scope import set_multiplex_active, set_secret_scope, reset_secret_scope
-        from hermes_cli import env_loader
+        from moor_cli import env_loader
         from tools.mcp_tool_config import _build_safe_env
 
         monkeypatch.setitem(env_loader._SECRET_SOURCES, "GITHUB_TOKEN", "bitwarden")

@@ -26,12 +26,12 @@ class CopilotACPProfile(ProviderProfile):
     ) -> list[str] | None:
         """Enabled models advertised by a short-lived signed-in ACP session (``session/new``).
 
-        The CLI may keep its login in an OS credential store with no token Hermes can reuse, so
+        The CLI may keep its login in an OS credential store with no token Moor can reuse, so
         the session is the only source that reflects the account's enablement. ``api_key`` /
         ``base_url`` are ignored: the subprocess owns auth. None when the CLI is missing, refuses
         ``--acp``, or the probe fails/times out — callers fall back to their next source.
         """
-        from hermes_cli.auth import resolve_external_process_provider_credentials
+        from moor_cli.auth import resolve_external_process_provider_credentials
 
         try:
             creds = resolve_external_process_provider_credentials(self.name)

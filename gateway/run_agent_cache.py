@@ -16,7 +16,7 @@ from agent.interrupt_compat import _accepts_keyword
 from gateway.config import Platform
 from gateway.session import SessionSource, build_session_context_prompt
 from gateway.run_shutdown import _log_suppressed
-from hermes_cli.config import cfg_get
+from moor_cli.config import cfg_get
 
 if TYPE_CHECKING:  # string annotations only; never imported at runtime (cycle)
     from gateway.run import GatewayRunner  # noqa: F401
@@ -232,14 +232,14 @@ class GatewayAgentCacheMixin:
 
     def _is_intentional_model_switch(self, session_key: str, agent: Any, config_model: str) -> bool:
         """True when *agent* running a model other than *config_model* is deliberate: a /model session
-        override names that model, or the Nous gateway moved the session off the ``nous/welcome``
+        override names that model, or the Moor gateway moved the session off the ``moor/welcome``
         alias that *config_model* still carries (``anon_auth.apply_model_switch``)."""
         override = self._session_model_override(session_key)
         if override is not None and override.get("model") == agent.model:
             return True
         # Exactly the recorded move (alias -> backing): a later fallback onto some other model is
         # ordinary drift and still evicts.
-        return getattr(agent, "_nous_model_switch", None) == (config_model, agent.model)
+        return getattr(agent, "_moor_model_switch", None) == (config_model, agent.model)
 
     def _release_running_agent_state(
         self, session_key: str, *, run_generation: Optional[int] = None
@@ -477,7 +477,7 @@ class GatewayAgentCacheMixin:
             # running-agent fast path; the pending-sentinel /stop has no in-flight work, so it stays
             # silent. Dispatch failures are swallowed so a misbehaving plugin cannot break an interrupt.
             try:
-                from hermes_cli.plugins import invoke_hook as _invoke_hook
+                from moor_cli.plugins import invoke_hook as _invoke_hook
 
                 _invoke_hook(
                     "agent_loop_stopped",
@@ -699,13 +699,13 @@ class GatewayAgentCacheMixin:
         And the LRU-cap eviction runs inside the REQUESTING turn, whose agent may belong to another
         profile — so "some scope is present" is not enough either. The owner comes from the session
         key: a named profile's home, else the DEFAULT profile (``agent:main:`` keys), which is the
-        root Hermes dir even when the gateway was launched under a named profile. Its scope is
+        root Moor dir even when the gateway was launched under a named profile. Its scope is
         entered unless the current one already is the owner's."""
         from agent.secret_scope import current_secret_scope, is_multiplex_active
         scope = nullcontext()
         if is_multiplex_active():
             from gateway.run import _profile_runtime_scope
-            from hermes_constants import get_default_hermes_root, get_hermes_home, hermes_home_key
+            from moor_constants import get_default_moor_root, get_moor_home, moor_home_key
             owner = None
             store = getattr(self, "session_store", None)
             if session_key and store is not None:
@@ -714,8 +714,8 @@ class GatewayAgentCacheMixin:
                 except Exception:
                     logger.warning("Could not resolve the owning profile for %s; releasing under the default profile",
                                    session_key, exc_info=True)
-            owner_home = Path(owner) if owner else get_default_hermes_root()
-            if current_secret_scope() is None or hermes_home_key(get_hermes_home()) != hermes_home_key(owner_home):
+            owner_home = Path(owner) if owner else get_default_moor_root()
+            if current_secret_scope() is None or moor_home_key(get_moor_home()) != moor_home_key(owner_home):
                 scope = _profile_runtime_scope(owner_home)
         with scope:
             target(*args)

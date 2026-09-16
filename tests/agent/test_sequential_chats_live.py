@@ -11,7 +11,7 @@ reproduction against a real provider so we have a true end-to-end smoke test
 for any future keepalive / transport plumbing.
 
 Opt-in — not part of default CI:
-    HERMES_LIVE_TESTS=1 pytest tests/agent/test_sequential_chats_live.py -v
+    MOOR_LIVE_TESTS=1 pytest tests/agent/test_sequential_chats_live.py -v
 
 Requires ``OPENROUTER_API_KEY`` to be set (or sourced via ~/.moor/.env).
 """

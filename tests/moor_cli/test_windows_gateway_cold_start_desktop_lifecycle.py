@@ -20,13 +20,13 @@ from __future__ import annotations
 
 import json
 
-from hermes_cli import gateway as hermes_gateway
-from hermes_cli import gateway_windows
-from hermes_cli import main as cli_main
-import hermes_cli.main_install_repair as main_install_repair
-from hermes_cli import process_identity
-from hermes_cli import update_cmd
-import hermes_cli.update_cmd_windows as update_cmd_windows
+from moor_cli import gateway as moor_gateway
+from moor_cli import gateway_windows
+from moor_cli import main as cli_main
+import moor_cli.main_install_repair as main_install_repair
+from moor_cli import process_identity
+from moor_cli import update_cmd
+import moor_cli.update_cmd_windows as update_cmd_windows
 
 
 def _live_serve_ledger_entry() -> dict:
@@ -136,7 +136,7 @@ def test_cold_start_aborts_when_desktop_owns_lifecycle(monkeypatch):
     spawned = []
     monkeypatch.setattr(cli_main, "_is_windows", lambda: True)
     monkeypatch.setattr(main_install_repair, "_is_windows", lambda: True)
-    monkeypatch.setattr(hermes_gateway, "find_gateway_pids", lambda **_k: [])
+    monkeypatch.setattr(moor_gateway, "find_gateway_pids", lambda **_k: [])
     monkeypatch.setattr(gateway_windows, "attested_death_generation", lambda **_k: None)
     monkeypatch.setattr(update_cmd, "_desktop_owns_gateway_lifecycle", lambda: True)
     monkeypatch.setattr(update_cmd_windows, "_desktop_owns_gateway_lifecycle", lambda: True)
@@ -157,11 +157,11 @@ def test_attested_dead_gateway_survives_desktop_ownership_and_marker_is_consumed
     evidence. It must keep the plan AND survive the spawn-time ownership re-check.
     Once the spawn happens the marker is consumed, so a stale crash marker cannot
     re-authorize a cold start against Desktop ownership on a later update."""
-    monkeypatch.setattr("hermes_cli.config.get_hermes_home", lambda: str(tmp_path))
+    monkeypatch.setattr("moor_cli.config.get_moor_home", lambda: str(tmp_path))
     monkeypatch.setattr(cli_main, "_is_windows", lambda: True)
     monkeypatch.setattr(main_install_repair, "_is_windows", lambda: True)
-    monkeypatch.setattr(hermes_gateway, "find_gateway_pids", lambda **_k: [])
-    monkeypatch.setattr(hermes_gateway, "find_windows_gateway_services", lambda **_k: [])
+    monkeypatch.setattr(moor_gateway, "find_gateway_pids", lambda **_k: [])
+    monkeypatch.setattr(moor_gateway, "find_windows_gateway_services", lambda **_k: [])
     monkeypatch.setattr(gateway_windows, "is_installed", lambda: True)
     monkeypatch.setattr(update_cmd, "_desktop_owns_gateway_lifecycle", lambda: True)
     monkeypatch.setattr(update_cmd_windows, "_desktop_owns_gateway_lifecycle", lambda: True)
@@ -200,15 +200,15 @@ def test_attested_dead_gateway_survives_desktop_ownership_and_marker_is_consumed
 def test_cold_start_is_authorized_by_the_token_generation_not_the_mutable_marker(
     monkeypatch, tmp_path, capsys
 ):
-    """#110020 review (a): the marker is a one-shot that a concurrent ``hermes gateway status``
+    """#110020 review (a): the marker is a one-shot that a concurrent ``moor gateway status``
     consumes between plan and execution. The spawn must still happen (authority lives on the
-    token), and a *newer* marker written by a concurrent ``hermes gateway start`` must not be
+    token), and a *newer* marker written by a concurrent ``moor gateway start`` must not be
     consumed as if it were ours."""
-    monkeypatch.setattr("hermes_cli.config.get_hermes_home", lambda: str(tmp_path))
+    monkeypatch.setattr("moor_cli.config.get_moor_home", lambda: str(tmp_path))
     monkeypatch.setattr(cli_main, "_is_windows", lambda: True)
     monkeypatch.setattr(main_install_repair, "_is_windows", lambda: True)
-    monkeypatch.setattr(hermes_gateway, "find_gateway_pids", lambda **_k: [])
-    monkeypatch.setattr(hermes_gateway, "find_windows_gateway_services", lambda **_k: [])
+    monkeypatch.setattr(moor_gateway, "find_gateway_pids", lambda **_k: [])
+    monkeypatch.setattr(moor_gateway, "find_windows_gateway_services", lambda **_k: [])
     monkeypatch.setattr(gateway_windows, "is_installed", lambda: True)
     monkeypatch.setattr(update_cmd, "_desktop_owns_gateway_lifecycle", lambda: True)
     monkeypatch.setattr(update_cmd_windows, "_desktop_owns_gateway_lifecycle", lambda: True)
@@ -217,10 +217,10 @@ def test_cold_start_is_authorized_by_the_token_generation_not_the_mutable_marker
     token = update_cmd._pause_windows_gateways_for_update()
     assert token["attested_generation"]
 
-    # Concurrent ``hermes gateway status`` consumed the marker...
+    # Concurrent ``moor gateway status`` consumed the marker...
     assert gateway_windows.check_start_attestation(current_pids=[]) is not None
     assert not marker.exists()
-    # ...and a concurrent ``hermes gateway start`` wrote a fresh one for its own PID.
+    # ...and a concurrent ``moor gateway start`` wrote a fresh one for its own PID.
     gateway_windows._write_start_attestation([777], "direct spawn (PID 777)")
     newer = json.loads(marker.read_text(encoding="utf-8"))["generation"]
     assert newer != token["attested_generation"]
@@ -238,11 +238,11 @@ def test_cold_start_is_authorized_by_the_token_generation_not_the_mutable_marker
 def _running_beta_pause_fixture(monkeypatch, tmp_path):
     """Windows update with ``beta`` (PID 777) running and the default profile home at ``tmp_path``."""
     from types import SimpleNamespace
-    import hermes_cli.profiles as profiles_mod
+    import moor_cli.profiles as profiles_mod
 
     homes = {"default": tmp_path, "beta": tmp_path / "profiles" / "beta"}
     homes["beta"].mkdir(parents=True)
-    monkeypatch.setattr("hermes_cli.config.get_hermes_home", lambda: str(tmp_path))
+    monkeypatch.setattr("moor_cli.config.get_moor_home", lambda: str(tmp_path))
     monkeypatch.setattr(cli_main, "_is_windows", lambda: True)
     monkeypatch.setattr(main_install_repair, "_is_windows", lambda: True)
     monkeypatch.setattr(update_cmd, "_desktop_owns_gateway_lifecycle", lambda: True)
@@ -257,7 +257,7 @@ def _running_beta_pause_fixture(monkeypatch, tmp_path):
     monkeypatch.setattr(profiles_mod, "get_profile_dir", lambda name: homes[name])
     # Resume side.
     monkeypatch.setattr(cli_main, "_refresh_windows_gateway_launchers", lambda: None)
-    monkeypatch.setattr(hermes_gateway, "launch_detached_profile_gateway_restart", lambda p, o: True)
+    monkeypatch.setattr(moor_gateway, "launch_detached_profile_gateway_restart", lambda p, o: True)
     ready_probes: list = []
     monkeypatch.setattr(gateway_windows, "_wait_for_gateway_ready", lambda *a, **k: ready_probes.append(k) or [4242])
     homes["_ready_probes"] = ready_probes
@@ -333,7 +333,7 @@ def test_service_supervised_running_profile_is_not_cold_started(monkeypatch, tmp
 
     homes = _running_beta_pause_fixture(monkeypatch, tmp_path)
     svc_proc = SimpleNamespace(pid=900, profile="beta", path=homes["beta"])
-    service = SimpleNamespace(name="HermesGw-beta", profile="beta", service_pid=800, gateway_pid=900,
+    service = SimpleNamespace(name="MoorGw-beta", profile="beta", service_pid=800, gateway_pid=900,
                               descendant_identities=(), service_create_time=1.0, gateway_create_time=2.0)
     monkeypatch.setattr(update_cmd_windows, "_discover_windows_gateways", lambda: ({900: svc_proc}, [service], {900}, [900]))
     monkeypatch.setattr(update_cmd_windows, "_request_socket_pauses", lambda *a: ({}, [], []))
@@ -342,6 +342,6 @@ def test_service_supervised_running_profile_is_not_cold_started(monkeypatch, tmp
 
     token = update_cmd._pause_windows_gateways_for_update()
 
-    assert token["services"] == ["HermesGw-beta"]
+    assert token["services"] == ["MoorGw-beta"]
     assert token["profiles"] == {}
     assert "cold_start_profiles" not in token

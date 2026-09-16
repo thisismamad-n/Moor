@@ -41,7 +41,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs, urlparse
 
-from hermes_constants import secure_parent_dir
+from moor_constants import secure_parent_dir
 from utils import atomic_json_write
 from tools.mcp_dashboard_oauth import contextvar_set as _contextvar_set, get_dashboard_oauth_flow
 
@@ -108,9 +108,9 @@ async def acquire_refresh_fence(path: "Path", *, timeout: float = _REFRESH_FENCE
     """
     lock_path = _refresh_lock_path(path)
     try:
-        from hermes_constants import mkdir_under_hermes_home
+        from moor_constants import mkdir_under_moor_home
 
-        mkdir_under_hermes_home(lock_path.parent)
+        mkdir_under_moor_home(lock_path.parent)
         secure_parent_dir(lock_path)
         fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
     except OSError as exc:
@@ -388,9 +388,9 @@ def _read_json(path: Path) -> dict | None:
 def _write_json(path: Path, data: dict) -> None:
     """OAuth tokens/client info at 0600 from creation, parent tightened to 0700 (``secure_parent_dir``
     refuses ``/``, top-level dirs and the install tree — #25821, #93050)."""
-    from hermes_constants import mkdir_under_hermes_home
+    from moor_constants import mkdir_under_moor_home
 
-    mkdir_under_hermes_home(path.parent)
+    mkdir_under_moor_home(path.parent)
     secure_parent_dir(path)
     atomic_json_write(path, data, mode=0o600, default=str)
 
@@ -406,7 +406,7 @@ class MoorTokenStorage:
 
     def __init__(self, server_name: str, *, moor_home: str | Path | None = None):
         self._server_name = _safe_filename(server_name)
-        self._hermes_home = Path(hermes_home) if hermes_home is not None else None
+        self._moor_home = Path(moor_home) if moor_home is not None else None
         # Issuer binding: ``loaded_issuer`` is what the token file on disk recorded (the authorization
         # server that granted the stored refresh token); ``_bound_issuer`` is stamped onto the next
         # ``set_tokens`` write. See ``tools.mcp_oauth_provider.enforce_refresh_token_issuer``.
@@ -464,8 +464,8 @@ class MoorTokenStorage:
                 data["expires_in"] = int(max(implied_expiry - time.time(), 0))
 
     def _fixup_loaded_tokens(self, data: dict) -> None:
-        # ``hermes_issuer`` is Hermes bookkeeping, not an SDK OAuthToken field: pop before validation.
-        self.loaded_issuer = data.pop("hermes_issuer", None)
+        # ``moor_issuer`` is Moor bookkeeping, not an SDK OAuthToken field: pop before validation.
+        self.loaded_issuer = data.pop("moor_issuer", None)
         self._rebase_expires_in(data)
 
     async def get_tokens(self) -> "OAuthToken | None":
@@ -479,7 +479,7 @@ class MoorTokenStorage:
             with contextlib.suppress(TypeError, ValueError):  # mock tokens / odd shapes: skip, don't fail persistence
                 payload["expires_at"] = time.time() + int(payload["expires_in"])
         if self._bound_issuer:  # which authorization server granted these tokens (never sent on the wire)
-            payload["hermes_issuer"] = self._bound_issuer
+            payload["moor_issuer"] = self._bound_issuer
             self.loaded_issuer = self._bound_issuer
         _write_json(self._tokens_path(), payload)
         logger.debug("OAuth tokens saved for %s", self._server_name)
@@ -489,12 +489,12 @@ class MoorTokenStorage:
         self._bound_issuer = str(issuer) if issuer else None
 
     def stamp_issuer(self, issuer: str) -> None:
-        """Backfill ``hermes_issuer`` onto a pre-binding token file: adopt the currently discovered
+        """Backfill ``moor_issuer`` onto a pre-binding token file: adopt the currently discovered
         issuer once instead of forcing a re-login, so the *next* read is protected."""
         data = _read_json(self._tokens_path())
-        if data is None or data.get("hermes_issuer"):
+        if data is None or data.get("moor_issuer"):
             return
-        data["hermes_issuer"] = str(issuer)
+        data["moor_issuer"] = str(issuer)
         try:
             _write_json(self._tokens_path(), data)
         except OSError as exc:  # non-fatal — worst case we stamp next time
@@ -510,7 +510,7 @@ class MoorTokenStorage:
         if data is None or not data.get("refresh_token"):
             return
         data.pop("refresh_token", None)
-        data.pop("hermes_issuer", None)
+        data.pop("moor_issuer", None)
         self.loaded_issuer = None
         try:
             _write_json(self._tokens_path(), data)
@@ -559,9 +559,9 @@ class MoorTokenStorage:
         the refused client_id. Cleared by ``remove()`` so a fixed document gets a retry."""
         path = self._cimd_rejected_path()
         try:
-            from hermes_constants import mkdir_under_hermes_home
+            from moor_constants import mkdir_under_moor_home
 
-            mkdir_under_hermes_home(path.parent)
+            mkdir_under_moor_home(path.parent)
             path.touch()
         except OSError as exc:  # non-fatal — worst case we retry CIMD later
             logger.debug("Could not record CIMD rejection at %s: %s", path, exc)
@@ -594,10 +594,10 @@ class MoorTokenStorage:
         self.remove()
         if not snapshot:
             return
-        token_dir = _get_token_dir(self._hermes_home)
-        from hermes_constants import mkdir_under_hermes_home
+        token_dir = _get_token_dir(self._moor_home)
+        from moor_constants import mkdir_under_moor_home
 
-        mkdir_under_hermes_home(token_dir)
+        mkdir_under_moor_home(token_dir)
         for fname, data in snapshot.items():
             try:
                 fd = os.open(str(token_dir / fname), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, stat.S_IRUSR | stat.S_IWUSR)
@@ -661,7 +661,7 @@ def _make_callback_handler() -> tuple[type, dict]:
         def do_GET(self) -> None:  # noqa: N802
             parsed = _parse_redirect_query(urlparse(self.path).query)
             result.update(auth_code=parsed["code"], state=parsed["state"], error=parsed["error"], iss=parsed["iss"])
-            body = ("<h2>Authorization Successful</h2><p>You can close this tab and return to Hermes.</p>" if parsed["code"]
+            body = ("<h2>Authorization Successful</h2><p>You can close this tab and return to Moor.</p>" if parsed["code"]
                     else f"<h2>Authorization Failed</h2><p>Error: {html.escape(parsed['error'] or 'unknown')}</p>")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")

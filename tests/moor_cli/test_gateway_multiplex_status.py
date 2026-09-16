@@ -22,7 +22,7 @@ def _fake_multiplexer(monkeypatch, tmp_path, *, multiplex: bool, pid_file: bool 
     launch-service gateway whose ``gateway.pid`` was unlinked while it kept serving."""
     import json
 
-    import hermes_constants
+    import moor_constants
     import gateway.status as status
 
     (tmp_path / "profiles" / "beta").mkdir(parents=True)
@@ -32,13 +32,13 @@ def _fake_multiplexer(monkeypatch, tmp_path, *, multiplex: bool, pid_file: bool 
     if pid_file:
         (tmp_path / "gateway.pid").write_text(str(os.getpid()))
     (tmp_path / "gateway_state.json").write_text(json.dumps({
-        "pid": os.getpid(), "kind": "hermes-gateway", "gateway_state": "running",
-        "start_time": status._get_process_start_time(os.getpid()), "hermes_home": str(tmp_path),
+        "pid": os.getpid(), "kind": "moor-gateway", "gateway_state": "running",
+        "start_time": status._get_process_start_time(os.getpid()), "moor_home": str(tmp_path),
     }))
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "profiles" / "beta"))
-    monkeypatch.setattr(hermes_constants, "_default_hermes_root_memo", None)
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "profiles" / "beta"))
+    monkeypatch.setattr(moor_constants, "_default_moor_root_memo", None)
     monkeypatch.setattr(
-        status, "_read_process_cmdline", lambda pid: "python -m hermes_cli.main gateway run --replace"
+        status, "_read_process_cmdline", lambda pid: "python -m moor_cli.main gateway run --replace"
     )
 
 
@@ -75,7 +75,7 @@ def test_unserved_named_profile_still_reports_stopped(monkeypatch, tmp_path):
 
 def test_served_named_profile_reports_running_without_default_pid_file(monkeypatch, tmp_path):
     """A live multiplexer whose PID file is missing still serves the profile it ticks (#110166)."""
-    from hermes_cli.profiles import list_profiles
+    from moor_cli.profiles import list_profiles
 
     _fake_multiplexer(monkeypatch, tmp_path, multiplex=True, pid_file=False)
 

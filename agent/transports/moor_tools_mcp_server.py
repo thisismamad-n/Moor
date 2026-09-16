@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 # codex-side reference to it (worker ``-c mcp_servers.<name>.env.*`` overrides, elicitation
 # auto-accept, display-name stripping) must use this constant: a drifted name materialises a
 # second env-only entry that codex rejects at bootstrap ("invalid transport").
-HERMES_TOOLS_MCP_SERVER_NAME = "hermes-tools"
+MOOR_TOOLS_MCP_SERVER_NAME = "moor-tools"
 
 # JSON Schema type -> Python type mapping for signature generation
 _JSON_TO_PY = {"string": str, "integer": int, "number": float, "boolean": bool, "array": list, "object": dict}
@@ -69,7 +69,7 @@ def _build_server() -> Any:
     from model_tools import get_tool_definitions, handle_function_call
 
     mcp = MCPServer(
-        HERMES_TOOLS_MCP_SERVER_NAME,
+        MOOR_TOOLS_MCP_SERVER_NAME,
         instructions=(
             "Moor Agent's tool surface, exposed for use inside a Codex "
             "session. Use these for capabilities Codex's built-in toolset "

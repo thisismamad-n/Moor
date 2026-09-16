@@ -35,7 +35,7 @@ export function updateMessagingPlatform(
   body: MessagingPlatformUpdate,
   profile?: null | string
 ): Promise<MessagingPlatformUpdateResponse> {
-  return hermesApi<MessagingPlatformUpdateResponse>({
+  return moorApi<MessagingPlatformUpdateResponse>({
     ...profileScoped(profile),
     path: `/api/messaging/platforms/${encodeURIComponent(platformId)}`,
     method: 'PUT',
@@ -63,7 +63,7 @@ export function startTelegramOnboarding(
   botName?: string,
   profile?: null | string
 ): Promise<TelegramOnboardingStartResponse> {
-  return hermesApi<TelegramOnboardingStartResponse>({
+  return moorApi<TelegramOnboardingStartResponse>({
     ...profileScoped(profile),
     path: '/api/messaging/telegram/onboarding/start',
     method: 'POST',
@@ -75,7 +75,7 @@ export function getTelegramOnboardingStatus(
   pairingId: string,
   profile?: null | string
 ): Promise<TelegramOnboardingStatusResponse> {
-  return hermesApi<TelegramOnboardingStatusResponse>({
+  return moorApi<TelegramOnboardingStatusResponse>({
     ...profileScoped(profile),
     path: `/api/messaging/telegram/onboarding/${encodeURIComponent(pairingId)}`
   })
@@ -86,7 +86,7 @@ export function applyTelegramOnboarding(
   allowedUserIds: string[],
   profile?: null | string
 ): Promise<TelegramOnboardingApplyResponse> {
-  return hermesApi<TelegramOnboardingApplyResponse>({
+  return moorApi<TelegramOnboardingApplyResponse>({
     ...profileScoped(profile),
     path: `/api/messaging/telegram/onboarding/${encodeURIComponent(pairingId)}/apply`,
     method: 'POST',
@@ -95,7 +95,7 @@ export function applyTelegramOnboarding(
 }
 
 export function cancelTelegramOnboarding(pairingId: string, profile?: null | string): Promise<{ ok: boolean }> {
-  return hermesApi<{ ok: boolean }>({
+  return moorApi<{ ok: boolean }>({
     ...profileScoped(profile),
     path: `/api/messaging/telegram/onboarding/${encodeURIComponent(pairingId)}`,
     method: 'DELETE'

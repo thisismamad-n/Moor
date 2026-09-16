@@ -9,7 +9,7 @@ import type {
 import { capabilityScoped, moorApi, type ProfileScope, STARTUP_REQUEST_TIMEOUT_MS } from './client'
 
 export function getProfiles(scope?: ProfileScope): Promise<ProfilesResponse> {
-  return hermesApi<ProfilesResponse>({
+  return moorApi<ProfilesResponse>({
     ...(scope === undefined ? {} : capabilityScoped(scope)),
     path: '/api/profiles',
     timeoutMs: STARTUP_REQUEST_TIMEOUT_MS

@@ -72,27 +72,27 @@ hgui() (
     fi
   done
 
-  root="$(_hermes_root)" || { print -u2 'hgui: not in a Hermes checkout'; return 1; }
-  deps="${HERMES_GUI_DEPS_CHECKOUT:-$HERMES_MAIN_CHECKOUT}"
+  root="$(_moor_root)" || { print -u2 'hgui: not in a Moor checkout'; return 1; }
+  deps="${MOOR_GUI_DEPS_CHECKOUT:-$MOOR_MAIN_CHECKOUT}"
   desktop="$root/apps/desktop"
 
   if cmp -s "$root/package-lock.json" "$deps/package-lock.json"; then
-    _hermes_link_deps "$desktop" "$deps/apps/desktop" || return 1
-    _hermes_link_deps "$root" "$deps" || return 1
+    _moor_link_deps "$desktop" "$deps/apps/desktop" || return 1
+    _moor_link_deps "$root" "$deps" || return 1
   else
     ( cd "$root" && npm ci ) || return 1
   fi
 
   cd "$desktop" || return 1
   export PATH="$desktop/node_modules/.bin:$root/node_modules/.bin:$PATH"
-  export HERMES_DESKTOP_HERMES_ROOT="$root"
-  export HERMES_DESKTOP_PYTHON="$HERMES_MAIN_CHECKOUT/.venv/bin/python"
-  export HERMES_DESKTOP_CWD="$root"
-  export HERMES_DESKTOP_DEV_SERVER="http://127.0.0.1:$vite_port"
-  export HERMES_DESKTOP_CDP_PORT="$cdp_port"
-  export HERMES_DESKTOP_USER_DATA_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/hermes-hgui/slot-$slot"
+  export MOOR_DESKTOP_MOOR_ROOT="$root"
+  export MOOR_DESKTOP_PYTHON="$MOOR_MAIN_CHECKOUT/.venv/bin/python"
+  export MOOR_DESKTOP_CWD="$root"
+  export MOOR_DESKTOP_DEV_SERVER="http://127.0.0.1:$vite_port"
+  export MOOR_DESKTOP_CDP_PORT="$cdp_port"
+  export MOOR_DESKTOP_USER_DATA_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/moor-hgui/slot-$slot"
   # A userData override would otherwise also relocate the agent's home.
-  export HERMES_HOME="${HERMES_HOME:-$HOME/.hermes}"
+  export MOOR_HOME="${MOOR_HOME:-$HOME/.moor}"
   export XCURSOR_SIZE=24
 
   # Mirror the dev scripts, replacing their fixed ports. No repo edits needed.
@@ -102,15 +102,15 @@ hgui() (
 )
 ```
 
-For example, after setting `HERMES_MAIN_CHECKOUT` and sourcing the helpers:
+For example, after setting `MOOR_MAIN_CHECKOUT` and sourcing the helpers:
 
 ```bash
 # Terminal 1: main checkout
-cd "$HERMES_MAIN_CHECKOUT"
+cd "$MOOR_MAIN_CHECKOUT"
 HGUI_SLOT=0 hgui
 
 # Terminal 2: an existing worktree
-cd /path/to/hermes-worktree
+cd /path/to/moor-worktree
 HGUI_SLOT=1 hgui
 ```
 
@@ -118,22 +118,22 @@ Slot `0` uses ports `5174`/`9222`; slot `1` uses `5175`/`9223`. Slots are caller
 
 | Variable | Role in `hgui` |
 |----------|----------------|
-| `HGUI_SLOT` | Helper-only slot number, `0`–`9`; not a Hermes setting. |
-| `HERMES_DESKTOP_HERMES_ROOT` | Runs the backend from this worktree, not the packaged/PATH runtime. |
-| `HERMES_DESKTOP_PYTHON` | Reuses the main checkout's Python environment. Adjust for an installation that uses `venv` rather than `.venv`. |
-| `HERMES_DESKTOP_CWD` | Roots new desktop work in the worktree. |
-| `HERMES_DESKTOP_DEV_SERVER` | Points Electron at this instance's Vite server. |
-| `HERMES_DESKTOP_CDP_PORT` | Gives each instance its own renderer debugging port. |
-| `HERMES_DESKTOP_USER_DATA_DIR` | Separates Electron's single-instance lock, browser storage, and desktop preferences. |
-| `HERMES_HOME` | Explicitly preserves the agent home despite the Electron user-data override. |
+| `HGUI_SLOT` | Helper-only slot number, `0`–`9`; not a Moor setting. |
+| `MOOR_DESKTOP_MOOR_ROOT` | Runs the backend from this worktree, not the packaged/PATH runtime. |
+| `MOOR_DESKTOP_PYTHON` | Reuses the main checkout's Python environment. Adjust for an installation that uses `venv` rather than `.venv`. |
+| `MOOR_DESKTOP_CWD` | Roots new desktop work in the worktree. |
+| `MOOR_DESKTOP_DEV_SERVER` | Points Electron at this instance's Vite server. |
+| `MOOR_DESKTOP_CDP_PORT` | Gives each instance its own renderer debugging port. |
+| `MOOR_DESKTOP_USER_DATA_DIR` | Separates Electron's single-instance lock, browser storage, and desktop preferences. |
+| `MOOR_HOME` | Explicitly preserves the agent home despite the Electron user-data override. |
 
 Each slot starts with fresh desktop preferences and remembers them on later launches. This example does not copy browser storage, saved navigation, or backend ownership from a running app.
 
 :::warning Separate desktops are not separate agent data
-The default `HERMES_HOME` is shared: sessions, configuration, credentials, and profiles remain the same. Avoid editing the same conversation from both instances. For destructive tests or incompatible database migrations, pass a separate temporary `HERMES_HOME` and configure that sandbox independently.
+The default `MOOR_HOME` is shared: sessions, configuration, credentials, and profiles remain the same. Avoid editing the same conversation from both instances. For destructive tests or incompatible database migrations, pass a separate temporary `MOOR_HOME` and configure that sandbox independently.
 :::
 
-Quit the app normally or press Ctrl-C in its launching terminal. `concurrently -k` manages its own child commands, and Electron owns its backend shutdown. Do not add a global `killport`, `pkill electron`, or a sweep of all `serve`/`dashboard --port 0` processes: those can terminate another instance. Remove the old `_hermes_gui_cleanup` trap if replacing an earlier version of this helper.
+Quit the app normally or press Ctrl-C in its launching terminal. `concurrently -k` manages its own child commands, and Electron owns its backend shutdown. Do not add a global `killport`, `pkill electron`, or a sweep of all `serve`/`dashboard --port 0` processes: those can terminate another instance. Remove the old `_moor_gui_cleanup` trap if replacing an earlier version of this helper.
 
 ## Shared helpers
 

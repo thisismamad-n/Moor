@@ -112,7 +112,7 @@ model:
   # context_length: 131072
   #
   # ollama_num_ctx: Ollama only — the num_ctx sent on every chat request.
-  #   Hermes auto-detects the model's window and sends it (Ollama otherwise
+  #   Moor auto-detects the model's window and sends it (Ollama otherwise
   #   defaults to 2048); context_length, if set, caps the detected value.
   #   An explicit ollama_num_ctx is sent as-is (never capped) — set it to
   #   pin VRAM use.
@@ -120,7 +120,7 @@ model:
   # ollama_num_ctx: 32768
   #
   # Output-token limits are provider-owned, not user configuration. Native
-  # protocols requiring a limit receive an internal value from Hermes.
+  # protocols requiring a limit receive an internal value from Moor.
 
   # ── Custom request headers (optional) ─────────────────────────────────────
   #
@@ -1157,7 +1157,7 @@ agent:
   # in-flight agent, cron and API runs to complete so the requesting turn is
   # not cut off by restart_drain_timeout. 0 = enter stop()/drain immediately.
   # The default (30 min) is a safety valve for wedged agents, not a target
-  # latency; raise it for long unattended turns. Env: HERMES_RESTART_AFTER_TURN_TIMEOUT.
+  # latency; raise it for long unattended turns. Env: MOOR_RESTART_AFTER_TURN_TIMEOUT.
   # restart_after_turn_timeout: 1800
 
   # Upper bound (seconds) a submitted prompt waits for the deferred agent
@@ -1181,7 +1181,7 @@ agent:
   # coding surfaces (CLI, TUI, desktop) and programmatic callers, off on
   # conversational messaging surfaces (Telegram, Discord, etc.) where the
   # verification summary would reach a human as chat noise. The
-  # HERMES_VERIFY_ON_STOP env var (1/0) takes precedence.
+  # MOOR_VERIFY_ON_STOP env var (1/0) takes precedence.
   # verify_on_stop: false
 
   # Standing operator instructions for the coding posture (when Moor is in a
@@ -2014,11 +2014,11 @@ telemetry:
 # Update Behavior
 # =============================================================================
 updates:
-  # Disable passive CLI/banner update checks with `hermes config set updates.check false`.
-  # Explicit `hermes update --check` and `hermes update` remain available.
+  # Disable passive CLI/banner update checks with `moor config set updates.check false`.
+  # Explicit `moor update --check` and `moor update` remain available.
   check: true
-  # Create a full HERMES_HOME zip before every `hermes update`.
-  # Backups land in ~/.hermes/backups/ and can be restored with `hermes import`.
+  # Create a full MOOR_HOME zip before every `moor update`.
+  # Backups land in ~/.moor/backups/ and can be restored with `moor import`.
   # Off by default because large homes can add minutes to every update.
   pre_update_backup: false
 

@@ -695,7 +695,7 @@
      shape: the bar belongs to the opaque content column across the full
      width, and the rail's glass ends at its top edge. Window scope has no
      seam, so the bar stays transparent there. */
-  :root[data-hermes-glass][data-hermes-glass-scope='sidebar'] [data-slot='statusbar'] {
+  :root[data-moor-glass][data-moor-glass-scope='sidebar'] [data-slot='statusbar'] {
     --ui-sidebar-surface-background: var(--ui-bg-chrome);
   }
 
@@ -1046,7 +1046,7 @@
   display: none;
 }
 
-/* Hermes speaks first here: no user bubble sits above the opening assistant
+/* Moor speaks first here: no user bubble sits above the opening assistant
    turn, so the first painted row would press against the pane chrome. The
    utility class on the row pulls the top pad 0.5rem ABOVE the titlebar; give
    the air back, and only in this thread. */
@@ -2911,7 +2911,7 @@ button[data-slot='aui_msg-reactions'] svg {
 /* Engaged, the field steps up the same way the docked thread's does — but
    never below the resting tint, so a high lever cannot make focusing the
    composer paint MORE transparent than glancing at it. */
-:root[data-hermes-glass-on] [data-hud-shell][data-hud-typing] [data-hud-glass] {
+:root[data-moor-glass-on] [data-hud-shell][data-hud-typing] [data-hud-glass] {
   background: rgb(12 14 18 / 0.72);
 }
 

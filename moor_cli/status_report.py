@@ -77,7 +77,7 @@ def build_status_fields(
     surface passes when it has no live agent. ``created`` / ``last_activity`` override the
     ``meta`` row scan for surfaces whose session store is authoritative (gateway SessionEntry).
     """
-    from hermes_constants import display_hermes_home
+    from moor_constants import display_moor_home
 
     meta = meta or {}
     if created is None or last_activity is None:
@@ -89,7 +89,7 @@ def build_status_fields(
     row_title = meta.get("title") if title is None else title
     return {
         "session_id": str(session_id or ""),
-        "path": display_hermes_home(),
+        "path": display_moor_home(),
         "title": (row_title or "").strip(),
         "model": getattr(agent, "model", None) or model or "",
         "provider": getattr(agent, "provider", None) or provider or "",

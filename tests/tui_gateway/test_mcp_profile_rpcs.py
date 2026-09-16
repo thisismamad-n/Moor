@@ -362,14 +362,14 @@ def test_default_profile_add_when_profile_omitted(moor_root):
     )
 
 
-def test_test_resolves_env_refs_from_requested_profile_secret_scope(hermes_root, monkeypatch):
+def test_test_resolves_env_refs_from_requested_profile_secret_scope(moor_root, monkeypatch):
     """``mcp.servers.test`` for a secondary must expand its ``${VAR}`` header from THAT profile's
     secret scope, not the launch process's ``os.environ`` (the default profile's value) — the
     Desktop MCP setup "Test connection" otherwise reports green against the wrong credential.
     ``os.environ`` is never mutated by the scope."""
-    import hermes_cli.mcp_config as mcp_config
+    import moor_cli.mcp_config as mcp_config
 
-    work = hermes_root / "profiles" / "work"
+    work = moor_root / "profiles" / "work"
     (work / ".env").write_text("ALPHA_ONLY_TOKEN=work-token\n", encoding="utf-8")
     (work / "config.yaml").write_text(
         "mcp_servers:\n  srv:\n    url: http://x/mcp\n"

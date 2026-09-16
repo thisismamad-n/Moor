@@ -1032,8 +1032,8 @@ class DiscordAdapter(DiscordMediaMixin, BasePlatformAdapter):
         self._voice_clients: Dict[int, Any] = {}  # guild_id -> VoiceClient
         self._voice_locks: Dict[int, asyncio.Lock] = {}  # guild_id -> serialize join/leave
         # Text batching: merge rapid successive messages (Telegram-style)
-        self._text_batch_delay_seconds = env_float("HERMES_DISCORD_TEXT_BATCH_DELAY_SECONDS", 0.6)
-        self._text_batch_split_delay_seconds = env_float("HERMES_DISCORD_TEXT_BATCH_SPLIT_DELAY_SECONDS", 2.0)
+        self._text_batch_delay_seconds = env_float("MOOR_DISCORD_TEXT_BATCH_DELAY_SECONDS", 0.6)
+        self._text_batch_split_delay_seconds = env_float("MOOR_DISCORD_TEXT_BATCH_SPLIT_DELAY_SECONDS", 2.0)
         self._voice_text_channels: Dict[int, int] = {}  # guild_id -> text_channel_id
         self._voice_sources: Dict[int, Dict[str, Any]] = {}  # guild_id -> linked text channel source metadata
         self._voice_timeout_tasks: Dict[int, asyncio.Task] = {}  # guild_id -> timeout task
@@ -4002,7 +4002,7 @@ class DiscordAdapter(DiscordMediaMixin, BasePlatformAdapter):
             return adapters, runner.config
         from gateway.config import load_gateway_config
         from gateway.run import _async_profile_runtime_scope
-        from hermes_cli.profiles import get_profile_dir
+        from moor_cli.profiles import get_profile_dir
         async with _async_profile_runtime_scope(get_profile_dir(profile)):
             return adapters, load_gateway_config()
 
@@ -5308,7 +5308,7 @@ class DiscordAdapter(DiscordMediaMixin, BasePlatformAdapter):
 
     # Payload lives in plain content: embeds can be invisible/detached on web/mobile.
     _EA_HEADER = (f"⚠️ **{EA_HEADER_TEXT}**\n\n"
-                  "Do you want Hermes to run this command?\n\n"
+                  "Do you want Moor to run this command?\n\n"
                   "**Requested command:**\n")
     _EA_CODE_OPEN = "```bash\n"
     _EA_CODE_CLOSE = "\n```\n"
@@ -6905,7 +6905,7 @@ def _discord_token_shape_error(token: str) -> Optional[str]:
 
 def _prompt_discord_bot_token(prompt) -> str:
     """Prompt for the bot token, re-prompting once when the answer is a numeric app ID."""
-    from hermes_cli.cli_output import print_error
+    from moor_cli.cli_output import print_error
     token = ""
     for _attempt in range(2):
         token = prompt("Discord bot token", password=True)
@@ -6925,7 +6925,7 @@ def interactive_setup() -> None:
     from moor_cli.cli_output import (
         prompt, prompt_yes_no, print_header, print_info, print_success,
     )
-    from hermes_cli.setup_platforms import declines_reconfigure
+    from moor_cli.setup_platforms import declines_reconfigure
     def _info_lines(*lines: str) -> None:
         for line in lines:
             print_info(line)

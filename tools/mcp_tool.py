@@ -639,7 +639,7 @@ def _update_death_supervisor(verb: str, pgids) -> None:
 def _mcp_registry_scope() -> Optional[str]:
     """Registry scope for MCP registrations: a profile overlay when this process serves profiles,
     else None. Under ``gateway.multiplex_profiles`` every turn runs scoped; a process that serves a
-    routed profile through the HERMES_HOME override (dashboard/desktop backend, per-profile cron
+    routed profile through the MOOR_HOME override (dashboard/desktop backend, per-profile cron
     ticker) is a multiplexer too, even with the flag off — keying its connections by the bare name
     would hand one profile's credentialed connection to every other served profile (#111151).
     Single-profile processes (no override, or an override naming their own home) keep bare names."""

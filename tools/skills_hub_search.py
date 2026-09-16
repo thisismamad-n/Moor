@@ -109,7 +109,7 @@ def _search_one_source(
     try:
         # These sources mix providers in one catalog. Narrow before their top-N
         # cut so another provider cannot crowd every requested match out.
-        if provider_filter and isinstance(src, (HermesIndexSource, GitHubSource)):
+        if provider_filter and isinstance(src, (MoorIndexSource, GitHubSource)):
             return src.source_id(), src.search(query, limit=limit, provider_filter=provider_filter)
         return src.source_id(), src.search(query, limit=limit)
     except Exception as e:

@@ -280,7 +280,7 @@ def test_stale_claim_extend_live_worker_does_not_count_failure(
 ):
     """The live-worker extend path must NOT increment ``consecutive_failures``
     (#111306): extending a still-alive worker's claim is not a failure."""
-    import hermes_cli.kanban_db as _kb
+    import moor_cli.kanban_db as _kb
 
     with kbc.connect() as conn:
         t = kb.create_task(conn, title="live worker", assignee="a")
@@ -1362,29 +1362,29 @@ def test_migrate_add_optional_columns_tolerates_concurrent_migration(kanban_home
 # spawn fails with FileNotFoundError and the task gets stuck. The resolver
 # prefers the interpreter-bound module form (exactly this install; a PATH
 # shim could be attacker-planted or belong to another install, #111569) and
-# only falls back to the PATH shim when ``hermes_cli`` is not importable.
+# only falls back to the PATH shim when ``moor_cli`` is not importable.
 # ---------------------------------------------------------------------------
 
 
-def test_resolve_hermes_argv_prefers_module_form_over_path_shim(monkeypatch):
-    """A `hermes` on PATH must not shadow the running install (#111569):
-    the module argv wins whenever ``hermes_cli`` is importable; only an
-    explicit ``$HERMES_BIN`` overrides it."""
+def test_resolve_moor_argv_prefers_module_form_over_path_shim(monkeypatch):
+    """A `moor` on PATH must not shadow the running install (#111569):
+    the module argv wins whenever ``moor_cli`` is importable; only an
+    explicit ``$MOOR_BIN`` overrides it."""
     import shutil
     import sys
-    from hermes_cli import kanban_db_dispatch as kbd
+    from moor_cli import kanban_db_dispatch as kbd
 
-    monkeypatch.delenv("HERMES_BIN", raising=False)
-    monkeypatch.setattr(shutil, "which", lambda name: "/tmp/planted/hermes")
-    monkeypatch.setattr(kbd, "_safe_which_no_cwd", lambda name: "/tmp/planted/hermes")
-    assert kbd._resolve_hermes_argv() == [sys.executable, "-m", "hermes_cli.main"]
+    monkeypatch.delenv("MOOR_BIN", raising=False)
+    monkeypatch.setattr(shutil, "which", lambda name: "/tmp/planted/moor")
+    monkeypatch.setattr(kbd, "_safe_which_no_cwd", lambda name: "/tmp/planted/moor")
+    assert kbd._resolve_moor_argv() == [sys.executable, "-m", "moor_cli.main"]
 
-    monkeypatch.setenv("HERMES_BIN", "/opt/hermes/bin/hermes")
-    assert kbd._resolve_hermes_argv() == ["/opt/hermes/bin/hermes"]
+    monkeypatch.setenv("MOOR_BIN", "/opt/moor/bin/moor")
+    assert kbd._resolve_moor_argv() == ["/opt/moor/bin/moor"]
 
 
-def test_resolve_hermes_argv_falls_back_to_module_form_when_no_path_shim(monkeypatch):
-    """When the shim is not on PATH, fall back to `python -m hermes_cli.main`.
+def test_resolve_moor_argv_falls_back_to_module_form_when_no_path_shim(monkeypatch):
+    """When the shim is not on PATH, fall back to `python -m moor_cli.main`.
 
     Pins the correct module name (NOT `moor` — there is no top-level
     `moor` package). Regression for #23198: the original PR shipped

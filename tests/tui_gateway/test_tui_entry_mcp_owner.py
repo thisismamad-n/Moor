@@ -10,8 +10,8 @@ fall through to the shared owner when no local thread exists.
 import threading
 import time
 
-from hermes_cli import mcp_startup
-from hermes_constants import hermes_home_key
+from moor_cli import mcp_startup
+from moor_constants import moor_home_key
 from tui_gateway import entry
 
 
@@ -32,7 +32,7 @@ def test_wait_falls_through_to_shared_owner(monkeypatch):
     )
     thread = threading.Thread(target=lambda: time.sleep(0.05), daemon=True)
     thread.start()
-    monkeypatch.setattr(mcp_startup, "_mcp_discovery_thread", {hermes_home_key(): thread})
+    monkeypatch.setattr(mcp_startup, "_mcp_discovery_thread", {moor_home_key(): thread})
 
     start = time.monotonic()
     entry.wait_for_mcp_discovery(timeout=2.0)

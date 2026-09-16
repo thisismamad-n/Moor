@@ -35,8 +35,8 @@ class GatewayGoalCommandsMixin:
     """Autonomy-loop gateway commands: /goal, /subgoal, /heartbeat, /loop, /refine, /review."""
 
     async def _handle_goal_command(self, event: MessageEvent) -> str:
-        from hermes_cli.goal_command import dispatch_goal_command
-        from hermes_cli.goals import last_user_message_from_db
+        from moor_cli.goal_command import dispatch_goal_command
+        from moor_cli.goals import last_user_message_from_db
 
         mgr, _session_entry = await self._get_goal_manager_for_event(event)
         if mgr is None:

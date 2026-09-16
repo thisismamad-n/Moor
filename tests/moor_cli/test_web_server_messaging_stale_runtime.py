@@ -14,18 +14,18 @@ _VALID_BOT_TOKEN = "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ_1234"
 
 
 @pytest.fixture
-def client(monkeypatch, _isolate_hermes_home):
+def client(monkeypatch, _isolate_moor_home):
     try:
         from starlette.testclient import TestClient
     except ImportError:
         pytest.skip("fastapi/starlette not installed")
 
-    import hermes_state
-    from hermes_constants import get_hermes_home
-    from hermes_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
+    import moor_state
+    from moor_constants import get_moor_home
+    from moor_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
-    home = get_hermes_home()
-    monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", home / "state.db")
+    home = get_moor_home()
+    monkeypatch.setattr(moor_state, "DEFAULT_DB_PATH", home / "state.db")
     monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
     (home / ".env").write_text(f"TELEGRAM_BOT_TOKEN={_VALID_BOT_TOKEN}\nTELEGRAM_ALLOWED_USERS=42\n", encoding="utf-8")
     (home / "config.yaml").write_text("platforms:\n  telegram:\n    enabled: true\n", encoding="utf-8")

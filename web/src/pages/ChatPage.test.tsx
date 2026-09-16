@@ -338,7 +338,7 @@ describe("ChatPage", () => {
 
     // A failed image paste leaves a non-rejection banner behind.
     uploadChatImage.mockRejectedValueOnce(new Error("disk full"));
-    const host = container.querySelector(".hermes-chat-xterm-host");
+    const host = container.querySelector(".moor-chat-xterm-host");
     expect(host).not.toBeNull();
     const paste = new Event("paste", { bubbles: true, cancelable: true });
     const file = new File([new Uint8Array([1, 2, 3])], "shot.png", { type: "image/png" });
@@ -476,8 +476,8 @@ describe("ChatPage", () => {
       }
 
       expect(container.textContent).not.toMatch(/code 1006/);
-      expect(container.textContent).toMatch(/Lost connection to the Hermes dashboard server/);
-      expect(container.textContent).toContain("hermes dashboard");
+      expect(container.textContent).toMatch(/Lost connection to the Moor dashboard server/);
+      expect(container.textContent).toContain("moor dashboard");
       const labels = Array.from(container.querySelectorAll("button")).map((b) => b.textContent?.trim());
       expect(labels).toContain("Reconnect now");
       expect(labels).toContain("Check server status");

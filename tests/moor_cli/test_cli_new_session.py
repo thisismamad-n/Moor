@@ -135,7 +135,7 @@ def _prepare_cli_with_active_session(tmp_path):
 
     # Bypass the destructive-slash confirmation gate — these tests focus on
     # the new-session mechanics, not the confirm prompt itself (covered in
-    # tests/hermes_cli/test_destructive_slash_confirm.py).
+    # tests/moor_cli/test_destructive_slash_confirm.py).
     cli._confirm_destructive_slash = lambda *_a, **_kw: "once"
     return cli
 

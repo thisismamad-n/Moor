@@ -11,7 +11,7 @@ import sqlite3
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
-from hermes_state_common import (
+from moor_state_common import (
     _BOUNDARY_END_REASONS, _COMPRESSION_LOCK_ROW_SQL as _LOCK_ROW_SQL, _ENDED_ROW_SQL, _ended_by_compression,
     _sql_json_extract, _sql_session_last_active, is_automatic_end_reason)
 

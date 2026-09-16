@@ -35,7 +35,7 @@ export const zh = defineLocale({
     retry: '重试',
     more: '显示更多',
     pinned: '已审核的提交',
-    snapshotHint: '内容来自 Hermes 目录。浏览时不会连接来源代码仓库。',
+    snapshotHint: '内容来自 Moor 目录。浏览时不会连接来源代码仓库。',
     installHint: '安装前请检查源代码。更改将在新会话中生效。',
     results: (count: number) => `${count.toLocaleString('zh')} 个结果`,
     back: '返回结果'
@@ -64,7 +64,7 @@ export const zh = defineLocale({
     ownerMissing: '请重新打开此对话以管理连接。',
     search: '查找应用',
     empty: '没有匹配的应用',
-    disclaimer: '连接为可选操作。请仅授权你希望 Hermes 使用的应用。',
+    disclaimer: '连接为可选操作。请仅授权你希望 Moor 使用的应用。',
     execution: '连接器工具'
   },
 
@@ -282,7 +282,7 @@ export const zh = defineLocale({
       liveEndedConnectionLost: '实时语音会话连接已断开。',
       liveEndedClosed: '实时语音会话已被服务端关闭。',
       liveError: '实时语音',
-      liveDelegationFailed: '无法将请求交给 Hermes',
+      liveDelegationFailed: '无法将请求交给 Moor',
       liveUnavailable: reason => `GPT-Live 语音聊天不可用：${reason}。已改用语音转文字。`
     },
     native: {
@@ -547,7 +547,7 @@ export const zh = defineLocale({
       deleteAction: '移除已保存项',
       otpField: '验证器密钥',
       otpPlaceholder: 'Base32 密钥或 otpauth:// 链接',
-      otpHint: '启用两步验证时网站显示的“设置密钥”。保存后 Hermes 会自动生成验证码。',
+      otpHint: '启用两步验证时网站显示的“设置密钥”。保存后 Moor 会自动生成验证码。',
       twoFactorBadge: '自动 2FA',
       deleteTitle: '删除此项？',
       deleteDescription: label => `“${label}”将从加密保险库中移除。此操作无法撤销。`,
@@ -557,10 +557,10 @@ export const zh = defineLocale({
         blurb:
           '已安装的密码管理器会被自动识别。智能体第一次需要其中的登录信息时会请你解锁（每个会话一次）；内存中只保留会话令牌，智能体永远看不到你的主密码或任何登录信息。',
         toggleFailed: '无法更新密码管理器',
-        notInstalled: name => `未检测到。安装 ${name} 命令行工具并登录后，Hermes 会自动识别。`,
-        disabledDesc: '已检测到，但已为 Hermes 关闭。',
+        notInstalled: name => `未检测到。安装 ${name} 命令行工具并登录后，Moor 会自动识别。`,
+        disabledDesc: '已检测到，但已为 Moor 关闭。',
         lockedDesc: '已检测到。智能体需要登录信息时会请你解锁，也可立即解锁。',
-        unlockedDesc: '本会话已解锁。闲置 30 分钟或关闭 Hermes 后会自动锁定。',
+        unlockedDesc: '本会话已解锁。闲置 30 分钟或关闭 Moor 后会自动锁定。',
         statusLocked: '已锁定',
         statusNotDetected: '未检测到',
         statusOff: '已关闭',
@@ -603,7 +603,7 @@ export const zh = defineLocale({
         agentTargetLocal: (profile, dir) => `安装到 ${profile} 后端（${dir}）`,
         agentTargetRemote: profile => `安装到已连接的 ${profile} 后端`,
         catalogPinned: (name, sha) =>
-          `Hermes 目录条目「${name}」— agent 部分将安装在经过审核的固定提交${sha ? ` ${sha}` : ''}，而不是分支最新代码。`,
+          `Moor 目录条目「${name}」— agent 部分将安装在经过审核的固定提交${sha ? ` ${sha}` : ''}，而不是分支最新代码。`,
         reviewedHeading: '经过审核的目录条目',
         reviewedIntro: '此条目已在其固定提交处经过人工审核。你仍可在下方检查确切代码。',
         restartToApply: '重启网关后插件才会生效。',
@@ -774,10 +774,10 @@ export const zh = defineLocale({
       reactionsTitle: '消息回应',
       reactionsDesc: 'iMessage 风格的表情回应 — 你可以给消息添加回应，Moor 也能回应你的消息。',
       tipsTitle: '应用内提示',
-      tipsDesc: '偶尔显示来自应用和 Hermes 的提示，每条提示只出现一次。开始使用满30天后自动关闭，你可以重新开启。',
+      tipsDesc: '偶尔显示来自应用和 Moor 的提示，每条提示只出现一次。开始使用满30天后自动关闭，你可以重新开启。',
       tipsReset: (count: number) => `再次显示 ${count} 条提示`,
       toursTitle: '引导导览',
-      toursDesc: '让 Hermes 逐步高亮每个位置，带你熟悉应用。开始使用满30天后自动关闭，你可以重新开启。',
+      toursDesc: '让 Moor 逐步高亮每个位置，带你熟悉应用。开始使用满30天后自动关闭，你可以重新开启。',
       composerPopoutTitle: '悬浮输入框',
       composerPopoutDesc: '允许将输入框拖出底部停靠区。关闭后，输入框会锁定在底部。',
       vibeHeartsTitle: '心情爱心',
@@ -1075,15 +1075,15 @@ export const zh = defineLocale({
       },
       browser: {
         useRealProfile:
-          '本地浏览使用你的真实登录状态。Hermes 会把你默认浏览器的配置（Cookie、登录、偏好）复制为受管快照，并用自带的 Chromium 驱动它——不会直接打开你的实时配置，且每次运行都会从实时配置刷新副本。还允许智能体在配置了云端浏览器后端时，按需打开本地真实配置会话。仅支持 Chromium 系浏览器（Chrome、Edge、Brave、Brave Origin、Chromium）；默认浏览器不是 Chromium 系时会给出明确报错。默认关闭。'
+          '本地浏览使用你的真实登录状态。Moor 会把你默认浏览器的配置（Cookie、登录、偏好）复制为受管快照，并用自带的 Chromium 驱动它——不会直接打开你的实时配置，且每次运行都会从实时配置刷新副本。还允许智能体在配置了云端浏览器后端时，按需打开本地真实配置会话。仅支持 Chromium 系浏览器（Chrome、Edge、Brave、Brave Origin、Chromium）；默认浏览器不是 Chromium 系时会给出明确报错。默认关闭。'
       },
       voice: {
         autoTts: '自动朗读助手回复。',
         voiceChatMode:
-          'chained：语音转文字 → Hermes → 文字转语音，使用下方的提供商。gpt-live：一个全双工的 OpenAI 语音模型（gpt-live-1）负责听和说，并把每个实际请求交给 Hermes——由你选择的任意模型带着完整工具集作答。需要 OpenAI API 密钥；语音层按每分钟 $0.05 计费。',
+          'chained：语音转文字 → Moor → 文字转语音，使用下方的提供商。gpt-live：一个全双工的 OpenAI 语音模型（gpt-live-1）负责听和说，并把每个实际请求交给 Moor——由你选择的任意模型带着完整工具集作答。需要 OpenAI API 密钥；语音层按每分钟 $0.05 计费。',
         gptLive: {
           voice: 'GPT-Live 模式使用的音色，可填写自定义音色 ID。',
-          instructions: '附加到实时语音人设的句子（语气、语速、语言）。Hermes 保留自己的系统提示词。'
+          instructions: '附加到实时语音人设的句子（语气、语速、语言）。Moor 保留自己的系统提示词。'
         }
       },
       stt: {
@@ -1115,7 +1115,7 @@ export const zh = defineLocale({
     uninstallSection: {
       dangerZone: '危险操作',
       confirmUninstall: '确认卸载',
-      uninstallHermes: '卸载 Hermes'
+      uninstallMoor: '卸载 Moor'
     },
     poolLimits: {
       warmBotBackendsAria: '预热机器人后端',
@@ -1912,7 +1912,7 @@ export const zh = defineLocale({
     edit: '编辑',
     archive: '归档',
     skillArchivedTitle: '技能已归档',
-    skillArchivedMessage: '可通过 hermes curator restore 恢复。',
+    skillArchivedMessage: '可通过 moor curator restore 恢复。',
     tabPlugins: '插件',
     plugins: {
       agentTitle: 'Agent 插件',
@@ -1922,7 +1922,7 @@ export const zh = defineLocale({
       halfDesktopHint: '本应用，所有配置相同',
       halfAgent: 'Agent',
       halfAgentIn: (profile: string) => `${profile} 中的 Agent`,
-      defaultProfile: 'Hermes（默认）',
+      defaultProfile: 'Moor（默认）',
       kindAgent: 'Agent',
       kindDesktop: '桌面',
       kindBoth: 'Agent + 桌面',
@@ -1938,7 +1938,7 @@ export const zh = defineLocale({
       emptyHint: '在下方目录中浏览，一键安装经过审核的插件。',
       loadFailed: '无法加载 agent 插件',
       toggleFailed: (name: string) => `无法切换 ${name}`,
-      legacyBackend: '此后端版本较旧，不支持按键名切换插件 — 请更新 Hermes 后再在此管理。',
+      legacyBackend: '此后端版本较旧，不支持按键名切换插件 — 请更新 Moor 后再在此管理。',
       portableBadge: '便携',
       catalogTitle: '插件目录',
       catalogBrowse: '浏览',
@@ -1946,7 +1946,7 @@ export const zh = defineLocale({
       catalogHint:
         '点击任意插件上的「+ Add to this Agent」— 经过审核的条目会以其固定提交安装到所选配置。捆绑的 agent+桌面插件会同时提供两部分。',
       alreadyInstalled: (name: string) => `${name} 已安装在此配置中。`,
-      catalogProvenance: (sha: string) => `从 Hermes 目录安装${sha ? `，固定提交 ${sha}` : ''}。`,
+      catalogProvenance: (sha: string) => `从 Moor 目录安装${sha ? `，固定提交 ${sha}` : ''}。`,
       pinnedProvenance: (sha: string) => `已固定到提交 ${sha}。重新固定前将拒绝更新。`,
       pinnedBadge: (sha: string) => `固定 @ ${sha}`,
       tierOfficial: '官方',
@@ -2198,7 +2198,7 @@ export const zh = defineLocale({
     sharedGatewayRestartDescription: bots => `此设备上的所有机器人都会重新连接：${bots}`,
     sharedGatewayRestartConfirm: '全部重启',
     sharedGatewayRestarted: count => `共享网关已重启（${count} 个机器人）`,
-    updateHermes: '更新 Hermes',
+    updateMoor: '更新 Moor',
     reloadWindow: '重新载入窗口',
     actionRunning: '运行中',
     actionDone: '完成',
@@ -2348,10 +2348,10 @@ export const zh = defineLocale({
     restartFailedManual: '网关重启失败 — 请手动重启并检查网关日志。',
     telegramQr: {
       title: '选择连接 Telegram 机器人的方式',
-      subtitle: '两种方式都会连接一个由你控制的机器人，凭据仅保存在此 Hermes 安装中。',
+      subtitle: '两种方式都会连接一个由你控制的机器人，凭据仅保存在此 Moor 安装中。',
       quickSetup: '快速设置',
       recommended: '推荐',
-      quickHelp: '扫描二维码并在 Telegram 中确认。Hermes 会自动创建机器人并识别你的 Telegram 用户 ID。',
+      quickHelp: '扫描二维码并在 Telegram 中确认。Moor 会自动创建机器人并识别你的 Telegram 用户 ID。',
       createWithQr: '通过二维码创建',
       starting: '正在启动…',
       replaceWarning: 'Telegram 凭据已配置。保存后，新的二维码设置或机器人令牌将替换当前机器人。',
@@ -3078,8 +3078,8 @@ export const zh = defineLocale({
     transcribingDictation: '正在转写听写',
     voiceControls: '语音',
     voiceEngine: '语音聊天引擎',
-    voiceEngineChained: '语音转文字 + Hermes 语音',
-    voiceEngineLive: 'GPT-Live（全双工，委托给 Hermes）',
+    voiceEngineChained: '语音转文字 + Moor 语音',
+    voiceEngineLive: 'GPT-Live（全双工，委托给 Moor）',
     voiceEngineLiveNeedsKey: '需要 OpenAI API 密钥',
     voiceEngineChangeFailed: '无法更改语音聊天引擎',
     voiceEngineChainedShort: '语音转文字',
@@ -3445,7 +3445,7 @@ export const zh = defineLocale({
   },
 
   guidedGreeting: {
-    line: '来了，进来吧。我是 Hermes。给我两分钟，把这里按你的习惯收拾一下，然后我们找件你真正想做的事来做。\n\n先说，我该怎么称呼你？',
+    line: '来了，进来吧。我是 Moor。给我两分钟，把这里按你的习惯收拾一下，然后我们找件你真正想做的事来做。\n\n先说，我该怎么称呼你？',
     nameSuggestion: (name: string) => `（如果你愿意，我也可以直接叫你 ${name}。）`
   },
   install: {
@@ -3595,21 +3595,21 @@ export const zh = defineLocale({
   // Not yet translated — English fallbacks so the free-tier surfaces stay
   // readable until a zh pass lands.
   freeTier: {
-    providerRowTitle: 'Nous · 免费层',
-    providerRowPitch: '登录 Nous 账户以解锁更多模型和工具。',
-    readyTitle: 'Hermes 已就绪。',
+    providerRowTitle: 'Moor · 免费层',
+    providerRowPitch: '登录 Moor 账户以解锁更多模型和工具。',
+    readyTitle: 'Moor 已就绪。',
     readyCaption: '免费 · 含连接器',
     begin: '开始',
-    signInInstead: '改为登录 Nous 账户',
+    signInInstead: '改为登录 Moor 账户',
     otherProviders: '其他提供方',
-    stripTitle: '免费的 Nous 推理和连接器现已可用。',
-    stripBody: '打开模型选择器试用，或登录 Nous 账户。',
+    stripTitle: '免费的 Moor 推理和连接器现已可用。',
+    stripBody: '打开模型选择器试用，或登录 Moor 账户。',
     openModelPicker: '打开模型选择器',
     dismiss: '关闭',
-    providerName: 'Nous',
-    statusLabel: model => `Nous · ${model}`,
+    providerName: 'Moor',
+    statusLabel: model => `Moor · ${model}`,
     signIn: '登录',
-    signInHeading: '登录 Nous 账户以解锁更多模型和工具。',
+    signInHeading: '登录 Moor 账户以解锁更多模型和工具。',
     settingUp: '正在设置免费推理…',
     codeBody: '在浏览器中输入此代码以完成登录。',
     copyLink: '复制链接',
@@ -3634,7 +3634,7 @@ export const zh = defineLocale({
     retiredBody: '此免费层身份已被使用或已过期；下次启动时会重新设置。',
     errorBody: '登录未完成；请重试。',
     alreadySignedInHeading: '已登录。',
-    alreadySignedInBody: '此 Hermes 已登录 Nous 账户。'
+    alreadySignedInBody: '此 Moor 已登录 Moor 账户。'
   },
 
   modelPicker: {
@@ -4249,7 +4249,7 @@ export const zh = defineLocale({
     sudoCommandUnavailable: '此 agent 未提供命令。如果无法在对话中确认，请取消。',
     sudoPlaceholder: 'sudo 密码',
     secretTitle: '需要密钥',
-    secretDesc: 'Hermes 需要一个凭据才能继续。',
+    secretDesc: 'Moor 需要一个凭据才能继续。',
     secretPlaceholder: '密钥值',
     vaultUnlockSendFailed: '无法发送主密码',
     vaultUnlockTitle: name => `解锁 ${name}`,
@@ -4261,7 +4261,7 @@ export const zh = defineLocale({
     vaultSaveSendFailed: '无法保存登录信息',
     vaultSaveTitle: site => `保存 ${site} 的登录信息？`,
     vaultSaveDesc: origin =>
-      `Hermes 到达了 ${origin} 的登录页，但没有为它保存的登录信息。在此输入一次；它将在本机加密保存并直接填入页面，模型永远看不到密码。`,
+      `Moor 到达了 ${origin} 的登录页，但没有为它保存的登录信息。在此输入一次；它将在本机加密保存并直接填入页面，模型永远看不到密码。`,
     vaultSaveIdentifierLabel: '邮箱或用户名',
     vaultSaveIdentifierPlaceholder: 'you@example.com',
     vaultSavePasswordPlaceholder: '密码',
@@ -4271,9 +4271,9 @@ export const zh = defineLocale({
     vaultCodeSendFailed: '无法发送验证码',
     vaultCodeTitle: site => `${site} 的验证码`,
     vaultCodeDesc: site =>
-      `${site} 要求输入一次性验证码（短信、邮件或验证器应用）。在此输入，Hermes 会将其填入页面；模型永远看不到它。`,
+      `${site} 要求输入一次性验证码（短信、邮件或验证器应用）。在此输入，Moor 会将其填入页面；模型永远看不到它。`,
     vaultCodeLabel: '验证码',
-    vaultCodeFootnote: '提示：在“设置 → 密码与登录”中为该登录保存验证器密钥后，Hermes 会自动填写验证码。',
+    vaultCodeFootnote: '提示：在“设置 → 密码与登录”中为该登录保存验证器密钥后，Moor 会自动填写验证码。',
     vaultCodeSkip: '跳过',
     vaultCodeConfirm: '输入验证码'
   },

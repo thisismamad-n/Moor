@@ -97,7 +97,7 @@ def _start_desktop_cron_ticker(stop_event: "threading.Event", interval: int = 60
     start_kwargs: dict = {"interval": interval}
     if isinstance(provider, InProcessCronScheduler):
         try:
-            from hermes_cli.profiles import (
+            from moor_cli.profiles import (
                 _check_gateway_running, _served_by_running_multiplexer, profiles_to_serve)
 
             # Same served set as the multiplexer: default + every live profile under profiles/.
@@ -118,7 +118,7 @@ def _start_desktop_cron_ticker(stop_event: "threading.Event", interval: int = 60
                 start_kwargs["profile_gate"] = lambda name, home: not (
                     _check_gateway_running(Path(home))
                     or (name != "default" and _served_by_running_multiplexer(name)))
-                from hermes_logging import enable_profile_log_routing
+                from moor_logging import enable_profile_log_routing
 
                 enable_profile_log_routing(initial_profile_homes)
                 _log.info(
@@ -245,11 +245,11 @@ async def _lifespan(app: "FastAPI"):
 
     threading.Thread(target=_boot_local_runtime, daemon=True, name="local-runtime-boot").start()
 
-    # Nous free tier: the ONE place its identity is created. Inventories credentials, mints only
-    # when HERMES_GUEST_ONBOARDING=1, records the answer for setup.status / free_tier.status and
+    # Moor free tier: the ONE place its identity is created. Inventories credentials, mints only
+    # when MOOR_GUEST_ONBOARDING=1, records the answer for setup.status / free_tier.status and
     # broadcasts `setup.ready`. Off-thread so a slow portal never delays the socket; the desktop's
     # first setup.status waits on the record (bounded) instead.
-    from hermes_cli.free_tier_bootstrap import start_background_bootstrap
+    from moor_cli.free_tier_bootstrap import start_background_bootstrap
 
     start_background_bootstrap()
 

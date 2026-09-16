@@ -548,8 +548,8 @@ def _migrate_to_45(results: Dict[str, Any], quiet: bool) -> None:
     # already records `connections` (a decline) or `agent.disabled_toolsets` names it (the
     # resolver subtracts that list last, so the append would have no effect).
     from agent.skill_utils import parse_config_string_list
-    from hermes_cli.tools_config import _configurable_keys, _get_plugin_toolset_keys
-    from hermes_cli.toolset_scope import toolset_allowed_for_platform
+    from moor_cli.tools_config import _configurable_keys, _get_plugin_toolset_keys
+    from moor_cli.toolset_scope import toolset_allowed_for_platform
 
     config = read_raw_config()
     saved = config.get("platform_toolsets")
@@ -566,7 +566,7 @@ def _migrate_to_45(results: Dict[str, Any], quiet: bool) -> None:
             continue
         if not toolset_allowed_for_platform("connections", platform):
             continue
-        # A composite like [hermes-cli] already inherits every core tool at read time.
+        # A composite like [moor-cli] already inherits every core tool at read time.
         if not any(str(ts) in explicit_keys for ts in toolsets):
             continue
         offered = known.get(platform)
@@ -586,7 +586,7 @@ def _migrate_to_45(results: Dict[str, Any], quiet: bool) -> None:
         config, results, quiet,
         f"enabled the connections toolset for {platforms}",
         f"  ✓ Enabled the Connections toolset (Gmail, Linear, Notion, local MCP servers) for {platforms}. "
-        "Uncheck Connections in `hermes tools` to turn it off.")
+        "Uncheck Connections in `moor tools` to turn it off.")
 
 
 #: Registry of (target_version, step), strictly ascending; simple default-flip steps are
@@ -706,7 +706,7 @@ MIGRATIONS: Tuple[Tuple[int, Callable[[Dict[str, Any], bool], None]], ...] = (
         added="curator.archive_after_days=30 (was: 90)",
         message=(
             "  ✓ curator.archive_after_days 90→30 — skills unused for a month are archived to "
-            "skills/.archive/ (recoverable with `hermes curator restore`). Set it back to 90 to keep the old window."))),
+            "skills/.archive/ (recoverable with `moor curator restore`). Set it back to 90 to keep the old window."))),
     # 44 → 45: saved platform_toolsets lists predate the connections toolset (see _migrate_to_45).
     (45, _migrate_to_45),
 )

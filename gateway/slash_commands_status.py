@@ -16,7 +16,7 @@ from agent.i18n import t
 from gateway.config import Platform
 from gateway.platforms.event import MessageEvent
 from gateway.session_transcript import TranscriptReadError
-from hermes_cli.status_report import build_status_fields
+from moor_cli.status_report import build_status_fields
 
 # Log-record parity with gateway/run.py and the origin module.
 logger = logging.getLogger("gateway.run")
@@ -69,7 +69,7 @@ async def _quiet(call, default=None):
 
 
 HISTORY_UNREADABLE = ("⚠️ I can't read this conversation's history right now (your earlier messages "
-                      "exist but cannot be loaded). Run `hermes doctor --fix` on the host, or use /new "
+                      "exist but cannot be loaded). Run `moor doctor --fix` on the host, or use /new "
                       "to start fresh.")
 
 
@@ -274,11 +274,11 @@ class GatewayStatusCommandsMixin:
         elif fields["model"]:
             lines.append(t("gateway.status.model", model=fields["model"]))
         try:
-            from hermes_cli.auth import resolve_provider
-            from hermes_cli.anon_auth import guest_carries_inference
+            from moor_cli.auth import resolve_provider
+            from moor_cli.anon_auth import guest_carries_inference
 
             free_tier_active = await self._run_in_executor_with_context(
-                lambda: resolve_provider("auto") == "nous" and guest_carries_inference()
+                lambda: resolve_provider("auto") == "moor" and guest_carries_inference()
             )
             if free_tier_active:
                 lines.append(t("gateway.status.free_tier"))

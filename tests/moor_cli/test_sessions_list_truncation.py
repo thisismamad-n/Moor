@@ -1,4 +1,4 @@
-"""``hermes sessions list`` tells the user when ``--limit`` cut the listing (#111989).
+"""``moor sessions list`` tells the user when ``--limit`` cut the listing (#111989).
 
 The cap is applied inside the SQL query, so the lister probes one row past it; the footer
 must appear only when that probe row exists.
@@ -8,12 +8,12 @@ from argparse import Namespace
 
 import pytest
 
-from hermes_cli import sessions_cmd
+from moor_cli import sessions_cmd
 
 
 @pytest.fixture
 def db(tmp_path):
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
     db = SessionDB(db_path=tmp_path / "state.db")
     for i in range(6):
         db.create_session(f"sess_{i}", "cli")

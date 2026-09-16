@@ -973,7 +973,7 @@ class TestMultiplexProfileWebhookAuthentication:
         runner.config.multiplex_profiles = True
         adapter.gateway_runner = runner
         monkeypatch.setattr(
-            "hermes_cli.profiles.profiles_to_serve",
+            "moor_cli.profiles.profiles_to_serve",
             lambda multiplex: [
                 ("default", tmp_path),
                 ("worker", tmp_path / "profiles" / "worker"),

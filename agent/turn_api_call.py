@@ -220,11 +220,11 @@ def moor_rate_limit_guard(
             compression_attempts=compression_attempts, result=result,
         )
 
-    if agent.provider == "nous":
-        # A gateway ``x-nous-model-switch`` recorded on the previous response moves this session
+    if agent.provider == "moor":
+        # A gateway ``x-moor-model-switch`` recorded on the previous response moves this session
         # (and the config default, when it still names the free tier's model) before the next call.
         try:
-            from hermes_cli.anon_auth import apply_model_switch
+            from moor_cli.anon_auth import apply_model_switch
             apply_model_switch(agent)
         except Exception:
             pass
@@ -232,18 +232,18 @@ def moor_rate_limit_guard(
             from agent.moor_rate_guard import (
                 moor_rate_limit_remaining, format_remaining as _fmt_moor_remaining
             )
-            _nous_remaining = nous_rate_limit_remaining()
-            if _nous_remaining is not None and _nous_remaining > 0:
-                from hermes_cli import anon_auth
-                reset = _fmt_nous_remaining(_nous_remaining)
+            _moor_remaining = moor_rate_limit_remaining()
+            if _moor_remaining is not None and _moor_remaining > 0:
+                from moor_cli import anon_auth
+                reset = _fmt_moor_remaining(_moor_remaining)
                 _welcome = anon_auth.route_is_welcome_host(getattr(agent, "base_url", ""))
                 if _welcome:
-                    _nous_msg = anon_auth.FREE_TIER_RATE_LIMIT_CHAT.format(
-                        reset=anon_auth.friendly_wait(_nous_remaining))
+                    _moor_msg = anon_auth.FREE_TIER_RATE_LIMIT_CHAT.format(
+                        reset=anon_auth.friendly_wait(_moor_remaining))
                 else:
-                    _nous_msg = f"Your Nous account has hit its rate limit; it resets in {reset}."
-                agent._buffer_vprint(f"⏳ {_nous_msg} Trying fallback...")
-                agent._buffer_status(f"⏳ {_nous_msg}")
+                    _moor_msg = f"Your Moor account has hit its rate limit; it resets in {reset}."
+                agent._buffer_vprint(f"⏳ {_moor_msg} Trying fallback...")
+                agent._buffer_status(f"⏳ {_moor_msg}")
                 if agent._try_activate_fallback():
                     active_system_prompt = _arm_fallback_restart(
                         agent, api_messages, active_system_prompt, _retry)
@@ -256,16 +256,16 @@ def moor_rate_limit_guard(
                 # The free tier's sentence already says what to do (wait, or sign in); the
                 # fallback-provider advice is for an install that runs its own providers.
                 return _verdict("return", stamp_failure({
-                    "final_response": (f"⏳ {_nous_msg}" if _welcome
-                                       else f"⏳ {_nous_msg}\n\n{site_copy('nous_rate_limit')}"),
+                    "final_response": (f"⏳ {_moor_msg}" if _welcome
+                                       else f"⏳ {_moor_msg}\n\n{site_copy('moor_rate_limit')}"),
                     "messages": messages,
                     "api_calls": api_call_count,
                     "completed": False,
                     "failed": True,
-                    "error": _nous_msg,
+                    "error": _moor_msg,
                     # The free tier's card body and its sign-in door (agent/error_surface.py).
                     **({"free_tier": {"kind": "rate_limited", "message": anon_auth.FREE_TIER_RATE_LIMIT_CARD.format(
-                        reset=anon_auth.friendly_wait(_nous_remaining))}} if _welcome else {}),
+                        reset=anon_auth.friendly_wait(_moor_remaining))}} if _welcome else {}),
                 }, FailoverReason.rate_limit.value, True))
         except Exception:
             pass  # Never let rate guard break the agent loop

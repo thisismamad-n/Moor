@@ -103,9 +103,9 @@ def _write_json_cache(path: Path, data: Any, **dump_kwargs: Any) -> None:
     """Atomically persist a cache file (creating parents). Raises on failure — callers decide
     whether a failed cache write is worth logging."""
     from utils import atomic_json_write
-    from hermes_constants import mkdir_under_hermes_home
+    from moor_constants import mkdir_under_moor_home
 
-    mkdir_under_hermes_home(path.parent)
+    mkdir_under_moor_home(path.parent)
     atomic_json_write(path, data, **dump_kwargs)
 
 
@@ -157,15 +157,15 @@ _openrouter_catalog_cache: list[tuple[str, str]] | None = None
 
 def _openrouter_catalog_disk_ttl() -> float:
     """Same TTL as the catalog manifest this list is filtered from (honours ``model_catalog.ttl_minutes``)."""
-    from hermes_cli.model_catalog import refresh_interval_seconds
+    from moor_cli.model_catalog import refresh_interval_seconds
 
     return refresh_interval_seconds()
 
 
 def _openrouter_catalog_disk_path() -> Path:
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
-    return get_hermes_home() / "cache" / "openrouter_curated_catalog.json"
+    return get_moor_home() / "cache" / "openrouter_curated_catalog.json"
 
 
 def _read_openrouter_catalog_disk() -> list[tuple[str, str]] | None:
@@ -442,34 +442,34 @@ def pick_silent_default_model(model_ids: list[str], provider: str = "openrouter"
     return preferred if preferred in model_ids else (model_ids[0] if model_ids else "")
 
 
-def recommended_nous_default_model() -> dict[str, Any]:
-    """The model a Nous account lands on without choosing one, honouring the account's tier.
+def recommended_moor_default_model() -> dict[str, Any]:
+    """The model a Moor account lands on without choosing one, honouring the account's tier.
 
     Curated catalog plus the Portal's recommendations for the tier, narrowed to the org's policy,
     then (free tier) to the rows the tier may select, then :func:`pick_silent_default_model`.
     Contacts the Portal for a fresh tier read, so never call it on a hot path. Returns
-    ``{"provider": "nous", "model": str, "free_tier": bool}``; ``model`` may be ``""`` when nothing
+    ``{"provider": "moor", "model": str, "free_tier": bool}``; ``model`` may be ``""`` when nothing
     is selectable (callers degrade). Shared by ``GET /api/model/recommended-default`` and the
-    sign-in completion in ``hermes_cli.anon_auth`` so both land on the same model.
+    sign-in completion in ``moor_cli.anon_auth`` so both land on the same model.
     """
-    from hermes_cli import models_pricing as mp
-    from hermes_cli.auth import get_provider_auth_state
+    from moor_cli import models_pricing as mp
+    from moor_cli.auth import get_provider_auth_state
 
-    model_ids = get_curated_nous_model_ids()
-    pricing = mp.get_pricing_for_provider("nous") or {}
-    free_tier = check_nous_free_tier(force_fresh=True)
+    model_ids = get_curated_moor_model_ids()
+    pricing = mp.get_pricing_for_provider("moor") or {}
+    free_tier = check_moor_free_tier(force_fresh=True)
     try:
-        portal_url = (get_provider_auth_state("nous") or {}).get("portal_base_url", "") or ""
+        portal_url = (get_provider_auth_state("moor") or {}).get("portal_base_url", "") or ""
     except Exception:
         portal_url = ""
     # Narrow to policy BEFORE the tier split, so a rescued id still has to pass the free/paid predicate.
-    policy_allowed = mp.nous_policy_allowed_ids()
+    policy_allowed = mp.moor_policy_allowed_ids()
     union = union_with_portal_free_recommendations if free_tier else union_with_portal_paid_recommendations
     model_ids, pricing = union(model_ids, pricing, portal_url)
-    model_ids = mp.restrict_to_nous_policy(model_ids, policy_allowed, rescue_empty=True)
+    model_ids = mp.restrict_to_moor_policy(model_ids, policy_allowed, rescue_empty=True)
     if free_tier:
-        model_ids, _unavailable = partition_nous_models_by_tier(model_ids, pricing, free_tier=True)
-    return {"provider": "nous", "model": pick_silent_default_model(model_ids, provider="nous"),
+        model_ids, _unavailable = partition_moor_models_by_tier(model_ids, pricing, free_tier=True)
+    return {"provider": "moor", "model": pick_silent_default_model(model_ids, provider="moor"),
             "free_tier": bool(free_tier)}
 
 
@@ -547,7 +547,7 @@ def fetch_openrouter_models(
     """Return the curated OpenRouter picker list, refreshed from the live catalog when possible."""
     # The curated list is filtered from this profile's manifest (``model_catalog.*`` config, its
     # ``<home>/cache`` copy), so a routed profile keeps its own slot instead of the module one.
-    from hermes_cli.models_profile_cache import profile_slot_get, profile_slot_set
+    from moor_cli.models_profile_cache import profile_slot_get, profile_slot_set
     _me = sys.modules[__name__]
     cached = profile_slot_get(_me, "_openrouter_catalog_cache")
 
@@ -706,7 +706,7 @@ def _provider_has_credentials(pid: str) -> bool:
         if pid == "custom":
             return bool((_get_custom_base_url() or "").strip())
         if pid == "openrouter":
-            from hermes_cli.model_switch import _scoped_key_env
+            from moor_cli.model_switch import _scoped_key_env
             return has_usable_secret(_scoped_key_env("OPENROUTER_API_KEY"))
         status = get_auth_status(pid)
         return bool(status.get("logged_in") or status.get("configured"))
@@ -989,9 +989,9 @@ def detect_provider_for_model(
 
     Never hands back a provider the user holds no credentials for: an unauthenticated guess is
     skipped and the ladder continues (``None`` = stay on the current provider). Exceptions: the user
-    NAMED the provider (``/model nous``), or there is no current provider yet (``auto``) — then the
+    NAMED the provider (``/model moor``), or there is no current provider yet (``auto``) — then the
     first guess is returned so the credential step fails loudly instead of silently ignoring input."""
-    from hermes_cli.models_detect import (
+    from moor_cli.models_detect import (
         current_provider_catalog_match, current_provider_owns_vendor, provider_has_credentials)
 
     name = (model_name or "").strip()
@@ -1546,8 +1546,8 @@ def _spawn_swr_refresh(cache_key: str, refresh_fn=None) -> None:
     # Under a routed profile the inflight key includes the home: the same provider slug names a
     # different disk cache and credential set per profile, so one profile's refresh must not
     # suppress another's. Unscoped keeps the bare key (tests inspect the set by slug).
-    from hermes_constants import get_hermes_home_override, hermes_home_key
-    inflight_key = cache_key if get_hermes_home_override() is None else (hermes_home_key(), cache_key)
+    from moor_constants import get_moor_home_override, moor_home_key
+    inflight_key = cache_key if get_moor_home_override() is None else (moor_home_key(), cache_key)
     with _swr_refresh_lock:
         if inflight_key in _swr_refresh_inflight:
             return
@@ -2180,7 +2180,7 @@ def _fetch_opencode_free_models(
     """Live keyless OpenCode Free catalog from the Zen relay, filtered to the anonymous-servable
     ``*-free`` tier minus ``_OPENCODE_FREE_EXCLUDED_MODELS`` (keyed twins and listed-but-dead ids) —
     the same membership criterion ``opencode_zen_free_runtime`` routes on."""
-    from hermes_cli.urllib_security import open_credentialed_url
+    from moor_cli.urllib_security import open_credentialed_url
 
     now = time.time()
     memo = _opencode_free_live_memo
@@ -2383,7 +2383,7 @@ def probe_api_models(
             return _probe_result(
                 None, normalized.rstrip("/") + "/models", normalized,
                 alternate_base if alternate_base != normalized else None)
-    headers: dict[str, str] = {"User-Agent": _HERMES_USER_AGENT}
+    headers: dict[str, str] = {"User-Agent": _MOOR_USER_AGENT}
     if urllib.parse.urlparse(normalized).hostname == "generativelanguage.googleapis.com":
         headers["X-Goog-Api-Client"] = f"moor-agent/{_MOOR_VERSION}"
     if api_key and api_mode == "anthropic_messages":
@@ -2456,7 +2456,7 @@ _DEEPINFRA_CATALOG_NEG_TTL = 60.0  # seconds
 
 def _deepinfra_env(key: str) -> str:
     """Profile-scoped ``.env``/environ read: under a multiplexed turn the launch env is not this profile's."""
-    from hermes_cli.config import get_env_value_prefer_dotenv
+    from moor_cli.config import get_env_value_prefer_dotenv
     return (get_env_value_prefer_dotenv(key) or "").strip()
 
 
@@ -2482,7 +2482,7 @@ def _fetch_deepinfra_catalog(
         if last_fail is not None and (time.monotonic() - last_fail) < _DEEPINFRA_CATALOG_NEG_TTL:
             return None
 
-    headers: dict[str, str] = {"User-Agent": _HERMES_USER_AGENT}
+    headers: dict[str, str] = {"User-Agent": _MOOR_USER_AGENT}
     api_key = _deepinfra_env("DEEPINFRA_API_KEY")
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
@@ -2614,7 +2614,7 @@ def cached_fetch_api_models(
     opens that must not block on a stopped local endpoint) still get a warm catalog instead of
     collapsing to the config-declared subset. ``fetch_models`` supplies native-aware discovery
     without minting a command token before cache admission."""
-    from hermes_cli.model_switch_providers import _NativePickerModelList
+    from moor_cli.model_switch_providers import _NativePickerModelList
 
     def _catalog(entry):
         return (_NativePickerModelList if entry.get("native_catalog") else list)(entry["models"])

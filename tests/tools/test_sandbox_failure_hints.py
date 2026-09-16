@@ -17,9 +17,9 @@ class TestSandboxFailureHint:
         assert "normal tool call" in h
 
     def test_helper_import_failure_reports_module_skew(self):
-        err = "ImportError: cannot import name 'json_parse' from 'hermes_tools'"
+        err = "ImportError: cannot import name 'json_parse' from 'moor_tools'"
         h = _sandbox_failure_hint(err)
-        assert "from hermes_tools import json_parse" in h
+        assert "from moor_tools import json_parse" in h
         assert "sys.path" in h
 
     def test_missing_third_party_module(self):

@@ -4,7 +4,7 @@ import threading
 from types import SimpleNamespace
 from unittest.mock import Mock
 
-from cli import HermesCLI
+from cli import MoorCLI
 from tools.process_registry_notifications import (
     PROCESS_COMPLETE_DISPLAY_KIND, format_process_notification, process_completion_display_text)
 from tui_gateway import server
@@ -24,7 +24,7 @@ def _event(sid, exit_code, command="cd /tmp && bash long-build.sh"):
 def test_process_completion_display_keeps_payload_separate_across_surfaces(monkeypatch, capsys, tmp_path):
     events = [_event("proc_1", 0)]
     payload = format_process_notification(events[0])
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = MoorCLI.__new__(MoorCLI)
     cli.session_id = "display-session"
     cli._pending_input = queue.Queue()
     registry = _registry(events)
@@ -53,7 +53,7 @@ def test_process_completion_display_keeps_payload_separate_across_surfaces(monke
     assert staged["display_kind"] == PROCESS_COMPLETE_DISPLAY_KIND
     assert staged["display_metadata"]["display_text"] == expected
 
-    from hermes_cli.cli_agent_setup_mixin import _collect_resume_entries
+    from moor_cli.cli_agent_setup_mixin import _collect_resume_entries
     entries, _, _ = _collect_resume_entries(cli.conversation_history, {}, lambda text: text)
     assert entries == [("event", expected)]
 

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from hermes_cli import plugin_compat
+from moor_cli import plugin_compat
 
 
 def _install_plugin(root: Path) -> Path:

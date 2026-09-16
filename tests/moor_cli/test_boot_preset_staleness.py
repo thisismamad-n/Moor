@@ -49,18 +49,18 @@ def test_presets_current_when_every_staged_model_is_covered(moor_home):
     assert _presets_stale() is False
 
 
-def test_legacy_presets_without_model_paths_are_regenerated(hermes_home):
-    from hermes_cli.local_runtime.bootstrap import _presets_stale
+def test_legacy_presets_without_model_paths_are_regenerated(moor_home):
+    from moor_cli.local_runtime.bootstrap import _presets_stale
 
-    _stage(hermes_home, "model-a")
-    _write_presets(hermes_home, "model-a")
-    ini = hermes_home / "runtimes/llamacpp/presets.ini"
+    _stage(moor_home, "model-a")
+    _write_presets(moor_home, "model-a")
+    ini = moor_home / "runtimes/llamacpp/presets.ini"
     ini.write_text("[model-a]\nctx-size = 65536\n")
     assert _presets_stale()
 
 
-def test_no_models_is_never_stale(hermes_home):
-    from hermes_cli.local_runtime.bootstrap import _presets_stale
+def test_no_models_is_never_stale(moor_home):
+    from moor_cli.local_runtime.bootstrap import _presets_stale
 
     _write_presets(moor_home, "model-a")
     assert _presets_stale() is False

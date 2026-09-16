@@ -692,7 +692,7 @@ async def fs_write_text(payload: FsWriteText):
 
 async def _fs_download_path(path: str, profile: Optional[str], session_id: Optional[str]) -> Path:
     if session_id is not None:
-        from hermes_cli.web_routers.sessions import get_session_detail
+        from moor_cli.web_routers.sessions import get_session_detail
 
         if not session_id.strip():
             raise HTTPException(status_code=404, detail="Session not found")
@@ -700,7 +700,7 @@ async def _fs_download_path(path: str, profile: Optional[str], session_id: Optio
         # Validate ownership even for absolute paths; never trust a client cwd.
         return _fs_path(path, cwd=session.get("cwd") or "")
     if profile is not None:
-        from hermes_cli.web_server_cron import _cron_profile_home
+        from moor_cli.web_server_cron import _cron_profile_home
 
         _cron_profile_home(profile)
     return _fs_path(path)
@@ -710,7 +710,7 @@ async def _fs_download_path(path: str, profile: Optional[str], session_id: Optio
 async def fs_read_data_url(
     path: str, profile: Optional[str] = None, session_id: Optional[str] = None,
 ):
-    from hermes_cli.web_server import _FS_DATA_URL_MAX_BYTES
+    from moor_cli.web_server import _FS_DATA_URL_MAX_BYTES
     target, st = _fs_regular_file(await _fs_download_path(path, profile, session_id))
     if st.st_size > _FS_DATA_URL_MAX_BYTES:
         raise HTTPException(status_code=413, detail="File too large")

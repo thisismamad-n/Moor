@@ -837,7 +837,7 @@ class GatewayAdapterLifecycleMixin:
         from gateway.run_profile_reconcile import profile_serve_signature
         if not self._multiplex_on():
             # ``write_runtime_status`` re-stamps the previous writer's record in place, so a multiplexer's
-            # ``served_profiles`` would outlive it into this single-profile run and `hermes -p X ...`
+            # ``served_profiles`` would outlive it into this single-profile run and `moor -p X ...`
             # would keep refusing (exit 78) / reporting "served" for profiles nobody serves.
             with _log_suppressed(logging.DEBUG, "could not clear served_profiles", exc_info=True):
                 from gateway.status import write_runtime_status
@@ -913,7 +913,7 @@ class GatewayAdapterLifecycleMixin:
         await asyncio.to_thread(hydrate_profile_secret_sources, profile_home)
         with _profile_runtime_scope(profile_home, hydrate_secrets=False):
             profile_runtime_cfg = _load_gateway_config()
-            from hermes_cli.plugins import discover_plugins
+            from moor_cli.plugins import discover_plugins
             discover_plugins()
             # This profile's `hooks:` block: start() registered before any profile scope existed.
             self._register_config_hooks(
@@ -965,7 +965,7 @@ class GatewayAdapterLifecycleMixin:
     def _note_unserved_secondary_platform(self, profile_name: str, platform: Platform) -> None:
         """A secondary enabled a shared-ingress platform (Relay, WhatsApp) the multiplexer only runs on
         the default profile. Log the reason + remedy once per (profile, platform) and stamp a
-        ``<profile>:<platform>`` status entry so ``hermes gateway status --profile X`` and the
+        ``<profile>:<platform>`` status entry so ``moor gateway status --profile X`` and the
         dashboard show *why* the channel is dead instead of nothing at all."""
         noted = getattr(self, "_unserved_secondary_platforms", None)
         if noted is None:
@@ -1135,7 +1135,7 @@ class GatewayAdapterLifecycleMixin:
         self._bind_voice_input_callback(adapter)
         # Secondary adapters carry their profile so prune paths namespace topic bindings correctly.
         # See #76423.
-        adapter._hermes_profile_name = profile_name
+        adapter._moor_profile_name = profile_name
         # A secondary's port-binding adapter never binds: the default profile owns the one shared
         # listener, which forwards /p/<profile>/<path> to this adapter's app (shared_ingress.py).
         if self._multiplex_on() and platform.value not in SHARED_LISTENER_MIRROR_PLATFORMS \
@@ -1393,8 +1393,8 @@ class GatewayAdapterLifecycleMixin:
         """Busy-path twin of ``_make_default_profile_message_handler``: busy callbacks bypass the message
         handler, so the routed scope and transport-home authorization must be re-established here or the
         follow-up is authorized in whatever scope is ambient (#103717)."""
-        from gateway.run import _async_profile_runtime_scope, get_hermes_home
-        default_home = Path(get_hermes_home())
+        from gateway.run import _async_profile_runtime_scope, get_moor_home
+        default_home = Path(get_moor_home())
 
         async def _handler(event, _session_key):
             source = event.source

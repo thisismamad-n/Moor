@@ -6,13 +6,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli import goals
+from moor_cli import goals
 
 
 def _surface(surface, mgr, monkeypatch, prompts=None):
     prompts = prompts if prompts is not None else []
     if surface == "cli":
-        from hermes_cli.cli_commands_mixin import CLICommandsMixin
+        from moor_cli.cli_commands_mixin import CLICommandsMixin
         cli = object.__new__(CLICommandsMixin)
         cli._get_goal_manager = lambda: mgr
         cli._pending_input = queue.Queue()

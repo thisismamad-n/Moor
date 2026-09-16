@@ -5,7 +5,7 @@ import os
 import shutil
 from unittest.mock import patch
 
-from hermes_cli import config as config_mod
+from moor_cli import config as config_mod
 
 
 def _replace_pinning_mtime(path, content: str) -> None:
@@ -17,7 +17,7 @@ def _replace_pinning_mtime(path, content: str) -> None:
 
 
 def test_load_config_sees_replacement_with_pinned_mtime_and_size(tmp_path):
-    with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}):
+    with patch.dict(os.environ, {"MOOR_HOME": str(tmp_path)}):
         config_mod._LOAD_CONFIG_CACHE.clear()
         config_mod._RAW_CONFIG_CACHE.clear()
         cfg = tmp_path / "config.yaml"

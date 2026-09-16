@@ -9,7 +9,7 @@
  * The two are persisted independently. Shift+X toggles light/dark.
  */
 
-import { ensureContrast, mix, parseColor } from '@hermes/shared/color'
+import { ensureContrast, mix, parseColor } from '@moor/shared/color'
 import { useStore } from '@nanostores/react'
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
@@ -104,7 +104,7 @@ const readBootProfileKey = () => normalizeProfileKey(storedString(LAST_PROFILE_K
 const rememberActiveProfileKey = (profile: string) => persistString(LAST_PROFILE_KEY, profile)
 
 // ─── Color math (for synthesised light variants of dark-only skins) ────────
-// mix / ensureContrast live in @hermes/shared/color (shared with the TUI);
+// mix / ensureContrast live in @moor/shared/color (shared with the TUI);
 // readableInk in ./color pins the desktop's near-black ink.
 
 function synthLightColors(seed: DesktopTheme): DesktopThemeColors {

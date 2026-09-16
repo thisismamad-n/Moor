@@ -85,7 +85,7 @@ def test_console_ws_cancel_returns_to_prompt(console_client, monkeypatch):
         conn.send_json({"type": "cancel"})
 
         complete = _recv_until(conn, "complete", status="cancelled")
-        assert complete["prompt"] == "hermes> "
+        assert complete["prompt"] == "moor> "
 
 
 @pytest.fixture
@@ -145,7 +145,7 @@ def test_console_cancel_stops_forked_agent_request_before_reporting(console_clie
     import threading
 
     from agent import curator
-    from hermes_cli.web_routers import chat_ws
+    from moor_cli.web_routers import chat_ws
 
     monkeypatch.setattr(
         curator, "_resolve_review_provider",

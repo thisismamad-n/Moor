@@ -46,7 +46,7 @@ def test_local_skills_publish_exact_install_target(mod, tmp_path, monkeypatch, d
     [entry] = mod.extract_local_skills()
     expected = f"{prefix}/creative/nested/example"
     assert entry["installIdentifier"] == expected
-    assert entry["installCmd"] == f"hermes skills install {expected}"
+    assert entry["installCmd"] == f"moor skills install {expected}"
 
 
 # --------------------------------------------------------------------------

@@ -401,10 +401,10 @@ def _command_line_belongs_to_profile(command: str, profile_home: Path) -> bool:
     profile_name = _profile_name_for_home(profile_home)
     home_lc = str(profile_home).lower().replace("\\", "/")
     if profile_name is not None and profile_name != "default":
-        return profile_flag_value(command_lc) == profile_name.lower() or f"hermes_home={home_lc}" in command_lc
+        return profile_flag_value(command_lc) == profile_name.lower() or f"moor_home={home_lc}" in command_lc
     # Default profile: accept unless argv names another profile (any spelling the CLI pre-parser
     # accepts, ``--profile=ops`` included -- a substring test let that gateway pass as the default's)
-    # or a conflicting explicit HERMES_HOME= (its absence is not disqualifying -- HERMES_HOME usually
+    # or a conflicting explicit MOOR_HOME= (its absence is not disqualifying -- MOOR_HOME usually
     # arrives via the env).
     if profile_flag_value(command_lc) is not None:
         return False
@@ -943,20 +943,20 @@ def multiplexer_liveness_for_profile(profile_dir: Path) -> Optional[tuple[int, d
     ``profile_dir``; None for the default home itself, an unserved profile, or no live multiplexer.
 
     A served profile owns no ``gateway.pid``/``gateway_state.json`` (#97120), so every PID-file rung of the
-    dashboard ladder reports it stopped while ``hermes -p X status`` says running — the two must agree.
+    dashboard ladder reports it stopped while ``moor -p X status`` says running — the two must agree.
     """
     name = _profile_name_for_home(Path(profile_dir))
     if not name:
         return None
-    from hermes_cli.gateway import named_profile_served_by_running_multiplexer
-    from hermes_cli.gateway_multiplex_served import live_default_gateway_pid
-    from hermes_constants import get_default_hermes_root
+    from moor_cli.gateway import named_profile_served_by_running_multiplexer
+    from moor_cli.gateway_multiplex_served import live_default_gateway_pid
+    from moor_constants import get_default_moor_root
     if not named_profile_served_by_running_multiplexer(name):
         return None
     pid = live_default_gateway_pid()
     if pid is None:
         return None
-    return pid, read_runtime_status(get_default_hermes_root() / "gateway_state.json") or {}
+    return pid, read_runtime_status(get_default_moor_root() / "gateway_state.json") or {}
 
 
 def shared_listener_mirror_platforms(runtime: Optional[dict[str, Any]], profile: str) -> dict[str, Any]:
@@ -1060,11 +1060,11 @@ def resolve_gateway_liveness(
             running=True, pid=runtime_pid, source="runtime_status", health_body=health_body
         )
     # (4) A named profile served by the live default multiplexer: no identity files of its own, but
-    # the multiplexer IS its gateway (mirrors `hermes -p X status` / `gateway list`). Unscoped, the
+    # the multiplexer IS its gateway (mirrors `moor -p X status` / `gateway list`). Unscoped, the
     # question is about the process's OWN home — which is a named profile inside a pooled
-    # `hermes --profile X serve` (the Desktop's per-profile backend answers its REST without
+    # `moor --profile X serve` (the Desktop's per-profile backend answers its REST without
     # `?profile=`), so it takes the same rung instead of reporting the served profile stopped.
-    own_home = profile_dir if scoped else _get_process_hermes_home()
+    own_home = profile_dir if scoped else _get_process_moor_home()
     served = guarded(multiplexer_liveness_for_profile, own_home)
     if served is not None:
         mux_pid, mux_runtime = served

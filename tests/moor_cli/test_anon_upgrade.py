@@ -1,4 +1,4 @@
-"""``hermes auth upgrade``: the free tier signs into a Nous account, keeping its connectors.
+"""``moor auth upgrade``: the free tier signs into a Moor account, keeping its connectors.
 
 Driven through a fake portal covering the device-code endpoints plus the promotion intent/status
 surface, so the wire contract (both codes in the intent, status-driven outcome, token grant
@@ -16,8 +16,8 @@ from urllib.parse import parse_qs
 import httpx
 import pytest
 
-from hermes_cli import anon_auth
-from hermes_cli.auth import _auth_file_path, _load_auth_store
+from moor_cli import anon_auth
+from moor_cli.auth import _auth_file_path, _load_auth_store
 
 WELCOME = "https://welcome-api.nousresearch.com/v1"
 INFERENCE = "https://inference-api.nousresearch.com/v1"
@@ -87,7 +87,7 @@ class FakePortal:
                 return httpx.Response(400, json={"error": "invalid_grant"})
             self.token_grants += 1
             return httpx.Response(200, json={
-                "access_token": _jwt(sub="nas_user:9", client_id="hermes-cli", account_tier="free"),
+                "access_token": _jwt(sub="nas_user:9", client_id="moor-cli", account_tier="free"),
                 "refresh_token": REFRESH_TOKEN, "token_type": "Bearer", "expires_in": 900,
                 "scope": "inference:invoke tool:invoke", "inference_base_url": INFERENCE})
         return httpx.Response(500, json={"error": f"unexpected {path}"})
@@ -96,17 +96,17 @@ class FakePortal:
 @pytest.fixture
 def portal(monkeypatch, tmp_path):
     fake = FakePortal()
-    monkeypatch.setenv("HERMES_PORTAL_BASE_URL", PORTAL)
-    monkeypatch.setenv("HERMES_ANON_API_SECRET", "test-secret")
-    monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
-    monkeypatch.setenv("HERMES_GUEST_ONBOARDING", "1")
+    monkeypatch.setenv("MOOR_PORTAL_BASE_URL", PORTAL)
+    monkeypatch.setenv("MOOR_ANON_API_SECRET", "test-secret")
+    monkeypatch.setenv("MOOR_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
+    monkeypatch.setenv("MOOR_GUEST_ONBOARDING", "1")
     for var in ("OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "NOUS_API_KEY"):
         monkeypatch.delenv(var, raising=False)
-    from hermes_cli import auth_nous
+    from moor_cli import auth_moor
 
     def _client(timeout_seconds, verify):
         return httpx.Client(transport=httpx.MockTransport(fake.handler), base_url=PORTAL)
-    monkeypatch.setattr(auth_nous, "_nous_http_client", _client)
+    monkeypatch.setattr(auth_moor, "_moor_http_client", _client)
     real_client = httpx.Client
 
     class _RoutedClient(real_client):
@@ -120,7 +120,7 @@ def portal(monkeypatch, tmp_path):
 
 
 def _shared_store(tmp_path) -> dict:
-    p = tmp_path / "shared-store" / "nous_auth.json"
+    p = tmp_path / "shared-store" / "moor_auth.json"
     return json.loads(p.read_text()) if p.exists() else {}
 
 
@@ -165,8 +165,8 @@ class TestUpgrade:
         for banned in ("guest", "anonymous", "claim"):
             assert banned not in lowered, f"{banned!r} leaked into user-facing output:\n{out}"
         store = _load_auth_store()
-        state = store["providers"]["nous"]
-        assert store["active_provider"] == "nous"
+        state = store["providers"]["moor"]
+        assert store["active_provider"] == "moor"
         assert "anon_token" not in state
         assert state.get("auth_method") != anon_auth.ANON_AUTH_METHOD
         assert not anon_auth.is_guest_state(state)
@@ -183,24 +183,24 @@ FREE_PICK = "upstage/solar-pro4:free"
 def free_account(monkeypatch):
     """The signed-in account is a $0 (free-plan) account: the Portal's tier read and its recommended
     free list are the only network egress the default pick has, stubbed at their seams."""
-    from hermes_cli import models as m
-    from hermes_cli import models_pricing as mp
-    monkeypatch.setattr(m, "check_nous_free_tier", lambda **kw: True)
-    monkeypatch.setattr(m, "fetch_nous_recommended_models", lambda *a, **kw: {
+    from moor_cli import models as m
+    from moor_cli import models_pricing as mp
+    monkeypatch.setattr(m, "check_moor_free_tier", lambda **kw: True)
+    monkeypatch.setattr(m, "fetch_moor_recommended_models", lambda *a, **kw: {
         "freeRecommendedModels": [{"modelName": FREE_PICK}]})
     monkeypatch.setattr(mp, "get_pricing_for_provider", lambda *a, **kw: {})
-    monkeypatch.setattr(mp, "nous_policy_allowed_ids", lambda **kw: None)
+    monkeypatch.setattr(mp, "moor_policy_allowed_ids", lambda **kw: None)
 
 
 def _write_model_config(model_cfg: dict) -> None:
-    from hermes_cli.config import load_config, save_config
+    from moor_cli.config import load_config, save_config
     config = load_config()
     config["model"] = model_cfg
     save_config(config)
 
 
 def _model_config() -> dict:
-    from hermes_cli.config import load_config_readonly
+    from moor_cli.config import load_config_readonly
     return dict(load_config_readonly().get("model") or {})
 
 
@@ -209,7 +209,7 @@ class TestSignInCompletionSettlesTheModel:
             self, portal, free_account, capsys):
         anon_auth.ensure_portal_identity(explicit=True)
         # What picking the free-tier row leaves behind: the welcome model pinned to the welcome host.
-        _write_model_config({"provider": "nous", "default": anon_auth.GUEST_MODEL, "base_url": WELCOME})
+        _write_model_config({"provider": "moor", "default": anon_auth.GUEST_MODEL, "base_url": WELCOME})
         assert anon_auth.upgrade_guest(_args()) == 0
         model_cfg = _model_config()
         assert model_cfg["default"] == FREE_PICK
@@ -227,16 +227,16 @@ class TestSignInCompletionSettlesTheModel:
 
     def test_no_eligible_recommendation_leaves_no_default_rather_than_a_model_the_account_may_not_use(
             self, portal, free_account, monkeypatch, capsys):
-        from hermes_cli import models as m
+        from moor_cli import models as m
         anon_auth.ensure_portal_identity(explicit=True)
-        _write_model_config({"provider": "nous", "default": anon_auth.GUEST_MODEL, "base_url": WELCOME})
+        _write_model_config({"provider": "moor", "default": anon_auth.GUEST_MODEL, "base_url": WELCOME})
         def _portal_down():
             raise RuntimeError("recommended models unavailable")
-        monkeypatch.setattr(m, "recommended_nous_default_model", _portal_down)
+        monkeypatch.setattr(m, "recommended_moor_default_model", _portal_down)
         assert anon_auth.upgrade_guest(_args()) == 0
         model_cfg = _model_config()
         assert "default" not in model_cfg
         assert model_cfg["base_url"] == INFERENCE.rstrip("/")
         out = capsys.readouterr().out
         assert "Default model is now" not in out
-        assert "run `hermes model` to pick one" in out
+        assert "run `moor model` to pick one" in out

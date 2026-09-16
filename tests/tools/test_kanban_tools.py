@@ -168,15 +168,15 @@ def test_request_review_rejects_unknown_reviewer_without_mutation(monkeypatch, w
     """#106163: a non-profile ``reviewer`` (e.g. the literal "reviewer") must be
     refused with an error the model sees, leaving the task running under the
     implementer — never parked in ``review`` on an assignee nobody can spawn."""
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
+    from moor_cli import kanban_db as kb
+    from moor_cli import kanban_db_connect as kbc
     from tools import kanban_tools as kt
 
-    (tmp_path / ".hermes" / "profiles" / "verifier").mkdir(parents=True)
+    (tmp_path / ".moor" / "profiles" / "verifier").mkdir(parents=True)
     with kbc.connect() as conn:
         before = kb.get_task(conn, worker_env)
         before_events = kb.list_events(conn, worker_env)
-    monkeypatch.setenv("HERMES_KANBAN_RUN_ID", str(before.current_run_id))
+    monkeypatch.setenv("MOOR_KANBAN_RUN_ID", str(before.current_run_id))
 
     out = json.loads(kt._handle_request_review({"summary": "Ready for review.", "reviewer": "reviewer"}))
 
@@ -188,13 +188,13 @@ def test_request_review_rejects_unknown_reviewer_without_mutation(monkeypatch, w
 
 
 def test_request_review_accepts_installed_profile(monkeypatch, worker_env, tmp_path):
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
+    from moor_cli import kanban_db as kb
+    from moor_cli import kanban_db_connect as kbc
     from tools import kanban_tools as kt
 
-    (tmp_path / ".hermes" / "profiles" / "verifier").mkdir(parents=True)
+    (tmp_path / ".moor" / "profiles" / "verifier").mkdir(parents=True)
     with kbc.connect() as conn:
-        monkeypatch.setenv("HERMES_KANBAN_RUN_ID", str(kb.get_task(conn, worker_env).current_run_id))
+        monkeypatch.setenv("MOOR_KANBAN_RUN_ID", str(kb.get_task(conn, worker_env).current_run_id))
 
     out = json.loads(kt._handle_request_review({"summary": "Ready for review.", "reviewer": "verifier"}))
 
@@ -459,8 +459,8 @@ def test_create_happy_path(worker_env):
     assert d["task_id"]
     assert d["status"] == "todo"  # parent isn't done yet
     assert d["gated"] is True and d["gated_by"] == worker_env
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
+    from moor_cli import kanban_db as kb
+    from moor_cli import kanban_db_connect as kbc
     conn = kbc.connect()
     try:
         child = kb.get_task(conn, d["task_id"])
@@ -478,8 +478,8 @@ def test_create_explicit_scratch_ignores_ambient_board_project(
     """#106342: an explicit scratch / empty project wins over the project the
     session's current board (and, when scoped, the target board itself) carries.
     Omitting both still inherits the target board's project."""
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import projects_db as pdb
+    from moor_cli import kanban_db as kb
+    from moor_cli import projects_db as pdb
     from tools import kanban_tools as kt
 
     repo = tmp_path / "repo"

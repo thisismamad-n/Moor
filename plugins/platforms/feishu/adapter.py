@@ -1386,7 +1386,7 @@ class FeishuAdapter(BasePlatformAdapter):
         """Run a blocking Feishu SDK call on the adapter-owned thread pool.
 
         ``copy_context().run`` mirrors ``asyncio.to_thread``: the worker sees the caller's
-        profile HERMES_HOME override / secret scope (multiplexed dedup flush, thread lookup).
+        profile MOOR_HOME override / secret scope (multiplexed dedup flush, thread lookup).
         """
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
@@ -1658,7 +1658,7 @@ class FeishuAdapter(BasePlatformAdapter):
     _EA_CARD_ACTIONS = {"once": "approve_once", "session": "approve_session", "always": "approve_always", "deny": "deny"}
 
     async def _send_exec_approval_prompt(self, prompt: ExecApprovalPrompt) -> SendResult:
-        """Approval-button card; ``hermes_action`` in each button value lets the click callback
+        """Approval-button card; ``moor_action`` in each button value lets the click callback
         route to ``resolve_gateway_approval()`` and unblock the waiting agent thread."""
         if not self._client:
             return SendResult(success=False, error="Not connected")
@@ -1666,7 +1666,7 @@ class FeishuAdapter(BasePlatformAdapter):
             approval_id = next(self._approval_counter)
             actions = [
                 _card_button(label, style or "default",
-                             {"hermes_action": self._EA_CARD_ACTIONS[choice], "approval_id": approval_id})
+                             {"moor_action": self._EA_CARD_ACTIONS[choice], "approval_id": approval_id})
                 for label, choice, style in prompt.actions]
             card = _card(f"⚠️ {EA_HEADER_TEXT}", "orange", prompt.text, actions=actions)
             return await self._send_interactive_card(
@@ -3449,8 +3449,8 @@ class FeishuAdapter(BasePlatformAdapter):
 
     def _persist_seen_message_ids(self) -> None:
         try:
-            from hermes_constants import mkdir_under_hermes_home
-            mkdir_under_hermes_home(self._dedup_state_path.parent)
+            from moor_constants import mkdir_under_moor_home
+            mkdir_under_moor_home(self._dedup_state_path.parent)
             with self._dedup_lock:
                 recent = self._seen_message_order[-self._dedup_cache_size:]
                 # Save as {msg_id: timestamp} so TTL filtering works across restarts.
@@ -4126,7 +4126,7 @@ def _qr_register_inner(*, initial_domain: str, timeout_seconds: int) -> Optional
         print(f"\n  Scan the QR code above, or open this URL directly:\n  {qr_url}")
     else:
         print(f"  Open this URL in Feishu / Lark on your phone:\n\n  {qr_url}\n")
-        from hermes_cli.managed_uv import pip_install_hint
+        from moor_cli.managed_uv import pip_install_hint
         print(f"  Tip: {pip_install_hint('qrcode')}  to display a scannable QR code here next time")
     print()
     result = _poll_registration(
@@ -4159,7 +4159,7 @@ _MIGRATION_AUDIO_EXTS = {".ogg", ".opus", ".mp3", ".wav", ".m4a", ".flac"}
 async def _standalone_send(pconfig, chat_id, message, *, thread_id=None, media_files=None, force_document=False):
     """standalone_sender_fn: out-of-process delivery (cron without gateway) via a transient adapter."""
     if not await asyncio.to_thread(_load_lark_oapi):
-        return send_error("Feishu dependencies not installed. Run `hermes setup` to install Feishu support.")
+        return send_error("Feishu dependencies not installed. Run `moor setup` to install Feishu support.")
     try:
         adapter = FeishuAdapter(pconfig)
         adapter._client = adapter._build_lark_client(_sdk_domain(getattr(adapter, "_domain_name", "feishu")))
@@ -4193,10 +4193,10 @@ async def _standalone_send(pconfig, chat_id, message, *, thread_id=None, media_f
 
 def interactive_setup() -> None:
     """Interactive setup for Feishu / Lark — scan-to-create or manual creds (CLI helpers lazy-imported)."""
-    from hermes_cli.config import remove_env_value, save_env_value
-    from hermes_cli.setup import prompt_choice
-    from hermes_cli.cli_output import prompt, print_header, print_info, print_success, print_warning
-    from hermes_cli.setup_platforms import declines_reconfigure
+    from moor_cli.config import remove_env_value, save_env_value
+    from moor_cli.setup import prompt_choice
+    from moor_cli.cli_output import prompt, print_header, print_info, print_success, print_warning
+    from moor_cli.setup_platforms import declines_reconfigure
 
     print_header("Feishu / Lark")
     if declines_reconfigure("Feishu / Lark", "Reconfigure Feishu / Lark?", "FEISHU_APP_ID"):

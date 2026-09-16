@@ -1,6 +1,6 @@
 """Tests for the Ctrl+S prompt stash wiring inside MoorCLI.
 
-The state machine itself is covered by tests/hermes_cli/test_prompt_stash.py. These
+The state machine itself is covered by tests/moor_cli/test_prompt_stash.py. These
 tests verify the cli.py side:
   - MoorCLI.__init__ creates a PromptStash
   - the layout hook makes room for the stash browse panel
@@ -8,7 +8,7 @@ tests verify the cli.py side:
   - the status-bar indicator appears / disappears with stash contents
 
 Follows the prompt_toolkit-stub construction pattern from
-tests/hermes_cli/test_cli_extension_hooks.py.
+tests/moor_cli/test_cli_extension_hooks.py.
 """
 
 from __future__ import annotations

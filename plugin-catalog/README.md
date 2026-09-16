@@ -1,9 +1,9 @@
-# Hermes Plugin Catalog
+# Moor Plugin Catalog
 
-Curated, Nous-approved Hermes plugins. Each YAML file in this directory
+Curated, Moor-approved Moor plugins. Each YAML file in this directory
 (except `removed.yaml`) is one catalog entry, discoverable via
-`hermes plugins catalog` / `hermes plugins search` and installable with
-`hermes plugins install <name>`.
+`moor plugins catalog` / `moor plugins search` and installable with
+`moor plugins install <name>`.
 
 ## Admission policy
 
@@ -11,7 +11,7 @@ Presence in this directory **is** the trust signal. The rules that keep it
 meaningful:
 
 1. **Human-merged gate.** Entries are added *only* via a PR to the
-   `hermes-agent` repository, reviewed and merged by a maintainer. There is
+   `moor-agent` repository, reviewed and merged by a maintainer. There is
    no self-serve registry, no automated ingestion.
 2. **Exact SHA pins are mandatory.** Every entry pins a full 40-character
    commit SHA. Branches, tags, and short SHAs are rejected by the loader.
@@ -21,7 +21,7 @@ meaningful:
    remote `plugin.js` loaders). The exact SHA pin *is* the trust model; a
    self-updater lets an installed copy move to a commit nobody reviewed.
    Updates reach users only through a SHA-bump PR here plus
-   `hermes plugins update <name>`. Keep the updater in the standalone
+   `moor plugins update <name>`. Keep the updater in the standalone
    distribution if you want one; strip it from the catalog build.
 4. **SHA bumps are new PRs.** Updating an entry's pin is a new PR whose diff
    (old SHA → new SHA) is re-reviewed like any other change — reviewers are
@@ -29,7 +29,7 @@ meaningful:
 5. **Owner-or-major-contributor submissions, or a maintainer-curated sweep.**
    An entry may be submitted by the plugin repository's owner or a major
    contributor to it; drive-by submissions of third-party repos are declined.
-   Hermes maintainers may also add entries in batches from a reviewed sweep
+   Moor maintainers may also add entries in batches from a reviewed sweep
    of community plugins (every pin validated and scanned at the pinned
    commit, self-updater and credential-store checks run, English-first UI).
    Authors of swept-in entries keep control: a PR from the owner adjusting
@@ -52,7 +52,7 @@ maintainer: OwnerName
 tier: official              # official | community (default community)
 category: memory            # desktop | memory | platform | web | tools | voice | automation | models | general
                             # (default desktop) — the shelf the entry sits on at /docs/plugins
-requires_hermes: ">=0.19"   # optional
+requires_moor: ">=0.19"   # optional
 docs_url: ""                # optional
 platforms: []               # optional, e.g. [linux, macos]; empty = all
 capabilities:

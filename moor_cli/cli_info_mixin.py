@@ -459,7 +459,7 @@ class CLIInfoMixin:
         Dispatched from the input loop BEFORE slash routing and before anything is queued for the
         agent, so a bang command never becomes a turn: nothing touches ``conversation_history``,
         zero tokens, role alternation / prompt caching untouched by construction
-        (tests/hermes_cli/test_bang_shell_mode.py). Returns False when the text is not a bang command or
+        (tests/moor_cli/test_bang_shell_mode.py). Returns False when the text is not a bang command or
         bang mode is disabled for this context (gateway/cron), so the caller routes normally.
         """
         from cli import _rich_text_from_ansi
@@ -778,7 +778,7 @@ class CLIInfoMixin:
                 i += 1
 
         try:
-            from hermes_state import SessionDB, _default_db_path
+            from moor_state import SessionDB, _default_db_path
             from agent.insights import InsightsEngine
             if not _default_db_path().exists():
                 print("  No session data yet.")

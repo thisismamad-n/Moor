@@ -1290,10 +1290,10 @@ class PluginManager(PluginLoaderMixin, PluginDispatchMixin, PluginLedgerMixin):
             # Reset and reload the SAME home the process (or routed turn) resolves to: under multiplex this
             # runs at gateway boot after sibling profiles may already have hydrated, and a global clear
             # wiped their snapshots; a routed discovery must rebuild the profile it just dropped.
-            from hermes_constants import get_hermes_home
-            home = get_hermes_home()
+            from moor_constants import get_moor_home
+            home = get_moor_home()
             reset_secret_source_cache(home)
-            load_hermes_dotenv(hermes_home=home)
+            load_moor_dotenv(moor_home=home)
             logger.debug("Re-applied secret sources after plugin discovery for: %s",
                          ", ".join(sorted(enabled_names)))
         except Exception as exc:
@@ -2015,9 +2015,9 @@ def resolve_plugin_command_result(result: Any) -> Any:
             done.set()
 
     # copy_context: the helper thread must see the caller's profile/secret scope, else an
-    # async hook under a running loop reads the default HERMES_HOME and get_secret raises.
+    # async hook under a running loop reads the default MOOR_HOME and get_secret raises.
     threading.Thread(target=contextvars.copy_context().run, args=(_runner,),
-                     name="hermes-plugin-command-await", daemon=True).start()
+                     name="moor-plugin-command-await", daemon=True).start()
     if not done.wait(timeout=_PLUGIN_COMMAND_AWAIT_TIMEOUT_SECS):
         raise TimeoutError("Plugin command async handler did not complete within "
                            f"{_PLUGIN_COMMAND_AWAIT_TIMEOUT_SECS:.0f}s")

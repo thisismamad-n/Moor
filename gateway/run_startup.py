@@ -96,7 +96,7 @@ class GatewayStartupMixin:
     def _start_free_tier_bootstrap() -> None:
         """One bootstrap per process. `run_bootstrap` already records its own failure in the boot record
         and never raises, so this is a plain call; it exists as a method so tests can seam it."""
-        from hermes_cli.free_tier_bootstrap import run_bootstrap
+        from moor_cli.free_tier_bootstrap import run_bootstrap
         run_bootstrap(announce=False)
 
     def _start_startup_warmup(self) -> None:
@@ -117,9 +117,9 @@ class GatewayStartupMixin:
         loop = asyncio.get_running_loop()
         if getattr(self.config, "multiplex_profiles", False):
             from gateway.run import _async_profile_runtime_scope
-            from hermes_constants import get_hermes_home
+            from moor_constants import get_moor_home
             try:
-                async with _async_profile_runtime_scope(get_hermes_home()):
+                async with _async_profile_runtime_scope(get_moor_home()):
                     return await loop.run_in_executor(None, copy_context().run, fn)
             except Exception:
                 # Same fallback as load_gateway_config_for_runner: a scope that cannot be built must not
@@ -931,8 +931,8 @@ class GatewayStartupMixin:
                 "shell-hook/webhook registration failed at gateway startup", level=logging.WARNING)
             return
         from gateway.run import _profile_runtime_scope
-        from hermes_constants import get_process_hermes_home
-        with _profile_runtime_scope(get_process_hermes_home()):
+        from moor_constants import get_process_moor_home
+        with _profile_runtime_scope(get_process_moor_home()):
             GatewayStartupMixin._register_config_hooks(
                 "shell-hook/webhook registration failed at gateway startup", level=logging.WARNING)
 
@@ -960,8 +960,8 @@ class GatewayStartupMixin:
         if not getattr(self.config, "multiplex_profiles", False):
             return 0
         from gateway.run import _multiplex_profile_homes, _profile_runtime_scope
-        from hermes_constants import get_hermes_home
-        launch_home = get_hermes_home().resolve()
+        from moor_constants import get_moor_home
+        launch_home = get_moor_home().resolve()
         recovered = 0
         for profile_name, profile_home in _multiplex_profile_homes(self.config):
             if Path(profile_home).resolve() == launch_home:
@@ -1395,7 +1395,7 @@ class GatewayStartupMixin:
         if self._start_check_access_policy():
             return True
         await self._start_recover_previous_run()
-        # The gateway is a boot owner of the Nous free tier, beside `cmd_chat` and `hermes serve`: every
+        # The gateway is a boot owner of the Moor free tier, beside `cmd_chat` and `moor serve`: every
         # demand-time site (provider resolution, /login, the connector token) is a read that needs the
         # identity to already exist. Blocking here, before any adapter connects, is what keeps a fast
         # first DM from arriving with nothing to resolve. With the launch gate unset this is a local

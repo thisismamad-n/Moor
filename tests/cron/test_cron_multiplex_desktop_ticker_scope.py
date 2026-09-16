@@ -110,7 +110,7 @@ def test_multiplex_ticker_profile_gate_skips_rejected_profile(tmp_path):
 @pytest.mark.parametrize("profile_count", [1, 2])
 def test_desktop_ticker_gates_on_profile_gateway_running(tmp_path, monkeypatch, profile_count):
     """Desktop yields to each live gateway, including a single-profile install."""
-    from hermes_cli import web_server
+    from moor_cli import web_server
 
     homes = [("default", tmp_path / "default"), ("ops", tmp_path / "ops")][:profile_count]
     running = {homes[-1][1]}
@@ -118,9 +118,9 @@ def test_desktop_ticker_gates_on_profile_gateway_running(tmp_path, monkeypatch, 
         "moor_cli.profiles.profiles_to_serve", lambda multiplex=False: list(homes)
     )
     monkeypatch.setattr(
-        "hermes_cli.profiles._check_gateway_running", lambda home: home in running
+        "moor_cli.profiles._check_gateway_running", lambda home: home in running
     )
-    monkeypatch.setattr("hermes_cli.profiles._served_by_running_multiplexer", lambda name: False)
+    monkeypatch.setattr("moor_cli.profiles._served_by_running_multiplexer", lambda name: False)
     captured = {}
 
     class _Provider:

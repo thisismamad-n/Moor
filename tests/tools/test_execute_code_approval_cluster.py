@@ -459,12 +459,12 @@ def test_env_scrub_moor_allowlist_and_secret_blocks():
 
     env = {
         # operational allowlist → kept
-        "HERMES_HOME": "/h", "HERMES_PROFILE": "p",
-        "HERMES_CONFIG": "/c.yaml", "HERMES_ENV": "/e",
-        "HERMES_DELEGATED_CHILD_CONTEXT": "1",
-        # other HERMES_* → dropped (broad prefix removed)
-        "HERMES_BASE_URL": "https://x", "HERMES_INTERACTIVE": "1",
-        "HERMES_KANBAN_TASK": "t_parent",
+        "MOOR_HOME": "/h", "MOOR_PROFILE": "p",
+        "MOOR_CONFIG": "/c.yaml", "MOOR_ENV": "/e",
+        "MOOR_DELEGATED_CHILD_CONTEXT": "1",
+        # other MOOR_* → dropped (broad prefix removed)
+        "MOOR_BASE_URL": "https://x", "MOOR_INTERACTIVE": "1",
+        "MOOR_KANBAN_TASK": "t_parent",
         # secret substrings (incl. new DSN/WEBHOOK) → dropped
         "SENTRY_DSN": "https://a@s.io/1", "SLACK_WEBHOOK": "https://h/x",
         "OPENAI_API_KEY": "sk", "GITHUB_TOKEN": "ghp",
@@ -479,7 +479,7 @@ def test_env_scrub_moor_allowlist_and_secret_blocks():
     ):
         assert kept in out, f"{kept} should be kept"
     for dropped in (
-        "HERMES_BASE_URL", "HERMES_INTERACTIVE", "HERMES_KANBAN_TASK",
+        "MOOR_BASE_URL", "MOOR_INTERACTIVE", "MOOR_KANBAN_TASK",
         "SENTRY_DSN", "SLACK_WEBHOOK", "OPENAI_API_KEY", "GITHUB_TOKEN",
         "RANDOM_X",
     ):

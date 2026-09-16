@@ -287,24 +287,24 @@ def _model_flow_moor(config, current_model="", args=None):
 
     # Already logged in — the curated list (agentic models users know from OpenRouter)
     # instead of the hundreds returned by the live /models endpoint.
-    from hermes_cli.models import check_nous_free_tier, get_curated_nous_model_ids
-    from hermes_cli.models_pricing import get_pricing_for_provider
-    from hermes_cli.model_switch_providers import _free_tier_nous_row
-    tier_row = _free_tier_nous_row({"name": "Nous Portal", "models": []})
+    from moor_cli.models import check_moor_free_tier, get_curated_moor_model_ids
+    from moor_cli.models_pricing import get_pricing_for_provider
+    from moor_cli.model_switch_providers import _free_tier_moor_row
+    tier_row = _free_tier_moor_row({"name": "Moor Portal", "models": []})
     if tier_row is None:
-        print("The Nous free tier is off for this install; sign in with `hermes auth upgrade` to use Nous models.")
+        print("The Moor free tier is off for this install; sign in with `moor auth upgrade` to use Moor models.")
         return
     if tier_row["models"]:
         # Free-tier identity: the welcome host serves the single pinned model; no Portal catalog,
         # pricing, or account lookups apply.
-        creds = _nous_verified_credentials()
+        creds = _moor_verified_credentials()
         if creds is None:
             return
         selected = tier_row["models"][0]
-        _nous_persist_selection(selected, creds)
+        _moor_persist_selection(selected, creds)
         print(f"Default model set to: {selected} (via {tier_row['name']})")
         return
-    model_ids = get_curated_nous_model_ids()
+    model_ids = get_curated_moor_model_ids()
     if not model_ids:
         print("No curated models available for Moor Portal.")
         return
@@ -540,8 +540,8 @@ def _model_flow_copilot(config, current_model=""):
     """GitHub Copilot flow using env vars, gh CLI, or OAuth device code. The reasoning-effort step
     is the shared post-pick one in ``select_provider_and_model`` (Copilot's per-model level set
     comes from ``github_model_reasoning_efforts`` there)."""
-    from hermes_cli.auth import PROVIDER_REGISTRY, resolve_api_key_provider_credentials
-    from hermes_cli.models import fetch_api_models, copilot_model_api_mode
+    from moor_cli.auth import PROVIDER_REGISTRY, resolve_api_key_provider_credentials
+    from moor_cli.models import fetch_api_models, copilot_model_api_mode
     provider_id = "copilot"
     pconfig = PROVIDER_REGISTRY[provider_id]
     creds = resolve_api_key_provider_credentials(provider_id)
@@ -931,7 +931,7 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
     effective_base = current_base or pconfig.inference_base_url
 
     if provider_id == "actual":
-        from hermes_cli.providers import normalize_provider
+        from moor_cli.providers import normalize_provider
         model_cfg = config.get("model") or {}
         if isinstance(model_cfg, dict) and normalize_provider(str(model_cfg.get("provider") or "")) == provider_id:
             effective_base = str(model_cfg.get("base_url") or "").strip() or effective_base

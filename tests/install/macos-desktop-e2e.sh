@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Prove a macOS user who installed OLD via the published desktop installer
-# (Hermes-Setup.dmg from the website) can reach HEAD.
+# (moor-setup.dmg from the website) can reach HEAD.
 #
 # The macOS sibling of tests/install/windows-e2e.ps1's desktop-installer
 # arm, sharing the staging trick: every git process is pointed at a local
@@ -18,15 +18,15 @@
 #   update   advance served main to HEAD, apply ONE update method:
 #              open-app-update            launch the installed app binary
 #                                         under Playwright, click Update now
-#              hermes-desktop-app-update  capture `hermes desktop`'s spawn,
+#              moor-desktop-app-update  capture `moor desktop`'s spawn,
 #                                         launch the spec under Playwright,
 #                                         click Update now
-#              hermes-update              CLI update from the installed venv
+#              moor-update              CLI update from the installed venv
 #              installer-script[+desktop] re-run the current install one-liner
 #
 # Usage:
 #   tests/install/macos-desktop-e2e.sh --phase stage|install|update|all
-#     --update-method open-app-update|hermes-desktop-app-update
+#     --update-method open-app-update|moor-desktop-app-update
 #     [--install-ref REF] [--dmg-url URL]
 #
 # Requires a clean full-history checkout with release tags fetched, on a
@@ -63,7 +63,7 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 case "$UPDATE_METHOD" in
-  open-app-update|hermes-desktop-app-update|hermes-update|installer-script|installer-script+desktop) ;;
+  open-app-update|moor-desktop-app-update|moor-update|installer-script|installer-script+desktop) ;;
   *) echo "error: unsupported --update-method '$UPDATE_METHOD'" >&2; exit 1 ;;
 esac
 [ "$(uname -s)" = "Darwin" ] || { echo "error: this driver runs on macOS only" >&2; exit 1; }
@@ -73,8 +73,8 @@ REPO_URL_SSH="git@github.com:NousResearch/hermes-agent.git"
 REPO_URL_HTTPS="https://github.com/NousResearch/hermes-agent.git"
 ASSETS="$REPO_ROOT/tests/install/e2e-assets"
 
-WORK_ROOT="${HERMES_E2E_WORKROOT:-${RUNNER_TEMP:-${TMPDIR:-/tmp}}/hermes-macos-desktop-e2e}"
-LOG_DIR="${HERMES_E2E_LOG_DIR:-$WORK_ROOT/logs}"
+WORK_ROOT="${MOOR_E2E_WORKROOT:-${RUNNER_TEMP:-${TMPDIR:-/tmp}}/moor-macos-desktop-e2e}"
+LOG_DIR="${MOOR_E2E_LOG_DIR:-$WORK_ROOT/logs}"
 SERVE_REPO="$WORK_ROOT/serve.git"
 STATE="$WORK_ROOT/shas.env"
 export HOME_SANDBOX="$WORK_ROOT/home"
@@ -95,7 +95,7 @@ log_group() {
 arm_redirect() {
   # --- the git URL redirect -----------------------------------------------------
 
-  # we redirect to our own repo so we can play around with what commit hermes thinks we're on.
+  # we redirect to our own repo so we can play around with what commit moor thinks we're on.
   # A driver-owned global gitconfig, NOT GIT_CONFIG_COUNT/KEY_n/VALUE_n env
   # config: install.sh sets those itself and would clobber ours.
   actual_git_url="$(git -C "$REPO_ROOT" remote get-url origin)"
@@ -156,8 +156,8 @@ EOF
   # -------
   export HOME="$HOME_SANDBOX"
   export PATH="$HOME/.local/bin:$PATH"
-  export HERMES_HOME="$HOME/.hermes"
-  export INSTALL_DIR="$HERMES_HOME/hermes-agent"
+  export MOOR_HOME="$HOME/.moor"
+  export INSTALL_DIR="$MOOR_HOME/moor-agent"
 }
 
 phase_stage() {
@@ -184,8 +184,8 @@ phase_stage() {
   git -C "$SERVE_REPO" config uploadpack.allowAnySHA1InWant true
 
   arm_redirect
-  mkdir -p "$HERMES_HOME"
-  touch "$HERMES_HOME/.skip_upstream_prompt"
+  mkdir -p "$MOOR_HOME"
+  touch "$MOOR_HOME/.skip_upstream_prompt"
 
   printf 'OLD_SHA=%s\nOLD_REF=%s\nHEAD_SHA=%s\n' "$old_sha" "$old_ref" "$head_sha" > "$STATE"
   ok "serve.git main = $old_sha ($old_ref), update target $head_sha"
@@ -196,9 +196,9 @@ find_installed_app() {
   # (the checkout's release dir), plus /Applications for a copied bundle.
   local cand
   for cand in \
-    "$INSTALL_DIR/apps/desktop/release/mac-arm64/Hermes.app" \
-    "$INSTALL_DIR/apps/desktop/release/mac/Hermes.app" \
-    "/Applications/Hermes.app"; do
+    "$INSTALL_DIR/apps/desktop/release/mac-arm64/Moor.app" \
+    "$INSTALL_DIR/apps/desktop/release/mac/Moor.app" \
+    "/Applications/Moor.app"; do
     [ -d "$cand" ] && { printf '%s' "$cand"; return 0; }
   done
   return 1
@@ -208,9 +208,9 @@ phase_install() {
   # shellcheck disable=SC1090
   . "$STATE"
   arm_redirect
-  step "installing OLD ($OLD_REF) via the published Hermes-Setup.dmg"
+  step "installing OLD ($OLD_REF) via the published moor-setup.dmg"
 
-  local dmg="$WORK_ROOT/Hermes-Setup.dmg"
+  local dmg="$WORK_ROOT/moor-setup.dmg"
   [ -f "$dmg" ] || curl -fsSL -o "$dmg" "$DMG_URL"
   [ "$(stat -f%z "$dmg")" -gt 1000000 ] || fail "dmg download too small: $(stat -f%z "$dmg") bytes"
   # curl'd files carry no quarantine attr, but belt and braces on a runner.
@@ -232,14 +232,14 @@ phase_install() {
   # attach never works, and run bare it waits forever on its setup-choice
   # screen. Launch it in the background with our env (direct exec, not
   # `open`: launchd inherits NONE of the redirect env) and drive the
-  # "Install Hermes" button with native input.
+  # "Install Moor" button with native input.
   local rc=0
   bash "$ASSETS/drive-dmg-install.sh" \
     --app-bin "$app_bin" \
     --install-dir "$INSTALL_DIR" \
     --proof-dir "$LOG_DIR" 2>&1 \
     | ts_prefix > "$LOG_DIR/bootstrap-install.log" || rc=$?
-  log_group "Hermes-Setup (dmg bootstrap) transcript" "$LOG_DIR/bootstrap-install.log"
+  log_group "moor-setup (dmg bootstrap) transcript" "$LOG_DIR/bootstrap-install.log"
   hdiutil detach "$mount" >/dev/null 2>&1 || true
   [ "$rc" -eq 0 ] || fail "dmg bootstrap exited $rc; transcript above"
 
@@ -248,11 +248,11 @@ phase_install() {
   got="$(git -C "$INSTALL_DIR" rev-parse HEAD)"
   [ "$got" = "$OLD_SHA" ] || fail "installed checkout is $got, expected OLD ($OLD_SHA)"
   ok "checkout is OLD ($OLD_SHA)"
-  local hermes="$INSTALL_DIR/venv/bin/hermes"
-  [ -x "$hermes" ] || fail "no hermes console script at $hermes"
-  "$hermes" --version 2>&1 | ts_prefix > "$LOG_DIR/version-old.log" || fail "hermes --version failed after install"
-  ok "hermes --version works: $(head -c 120 "$LOG_DIR/version-old.log" | tr -d '\n')"
-  find_installed_app >/dev/null || fail "no installed Hermes.app after the dmg bootstrap"
+  local moor="$INSTALL_DIR/venv/bin/moor"
+  [ -x "$moor" ] || fail "no moor console script at $moor"
+  "$moor" --version 2>&1 | ts_prefix > "$LOG_DIR/version-old.log" || fail "moor --version failed after install"
+  ok "moor --version works: $(head -c 120 "$LOG_DIR/version-old.log" | tr -d '\n')"
+  find_installed_app >/dev/null || fail "no installed Moor.app after the dmg bootstrap"
   ok "installed app: $(find_installed_app)"
 }
 
@@ -310,7 +310,7 @@ run_playwright_update() {
   local rc=0
   (cd "$pw_dir" && node launch-from-spec.mjs \
     --spec "$spec" \
-    --result "$HERMES_HOME/.hermes-update-result.json" \
+    --result "$MOOR_HOME/.moor-update-result.json" \
     --expect-sha "$HEAD_SHA" \
     --repo-dir "$INSTALL_DIR" 2>&1 \
     | ts_prefix > "$LOG_DIR/app-update.log") || rc=$?
@@ -335,18 +335,18 @@ phase_update() {
   mock_start "$WORK_ROOT"
   trap mock_stop EXIT
   case "$UPDATE_METHOD" in
-    hermes-update)
+    moor-update)
       # The CLI route a dmg user takes from a terminal. `--yes` reaches the
-      # update subcommand only in later releases; ask the installed hermes.
-      local hermes="$INSTALL_DIR/venv/bin/hermes"
-      local update_cmd=("$hermes" update)
-      if "$hermes" update --help 2>&1 | grep -qF -- --yes; then
-        update_cmd=("$hermes" update --yes)
+      # update subcommand only in later releases; ask the installed moor.
+      local moor="$INSTALL_DIR/venv/bin/moor"
+      local update_cmd=("$moor" update)
+      if "$moor" update --help 2>&1 | grep -qF -- --yes; then
+        update_cmd=("$moor" update --yes)
       fi
       local rc=0
       (cd "$INSTALL_DIR" && "${update_cmd[@]}" < /dev/null 2>&1 | ts_prefix > "$LOG_DIR/update.log") || rc=$?
-      log_group "hermes update transcript" "$LOG_DIR/update.log"
-      [ "$rc" -eq 0 ] || fail "hermes update exited $rc; transcript above"
+      log_group "moor update transcript" "$LOG_DIR/update.log"
+      [ "$rc" -eq 0 ] || fail "moor update exited $rc; transcript above"
       ;;
     installer-script)
       # A dmg user re-running today's install one-liner.
@@ -357,17 +357,17 @@ phase_update() {
       # The desktop stage is this leg's claim: the rebuilt app must exist.
       head_app=""
       for cand in \
-        "$INSTALL_DIR/apps/desktop/release/mac-arm64/Hermes.app" \
-        "$INSTALL_DIR/apps/desktop/release/mac/Hermes.app"; do
+        "$INSTALL_DIR/apps/desktop/release/mac-arm64/Moor.app" \
+        "$INSTALL_DIR/apps/desktop/release/mac/Moor.app"; do
         [ -d "$cand" ] && { head_app="$cand"; break; }
       done
-      [ -n "$head_app" ] || fail "no built Hermes.app under the checkout after the +desktop update"
+      [ -n "$head_app" ] || fail "no built Moor.app under the checkout after the +desktop update"
       ok "rebuilt app present: $head_app"
       ;;
     open-app-update)
       # The installed app IS the user surface here (double-click the .app);
       # hand-build the spec Playwright launches from. Env: the redirect set,
-      # which is exactly what the app's children (git, hermes update) need.
+      # which is exactly what the app's children (git, moor update) need.
       local app app_bin
       app="$(find_installed_app)" || fail "no installed app to launch"
       app_bin="$(find "$app/Contents/MacOS" -type f -perm +111 | head -1)"
@@ -384,18 +384,18 @@ with open(sys.argv[2], "w") as fh:
 PYEOF
       run_playwright_update "$WORK_ROOT/launch-spec.json"
       ;;
-    hermes-desktop-app-update)
+    moor-desktop-app-update)
       # The product's own launch, captured at its spawn site.
-      local hermes="$INSTALL_DIR/venv/bin/hermes"
+      local moor="$INSTALL_DIR/venv/bin/moor"
       local spec="$WORK_ROOT/launch-spec.json"
       local rc=0
       (cd "$INSTALL_DIR" && \
         PYTHONPATH="$ASSETS/launch-capture${PYTHONPATH:+:$PYTHONPATH}" \
-        HERMES_E2E_CAPTURE_LAUNCH="$spec" \
-        "$hermes" desktop < /dev/null 2>&1 | ts_prefix > "$LOG_DIR/desktop-launch-capture.log") || rc=$?
-      log_group "hermes desktop (launch capture) transcript" "$LOG_DIR/desktop-launch-capture.log"
-      [ "$rc" -eq 0 ] || fail "hermes desktop exited $rc during launch capture"
-      [ -f "$spec.captured" ] || fail "hermes desktop exited 0 but no launch was captured"
+        MOOR_E2E_CAPTURE_LAUNCH="$spec" \
+        "$moor" desktop < /dev/null 2>&1 | ts_prefix > "$LOG_DIR/desktop-launch-capture.log") || rc=$?
+      log_group "moor desktop (launch capture) transcript" "$LOG_DIR/desktop-launch-capture.log"
+      [ "$rc" -eq 0 ] || fail "moor desktop exited $rc during launch capture"
+      [ -f "$spec.captured" ] || fail "moor desktop exited 0 but no launch was captured"
       ok "captured $(cat "$spec.captured") launch spec"
       run_playwright_update "$spec"
       ;;
@@ -414,18 +414,18 @@ PYEOF
   # evidence must already be on disk when it does.
   local ildest="$LOG_DIR/install-logs"
   mkdir -p "$ildest"
-  cp -R "$HOME_SANDBOX/.hermes/logs" "$ildest/hermes-logs" 2>/dev/null || true
-  local ud="$HOME_SANDBOX/Library/Application Support/Hermes"
+  cp -R "$HOME_SANDBOX/.moor/logs" "$ildest/moor-logs" 2>/dev/null || true
+  local ud="$HOME_SANDBOX/Library/Application Support/Moor"
   [ -d "$ud" ] && cp -R "$ud" "$ildest/desktop-userdata" 2>/dev/null || true
-  cp "$HERMES_HOME/.hermes-update-result.json" "$ildest" 2>/dev/null || true
-  ls -la "$HERMES_HOME" > "$ildest/hermes-home-ls.txt" 2>/dev/null || true
+  cp "$MOOR_HOME/.moor-update-result.json" "$ildest" 2>/dev/null || true
+  ls -la "$MOOR_HOME" > "$ildest/moor-home-ls.txt" 2>/dev/null || true
   ls -la "$INSTALL_DIR/venv/bin" > "$ildest/venv-bin-ls.txt" 2>/dev/null || true
   ls -la "$INSTALL_DIR/venv" > "$ildest/venv-ls.txt" 2>/dev/null || true
   ok "collected install-side logs to $ildest"
 
-  "$INSTALL_DIR/venv/bin/hermes" --version 2>&1 | ts_prefix > "$LOG_DIR/version-head.log" \
-    || fail "hermes --version failed after update"
-  ok "hermes --version works post-update"
+  "$INSTALL_DIR/venv/bin/moor" --version 2>&1 | ts_prefix > "$LOG_DIR/version-head.log" \
+    || fail "moor --version failed after update"
+  ok "moor --version works post-update"
   step "PASS: $OLD_REF -> HEAD via $UPDATE_METHOD"
 }
 

@@ -44,7 +44,7 @@ The center of the app. You get:
 
 - **Streaming responses** with live tool activity and structured tool-call summaries as the agent works.
 - **Markdown line breaks** follow Markdown semantics: two trailing spaces create a hard line break; an ordinary newline stays a soft break. Media and preview extraction preserve text outside removed attachment spans, including first-line code indentation and unfinished fenced-code spacing. Code display and Copy preserve leading blank lines, trailing spaces, and terminal blank lines from the Markdown parser.
-- **The same conversation history** as every other Hermes surface — sessions started here resume in the CLI/TUI and vice versa.
+- **The same conversation history** as every other Moor surface — sessions started here resume in the CLI/TUI and vice versa.
 - **Drag-and-drop files** anywhere in the chat area to attach them to your next message.
 - **Independent background drafts** — hidden chat tabs can update their drafts without moving the caret or selection in the visible composer.
 - **Directive chip actions** — hover an actionable reference (such as a URL) to reveal its action pill. A short grace period lets you move from the chip to the pill before it dismisses. The pill stays available while you move within it; after leaving, unrelated pointer movement does not delay dismissal. Clicking its action preserves the draft selection.
@@ -180,20 +180,20 @@ That bridges to `ELECTRON_OZONE_PLATFORM_HINT` at launch (an explicit env var st
 
 #### WSLg (Windows GPU from WSL2)
 
-When `hermes gui` runs inside WSL2 with `/dev/dxg` present and Mesa's `d3d12_dri.so` installed, the launcher sets `GALLIUM_DRIVER=d3d12` for Electron so rendering uses the Windows GPU instead of the llvmpipe software rasterizer; an explicit `GALLIUM_DRIVER`, `MESA_LOADER_DRIVER_OVERRIDE`, `LIBGL_ALWAYS_SOFTWARE`, or `LIBGL_DRIVERS_PATH` in your environment is left untouched (for example `GALLIUM_DRIVER=llvmpipe hermes gui` keeps software rendering).
+When `moor gui` runs inside WSL2 with `/dev/dxg` present and Mesa's `d3d12_dri.so` installed, the launcher sets `GALLIUM_DRIVER=d3d12` for Electron so rendering uses the Windows GPU instead of the llvmpipe software rasterizer; an explicit `GALLIUM_DRIVER`, `MESA_LOADER_DRIVER_OVERRIDE`, `LIBGL_ALWAYS_SOFTWARE`, or `LIBGL_DRIVERS_PATH` in your environment is left untouched (for example `GALLIUM_DRIVER=llvmpipe moor gui` keeps software rendering).
 
 ### Settings & onboarding
 
 Manage providers, models, tools, and credentials from a real UI instead of editing YAML. First-run onboarding gets you to your first message in seconds. The settings panes cover providers/keys, model selection, toolset configuration, MCP servers, the gateway, and session management.
 
 - **Providers settings pane** — a dedicated place to manage inference providers, with an Accounts / API-keys UX for signing in and storing credentials per provider. Accounts and API keys share the Settings **Applies to** selection: credential reads and edits, OAuth account removal, and sign-in launched here target the selected profile, not the active chat profile. The sign-in flow keeps that target through credential saving and model selection. Changing **Applies to** discards unsaved credential drafts. Closing sign-in cancels polling and ignores late results; a credential write already sent may still finish in its original profile. Externally managed CLI credentials use their own CLI and are not covered by this profile selector. Its **Local Models** view installs and manages an on-device llama.cpp runtime — see [Local Models](/user-guide/local-models).
-- **Every provider and model in the menus** — the GUI surfaces the full provider list and every model that `hermes model` knows about, so you pick from the same catalog the CLI sees rather than a curated subset.
+- **Every provider and model in the menus** — the GUI surfaces the full provider list and every model that `moor model` knows about, so you pick from the same catalog the CLI sees rather than a curated subset.
 - **xAI Grok OAuth** — Grok is a first-class OAuth provider in the launcher; sign in through the browser flow like the other OAuth providers.
 - **Tool-backend installs from the GUI** — run a tool backend's post-setup install steps directly from the app instead of dropping to a terminal.
 - **Terminal font picker** — choose an installed font in **Settings → Appearance**. Nerd Fonts such as `MesloLGS NF` render Powerlevel10k separators and icons in both interactive and agent terminals; the setting is saved per profile.
 - **Reopen Last Chat on Launch** — by default the app picks up where you left off on cold start. Turn it off in **Settings → Appearance** (or set `display.resume_last_session: false` in `config.yaml`) to always begin with a fresh chat. Deep links and explicit destinations are never overridden either way.
 - **Auxiliary-model warning** — if you switch the main model to a new provider while auxiliary tasks (titling, summarization, and similar helpers) are still pinned to another provider, the app warns you so you don't unknowingly split work across two providers.
-- **Per-task reasoning effort** — each row under **Settings → Model → Auxiliary models** has a reasoning selector next to its provider/model pick: a level, **Off**, or **inherit · main model effort** (the default, which removes the task's override). It is saved as `auxiliary.<task>.reasoning_effort` in `config.yaml`, the same key `hermes model` writes, and shows in the row's summary when set. Use it to run frequent helpers such as compression or titling at low or no reasoning while the main agent stays at high.
+- **Per-task reasoning effort** — each row under **Settings → Model → Auxiliary models** has a reasoning selector next to its provider/model pick: a level, **Off**, or **inherit · main model effort** (the default, which removes the task's override). It is saved as `auxiliary.<task>.reasoning_effort` in `config.yaml`, the same key `moor model` writes, and shows in the row's summary when set. Use it to run frequent helpers such as compression or titling at low or no reasoning while the main agent stays at high.
 - **VS Code Marketplace themes** — beyond the built-in theme presets, the appearance settings include a live VS Code Marketplace search: pick any color theme and the app downloads, converts, and installs it as a desktop theme. The same importer is available from the command palette (*Install theme*), and imported themes can be removed again from the appearance settings.
 - **Keep computer awake** — **Settings → Advanced → Keep computer awake** stops the machine from sleeping so long or overnight agent runs keep going (the display can still dim). This is a per-computer setting.
 
@@ -217,9 +217,9 @@ The app also surfaces the broader Moor management surface so you don't have to d
 - **Skills** — open **Capabilities → Skills** to manage [skills](./features/skills.md). **Installed** shows the selected profile's actual skills and enable/disable state. **Browse** searches the same full published catalog as the public Skills Hub, with native list and detail views.
 - **Plugins** — **Capabilities → Plugins** uses the same **Installed / Browse** layout. Installed combines actual app-level desktop plugins with agent plugins from the selected profile; Browse shows the public [Plugin Catalog](./features/plugin-catalog.md). Search stays at the top, and the tab switch and actions share one row on both pages.
 - **Memory graph (Star Map)** — type `/journey` (aliases `/learning`, `/memory-graph`) in chat to open an interactive constellation of learned skills and memories over time, with a playback scrubber. Nodes can be edited or deleted right from the panel (skills are archived, memories removed). See [Learning Journey](./features/memory.md#learning-journey-journey).
-- **Cron** — view and manage [scheduled jobs](../reference/cli-commands.md#hermes-cron).
-- **Profiles** — switch between [Hermes profiles](./profiles.md) (isolated config/skills/sessions).
-- **Messaging** — set up gateway channels. Telegram has a **Quick setup** card: click **Create with QR**, scan the code (or open the link) in Telegram, and Hermes creates the bot, detects your user ID for the allowlist, saves the credentials, and restarts the gateway for you. Any credential save, clear, or enable toggle keeps a **Restart now** banner on the page until the gateway has actually restarted; if a restart fails, the banner stays so you can retry or restart manually.
+- **Cron** — view and manage [scheduled jobs](../reference/cli-commands.md#moor-cron).
+- **Profiles** — switch between [Moor profiles](./profiles.md) (isolated config/skills/sessions).
+- **Messaging** — set up gateway channels. Telegram has a **Quick setup** card: click **Create with QR**, scan the code (or open the link) in Telegram, and Moor creates the bot, detects your user ID for the allowlist, saves the credentials, and restarts the gateway for you. Any credential save, clear, or enable toggle keeps a **Restart now** banner on the page until the gateway has actually restarted; if a restart fails, the banner stays so you can retry or restart manually.
 - **Agents** and **Command Center** — orchestration surfaces for multi-agent work.
 
 #### Where Browse gets its data
@@ -239,8 +239,8 @@ GitHub API calls or fetch plugin/skill source repositories. **Installed** is
 separate: its state comes from the selected profile's backend and the app's
 desktop-plugin registry, not those public snapshots.
 
-The public hubs' **Install in Hermes** buttons open `hermes://skill/install`
-or `hermes://plugin/install` links and require confirmation in Desktop. Use
+The public hubs' **Install in Moor** buttons open `moor://skill/install`
+or `moor://plugin/install` links and require confirmation in Desktop. Use
 an updated Desktop build for the skill route and plugin catalog parameters;
 the cards retain copyable CLI commands if the app is missing or too old. See
 [skill links](./features/skills.md#install-from-the-website) and
@@ -328,7 +328,7 @@ Windows hand-off counts new output in this log as progress; a child that produce
 no output is still subject to the idle watchdog. Process liveness alone does not
 reset that watchdog, and cancelling an update does not wait for its build to finish.
 
-The desktop app and the Hermes backend it talks to update on separate clocks — the app package on your machine, the backend wherever it runs. When more than one update target exists (a remote gateway, or several registered gateways), the update affordances (**Update now** on the About panel, the ⌘K **Update Hermes** row, and the update-ready toast) update **everything**: the connected backend first, then every other eligible registered gateway (Hermes Cloud entries are platform-managed and skipped), and the desktop app itself last, since applying the client update relaunches the app. Single-machine installs keep the one-button experience.
+The desktop app and the Moor backend it talks to update on separate clocks — the app package on your machine, the backend wherever it runs. When more than one update target exists (a remote gateway, or several registered gateways), the update affordances (**Update now** on the About panel, the ⌘K **Update Moor** row, and the update-ready toast) update **everything**: the connected backend first, then every other eligible registered gateway (Moor Cloud entries are platform-managed and skipped), and the desktop app itself last, since applying the client update relaunches the app. Single-machine installs keep the one-button experience.
 
 After any backend update, the app also re-checks its own version and warns with a one-click **Update desktop app** action if the GUI is still behind — so updating a remote backend can never silently leave you on a stale desktop build.
 
@@ -354,15 +354,15 @@ Running `moor uninstall --gui` from a **source checkout** (a `moor desktop` dev 
 
 To launch via the CLI, simply run `moor desktop`. By default it installs workspace Node dependencies, builds the current OS's unpacked Electron app, then launches that packaged artifact.
 
-On Linux, launches refresh `$XDG_DATA_HOME/applications/hermes.desktop` (by default `~/.local/share/applications/hermes.desktop`) so Hermes appears in the application menu. To preserve a hand-edited entry, disable refreshes:
+On Linux, launches refresh `$XDG_DATA_HOME/applications/moor.desktop` (by default `~/.local/share/applications/moor.desktop`) so Moor appears in the application menu. To preserve a hand-edited entry, disable refreshes:
 
 ```bash
-hermes config set desktop.manage_launcher_entry false
+moor config set desktop.manage_launcher_entry false
 ```
 
-A missing entry is still created; the flag only stops `hermes desktop` from rewriting an entry that already exists.
+A missing entry is still created; the flag only stops `moor desktop` from rewriting an entry that already exists.
 
-When you start Hermes from the application grid or menu (the launcher sets `DESKTOP_STARTUP_ID`), the entry is written only after the window is on screen. If the app exits before a window appears, nothing is written that time; the next terminal launch, updater relaunch, or grid launch that shows a window installs it. Some GNOME Shell versions lose track of an app whose `.desktop` file changes while it is still starting (they keep it in that state until the startup notification completes or times out, not until the process exits), and that can crash the whole session later; waiting for the window avoids it. Terminal launches and the updater's relaunch still write the entry immediately.
+When you start Moor from the application grid or menu (the launcher sets `DESKTOP_STARTUP_ID`), the entry is written only after the window is on screen. If the app exits before a window appears, nothing is written that time; the next terminal launch, updater relaunch, or grid launch that shows a window installs it. Some GNOME Shell versions lose track of an app whose `.desktop` file changes while it is still starting (they keep it in that state until the startup notification completes or times out, not until the process exits), and that can crash the whole session later; waiting for the window avoids it. Terminal launches and the updater's relaunch still write the entry immediately.
 
 | Flag                 | Description                                                                               |
 | -------------------- | ----------------------------------------------------------------------------------------- |
@@ -483,7 +483,7 @@ For the same setup from the web-dashboard angle, see [Web Dashboard → Connecti
 The desktop app is contribution-driven — panes, pages, sidebar nav, status-bar
 items, palette commands, keybinds, and themes all register through one SDK, and
 you can add your own. A plugin is a single ESM file dropped in
-`$HERMES_HOME/desktop-plugins/<id>/plugin.js`; the app loads it within seconds and
+`$MOOR_HOME/desktop-plugins/<id>/plugin.js`; the app loads it within seconds and
 hot-reloads every save. Manage installed plugins live in **Capabilities → Plugins**.
 
 See [Desktop Plugin SDK](../developer-guide/desktop-plugin-sdk.md) for the full
@@ -499,7 +499,7 @@ reference. (This is separate from the [web dashboard plugin system](./features/e
 - **Desktop column** — the half loaded into this app. It is app-level: the
   same switch, the same value, whichever profile, gateway, or remote machine
   the window is looking at. Desktop code loads from exactly one place,
-  `~/.hermes/desktop-plugins/`; the desktop half of a unified agent+desktop
+  `~/.moor/desktop-plugins/`; the desktop half of a unified agent+desktop
   package is copied there by the app when the package is installed (and
   follows its updates and uninstall), so switching profiles never loads,
   unloads, or re-scopes a pane. Toggles apply live.
@@ -609,7 +609,7 @@ ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ \
   bash -c 'cd "$HOME/.moor/moor-agent/apps/desktop" && CSC_IDENTITY_AUTO_DISCOVERY=false npm run pack'
 ```
 
-**Other native downloads (e.g. the `get-windows` prebuilt on Windows) that need a mirror:** put the npm keys in `$HERMES_HOME/npmrc` (`%LOCALAPPDATA%\hermes\npmrc` on Windows, `~/.hermes/npmrc` elsewhere) — for example `node_get_windows_binary_host_mirror=https://<mirror>/sindresorhus/get-windows/releases/download/`. Every `npm ci`/`npm run` the updater spawns (desktop, web and TUI builds) points `NPM_CONFIG_USERCONFIG` at that file when it exists, so the config survives `hermes update`; the repo-root `.npmrc` is git-tracked and gets autostashed on every update, and `~/.npmrc` may be missed because the desktop hand-off inherits the GUI's environment. An `NPM_CONFIG_USERCONFIG` you set yourself is never overridden.
+**Other native downloads (e.g. the `get-windows` prebuilt on Windows) that need a mirror:** put the npm keys in `$MOOR_HOME/npmrc` (`%LOCALAPPDATA%\moor\npmrc` on Windows, `~/.moor/npmrc` elsewhere) — for example `node_get_windows_binary_host_mirror=https://<mirror>/sindresorhus/get-windows/releases/download/`. Every `npm ci`/`npm run` the updater spawns (desktop, web and TUI builds) points `NPM_CONFIG_USERCONFIG` at that file when it exists, so the config survives `moor update`; the repo-root `.npmrc` is git-tracked and gets autostashed on every update, and `~/.npmrc` may be missed because the desktop hand-off inherits the GUI's environment. An `NPM_CONFIG_USERCONFIG` you set yourself is never overridden.
 
 To clear a corrupt cached zip by hand:
 

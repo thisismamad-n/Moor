@@ -99,7 +99,7 @@ are remembered on this desktop. Collapsing a gateway preserves its profiles'
 individual collapse states. Each profile's new-session action targets that
 profile on its owning gateway.
 
-The Hermes Cloud panel also lists **Saved Cloud gateways** when portal discovery
+The Moor Cloud panel also lists **Saved Cloud gateways** when portal discovery
 is signed out. **Use gateway** selects an existing saved connection without
 changing the default gateway; **Active in this window** identifies the current
 one. Adding a new instance uses its friendly Cloud name, while existing custom

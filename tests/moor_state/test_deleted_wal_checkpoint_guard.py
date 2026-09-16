@@ -17,20 +17,20 @@ from unittest.mock import ANY, patch
 
 import pytest
 
-import hermes_state
-import hermes_state_wal
-from hermes_state import DeletedWalGenerationError, SessionDB
+import moor_state
+import moor_state_wal
+from moor_state import DeletedWalGenerationError, SessionDB
 
 
 @pytest.fixture
 def force_wal(monkeypatch):
     """Pin WAL so this host's vulnerable SQLite still matches production topology."""
     monkeypatch.setattr(
-        hermes_state_wal,
+        moor_state_wal,
         "is_sqlite_wal_reset_vulnerable",
         lambda version_info=None: False,
     )
-    monkeypatch.setattr(hermes_state_wal, "resolve_journal_mode", lambda: "wal")
+    monkeypatch.setattr(moor_state_wal, "resolve_journal_mode", lambda: "wal")
 
 
 def _make_db(path: Path, session_id: str, content: str) -> SessionDB:

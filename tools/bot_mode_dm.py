@@ -53,8 +53,8 @@ _LOCAL_TARGET_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$")
 
 
 def _default_home() -> str:
-    from hermes_constants import get_process_hermes_home
-    return str(get_process_hermes_home())
+    from moor_constants import get_process_moor_home
+    return str(get_process_moor_home())
 
 
 def message_agent_tool_schema() -> dict:
@@ -183,7 +183,7 @@ def message_agent_tool(target: str = "", message: str = "", task_id: Optional[st
             BOT_CHAT_TITLE, _handle, _moor_root, _peers, _profile_name as _self_profile_name, _roster,
             is_bot_mode_managed,
         )
-        from tools.bot_relay import BOT_CHAT_TURN_ARGS, _hermes_cli
+        from tools.bot_relay import BOT_CHAT_TURN_ARGS, _moor_cli
 
         if _session_title(agent) != BOT_CHAT_TITLE:
             return _err("message_agent is only available in a Bot Mode 'Bot Chat' session. "
@@ -194,7 +194,7 @@ def message_agent_tool(target: str = "", message: str = "", task_id: Optional[st
     except Exception as exc:  # pragma: no cover — defensive
         return _err(f"Bot Mode gate check failed: {exc}")
 
-    root, me = _hermes_root(Path(home)), _self_profile_name(Path(home))
+    root, me = _moor_root(Path(home)), _self_profile_name(Path(home))
     roster_homes = dict(_roster(root))
     roster = list(roster_homes)
     peers = _peers(root)
@@ -228,15 +228,15 @@ def message_agent_tool(target: str = "", message: str = "", task_id: Optional[st
         # A peer dm crosses installs: qualify the id with this host so the peer's own '<me>' stays distinct.
         from agent.turn_author import bot_author_id, local_origin
         peer_author = {**author, "id": bot_author_id(me, local_origin())}
-        # Pin the registry-owning profile: `hermes peer` resolves bot_peers via the profile-scoped
+        # Pin the registry-owning profile: `moor peer` resolves bot_peers via the profile-scoped
         # load_config(), while the roster above reads the machine-root config — the CLI must run
         # in that same profile or a secondary-profile bot sees an empty registry.
         # The delivery runs in a background service context whose PATH lacks the gateway's
-        # venv bin dir, so a bare "hermes" resolves to a system install and dies on import
-        # under the wrong interpreter (#108628). _hermes_cli pins the entrypoint beside
+        # venv bin dir, so a bare "moor" resolves to a system install and dies on import
+        # under the wrong interpreter (#108628). _moor_cli pins the entrypoint beside
         # this interpreter; _delivery_lock/_local_delivery_home match argv[0] by basename,
         # so the absolute path stays compatible.
-        return _start_delivery([_hermes_cli(), "-p", _self_profile_name(root), "peer", "dm", dm_target], content,
+        return _start_delivery([_moor_cli(), "-p", _self_profile_name(root), "peer", "dm", dm_target], content,
                                f"@{peer_profile or peer_name} on peer '{peer_name}'", stdin_file=True,
                                author=peer_author, **delivery)
 
@@ -257,7 +257,7 @@ def message_agent_tool(target: str = "", message: str = "", task_id: Optional[st
         return _roster_err(f"No teammate named '{raw_target}' on this install, on a connected "
                            "machine, or on a registered peer. Pick a name from the roster "
                            "(roles are listed in your system prompt).")
-    return _start_delivery([_hermes_cli(), "-p", resolved, *BOT_CHAT_TURN_ARGS], content, f"@{_handle(resolved)}",
+    return _start_delivery([_moor_cli(), "-p", resolved, *BOT_CHAT_TURN_ARGS], content, f"@{_handle(resolved)}",
                            stdin_file=False, profile_home=roster_homes[resolved], author=author, **delivery)
 
 
@@ -401,9 +401,9 @@ def _run_local_turn(argv: list[str], dm_file: str, *, env: Optional[dict[str, st
         if retry_action(classify_agent_error((proc.stderr or proc.stdout or "").strip()[-500:])) != RETRY_NONE:
             proc = _turn()
     stderr_text = proc.stderr or ""
-    reason = next((line.removeprefix("hermes-refusal-reason: ").strip()
+    reason = next((line.removeprefix("moor-refusal-reason: ").strip()
                    for line in stderr_text.splitlines()
-                   if line.startswith("hermes-refusal-reason: ")), None)
+                   if line.startswith("moor-refusal-reason: ")), None)
     # A code wins over prose, including unknown codes from newer CLIs.
     # Only older CLIs without a marker need the historical wording fallback.
     refused_not_owned = (reason == "SESSION_NOT_OWNED" if reason is not None
@@ -496,11 +496,11 @@ def _wait_live_dm(home: str, delivery_id: str, *, dm_file: "str | os.PathLike | 
 
 def _local_delivery_home(argv: list[str]) -> Path | None:
     cli = (argv[0] if argv else "").rsplit("\\", 1)[-1].rsplit("/", 1)[-1]
-    if len(argv) < 3 or cli not in ("hermes", "hermes.exe") or argv[1] != "-p":
+    if len(argv) < 3 or cli not in ("moor", "moor.exe") or argv[1] != "-p":
         return None
-    from tools.bot_mode_probe import _hermes_root, _roster
+    from tools.bot_mode_probe import _moor_root, _roster
 
-    return dict(_roster(_hermes_root(Path(_default_home())))).get(argv[2])
+    return dict(_roster(_moor_root(Path(_default_home())))).get(argv[2])
 
 
 def _run_delivery(argv: list[str], dm_file: str, *, stdin_file: bool,
@@ -509,7 +509,7 @@ def _run_delivery(argv: list[str], dm_file: str, *, stdin_file: bool,
     retain their intent/payload and immutable receipt; only CLI/peer payloads are
     removed after consumption. The CLI turn window holds the profile lock, so two
     deliveries into one profile queue; a bounded wait ends in a 'target_busy' refusal.
-    ``author`` rides to the child as HERMES_TURN_AUTHOR; ``hermes peer dm`` forwards it in the request body.
+    ``author`` rides to the child as MOOR_TURN_AUTHOR; ``moor peer dm`` forwards it in the request body.
 
     Local (query-file) turns get one policy-gated retry (#93091 item 5): transient failures re-run the same
     session; a context_overflow re-run lets the retried turn's pre-API compaction pass compact the Bot Chat

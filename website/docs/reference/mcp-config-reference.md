@@ -334,7 +334,7 @@ mcp_servers:
 Behavior:
 - Moor uses the MCP SDK's OAuth 2.1 PKCE flow (metadata discovery, client identification, token exchange, and refresh)
 - On first connect, a browser window opens for authorization
-- Tokens are persisted to `~/.hermes/mcp-tokens/<server>.json` (a named profile uses `~/.hermes/profiles/<name>/mcp-tokens/`) and reused across sessions
+- Tokens are persisted to `~/.moor/mcp-tokens/<server>.json` (a named profile uses `~/.moor/profiles/<name>/mcp-tokens/`) and reused across sessions
 - Token refresh is automatic; re-authorization only happens when refresh fails
 - Only applies to HTTP/StreamableHTTP transport (`url`-based servers)
 - Under a [multiplexed gateway](/user-guide/multi-profile-gateways), an OAuth connection is never shared across profiles: each profile authenticates with its own token and opens its own connection, even when the `mcp_servers` entries are identical
@@ -342,14 +342,14 @@ Behavior:
 ### Device-code login (RFC 8628)
 
 For an authorization server advertising `device_authorization_endpoint`, explicitly choose
-device authorization from a terminal on the machine running Hermes:
+device authorization from a terminal on the machine running Moor:
 
 ```bash
-hermes mcp login protected_api --flow device
+moor mcp login protected_api --flow device
 ```
 
 Open the printed verification URL on any device and enter the displayed user code.
-Hermes polls for approval, respects `authorization_pending` and `slow_down`, and stops
+Moor polls for approval, respects `authorization_pending` and `slow_down`, and stops
 on denial or expiry. No browser is launched and no callback listener is needed.
 `oauth.timeout` bounds the approval wait (default 300 seconds), also limited by the code's lifetime.
 When the server's protected-resource metadata lists several authorization servers, device
@@ -357,7 +357,7 @@ login scans them in order and uses the first one whose metadata issuer matches i
 URL and that offers the `device_code` grant (a browser-only server listed first is skipped);
 issuer validation is never relaxed.
 
-Set `oauth.flow: device` on the server to make `hermes mcp login` and `hermes mcp reauth`
+Set `oauth.flow: device` on the server to make `moor mcp login` and `moor mcp reauth`
 (including `reauth --all`) use device authorization. `login --flow browser` overrides that
 setting for one login; browser PKCE remains the default. Unsupported metadata produces
 an actionable error rather than silently falling back to a different flow.

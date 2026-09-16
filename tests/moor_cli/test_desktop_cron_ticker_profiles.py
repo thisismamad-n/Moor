@@ -79,8 +79,8 @@ def test_multi_profile_homes_passed_to_builtin(monkeypatch, _providers, tmp_path
 def test_single_profile_ticks_only_without_gateway(monkeypatch, tmp_path, gateway_running):
     """Exercise Desktop startup through the real built-in scheduler loop."""
     from cron.scheduler_provider import InProcessCronScheduler
-    from hermes_constants import get_hermes_home
-    import hermes_cli.profiles as profiles_mod
+    from moor_constants import get_moor_home
+    import moor_cli.profiles as profiles_mod
 
     home = tmp_path / "root"
     home.mkdir()
@@ -91,7 +91,7 @@ def test_single_profile_ticks_only_without_gateway(monkeypatch, tmp_path, gatewa
     )
     ticked = []
     monkeypatch.setattr(
-        "cron.scheduler.tick", lambda **_kw: ticked.append(get_hermes_home())
+        "cron.scheduler.tick", lambda **_kw: ticked.append(get_moor_home())
     )
     stop = threading.Event()
     # One real scheduler cycle, with no wall-clock wait or job dispatch.
@@ -143,16 +143,16 @@ def test_desktop_ticker_serves_every_profile_and_yields_to_owning_gateway(monkey
     or the live default multiplexer that already ticks it — such a satellite has no gateway.pid
     of its own, so the per-home liveness check alone lets both tickers race for its fires
     (#107485, #108428)."""
-    import hermes_cli.profiles as profiles_mod
+    import moor_cli.profiles as profiles_mod
     import yaml
 
     _sp, builtin = _providers
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".moor"
     for name in ("worker", "guest", "solo"):
         (root / "profiles" / name).mkdir(parents=True)
     (root / "config.yaml").write_text(yaml.safe_dump({"gateway": {"multiplex_profiles": True}}))
-    monkeypatch.setattr("hermes_constants.get_default_hermes_root", lambda: root)
-    monkeypatch.setattr(profiles_mod, "_get_default_hermes_home", lambda: root)
+    monkeypatch.setattr("moor_constants.get_default_moor_root", lambda: root)
+    monkeypatch.setattr(profiles_mod, "_get_default_moor_home", lambda: root)
     monkeypatch.setattr(profiles_mod, "_get_profiles_root", lambda: root / "profiles")
     monkeypatch.setattr(
         profiles_mod, "_check_gateway_running", lambda home: home == root / "profiles" / "solo")

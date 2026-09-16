@@ -58,7 +58,7 @@ plugin, and fail to resolve in a disk plugin). Capability comes in tiers:
 | **Unified package** | `$MOOR_HOME/plugins/<id>/desktop/plugin.js` | plugins that also ship agent-side code | none — same disk pipeline |
 | **Bundled** | `apps/desktop/src/plugins/<id>/plugin.tsx` | in-tree, shipped with the app | the app's own Vite build |
 
-All three take the same `HermesPlugin` contract, appear in **Capabilities → Plugins**,
+All three take the same `MoorPlugin` contract, appear in **Capabilities → Plugins**,
 and enable/disable live. A unified package is just the disk door scanning inside
 your agent plugin's folder — see
 [One package, both SDKs](#one-package-both-sdks). Everything on this page is
@@ -68,12 +68,12 @@ differences. Radio ships as a bundled SDK-only plugin, off by default. Enable it
 in **Capabilities → Plugins** for free live streams, station search, and status-bar
 playback controls with an audio-reactive waveform. It uses the existing plugin
 toggle and contributes nothing while disabled. Reference demos live in the companion
-[`hermes-example-plugins`](https://github.com/NousResearch/hermes-example-plugins)
+[`moor-example-plugins`](https://github.com/NousResearch/hermes-example-plugins)
 repo.
 
 ## Quick start — your first plugin
 
-Create `$HERMES_HOME/desktop-plugins/hello/plugin.js` (that's `~/.hermes/...`
+Create `$MOOR_HOME/desktop-plugins/hello/plugin.js` (that's `~/.moor/...`
 by default). Desktop plugins are app-level — one root for every profile, gateway,
 or remote machine the window connects to. The folder name must equal the plugin `id`.
 
@@ -699,8 +699,8 @@ A feature that needs a desktop UI **and** agent-side code (a Python plugin, its
 backend routes, skills) doesn't have to ship as two co-dependent installs. Put a
 `desktop/plugin.js` inside the agent package. When the package lands in any
 local `plugins/` root (default home or a profile), the Electron main process
-copies that half into `$HERMES_HOME/desktop-plugins/<id>/` beside a
-`.hermes-package.json` marker, and the renderer loads it through the exact same
+copies that half into `$MOOR_HOME/desktop-plugins/<id>/` beside a
+`.moor-package.json` marker, and the renderer loads it through the exact same
 pipeline as the standalone disk door (hot reload included):
 
 ```
@@ -717,7 +717,7 @@ pipeline as the standalone disk door (hot reload included):
 The `desktop/plugin.js` half is an ordinary disk plugin — same contract, same
 imports, same `ctx.rest('/…')` reaching the `plugin_api.py` sitting beside it.
 Installing, sharing, or removing the feature is one folder: the app-root copy
-is refreshed when the source `plugin.js` changes (`hermes plugins update`, or
+is refreshed when the source `plugin.js` changes (`moor plugins update`, or
 **Rescan**) and removed when the package folder disappears. The copy is what
 makes the desktop half **app-level**: it exists once, however many profiles
 carry the package, and it never appears or disappears when the user switches
@@ -736,7 +736,7 @@ off — `ctx.rest` returns errors, not crashes.
 
 :::note
 The copy is local to the machine the desktop app runs on. Against a remote
-backend, the remote box's `~/.hermes/plugins` is not reachable as a filesystem —
+backend, the remote box's `~/.moor/plugins` is not reachable as a filesystem —
 only locally installed packages contribute a desktop half this way. For a
 remote backend the install dialog clones the desktop half separately into
 `desktop-plugins/`, the same as a desktop-only repo.

@@ -80,7 +80,7 @@ class TestMultiplexOnUnchanged:
             config=SimpleNamespace(multiplex_profiles=True)
         )
         monkeypatch.setattr(
-            "hermes_cli.profiles.profiles_to_serve",
+            "moor_cli.profiles.profiles_to_serve",
             lambda multiplex: [("worker", object())],
         )
         assert adapter._resolve_request_profile(_request("worker")) == "worker"

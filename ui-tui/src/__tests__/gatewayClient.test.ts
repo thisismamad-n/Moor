@@ -403,7 +403,7 @@ describe('GatewayClient websocket attach mode', () => {
   })
 
   it('surfaces JSON-RPC error code and data to callers (shared error mapping)', async () => {
-    process.env.HERMES_TUI_GATEWAY_URL = 'ws://gateway.test/api/ws?token=abc'
+    process.env.MOOR_TUI_GATEWAY_URL = 'ws://gateway.test/api/ws?token=abc'
     const gw = new GatewayClient()
 
     gw.start()
@@ -659,7 +659,7 @@ describe('GatewayClient websocket attach mode', () => {
 
   it('keeps delivering events to the mounted subscriber across reconnects, with growing backoff (#111594)', async () => {
     vi.useFakeTimers()
-    process.env.HERMES_TUI_GATEWAY_URL = 'ws://gateway.test/api/ws?token=abc'
+    process.env.MOOR_TUI_GATEWAY_URL = 'ws://gateway.test/api/ws?token=abc'
     const gw = new GatewayClient()
     const ready: number[] = []
     const delays: number[] = []

@@ -1,9 +1,9 @@
 """Anthropic credential sources, OAuth flows, and token resolution.
 
 ``resolve_anthropic_token()`` order: ``ANTHROPIC_TOKEN`` / ``CLAUDE_CODE_OAUTH_TOKEN``,
-``ANTHROPIC_API_KEY``, Hermes-owned OAuth grants in the ``auth.json`` credential
+``ANTHROPIC_API_KEY``, moor-owned OAuth grants in the ``auth.json`` credential
 pool, then ``~/.claude/.credentials.json`` / macOS Keychain as a borrowed fallback.
-``~/.hermes/.anthropic_oauth.json`` (Hermes PKCE) and
+``~/.moor/.anthropic_oauth.json`` (Moor PKCE) and
 the Claude Code file are *singletons*: ``credential_pool._seed_from_singletons()``
 re-reads them on every ``load_pool()``, so a failed write here is a failed refresh
 (``CredentialPersistError``), not a cache miss.
@@ -25,7 +25,7 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 from utils import atomic_json_write
 from agent.secret_scope import get_secret as _get_secret
 

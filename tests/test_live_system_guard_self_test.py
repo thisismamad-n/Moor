@@ -297,13 +297,13 @@ def test_subprocess_killall_moor_blocked():
 
 
 def test_subprocess_popen_real_gateway_restart_blocked():
-    """``python -m hermes_cli.main gateway restart`` is a detached child that
-    inherits the pytest-tmp HERMES_HOME, resolves the developer's real
-    ``hermes-gateway`` unit, and outlives the test (39 six-day orphans squatted
+    """``python -m moor_cli.main gateway restart`` is a detached child that
+    inherits the pytest-tmp MOOR_HOME, resolves the developer's real
+    ``moor-gateway`` unit, and outlives the test (39 six-day orphans squatted
     the webhook port, 2026-09-03). Blocked at the spawn primitive."""
     with pytest.raises(RuntimeError, match="live-system guard"):
         subprocess.Popen(
-            [sys.executable, "-m", "hermes_cli.main", "gateway", "restart"],
+            [sys.executable, "-m", "moor_cli.main", "gateway", "restart"],
             start_new_session=True,
         )
 
@@ -313,7 +313,7 @@ def test_subprocess_run_gateway_status_passes_through():
     read-only subcommand) must still spawn — via the canonical matcher, not an
     argv substring."""
     result = subprocess.run(
-        [sys.executable, "-c", "import sys; print(sys.argv[1:])", "-m", "hermes_cli.main", "gateway", "status"],
+        [sys.executable, "-c", "import sys; print(sys.argv[1:])", "-m", "moor_cli.main", "gateway", "status"],
         capture_output=True, text=True,
     )
     assert result.returncode == 0

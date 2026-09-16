@@ -284,7 +284,7 @@ _MESSAGING_KEYS_PAGE_KEYS = frozenset({
 def _platform_env_prefixes(platform_id: str) -> tuple[str, ...]:
     """Env-var prefixes owned by a messaging platform card (shared with the profile-clone
     channel stripper so a card and a clone agree on which keys belong to a platform)."""
-    from hermes_cli.profile_channels import platform_env_prefixes
+    from moor_cli.profile_channels import platform_env_prefixes
     return platform_env_prefixes(platform_id)
 
 

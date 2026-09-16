@@ -854,7 +854,7 @@ def _routed_reasoning_config(task_cfg: Optional[Dict[str, Any]]) -> Optional[Dic
     effort = _background_review_task_config(task_cfg).get("reasoning_effort")
     if effort is None or effort == "":
         return None
-    from hermes_constants import VALID_REASONING_EFFORTS, parse_reasoning_effort
+    from moor_constants import VALID_REASONING_EFFORTS, parse_reasoning_effort
     parsed = parse_reasoning_effort(effort)
     if parsed is None:
         logger.warning(
@@ -1095,7 +1095,7 @@ def _run_review_fork(
         agent, task_cfg, max_iterations=_REVIEW_MAX_ITERATIONS)
     st.review_agent._review_attended = explicit
     _track_review_fork(agent, st.review_agent, register=True)
-    from hermes_cli.plugins import set_thread_tool_whitelist, clear_thread_tool_whitelist
+    from moor_cli.plugins import set_thread_tool_whitelist, clear_thread_tool_whitelist
     review_whitelist, configured_extra_tools = _review_tool_whitelist(st.review_agent, task_cfg, review_memory)
     extra_list = ", ".join(sorted(configured_extra_tools))
     deny_extra = f" Configured extra tools also allowed: {extra_list}." if configured_extra_tools else ""

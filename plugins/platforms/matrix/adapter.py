@@ -613,9 +613,9 @@ def _scoped_recovery_key() -> str:
 # markup after sanitization. Tokens are plain printable text with no special
 # HTML/Markdown meaning, so both the Markdown converter and the sanitizer
 # pass them through verbatim.
-_TEX_TOKEN_RE = re.compile(r"HERMESTEX(?:DISPLAY|INLINE)(\d+)HERMESTEXEND")
-_TEX_DISPLAY_TOKEN = "HERMESTEXDISPLAY%dHERMESTEXEND"
-_TEX_INLINE_TOKEN = "HERMESTEXINLINE%dHERMESTEXEND"
+_TEX_TOKEN_RE = re.compile(r"MOORTEX(?:DISPLAY|INLINE)(\d+)MOORTEXEND")
+_TEX_DISPLAY_TOKEN = "MOORTEXDISPLAY%dMOORTEXEND"
+_TEX_INLINE_TOKEN = "MOORTEXINLINE%dMOORTEXEND"
 
 
 def _latex_to_tokens(text: str) -> tuple[str, list[tuple[str, str]]]:
@@ -883,8 +883,8 @@ class MatrixAdapter(BasePlatformAdapter):
             logger.info("Matrix: proxy configured — %s", self._proxy_url)
         self._max_media_bytes = _env_number("MATRIX_MAX_MEDIA_BYTES", 100 * 1024 * 1024, int)
         # Text batching merges client-side splits (~4000 chars) of one long message.
-        self._text_batch_delay_seconds = float(os.getenv("HERMES_MATRIX_TEXT_BATCH_DELAY_SECONDS", "0.6"))
-        self._text_batch_split_delay_seconds = float(os.getenv("HERMES_MATRIX_TEXT_BATCH_SPLIT_DELAY_SECONDS", "2.0"))
+        self._text_batch_delay_seconds = float(os.getenv("MOOR_MATRIX_TEXT_BATCH_DELAY_SECONDS", "0.6"))
+        self._text_batch_split_delay_seconds = float(os.getenv("MOOR_MATRIX_TEXT_BATCH_SPLIT_DELAY_SECONDS", "2.0"))
         self._approval_reaction_map = {
             "✅": "once", "🌀": "session", "♾️": "always", "♾": "always", "\u267e\ufe0f": "always",
             "\u267e": "always", "❌": "deny", "❎": "deny"}
@@ -2922,7 +2922,7 @@ async def _standalone_send(pconfig, chat_id, message, *, thread_id=None, media_f
         token = getattr(pconfig, "token", None) or get_secret("MATRIX_ACCESS_TOKEN", "") or ""
         if not homeserver or not token:
             return send_error("Matrix not configured (MATRIX_HOMESERVER, MATRIX_ACCESS_TOKEN required)")
-        txn_id = f"hermes_{int(time.time() * 1000)}_{os.urandom(4).hex()}"
+        txn_id = f"moor_{int(time.time() * 1000)}_{os.urandom(4).hex()}"
         from urllib.parse import quote
         url = f"{homeserver}/_matrix/client/v3/rooms/{quote(chat_id, safe='')}/send/m.room.message/{txn_id}"
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
@@ -2954,9 +2954,9 @@ async def _standalone_send(pconfig, chat_id, message, *, thread_id=None, media_f
 
 def interactive_setup() -> None:
     """Interactive credential setup (setup_fn); CLI helpers are lazy-imported."""
-    from hermes_cli.config import get_env_value, remove_env_value, save_env_value
-    from hermes_cli.cli_output import prompt, prompt_yes_no, print_header, print_info, print_success, print_warning
-    from hermes_cli.setup_platforms import declines_reconfigure
+    from moor_cli.config import get_env_value, remove_env_value, save_env_value
+    from moor_cli.cli_output import prompt, prompt_yes_no, print_header, print_info, print_success, print_warning
+    from moor_cli.setup_platforms import declines_reconfigure
     print_header("Matrix")
     if declines_reconfigure("Matrix", "Reconfigure Matrix?", "MATRIX_ACCESS_TOKEN", "MATRIX_PASSWORD"):
         return

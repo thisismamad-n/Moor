@@ -7,14 +7,14 @@ import {
   friendlyWait,
   provisionFreeTier
 } from '@/store/free-tier'
-import type { FreeTierStatus } from '@/types/hermes'
+import type { FreeTierStatus } from '@/types/moor'
 
 const NO_IDENTITY: FreeTierStatus = {
   available: false,
   enabled: true,
   has_guest: false,
-  label: 'Nous · free tier',
-  model: 'nous/welcome',
+  label: 'Moor · free tier',
+  model: 'moor/welcome',
   notice_pending: false
 }
 

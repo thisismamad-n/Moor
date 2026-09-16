@@ -5,13 +5,13 @@ import json
 
 import pytest
 
-from hermes_cli.web_routers import memory_providers as mp
+from moor_cli.web_routers import memory_providers as mp
 from plugins.memory.honcho.config_schema import CONFIG_SCHEMA
 
 
 def _point_at(monkeypatch, path):
     from plugins.memory.honcho.client import _host_block
-    monkeypatch.setattr(mp, "_honcho_resolvers", lambda: (lambda: "hermes", lambda: path, _host_block))
+    monkeypatch.setattr(mp, "_honcho_resolvers", lambda: (lambda: "moor", lambda: path, _host_block))
 
 
 @pytest.mark.parametrize("corrupt", [True, False], ids=["unparseable-file-is-left-alone", "parseable-file-is-merged"])
@@ -29,4 +29,4 @@ def test_web_save_never_replaces_an_unparseable_honcho_json(tmp_path, monkeypatc
     mp._write_provider_honcho(CONFIG_SCHEMA, {"recallMode": "tools"})
     data = json.loads(path.read_text(encoding="utf-8"))
     assert data["hosts"]["other"]["apiKey"] == "keep-me"
-    assert data["hosts"]["hermes"]["recallMode"] == "tools"
+    assert data["hosts"]["moor"]["recallMode"] == "tools"

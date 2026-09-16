@@ -306,7 +306,7 @@ class TestPromptToolkitTerminalCompatibility:
 
         The native-Windows arm (``_terminal_may_leak_cpr() is False``, plus
         the ``PROMPT_TOOLKIT_NO_CPR`` override that outranks it) lives in
-        ``tests/hermes_cli/test_cpr_local_leak.py`` under ``windows_only``, where it
+        ``tests/moor_cli/test_cpr_local_leak.py`` under ``windows_only``, where it
         runs against a real Windows console.
         """
         from cli import _terminal_may_leak_cpr

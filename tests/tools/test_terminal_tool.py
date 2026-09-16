@@ -81,7 +81,7 @@ def test_explicit_empty_sudo_password_tries_empty_without_prompt(monkeypatch):
 def test_headless_sudo_never_runs_backend_nopasswd_probe(monkeypatch):
     """No prompt can fire without a UI, so the backend round trip must not be paid."""
     monkeypatch.delenv("SUDO_PASSWORD", raising=False)
-    monkeypatch.delenv("HERMES_INTERACTIVE", raising=False)
+    monkeypatch.delenv("MOOR_INTERACTIVE", raising=False)
     terminal_tool.set_sudo_password_callback(None)
 
     def _fail_probe():

@@ -61,7 +61,7 @@ class GatewayConfigLoadersMixin:
         then legacy agent.prefill_messages_file. Relative paths resolve from ~/.moor/.
         """
         from gateway.run import _gateway_config_home, _load_gateway_config
-        file_path = os.getenv("HERMES_PREFILL_MESSAGES_FILE", "")
+        file_path = os.getenv("MOOR_PREFILL_MESSAGES_FILE", "")
         if not file_path:
             cfg = _load_gateway_config()
             file_path = str(
@@ -88,9 +88,9 @@ class GatewayConfigLoadersMixin:
 
     @staticmethod
     def _load_ephemeral_system_prompt() -> str:
-        """HERMES_EPHEMERAL_SYSTEM_PROMPT env first, then ``display.personality`` / ``agent.system_prompt``."""
+        """MOOR_EPHEMERAL_SYSTEM_PROMPT env first, then ``display.personality`` / ``agent.system_prompt``."""
         from gateway.run import _load_gateway_config
-        prompt = os.getenv("HERMES_EPHEMERAL_SYSTEM_PROMPT", "")
+        prompt = os.getenv("MOOR_EPHEMERAL_SYSTEM_PROMPT", "")
         if prompt:
             return prompt
         return resolve_ephemeral_system_prompt_from_config(_load_gateway_config())
@@ -152,7 +152,7 @@ class GatewayConfigLoadersMixin:
         Closes #21256.
         """
         from gateway.run import _load_gateway_config
-        from hermes_constants import resolve_reasoning_config
+        from moor_constants import resolve_reasoning_config
         return resolve_reasoning_config(_load_gateway_config(), model)
 
     @staticmethod
@@ -387,7 +387,7 @@ class GatewayConfigLoadersMixin:
         secondary sees its own ``.env`` value, not the launch profile's ``os.environ``."""
         from gateway.run import _load_gateway_config
         from gateway.platforms._shared import platform_gate_env as _platform_gate_env
-        mode = _platform_gate_env("HERMES_BACKGROUND_NOTIFICATIONS")
+        mode = _platform_gate_env("MOOR_BACKGROUND_NOTIFICATIONS")
         if not mode:
             raw = cfg_get(_load_gateway_config(), "display", "background_process_notifications")
             if raw is False:
@@ -436,14 +436,14 @@ class GatewayConfigLoadersMixin:
         home handed every secondary profile the default profile's fallback chain.
         """
         from gateway.run import _gateway_config_home
-        from hermes_constants import hermes_home_key
+        from moor_constants import moor_home_key
         home = _gateway_config_home()
         by_home = getattr(self, "_fallback_model_by_home", None)
         if by_home is None:
             by_home = self._fallback_model_by_home = {}
-        home_key = hermes_home_key(home)
+        home_key = moor_home_key(home)
         try:
-            from hermes_cli.config_effective import load_user_config_effective
+            from moor_cli.config_effective import load_user_config_effective
             cfg_path = home / "config.yaml"
             if not cfg_path.exists():
                 by_home[home_key] = self._fallback_model = None

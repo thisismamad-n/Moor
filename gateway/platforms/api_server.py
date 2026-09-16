@@ -782,7 +782,7 @@ class ResponseStore:
 
 _CORS_HEADERS = {
     "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Authorization, Content-Type, Idempotency-Key, X-Hermes-Session-Id"}
+    "Access-Control-Allow-Headers": "Authorization, Content-Type, Idempotency-Key, X-moor-session-Id"}
 _SECURITY_HEADERS = {
     "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
@@ -1468,7 +1468,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
         if not getattr(cfg, "multiplex_profiles", False):
             return None if _prefix_names_served_profile(profile) else _PROFILE_REJECTED
         try:
-            from hermes_cli.profiles import profiles_to_serve
+            from moor_cli.profiles import profiles_to_serve
             served = {name for name, _ in profiles_to_serve(multiplex=True)}
         except Exception:
             return _PROFILE_REJECTED
@@ -3516,7 +3516,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
             job_id = (body or {}).get("job_id")
             if not job_id:
                 return web.json_response({"error": "missing job_id"}, status=400)
-            # `hermes pause` ESTOP: refuse the fire and ask NAS to retry later.
+            # `moor pause` ESTOP: refuse the fire and ask NAS to retry later.
             # Placed after JWT verify (don't leak pause state to unauth callers)
             # and after the drain check (drain is transient shutdown, ESTOP is
             # operator override). 503 + Retry-After reschedules the job via NAS
@@ -3526,7 +3526,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
                 from agent.estop import check_paused as _estop_check_paused
                 if _estop_check_paused("cron-webhook", logger):
                     return web.json_response(
-                        {"error": "hermes is paused (ESTOP)", "job_id": job_id},
+                        {"error": "moor is paused (ESTOP)", "job_id": job_id},
                         status=503,
                         headers={"Retry-After": str(60)},
                     )
@@ -3609,7 +3609,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
         declaration or fingerprint-derived identity keeps delegation synchronous.
 
         ``profile`` is the ``/p/<profile>/`` prefix serving the request (``""`` = default). It must
-        reach ``HERMES_SESSION_PROFILE``: the persistent-Docker container key is derived from it, so an
+        reach ``MOOR_SESSION_PROFILE``: the persistent-Docker container key is derived from it, so an
         unbound profile collapses every profile's turns onto the default sandbox (#96370)."""
         from gateway.session_context import set_session_vars
         return set_session_vars(

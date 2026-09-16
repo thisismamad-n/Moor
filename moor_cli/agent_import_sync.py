@@ -1,6 +1,6 @@
-"""``hermes import-agent --sync`` — keep previously imported Claude Code / Codex setups current.
+"""``moor import-agent --sync`` — keep previously imported Claude Code / Codex setups current.
 
-Every successful ``hermes import-agent`` run records its source in ``HERMES_HOME/import-sync.json``
+Every successful ``moor import-agent`` run records its source in ``MOOR_HOME/import-sync.json``
 (the sync manifest); ``--sync`` re-imports every registered source whose files changed since the
 last run. Change detection is a content digest over exactly the files the importer reads, so an
 unchanged source is a cheap no-op and credential files (never read by the importer) can never
@@ -31,7 +31,7 @@ def sync_manifest_path(target_root: Path) -> Path:
 
 def _iter_sync_files(agent: str, source_root: Path) -> Iterator[Path]:
     """Yield the source files whose content determines the sync digest — exactly what
-    :class:`~hermes_cli.agent_import.AgentImporter` reads for ``agent``."""
+    :class:`~moor_cli.agent_import.AgentImporter` reads for ``agent``."""
     if agent == "claude-code":
         # ~/.claude.json lives NEXT TO ~/.claude/ (see AgentImporter._run_claude_code)
         paths = [source_root / "CLAUDE.md", source_root / "settings.json",
@@ -128,19 +128,19 @@ def update_sync_manifest(agent: str, source_root: Path, target_root: Path,
 
 
 def sync_imported_agents(args) -> None:
-    """Handle ``hermes import-agent --sync``: re-import every registered source whose digest
+    """Handle ``moor import-agent --sync``: re-import every registered source whose digest
     changed. Prompt-free (cron-friendly); ``--dry-run`` previews without touching the manifest."""
-    from hermes_cli.agent_import import AgentImporter, print_import_report
-    from hermes_cli.setup import print_error, print_header, print_info, print_success
-    from hermes_constants import get_hermes_home
+    from moor_cli.agent_import import AgentImporter, print_import_report
+    from moor_cli.setup import print_error, print_header, print_info, print_success
+    from moor_constants import get_moor_home
 
     dry_run = bool(getattr(args, "dry_run", False))
-    hermes_home = get_hermes_home().resolve()
-    agents: Dict[str, Any] = load_sync_manifest(hermes_home).get("agents", {})
+    moor_home = get_moor_home().resolve()
+    agents: Dict[str, Any] = load_sync_manifest(moor_home).get("agents", {})
     if not agents:
         print()
         print_info("No import sources registered yet.")
-        print_info("Run 'hermes import-agent' first — successful imports are "
+        print_info("Run 'moor import-agent' first — successful imports are "
                    "registered for sync automatically.")
         return
 
@@ -163,7 +163,7 @@ def sync_imported_agents(args) -> None:
                    + (" (dry run)" if dry_run else " — re-importing"))
         overwrite = bool(entry.get("overwrite", False))
         try:
-            report = AgentImporter(agent_name, source_dir, hermes_home, execute=not dry_run,
+            report = AgentImporter(agent_name, source_dir, moor_home, execute=not dry_run,
                                    overwrite=overwrite, sync_skills=managed_skills(entry)).run()
         except Exception as exc:  # noqa: BLE001 — keep syncing the other sources
             print_error(f"{agent_name}: sync failed: {exc}")
@@ -177,7 +177,7 @@ def sync_imported_agents(args) -> None:
         if not dry_run:
             try:
                 # Errors keep the old source digest so the next sync retries the failed items.
-                update_sync_manifest(agent_name, source_dir, hermes_home, overwrite, report,
+                update_sync_manifest(agent_name, source_dir, moor_home, overwrite, report,
                                      refresh_digest=not had_errors)
             except OSError as exc:
                 logger.warning("Could not update import sync manifest: %s", exc)

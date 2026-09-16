@@ -123,7 +123,7 @@ def _cmd_subscribe(args):
     if profile_arg is None:
         profile = existing.get("profile", "default")
     else:
-        from hermes_cli.profiles import normalize_profile_name, profile_exists, validate_profile_name
+        from moor_cli.profiles import normalize_profile_name, profile_exists, validate_profile_name
         try:
             profile = normalize_profile_name(profile_arg)
             validate_profile_name(profile)
@@ -170,7 +170,7 @@ def _cmd_subscribe(args):
             print(f"Error: {e}")
             return
         if job is None:
-            print(f"Error: no cron job matches '{cron_job}'. List jobs with: hermes cron list")
+            print(f"Error: no cron job matches '{cron_job}'. List jobs with: moor cron list")
             return
         route["cron_job"] = job["id"]
     script = (getattr(args, "script", "") or "").strip()
@@ -251,7 +251,7 @@ def _cmd_test(args):
         return
     secret = subs[name].get("secret", "")
     url = _route_url(name, subs[name])
-    payload = args.payload or '{"test": true, "event_type": "test", "message": "Hello from hermes webhook test"}'
+    payload = args.payload or '{"test": true, "event_type": "test", "message": "Hello from moor webhook test"}'
     sig = "sha256=" + hmac.new(secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
     print(f"  Sending test POST to {url}")
     try:

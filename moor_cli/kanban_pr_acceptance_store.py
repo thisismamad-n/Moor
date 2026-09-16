@@ -1,8 +1,8 @@
 """Persist acceptance with the same ownership snapshot as the terminal write."""
 from __future__ import annotations
 
-from hermes_cli.kanban_db_connect import write_txn
-from hermes_cli.kanban_pr_acceptance import _PR, collect_acceptance
+from moor_cli.kanban_db_connect import write_txn
+from moor_cli.kanban_pr_acceptance import _PR, collect_acceptance
 
 
 def _snapshot(conn, task_id):
@@ -34,7 +34,7 @@ def prepare_acceptance(conn, task_id, expected_run_id, metadata):
 
 def record_acceptance(conn, task_id, acceptance):
     """Called under complete_task's write_txn, before its terminal UPDATE."""
-    from hermes_cli.kanban_db import _append_event
+    from moor_cli.kanban_db import _append_event
     snapshot, receipt = acceptance
     if _snapshot(conn, task_id) != snapshot:
         return False

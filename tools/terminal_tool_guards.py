@@ -216,7 +216,7 @@ def gateway_lifecycle_block(
             "Blocked: launchctl submit/bootstrap is restricted inside a supervised "
             "gateway regardless of the job label, to prevent indirect gateway "
             "restart loops. This guard does not inspect the job's KeepAlive settings "
-            "or determine whether it is independent of Hermes. Perform authorized "
+            "or determine whether it is independent of Moor. Perform authorized "
             "LaunchAgent maintenance from a separate shell outside the gateway, "
             "not by switching launchctl verbs to bypass this rejection.",
             "error",

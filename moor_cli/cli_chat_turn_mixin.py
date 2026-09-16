@@ -248,7 +248,7 @@ class CLIChatTurnMixin:
             def display_callback(sentence: str):
                 if not turn.box_opened:
                     turn.box_opened = True
-                    label = " ☤ Hermes "
+                    label = " ☤ Moor "
                     if self.show_timestamps:
                         label = f"{label}{datetime.now().strftime(self.timestamp_format)} "
                     w = self._scrollback_box_width(getattr(self.console, "width", 80))
@@ -336,7 +336,7 @@ class CLIChatTurnMixin:
         except Exception as exc:
             logging.error("run_conversation raised: %s", exc, exc_info=True)
             _summary = getattr(self.agent, '_summarize_api_error', lambda e: str(e)[:300])(exc)
-            from hermes_cli.cli_chat_error_copy import chat_error_response
+            from moor_cli.cli_chat_error_copy import chat_error_response
             turn.result = {
                 "final_response": chat_error_response(
                     exc, provider=str(getattr(self.agent, "provider", "") or self.provider or ""),
@@ -486,7 +486,7 @@ class CLIChatTurnMixin:
         response = turn.result.get("final_response", "") if turn.result else ""
         # "failed"/"partial" with an empty final_response: no usable answer.
         if turn.result and (turn.result.get("failed") or turn.result.get("partial")) and not response:
-            from hermes_cli.cli_chat_error_copy import chat_error_response
+            from moor_cli.cli_chat_error_copy import chat_error_response
             response = chat_error_response(
                 str(turn.result.get("error") or "Unknown error"),
                 provider=str(getattr(self.agent, "provider", "") or self.provider or ""),
@@ -634,11 +634,11 @@ class CLIChatTurnMixin:
             try:
                 from moor_cli.skin_engine import get_active_skin
                 _skin = get_active_skin()
-                label = _skin.get_branding("response_label", "☤ Hermes")
+                label = _skin.get_branding("response_label", "☤ Moor")
                 _resp_color = _maybe_remap_for_light_mode(_skin.get_color("response_border", "#CD7F32"))
                 _resp_text = _maybe_remap_for_light_mode(_skin.get_color("banner_text", "#FFF8DC"))
             except Exception:
-                label = "☤ Hermes"
+                label = "☤ Moor"
                 _resp_color = _maybe_remap_for_light_mode("#CD7F32")
                 _resp_text = _maybe_remap_for_light_mode("#FFF8DC")
 

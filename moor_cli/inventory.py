@@ -407,7 +407,7 @@ def _append_unconfigured_rows(
     """Empty setup skeletons for canonical providers missing from ``rows`` — except the *current* one:
     if config.yaml still points at it but credentials are gone, keep a row carrying the saved model so
     GUI pickers don't silently snap to another provider."""
-    from hermes_cli.models import CANONICAL_PROVIDERS, _model_requires_account_discovery
+    from moor_cli.models import CANONICAL_PROVIDERS, _model_requires_account_discovery
 
     seen = {r["slug"].lower() for r in rows}
     cur = (ctx.current_provider or "").lower()
@@ -428,7 +428,7 @@ def _append_unconfigured_rows(
             warning = (
                 f"Configured provider missing usable credentials; paste {key_env} to reactivate. {tail}"
                 if auth_type == "api_key" and key_env
-                else f"Configured provider is not authenticated; run `hermes model` to reactivate. {tail}"
+                else f"Configured provider is not authenticated; run `moor model` to reactivate. {tail}"
             )
             extras.append(_canonical_row(
                 entry, cur, models=[saved_model] if saved_model else [], total_models=1 if saved_model else 0,

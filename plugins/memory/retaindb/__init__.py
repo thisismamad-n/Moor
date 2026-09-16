@@ -330,7 +330,7 @@ class RetainDBMemoryProvider(MemoryProvider):
         # Non-secret fields resolve env (profile-scoped) -> config.yaml (written by the Dashboard) -> default.
         cfg = {k: v.strip() for k, v in _load_retaindb_config().items() if isinstance(v, str)}
         base_url = re.sub(r"/+$", "", get_secret("RETAINDB_BASE_URL", "") or cfg.get("base_url") or _DEFAULT_BASE_URL)
-        # Project: RETAINDB_PROJECT > config.yaml > hermes-<profile> > "default" (API auto-creates "default").
+        # Project: RETAINDB_PROJECT > config.yaml > moor-<profile> > "default" (API auto-creates "default").
         # The project is the data partition: read through the secret scope so a multiplexed secondary's
         # memories never land in the default profile's project.
         project = get_secret("RETAINDB_PROJECT", "") or cfg.get("project")

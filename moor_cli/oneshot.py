@@ -172,7 +172,7 @@ def run_oneshot(
 ) -> int:
     """Execute a single prompt and print only the final content block.
 
-    Model/provider fall back to ``HERMES_INFERENCE_MODEL`` and config.yaml. ``usage_file`` gets a
+    Model/provider fall back to ``MOOR_INFERENCE_MODEL`` and config.yaml. ``usage_file`` gets a
     JSON usage report even when the run fails. ``resume`` is a session id (already normalized by
     the CLI layer: latest/title/--continue resolution) whose transcript is loaded and continued
     by this turn. Returns the exit code; the caller owns process termination.
@@ -266,12 +266,12 @@ def run_oneshot(
 
 
 def _create_session_db_for_oneshot():
-    """Best-effort SessionDB — oneshot bypasses ``HermesCLI._init_agent()``, so it must wire the
+    """Best-effort SessionDB — oneshot bypasses ``MoorCLI._init_agent()``, so it must wire the
     SQLite store itself or ``session_search`` is advertised but always unavailable. The registry
     handle is the one in-process tools (delegation, goals) acquire during the run, so the process
     holds one writer; ``_close_agent``'s ``close()`` releases the refcount."""
     try:
-        from hermes_state_registry import acquire
+        from moor_state_registry import acquire
 
         return acquire()
     except Exception as exc:
@@ -356,7 +356,7 @@ def _load_resume_target(session_db, resume: Optional[str]) -> tuple[Optional[str
     ``session_meta`` rows dropped. An unknown session raises (the user passed an explicit id;
     silently starting a fresh session is the resume-dropped failure mode this exists to fix —
     see #105892). An empty stored transcript still returns the resolved id: the turn replays
-    nothing but is recorded under the requested session — ``hermes -z "hello" -c <title>
+    nothing but is recorded under the requested session — ``moor -z "hello" -c <title>
     --create-if-missing`` must fill the titled session it created, not mint a fresh id
     (same contract as the interactive /resume of an empty session).
 
@@ -394,7 +394,7 @@ def _apply_stored_session_runtime(
     re-fetches credentials for the restored provider."""
     if explicit_model:
         return choice
-    from hermes_cli.cli_model_switch_mixin import stored_session_route
+    from moor_cli.cli_model_switch_mixin import stored_session_route
 
     route = stored_session_route(session_meta, current_model=choice.model, current_provider=choice.provider)
     if route is None:
@@ -443,7 +443,7 @@ def _run_agent(
     if choice.api_mode:
         runtime["api_mode"] = choice.api_mode
 
-    from hermes_constants import parse_reasoning_effort, resolve_reasoning_config
+    from moor_constants import parse_reasoning_effort, resolve_reasoning_config
 
     reasoning_config = resolve_reasoning_config(cfg, choice.model)
     if reasoning is not None and str(reasoning).strip():

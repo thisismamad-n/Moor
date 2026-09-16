@@ -29,7 +29,7 @@ def _profile_scoped_rpc(
     ``scoped=False`` ignores ``profile``.
 
     The scope is the same home + secret + terminal composition a turn binds
-    (``_session_profile_runtime_scope``), not HERMES_HOME alone: these bodies read config.yaml,
+    (``_session_profile_runtime_scope``), not MOOR_HOME alone: these bodies read config.yaml,
     whose ``${VAR}`` refs (``config._env_ref_lookup``) and the MCP probe's own header/env
     interpolation resolve through ``get_secret`` — with only the home bound they read plain
     ``os.environ``, i.e. the launch profile's values, so ``mcp.servers.test`` for a secondary
@@ -517,19 +517,19 @@ def _run_plugin_command(handler, arg: str) -> str:
 
 @contextlib.contextmanager
 def _session_home_scope(session):
-    """Bind HERMES_HOME to the session's profile for the block (no-op for the launch profile).
+    """Bind MOOR_HOME to the session's profile for the block (no-op for the launch profile).
 
     Skill/bundle/quick-command resolution is home-keyed (``skills.external_dirs``, ``skill-bundles/``,
     ``quick_commands`` all live in the profile's config/home); nothing upstream of these RPC handlers
     binds it, so an unscoped call resolves against the launch profile (#110695)."""
-    hc = _tools_mod("hermes_constants")
+    hc = _tools_mod("moor_constants")
     profile_home = session.get("profile_home") if session else None
-    token = hc.set_hermes_home_override(profile_home) if profile_home else None
+    token = hc.set_moor_home_override(profile_home) if profile_home else None
     try:
         yield
     finally:
         if token is not None:
-            hc.reset_hermes_home_override(token)
+            hc.reset_moor_home_override(token)
 
 
 def _is_profile_skill_command(session: dict, base: str) -> bool:
@@ -709,7 +709,7 @@ def _cmd_steer(rid, params, session, name, arg):
 
 def _cmd_goal(rid, params, session, name, arg):
     with _session_profile_runtime_scope(session or {}):
-        sid_key, goals, err = _session_key_or_err(rid, session, "hermes_cli.goals", "goals")
+        sid_key, goals, err = _session_key_or_err(rid, session, "moor_cli.goals", "goals")
         if err:
             return err
         try:
@@ -717,7 +717,7 @@ def _cmd_goal(rid, params, session, name, arg):
         except Exception:
             max_turns = 20
         mgr = goals.GoalManager(session_id=sid_key, default_max_turns=max_turns)
-        from hermes_cli.goal_command import dispatch_goal_command
+        from moor_cli.goal_command import dispatch_goal_command
         result = dispatch_goal_command(
             mgr, arg, authorize_gate=lambda: None,
             last_user_message=goals.last_user_message_from_db(sid_key),
@@ -1358,7 +1358,7 @@ def _(rid, params: dict) -> dict:
 @_mcp_rpc("oauth.cancel", _NAME_SESSION)
 def _(rid, params: dict) -> dict:
     """Cancel a flow owned by the resolved profile, waking its callback worker."""
-    home = str(_tools_mod("hermes_constants").get_hermes_home().expanduser().resolve(strict=False))
+    home = str(_tools_mod("moor_constants").get_moor_home().expanduser().resolve(strict=False))
     cancel = _tools_mod("tui_gateway.mcp_oauth_sessions").cancel_flow
     return _ok(rid, cancel(_str_arg(params, "session_id"), _str_arg(params, "name"), home))
 
@@ -1375,8 +1375,8 @@ def _(rid, params: dict) -> dict:
 
 # ─── Plugins ─────────────────────────────────────────────────────────────────
 def _plugin_rows() -> list[dict]:
-    pc = _tools_mod("hermes_cli.plugins_cmd")
-    cat = _tools_mod("hermes_cli.plugins_cmd_catalog")
+    pc = _tools_mod("moor_cli.plugins_cmd")
+    cat = _tools_mod("moor_cli.plugins_cmd_catalog")
     enabled, disabled = pc._get_enabled_set(), pc._get_disabled_set()
     pins = cat.catalog_pins()  # powers the desktop's "Update to <pin>" affordance
     ref_pins = pc._read_install_metadata()  # ``--ref`` installs: pinned_sha so the desktop can show the pin
@@ -1427,7 +1427,7 @@ def _plugins_install(rid, params):
     catalog_name = str(params.get("catalog_name") or "").strip()
     if not ident and not catalog_name:
         return _err(rid, 4019, "plugins.install requires 'identifier', 'repo', or 'catalog_name'")
-    result = _tools_mod("hermes_cli.plugins_cmd").dashboard_install_plugin(
+    result = _tools_mod("moor_cli.plugins_cmd").dashboard_install_plugin(
         ident, force=bool(params.get("force")), enable=params.get("enable", True), catalog_name=catalog_name or None,
         ref=str(params.get("ref") or "").strip() or None)
     return _ok(rid, result) if result.get("ok") else _err(rid, 5026, result.get("error") or "install failed")
@@ -1438,7 +1438,7 @@ def _plugins_update(rid, params):
     name = (params.get("name") or "").strip()
     if not name:
         return _err(rid, 4019, "plugins.update requires a 'name'")
-    pc, cat = _tools_mod("hermes_cli.plugins_cmd"), _tools_mod("hermes_cli.plugins_cmd_catalog")
+    pc, cat = _tools_mod("moor_cli.plugins_cmd"), _tools_mod("moor_cli.plugins_cmd_catalog")
     target = pc._plugins_dir() / name
     sidecar = cat.read_catalog_sidecar(target) if target.is_dir() else None
     if not sidecar:

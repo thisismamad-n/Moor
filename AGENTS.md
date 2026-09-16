@@ -64,7 +64,7 @@ grow: expansive at the edges, conservative at the waist.
   freeze a current value (see Testing).
 - **E2E validation, not just green unit mocks.** Anything touching resolution chains, config
   propagation, security boundaries, remote backends, or file/network I/O must exercise the
-  real path with real imports against a temp `HERMES_HOME` — two of them (A→B→A) when the
+  real path with real imports against a temp `MOOR_HOME` — two of them (A→B→A) when the
   change touches profile scope. Mocks hide integration bugs.
 - **Cache-, alternation-, and invariant-safe.** Preserve prompt caching, strict role
   alternation (never two same-role messages in a row; never a synthetic user message injected
@@ -143,7 +143,7 @@ Choose the highest (least-footprint) rung that correctly solves the problem:
    reachability/opt-in process-wide; a capability that varies per SESSION (who is watching) is
    a named toolset folded in by the toolset resolver, not a `check_fn` — see "Surface capability
    is a property of the SESSION" below.
-4. **Plugin** — third-party/niche/user-specific; lives in `~/.hermes/plugins/` or a pip
+4. **Plugin** — third-party/niche/user-specific; lives in `~/.moor/plugins/` or a pip
    package, discovered at runtime.
 5. **MCP server (in the catalog)** — genuinely a tool but not core-fundamental. Zero permanent
    core-schema footprint, reusable by any MCP host, reached via the built-in MCP client.
@@ -267,11 +267,11 @@ families: `moor_state.py` (21), `gateway/run.py` (15), `tools/mcp_tool.py` (15),
   matchers `gateway.status.looks_like_gateway_command_line` and
   `moor_cli.update_cmd._moor_holder_subcommand`; flag sets are DERIVED from the parser
   (`_holder_value_flags()`), never hand-written; match FULL cmdlines and truncate only for
-  display. Details: `hermes_cli/AGENTS.md`.
-- **Never hardcode `~/.hermes`.** `get_hermes_home()` for code paths, `display_hermes_home()`
-  for user-facing text (both from `hermes_constants`). Hardcoding breaks profiles (5 bugs in
+  display. Details: `moor_cli/AGENTS.md`.
+- **Never hardcode `~/.moor`.** `get_moor_home()` for code paths, `display_moor_home()`
+  for user-facing text (both from `moor_constants`). Hardcoding breaks profiles (5 bugs in
   PR #3575). Profile operations themselves are HOME-anchored
-  (`_get_profiles_root()` = `Path.home()/.hermes/profiles`) so `hermes -p x profile list`
+  (`_get_profiles_root()` = `Path.home()/.moor/profiles`) so `moor -p x profile list`
   sees all profiles — intentional, not a bug.
 - **One process may serve many profiles; code that runs outside a turn binds the owning
   profile scope explicitly.** A profile = home + secret scope + terminal scope, bound by
@@ -280,12 +280,12 @@ families: `moor_state.py` (21), `gateway/run.py` (15), `tools/mcp_tool.py` (15),
   _profile_cron_scope` (ticker), `gateway/run_agent_cache.py::_run_release_in_profile_scope`
   (eviction). `os.environ`, module globals and import-time values hold the *launch* profile's, so
   an unbound read is a silent default-profile leak, never an error: home/config/`.env`-derived
-  module constants are a bug class — key slots by `hermes_home_key()` or resolve at call time.
+  module constants are a bug class — key slots by `moor_home_key()` or resolve at call time.
   Needs a binding: boot probes (`check_fn`, MCP discovery, hooks), session end/eviction, tickers,
   deferred callbacks, RPC methods, config readers, thread hops (`spawn_context_thread`), child
   spawns (`served_profile_child_env`, never `os.environ.copy()`). Fail-closed reads exist only after
   `set_multiplex_active(True)`. Prove live with two homes (A→B→A) under multiplex, not one temp
-  `HERMES_HOME`. Advisory lint: `scripts/check_profile_scope_patterns.py`.
+  `MOOR_HOME`. Advisory lint: `scripts/check_profile_scope_patterns.py`.
 - **Argparse alias dispatch:** `add_parser("list", aliases=["ls"])` sets `dest` to the literal
   the user typed (`"ls"`). Dispatch must accept both (caught PTY-testing `moor webhook ls`).
 - **Don't wire in dead code without E2E validation.** Unshipped code was dead for a reason;
@@ -343,10 +343,10 @@ scripts/run_tests.sh -v --tb=long                       # pytest flags pass thro
   `MOOR_TEST_FILE_RETRIES=0` disables). Pass-on-retry is green but printed under `⚠ FLAKY`
   with both outputs — a bug to fix, not noise. Timing tests must not assume a quiet runner:
   wall-clock bounds ≥ 2s, event-based sync, no `assert not _wait_until(...)` races.
-- **Placement mirrors the source tree.** A test lives in `tests/<top-level source dir>/` (`tests/hermes_cli/`,
-  `tests/agent/`, `tests/hermes_state/`, `tests/gateway/relay/`, ...); installer/updater script tests
+- **Placement mirrors the source tree.** A test lives in `tests/<top-level source dir>/` (`tests/moor_cli/`,
+  `tests/agent/`, `tests/moor_state/`, `tests/gateway/relay/`, ...); installer/updater script tests
   under `tests/scripts/{install,desktop_update}/`. Only tests of root-level modules (`batch_runner`,
-  `utils`, `hermes_constants`, packaging) sit directly in `tests/`. No issue numbers in filenames —
+  `utils`, `moor_constants`, packaging) sit directly in `tests/`. No issue numbers in filenames —
   cite the issue in the module docstring (`test_89315_x.py` → `test_x.py`, "Regression for #89315").
 - **Placement (CI lanes):** `scripts/ci/classify_changes.py` picks jobs by changed files. A Python test
   asserting about `package.json`, `package-lock.json`, `tsconfig.json`, or `.ts/.tsx/.js/

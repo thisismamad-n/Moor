@@ -542,7 +542,7 @@ def _ensure_terminal_env_bridged() -> None:
     env would re-create the first-writer-wins cross-profile leak the scope fixes.
 
     Ambient ``os.environ`` is the *launch* profile's authority only. Under a
-    context-local ``HERMES_HOME`` override (multiplexed dashboard / gateway
+    context-local ``MOOR_HOME`` override (multiplexed dashboard / gateway
     secondary profile), this bridge is a no-op — otherwise the first unscoped
     call under that override would latch the secondary profile's ``terminal.*``
     into process-global env and poison later unscoped launch-profile turns
@@ -556,9 +556,9 @@ def _ensure_terminal_env_bridged() -> None:
     if get_terminal_scope() is not None:
         return
     # Never write a secondary profile's terminal.* into process-global env.
-    from hermes_constants import get_hermes_home_override
+    from moor_constants import get_moor_home_override
 
-    if get_hermes_home_override() is not None:
+    if get_moor_home_override() is not None:
         return
     global _terminal_config_bridge_attempted
     if _terminal_config_bridge_attempted:

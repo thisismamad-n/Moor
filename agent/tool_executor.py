@@ -742,7 +742,7 @@ def _run_agent_tool_execution_middleware(
     from agent.terminal_approval_batch import bind_prepared_dispatch
     _authorized_dispatch = bind_prepared_dispatch(_authorized_dispatch)
 
-    def _hermes_pipeline(relay_args: dict[str, Any]) -> Any:
+    def _moor_pipeline(relay_args: dict[str, Any]) -> Any:
         request_result = apply_tool_request_middleware(
             function_name,
             relay_args,

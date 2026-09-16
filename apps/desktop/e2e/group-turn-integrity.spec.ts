@@ -9,7 +9,7 @@ let fixture: MockBackendFixture | null = null
 
 async function publicLog(page: MockBackendFixture['page']) {
   return page.evaluate(() => {
-    const rooms = JSON.parse(localStorage.getItem('hermes.plugin.hermes-bots.group-chats') || '{}')
+    const rooms = JSON.parse(localStorage.getItem('moor.plugin.moor-bots.group-chats') || '{}')
 
     return (rooms['Programmer, Reviewer']?.log || []).map((entry: any) => ({
       from: entry.from.name, text: entry.text, thread: entry.thread

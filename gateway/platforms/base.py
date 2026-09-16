@@ -298,7 +298,7 @@ def resolve_proxy_url(
     process env another profile's ``TELEGRAM_PROXY``/``DISCORD_PROXY``/etc. may hold; the YAML
     value is the same profile's, so a secondary keeps its configured route without any env
     bridge (#108440). The generic ``HTTPS_PROXY``/``HTTP_PROXY``/``ALL_PROXY`` fallback stays a raw
-    process-env read — those are OS/system-level network settings, not a per-profile Hermes concept."""
+    process-env read — those are OS/system-level network settings, not a per-profile Moor concept."""
     from gateway.platforms._shared import get_scoped_secret as _get_scoped_proxy_var
     value = (_get_scoped_proxy_var(platform_env_var, "") or "").strip() if platform_env_var else ""
     if not value:
@@ -441,11 +441,11 @@ GATEWAY_SECRET_CAPTURE_UNSUPPORTED_MESSAGE = (
 
 # One sentence for every "you may not press/run this" refusal on every platform (slash commands,
 # approval buttons, pickers, prompts). ``{platform}`` is the ``Platform.value`` for the
-# ``hermes pairing approve`` command (hermes_cli/subcommands/pairing.py) that lets the owner fix it.
+# ``moor pairing approve`` command (moor_cli/subcommands/pairing.py) that lets the owner fix it.
 # Kept under 200 chars: Telegram's answerCallbackQuery truncates longer text.
 UNAUTHORIZED_ACTION_NOTICE = (
     "This bot is private and you're not on its allowed list. If you own it, run "
-    "`hermes pairing approve {platform} <request-id>` on the host (`hermes pairing list` shows the id).")
+    "`moor pairing approve {platform} <request-id>` on the host (`moor pairing list` shows the id).")
 
 
 def unauthorized_action_notice(platform: Any) -> str:
@@ -706,11 +706,11 @@ _CACHE_DIR_IMPORT_DEFAULTS = {
 
 # Launch-time homes: fine for the static ALLOW roots below (per-profile cache roots are
 # enumerated at check time), never for the credential DENY side — see _credential_home_roots.
-_HERMES_HOME = get_hermes_home()
-_HERMES_ROOT = get_default_hermes_root()
-MEDIA_DELIVERY_ALLOW_DIRS_ENV = "HERMES_MEDIA_ALLOW_DIRS"
-MEDIA_DELIVERY_TRUST_RECENT_ENV = "HERMES_MEDIA_TRUST_RECENT_FILES"
-MEDIA_DELIVERY_TRUST_RECENT_SECONDS_ENV = "HERMES_MEDIA_TRUST_RECENT_SECONDS"
+_MOOR_HOME = get_moor_home()
+_MOOR_ROOT = get_default_moor_root()
+MEDIA_DELIVERY_ALLOW_DIRS_ENV = "MOOR_MEDIA_ALLOW_DIRS"
+MEDIA_DELIVERY_TRUST_RECENT_ENV = "MOOR_MEDIA_TRUST_RECENT_FILES"
+MEDIA_DELIVERY_TRUST_RECENT_SECONDS_ENV = "MOOR_MEDIA_TRUST_RECENT_SECONDS"
 # Strict mode = allowlist+recency validation; off by default (the denylist still blocks
 # credential / system paths). Set true on public-facing gateways.
 MEDIA_DELIVERY_STRICT_ENV = "MOOR_MEDIA_DELIVERY_STRICT"
@@ -773,18 +773,18 @@ def _profile_cache_roots() -> List[Path]:
 def _profile_dirs() -> List[Path]:
     """Every ``<root>/profiles/<name>`` directory, read at check time."""
     try:
-        return [p for p in (_HERMES_ROOT / "profiles").iterdir() if p.is_dir()]
+        return [p for p in (_MOOR_ROOT / "profiles").iterdir() if p.is_dir()]
     except OSError:
         return []
 
 
 def _credential_home_roots() -> List[Path]:
-    """Every Hermes home whose credential stores the denylist must cover: the ACTIVE home
-    (the per-turn HERMES_HOME override under ``gateway.multiplex_profiles``), the shared root
+    """Every Moor home whose credential stores the denylist must cover: the ACTIVE home
+    (the per-turn MOOR_HOME override under ``gateway.multiplex_profiles``), the shared root
     and every ``<root>/profiles/*``. Enumerated at check time like ``_profile_cache_roots`` on
     the allow side — a denylist frozen at import covers only the launch profile, so a
     ``MEDIA:<root>/profiles/<other>/.env`` emitted in any profile's turn would upload it."""
-    return list(dict.fromkeys((get_hermes_home(), _HERMES_ROOT, *_profile_dirs())))
+    return list(dict.fromkeys((get_moor_home(), _MOOR_ROOT, *_profile_dirs())))
 
 
 def _kanban_root() -> Path:
@@ -1095,7 +1095,7 @@ def validate_media_delivery_path(path: str, session_key: str = "") -> Optional[s
         resolved_root = _resolve_path(root, expand=True)
         if resolved_root is not None and _path_is_within(resolved, resolved_root):
             return str(resolved)
-    # Non-strict (default): anything not denylisted (/etc, /proc, ~/.ssh, Hermes-root secrets).
+    # Non-strict (default): anything not denylisted (/etc, /proc, ~/.ssh, moor-root secrets).
     from gateway.media_policy import media_delivery_strict
     if not media_delivery_strict():
         return None if _path_under_denied_prefix(resolved) else str(resolved)
@@ -1851,7 +1851,7 @@ class BasePlatformAdapter(ABC):
     interactive_resume: bool = True
     # Port-binding adapter that answers ``/p/<profile>/...`` for every served profile on the default
     # listener under ``gateway.multiplex_profiles``. Declared per adapter (not in a central list) so
-    # ``hermes gateway migrate`` can tell "URL changes" from "this profile would be skipped" as new
+    # ``moor gateway migrate`` can tell "URL changes" from "this profile would be skipped" as new
     # HTTP-inbound adapters gain the prefix.
     serves_profile_prefix: bool = False
     # Back-reference to the running ``GatewayRunner`` (set by gateway/run.py); ``build_source``

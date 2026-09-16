@@ -204,15 +204,15 @@ moor-agent/
 
 | Ruta | Propósito |
 |------|-----------|
-| `~/.hermes/config.yaml` | Configuración (modelo, terminal, toolsets, compresión, etc.) |
-| `~/.hermes/.env` | Claves API y secretos |
-| `~/.hermes/auth.json` | Credenciales OAuth (Nous Portal) |
-| `~/.hermes/skills/` | Todas las habilidades activas (incluidas + instaladas desde hub + creadas por el agente) |
-| `~/.hermes/memories/` | Memoria persistente (MEMORY.md, USER.md) |
-| `~/.hermes/state.db` | Base de datos de sesiones SQLite |
-| `~/.hermes/sessions/` | Índice de enrutamiento del gateway (`sessions.json`), migas de pan de solicitudes, transcripciones `*.jsonl` del gateway y exportaciones explícitas con `/save`. Ya no se escriben snapshots JSON automáticos; los archivos existentes se conservan y state.db es canónica. |
-| `~/.hermes/cron/` | Datos de trabajos programados |
-| `~/.hermes/whatsapp/session/` | Credenciales del puente WhatsApp |
+| `~/.moor/config.yaml` | Configuración (modelo, terminal, toolsets, compresión, etc.) |
+| `~/.moor/.env` | Claves API y secretos |
+| `~/.moor/auth.json` | Credenciales OAuth (Moor Portal) |
+| `~/.moor/skills/` | Todas las habilidades activas (incluidas + instaladas desde hub + creadas por el agente) |
+| `~/.moor/memories/` | Memoria persistente (MEMORY.md, USER.md) |
+| `~/.moor/state.db` | Base de datos de sesiones SQLite |
+| `~/.moor/sessions/` | Índice de enrutamiento del gateway (`sessions.json`), migas de pan de solicitudes, transcripciones `*.jsonl` del gateway y exportaciones explícitas con `/save`. Ya no se escriben snapshots JSON automáticos; los archivos existentes se conservan y state.db es canónica. |
+| `~/.moor/cron/` | Datos de trabajos programados |
+| `~/.moor/whatsapp/session/` | Credenciales del puente WhatsApp |
 
 ---
 

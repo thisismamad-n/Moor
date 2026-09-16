@@ -21,8 +21,8 @@ To easily install the command-line and desktop applications, [download the Moor 
 The macOS installer is **Apple Silicon only**. macOS on x86 (Intel) processors is [not a supported platform](./platform-support.md#unsupported).
 :::
 
-### Without Hermes Desktop:
-For a command-line only install without Hermes Desktop, run:
+### Without Moor Desktop:
+For a command-line only install without Moor Desktop, run:
 
 #### Linux / macOS / WSL2 / Android (Termux)
 ```bash
@@ -177,21 +177,21 @@ For more diagnostics, run `moor doctor` — it will tell you exactly what's miss
 
 ### Symlinked home directories and external storage
 
-Hermes supports a symlinked `HERMES_HOME` and symlinked home subdirectories,
+Moor supports a symlinked `MOOR_HOME` and symlinked home subdirectories,
 including `hooks`, `skills`, `sessions`, and `logs`. During home initialization,
 existing directory links are preserved, and permissions on linked directories
 (and descendants such as `logs/curator`) are left to their owner.
 
 If a link target is missing, inaccessible, or not a directory, initialization
-stops with a storage error naming the path and link target. Hermes does **not**
+stops with a storage error naming the path and link target. Moor does **not**
 replace the link or create its missing target: doing so could write data onto
 the local disk while an external or NAS volume is unmounted. Check the reported
 link, restore the mount or correct its target, and verify access permissions
 before retrying. For a deliberately new dotfiles target, create it yourself only
 after confirming the intended storage is available.
 
-`hermes doctor` reports these failures as storage problems, not invalid YAML.
-Keep your existing `config.yaml`; running `hermes setup` is not the repair for an
+`moor doctor` reports these failures as storage problems, not invalid YAML.
+Keep your existing `config.yaml`; running `moor setup` is not the repair for an
 unavailable directory. This is a directory-availability check, not a mount monitor:
 an existing directory cannot establish that the intended volume is mounted.
 

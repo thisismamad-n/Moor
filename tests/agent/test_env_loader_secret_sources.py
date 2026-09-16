@@ -739,19 +739,19 @@ def test_env_shadowed_reapply_keeps_home_snapshot(tmp_path, monkeypatch, _fresh_
     lifetime under multiplex."""
     from agent.secret_scope import build_profile_secret_scope
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     (home / "config.yaml").write_text("secrets:\n  fakebulk:\n    enabled: true\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.delenv("GLM_API_KEY", raising=False)
     _register_fake_bulk_source(lambda _home: "vault-value")
 
-    env_loader.load_hermes_dotenv(hermes_home=home)
+    env_loader.load_moor_dotenv(moor_home=home)
     assert env_loader.get_secret_source_values(home) == {"GLM_API_KEY": "vault-value"}
 
     # cron per-fire / plugin-discovery re-pull: reset + reload with the key now shadowing itself.
     env_loader.reset_secret_source_cache()
-    env_loader.load_hermes_dotenv(hermes_home=home)
+    env_loader.load_moor_dotenv(moor_home=home)
 
     assert str(home.resolve()) in env_loader._APPLIED_HOMES
     assert env_loader.hydrate_profile_secret_sources(home) == {"GLM_API_KEY": "vault-value"}
@@ -761,16 +761,16 @@ def test_env_shadowed_reapply_keeps_home_snapshot(tmp_path, monkeypatch, _fresh_
 def test_home_scoped_reset_preserves_sibling_snapshot(tmp_path, monkeypatch, _fresh_registry):
     """A cron fire / discovery refresh for one profile resets only THAT home: a multiplex sibling's
     hydrated snapshot stays intact instead of running empty until it re-hydrates."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     sibling = home / "profiles" / "b"
     sibling.mkdir(parents=True)
     for h in (home, sibling):
         (h / "config.yaml").write_text("secrets:\n  fakebulk:\n    enabled: true\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.delenv("GLM_API_KEY", raising=False)
     _register_fake_bulk_source(lambda h: f"vault-{h.name}")
 
-    env_loader.load_hermes_dotenv(hermes_home=home)
+    env_loader.load_moor_dotenv(moor_home=home)
     assert env_loader.hydrate_profile_secret_sources(sibling) == {"GLM_API_KEY": "vault-b"}
 
     env_loader.reset_secret_source_cache(home)

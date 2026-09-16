@@ -175,7 +175,7 @@ class TestShouldExclude:
     def test_excludes_regenerable_cache_but_keeps_durable_artifacts(self):
         """Catalogs and live browser profiles are rebuilt on demand; delivered media and the
         citation ledger are not, so they stay in the archive."""
-        from hermes_cli.backup import _should_exclude
+        from moor_cli.backup import _should_exclude
         assert _should_exclude(Path("cache/model_catalog.json"))
         assert _should_exclude(Path("cache/chrome-debug/Default/Cookies"))
         assert _should_exclude(Path("profiles/sage/cache/chrome-debug/cache.db"))
@@ -245,9 +245,9 @@ class TestIterBackupFiles:
         assert not any(s.startswith("moor-agent") for s in selected)
 
     def test_prunes_regenerable_caches_but_keeps_durable_and_nested(self, tmp_path):
-        from hermes_cli.backup import _iter_backup_files
+        from moor_cli.backup import _iter_backup_files
 
-        root = tmp_path / ".hermes"
+        root = tmp_path / ".moor"
         root.mkdir()
         files = {
             "cache/model_catalog.json": False,
@@ -286,9 +286,9 @@ class TestIterBackupFiles:
 
     @pytest.mark.linux_only
     def test_skips_unix_sockets(self, tmp_path, monkeypatch):
-        from hermes_cli.backup import _iter_backup_files
+        from moor_cli.backup import _iter_backup_files
 
-        root = tmp_path / ".hermes"
+        root = tmp_path / ".moor"
         root.mkdir()
         # AF_UNIX paths are capped at ~108 bytes; pytest's tmp_path overflows that under the
         # test runner's deep temp root, so bind by a relative name from inside ``root``.
@@ -2480,22 +2480,22 @@ def _count_rows(db_path: Path) -> tuple[int, int]:
 
 
 def test_run_backup_prunes_older_default_named_zips_but_not_others(tmp_path, monkeypatch):
-    """Hourly `hermes backup` callers accumulated 150+ zips; --keep bounds the default-named
+    """Hourly `moor backup` callers accumulated 150+ zips; --keep bounds the default-named
     ones and leaves custom-named or foreign zips alone (#81317)."""
     from argparse import Namespace
-    from hermes_cli import backup as backup_mod
+    from moor_cli import backup as backup_mod
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     (home / "config.yaml").write_text("model: x\n")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     for i in range(4):
-        (tmp_path / f"hermes-backup-2026-01-0{i + 1}-000000.zip").write_bytes(b"old")
+        (tmp_path / f"moor-backup-2026-01-0{i + 1}-000000.zip").write_bytes(b"old")
     (tmp_path / "my-archive.zip").write_bytes(b"mine")
 
     backup_mod.run_backup(Namespace(output=None, keep=2))
 
-    kept = sorted(p.name for p in tmp_path.glob("hermes-backup-*.zip"))
-    assert len(kept) == 2 and kept[0] == "hermes-backup-2026-01-04-000000.zip"
+    kept = sorted(p.name for p in tmp_path.glob("moor-backup-*.zip"))
+    assert len(kept) == 2 and kept[0] == "moor-backup-2026-01-04-000000.zip"
     assert (tmp_path / "my-archive.zip").exists()

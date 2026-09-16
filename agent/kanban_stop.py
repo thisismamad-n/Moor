@@ -18,12 +18,12 @@ _DEFAULT_MAX_ATTEMPTS = 2
 
 
 def kanban_stop_nudge_enabled() -> bool:
-    """On when ``HERMES_KANBAN_TASK`` is set for the dispatcher-owned worker, unless
-    ``HERMES_KANBAN_STOP_NUDGE`` disables it. In-process delegate_task children and cron runs
+    """On when ``MOOR_KANBAN_TASK`` is set for the dispatcher-owned worker, unless
+    ``MOOR_KANBAN_STOP_NUDGE`` disables it. In-process delegate_task children and cron runs
     inherit the env var but own no board task and carry no kanban toolset."""
-    if (os.environ.get("HERMES_KANBAN_STOP_NUDGE") or "").strip().lower() in {"0", "false", "no", "off"}:
+    if (os.environ.get("MOOR_KANBAN_STOP_NUDGE") or "").strip().lower() in {"0", "false", "no", "off"}:
         return False
-    return bool((os.environ.get("HERMES_KANBAN_TASK") or "").strip()) and is_dispatcher_owned_worker_context()
+    return bool((os.environ.get("MOOR_KANBAN_TASK") or "").strip()) and is_dispatcher_owned_worker_context()
 
 
 def _tool_call_name(tc: Any) -> str:

@@ -1128,7 +1128,7 @@ class GatewayTurnMixin:
                     source, attempt.meta,
                     "⚠️ Shortening the conversation history failed, so I kept everything as-is. "
                     "Run /compress to try again or /new to start fresh. If this keeps happening, "
-                    "run `hermes doctor` on the host.",
+                    "run `moor doctor` on the host.",
                     "compression-failure warning",
                 )
         # Configured aux model failed, recovered on the main model: only the user can fix that config.
@@ -1876,11 +1876,11 @@ class GatewayTurnMixin:
 
         return response
 
-    # Chat-side next steps keyed by HTTP status; Hermes commands only (/login is the gateway's own
-    # sign-in, `hermes auth add <provider>` the host equivalent).
+    # Chat-side next steps keyed by HTTP status; Moor commands only (/login is the gateway's own
+    # sign-in, `moor auth add <provider>` the host equivalent).
     _STATUS_HINTS = {
         401: (" Your sign-in to the AI model service has expired or the API key is wrong. "
-              "Use /login here, or run `hermes auth add <provider>` on the host."),
+              "Use /login here, or run `moor auth add <provider>` on the host."),
         402: " Your AI model service balance or quota is used up. Top it up on the service's website, or use /model to switch models.",
         529: " The AI model service is temporarily overloaded. Wait a moment, then use /retry.",
     }
@@ -1933,7 +1933,7 @@ class GatewayTurnMixin:
         return self._hmwa_add_failed_turn_notice(
             f"⚠️ Something went wrong and I couldn't finish this reply.{status_hint}\n"
             "Use /retry to try again, or /new to start a fresh conversation. "
-            "Technical details are in the gateway log (`hermes logs`).",
+            "Technical details are in the gateway log (`moor logs`).",
             self._PARTIAL_FAILED_TURN_NOTICE,
         )
 
@@ -2279,7 +2279,7 @@ class GatewayTurnMixin:
                 await adapter.send(
                     source.chat_id,
                     "❌ The background task couldn't start because no AI model sign-in is "
-                    "configured. Use /login, or run `hermes setup` on the host.",
+                    "configured. Use /login, or run `moor setup` on the host.",
                     metadata=_thread_metadata,
                 )
                 return
@@ -2454,7 +2454,7 @@ class GatewayTurnMixin:
             # Explicit reload also re-probes tool availability (check_fn).
             reprobe_tool_availability()
             # Reconnect by discovering tools (reads config.yaml fresh). A chat command cannot finish
-            # a browser OAuth flow either: an expired token parks with a `hermes mcp login` hint.
+            # a browser OAuth flow either: an expired token parks with a `moor mcp login` hint.
             from tools.mcp_oauth import suppress_interactive_oauth
             with suppress_interactive_oauth():
                 new_tools = await self._run_in_executor_with_context(discover_mcp_tools)
@@ -2807,7 +2807,7 @@ class GatewayTurnMixin:
 
         # Resolve the mode and its provenance together: null inherits, tier off is not intent.
         progress_mode, _tool_progress_explicit = resolve_tool_progress(
-            user_config, platform_key, os.getenv("HERMES_TOOL_PROGRESS_MODE"),
+            user_config, platform_key, os.getenv("MOOR_TOOL_PROGRESS_MODE"),
         )
         # "accumulate" (edit one bubble) or "separate" (one msg per tool)
         progress_grouping = resolve_display_setting(user_config, platform_key, "tool_progress_grouping") or "accumulate"

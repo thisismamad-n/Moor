@@ -8,10 +8,10 @@ import sqlite3
 from pathlib import Path
 from typing import Sequence
 
-from hermes_constants import get_hermes_home
-from hermes_state_common import (FTS_CJK_STALE_KEY, FTS_STALE_KEY, _FTS_CJK_TRIGGERS, _FTS_TRIGGERS,
+from moor_constants import get_moor_home
+from moor_state_common import (FTS_CJK_STALE_KEY, FTS_STALE_KEY, _FTS_CJK_TRIGGERS, _FTS_TRIGGERS,
     routed_sessions_setting)
-from hermes_state_errors import is_fts_scoped_corruption_error
+from moor_state_errors import is_fts_scoped_corruption_error
 
 # caplog tests pin the "moor_state" logger name.
 logger = logging.getLogger("moor_state")
@@ -104,7 +104,7 @@ def fts5_cjk_so_path() -> Path:
 
 def _cjk_fts_config_enabled() -> bool:
     """config.yaml ``sessions.cjk_fts`` (default on) for the profile being served."""
-    value = routed_sessions_setting("cjk_fts", "HERMES_CJK_FTS")
+    value = routed_sessions_setting("cjk_fts", "MOOR_CJK_FTS")
     return value is None or str(value).strip().lower() not in ("0", "false", "off", "no")
 
 
@@ -347,7 +347,7 @@ class SessionFtsSetupMixin:
         """Corruption SQLite identifies as FTS-scoped (SQLITE_CORRUPT_VTAB, or an ``fts5:``
         report naming ``messages_fts*`` on builds without result codes); a bare malformed
         image is structural. One rule, shared with ``classify_persistence_error`` and the
-        gateway transcript retry: see :func:`hermes_state_errors.is_fts_scoped_corruption_error`."""
+        gateway transcript retry: see :func:`moor_state_errors.is_fts_scoped_corruption_error`."""
         return is_fts_scoped_corruption_error(exc)
 
     def _enter_fts_fail_open(self, exc: sqlite3.DatabaseError) -> bool:

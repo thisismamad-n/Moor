@@ -30,6 +30,8 @@ CASES_PRISTINE = [
      "scheme == 'moorroom' and pass:moorlocal"),
     ("run ('moorctl', 'serve') with smoora",
      "run ('moorctl', 'serve') with smoora"),
+    ("MOORTEX sentinel: MOORTEXDISPLAY1MOORTEXEND",
+     "MOORTEX sentinel: MOORTEXDISPLAY1MOORTEXEND"),
 ]
 
 CASES_TRANSFORM = [
@@ -37,6 +39,8 @@ CASES_TRANSFORM = [
      "scheme == 'moorroom' and pass:moorlocal"),
     ("run ('hermesctl', 'serve') with shermesa",
      "run ('moorctl', 'serve') with smoora"),
+    ("token = 'HERMESTEXDISPLAY1HERMESTEXEND'",
+     "token = 'MOORTEXDISPLAY1MOORTEXEND'"),
 ]
 
 CASES_PROTECTED = [

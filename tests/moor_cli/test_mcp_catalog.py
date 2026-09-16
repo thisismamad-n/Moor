@@ -424,8 +424,8 @@ class TestInstall:
     def test_empty_discovery_reinstall_keeps_explicit_empty_include(self, catalog_dir, monkeypatch):
         """A probe that succeeds with zero tools must not widen a deliberate ``include: []``
         to "all tools" (#12865): the block-all choice survives until the user changes it."""
-        import hermes_cli.mcp_catalog as mc
-        from hermes_cli.config import load_config, save_config
+        import moor_cli.mcp_catalog as mc
+        from moor_cli.config import load_config, save_config
 
         monkeypatch.setattr(mc, "_probe_tools", lambda name: [])
         _write_manifest(catalog_dir, "demo", _basic_manifest())
@@ -765,7 +765,7 @@ class TestGitInstallShaRef:
 
         monkeypatch.setattr(mcp_catalog.subprocess, "run", fake_run)
         monkeypatch.setattr(mcp_catalog.shutil, "which", lambda x: "/usr/bin/git")
-        from hermes_cli import git_credentials
+        from moor_cli import git_credentials
         monkeypatch.setattr(git_credentials, "resolve_git_basic_auth", lambda url: None)
 
         from moor_cli.mcp_catalog import get_entry

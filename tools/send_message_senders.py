@@ -298,7 +298,7 @@ def _live_adapter(platform, *, lookup_failed_warning=None):
     ``runner.adapters`` hit — that map holds the default profile's bots, so a secondary profile's turn
     would post/react with the default bot's identity. A profile with no adapter for the platform
     yields ``None`` (fail closed → the caller's scoped standalone sender or an error), never the
-    default bot. Same resolver shape as ``hermes_cli/platform_actions.py::_resolve_adapter``."""
+    default bot. Same resolver shape as ``moor_cli/platform_actions.py::_resolve_adapter``."""
     try:
         from gateway.run import _gateway_runner_ref
         runner = _gateway_runner_ref()
@@ -310,7 +310,7 @@ def _live_adapter(platform, *, lookup_failed_warning=None):
         resolve = getattr(runner, "_authorization_adapter", None)
         if not callable(resolve):  # bare runner stubs without the authz mixin
             return runner, runner.adapters.get(platform)
-        from hermes_cli.profiles import get_active_profile_name
+        from moor_cli.profiles import get_active_profile_name
         return runner, resolve(platform, get_active_profile_name())
     except Exception:
         if lookup_failed_warning:

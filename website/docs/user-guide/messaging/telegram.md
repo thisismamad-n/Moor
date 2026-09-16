@@ -10,7 +10,7 @@ Moor Agent integrates with Telegram as a full-featured conversational bot. Once 
 
 ## Quick setup (dashboard and desktop app)
 
-The **Messaging → Telegram** page in the [dashboard](../features/web-dashboard.md) and the [desktop app](../desktop.md) has a **Create with QR** button. Scan the code (or open the link) in Telegram; Hermes creates the bot for you, detects your Telegram user ID, writes `TELEGRAM_BOT_TOKEN` and `TELEGRAM_ALLOWED_USERS` into your profile's `.env`, and restarts the gateway. If you prefer to create the bot yourself, follow the manual steps below.
+The **Messaging → Telegram** page in the [dashboard](../features/web-dashboard.md) and the [desktop app](../desktop.md) has a **Create with QR** button. Scan the code (or open the link) in Telegram; Moor creates the bot for you, detects your Telegram user ID, writes `TELEGRAM_BOT_TOKEN` and `TELEGRAM_ALLOWED_USERS` into your profile's `.env`, and restarts the gateway. If you prefer to create the bot yourself, follow the manual steps below.
 
 ## Step 1: Create a Bot via BotFather
 
@@ -582,7 +582,7 @@ telegram:
 
 With this setup, a group message like `@research_bot @ops_bot summarize this` is processed by `research_bot` and `ops_bot` only. Other Moor bots in the group stay silent, even if the message is a reply to one of their earlier messages or would otherwise match a shared wake word.
 
-Two Hermes bots that answer each other's quote-replies can still loop forever with `TELEGRAM_ALLOW_BOTS=all`, because a reply to the bot always passes the `require_mention` gate. Setting `telegram.bots_require_mention: true` (env `TELEGRAM_BOTS_REQUIRE_MENTION`) closes that path: a message from another bot only triggers a response when it explicitly `@mentions` this bot, while human replies keep working unchanged.
+Two Moor bots that answer each other's quote-replies can still loop forever with `TELEGRAM_ALLOW_BOTS=all`, because a reply to the bot always passes the `require_mention` gate. Setting `telegram.bots_require_mention: true` (env `TELEGRAM_BOTS_REQUIRE_MENTION`) closes that path: a message from another bot only triggers a response when it explicitly `@mentions` this bot, while human replies keep working unchanged.
 
 A bot-to-bot loop guard also meters every chat where bot-authored messages are admitted (`TELEGRAM_ALLOW_BOTS` set to `mentions` or `all`). Once 20 bot messages land in one chat inside 5 minutes, further bot messages in that chat are dropped for 10 minutes and one warning is logged; human messages are never counted or dropped. Settings live in `config.yaml`:
 
@@ -597,7 +597,7 @@ gateway:
 
 A legitimate high-volume bot posting more than 20 messages into one chat in 5 minutes trips the guard too; raise `max_events` for that gateway.
 
-Group conversation text and media captions keep every mention when the message names other participants too (`@research_bot , @ops_bot are you both listening?` reaches `research_bot` verbatim); when this bot is the only one addressed, its own handle is still stripped so short answers such as `@hermes_bot 2` keep working. Group turns also carry the bot's own Telegram username in the per-channel context so the model can tell which retained mentions are for it. Slash commands still use the normal command-trigger cleanup.
+Group conversation text and media captions keep every mention when the message names other participants too (`@research_bot , @ops_bot are you both listening?` reaches `research_bot` verbatim); when this bot is the only one addressed, its own handle is still stripped so short answers such as `@moor_bot 2` keep working. Group turns also carry the bot's own Telegram username in the per-channel context so the model can tell which retained mentions are for it. Slash commands still use the normal command-trigger cleanup.
 
 Set `exclusive_bot_mentions: false` only for legacy groups where explicit mentions should not override reply and wake-word triggers.
 
@@ -1022,7 +1022,7 @@ gateway:
         allow_cjk_rich_messages: false
 ```
 
-This setting is for client-rendering/copy compatibility; Hermes already falls back automatically when Telegram rejects the rich API call. `rich_drafts` controls whether the DM streaming preview *renders* rich (`sendRichMessageDraft`) and stays off by default because Telegram Desktop/macOS can visually overlay rich draft frames until the chat redraws; with it off, the preview streams plain and the final still arrives as a native Rich Message.
+This setting is for client-rendering/copy compatibility; Moor already falls back automatically when Telegram rejects the rich API call. `rich_drafts` controls whether the DM streaming preview *renders* rich (`sendRichMessageDraft`) and stays off by default because Telegram Desktop/macOS can visually overlay rich draft frames until the chat redraws; with it off, the preview streams plain and the final still arrives as a native Rich Message.
 
 CJK text (Chinese, Japanese, Korean, and rare Han extensions) stays on the legacy MarkdownV2 path by default because affected Telegram Desktop/macOS clients have rendered Bot API rich messages with overlapping CJK glyph artifacts. If you use an unaffected client and prefer native rich tables/task lists/details/math for CJK payloads, set `allow_cjk_rich_messages: true` alongside `rich_messages: true` to opt in to that client-side risk.
 

@@ -2,7 +2,7 @@
 
 import pytest
 
-from hermes_cli.web_server_lifecycle import (
+from moor_cli.web_server_lifecycle import (
     _is_serve_orphaned,
     _parent_start_marker_mismatch_is_conclusive,
     _valid_parent_start_marker,
@@ -206,7 +206,7 @@ def test_ps_marker_probe_classifies_missing_process_vs_other_ps_failures(monkeyp
     of killing a healthy backend."""
     import subprocess
 
-    from hermes_cli import web_server_lifecycle
+    from moor_cli import web_server_lifecycle
 
     def fake_run(stderr):
         return lambda *a, **k: subprocess.CompletedProcess(args=a, returncode=2, stdout="", stderr=stderr)

@@ -1,4 +1,4 @@
-"""Catalog-aware ``hermes plugins`` surface (hermes_cli/plugins_cmd_catalog.py): a bare catalog name installs
+"""Catalog-aware ``moor plugins`` surface (moor_cli/plugins_cmd_catalog.py): a bare catalog name installs
 the PINNED sha and records provenance; the kill list blocks every install path (CLI needs an explicit
 bypass, dashboard/TUI have none); ``update`` re-pins instead of pulling. Real git, file:// repos."""
 
@@ -12,9 +12,9 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import plugin_catalog as pc_cat
-from hermes_cli import plugins_cmd as pc
-from hermes_cli import plugins_cmd_catalog as cat
+from moor_cli import plugin_catalog as pc_cat
+from moor_cli import plugins_cmd as pc
+from moor_cli import plugins_cmd_catalog as cat
 
 pytestmark = pytest.mark.skipif(shutil.which("git") is None, reason="git not available")
 

@@ -65,9 +65,9 @@ def test_sessiondb_quarantines_page_zero_clobber_before_open(tmp_path, monkeypat
     """#102198: preserve a non-SQLite page 0 instead of opening degraded."""
     import sqlite3
 
-    import hermes_state as hs
+    import moor_state as hs
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     db = tmp_path / "state.db"
     clobbered = (b"bg_032237_0e4ce7A" * 256)[:4096]
     db.write_bytes(clobbered)

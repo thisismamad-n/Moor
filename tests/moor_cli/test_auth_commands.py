@@ -295,7 +295,7 @@ def test_auth_list_includes_non_registry_configured_provider(
 
 
 def test_auth_list_shows_entry_id_and_priority(tmp_path, monkeypatch, capsys):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "moor"))
     _write_auth_store(
         tmp_path,
         {
@@ -324,7 +324,7 @@ def test_auth_list_shows_entry_id_and_priority(tmp_path, monkeypatch, capsys):
         },
     )
 
-    from hermes_cli.auth_commands import auth_list_command
+    from moor_cli.auth_commands import auth_list_command
 
     auth_list_command(type("Args", (), {"provider": "openrouter"})())
 
@@ -1169,17 +1169,17 @@ def test_qwen_oauth_login_marks_active_through_moved_owner(monkeypatch):
 
 
 def test_auth_add_openrouter_oauth_persists_pkce_key_without_touching_api_key_default(tmp_path, monkeypatch):
-    """`hermes auth add openrouter --type oauth` stores the PKCE-minted key as an ``api_key`` pool row
+    """`moor auth add openrouter --type oauth` stores the PKCE-minted key as an ``api_key`` pool row
     (OpenRouter returns a plain key, no refresh pair) that ``resolve_provider("auto")`` picks up with no
     env var — same as a pasted key; the bare `--api-key` path keeps its API-key default."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "moor"))
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
-    monkeypatch.setattr("hermes_cli.auth._openrouter_pkce_login", lambda **kw: {"api_key": "sk-or-v1-from-pkce"})
+    monkeypatch.setattr("moor_cli.auth._openrouter_pkce_login", lambda **kw: {"api_key": "sk-or-v1-from-pkce"})
 
-    from hermes_cli.auth import resolve_provider
-    from hermes_cli.auth_commands import auth_add_command
+    from moor_cli.auth import resolve_provider
+    from moor_cli.auth_commands import auth_add_command
 
     class _Oauth:
         provider = "openrouter"
@@ -1200,7 +1200,7 @@ def test_auth_add_openrouter_oauth_persists_pkce_key_without_touching_api_key_de
     assert resolve_provider("auto") == "openrouter"
     auth_add_command(_Plain())
 
-    payload = json.loads((tmp_path / "hermes" / "auth.json").read_text())
+    payload = json.loads((tmp_path / "moor" / "auth.json").read_text())
     by_source = {e["source"]: e for e in payload["credential_pool"]["openrouter"]}
     assert by_source["manual:openrouter_pkce"]["auth_type"] == "api_key"
     assert by_source["manual:openrouter_pkce"]["access_token"] == "sk-or-v1-from-pkce"
@@ -1216,7 +1216,7 @@ def test_openrouter_loopback_callback_binds_nonce_path_and_rejects_forged_redire
     import urllib.parse
     import urllib.request
 
-    import hermes_cli.auth_openrouter as orm
+    import moor_cli.auth_openrouter as orm
 
     seen: dict = {}
 

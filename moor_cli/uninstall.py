@@ -192,7 +192,7 @@ def uninstall_gateway_service():
 
 def _remove_systemd_gateway() -> bool:
     """Linux: uninstall systemd services (both user and system scopes)."""
-    from hermes_cli.gateway import (
+    from moor_cli.gateway import (
         _systemctl_cmd, _systemd_unit_belongs_to_current_home, get_service_name, get_systemd_unit_path,
     )
     svc_name = get_service_name()
@@ -425,7 +425,7 @@ def run_gui_uninstall(args):
     skip_confirm = bool(getattr(args, "yes", False))
 
     print()
-    _print_box("│         ☤ Hermes Chat GUI Uninstaller                  │", Colors.MAGENTA)
+    _print_box("│         ☤ Moor Chat GUI Uninstaller                  │", Colors.MAGENTA)
     print()
 
     if not summary["gui_installed"]:
@@ -489,7 +489,7 @@ def run_uninstall(args):
         return
 
     print()
-    _print_box("│            ☤ Hermes Agent Uninstaller                  │", Colors.MAGENTA)
+    _print_box("│            ☤ Moor Agent Uninstaller                  │", Colors.MAGENTA)
     print()
 
     # Show what will be affected
@@ -697,7 +697,7 @@ def _perform_uninstall(
     for line, col in _RELOAD_HINT[windows]:
         print(color(line, col) if col else line)
     print()
-    print("Thank you for using Hermes Agent! ☤")
+    print("Thank you for using Moor Agent! ☤")
     print()
 
 

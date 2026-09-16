@@ -505,7 +505,7 @@ def test_do_update_unmodified_skill_updates_normally(monkeypatch, tmp_path):
 
 def _stale_env(monkeypatch):
     """do_install where the index has metadata but the files are gone (404)."""
-    import hermes_cli.skills_hub as cli_hub
+    import moor_cli.skills_hub as cli_hub
     import tools.skills_hub as hub
 
     class StaleSource:
@@ -525,7 +525,7 @@ def _stale_env(monkeypatch):
 
 def test_do_install_stale_index_names_the_problem(monkeypatch):
     """Index hit + missing files reads as a stale entry, not a typo (#3259)."""
-    from hermes_cli.skills_hub import do_install
+    from moor_cli.skills_hub import do_install
 
     console, sink = _stale_env(monkeypatch)
     do_install("skills-sh/org/gone-skill", console=console, skip_confirm=True)
@@ -540,9 +540,9 @@ def test_do_install_stale_index_names_the_problem(monkeypatch):
 def test_do_install_generic_when_no_index_hit_or_rate_limited(monkeypatch, meta_hit):
     """No index hit — or a throttled fetch that only *looks* like a stale entry — keeps the
     generic message (plus the rate-limit hint), never the stale-entry verdict."""
-    import hermes_cli.skills_hub as cli_hub
+    import moor_cli.skills_hub as cli_hub
     import tools.skills_hub as hub
-    from hermes_cli.skills_hub import do_install
+    from moor_cli.skills_hub import do_install
 
     class ThrottledSource:
         is_rate_limited = meta_hit

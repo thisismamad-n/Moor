@@ -48,7 +48,7 @@ GetFilesFn = Callable[[], list[tuple[str, str]]]  # () -> [(host_path, remote_pa
 _SYNC_BACK_MAX_RETRIES = 3
 _SYNC_BACK_BACKOFF = (2, 4, 8)  # seconds between retries
 _SYNC_BACK_MAX_BYTES = 2 * 1024 * 1024 * 1024  # 2 GiB — refuse to extract larger tars
-_SYNC_BACK_TEMP_PREFIX = "hermes-sync-back-"
+_SYNC_BACK_TEMP_PREFIX = "moor-sync-back-"
 # A sync-back temp entry (the downloaded tar or the extraction staging dir) is only leaked by
 # a hard kill (SIGKILL/OOM/power loss — the ``finally`` never runs), so anything older than
 # this is safe to reclaim; a live transfer is hours younger than the cutoff.
@@ -199,7 +199,7 @@ class FileSyncManager:
         try:
             # Hash and upload the same bytes: the original may be saved while
             # the transport is reading it or waiting for remote acknowledgement.
-            with tempfile.TemporaryDirectory(prefix="hermes-sync-push-") as staging:
+            with tempfile.TemporaryDirectory(prefix="moor-sync-push-") as staging:
                 staged_files = []
                 pushed_hashes = {}
                 for index, (host_path, remote_path) in enumerate(to_upload):

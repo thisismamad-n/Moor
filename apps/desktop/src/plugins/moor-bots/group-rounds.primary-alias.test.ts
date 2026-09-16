@@ -5,7 +5,7 @@ import { durableGroupChatMembers, groupMemberKey } from './group-membership'
 import { parseGroupChatMentions, resolveGroupResponders, unaddressedGroupMentions } from './group-rounds'
 import type { GroupMember, GroupMessage } from './types'
 
-vi.mock('@hermes/plugin-sdk', async () => {
+vi.mock('@moor/plugin-sdk', async () => {
   const { atom } = await import('nanostores')
 
   return {
@@ -16,21 +16,21 @@ vi.mock('@hermes/plugin-sdk', async () => {
     useValue: vi.fn()
   }
 })
-vi.mock('./shared', () => ({ getPluginCtx: () => null, ID: 'hermes-bots' }))
+vi.mock('./shared', () => ({ getPluginCtx: () => null, ID: 'moor-bots' }))
 
 beforeEach(() => $groupChats.set({}))
 
 it('keeps primary handoffs callable in both directions across persisted descriptor shapes', () => {
-  for (const handle of [undefined, 'default', 'hermes']) {
+  for (const handle of [undefined, 'default', 'moor']) {
     const original: GroupMember[] = [{ name: 'default', handle }, { name: 'code-farmer' }]
 
     const durable = durableGroupChatMembers(original)
-    expect(durable.map(member => member.handle)).toEqual(['hermes', 'code-farmer'])
+    expect(durable.map(member => member.handle)).toEqual(['moor', 'code-farmer'])
 
     for (const members of [original, durable]) {
       for (const [sender, target, senderTag, targetTag] of [
-        ['code-farmer', 'default', 'code-farmer', 'hermes'],
-        ['default', 'code-farmer', 'hermes', 'code-farmer']
+        ['code-farmer', 'default', 'code-farmer', 'moor'],
+        ['default', 'code-farmer', 'moor', 'code-farmer']
       ]) {
         const targetKey = groupMemberKey(members.find(member => member.name === target)!)
 
@@ -49,7 +49,7 @@ it('keeps primary handoffs callable in both directions across persisted descript
 })
 
 it('keeps qualified remote defaults distinct from the primary alias regardless of roster order', () => {
-  const local: GroupMember = { name: 'default', handle: 'hermes', connectionId: 'local', sourceScoped: true }
+  const local: GroupMember = { name: 'default', handle: 'moor', connectionId: 'local', sourceScoped: true }
 
   const remotes: GroupMember[] = ['vera', 'spark'].map(device => ({
     name: 'default',
@@ -62,7 +62,7 @@ it('keeps qualified remote defaults distinct from the primary alias regardless o
   for (const members of [[local, ...remotes], [...remotes].reverse().concat(local)]) {
     for (const descriptors of [members, durableGroupChatMembers(members)]) {
       for (const [tag, key] of [
-        ['hermes', 'local::default'],
+        ['moor', 'local::default'],
         ['default-vera', 'vera::default'],
         ['default-spark', 'spark::default']
       ]) {

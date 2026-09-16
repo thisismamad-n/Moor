@@ -137,7 +137,7 @@ def _submit_fal_request(model: str, arguments: Dict[str, Any]):
             billing = _managed_fal_billing_error(exc, "model")
             if billing is not None:
                 raise ValueError(
-                    f"Nous Subscription gateway rejected model '{model}' (HTTP {status}): {billing}") from exc
+                    f"Moor Subscription gateway rejected model '{model}' (HTTP {status}): {billing}") from exc
             gateway_message = ""
             if status in {401, 402, 403}:
                 gateway_message = "\n\n" + moor_tool_gateway_unavailable_message(
@@ -319,7 +319,7 @@ def _agent_cache_base_for_env(env: Any) -> str | None:
         if remote_home:
             return f"{str(remote_home).rstrip('/')}/.moor"
         if env.__class__.__name__ in _CONTAINER_HOME_ENVS:
-            return "/root/.hermes"
+            return "/root/.moor"
     from tools.terminal_scope import terminal_env
     backend = (terminal_env("TERMINAL_ENV") or "local").strip().lower()
     return _CACHE_BASE_BY_BACKEND.get(backend)

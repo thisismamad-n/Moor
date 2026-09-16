@@ -319,10 +319,10 @@ describe('MessagingView Telegram quick setup', () => {
       expires_at: new Date(Date.now() + 600_000).toISOString(),
       pairing_id: 'pair-1',
       qr_payload: 'tg://pair',
-      suggested_username: 'hermes_bot'
+      suggested_username: 'moor_bot'
     })
     getTelegramOnboardingStatus.mockResolvedValue({
-      bot_username: 'hermes_bot',
+      bot_username: 'moor_bot',
       expires_at: new Date(Date.now() + 600_000).toISOString(),
       owner_user_id: '8792111505',
       status: 'ready'

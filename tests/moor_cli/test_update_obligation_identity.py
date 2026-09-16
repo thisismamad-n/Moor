@@ -4,13 +4,13 @@ import json
 
 import pytest
 
-from hermes_cli import update_cmd, update_cmd_fleet, update_receipt
-from hermes_constants import get_hermes_home
+from moor_cli import update_cmd, update_cmd_fleet, update_receipt
+from moor_constants import get_moor_home
 
 
 @pytest.mark.parametrize("profiles", [["alpha"], ["alpha", "beta"]])
 def test_current_successors_settle_historical_obligations(monkeypatch, profiles):
-    home = get_hermes_home()
+    home = get_moor_home()
     directory = home / "logs" / "update_receipts"
     directory.mkdir(parents=True)
     receipt = {
@@ -53,7 +53,7 @@ def test_current_successors_settle_historical_obligations(monkeypatch, profiles)
     ],
 )
 def test_every_owed_identity_requires_current_evidence(monkeypatch, bad):
-    home = get_hermes_home()
+    home = get_moor_home()
     directory = home / "logs" / "update_receipts"
     directory.mkdir(parents=True)
     if bad == "marker":

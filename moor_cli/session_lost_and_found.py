@@ -13,10 +13,10 @@ import tempfile
 from pathlib import Path
 from typing import Any, Callable, Optional, Sequence
 
-from hermes_cli.session_schema_history import SCHEMA_HISTORY, reachable_physical_layouts
+from moor_cli.session_schema_history import SCHEMA_HISTORY, reachable_physical_layouts
 
-from hermes_state_ids import SESSION_ID_PATTERN  # timestamp prefix: strongest sentinel for schema-less rows
-from hermes_cli.session_recovery import (
+from moor_state_ids import SESSION_ID_PATTERN  # timestamp prefix: strongest sentinel for schema-less rows
+from moor_cli.session_recovery import (
     _AUXILIARY_TABLE_SCHEMAS, _AUXILIARY_TABLES, _CANONICAL_TABLES, _count_rows, _immediate_transaction,
     _placeholder_titles, _quoted_columns, _table_columns,
 )
@@ -344,7 +344,7 @@ def _type_conflicts(value: Any, declared: str) -> bool:
     """True when a salvaged cell cannot have come from a column of this type.
 
     Stricter than SQLite affinity on purpose: SQLite would happily keep a
-    non-numeric string in an INTEGER column, but Hermes never writes one, so
+    non-numeric string in an INTEGER column, but Moor never writes one, so
     text sitting where a counter is declared means the layout is wrong. A
     TEXT column always yields ``str`` (numbers are coerced on write), a REAL
     column always yields ``float``, an INTEGER column yields ``int``.
@@ -371,7 +371,7 @@ _SESSION_KEY_PATTERN = re.compile(r"^agent:[^:]+:")
 # Machine tokens (``compression``, ``agent.compression_timeout``, ``api_key``,
 # ``compute_host_shutdown``): never spaces, never mixed case.
 _TOKEN_PATTERN = re.compile(r"^[a-z][a-z0-9_.:-]*$")
-# The closed sets SessionDB writes (hermes_state.py: request/claim/complete/
+# The closed sets SessionDB writes (moor_state.py: request/claim/complete/
 # fail_handoff; TITLE_SOURCE_* + _title_rank). chat_type is platform-supplied
 # and open-ended, so it only gets the identifier shape.
 _HANDOFF_STATES = frozenset({"pending", "running", "completed", "failed"})

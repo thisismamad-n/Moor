@@ -21,7 +21,7 @@ approval:
   prompt_smart_deny: "      Choice [o/D]: "
   smart_deny_once_inputs: "o,once"
   smart_deny_deny_inputs: "d,deny"
-  timeout:         "      ⏱ No answer in {waited} — the command was not run. Ask again to retry, or raise the limit: hermes config set approvals.timeout {suggested}"
+  timeout:         "      ⏱ No answer in {waited} — the command was not run. Ask again to retry, or raise the limit: moor config set approvals.timeout {suggested}"
   allowed_once:    "      ✓ Allowed once"
   allowed_session: "      ✓ Allowed for this session"
   allowed_always:  "      ✓ Added to permanent allowlist"
@@ -354,7 +354,7 @@ gateway:
     last_activity:         "**Last Activity:** {timestamp}"
     model:                 "**Model:** `{model}`"
     model_provider:        "**Model:** `{model}` ({provider})"
-    free_tier:             "Nous · free tier · nous/welcome · /login to sign in"
+    free_tier:             "Moor · free tier · moor/welcome · /login to sign in"
     context:               "**Context:** {used} / {total} ({pct}%)"
     context_used:          "**Context:** ~{used} tokens"
     tokens:                "**Lifetime tokens billed:** {tokens} _(not your current context size; use `/context`)_"
@@ -400,7 +400,7 @@ gateway:
     not_git_repo:            "✗ Not a git repository — cannot update."
     moor_cmd_not_found:    "✗ Could not locate the `moor` command. Moor is running, but the update command could not find the executable on PATH or via the current Python interpreter. Try running `moor update` manually in your terminal."
     start_failed:            "✗ Failed to start update: {error}"
-    starting:                "☤ Starting Hermes update… I'll stream progress here."
+    starting:                "☤ Starting Moor update… I'll stream progress here."
 
   usage:
     rate_limits:              "⏱️ **Rate Limits:** {state}"

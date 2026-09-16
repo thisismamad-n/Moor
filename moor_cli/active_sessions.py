@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterator, Optional
 
-from hermes_constants import get_default_hermes_root, get_hermes_home
+from moor_constants import get_default_moor_root, get_moor_home
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)
@@ -131,7 +131,7 @@ class ActiveSessionRefusal(str):
 def format_refusal_stderr(message: str) -> str:
     """Keep the refusal contract across the one-shot CLI subprocess boundary."""
     reason = getattr(message, "reason", "")
-    return f"hermes-refusal-reason: {reason}\n{message}" if reason else str(message)
+    return f"moor-refusal-reason: {reason}\n{message}" if reason else str(message)
 
 
 def _is_same_writer(entry: dict[str, Any], metadata: Optional[dict[str, Any]]) -> bool:
@@ -158,7 +158,7 @@ def session_already_owned_message(session_id: str, entry: dict[str, Any]) -> str
     started = _optional_float(entry.get("started_at"))
     age = f" {format_age(time.time() - started)} ago" if started else ""
     return (
-        "This chat is open in another Hermes window/terminal. Use it there, or start a new chat here.\n"
+        "This chat is open in another Moor window/terminal. Use it there, or start a new chat here.\n"
         f"Details: session {session_id} opened by {surface}{age}."
     )
 

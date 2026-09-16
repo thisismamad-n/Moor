@@ -26,7 +26,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Iterator, Optional
 
-from tools.bot_mode_probe import _default_home, _hermes_root
+from tools.bot_mode_probe import _default_home, _moor_root
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ DEFAULT_ENVELOPE_TTL_SECONDS = 900  # older envelopes are refused at drain with 
 # Per-attempt turn timeout and attempt ceiling for bot_relay.deliver (tui_gateway/methods_bot_relay.py).
 TURN_ATTEMPT_TIMEOUT_SECONDS = 600
 TURN_MAX_ATTEMPTS = 2  # first attempt + the policy-gated re-run
-# Mirrors RELAY_DELIVER_TIMEOUT_MS in apps/desktop/src/plugins/hermes-bots/relay.ts; both test suites pin it.
+# Mirrors RELAY_DELIVER_TIMEOUT_MS in apps/desktop/src/plugins/moor-bots/relay.ts; both test suites pin it.
 DESKTOP_DELIVER_SETTLEMENT_MARGIN_SECONDS = 180
 DESKTOP_DELIVER_TIMEOUT_SECONDS = (
     TURN_WAIT_SECONDS_FALLBACK + TURN_ATTEMPT_TIMEOUT_SECONDS * TURN_MAX_ATTEMPTS + DESKTOP_DELIVER_SETTLEMENT_MARGIN_SECONDS
@@ -86,8 +86,8 @@ def relay_root(root: Path | str) -> Path:
 def _ensure_dirs(root: Path | str) -> Path:
     base = relay_root(root)
     for sub in (OUTBOX_DIR, CLAIMED_DIR, REPLIES_DIR):
-        from hermes_constants import mkdir_under_hermes_home
-        mkdir_under_hermes_home(base / sub)
+        from moor_constants import mkdir_under_moor_home
+        mkdir_under_moor_home(base / sub)
     return base
 
 
@@ -409,22 +409,22 @@ def _delivery_child_session_env_names() -> "tuple[str, ...]":
     """Session-bound env names to strip from a delivery child, from ``gateway.session_context``.
 
     Synced with the session binding surface as vars are added; deliberately NOT a
-    ``HERMES_SESSION_*`` prefix match, which would also strip non-identity knobs
-    (e.g. ``HERMES_SESSION_STALL_TIMEOUT``)."""
+    ``MOOR_SESSION_*`` prefix match, which would also strip non-identity knobs
+    (e.g. ``MOOR_SESSION_STALL_TIMEOUT``)."""
     from gateway.session_context import _VAR_MAP
 
     return tuple(_VAR_MAP)
 
 
 def delivery_env(author: Optional[dict], profile_home: "str | Path | None" = None) -> dict[str, str]:
-    """Environment for one delivery turn's ``hermes -p <profile>`` child. The dispatcher's own
-    HERMES_TURN_AUTHOR is dropped first so a delivery without an author never inherits the author of the turn
+    """Environment for one delivery turn's ``moor -p <profile>`` child. The dispatcher's own
+    MOOR_TURN_AUTHOR is dropped first so a delivery without an author never inherits the author of the turn
     that sent it. Dispatcher session identity (the canonical ``gateway.session_context`` session env names) is
     dropped too: a nested recipient that ``message_agent``s onward must not stamp that grandchild
     notify with the grandparent's key, or the live recipient never resumes. The child runs the target
     profile's Bot Chat turn, so it starts from THAT profile's env (``served_profile_child_env``: launch
     profile ``.env`` / TERMINAL_* residue dropped, target secrets overlaid), never the multiplexer's raw
-    ``os.environ``; ``-p`` alone only pinned HERMES_HOME. ``profile_home`` is the target's home when the
+    ``os.environ``; ``-p`` alone only pinned MOOR_HOME. ``profile_home`` is the target's home when the
     caller knows it (relay RPC, roster); otherwise the active override."""
     from agent.turn_author import TURN_AUTHOR_ENV, turn_author_env
     from tools.environments.local import served_profile_child_env

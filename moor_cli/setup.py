@@ -80,7 +80,7 @@ def is_interactive_stdin() -> bool:
 def print_noninteractive_setup_guidance(reason: str | None = None) -> None:
     """Print guidance for headless/non-interactive setup flows."""
     print()
-    print(color("☤ Hermes Setup — Non-interactive mode", Colors.CYAN, Colors.BOLD))
+    print(color("☤ Moor Setup — Non-interactive mode", Colors.CYAN, Colors.BOLD))
     print()
     if reason:
         print_info(reason)
@@ -380,8 +380,8 @@ def setup_model_provider(config: dict, *, quick: bool = False):
         _info(None, "Provider setup skipped.")
     except Exception as exc:
         logger.debug("select_provider_and_model error during setup: %s", exc)
-        from hermes_cli.auth_error_copy import provider_setup_failure_lines
-        lead, *rest = provider_setup_failure_lines(exc, retry_command="hermes model")
+        from moor_cli.auth_error_copy import provider_setup_failure_lines
+        lead, *rest = provider_setup_failure_lines(exc, retry_command="moor model")
         print_warning(lead)
         for line in rest:
             print_info(line)
@@ -409,7 +409,7 @@ def _apply_default_agent_settings(config: dict):
     save_config(config)
     print_success("Applied recommended defaults:")
     _info("  Max iterations: 150", "  Tool progress: all", "  Compression threshold: 0.50",
-          "  Run `hermes setup agent` later to customize.")
+          "  Run `moor setup agent` later to customize.")
 
 
 def _prompt_number(label: str, current, cast=int):
@@ -591,7 +591,7 @@ def _run_setup_section(config: dict, section: str) -> None:
         print_info(f"Available sections: {', '.join(k for k, _, _ in SETUP_SECTIONS)}")
         return
     label, func = entry
-    _print_banner(f"│     ☤ Hermes Setup — {label:<34s} │")
+    _print_banner(f"│     ☤ Moor Setup — {label:<34s} │")
     _run_setup_steps([(label, lambda: func(config))])
     save_config(config)
     print()
@@ -651,10 +651,10 @@ def _run_setup_wizard_impl(args):
     if is_managed():
         managed_error("run setup wizard")
         return
-    ensure_hermes_home()
+    ensure_moor_home()
     # Back up BEFORE --reset: save_config below overwrites the very file we copy (#3522, #77299).
     config_path = get_config_path()
-    from hermes_cli.config_backups import backup_config
+    from moor_cli.config_backups import backup_config
     _backup_path = backup_config(config_path, "pre-setup")
     if getattr(args, "reset", False):
         save_config(copy.deepcopy(DEFAULT_CONFIG))
@@ -664,7 +664,7 @@ def _run_setup_wizard_impl(args):
     reconfigure_requested = bool(getattr(args, "reconfigure", False))
     quick_requested = bool(getattr(args, "quick", False))
     config = load_config()
-    hermes_home = get_hermes_home()
+    moor_home = get_moor_home()
 
     # Non-interactive environments (headless SSH, Docker, CI/CD)
     if getattr(args, 'non_interactive', False) or not is_interactive_stdin():
@@ -682,7 +682,7 @@ def _run_setup_wizard_impl(args):
     from moor_cli.auth import get_active_provider
     is_existing = bool(get_env_value("OPENROUTER_API_KEY") or get_env_value("OPENAI_BASE_URL")
                        or get_active_provider() is not None)
-    _print_banner("│             ☤ Hermes Agent Setup Wizard                │",
+    _print_banner("│             ☤ Moor Agent Setup Wizard                │",
                   "├─────────────────────────────────────────────────────────┤",
                   "│  Let's configure your Moor Agent installation.       │",
                   "│  Press Ctrl+C at any time to exit.                     │")

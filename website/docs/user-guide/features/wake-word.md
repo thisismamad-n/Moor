@@ -304,11 +304,11 @@ macOS grants microphone access per **process**. STT working in the desktop app
 proves the *renderer* has mic access — the wake listener runs in the Python
 *backend*, which needs its own grant. Without it, CoreAudio hands the backend a
 "working" stream that only ever delivers silence, so the ear shows listening
-but the phrase never fires. Hermes detects this (`/wake status` shows
+but the phrase never fires. Moor detects this (`/wake status` shows
 "mic delivers only silence"; the desktop's folded voice menu carries the same
 hint on its trigger).
-Fix: System Settings → Privacy & Security → Microphone → enable the Hermes
-backend (it may appear as your terminal, `python`, or Hermes), then toggle the
+Fix: System Settings → Privacy & Security → Microphone → enable the Moor
+backend (it may appear as your terminal, `python`, or Moor), then toggle the
 wake word off and on.
 
 ### "Listening" but receives silence (Windows)

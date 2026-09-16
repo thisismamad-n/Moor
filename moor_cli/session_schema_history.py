@@ -1,6 +1,6 @@
 """Physical column history of the state.db tables the page-level salvage lane maps.
 
-``_reconcile_columns()`` (hermes_state_schema.py) upgrades a live store with
+``_reconcile_columns()`` (moor_state_schema.py) upgrades a live store with
 ``ALTER TABLE ADD COLUMN``, which APPENDS each newly declared column. A store
 therefore keeps its columns in the order they were *added*, which diverges
 from the order ``SCHEMA_SQL`` declares them whenever a later release inserts a
@@ -17,7 +17,7 @@ declared order, and every physical layout a real store can have is some
 prefix chain over those snapshots (created at snapshot ``i``, then each later
 upgrade appending the columns it had not seen yet).
 
-``tests/hermes_cli/test_session_schema_history.py`` asserts the replay ends
+``tests/moor_cli/test_session_schema_history.py`` asserts the replay ends
 at the current ``SCHEMA_SQL``. When that test fails you added or moved a
 column: append an event at the END, labelled with the next sequence number,
 describing the edit (``("+", column, after)`` / ``("-", column)``) — do NOT

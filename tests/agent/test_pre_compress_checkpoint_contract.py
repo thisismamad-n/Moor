@@ -328,7 +328,7 @@ def test_compressed_summary_marker_survives_restart_via_resume_history(tmp_path)
 
 
 def test_live_replay_preserves_summary_boundary_without_changing_display(tmp_path):
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
 
     db_path = tmp_path / "state.db"
     db = SessionDB(db_path)

@@ -94,7 +94,7 @@ def test_quick_snapshot_tree_is_owner_only_under_permissive_umask(tmp_path) -> N
     pairing records, and cron data, so every published file must be 0600 and
     every directory 0700 regardless of the caller's umask or source modes.
     """
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     (home / "config.yaml").write_text("model: {}\n", encoding="utf-8")
     with sqlite3.connect(home / "state.db") as conn:
@@ -102,7 +102,7 @@ def test_quick_snapshot_tree_is_owner_only_under_permissive_umask(tmp_path) -> N
 
     old_umask = os.umask(0o022)
     try:
-        snapshot_id = create_quick_snapshot(hermes_home=home)
+        snapshot_id = create_quick_snapshot(moor_home=home)
     finally:
         os.umask(old_umask)
 

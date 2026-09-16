@@ -152,7 +152,7 @@ def describe_suppression(results: Iterable[Optional["DispatchResult"]]) -> str:
     memory_pressure=critical`` — the respawn-guard reasons counted per task
     plus the tick-level holds. Feeds the "dispatcher stuck" warnings of the
     CLI daemon and the embedded gateway dispatcher, which otherwise report a
-    bare zero-spawn count while ``hermes kanban tail`` is the only place the
+    bare zero-spawn count while ``moor kanban tail`` is the only place the
     guard reason is written (#111910).
     """
     counts: dict[str, int] = {}
@@ -910,7 +910,7 @@ _PROTOCOL_VIOLATION_ERROR = (
 
 _EXIT_SUMMARY_MARKER = "Resume this session with:"
 # Rich panel/rule chrome around the rendered response, and the CLI's own preamble lines.
-_LOG_CHROME = re.compile(r"[─━═╭╮╰╯│┃┌┐└┘]+|☤\s*Hermes")
+_LOG_CHROME = re.compile(r"[─━═╭╮╰╯│┃┌┐└┘]+|☤\s*Moor")
 _LOG_NOISE_PREFIXES = ("session_id:", "Query:", "Initializing agent")
 
 
@@ -1466,7 +1466,7 @@ def _profile_exists_fn() -> Optional[Callable[[str], bool]]:
     Foreign assignees land in the existing ``skipped_nonspawnable`` bucket.
     """
     try:
-        from hermes_cli.profiles import normalize_profile_name, profile_exists
+        from moor_cli.profiles import normalize_profile_name, profile_exists
     except Exception:
         return None
     allowlist = _dispatch_profile_allowlist(normalize_profile_name)
@@ -1486,7 +1486,7 @@ def _profile_exists_fn() -> Optional[Callable[[str], bool]]:
 def _dispatch_profile_allowlist(normalize_profile_name) -> Optional[frozenset]:
     """Per-home claim allowlist ``kanban.dispatch_profiles`` (#110995).
 
-    On a shared board (one ``kanban.db`` mounted across several Hermes homes),
+    On a shared board (one ``kanban.db`` mounted across several Moor homes),
     every home's ``profile_exists`` returns True for ``default`` — the root
     profile every home has — so a card assigned to ``default`` is claimable by
     every home's dispatcher. A home opts out of foreign claims by declaring
@@ -1500,7 +1500,7 @@ def _dispatch_profile_allowlist(normalize_profile_name) -> Optional[frozenset]:
     nothing. Config read is fail-open like the sibling ``kanban.*`` readers.
     """
     try:
-        from hermes_cli.config import load_config_readonly
+        from moor_cli.config import load_config_readonly
         raw = (load_config_readonly() or {}).get("kanban", {}).get("dispatch_profiles")
     except Exception:
         return None
@@ -2265,12 +2265,12 @@ def _resolve_moor_argv() -> list[str]:
     """Resolve the ``moor`` invocation as argv for ``Popen``: ``$MOOR_BIN``
     (path-like -> absolute; bare names keep PATH semantics, never a
     same-directory file), then the running interpreter's ``sys.executable -m
-    hermes_cli.main`` (exactly this install; also covers shim-less cron,
-    systemd ``User=``, launchd), then ``which("hermes")`` (Windows: safe PATH
-    search, batch shims fall back to the module form) only when ``hermes_cli``
+    moor_cli.main`` (exactly this install; also covers shim-less cron,
+    systemd ``User=``, launchd), then ``which("moor")`` (Windows: safe PATH
+    search, batch shims fall back to the module form) only when ``moor_cli``
     is not importable. The module argv must win over PATH: a PATH-first lookup
-    lets an attacker-planted ``hermes`` shadow the running install (#111569).
-    Mirrors ``gateway.run._resolve_hermes_bin``; local because ``hermes_cli``
+    lets an attacker-planted ``moor`` shadow the running install (#111569).
+    Mirrors ``gateway.run._resolve_moor_bin``; local because ``moor_cli``
     sits below ``gateway`` in the dependency order.
     """
     import importlib.util
@@ -2286,15 +2286,15 @@ def _resolve_moor_argv() -> list[str]:
         return _module_moor_argv()
 
     try:
-        if importlib.util.find_spec("hermes_cli") is not None:
-            return _module_hermes_argv()
+        if importlib.util.find_spec("moor_cli") is not None:
+            return _module_moor_argv()
     except Exception:
         pass
 
-    hermes_bin = _safe_which_no_cwd("hermes") if _kb._IS_WINDOWS else shutil.which("hermes")
-    if hermes_bin:
-        return _hermes_path_argv(hermes_bin)
-    return _module_hermes_argv()
+    moor_bin = _safe_which_no_cwd("moor") if _kb._IS_WINDOWS else shutil.which("moor")
+    if moor_bin:
+        return _moor_path_argv(moor_bin)
+    return _module_moor_argv()
 
 
 def _worker_terminal_timeout_env(
@@ -2340,15 +2340,15 @@ def _resolve_worker_cli_toolsets(moor_home: Optional[str]) -> Optional[list[str]
     try:
         from agent.secret_scope import (
             build_profile_secret_scope, is_multiplex_active, reset_secret_scope, set_secret_scope)
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-        from hermes_cli.config import load_config
-        from hermes_cli.tools_config import _get_platform_tools
+        from moor_constants import reset_moor_home_override, set_moor_home_override
+        from moor_cli.config import load_config
+        from moor_cli.tools_config import _get_platform_tools
 
-        token = set_hermes_home_override(hermes_home)
+        token = set_moor_home_override(moor_home)
         # Toolset availability probes read credentials (``get_secret``); under multiplex an
         # unscoped read raises and the pin was silently dropped for every worker.
         secret_token = (
-            set_secret_scope(build_profile_secret_scope(Path(hermes_home)))
+            set_secret_scope(build_profile_secret_scope(Path(moor_home)))
             if is_multiplex_active() else None)
         try:
             cfg = load_config()
@@ -2356,7 +2356,7 @@ def _resolve_worker_cli_toolsets(moor_home: Optional[str]) -> Optional[list[str]
         finally:
             if secret_token is not None:
                 reset_secret_scope(secret_token)
-            reset_hermes_home_override(token)
+            reset_moor_home_override(token)
         return toolsets or None
     except Exception as exc:
         _kb._log.debug(
@@ -2381,7 +2381,7 @@ def _retag_legacy_worker_sessions(workspaces_root_path: str) -> None:
     if workspaces_root_path in _retagged_workspace_roots:
         return
     try:
-        from hermes_state_registry import acquire, release_or_close
+        from moor_state_registry import acquire, release_or_close
 
         # Inside the gateway the dispatcher shares the process's registry handle; a bare
         # SessionDB() here was one more writer connection on the same state.db (#100896).
@@ -2503,7 +2503,7 @@ def _default_spawn(task: Task, workspace: str, *, board: Optional[str] = None) -
         profile_home = resolve_profile_env(profile_arg)
     except FileNotFoundError:
         # No profile dir (isolated test fixtures) — the CLI resolves it from
-        # HERMES_PROFILE (set below) instead.
+        # MOOR_PROFILE (set below) instead.
         profile_home = None
 
     multiplex_active = is_multiplex_active()
@@ -2528,12 +2528,12 @@ def _default_spawn(task: Task, workspace: str, *, board: Optional[str] = None) -
     for key in _VAR_MAP:
         env.pop(key, None)
 
-    # Inject HERMES_HOME so the worker reads the profile-scoped config.yaml:
-    # without it the child's get_hermes_home() falls back to the DEFAULT
-    # profile root because `hermes -p` applies its override before
-    # hermes_constants is imported.
+    # Inject MOOR_HOME so the worker reads the profile-scoped config.yaml:
+    # without it the child's get_moor_home() falls back to the DEFAULT
+    # profile root because `moor -p` applies its override before
+    # moor_constants is imported.
     if profile_home:
-        env["HERMES_HOME"] = profile_home
+        env["MOOR_HOME"] = profile_home
         # A multiplexer dispatching for another profile must not hand it the launch
         # profile's .env settings / TERMINAL_* policy — a standalone dispatcher never would.
         strip_launch_profile_env(env, profile_home)
@@ -2583,13 +2583,13 @@ def _default_spawn(task: Task, workspace: str, *, board: Optional[str] = None) -
     env["MOOR_KANBAN_BOARD"] = _kb._normalize_board_slug(board) or _kb.get_current_board()
     # kanban_comment reads MOOR_PROFILE for its default author; `-p` alone
     # doesn't set the env var.
-    env["HERMES_PROFILE"] = profile_arg
+    env["MOOR_PROFILE"] = profile_arg
     # This is the grant boundary: the dispatcher assigned this new worker's task.
     from agent.delegation_context import DELEGATED_CHILD_ENV_MARKER
     env.pop(DELEGATED_CHILD_ENV_MARKER, None)
-    # `--cli` is the highest-precedence TUI override; dropping HERMES_TUI covers
-    # older hermes builds on PATH that predate the flag's precedence.
-    env.pop("HERMES_TUI", None)
+    # `--cli` is the highest-precedence TUI override; dropping MOOR_TUI covers
+    # older moor builds on PATH that predate the flag's precedence.
+    env.pop("MOOR_TUI", None)
 
     cmd = _worker_argv(task, profile_arg, env.get("MOOR_HOME"))
     # A worker spawned by a managed systemd gateway must leave the gateway's

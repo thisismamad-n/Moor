@@ -304,7 +304,7 @@ def _prompt_for_category(c: Console, existing: List[str]) -> str:
         c.print(f"[dim]Existing: {', '.join(existing)}[/]")
     else:
         c.print("[bold]Category[/] "
-                f"[dim](optional — press Enter to install flat at {display_hermes_home()}/skills/<name>/)[/]")
+                f"[dim](optional — press Enter to install flat at {display_moor_home()}/skills/<name>/)[/]")
     answer = _line_input("Category: ")
     if answer and not _VALID_CATEGORY_RE.match(answer):
         c.print(f"[dim]Invalid category {answer!r} — installing flat.[/]")
@@ -504,16 +504,16 @@ def _scan_block_message(result, identifier: str) -> str:
     """User-facing sentence for a scan-blocked install (the audit row keeps the scanner's raw reason).
 
     Says what happened (not installed), why in plain words (high-risk patterns), whether ``--force``
-    can help, and the read-only next step (``hermes skills inspect``). The hard-block rule mirrors
+    can help, and the read-only next step (``moor skills inspect``). The hard-block rule mirrors
     ``tools.skills_guard.should_allow_install``: a dangerous verdict on a non-official source."""
     n = len(result.findings)
     findings = f"{n} high-risk pattern(s)" if n else "high-risk patterns"
     hard_block = result.verdict == "dangerous" and result.trust_level in ("community", "trusted")
-    policy = ("Hermes never installs unverified skills with high-risk findings, even with --force."
+    policy = ("Moor never installs unverified skills with high-risk findings, even with --force."
               if hard_block else "Re-run with --force to install anyway.")
     return (f"the security scan found {findings} in '{identifier}' (listed above). "
             f"{policy} Review the findings or ask the author to fix them; to read the skill without "
-            f"installing, run `hermes skills inspect {identifier}`.")
+            f"installing, run `moor skills inspect {identifier}`.")
 
 
 def _invalid_path(c: Console, bundle, exc: ValueError, q_path: Optional[Path] = None) -> None:
@@ -612,7 +612,7 @@ def _print_fetch_failure(c: Console, sources, identifier: str, meta=None, source
         c.print(f"[bold red]Error:[/] '{identifier}' is listed in the {src_id} index, "
                 f"but its files no longer exist upstream.")
         c.print("[dim]Stale index entry: the skill was likely renamed or removed by "
-                "its author. Try `hermes skills search` for an alternative.[/]\n")
+                "its author. Try `moor skills search` for an alternative.[/]\n")
         return
     c.print(f"[bold red]Error:[/] Could not download '{identifier}'.")
     if rate_limited:
@@ -621,8 +621,8 @@ def _print_fetch_failure(c: Console, sources, identifier: str, meta=None, source
                 "Set [bold]GITHUB_TOKEN[/] in your .env or install the [bold]gh[/] CLI and run "
                 "[bold]gh auth login[/] to raise the limit to 5,000/hr.\n")
     else:
-        c.print(f"Check the name with [bold]hermes skills search {identifier.rsplit('/', 1)[-1]}[/] "
-                "and check your internet connection. If it keeps failing, run [bold]hermes doctor[/].\n")
+        c.print(f"Check the name with [bold]moor skills search {identifier.rsplit('/', 1)[-1]}[/] "
+                "and check your internet connection. If it keeps failing, run [bold]moor doctor[/].\n")
 
 
 def _scan_quarantined(c: Console, q_path: Path, bundle, meta, identifier: str):
@@ -838,7 +838,7 @@ def do_check(name: Optional[str] = None, console: Optional[Console] = None) -> N
     if orphaned:
         c.print(f"[yellow]Orphaned:[/] {', '.join(orphaned)} — lock-file entries whose local "
                 "directory is missing or replaced by a non-directory. For missing directories, "
-                "remove the stale entry with: hermes skills uninstall <name>\n")
+                "remove the stale entry with: moor skills uninstall <name>\n")
 
 
 def _has_local_edits(installed: dict) -> bool:

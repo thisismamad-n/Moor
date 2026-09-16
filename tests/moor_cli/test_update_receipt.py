@@ -272,8 +272,8 @@ class TestFleetClassification:
         home.mkdir()
         gateway_record = {
             "gateway_state": "running",
-            "kind": "hermes-gateway",
-            "argv": ["hermes", "gateway", "run"],
+            "kind": "moor-gateway",
+            "argv": ["moor", "gateway", "run"],
             **record,
         }
         (home / "gateway_state.json").write_text(
@@ -304,17 +304,17 @@ class TestFleetClassification:
 
         home = tmp_path / "fleet_home"
         home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("MOOR_HOME", str(home))
         monkeypatch.setattr(
-            "hermes_cli.build_info.get_code_identity",
+            "moor_cli.build_info.get_code_identity",
             lambda refresh=False: {"sha": "a" * 40, "short_sha": "a" * 8,
                                    "version": "1.0", "source": "git"},
         )
         monkeypatch.setattr(
-            "hermes_cli.profiles._get_default_hermes_home", lambda: home
+            "moor_cli.profiles._get_default_moor_home", lambda: home
         )
         monkeypatch.setattr(
-            "hermes_cli.profiles._get_profiles_root",
+            "moor_cli.profiles._get_profiles_root",
             lambda: tmp_path / "nonexistent_profiles_root",
         )
 
@@ -384,8 +384,8 @@ class TestFleetClassification:
         record = {
             "pid": 4242,
             "gateway_state": "running",
-            "kind": "hermes-gateway",
-            "argv": ["hermes", "gateway", "run"],
+            "kind": "moor-gateway",
+            "argv": ["moor", "gateway", "run"],
             "code_sha": "a" * 40,
             "code_version": "1.0",
         }

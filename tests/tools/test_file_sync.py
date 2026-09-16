@@ -281,7 +281,7 @@ class TestConcurrency:
             ]
 
         def upload(_host_path, remote_path):
-            if remote_path == f"/root/.hermes/cache/images/{new_file.name}":
+            if remote_path == f"/root/.moor/cache/images/{new_file.name}":
                 upload_started.set()
                 sync_back_transport_started.wait(timeout=1.0)
                 release_upload.set()

@@ -105,7 +105,7 @@ Default preset:
 MoA uses provider-owned output limits. Preset and per-slot output-token cap
 settings are no longer supported. Provider defaults vary; omission does not
 always mean the model maximum. Native protocols that require an output limit
-receive an internal value from Hermes.
+receive an internal value from Moor.
 
 ### Advisor cadence with `fanout`
 

@@ -30,16 +30,16 @@ from utils import env_int
 
 logger = logging.getLogger(__name__)
 
-CHECKPOINT_BASE = get_hermes_home() / "checkpoints"
+CHECKPOINT_BASE = get_moor_home() / "checkpoints"
 _CHECKPOINT_BASE_AT_IMPORT = CHECKPOINT_BASE
 
 
 def _resolve_checkpoint_base() -> Path:
     """Active profile's checkpoint root at call time: the patched ``CHECKPOINT_BASE`` when a test
-    changed it, else live profile-scoped HERMES_HOME — under the multiplexed gateway one process
+    changed it, else live profile-scoped MOOR_HOME — under the multiplexed gateway one process
     serves every profile, so the import-time constant would write every profile's code-edit
     checkpoints into the launch profile's store."""
-    return CHECKPOINT_BASE if CHECKPOINT_BASE != _CHECKPOINT_BASE_AT_IMPORT else get_hermes_home() / "checkpoints"
+    return CHECKPOINT_BASE if CHECKPOINT_BASE != _CHECKPOINT_BASE_AT_IMPORT else get_moor_home() / "checkpoints"
 
 _STORE_DIRNAME, _INDEXES_DIRNAME, _PROJECTS_DIRNAME, _LEDGERS_DIRNAME = "store", "indexes", "projects", "ledgers"
 _REFS_PREFIX, _LEGACY_PREFIX, _PRUNE_MARKER_NAME = "refs/moor", "legacy-", ".last_prune"
@@ -1162,9 +1162,9 @@ def auto_prune_from_config() -> Dict[str, object]:
     """``maybe_auto_prune_checkpoints`` driven by the ``checkpoints:`` config section — the one
     startup/housekeeping entry point for the CLI and the gateway. ``delete_orphans`` is never
     honoured unattended: a missing workdir is ambiguous (deleted vs. unmounted share); orphan
-    cleanup is only via explicit ``hermes checkpoints prune``. Never raises."""
+    cleanup is only via explicit ``moor checkpoints prune``. Never raises."""
     try:
-        from hermes_cli.config import load_config
+        from moor_cli.config import load_config
         cfg = load_config().get("checkpoints") or {}
         if not cfg.get("auto_prune", False):
             return {"skipped": True}
@@ -1185,7 +1185,7 @@ def checkpoint_footprint_notice() -> Optional[str]:
     GB-scale store for a feature they never invoke. The cap is a floor of one snapshot per
     project, so a big store is expected, not broken — the notice names the opt-out. Never raises."""
     try:
-        from hermes_cli.config import load_config
+        from moor_cli.config import load_config
         cfg = load_config().get("checkpoints") or {}
         if not cfg.get("enabled", False):
             return None
@@ -1194,11 +1194,11 @@ def checkpoint_footprint_notice() -> Optional[str]:
         size = int(status["total_size_bytes"])
         if cap_mb <= 0 or size < cap_mb * _MB:
             return None
-        from hermes_cli.sizefmt import format_bytes
+        from moor_cli.sizefmt import format_bytes
         return (f"Filesystem checkpoints (/rollback) are on: {format_bytes(size)} across "
                 f"{status['project_count']} project(s), above the {cap_mb} MB cap (one snapshot per project is "
-                f"always kept). Not using /rollback? `hermes config set checkpoints.enabled false` then "
-                f"`hermes checkpoints clear`; or lower `checkpoints.retention_days`.")
+                f"always kept). Not using /rollback? `moor config set checkpoints.enabled false` then "
+                f"`moor checkpoints clear`; or lower `checkpoints.retention_days`.")
     except Exception as exc:
         logger.debug("checkpoint footprint notice skipped: %s", exc)
         return None

@@ -1186,7 +1186,7 @@ class TestForceReloadSymmetry:
         """Two concurrent calls of one tool are different work, not a duplicate (#98382)."""
         import time
         monkeypatch.setattr(
-            "hermes_cli.plugins._resolve_hook_callback_timeout", lambda: 5.0
+            "moor_cli.plugins._resolve_hook_callback_timeout", lambda: 5.0
         )
 
         hold = threading.Event()
@@ -1226,7 +1226,7 @@ class TestForceReloadSymmetry:
         is still running, so the running gate (not timeout suppression) dedupes it."""
         import time
         monkeypatch.setattr(
-            "hermes_cli.plugins._resolve_hook_callback_timeout", lambda: 5.0
+            "moor_cli.plugins._resolve_hook_callback_timeout", lambda: 5.0
         )
 
         hold = threading.Event()
@@ -1258,7 +1258,7 @@ class TestForceReloadSymmetry:
         """A worker abandoned on timeout still occupies its callback: a later call with a
         fresh id must be skipped, not given a second thread (one leak, not one per call)."""
         monkeypatch.setattr(
-            "hermes_cli.plugins._resolve_hook_callback_timeout", lambda: 0.1
+            "moor_cli.plugins._resolve_hook_callback_timeout", lambda: 0.1
         )
 
         hold = threading.Event()
@@ -1283,7 +1283,7 @@ class TestForceReloadSymmetry:
         """If the worker completes between the wait expiring and the timeout branch taking the
         lock, it has already released its token; recording it as abandoned anyway would block
         every later call id for that callback until reload. A fresh call must still run."""
-        import hermes_cli.plugins_dispatch as dispatch
+        import moor_cli.plugins_dispatch as dispatch
 
         class _RacingEvent(threading.Event):
             def wait(self, timeout=None):
@@ -1298,7 +1298,7 @@ class TestForceReloadSymmetry:
 
         monkeypatch.setattr(dispatch, "threading", _Threading())
         monkeypatch.setattr(
-            "hermes_cli.plugins._resolve_hook_callback_timeout", lambda: 0.1
+            "moor_cli.plugins._resolve_hook_callback_timeout", lambda: 0.1
         )
         starts = []
 
@@ -1358,10 +1358,10 @@ class TestForceReloadSymmetry:
         self, monkeypatch
     ):
         """A transient worker-start failure must not poison later hook calls."""
-        from hermes_cli.plugins import _PRE_TOOL_CALL_TIMEOUT_BLOCK_MESSAGE
+        from moor_cli.plugins import _PRE_TOOL_CALL_TIMEOUT_BLOCK_MESSAGE
 
         monkeypatch.setattr(
-            "hermes_cli.plugins._resolve_hook_callback_timeout", lambda: 1.0
+            "moor_cli.plugins._resolve_hook_callback_timeout", lambda: 1.0
         )
 
         calls = []
@@ -2374,7 +2374,7 @@ class TestPluginCommands:
             )
             # `state.py` is imported via a *relative* import from
             # `__init__.py`, so it lands in sys.modules as
-            # `hermes_plugins.stateful_plugin.state`.
+            # `moor_plugins.stateful_plugin.state`.
             (plugin_dir / "state.py").write_text(f"MARKER = {marker!r}\n", encoding="utf-8")
             (plugin_dir / "__init__.py").write_text(
                 "from . import state\n\n"

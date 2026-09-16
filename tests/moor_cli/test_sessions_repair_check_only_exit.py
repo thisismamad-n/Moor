@@ -1,4 +1,4 @@
-"""`hermes sessions repair --check-only` must fail (non-zero) when the store is unhealthy.
+"""`moor sessions repair --check-only` must fail (non-zero) when the store is unhealthy.
 
 Automation gates on the exit status; printing the reason and exiting 0 read as "healthy"
 (#63386, PR #103321).
@@ -6,15 +6,15 @@ Automation gates on the exit status; printing the reason and exiting 0 read as "
 import argparse
 from pathlib import Path
 
-import hermes_state
-from hermes_cli import sessions_cmd
-from hermes_state import SessionDB
+import moor_state
+from moor_cli import sessions_cmd
+from moor_state import SessionDB
 
 
 def test_check_only_exit_status_tracks_probe_verdict(tmp_path, monkeypatch):
     db_path = tmp_path / "state.db"
     SessionDB(db_path=db_path).close()
-    monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", db_path)
+    monkeypatch.setattr(moor_state, "DEFAULT_DB_PATH", db_path)
     args = argparse.Namespace(check_only=True, no_backup=False)
 
     assert not sessions_cmd._cmd_repair(args)

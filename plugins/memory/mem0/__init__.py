@@ -77,16 +77,16 @@ def _load_config() -> dict:
     """Env vars provide defaults; $MOOR_HOME/mem0.json overrides individual keys.
     Layering avoids a silent failure when the JSON file exists but lacks fields
     like ``api_key`` that the user set in ``.env``."""
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
     # Identity (user/agent id), host and mode are .env values like the key: read them through the
     # profile scope too, or a secondary profile's memories land in the default profile's account.
     # A scope-less multiplex caller raises here on purpose — that is a spawn-site bug, and
     # swallowing it would silently route the turn's memories to the default profile.
     config = {"mode": get_secret("MEM0_MODE", "") or "platform", "host": get_secret("MEM0_HOST", "") or "",
-              "agent_id": get_secret("MEM0_AGENT_ID", "") or "hermes", "oss": {}}
+              "agent_id": get_secret("MEM0_AGENT_ID", "") or "moor", "oss": {}}
     if user_id := get_secret("MEM0_USER_ID", ""):  # only when explicitly configured, so initialize() can fall back to the gateway-native id
         config["user_id"] = user_id
-    file_cfg = read_json_or_empty(get_hermes_home() / "mem0.json")
+    file_cfg = read_json_or_empty(get_moor_home() / "mem0.json")
     config.update({k: v for k, v in file_cfg.items() if v is not None and v != ""})
     # MEM0_API_KEY authenticates the Platform and self-hosted HTTP backends; pure OSS mode builds its
     # backend from the local ``oss`` config and has no platform credential to resolve, so a profile
@@ -146,9 +146,9 @@ class Mem0MemoryProvider(MemoryProvider):
             return bool(cfg.get("oss", {}).get("vector_store"))
         return bool(cfg.get("api_key") or cfg.get("host"))  # platform needs a key; self-hosted a host (key optional with AUTH_DISABLED)
 
-    def save_config(self, values, hermes_home):
-        """Merge-write config to $HERMES_HOME/mem0.json."""
-        config_path = Path(hermes_home) / "mem0.json"
+    def save_config(self, values, moor_home):
+        """Merge-write config to $MOOR_HOME/mem0.json."""
+        config_path = Path(moor_home) / "mem0.json"
         atomic_json_write(config_path, {**read_json_or_empty(config_path), **values}, mode=0o600)
 
     def get_config_schema(self):

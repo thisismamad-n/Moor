@@ -29,7 +29,7 @@ _lock = threading.Lock()
 # ``contextvars.copy_context()``, so a guard chain moved onto that worker still honours
 # ``/stop`` aimed at the tool thread that spawned it (``is_interrupted`` checks both).
 acting_for_tid: contextvars.ContextVar[int | None] = contextvars.ContextVar(
-    "hermes_interrupt_acting_for_tid", default=None,
+    "moor_interrupt_acting_for_tid", default=None,
 )
 
 

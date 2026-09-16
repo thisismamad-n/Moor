@@ -202,7 +202,7 @@ class CLIAgentSetupMixin:
         api_key = runtime.get("api_key")
         base_url = runtime.get("base_url")
         resolved_provider = runtime.get("provider", "openrouter")
-        if resolved_provider != "nous":
+        if resolved_provider != "moor":
             # An explicit provider carries inference. The free-tier identity (for connectors) was
             # created by the boot bootstrap before this point, never here; this prints the one-time
             # "free tier is here" notice the first time an identity is seen beside an own key.
@@ -279,7 +279,7 @@ class CLIAgentSetupMixin:
         flagged on that identity so it never repeats. Never blocks or raises."""
         from cli import logger
         try:
-            from hermes_cli import anon_auth
+            from moor_cli import anon_auth
             if not anon_auth.guest_notice_pending():
                 return
             self._console_print(f"[dim]{anon_auth.FREE_TIER_AVAILABLE_NOTICE}[/]")
@@ -352,7 +352,7 @@ class CLIAgentSetupMixin:
         from cli import _cprint, logger
         _cprint("")
         _cprint("☤ No inference provider is configured yet — let's fix that.")
-        _cprint("  You'll pick a provider (Nous Portal OAuth is the fastest; "
+        _cprint("  You'll pick a provider (Moor Portal OAuth is the fastest; "
                 "no API key needed) and a model.")
         try:
             answer = input("  Set up a provider now? [Y/n]: ").strip().lower()
@@ -517,7 +517,7 @@ class CLIAgentSetupMixin:
             logger=logger, single_query=getattr(self, "_single_query_mode", False))
         if self._session_db is None:
             try:
-                from hermes_state_registry import acquire
+                from moor_state_registry import acquire
                 self._session_db = acquire()
             except Exception as e:
                 logger.warning("SQLite session store not available — session will NOT be indexed: %s", e)
@@ -613,9 +613,9 @@ class CLIAgentSetupMixin:
             return True
         except Exception as e:
             console = ChatConsole()
-            from hermes_cli.cli_chat_error_copy import agent_init_failure_message
+            from moor_cli.cli_chat_error_copy import agent_init_failure_message
             console.print(f"[bold red]{_escape(agent_init_failure_message(e))}[/]")
-            from hermes_constants import partial_update_hint
+            from moor_constants import partial_update_hint
             for line in partial_update_hint(e):
                 console.print(line)
             return False

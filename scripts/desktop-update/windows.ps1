@@ -1453,7 +1453,7 @@ try {
 
     # StartAssigned passes a null CreateProcess currentDirectory, so children
     # inherit the hand-off process directory rather than PowerShell's $PWD.
-    # Desktop launches us from HERMES_HOME; pin the process directory to the
+    # Desktop launches us from MOOR_HOME; pin the process directory to the
     # checkout before any update child can resolve files against the wrong tree.
     try {
         $resolvedInstallRoot = Set-InstallRootCurrentDirectory $InstallRoot
@@ -1469,7 +1469,7 @@ try {
     if ($SelfTestWorkingDirectory) {
         $expectedRoot = [System.IO.Path]::GetFullPath($InstallRoot)
         $probeExe = Join-Path $PSHOME "powershell.exe"
-        $probe = Invoke-HermesStep $probeExe @("-NoProfile", "-Command", "[Environment]::CurrentDirectory") "cwd"
+        $probe = Invoke-MoorStep $probeExe @("-NoProfile", "-Command", "[Environment]::CurrentDirectory") "cwd"
         $observed = $probe.Output.Trim()
         if ($probe.Code -ne 0 -or -not [string]::Equals($observed, $expectedRoot, [StringComparison]::OrdinalIgnoreCase)) {
             $finalMsg = "WORKING-DIRECTORY SELF-TEST: FAIL expected=$expectedRoot observed=$observed code=$($probe.Code)"
@@ -1644,11 +1644,11 @@ try {
 
     # A zero-exit update is not proof that the runtime survived the update.
     if ($res.Code -eq 0 -and -not $desktopBuildFailed) {
-        $verifyCode = "import hermes_cli.main; from hermes_cli.desktop_update_verify import verify_windows_desktop_update; verify_windows_desktop_update()"
-        $verify = Invoke-HermesStep $pythonExe @("-c", $verifyCode) "verify"
+        $verifyCode = "import moor_cli.main; from moor_cli.desktop_update_verify import verify_windows_desktop_update; verify_windows_desktop_update()"
+        $verify = Invoke-MoorStep $pythonExe @("-c", $verifyCode) "verify"
         if ($verify.Code -ne 0) {
             $finalCode = 8
-            $finalMsg = "The updated Hermes runtime or Desktop build failed verification. Repair the installation and review antivirus quarantine before retrying."
+            $finalMsg = "The updated Moor runtime or Desktop build failed verification. Repair the installation and review antivirus quarantine before retrying."
             Write-HandoffLog $finalMsg
             exit $finalCode
         }

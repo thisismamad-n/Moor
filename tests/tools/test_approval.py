@@ -668,7 +668,7 @@ class TestPermanentAllowlistReload:
 
     def test_load_permanent_allowlist_clears_when_config_is_empty(self):
         with mock_patch.object(approval_module, "_permanent_approved", {"stale-pattern"}):
-            with mock_patch("hermes_cli.config.load_config_readonly", return_value={"command_allowlist": []}):
+            with mock_patch("moor_cli.config.load_config_readonly", return_value={"command_allowlist": []}):
                 assert approval_module.load_permanent_allowlist() == set()
 
             assert approval_module._permanent_approved == set()

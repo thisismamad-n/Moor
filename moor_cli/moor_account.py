@@ -69,11 +69,11 @@ class MoorToolAccessInfo:
 
 _ANON_ACCOUNT_TIER = "anonymous"
 # Every billing / top-up / entitlement surface says exactly this for the free tier (R-USR-1).
-FREE_TIER_NEEDS_ACCOUNT = "This needs a Nous account. Run `hermes auth upgrade`."
-FREE_TIER_NEEDS_ACCOUNT_CHAT = "This needs a Nous account. Use /login to sign in."
+FREE_TIER_NEEDS_ACCOUNT = "This needs a Moor account. Run `moor auth upgrade`."
+FREE_TIER_NEEDS_ACCOUNT_CHAT = "This needs a Moor account. Use /login to sign in."
 
 
-def _is_anonymous_tier(account_info: Optional["NousPortalAccountInfo"]) -> bool:
+def _is_anonymous_tier(account_info: Optional["MoorPortalAccountInfo"]) -> bool:
     return account_info is not None and account_info.account_tier == _ANON_ACCOUNT_TIER
 
 
@@ -103,7 +103,7 @@ class MoorPortalAccountInfo:
     raw_claims: Optional[dict[str, Any]] = None
     raw_account: Optional[dict[str, Any]] = None
     error: Optional[str] = None
-    # NAS account tier claim; ``"anonymous"`` is the free tier (no Nous account behind it).
+    # NAS account tier claim; ``"anonymous"`` is the free tier (no Moor account behind it).
     account_tier: Optional[str] = None
     # Portal ``managed_tools`` (JWT claim and account API): the portal has enabled connectors for
     # this account. ``None`` = the portal did not say (a token minted before the claim shipped).
@@ -115,7 +115,7 @@ class MoorPortalAccountInfo:
 
     @property
     def is_anonymous_tier(self) -> bool:
-        """The free tier: no Nous account, so no billing, credits, or entitlement to speak of."""
+        """The free tier: no Moor account, so no billing, credits, or entitlement to speak of."""
         return self.account_tier == _ANON_ACCOUNT_TIER
 
     @property
@@ -182,7 +182,7 @@ def format_moor_portal_entitlement_message(
     """
     if _is_anonymous_tier(account_info):
         return FREE_TIER_NEEDS_ACCOUNT_CHAT if in_chat else FREE_TIER_NEEDS_ACCOUNT
-    billing_url = nous_portal_billing_url(account_info)
+    billing_url = moor_portal_billing_url(account_info)
 
     if account_info is not None:
         if coverage_category is not None:
@@ -237,11 +237,11 @@ def format_moor_portal_entitlement_message(
 
 
 def _no_paid_access_message(
-    account_info: NousPortalAccountInfo, capability: str, billing_url: str, *, in_chat: bool = False,
+    account_info: MoorPortalAccountInfo, capability: str, billing_url: str, *, in_chat: bool = False,
 ) -> str:
     if _is_anonymous_tier(account_info):
         return FREE_TIER_NEEDS_ACCOUNT_CHAT if in_chat else FREE_TIER_NEEDS_ACCOUNT
-    access = account_info.paid_service_access_info or NousPaidServiceAccessInfo()
+    access = account_info.paid_service_access_info or MoorPaidServiceAccessInfo()
     active, paid = access.has_active_subscription, access.active_subscription_is_paid
     labelled = (
         ("usable", access.total_usable_credits),

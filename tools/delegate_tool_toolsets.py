@@ -36,7 +36,7 @@ def _is_mcp_toolset_name(name: str) -> bool:
     return bool(target and str(target).startswith("mcp-"))
 
 def _expand_parent_toolsets(parent_toolsets: set) -> set:
-    """Add every toolset whose tools are a subset of the parent's tools: a parent on a composite like ``hermes-cli``
+    """Add every toolset whose tools are a subset of the parent's tools: a parent on a composite like ``moor-cli``
     must still let a child request ``web``/``terminal``; bare name intersection would reject them. Both sides use
     the RESOLVED static surface: a composite's ``includes`` (``debugging`` -> ``web``/``file``, ``safe``) are tools
     the parent genuinely holds, and the child never gains a tool the parent lacks."""

@@ -787,7 +787,7 @@ def _read_referenced_script(
     which another thread opens SQLite after the check but before this function
     closes its descriptor, cancelling that connection's POSIX locks.
     """
-    from hermes_cli.sqlite_safe_read import LiveConnectionError, offline_file_access
+    from moor_cli.sqlite_safe_read import LiveConnectionError, offline_file_access
 
     try:
         with offline_file_access(path, what="read referenced script"):

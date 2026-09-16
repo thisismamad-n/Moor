@@ -1,4 +1,4 @@
-"""Plugin catalog — curated, Nous-approved Hermes plugins shipped with the repo.
+"""Plugin catalog — curated, Moor-approved Moor plugins shipped with the repo.
 
 Mirrors the ``optional-mcps/`` MCP-catalog pattern: one YAML file per entry under the in-tree
 ``plugin-catalog/`` directory, pinned to an exact 40-character commit SHA. Presence in the directory IS
@@ -8,7 +8,7 @@ the human-merged approval gate; SHA bumps are new, re-reviewed PRs; ``removed.ya
 
 Live refresh: the docs build publishes the same data as ONE JSON document
 (``website/scripts/extract-plugins.py`` → ``/docs/api/plugin-catalog.json``, like the skills index), so
-an installed Hermes sees new entries and removals without updating. Any fetch failure falls back to the
+an installed Moor sees new entries and removals without updating. Any fetch failure falls back to the
 in-tree copy silently.
 """
 
@@ -64,7 +64,7 @@ class PluginCatalogEntry:
     maintainer: str
     tier: str = "community"
     category: str = "desktop"
-    requires_hermes: str = ""
+    requires_moor: str = ""
     subdir: str = ""
     docs_url: str = ""
     platforms: List[str] = field(default_factory=list)  # empty = all OSes
@@ -80,7 +80,7 @@ class PluginCatalogEntry:
         return {
             "name": self.name, "repo": self.repo, "sha": self.sha, "description": self.description,
             "maintainer": self.maintainer, "tier": self.tier, "category": self.category,
-            "requires_hermes": self.requires_hermes,
+            "requires_moor": self.requires_moor,
             "subdir": self.subdir, "docs_url": self.docs_url, "platforms": list(self.platforms),
             "capabilities": {
                 "provides_tools": list(caps.provides_tools), "provides_hooks": list(caps.provides_hooks),
@@ -127,7 +127,7 @@ def entry_from_mapping(data: Any, label: str) -> Optional[PluginCatalogEntry]:
         name=name, repo=repo, sha=sha,
         description=str(data.get("description") or "").strip(),
         maintainer=str(data.get("maintainer") or "").strip(), tier=tier, category=category,
-        requires_hermes=str(data.get("requires_hermes") or "").strip(),
+        requires_moor=str(data.get("requires_moor") or "").strip(),
         subdir=str(data.get("subdir") or "").strip(), docs_url=str(data.get("docs_url") or "").strip(),
         platforms=_str_list(data.get("platforms")),
         capabilities=CatalogCapabilities(
@@ -222,13 +222,13 @@ def find_removed(name_or_repo: str, catalog_dir: Optional[Path] = None) -> Optio
 # ── Live catalog ─────────────────────────────────────────────────────────────
 
 def _live_cache_path() -> Path:
-    from hermes_constants import get_hermes_home
-    return get_hermes_home() / "cache" / "plugin-catalog.json"
+    from moor_constants import get_moor_home
+    return get_moor_home() / "cache" / "plugin-catalog.json"
 
 
 def fetch_live_catalog(*, force: bool = False) -> Optional[Dict[str, Any]]:
     """The published ``plugin-catalog.json`` (``{"entries": [...], "removed": [...]}``), cached under
-    ``HERMES_HOME/cache`` for :data:`LIVE_CATALOG_TTL_SECONDS`. ``None`` on ANY failure — callers fall
+    ``MOOR_HOME/cache`` for :data:`LIVE_CATALOG_TTL_SECONDS`. ``None`` on ANY failure — callers fall
     back to the in-tree catalog."""
     cache = _live_cache_path()
     try:
@@ -238,7 +238,7 @@ def fetch_live_catalog(*, force: bool = False) -> Optional[Dict[str, Any]]:
         logger.debug("Plugin catalog: unreadable live cache %s: %s", cache, exc)
     try:
         import httpx
-        from hermes_constants import mkdir_under_hermes_home
+        from moor_constants import mkdir_under_moor_home
 
         resp = httpx.get(LIVE_CATALOG_URL, timeout=_REQUEST_TIMEOUT, follow_redirects=True)
         resp.raise_for_status()
@@ -247,7 +247,7 @@ def fetch_live_catalog(*, force: bool = False) -> Optional[Dict[str, Any]]:
         data = resp.json()
         if not isinstance(data, dict) or not isinstance(data.get("entries"), list):
             raise ValueError("unexpected live catalog payload")
-        mkdir_under_hermes_home(cache.parent)
+        mkdir_under_moor_home(cache.parent)
         cache.write_text(json.dumps(data), encoding="utf-8")
         return data
     except Exception as exc:
@@ -292,6 +292,6 @@ def entry_capability_summary(entry: PluginCatalogEntry) -> str:
     bits.append(f"This plugin {'; '.join(parts) if parts else 'declares no tools, hooks, middleware, or env vars'}.")
     if entry.platforms:
         bits.append(f"Platforms: {', '.join(entry.platforms)}.")
-    if entry.requires_hermes:
-        bits.append(f"Requires Hermes {entry.requires_hermes}.")
+    if entry.requires_moor:
+        bits.append(f"Requires Moor {entry.requires_moor}.")
     return " ".join(bits)

@@ -75,8 +75,8 @@ def test_promote_refuses_undone_parent_and_names_the_real_remedy(conn):
 
 
 def test_cli_promote_has_no_force_flag(kanban_home):
-    from hermes_cli import kanban_parser
-    parser = argparse.ArgumentParser(prog="hermes", add_help=False)
+    from moor_cli import kanban_parser
+    parser = argparse.ArgumentParser(prog="moor", add_help=False)
     kanban_parser.build_parser(parser.add_subparsers(dest="command"))
     with pytest.raises(SystemExit):
         parser.parse_args(["kanban", "promote", "t_x", "--force"])

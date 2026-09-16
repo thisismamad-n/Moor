@@ -209,7 +209,7 @@ def resolve_pack_plugins(pack: PluginPack) -> List[ResolvedPackPlugin]:
             continue
         try:
             if catalog_entries is None:
-                from hermes_cli.plugin_catalog import load_catalog_live
+                from moor_cli.plugin_catalog import load_catalog_live
                 catalog_entries = load_catalog_live()
         except Exception as exc:  # catalog load must not crash pack handling
             resolved.append(ResolvedPackPlugin(

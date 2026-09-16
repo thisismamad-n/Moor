@@ -849,9 +849,9 @@ class GatewayShutdownMixin:
                 continue
             job_name = job.get("name") or job_id
             msg = (
-                f"⚠️ Scheduled job '{job_name}' was cut short because Hermes is {action}; "
+                f"⚠️ Scheduled job '{job_name}' was cut short because Moor is {action}; "
                 "no result this run. It will run again on schedule, or run it now with "
-                f"`hermes cron run {job_name}` once Hermes is back."
+                f"`moor cron run {job_name}` once Moor is back."
             )
             for target in targets or ():
                 try:
@@ -933,12 +933,12 @@ class GatewayShutdownMixin:
         """
         restart_source = self._restart_command_source if self._restart_requested else None
         msg = (
-            "⚠️ Hermes is shutting down — your current task will be interrupted. "
+            "⚠️ Moor is shutting down — your current task will be interrupted. "
             "When it is back online, send any message and I'll try to pick up where we left off."
         )
         if self._restart_requested:
             msg = (
-                "⚠️ Hermes is restarting — your current task will be interrupted. "
+                "⚠️ Moor is restarting — your current task will be interrupted. "
                 "Send any message after the restart and I'll try to resume where you left off."
             )
         restart_key = None
@@ -1117,7 +1117,7 @@ class GatewayShutdownMixin:
     async def _finalize_session_off_loop(
         self, *, session_id: Any, platform: str, reason: str, session_key: Optional[str] = None, **extra: Any,
     ) -> None:
-        """Run hermes_cli.lifecycle.finalize_session off-loop, bounded; on timeout the worker is left alone.
+        """Run moor_cli.lifecycle.finalize_session off-loop, bounded; on timeout the worker is left alone.
         ``session_key`` lets an unscoped caller (shutdown) enter the owning profile's scope: plugin
         ``on_session_finalize`` observers and the Relay coordinator (``current_profile_key``) resolve
         profile state at call time."""
@@ -1283,11 +1283,11 @@ class GatewayShutdownMixin:
     # Restart orchestration
     @staticmethod
     def _restart_watcher_env() -> dict:
-        """Watcher env minus ``_HERMES_GATEWAY`` (else the CLI's self-restart guard refuses; gateway stays down)."""
+        """Watcher env minus ``_MOOR_GATEWAY`` (else the CLI's self-restart guard refuses; gateway stays down)."""
         from gateway.config_loader import drop_bridged_env
         from tools.environments.local import build_subprocess_env
         watcher_env = drop_bridged_env(build_subprocess_env(scrub_secrets=False, inherit_profile_home=True))
-        watcher_env.pop("_HERMES_GATEWAY", None)
+        watcher_env.pop("_MOOR_GATEWAY", None)
         return watcher_env
 
     @staticmethod
@@ -1402,7 +1402,7 @@ class GatewayShutdownMixin:
 
     def _describe_active_work(self) -> list:
         """One dict per in-flight work unit the restart wait is holding for, so an observer
-        (``hermes update``, ``hermes gateway status``) can name it instead of printing a bare count.
+        (``moor update``, ``moor gateway status``) can name it instead of printing a bare count.
 
         ``kind`` ∈ ``chat`` (session turn), ``cron`` (job id + external worker pid when the run was
         handed to a restart-safe scope), ``api`` / ``deferred`` (count only — those sources expose

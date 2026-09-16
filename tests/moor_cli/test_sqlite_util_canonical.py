@@ -1,4 +1,4 @@
-"""Invariants for the canonical SQLite connect/transaction layer (``hermes_cli/sqlite_util.py``).
+"""Invariants for the canonical SQLite connect/transaction layer (``moor_cli/sqlite_util.py``).
 
 Every small store used to carry its own connect + PRAGMA + ``with conn:`` stack, so the #69567 fd-leak
 fix and the WAL fallback rules had to be re-pasted per module (and at least one copy missed each).
@@ -11,7 +11,7 @@ import sqlite3
 
 import pytest
 
-from hermes_cli import sqlite_util
+from moor_cli import sqlite_util
 
 
 def test_transaction_closes_the_connection_even_when_the_body_raises(tmp_path):
@@ -69,7 +69,7 @@ _STORE_OPENERS = (
     ("cron.delivery_queue", "_connect"),
     ("gateway.delivery_ledger", "_connect"),
     ("tools.async_delegation", "_connect"),
-    ("hermes_cli.projects_db", "connect"),
+    ("moor_cli.projects_db", "connect"),
     ("gateway.hosted_rooms_common", "open_sqlite"),
 )
 
@@ -78,7 +78,7 @@ _STORE_OPENERS = (
 def test_every_store_opens_through_the_canonical_open_db(monkeypatch, tmp_path, module_name, attr):
     import importlib
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     module = importlib.import_module(module_name)
     for name in ("EXECUTIONS_FILE", "NOTEPAD_FILE", "DELIVERY_DB"):
         if hasattr(module, name):
@@ -103,7 +103,7 @@ def test_every_store_opens_through_the_canonical_open_db(monkeypatch, tmp_path, 
         monkeypatch.setattr(module, "open_db", spy)
     opener = getattr(module, attr)
     args = (tmp_path / "opened.db",) if module_name == "gateway.hosted_rooms_common" else ()
-    if module_name == "hermes_cli.projects_db":
+    if module_name == "moor_cli.projects_db":
         args = (tmp_path / "projects.db",)
     conn = opener(*args)
     try:
@@ -116,18 +116,18 @@ def test_every_store_opens_through_the_canonical_open_db(monkeypatch, tmp_path, 
 def test_plugin_db_wal_goes_through_the_shared_fallback(monkeypatch, tmp_path):
     """A raw ``PRAGMA journal_mode=WAL`` bypasses the network-FS fallback and the WAL-reset-bug gate;
     plugin databases must obey the same rules as every core store."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    import hermes_state_wal
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
+    import moor_state_wal
     from plugins import plugin_storage
 
     seen = []
-    real = hermes_state_wal.apply_wal_with_fallback
+    real = moor_state_wal.apply_wal_with_fallback
 
     def spy(conn, **kwargs):
         seen.append(kwargs["db_label"])
         return real(conn, **kwargs)
 
-    monkeypatch.setattr(hermes_state_wal, "apply_wal_with_fallback", spy)
+    monkeypatch.setattr(moor_state_wal, "apply_wal_with_fallback", spy)
     conn = plugin_storage.plugin_db("board")
     try:
         assert conn.execute("PRAGMA foreign_keys").fetchone()[0] == 1

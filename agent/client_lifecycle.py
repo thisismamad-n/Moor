@@ -684,12 +684,12 @@ class ClientLifecycleMixin:
             default_base = (pconfig.inference_base_url or "").strip().rstrip("/")
             base_url = env_url or default_base
             if self.provider == "actual":
-                from hermes_cli.auth import normalize_actual_base_url
-                from hermes_cli.runtime_provider import _config_base_url_for_provider, _get_model_config
+                from moor_cli.auth import normalize_actual_base_url
+                from moor_cli.runtime_provider import _config_base_url_for_provider, _get_model_config
                 configured_base = _config_base_url_for_provider(_get_model_config(), "actual")
                 base_url = normalize_actual_base_url(configured_base or base_url)
             elif self.provider in ("kimi-coding", "zai"):
-                from hermes_cli import auth as _auth
+                from moor_cli import auth as _auth
                 resolver = _auth._resolve_kimi_base_url if self.provider == "kimi-coding" else _auth._resolve_zai_base_url
                 base_url = resolver(api_key, pconfig.inference_base_url, env_url).rstrip("/")
         elif self.provider == "custom":
@@ -929,14 +929,14 @@ class ClientLifecycleMixin:
         rotation; the caller treats a refused swap as "no entry")."""
         runtime_key = getattr(entry, "runtime_api_key", None) or getattr(entry, "access_token", "")
         runtime_base = getattr(entry, "runtime_base_url", None) or getattr(entry, "base_url", None) or self.base_url
-        from hermes_cli.providers import is_actual_route
+        from moor_cli.providers import is_actual_route
         actual_route = is_actual_route(getattr(self, "provider", ""), runtime_base)
         if actual_route:
-            from hermes_cli.auth import normalize_actual_base_url
+            from moor_cli.auth import normalize_actual_base_url
             runtime_base = normalize_actual_base_url(runtime_base)
         stripped_base = runtime_base.rstrip("/") if isinstance(runtime_base, str) else runtime_base
         # Refuse BEFORE any state changes below: a refused swap must leave the agent exactly as it was.
-        from hermes_cli.anon_auth import route_can_serve_model
+        from moor_cli.anon_auth import route_can_serve_model
         if not route_can_serve_model(getattr(self, "provider", None), stripped_base, getattr(self, "model", None)):
             logger.info("Credential %s skipped: its route cannot serve model %s", getattr(entry, "id", "?"), self.model)
             return False

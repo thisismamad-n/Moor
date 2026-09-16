@@ -46,7 +46,7 @@ import { sessionTileOwnerRoute } from '@/store/session-states'
 export { sessionMatchesStoredId }
 import { sessionOwnerRouteFromRow, type SessionOwnerScope } from '@/store/session-request-router'
 import { reportBackendContract, reportInstallMethodWarning } from '@/store/updates'
-import type { SessionCreateResponse, SessionInfo, SessionResumeResult, SessionRuntimeInfo } from '@/types/hermes'
+import type { SessionCreateResponse, SessionInfo, SessionResumeResult, SessionRuntimeInfo } from '@/types/moor'
 
 import type { ClientSessionState } from '../../../types'
 

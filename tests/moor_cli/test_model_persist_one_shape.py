@@ -3,7 +3,7 @@
 ``/model --global`` reaches config.yaml from four places (CLI mixin, gateway slash command, TUI
 gateway, dashboard main slot). Each used to hand-roll its own write; the TUI never touched
 ``api_mode`` (stale wire protocol after a switch) and the dashboard wrote ``base_url: ""``. All
-four now go through ``hermes_cli.model_switch.persist_model_selection`` /
+four now go through ``moor_cli.model_switch.persist_model_selection`` /
 ``apply_model_selection``, so the same ``ModelSwitchResult`` must land as the same ``model.*``
 keys on disk — including the api_mode clear and the route-changed context_length clear.
 """
@@ -15,7 +15,7 @@ import asyncio
 import pytest
 import yaml
 
-from hermes_cli.model_switch import ModelSwitchResult
+from moor_cli.model_switch import ModelSwitchResult
 
 _SEED = (
     "model:\n"
@@ -41,8 +41,8 @@ _RESULT = ModelSwitchResult(
 def seeded_home(tmp_path, monkeypatch):
     import cli
     (tmp_path / "config.yaml").write_text(_SEED, encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.setattr(cli, "_hermes_home", tmp_path)
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
+    monkeypatch.setattr(cli, "_moor_home", tmp_path)
     return tmp_path
 
 
@@ -51,7 +51,7 @@ def _model_block(home) -> dict:
 
 
 def _via_cli(home):
-    from hermes_cli import cli_model_switch_mixin as mixin
+    from moor_cli import cli_model_switch_mixin as mixin
     stub = type("Stub", (), {
         "agent": None, "model": "local-model", "_pending_one_turn_model_restore": None,
         "_stage_and_swap_model": lambda self, r, o: True})()
@@ -71,17 +71,17 @@ def _via_tui(home):
 
 
 def _via_dashboard(home):
-    from hermes_cli.web_server_config import _apply_model_assignment_sync
+    from moor_cli.web_server_config import _apply_model_assignment_sync
     _apply_model_assignment_sync("main", "anthropic", "claude-haiku", "", "")
 
 
 @pytest.mark.parametrize("surface", [_via_cli, _via_gateway, _via_tui, _via_dashboard],
                          ids=["cli", "gateway", "tui", "dashboard"])
 def test_every_persist_surface_writes_the_same_model_block(seeded_home, monkeypatch, surface):
-    monkeypatch.setattr("hermes_cli.model_switch.switch_model", lambda **_kw: _RESULT)
-    monkeypatch.setattr("cli.HermesCLI._persist_model_switch_to_session", lambda *a, **k: None)
-    monkeypatch.setattr("hermes_cli.cli_model_switch_mixin._print_switch_summary", lambda *a, **k: None)
-    monkeypatch.setattr("hermes_cli.model_selection_guards.combined_selection_warning",
+    monkeypatch.setattr("moor_cli.model_switch.switch_model", lambda **_kw: _RESULT)
+    monkeypatch.setattr("cli.MoorCLI._persist_model_switch_to_session", lambda *a, **k: None)
+    monkeypatch.setattr("moor_cli.cli_model_switch_mixin._print_switch_summary", lambda *a, **k: None)
+    monkeypatch.setattr("moor_cli.model_selection_guards.combined_selection_warning",
                         lambda *a, **k: None, raising=False)
     monkeypatch.setattr("cli._cprint", lambda *a, **k: None, raising=False)
 
@@ -103,7 +103,7 @@ def test_every_persist_surface_writes_the_same_model_block(seeded_home, monkeypa
 
 def test_same_route_repick_keeps_the_context_pin(seeded_home):
     """A model re-pick on the SAME route keeps ``context_length`` (only the owner change drops it)."""
-    from hermes_cli.model_switch import persist_model_selection
+    from moor_cli.model_switch import persist_model_selection
     same_route = ModelSwitchResult(
         success=True, new_model="local-model", target_provider="custom",
         base_url="http://localhost:1234/v1", api_mode="anthropic_messages", is_global=True)
@@ -117,7 +117,7 @@ def test_custom_to_other_custom_endpoint_drops_the_inline_key(seeded_home):
     """``custom`` -> ``custom:other-box``: endpoint A's inline ``api_key`` must not become endpoint B's
     credential (the pointer-not-secret rule, #88990). Same provider *string* but a different
     ``base_url`` drops it too — the key belongs to one endpoint, not to the word "custom"."""
-    from hermes_cli.model_switch import persist_model_selection
+    from moor_cli.model_switch import persist_model_selection
     other_provider = ModelSwitchResult(
         success=True, new_model="other-model", target_provider="custom:other-box",
         base_url="http://other-box:8000/v1", api_mode="chat_completions", is_global=True)
@@ -136,7 +136,7 @@ def test_provider_switch_drops_the_key_env_pointer_but_a_same_route_repick_keeps
     """``model.key_env`` is a credential POINTER (custom-endpoint activation writes it with no inline
     key). Surviving a provider switch it routes the new provider's requests to the old endpoint's
     env var, so it clears like ``api_key``; a same-route re-pick keeps it like ``api_key``."""
-    from hermes_cli.model_switch import persist_model_selection
+    from moor_cli.model_switch import persist_model_selection
     seed = _SEED.replace("  api_key: sk-stale\n", "  key_env: CUSTOM_BOX_API_KEY\n")
     (seeded_home / "config.yaml").write_text(seed, encoding="utf-8")
     persist_model_selection(_RESULT)
@@ -149,28 +149,28 @@ def test_provider_switch_drops_the_key_env_pointer_but_a_same_route_repick_keeps
     persist_model_selection(same_route)
     assert _model_block(seeded_home)["key_env"] == "CUSTOM_BOX_API_KEY"
 
-    # Registry providers get the pointer too (Desktop stores e.g. HERMES_CUSTOM_LMSTUDIO_API_KEY
+    # Registry providers get the pointer too (Desktop stores e.g. MOOR_CUSTOM_LMSTUDIO_API_KEY
     # as model.key_env with provider lmstudio, #106336): a same-route model re-pick keeps it.
     (seeded_home / "config.yaml").write_text(
         seed.replace("provider: custom\n", "provider: lmstudio\n")
-            .replace("CUSTOM_BOX_API_KEY", "HERMES_CUSTOM_LMSTUDIO_API_KEY"), encoding="utf-8")
+            .replace("CUSTOM_BOX_API_KEY", "MOOR_CUSTOM_LMSTUDIO_API_KEY"), encoding="utf-8")
     persist_model_selection(ModelSwitchResult(
         success=True, new_model="qwen3-8b", target_provider="lmstudio",
         base_url="http://localhost:1234/v1", api_mode="openai_chat", is_global=True))
     block = _model_block(seeded_home)
     assert block["default"] == "qwen3-8b"
-    assert block["key_env"] == "HERMES_CUSTOM_LMSTUDIO_API_KEY"
+    assert block["key_env"] == "MOOR_CUSTOM_LMSTUDIO_API_KEY"
 
 
 def test_gateway_persists_to_the_profile_config_it_was_given(tmp_path, monkeypatch):
     """Multiplexed gateway: the write lands in the routed profile's config.yaml, never the
-    process-level HERMES_HOME."""
+    process-level MOOR_HOME."""
     from gateway.slash_commands_model import _persist_model_switch_to_config
     process_home, profile_home = tmp_path / "default", tmp_path / "profiles" / "named"
     for home in (process_home, profile_home):
         home.mkdir(parents=True)
         (home / "config.yaml").write_text("model:\n  default: old\n  provider: openai-codex\n")
-    monkeypatch.setenv("HERMES_HOME", str(process_home))
+    monkeypatch.setenv("MOOR_HOME", str(process_home))
     asyncio.run(_persist_model_switch_to_config(_RESULT, profile_home / "config.yaml"))
     assert _model_block(profile_home)["default"] == "claude-haiku"
     assert _model_block(process_home)["default"] == "old"

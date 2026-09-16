@@ -943,7 +943,7 @@ function SidebarSystemActions({
   const navigate = useNavigate();
   const { activeAction, isBusy, isRunning, pendingAction, runAction } =
     useSystemActions();
-  const canUpdateHermes = status?.can_update_hermes === true;
+  const canUpdateMoor = status?.can_update_moor === true;
   // Served by the shared multiplexer: a restart blips every bot on this device — say which.
   const sharedGateway = sharedGatewayProfiles(status);
   const [restartConfirmOpen, setRestartConfirmOpen] = useState(false);
@@ -1084,7 +1084,7 @@ function SidebarSystemActions({
         sharedGateway
           ? sharedGatewayRestartDescription(sharedGateway)
           : (t.status.restartGatewayConfirmMessage ??
-            "This restarts the Hermes gateway process. Connected channels and active sessions will reconnect afterward.")
+            "This restarts the Moor gateway process. Connected channels and active sessions will reconnect afterward.")
       }
       loading={pendingAction === "restart"}
       onCancel={() => setRestartConfirmOpen(false)}

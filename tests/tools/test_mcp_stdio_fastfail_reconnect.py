@@ -135,7 +135,7 @@ def test_precall_dead_children_respawn_and_retry(monkeypatch, tmp_path):
 
 def test_midcall_child_exit_reconnects_without_replay(monkeypatch, tmp_path):
     """An in-flight side effect may have completed, so reconnect but do not replay it."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     from tools import mcp_tool
     from tools.mcp_tool_handlers import _make_tool_handler
 
@@ -186,7 +186,7 @@ def test_sdk_first_transport_close_midcall_is_uncertain_without_replay(monkeypat
     """The SDK usually notices the closed pipe before the 250 ms child watcher does and raises a
     transport-closure error. On a stdio server that is the same ambiguous mid-call death: it must
     surface as uncertain, never reach the session-expired recoverer, which would replay the call."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     anyio = pytest.importorskip("anyio")
     from tools import mcp_tool
     from tools.mcp_tool_handlers import _make_tool_handler

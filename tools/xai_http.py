@@ -49,8 +49,8 @@ def has_xai_credentials() -> bool:
         return False
 
 
-def hermes_xai_user_agent() -> str:
-    """Return a stable Hermes-specific User-Agent for xAI HTTP calls."""
+def moor_xai_user_agent() -> str:
+    """Return a stable moor-specific User-Agent for xAI HTTP calls."""
     try:
         from moor_cli import __version__
     except Exception:
@@ -169,9 +169,9 @@ def _resolve_explicit_xai_api_key() -> str:
 
 
 def _xai_base_url_override() -> str:
-    """``HERMES_XAI_BASE_URL`` then ``XAI_BASE_URL``, stripped; '' when unset."""
-    from hermes_cli.config import get_env_value
-    return str(get_env_value("HERMES_XAI_BASE_URL") or get_env_value("XAI_BASE_URL") or "").strip().rstrip("/")
+    """``MOOR_XAI_BASE_URL`` then ``XAI_BASE_URL``, stripped; '' when unset."""
+    from moor_cli.config import get_env_value
+    return str(get_env_value("MOOR_XAI_BASE_URL") or get_env_value("XAI_BASE_URL") or "").strip().rstrip("/")
 
 
 def resolve_xai_http_credentials(
@@ -223,7 +223,7 @@ def resolve_xai_http_credentials(
     except Exception:
         pass
 
-    from hermes_cli.config import get_env_value
+    from moor_cli.config import get_env_value
     api_key = _resolve_explicit_xai_api_key()
     base_url = str(get_env_value("XAI_BASE_URL") or DEFAULT_XAI_BASE_URL).strip().rstrip("/")
     return {"provider": "xai", "api_key": api_key, "base_url": base_url}

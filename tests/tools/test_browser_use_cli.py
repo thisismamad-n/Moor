@@ -271,7 +271,7 @@ class TestVaultSupervisorAttach:
     def test_exec_attaches_supervisor_to_the_browser_it_drives(self, tmp_path, monkeypatch, _fake_supervisor_registry):
         """browser_vault_fill injects secrets only over the supervisor's CDP WebSocket. Without this attach the
         default (Browser Use) backend had no supervisor at all and every fill failed with supervisor_required."""
-        monkeypatch.setattr("hermes_cli.config.read_raw_config", lambda: {"browser": {"backend": "browser-use"}})
+        monkeypatch.setattr("moor_cli.config.read_raw_config", lambda: {"browser": {"backend": "browser-use"}})
         cli = _fake_cli(tmp_path, 'cat > /dev/null\necho ok\n')
         monkeypatch.setattr(bu_cli, "_find_cli", lambda: [cli])
         monkeypatch.setattr("tools.browser_tool_cdp._resolve_cdp_override", lambda url: url)
@@ -574,7 +574,7 @@ class TestBackendCdpResolution:
         assert "BU_CDP_WS" not in env and "BU_CDP_URL" not in env
 
     def test_picker_managed_selection_resolves_gateway_provider(self, monkeypatch):
-        """``cloud_provider: nous`` (the `hermes tools` managed row) must resolve through the
+        """``cloud_provider: moor`` (the `moor tools` managed row) must resolve through the
         provider: the picker never writes the legacy ``use_gateway`` flag, and the direct-API
         branch leaves browser_exec with no CDP endpoint at all (#108310)."""
         import tools.browser_tool as bt  # noqa: F401 — imported for parity with sibling tests
@@ -588,7 +588,7 @@ class TestBackendCdpResolution:
             bt_session, "_get_session_info",
             lambda task_id: {"cdp_url": "wss://gateway.example/cdp/managed"},
         )
-        monkeypatch.setattr(bu_cli, "_read_browser_cfg", lambda: {"cloud_provider": "nous"})
+        monkeypatch.setattr(bu_cli, "_read_browser_cfg", lambda: {"cloud_provider": "moor"})
         env = {}
         assert bu_cli._resolve_backend_cdp(env, "t1") is None
         assert env["BU_CDP_WS"] == "wss://gateway.example/cdp/managed"
@@ -1420,7 +1420,7 @@ class TestTimeoutProcessGroupKill:
         """A grandchild that outlives the direct child and holds the inherited stdout
         pipe must not keep browser_exec blocked past the timeout (it wedged permanently
         before the group kill)."""
-        monkeypatch.setattr("hermes_cli.config.read_raw_config", lambda: {})
+        monkeypatch.setattr("moor_cli.config.read_raw_config", lambda: {})
         pid_file = tmp_path / "grandchild.pid"
         cli = _fake_cli(tmp_path, (
             "cat > /dev/null\n"

@@ -52,7 +52,7 @@ def _restore_agent_model_runtime(agent, snapshot: dict | None) -> None:
 
 
 def _profile_runtime_scope_tokens(profile_home) -> "_TurnScopes":
-    """Bind HERMES_HOME + secret + terminal scope for ``profile_home`` (None = launch profile) and
+    """Bind MOOR_HOME + secret + terminal scope for ``profile_home`` (None = launch profile) and
     return the reset tokens. The launch profile's SECRET scope is always bound — its ``.env`` over
     the launch env (live while single-profile, frozen at activation afterwards; never live
     ``os.environ`` once a secondary context may have written to it, #107422) — so the credential
@@ -65,16 +65,16 @@ def _profile_runtime_scope_tokens(profile_home) -> "_TurnScopes":
     if profile_home:
         home = Path(profile_home)
         # External sources first: the requested profile may never have been served in this process.
-        from hermes_cli.env_loader import hydrate_profile_secret_sources
+        from moor_cli.env_loader import hydrate_profile_secret_sources
         hydrate_profile_secret_sources(home)
         secrets = build_profile_secret_scope(home)
         overlay = None
-        scopes.home = set_hermes_home_override(str(home))
+        scopes.home = set_moor_home_override(str(home))
     else:
-        # No home override: the launch home IS get_hermes_home() (``_profile_home`` answers None for
+        # No home override: the launch home IS get_moor_home() (``_profile_home`` answers None for
         # "already the launch profile"); only its secrets (+ terminal policy under multiplex) need binding.
         from tui_gateway.launch_profile_policy import launch_secret_scope, launch_terminal_env
-        home = Path(_hermes_home)
+        home = Path(_moor_home)
         secrets = launch_secret_scope(home)
         scopes.secret = set_secret_scope(secrets)
         if not is_multiplex_active():
@@ -91,7 +91,7 @@ def _profile_runtime_scope_tokens(profile_home) -> "_TurnScopes":
 
 def _release_profile_runtime_scope_tokens(scopes: "_TurnScopes | None") -> None:
     """Release terminal → secret → home. Each reset is independent: a failing terminal reset must
-    not leave the previous profile's secrets / HERMES_HOME installed for the next body in this
+    not leave the previous profile's secrets / MOOR_HOME installed for the next body in this
     context (a fail-open scope leak on the teardown path). The first failure is re-raised after
     every scope has been released."""
     if scopes is None:
@@ -99,7 +99,7 @@ def _release_profile_runtime_scope_tokens(scopes: "_TurnScopes | None") -> None:
     from tools.terminal_scope import reset_terminal_scope
     first_error: BaseException | None = None
     for token, reset in ((scopes.terminal, reset_terminal_scope), (scopes.secret, reset_secret_scope),
-                         (scopes.home, reset_hermes_home_override)):
+                         (scopes.home, reset_moor_home_override)):
         if token is None:
             continue
         try:
@@ -148,7 +148,7 @@ def _restart_completed_failed_agent_build(sid: str, session: dict, failed_ready:
 
 def _switch_request(raw_input: str, parsed_flags, persist_override) -> tuple[str, str, bool, bool, str]:
     """Normalize /model flags → (model_input, explicit_provider, one_turn, persist_global, reasoning_effort)."""
-    from hermes_cli.model_switch import (
+    from moor_cli.model_switch import (
         MODEL_SWITCH_ERR_ONCE_WITH_GLOBAL, MODEL_SWITCH_ERROR_TEXT, parse_model_switch_args,
         resolve_persist_behavior)
 
@@ -206,7 +206,7 @@ def _expensive_model_confirm(result, current_base_url: str, current_api_key, age
     """Deferred-confirm response when the selection guards flag the target model (or, with a live
     ``agent``, the switch itself — large cached context), else None."""
     try:
-        from hermes_cli.model_selection_guards import (
+        from moor_cli.model_selection_guards import (
             combined_selection_warning, selection_context_for_agent)
         warning = combined_selection_warning(
             result.new_model, provider=result.target_provider, base_url=result.base_url or current_base_url,
@@ -253,7 +253,7 @@ def _apply_model_switch(
     sid: str, session: dict, raw_input: str, *, confirm_expensive_model: bool = False,
     pin_session_override: bool = True, parsed_flags: Any | None = None,
     persist_override: bool | None = None) -> dict:
-    from hermes_cli.model_switch import switch_model
+    from moor_cli.model_switch import switch_model
     model_input, explicit_provider, one_turn, persist_global, reasoning_effort = _switch_request(
         raw_input, parsed_flags, persist_override)
     agent = session.get("agent")
@@ -293,7 +293,7 @@ def _apply_model_switch(
             "model": result.new_model, "provider": result.target_provider,
             "base_url": result.base_url, "api_key": result.api_key, "api_mode": result.api_mode}
     if persist_global:
-        from hermes_cli.model_switch import persist_model_selection
+        from moor_cli.model_switch import persist_model_selection
         persist_model_selection(result)
     if reasoning_effort:
         _apply_switch_reasoning(sid, session, agent, reasoning_effort, persist_global=persist_global, one_turn=one_turn)
@@ -308,7 +308,7 @@ def _apply_switch_reasoning(sid: str, session, agent, effort: str, *, persist_gl
     AFTER ``agent.switch_model`` (which re-resolves ``reasoning_config`` from config.yaml, so an
     earlier write would be clobbered). ``--once`` restores through ``one_turn_model_restore`` —
     the snapshot's ``primary_runtime`` carries the pre-switch ``reasoning_config``."""
-    from hermes_constants import parse_reasoning_effort
+    from moor_constants import parse_reasoning_effort
     parsed = parse_reasoning_effort(effort)
     if parsed is None:
         return

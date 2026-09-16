@@ -182,8 +182,8 @@ def _open_session_db_at_path(db_path: Path, *, read_only: bool):
 
 def _session_db_path_for_profile(profile: Optional[str]) -> Path:
     """state.db path for ``profile`` (None/empty = this process's own)."""
-    from hermes_cli.web_server_cron import _cron_profile_home
-    from hermes_state import _default_db_path
+    from moor_cli.web_server_cron import _cron_profile_home
+    from moor_state import _default_db_path
 
     if profile:
         _name, home = _cron_profile_home(profile)
@@ -237,9 +237,9 @@ def _skill_maintenance_idle_for(started_at: float) -> Optional[float]:
     """Measure chat inactivity, not socket inactivity (Desktop stays connected)."""
     import tui_gateway.server as gateway
 
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
-    home = get_hermes_home().resolve()
+    home = get_moor_home().resolve()
     with gateway._sessions_lock:
         sessions = [session for session in gateway._sessions.values()
                     if Path(session.get("profile_home") or home).resolve() == home]
@@ -252,11 +252,11 @@ def _skill_maintenance_idle_for(started_at: float) -> Optional[float]:
 
 
 def _maybe_run_skill_maintenance(started_at: float) -> None:
-    from hermes_constants import get_hermes_home
-    from hermes_cli.profiles import _check_gateway_running
+    from moor_constants import get_moor_home
+    from moor_cli.profiles import _check_gateway_running
 
     # A live messaging gateway already owns these chores for this profile.
-    if _check_gateway_running(get_hermes_home()):
+    if _check_gateway_running(get_moor_home()):
         return
 
     from agent.curator import maybe_run_curator

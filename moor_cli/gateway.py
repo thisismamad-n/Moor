@@ -576,8 +576,8 @@ def _scan_gateway_pids(
     from gateway.status import (
         looks_like_gateway_command_line, looks_like_gateway_runtime_command_line, profile_flag_value,
     )
-    current_home = str(get_hermes_home().resolve())
-    # Forward slashes on both sides of the HERMES_HOME= match (mirrors gateway.status).
+    current_home = str(get_moor_home().resolve())
+    # Forward slashes on both sides of the MOOR_HOME= match (mirrors gateway.status).
     current_home_lc = current_home.lower().replace("\\", "/")
     current_profile_arg = _profile_arg(current_home)
     current_profile_name = current_profile_arg.split()[-1] if current_profile_arg else ""
@@ -589,13 +589,13 @@ def _scan_gateway_pids(
             # Token equality, not substring: `-p ops` must not claim (or SIGTERM) an `-p ops-2` gateway.
             return (
                 profile_flag_value(command_lc) == current_profile_name_lc
-                or f"hermes_home={current_home_lc}" in command_lc
+                or f"moor_home={current_home_lc}" in command_lc
             )
 
         # Default profile: accept unless argv advertises another profile in any spelling the CLI
         # pre-parser accepts (``--profile=ops`` slipped past a substring test, so a default-profile
-        # fallback stop could SIGTERM the named gateway). HERMES_HOME may come via env (invisible to
-        # wmic/CIM), so only a non-matching explicit HERMES_HOME= disqualifies.
+        # fallback stop could SIGTERM the named gateway). MOOR_HOME may come via env (invisible to
+        # wmic/CIM), so only a non-matching explicit MOOR_HOME= disqualifies.
         if profile_flag_value(command_lc) is not None:
             return False
         return not ("moor_home=" in command_lc and f"moor_home={current_home_lc}" not in command_lc)
@@ -1102,8 +1102,8 @@ def _systemctl_show(properties: tuple[str, ...], *, system: bool) -> dict[str, s
     return _parse_kv_pairs(result.stdout.splitlines()) if result.returncode == 0 else {}
 
 
-def _hermes_home_pinned_by_unit(unit_path: Path) -> str | None:
-    """``HERMES_HOME`` pinned by the unit file at *unit_path*, or None when absent/unreadable."""
+def _moor_home_pinned_by_unit(unit_path: Path) -> str | None:
+    """``MOOR_HOME`` pinned by the unit file at *unit_path*, or None when absent/unreadable."""
     try:
         text = unit_path.read_text(encoding="utf-8")
     except OSError:
@@ -1117,14 +1117,14 @@ def _hermes_home_pinned_by_unit(unit_path: Path) -> str | None:
     return None
 
 
-def _hermes_home_from_systemd_unit_file(system: bool = False) -> str | None:
-    """``HERMES_HOME`` from the on-disk unit file - what refresh/compare already read, and reliable under ``sudo``."""
-    return _hermes_home_pinned_by_unit(get_systemd_unit_path(system=system))
+def _moor_home_from_systemd_unit_file(system: bool = False) -> str | None:
+    """``MOOR_HOME`` from the on-disk unit file - what refresh/compare already read, and reliable under ``sudo``."""
+    return _moor_home_pinned_by_unit(get_systemd_unit_path(system=system))
 
 
-def _sync_hermes_home_from_systemd_unit(system: bool) -> None:
-    """Adopt a system-scope unit's ``HERMES_HOME``: under ``sudo`` it is stripped and HOME=/root, so
-    get_hermes_home() would pick the wrong profile for runtime-status/PID reads."""
+def _sync_moor_home_from_systemd_unit(system: bool) -> None:
+    """Adopt a system-scope unit's ``MOOR_HOME``: under ``sudo`` it is stripped and HOME=/root, so
+    get_moor_home() would pick the wrong profile for runtime-status/PID reads."""
     if not system:
         return
     # On-disk unit first; ``systemctl show`` for units that only exist in the manager.
@@ -1486,7 +1486,7 @@ def _print_served_ingress_urls(profile: str | None = None) -> None:
     """Callback URLs of inbound-port platforms the live multiplexer serves for secondary profiles
     (the value to paste into the Twilio / LINE / Teams / BlueBubbles console)."""
     try:
-        from hermes_cli.gateway_multiplex_served import format_ingress_url_lines, served_profile_ingress_urls
+        from moor_cli.gateway_multiplex_served import format_ingress_url_lines, served_profile_ingress_urls
         urls = served_profile_ingress_urls(profile)
     except Exception:
         return
@@ -1503,7 +1503,7 @@ def _print_unserved_shared_ingress(profile: str | None) -> None:
     """Shared-ingress platforms (WhatsApp/Relay) this served profile enabled that the multiplexer runs
     only on the default profile — the ``whatsapp: not served under multiplex`` line."""
     try:
-        from hermes_cli.gateway_multiplex_served import served_profile_unserved_platforms
+        from moor_cli.gateway_multiplex_served import served_profile_unserved_platforms
         unserved = served_profile_unserved_platforms(profile or "")
     except Exception:
         return
@@ -1995,9 +1995,9 @@ def _profile_name_from_home(home: Path, default: Path) -> str | None:
 def _native_service_homes() -> set[Path]:
     """This process's native default home plus, when root under sudo, the invoking user's (see
     ``_profile_suffix`` for why sudo matters)."""
-    from hermes_constants import _get_platform_default_hermes_home, sudo_invoker_default_home
+    from moor_constants import _get_platform_default_moor_home, sudo_invoker_default_home
 
-    homes = {_get_platform_default_hermes_home().resolve()}
+    homes = {_get_platform_default_moor_home().resolve()}
     sudo_home = sudo_invoker_default_home()
     if sudo_home is not None:
         homes.add(sudo_home.resolve())
@@ -2005,7 +2005,7 @@ def _native_service_homes() -> set[Path]:
 
 
 def _bare_unit_pinned_home() -> Path | None:
-    """Resolved ``HERMES_HOME`` pinned by an installed ``hermes-gateway.service``, or None. The unit is the
+    """Resolved ``MOOR_HOME`` pinned by an installed ``moor-gateway.service``, or None. The unit is the
     one naming basis that holds still across the sudo mid-command switch (see ``_profile_suffix``) and it
     covers every elevated identity — ``sudo -i`` and cron included, where SUDO_USER is absent.
 
@@ -2019,7 +2019,7 @@ def _bare_unit_pinned_home() -> Path | None:
     """
     if not is_linux() or os.geteuid() != 0:  # windows-footgun: ok — behind is_linux()
         return None
-    pinned = _hermes_home_pinned_by_unit(_SYSTEM_UNIT_DIR / f"{_SERVICE_BASE}.service")
+    pinned = _moor_home_pinned_by_unit(_SYSTEM_UNIT_DIR / f"{_SERVICE_BASE}.service")
     if not pinned:
         return None
     try:
@@ -2029,30 +2029,30 @@ def _bare_unit_pinned_home() -> Path | None:
 
 
 def _profile_suffix() -> str:
-    """Service-name suffix for HERMES_HOME: "" for a home that owns the bare name, the profile name for
+    """Service-name suffix for MOOR_HOME: "" for a home that owns the bare name, the profile name for
     ``<root>/profiles/<name>``, else a short hash of the path.
 
-    Bare-name owners: this process's platform-native default (``~/.hermes``), under sudo the invoking
-    user's native default, and the home pinned by an installed ``hermes-gateway.service``. Under sudo the
-    naming basis moves MID-COMMAND — sudo strips HERMES_HOME and sets HOME=/root, then
-    ``_sync_hermes_home_from_systemd_unit()`` adopts the unit's own HERMES_HOME into ``os.environ`` — so a
+    Bare-name owners: this process's platform-native default (``~/.moor``), under sudo the invoking
+    user's native default, and the home pinned by an installed ``moor-gateway.service``. Under sudo the
+    naming basis moves MID-COMMAND — sudo strips MOOR_HOME and sets HOME=/root, then
+    ``_sync_moor_home_from_systemd_unit()`` adopts the unit's own MOOR_HOME into ``os.environ`` — so a
     basis derived from the process alone names one unit before the adoption and another after it. The
-    unit-pinned check must precede the profile branch: ``sudo hermes gateway install --system`` resolves
+    unit-pinned check must precede the profile branch: ``sudo moor gateway install --system`` resolves
     the BARE name from root's default, then pins the invoking user's remapped home, so the bare unit
     legitimately carries a ``<root>/profiles/<name>`` home.
 
-    The bare name is deliberately NOT tied to ``get_default_hermes_root()``: that helper treats any
-    HERMES_HOME outside ``~/.hermes`` (Docker ``/opt/data``, a temp dir) as "the root itself", which let a
-    temp-home harness resolve to the default profile's ``hermes-gateway`` unit and uninstall the
+    The bare name is deliberately NOT tied to ``get_default_moor_root()``: that helper treats any
+    MOOR_HOME outside ``~/.moor`` (Docker ``/opt/data``, a temp dir) as "the root itself", which let a
+    temp-home harness resolve to the default profile's ``moor-gateway`` unit and uninstall the
     production gateway. Service names are host-wide identities; a home with no installed bare unit and
     no native default keeps its own suffix.
     """
     import hashlib
-    from hermes_constants import get_default_hermes_root
-    home = get_hermes_home().resolve()
+    from moor_constants import get_default_moor_root
+    home = get_moor_home().resolve()
     if home in _native_service_homes() or home == _bare_unit_pinned_home():
         return ""
-    name = _profile_name_from_home(home, get_default_hermes_root().resolve())
+    name = _profile_name_from_home(home, get_default_moor_root().resolve())
     return name or hashlib.sha256(str(home).encode()).hexdigest()[:8]
 
 
@@ -2060,8 +2060,8 @@ def _current_profile_name() -> str:
     """Profile id relative to the profile ROOT: ``default`` for the root itself (Docker's ``/opt/data``
     included), ``<name>`` for ``<root>/profiles/<name>``, else the service hash. s6 slots and the
     multiplexer ask which PROFILE this is; ``_profile_suffix()`` answers which HOST SERVICE this is."""
-    from hermes_constants import profile_name_for_home
-    return profile_name_for_home(get_hermes_home()) or _profile_suffix()
+    from moor_constants import profile_name_for_home
+    return profile_name_for_home(get_moor_home()) or _profile_suffix()
 
 
 def _profile_arg(moor_home: str | None = None, default_root: str | Path | None = None) -> str:
@@ -2289,7 +2289,7 @@ def _run_systemctl(args: list[str], *, system: bool = False, **kwargs) -> subpro
     try:
         return subprocess.run(_systemctl_cmd(system) + args, **kwargs)
     except FileNotFoundError:
-        from hermes_cli.gateway_command_errors import SystemctlUnavailableError
+        from moor_cli.gateway_command_errors import SystemctlUnavailableError
         raise SystemctlUnavailableError() from None
 
 
@@ -2880,9 +2880,9 @@ def generate_systemd_unit(system: bool = False, run_as_user: str | None = None) 
 
     if system:
         username, group_name, home_dir, uid = _system_service_identity(run_as_user)
-        hermes_home = _hermes_home_for_target_user(home_dir)
-        # Profile arg relative to the TARGET user's ~/.hermes when hermes_home lives under it.
-        target_root = Path(home_dir) / ".hermes"
+        moor_home = _moor_home_for_target_user(home_dir)
+        # Profile arg relative to the TARGET user's ~/.moor when moor_home lives under it.
+        target_root = Path(home_dir) / ".moor"
         try:
             Path(moor_home).resolve().relative_to(target_root.resolve())
             profile_arg = _profile_arg(moor_home, default_root=target_root)
@@ -3315,15 +3315,15 @@ def _systemd_scope_preamble(
 
 
 def _systemd_unit_belongs_to_current_home(system: bool = False) -> bool:
-    """False (with a warning) when the installed unit pins a HERMES_HOME other than this process's: the
+    """False (with a warning) when the installed unit pins a MOOR_HOME other than this process's: the
     service name then resolved to ANOTHER install's gateway, and stop/disable/unlink would take it down."""
-    _sync_hermes_home_from_systemd_unit(system=system)  # sudo strips HERMES_HOME; adopt the unit's first
-    unit_home = _hermes_home_from_systemd_unit_file(system=system)
-    if unit_home is None or Path(unit_home).expanduser().resolve() == get_hermes_home().resolve():
+    _sync_moor_home_from_systemd_unit(system=system)  # sudo strips MOOR_HOME; adopt the unit's first
+    unit_home = _moor_home_from_systemd_unit_file(system=system)
+    if unit_home is None or Path(unit_home).expanduser().resolve() == get_moor_home().resolve():
         return True
     print_warning(
-        f"Refusing to remove {get_systemd_unit_path(system=system)}: it runs HERMES_HOME={unit_home}, "
-        f"but this process has HERMES_HOME={get_hermes_home()}"
+        f"Refusing to remove {get_systemd_unit_path(system=system)}: it runs MOOR_HOME={unit_home}, "
+        f"but this process has MOOR_HOME={get_moor_home()}"
     )
     return False
 
@@ -3438,7 +3438,7 @@ def _systemd_graceful_restart_action(system: bool, pid: int) -> str | None:
         f"⏳ {scope_label} service restarting gracefully (PID {pid}) — "
         f"waiting up to {wait_budget:.0f}s for in-flight turns + drain..."
     )
-    from hermes_cli.update_cmd_drain_report import drain_progress_reporter
+    from moor_cli.update_cmd_drain_report import drain_progress_reporter
     if not _graceful_restart_via_sigusr1(pid, wait_budget, on_progress=drain_progress_reporter(budget_s=wait_budget)):
         print(f"⚠ Graceful restart did not complete within {int(wait_budget)}s; forcing a service restart...")
         return "restart"
@@ -4062,7 +4062,7 @@ def refresh_launchd_plist_if_needed() -> bool:
             target, int(_reload_budget), _launchd_reload_log_path(),
         )
         return False
-    print("↻ Updated gateway launchd service definition to match the current Hermes install")
+    print("↻ Updated gateway launchd service definition to match the current Moor install")
     return True
 
 
@@ -4077,11 +4077,11 @@ def launchd_install(force: bool = False):
             else:
                 # The plist was rewritten but launchd never registered it (or the write was refused):
                 # a success line here would hide an unloaded service with no KeepAlive.
-                from hermes_constants import display_hermes_home
+                from moor_constants import display_moor_home
                 print(
                     "⚠ Service definition could not be reloaded with launchd. "
-                    "Run 'hermes gateway install --force' or check "
-                    f"{display_hermes_home()}/logs/launchd-reload.log for details."
+                    "Run 'moor gateway install --force' or check "
+                    f"{display_moor_home()}/logs/launchd-reload.log for details."
                 )
             return
         print(f"Service already installed at: {plist_path}")
@@ -4265,7 +4265,7 @@ def launchd_restart():
             # surfaces with no other feedback (desktop updater) read silence as "update stuck".
             wait_budget = _get_restart_exit_wait_budget()
             print(f"→ Stopping gateway (PID {pid}) — draining in-flight runs (up to {wait_budget:.0f}s)...")
-            from hermes_cli.update_cmd_drain_report import drain_progress_reporter
+            from moor_cli.update_cmd_drain_report import drain_progress_reporter
             if _graceful_restart_via_sigusr1(pid, wait_budget, on_progress=drain_progress_reporter(budget_s=wait_budget)):
                 # KeepAlive revives a planned exit, so do NOT kickstart (-k would kill the replacement) —
                 # but a clean exit doesn't prove supervision, so verify a replacement PID appears first.
@@ -4440,12 +4440,12 @@ def named_profile_served_by_running_multiplexer(profile_name: str | None = None)
         return False
 
     try:
-        from hermes_cli.gateway_multiplex_served import live_default_gateway_pid, recorded_served_profiles
+        from moor_cli.gateway_multiplex_served import live_default_gateway_pid, recorded_served_profiles
         if live_default_gateway_pid() is None:
             return False
-        from hermes_cli.profiles import normalize_profile_name
+        from moor_cli.profiles import normalize_profile_name
         # The live gateway's own record wins: the CLI process cannot see an env-only opt-in on the
-        # default profile (`hermes -p X` loads X's .env) and a config edit after start is not live yet.
+        # default profile (`moor -p X` loads X's .env) and a config edit after start is not live yet.
         # Only a record without the key (pre-multiplex writer) falls through to config derivation.
         recorded = recorded_served_profiles(default_root)
         if recorded is not None:
@@ -4477,8 +4477,8 @@ def _served_profile_needs_no_service() -> bool:
     """Print the "already served" note and return True when a setup flow must not install a standalone
     service: a live multiplexing default gateway already serves this named profile, so the unit/plist it
     would register can only sit dead (the start guard refuses it) or double-bind its platforms.
-    Shared by ``hermes setup gateway`` / ``hermes setup`` / ``hermes import`` (``ensure_gateway_service``)
-    and the ``hermes gateway setup`` wizard. See #111958."""
+    Shared by ``moor setup gateway`` / ``moor setup`` / ``moor import`` (``ensure_gateway_service``)
+    and the ``moor gateway setup`` wizard. See #111958."""
     if not named_profile_served_by_running_multiplexer():
         return False
     print_success(
@@ -4606,9 +4606,9 @@ def _guard_existing_gateway_process_conflict(replace: bool = False) -> None:
         return
 
     print_error(f"A gateway is already running (PID {pid}), so your bots are most likely online already.")
-    print("  Check with `hermes gateway status`.")
-    print("  To restart it: `hermes gateway restart`. To stop it: `hermes gateway stop`.")
-    print("  To replace it from here: `hermes gateway run --replace`.")
+    print("  Check with `moor gateway status`.")
+    print("  To restart it: `moor gateway restart`. To stop it: `moor gateway stop`.")
+    print("  To replace it from here: `moor gateway run --replace`.")
     sys.exit(1)
 
 
@@ -4785,7 +4785,7 @@ def run_gateway(verbose: int = 0, quiet: bool = False, replace: bool = False, fo
 
     from gateway.run import start_gateway
     print("┌─────────────────────────────────────────────────────────┐")
-    print("│           ☤ Hermes Gateway Starting...                 │")
+    print("│           ☤ Moor Gateway Starting...                 │")
     print("├─────────────────────────────────────────────────────────┤")
     print("│  Messaging platforms + cron scheduler                    │")
     print("│  Press Ctrl+C to stop                                   │")
@@ -5043,7 +5043,7 @@ def _runtime_health_lines() -> list[str]:
         lines.append(f"⏳ Gateway draining for {action} ({count} active agent(s))")
         work = state.get("active_work")
         if isinstance(work, list) and work:
-            from hermes_cli.update_cmd_drain_report import describe_active_work_unit
+            from moor_cli.update_cmd_drain_report import describe_active_work_unit
             lines.extend(f"     • {describe_active_work_unit(u)}" for u in work if isinstance(u, dict))
     elif gateway_state == "stopped" and exit_reason:
         lines.append(f"⚠ Last shutdown reason: {exit_reason}")
@@ -5101,7 +5101,7 @@ _UNAUTHORIZED_ACCESS_CHOICES = {
         "Keep unknown senders silent"),
     False: (1,
         "Enable open access (anyone can message the bot)",
-        "Use DM pairing (unknown users request access, you approve with 'hermes pairing approve')",
+        "Use DM pairing (unknown users request access, you approve with 'moor pairing approve')",
         "Politely decline unknown senders (one-time message, then silence)",
         "Skip for now (bot will deny all users until configured)"),
 }
@@ -5120,7 +5120,7 @@ def _prompt_unauthorized_access(platform_key: str) -> None:
         if is_email:
             _set_platform_unauthorized_dm_behavior("email", "pair")
         print_success("  DM pairing mode — users will receive a code to request access.")
-        print_info("  Approve with: hermes pairing approve <platform> <code>")
+        print_info("  Approve with: moor pairing approve <platform> <code>")
     elif access_idx == 2:
         _set_platform_unauthorized_dm_behavior(platform_key, "decline")
         print_success("  Unknown senders get one polite decline, then silence (unauthorized_dm_behavior: decline).")
@@ -5860,7 +5860,7 @@ def gateway_setup():
 def _dispatch_via_service_manager_if_s6(action: str, profile: str | None = None) -> bool:
     """Dispatch start/stop/restart via s6 inside an s6 container; True iff dispatched (caller returns).
     Profile defaults to the current one; missing slot / s6 errors become actionable CLI messages."""
-    from hermes_cli.service_manager import (
+    from moor_cli.service_manager import (
         GatewayNotRegisteredError, detect_service_manager, get_service_manager,
         register_unregistered_profile_gateway,
     )
@@ -5933,7 +5933,7 @@ def gateway_command(args):
         sys.exit(1)
     except (subprocess.CalledProcessError, RuntimeError) as e:
         # systemctl exited non-zero or is missing entirely: guidance, not a traceback.
-        from hermes_cli.gateway_command_errors import explain_service_failure
+        from moor_cli.gateway_command_errors import explain_service_failure
         lines = explain_service_failure(e)
         if lines is None:
             raise
@@ -6123,7 +6123,7 @@ _NO_BACKEND_MESSAGES = {
     ("uninstall", "unsupported"): (1,
         "Running the gateway as a background service is not available on this platform "
         "(no systemd, launchd or Scheduled Tasks), so there is nothing to uninstall.",
-        "Stop a manually started gateway with: hermes gateway stop"),
+        "Stop a manually started gateway with: moor gateway stop"),
     ("start", "termux"): (1,
         "Gateway service start is not supported on Termux because there is no system service manager.",
         "Run manually: moor gateway"),
@@ -6136,11 +6136,11 @@ _NO_BACKEND_MESSAGES = {
         "The gateway runs as the container's main process.", "",
         "  docker start <container>     # start a stopped container",
         "  docker restart <container>   # restart a running container", "",
-        "Or run the gateway directly: hermes gateway run"),
+        "Or run the gateway directly: moor gateway run"),
     ("start", "unsupported"): (1,
         "Running the gateway as a background service is not available on this platform "
         "(no systemd, launchd or Scheduled Tasks).",
-        "Run it directly with: hermes gateway run"),
+        "Run it directly with: moor gateway run"),
 }
 
 
@@ -6268,8 +6268,8 @@ def _cmd_stop(args):
         )
         print("  Stop or restart the multiplexer from the default profile instead:")
         print()
-        print("    hermes gateway stop      # takes every served profile offline")
-        print("    hermes gateway restart")
+        print("    moor gateway stop      # takes every served profile offline")
+        print("    moor gateway restart")
         sys.exit(GATEWAY_FATAL_CONFIG_EXIT_CODE)
     # Under s6 a bare pkill is seen as a crash and restarted; go through the supervisor.
     if stop_all and _dispatch_all_via_service_manager_if_s6("stop"):
@@ -6335,7 +6335,7 @@ def _cmd_restart(args):
             pass
 
     # Linger only explains a FAILED systemd unit restart. Without an installed unit the
-    # detached run below is the restart; bailing here left `hermes gateway restart` a
+    # detached run below is the restart; bailing here left `moor gateway restart` a
     # silent exit-0 no-op on any Linux login session (Desktop read it as success).
     if kind == "systemd" and supports_systemd_services():
         linger_ok, _detail = get_systemd_linger_status()
@@ -6361,7 +6361,7 @@ def _cmd_restart(args):
     # `gateway run --external-supervisor`) restarts by exiting back to it: the stop + foreground
     # run below would stamp this CLI's PID as the gateway and wedge every respawn (#110637).
     from gateway.status import get_running_pid
-    from hermes_cli.gateway_supervised_restart import (
+    from moor_cli.gateway_supervised_restart import (
         gateway_declares_external_supervisor, restart_externally_supervised_gateway,
     )
     supervised_pid = get_running_pid()
@@ -6417,13 +6417,13 @@ def _cmd_status(args):
     full = getattr(args, "full", False)
     system = getattr(args, "system", False)
     snapshot = get_gateway_runtime_snapshot(system=system)
-    from hermes_cli.profiles import get_active_profile_name
+    from moor_cli.profiles import get_active_profile_name
 
     _windows_service_installed = is_windows() and _gw_windows().is_installed()
     if not snapshot.running and named_profile_served_by_running_multiplexer():
         # Satellite profile: the default multiplexer is the live inbound process for it.
         print("✓ Gateway is running via the default-profile multiplexer")
-        print("  Manage it from the default profile: hermes gateway status")
+        print("  Manage it from the default profile: moor gateway status")
         _print_served_ingress_urls(get_active_profile_name())
         _print_unserved_shared_ingress(get_active_profile_name())
     elif (kind := _installed_service_kind_for(lambda: _windows_service_installed)) is not None:
@@ -6470,7 +6470,7 @@ def _cmd_migrate_legacy(args):
 
 
 def _cmd_migrate(args):
-    from hermes_cli.gateway_migrate import cmd_migrate
+    from moor_cli.gateway_migrate import cmd_migrate
     cmd_migrate(args)
 
 

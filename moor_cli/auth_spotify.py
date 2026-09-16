@@ -12,12 +12,12 @@ import webbrowser
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional, Tuple
 from urllib.parse import urlencode, urlparse
-from hermes_cli.auth_constants import (
+from moor_cli.auth_constants import (
     AuthError, DEFAULT_SPOTIFY_ACCOUNTS_BASE_URL, DEFAULT_SPOTIFY_API_BASE_URL, DEFAULT_SPOTIFY_REDIRECT_URI,
     DEFAULT_SPOTIFY_SCOPE, SPOTIFY_ACCESS_TOKEN_REFRESH_SKEW_SECONDS, SPOTIFY_DASHBOARD_URL, SPOTIFY_DOCS_URL,
     _spotify_err, httpx,
 )
-from hermes_cli.auth_device_flow import (
+from moor_cli.auth_device_flow import (
     _bind_loopback_callback_server, _make_loopback_callback_handler, _pkce_code_challenge,
     _pkce_code_verifier, _serve_loopback_callback)
 

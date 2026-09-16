@@ -126,7 +126,7 @@ def test_minimax_start_route_honors_poller_mock_on_owning_module(tmp_path, monke
     """
     import threading
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     fake_user_code_resp = {
         "user_code": "ABCD-1234",
         "verification_uri": "https://api.minimax.io/oauth/verify",
@@ -145,16 +145,16 @@ def test_minimax_start_route_honors_poller_mock_on_owning_module(tmp_path, monke
         raise AssertionError("real _minimax_poller body must not run under the mock")
 
     with patch(
-        "hermes_cli.auth._minimax_request_user_code",
+        "moor_cli.auth._minimax_request_user_code",
         return_value=fake_user_code_resp,
     ), patch(
-        "hermes_cli.auth._minimax_pkce_pair",
+        "moor_cli.auth._minimax_pkce_pair",
         return_value=("verifier-stub", "challenge-stub", "stub-state"),
     ), patch(
-        "hermes_cli.auth._minimax_poll_token",
+        "moor_cli.auth._minimax_poll_token",
         fail_poll_token,
     ), patch(
-        "hermes_cli.web_server_oauth._minimax_poller",
+        "moor_cli.web_server_oauth._minimax_poller",
         fake_poller,
     ):
         resp = client.post("/api/providers/oauth/minimax-oauth/start", headers=HEADERS)
@@ -574,8 +574,8 @@ def test_moor_dashboard_poller_preserves_effective_scope_when_token_omits_scope(
     monkeypatch.setattr(auth_mod, "persist_moor_credentials", lambda state: None)
 
     try:
-        _web_server_oauth._nous_plain_poller(session_id)
-        assert captured_state["scope"] == auth_mod.DEFAULT_NOUS_SCOPE
+        _web_server_oauth._moor_plain_poller(session_id)
+        assert captured_state["scope"] == auth_mod.DEFAULT_MOOR_SCOPE
         assert _web_server_oauth._oauth_sessions[session_id]["status"] == "approved"
     finally:
         _web_server_oauth._oauth_sessions.pop(session_id, None)

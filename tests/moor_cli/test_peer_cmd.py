@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import pytest
 
 from agent.turn_author import TURN_AUTHOR_ENV
-from hermes_cli.subcommands import peer as peer_cmd
+from moor_cli.subcommands import peer as peer_cmd
 
 
 # ── target parsing ───────────────────────────────────────────────────────────
@@ -230,7 +230,7 @@ def test_dm_reuses_existing_bot_chat(monkeypatch, capsys, fake_peer_server):
     assert _FakePeer.sessions == ["bc_existing"]
 
 
-# ── per-turn author (HERMES_TURN_AUTHOR set by the message_agent runner) ─────
+# ── per-turn author (MOOR_TURN_AUTHOR set by the message_agent runner) ─────
 
 
 AUTHOR = {"id": "bot:dixie", "name": "dixie", "is_bot": True}

@@ -469,7 +469,7 @@ def test_decline_config_and_stamp_roundtrip(monkeypatch, tmp_path):
         "    unauthorized_dm_behavior: decline\n",
         encoding="utf-8",
     )
-    with _patch("gateway.config.get_hermes_home", return_value=tmp_path):
+    with _patch("gateway.config.get_moor_home", return_value=tmp_path):
         config = load_gateway_config()
     assert config.unauthorized_dm_behavior == "decline"
     assert config.unauthorized_dm_decline_message == "custom text"

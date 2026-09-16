@@ -1,0 +1,14 @@
+name: moor-terminal
+repo: https://github.com/Adolanium/moor-terminal
+sha: 43658bf3c883178bf035d2163f7f541500d17407
+description: Run the Moor terminal interface in a Moor Desktop workspace tab.
+maintainer: Adolanium
+tier: community
+category: desktop
+docs_url: https://github.com/Adolanium/moor-terminal#readme
+capabilities:
+  provides_tools: []
+  provides_hooks: []
+  provides_middleware: []
+  requires_env: []
+subdir: catalog

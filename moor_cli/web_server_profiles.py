@@ -230,7 +230,7 @@ def _profile_scope(profile: Optional[str]):
 
 @contextmanager
 def _config_profile_scope(profile: Optional[str]):
-    """Await-safe profile scope: the task-local HERMES_HOME contextvar PLUS the profile's secret
+    """Await-safe profile scope: the task-local MOOR_HOME contextvar PLUS the profile's secret
     scope, never the process-global skills-module attributes ``_profile_scope`` swaps (holding
     those across an ``await`` lets a concurrent request restore THIS request's dir on its
     ``finally``). None/""/"current" = no override.
@@ -247,10 +247,10 @@ def _config_profile_scope(profile: Optional[str]):
     Still enter the requested home so a nested scope cannot retain another profile.
     """
     from agent.secret_scope import build_profile_secret_scope, reset_secret_scope, set_secret_scope
-    from hermes_cli.env_loader import hydrate_profile_secret_sources
+    from moor_cli.env_loader import hydrate_profile_secret_sources
     from tui_gateway.launch_profile_policy import activate_multi_profile_hosting, launch_secret_scope
 
-    process_home = get_process_hermes_home()
+    process_home = get_process_moor_home()
     if _is_current_profile(profile):
         profile_dir, scoped = None, None  # the dashboard's own profile: no home override
     else:
@@ -267,7 +267,7 @@ def _config_profile_scope(profile: Optional[str]):
         # concurrent first ``?profile=B`` request flips ``get_secret`` to fail closed mid-request,
         # and an unscoped launch request would then raise ``UnscopedSecretError`` on its next read.
         secrets = launch_secret_scope(process_home)
-    with (_hermes_home_scope(profile_dir) if profile_dir is not None else nullcontext()):
+    with (_moor_home_scope(profile_dir) if profile_dir is not None else nullcontext()):
         token = set_secret_scope(secrets)
         try:
             yield scoped

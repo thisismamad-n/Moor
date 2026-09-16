@@ -1271,8 +1271,8 @@ def create_task(
     ``workspace_kind=None`` (omitted) inherits a project-scoped board's project;
     an explicit ``"scratch"`` or ``project_id=""`` is a request for no project.
     """
-    from hermes_cli.kanban_db_graph import initial_task_state, inherit_creator_origin
-    from hermes_cli.kanban_pr_acceptance import validate_contract
+    from moor_cli.kanban_db_graph import initial_task_state, inherit_creator_origin
+    from moor_cli.kanban_pr_acceptance import validate_contract
 
     completion_contract = validate_contract(completion_contract)
     model_override, provider_override = _validate_model_override(model_override, provider_override)
@@ -2675,7 +2675,7 @@ def complete_task(
     # Cheap pre-check; re-checked inside the txn to close the parent-reopen race.
     if not _parents_satisfied(conn, task_id):
         return False
-    from hermes_cli.kanban_pr_acceptance_store import prepare_acceptance, record_acceptance
+    from moor_cli.kanban_pr_acceptance_store import prepare_acceptance, record_acceptance
     verified_cards = _gate_created_cards(conn, task_id, created_cards, summary or result)
     metadata = _merge_completion_prose_artifacts(
         conn, task_id, metadata, summary=summary, result=result,
@@ -3386,7 +3386,7 @@ def promote_task(
             f"unsatisfied parent dependencies: {', '.join(unsatisfied)} "
             f"(the ready -> running claim re-checks parents, so promotion cannot "
             f"bypass them; complete the parents or drop the link with "
-            f"`hermes kanban unlink <parent_id> {task_id}`)"
+            f"`moor kanban unlink <parent_id> {task_id}`)"
         )
 
     if dry_run:

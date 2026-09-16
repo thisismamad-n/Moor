@@ -84,9 +84,9 @@ class TestDashboardStop:
         process again: a launchd KeepAlive job respawns its backend on a fresh PID, and that
         respawn is not a failed stop (the kill path already warns about it)."""
         scans = iter([[12345, 12346], [12347]])
-        with patch("hermes_cli.main._find_stale_dashboard_pids",
+        with patch("moor_cli.main._find_stale_dashboard_pids",
                    side_effect=lambda: next(scans)), \
-             patch("hermes_cli.dashboard_procs._kill_stale_dashboard_processes",
+             patch("moor_cli.dashboard_procs._kill_stale_dashboard_processes",
                    return_value={"matched": [12345, 12346], "killed": [12345, 12346],
                                  "failed": [], "unrecovered": [12345, 12346]}) as mock_kill, \
              pytest.raises(SystemExit) as exc:
@@ -103,8 +103,8 @@ class TestDashboardStop:
     def test_stop_exits_nonzero_if_kill_leaves_survivors(self):
         """A pid the kill path could not stop (e.g. permission denied) -> exit 1 so
         scripts can detect that the stop didn't succeed."""
-        with patch("hermes_cli.main._find_stale_dashboard_pids", return_value=[12345]), \
-             patch("hermes_cli.dashboard_procs._kill_stale_dashboard_processes",
+        with patch("moor_cli.main._find_stale_dashboard_pids", return_value=[12345]), \
+             patch("moor_cli.dashboard_procs._kill_stale_dashboard_processes",
                    return_value={"matched": [12345], "killed": [],
                                  "failed": [(12345, "Operation not permitted")], "unrecovered": []}), \
              pytest.raises(SystemExit) as exc:

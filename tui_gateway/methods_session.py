@@ -68,7 +68,7 @@ def _new_runtime_ids(params: dict) -> tuple[str, str]:
 
 
 def _profile_build_scope(profile_home):
-    """Bind HERMES_HOME + secret + terminal scope for an agent build: the same composition a turn
+    """Bind MOOR_HOME + secret + terminal scope for an agent build: the same composition a turn
     binds (``_session_profile_runtime_scope``). Home alone leaves ``get_secret()`` on the LAUNCH
     ``.env``; home + secrets alone leaves ``_make_agent``'s terminal probing on the launch process's
     ambient ``TERMINAL_*`` (a ``terminal.backend: docker`` secondary built a ``local`` agent)."""
@@ -398,7 +398,7 @@ def _unarchive_recoverable(db, session_id: str) -> bool:
     the rare write escalates to a short-lived registry writer instead of writing on the reader."""
     if not getattr(db, "read_only", False):
         return db.unarchive_recoverable_session(session_id)
-    from hermes_state_registry import acquire
+    from moor_state_registry import acquire
     try:
         wdb = acquire(db.db_path)
     except Exception:
@@ -1572,12 +1572,12 @@ def _billing_view(name: str, module: str, builder: str, serializer: str, fallbac
 
 @method("billing.state")
 def _(rid, params: dict) -> dict:
-    """Read-only billing view (no scope required); fail-open. The Nous free tier has no account to
+    """Read-only billing view (no scope required); fail-open. The Moor free tier has no account to
     bill, so its state is answered locally (``free_tier`` set, ``logged_in`` false) without a portal
     round-trip that could only fail."""
     try:
         from agent.billing_view import BillingState, build_billing_state
-        from hermes_cli.anon_auth import guest_carries_inference
+        from moor_cli.anon_auth import guest_carries_inference
         if guest_carries_inference():
             return _ok(rid, _serialize_billing_state(BillingState(logged_in=False), free_tier=True))
         return _ok(rid, _serialize_billing_state(build_billing_state()))
@@ -1694,7 +1694,7 @@ def _try_get_session(db, key: str) -> dict:
 
 @_session_method("session.status")
 def _(rid, params: dict, session: dict) -> dict:
-    from hermes_cli.status_report import build_status_fields, status_lines
+    from moor_cli.status_report import build_status_fields, status_lines
     key = session.get("session_key") or params.get("session_id") or ""
     mirror = _metadata_mirror(session)
     # Under turn isolation the compute host owns the live route: a stale in-process agent object
@@ -1710,7 +1710,7 @@ def _(rid, params: dict, session: dict) -> dict:
     )
     project = _project_info_for_cwd(_display_session_cwd(session))
     lines = [
-        "Hermes TUI Status", "", *status_lines(fields, "session_id", "path"),
+        "Moor TUI Status", "", *status_lines(fields, "session_id", "path"),
         *([f"Project: {project['name']}"] if project else []),
         *status_lines(fields, "title", "model", "created", "last_activity", "tokens", "agent_running")]
     return _ok(rid, {"output": "\n".join(lines)})

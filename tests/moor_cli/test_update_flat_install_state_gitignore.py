@@ -1,13 +1,13 @@
-"""Flat-install runtime state must be gitignored so ``hermes update``'s untracked
+"""Flat-install runtime state must be gitignored so ``moor update``'s untracked
 autostash cannot sweep the live state.db (#110648).
 
-On a flat install (checkout root == $HERMES_HOME) the profile's runtime files
+On a flat install (checkout root == $MOOR_HOME) the profile's runtime files
 live inside the repo as untracked paths. ``git stash push --include-untracked``
-(hermes_cli/update_cmd_stash.py) moves the whole untracked set into the stash and
+(moor_cli/update_cmd_stash.py) moves the whole untracked set into the stash and
 unlinks it from the working tree under the running gateway, silently stranding
 every transcript when the restore is declined or fails its health check. The
 tracked .gitignore must cover the runtime state set, mirroring the
-.hermes-bootstrap-complete / .install_method precedent (#38529 / #66189).
+.moor-bootstrap-complete / .install_method precedent (#38529 / #66189).
 """
 import shutil
 import sqlite3
@@ -18,8 +18,8 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
-# Runtime state that lives at $HERMES_HOME's root on a flat install, exactly as
-# ``hermes update`` would sweep it: one representative per ignored class. The
+# Runtime state that lives at $MOOR_HOME's root on a flat install, exactly as
+# ``moor update`` would sweep it: one representative per ignored class. The
 # sidecar names mirror ``_sqlite_files`` in gateway/platforms/base.py; the
 # credential entries mirror ``_ROOT_CREDENTIAL_PATHS`` there.
 FLAT_INSTALL_RUNTIME_STATE = (
@@ -54,7 +54,7 @@ FLAT_INSTALL_RUNTIME_STATE = (
     ".update_check",
     ".clean_shutdown",
     "active_profile",
-    ".hermes_history",
+    ".moor_history",
     "slack_tokens.json",
     "hook_outputs/2026-09-14_06-00-00/tool.json",
     "hooks/on_session_end.sh",
@@ -96,15 +96,15 @@ def _run_git(repo: Path, *args: str) -> subprocess.CompletedProcess:
 def flat_install_repo(tmp_path: Path) -> Path:
     """A real git repo standing in for a flat install, with the tracked .gitignore.
 
-    Built in a subdirectory of tmp_path: the suite-wide HERMES_HOME isolation
-    fixture (tests/conftest.py) materialises its own ``hermes_test/`` tree in
+    Built in a subdirectory of tmp_path: the suite-wide MOOR_HOME isolation
+    fixture (tests/conftest.py) materialises its own ``moor_test/`` tree in
     tmp_path itself, which is not part of this repo's story.
     """
     repo = tmp_path / "flat-install-checkout"
     repo.mkdir()
     subprocess.run(["git", "init", "-q", str(repo)], check=True)
     shutil.copyfile(REPO_ROOT / ".gitignore", repo / ".gitignore")
-    (repo / "app.py").write_text("print('hermes')\n")
+    (repo / "app.py").write_text("print('moor')\n")
     _run_git(repo, "add", ".gitignore", "app.py")
     _run_git(
         repo,
@@ -120,7 +120,7 @@ def flat_install_repo(tmp_path: Path) -> Path:
 
 def test_flat_install_runtime_state_is_ignored(flat_install_repo):
     """`git status --porcelain` must stay empty with the full runtime state present,
-    so `hermes update` never enters its stash step for runtime state alone."""
+    so `moor update` never enters its stash step for runtime state alone."""
     status = _run_git(
         flat_install_repo, "status", "--porcelain", "--untracked-files=all"
     )
@@ -135,9 +135,9 @@ def test_untracked_autostash_cannot_sweep_runtime_state(flat_install_repo):
     (flat_install_repo / "app.py").write_text("print('changed')\n")
     _run_git(
         flat_install_repo,
-        "stash", "push", "--include-untracked", "-m", "hermes-update-autostash",
+        "stash", "push", "--include-untracked", "-m", "moor-update-autostash",
     )
-    assert (flat_install_repo / "app.py").read_text() == "print('hermes')\n"
+    assert (flat_install_repo / "app.py").read_text() == "print('moor')\n"
     missing = [
         rel
         for rel in FLAT_INSTALL_RUNTIME_STATE
@@ -152,7 +152,7 @@ def test_untracked_autostash_leaves_open_wal_database_readable(flat_install_repo
     base file ignored but its sidecars swept, the next ``cron.executions._connect()``
     finds a database whose WAL vanished under a live writer and fails with
     ``disk I/O error`` (the review repro on #111175)."""
-    from hermes_cli.update_cmd_stash import _stash_local_changes_if_needed
+    from moor_cli.update_cmd_stash import _stash_local_changes_if_needed
 
     db_path = flat_install_repo / "cron" / "executions.db"
     db_path.unlink()  # the fixture's placeholder is not a database

@@ -6,57 +6,57 @@ sessions. This replaces the earlier per-session JSONL file approach.
 
 Source files: `moor_state.py` (facade) plus the `moor_state_*.py` siblings (schema, fts, search, compression, portability, gateway, ...)
 
-## Hermes home and profile isolation
+## Moor home and profile isolation
 
-`get_hermes_home()` is the authoritative filesystem resolver for state and
-configuration. It uses a context-local override first, then the `HERMES_HOME`
-environment variable, and finally the platform default (`~/.hermes` on macOS
-and Linux; `%LOCALAPPDATA%/hermes` on Windows). Consequently, the default
-database is always `get_hermes_home() / "state.db"`, not a path that callers
-should hard-code as `~/.hermes/state.db`.
+`get_moor_home()` is the authoritative filesystem resolver for state and
+configuration. It uses a context-local override first, then the `MOOR_HOME`
+environment variable, and finally the platform default (`~/.moor` on macOS
+and Linux; `%LOCALAPPDATA%/moor` on Windows). Consequently, the default
+database is always `get_moor_home() / "state.db"`, not a path that callers
+should hard-code as `~/.moor/state.db`.
 
 Named profiles are isolated directories: a profile named `coder`, for example,
-uses `<default Hermes root>/profiles/coder/` and therefore has its own
+uses `<default Moor root>/profiles/coder/` and therefore has its own
 `state.db`, configuration, logs, and other profile-scoped state. A process that
 creates a database, reads configuration, or starts a child process for a
-profile must retain or pass that profile's `HERMES_HOME`; falling back to the
+profile must retain or pass that profile's `MOOR_HOME`; falling back to the
 default root mixes the wrong profile's state into the operation.
 
 The CLI bootstrap calls `_apply_profile_override()` before importing the rest
-of Hermes. An explicit `--profile`/`-p` resolves that profile and writes the
-resolved directory to `HERMES_HOME`. Without an explicit selector, a
-profile-specific `HERMES_HOME` is preserved; otherwise the bootstrap can use
+of Moor. An explicit `--profile`/`-p` resolves that profile and writes the
+resolved directory to `MOOR_HOME`. Without an explicit selector, a
+profile-specific `MOOR_HOME` is preserved; otherwise the bootstrap can use
 the default root's active-profile selection. `HOME` only determines the
-platform default used when no context override or `HERMES_HOME` is available.
+platform default used when no context override or `MOOR_HOME` is available.
 Changing `HOME` is not a safe way to select a named profile. In particular, a
-subprocess that drops `HERMES_HOME` can fall back to the default profile even
+subprocess that drops `MOOR_HOME` can fall back to the default profile even
 when another profile is active, so subprocess spawners should pass
-`HERMES_HOME` explicitly.
+`MOOR_HOME` explicitly.
 
-Use `display_hermes_home()` only for user-facing text. It formats the resolved
+Use `display_moor_home()` only for user-facing text. It formats the resolved
 home relative to the user's home directory when possible (for example,
-`~/.hermes/profiles/coder`); it does not provide a separate resolution rule.
+`~/.moor/profiles/coder`); it does not provide a separate resolution rule.
 
 ### Test isolation guard
 
-Tests must use a temporary `HERMES_HOME` or an explicit temporary database
+Tests must use a temporary `MOOR_HOME` or an explicit temporary database
 path. The live-system guard raises before a test-context process opens a
-production `state.db` under the real default Hermes root or a real named
+production `state.db` under the real default Moor root or a real named
 profile, preventing fixture data or SQLite side effects from reaching a live
 installation.
 
-`HERMES_STATE_DB_GUARD_BYPASS=1` is a test-only escape hatch for a spawned
+`MOOR_STATE_DB_GUARD_BYPASS=1` is a test-only escape hatch for a spawned
 child process that genuinely must access the live database. The equivalent
 in-process escape hatch is `@pytest.mark.live_system_guard_bypass`. Do not set
-either bypass in normal Hermes commands, development shells, or application
+either bypass in normal Moor commands, development shells, or application
 configuration: it disables the guard (a hard `RuntimeError`) that protects live
 session history, and a shell that exports it hands the bypass to every later
 pytest run.
 
 ### Desktop profile isolation and compaction generations
 
-Each named profile stores its transcript in its own `$HERMES_HOME/state.db`,
-including when one `hermes serve` process serves several profiles. In-session
+Each named profile stores its transcript in its own `$MOOR_HOME/state.db`,
+including when one `moor serve` process serves several profiles. In-session
 agent rebuilds (Bot Chat capability refresh and `tools.configure`) must retain
 that session's database handle and bind its profile home during construction.
 Releasing the outgoing agent must not close the handle inherited by its replacement.
@@ -82,7 +82,7 @@ history that appears to revert.
 
 The agent persists an accepted user input before starting its Codex turn. Codex
 then projects that input as a leading `userMessage` notification. At the runtime
-splice boundary, Hermes excludes only that leading item when it exactly matches
+splice boundary, Moor excludes only that leading item when it exactly matches
 the text serialized into `turn/start`, including rich-input coercion. Later or
 nonmatching user events remain intact, as do separately accepted identical turns.
 This also applies to synthetic/keyless input; it does not depend on a platform
@@ -515,9 +515,9 @@ db.delete_session("sess_abc123")
 
 ## Database Location
 
-Default path: `get_hermes_home() / "state.db"` — `~/.hermes/state.db` for the
-default profile, `~/.hermes/profiles/<name>/state.db` for a named profile, or
-wherever `HERMES_HOME` points (see [Hermes home and profile isolation](#hermes-home-and-profile-isolation)).
+Default path: `get_moor_home() / "state.db"` — `~/.moor/state.db` for the
+default profile, `~/.moor/profiles/<name>/state.db` for a named profile, or
+wherever `MOOR_HOME` points (see [Moor home and profile isolation](#moor-home-and-profile-isolation)).
 
 The database file, WAL file (`state.db-wal`), and shared-memory file
 (`state.db-shm`) are all created in the same directory.

@@ -166,7 +166,7 @@ def _make_text_cb(
     conn: acp.Client, session_id: str, loop: asyncio.AbstractEventLoop, wrap: Callable[[str], Any],
     message_ids: AssistantMessageIdAllocator | None = None,
 ) -> Callable:
-    # ``None`` is the flush sentinel Hermes core sends between assistant messages
+    # ``None`` is the flush sentinel Moor core sends between assistant messages
     # (before tool execution / at end of stream): it closes the active messageId so
     # the next delta opens a new bubble instead of merging into the previous one.
     def _cb(text: str | None) -> None:

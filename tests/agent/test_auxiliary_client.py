@@ -734,7 +734,7 @@ class TestBuildCodexClient:
             patch("agent.auxiliary_client._select_pool_entry", return_value=(True, entry)),
             patch("agent.auxiliary_client.OpenAI") as mock_openai,
         ):
-            monkeypatch.setenv("HERMES_CODEX_BASE_URL", "http://127.0.0.1:8787/v1")
+            monkeypatch.setenv("MOOR_CODEX_BASE_URL", "http://127.0.0.1:8787/v1")
             mock_openai.return_value = MagicMock()
             from agent.auxiliary_client import _build_codex_client
 
@@ -750,7 +750,7 @@ class TestBuildCodexClient:
             patch("agent.auxiliary_client._read_codex_access_token", return_value="codex-auth-token"),
             patch("agent.auxiliary_client.OpenAI") as mock_openai,
         ):
-            monkeypatch.setenv("HERMES_CODEX_BASE_URL", "http://127.0.0.1:8787/v1")
+            monkeypatch.setenv("MOOR_CODEX_BASE_URL", "http://127.0.0.1:8787/v1")
             mock_openai.return_value = MagicMock()
             from agent.auxiliary_client import resolve_provider_client
 
@@ -1636,7 +1636,7 @@ class TestTryPaymentFallback:
         fails never hops to another logged-in account (test_auxiliary_auto_never_guesses_provider)."""
         mock_client = MagicMock()
         with patch("agent.auxiliary_client._try_openrouter", return_value=(None, None)), \
-             patch("agent.auxiliary_client._try_nous", return_value=(mock_client, "nous-model")), \
+             patch("agent.auxiliary_client._try_moor", return_value=(mock_client, "moor-model")), \
              patch("agent.auxiliary_client._read_main_provider", return_value="auto"):
             client, model, label = _try_payment_fallback("openrouter", task="compression")
         assert client is mock_client
@@ -2501,7 +2501,7 @@ class TestStaleBaseUrlWarning:
 class TestAuxiliaryTaskExtraBody:
     @pytest.mark.parametrize("task", ["session_search", "moa_reference", "moa_aggregator"])
     def test_generic_reasoning_fallback_clamps_ultra_for_auxiliary_and_moa_calls(self, task, monkeypatch):
-        """The OpenAI-compatible fallback must never put Hermes-only ``ultra`` on the wire."""
+        """The OpenAI-compatible fallback must never put moor-only ``ultra`` on the wire."""
         from agent.auxiliary_client import _ProfileProjection, _build_call_kwargs
 
         monkeypatch.setattr(
@@ -2542,7 +2542,7 @@ class TestAuxiliaryTaskExtraBody:
     def test_profile_projection_receives_wire_clamped_effort(self, monkeypatch):
         """Profiles clamp only against their own narrower sets (or a catalog that may be cold), so
         ``ultra`` must already be a wire level when the projection sees it — the MoA aggregator on
-        an OpenRouter/Nous slot 400'd otherwise (#112010)."""
+        an OpenRouter/Moor slot 400'd otherwise (#112010)."""
         import agent.auxiliary_client as aux
 
         seen = {}
@@ -2735,11 +2735,11 @@ class TestAuxiliaryTaskExtraBody:
     def test_bare_custom_auth_error_does_not_fall_back_to_env_base_url(self, monkeypatch):
         """Bare 'custom' with nothing configured: the main resolver raises AuthError; aux must
         return no endpoint rather than route to a stale env OPENAI_BASE_URL with a placeholder key."""
-        from hermes_cli.auth import AuthError
+        from moor_cli.auth import AuthError
         from agent.auxiliary_client import _resolve_custom_runtime
         monkeypatch.setenv("OPENAI_BASE_URL", "https://old-proxy.example/v1")
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-        with patch("hermes_cli.runtime_provider.resolve_runtime_provider",
+        with patch("moor_cli.runtime_provider.resolve_runtime_provider",
                    side_effect=AuthError("no creds", provider="custom", code="missing_api_key")):
             assert _resolve_custom_runtime() == (None, None, None)
 

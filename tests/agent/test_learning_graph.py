@@ -86,17 +86,17 @@ def test_foreground_created_skill_is_in_journey_before_first_use(tmp_path):
     uses, while an unmarked never-used local skill (hand-written) stays out."""
     from tools import skill_usage
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     for name in ("fresh-learn-skill", "hand-written"):
         (home / "skills" / "demo" / name).mkdir(parents=True)
         (home / "skills" / "demo" / name / "SKILL.md").write_text(
             f"---\nname: {name}\ndescription: d.\n---\n\n# {name}\n", encoding="utf-8")
-    token = set_hermes_home_override(home)
+    token = set_moor_home_override(home)
     try:
         skill_usage.record_created("fresh-learn-skill", agent_created=False)
         skill_nodes = {n["id"] for n in learning_graph.build_learning_graph()["nodes"] if n["kind"] == "skill"}
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
     assert "fresh-learn-skill" in skill_nodes
     assert "hand-written" not in skill_nodes

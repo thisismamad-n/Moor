@@ -633,8 +633,8 @@ class TeamsAdapter(BasePlatformAdapter):
         for label, choice, style in prompt.actions:
             kw = {"style": self._EA_CARD_STYLES[style]} if style else {}
             actions.append(ExecuteAction(
-                title=label, verb="hermes_approve",
-                data={**btn_data_base, "hermes_action": self._EA_CARD_ACTIONS[choice]}, **kw))
+                title=label, verb="moor_approve",
+                data={**btn_data_base, "moor_action": self._EA_CARD_ACTIONS[choice]}, **kw))
         body = _approval_body(self._truncate_preview(prompt.command, self._EA_CMD_BUDGET), prompt.description, always=True)
         body.append(TextBlock(text=format_approval_deadline_line(approval_timeout_seconds()), wrap=True))
         if prompt.smart_denied:
@@ -741,9 +741,9 @@ _SETUP_INTRO = (  # "" → blank line
 
 
 def interactive_setup() -> None:
-    from hermes_cli.config import get_env_value, save_env_value
-    from hermes_cli.cli_output import prompt, prompt_yes_no, print_info, print_success, print_warning
-    from hermes_cli.setup_platforms import declines_reconfigure
+    from moor_cli.config import get_env_value, save_env_value
+    from moor_cli.cli_output import prompt, prompt_yes_no, print_info, print_success, print_warning
+    from moor_cli.setup_platforms import declines_reconfigure
     if declines_reconfigure("Teams", "Reconfigure Teams?", "TEAMS_CLIENT_ID"):
         return
     for line in _SETUP_INTRO:

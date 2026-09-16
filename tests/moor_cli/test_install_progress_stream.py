@@ -5,12 +5,12 @@ import sys
 
 import pytest
 
-from hermes_cli.main_install_repair import _run_install_with_heartbeat
+from moor_cli.main_install_repair import _run_install_with_heartbeat
 
 
 @pytest.mark.parametrize("exit_code", [0, 7])
 def test_installer_stderr_streams_to_stdout(tmp_path, monkeypatch, capfd, exit_code):
-    import hermes_cli.main as main
+    import moor_cli.main as main
 
     monkeypatch.setattr(main, "PROJECT_ROOT", tmp_path)
     # More than a pipe buffer of progress, from a real child on the native host.

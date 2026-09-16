@@ -131,8 +131,8 @@ def _list_targets(platform_filter: Optional[str], *, json_mode: bool) -> int:
     return _SUCCESS_EXIT
 
 
-def _load_hermes_env() -> None:
-    """Populate the credential environment from ``~/.hermes/.env`` AND bridge top-level ``config.yaml``
+def _load_moor_env() -> None:
+    """Populate the credential environment from ``~/.moor/.env`` AND bridge top-level ``config.yaml``
     keys into it so the gateway config loader sees platform credentials and home channels.
 
     The target is ``os.environ`` for the standalone CLI. Inside a multi-profile host (dashboard console
@@ -158,7 +158,7 @@ def _load_hermes_env() -> None:
         env_path = home / ".env"
         if env_path.exists():
             try:
-                from hermes_cli.env_loader import _load_dotenv_with_fallback
+                from moor_cli.env_loader import _load_dotenv_with_fallback
                 _load_dotenv_with_fallback(env_path, override=True)
             except Exception:
                 pass
@@ -169,7 +169,7 @@ def _load_hermes_env() -> None:
     if not config_path.exists():
         return
     try:
-        from hermes_cli.config_effective import load_user_config_effective
+        from moor_cli.config_effective import load_user_config_effective
         cfg = load_user_config_effective(config_path)
     except Exception:
         return

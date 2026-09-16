@@ -86,7 +86,7 @@ def test_resolve_runtime_provider_uses_credential_pool(monkeypatch):
     assert resolved["source"] == "manual"
 
 
-def test_codex_pool_honors_hermes_codex_base_url(monkeypatch):
+def test_codex_pool_honors_moor_codex_base_url(monkeypatch):
     """The profile-wide Codex endpoint override must apply to pool credentials too."""
     class _Entry:
         access_token = "pool-token"
@@ -102,7 +102,7 @@ def test_codex_pool_honors_hermes_codex_base_url(monkeypatch):
 
     monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "openai-codex")
     monkeypatch.setattr(rp, "load_pool", lambda provider: _Pool())
-    monkeypatch.setenv("HERMES_CODEX_BASE_URL", "http://127.0.0.1:8787/v1")
+    monkeypatch.setenv("MOOR_CODEX_BASE_URL", "http://127.0.0.1:8787/v1")
 
     resolved = rp.resolve_runtime_provider(requested="openai-codex")
 
@@ -1012,7 +1012,7 @@ def test_explicit_openrouter_config_mirror_bypasses_pool(monkeypatch):
     assert resolved["api_key"] == "router-key"
     assert resolved.get("credential_pool") is None
 
-    # The canonical URL that `hermes setup` persists is NOT a mirror: the pool must still serve it.
+    # The canonical URL that `moor setup` persists is NOT a mirror: the pool must still serve it.
     monkeypatch.setattr(rp, "_get_model_config", lambda: {"provider": "openrouter", "base_url": "https://openrouter.ai/api/v1"})
     canonical = rp.resolve_runtime_provider(requested="openrouter")
     assert canonical["api_key"] == "pool-key" and canonical.get("credential_pool") is not None

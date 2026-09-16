@@ -144,7 +144,7 @@ def _save_aux_choice(task: str, *, provider: str, model: str = "", base_url: str
     """Persist an aux task's four routing fields (timeout etc. untouched; main model config never
     modified). ``delegation`` writes the top-level section, with "auto" stored as an empty provider.
     ``reasoning_effort``: a level word or "" (provider default) to write; None leaves the key alone."""
-    from hermes_cli.config import load_config, save_config
+    from moor_cli.config import load_config, save_config
     cfg = load_config()
     if task == _DELEGATION_TASK_KEY:
         entry = _ensure_dict_section(cfg, "delegation")
@@ -166,7 +166,7 @@ def _aux_task_takes_reasoning(task: str) -> bool:
     routes through delegation which reads ``delegation.reasoning_effort``, not its own block."""
     if task == _DELEGATION_TASK_KEY:
         return True
-    from hermes_cli.config_defaults import DEFAULT_CONFIG
+    from moor_cli.config_defaults import DEFAULT_CONFIG
     block = (DEFAULT_CONFIG.get("auxiliary") or {}).get(task)
     if isinstance(block, dict):
         return "reasoning_effort" in block
@@ -177,7 +177,7 @@ def _prompt_aux_reasoning_effort(task: str, current: str) -> Optional[str]:
     """Effort step for an aux task: a level, "none", "" (provider default / inherit parent), or None to
     keep current. The empty-value row is "Inherit parent" for delegation (a child inherits the parent's
     effort; wording from #105431 by @fangliquanflq) and "Provider default" for aux tasks."""
-    from hermes_constants import VALID_REASONING_EFFORTS
+    from moor_constants import VALID_REASONING_EFFORTS
     label = "Inherit parent" if task == _DELEGATION_TASK_KEY else "Provider default"
     return _prompt_reasoning_effort_selection(
         list(VALID_REASONING_EFFORTS), current_effort=current, default_label=label)
@@ -294,8 +294,8 @@ def _aux_flow_provider_model(task: str, provider_slug: str, curated_models: list
                              current_model: str = "", current_effort: str = "") -> None:
     """Prompt for a model under an already-authenticated provider (then its reasoning effort),
     save to aux."""
-    from hermes_cli.auth import _prompt_model_selection
-    from hermes_cli.models_pricing import get_pricing_for_provider
+    from moor_cli.auth import _prompt_model_selection
+    from moor_cli.models_pricing import get_pricing_for_provider
     display_name = _aux_task_display_name(task)
     try:
         pricing = get_pricing_for_provider(provider_slug) or {}
@@ -624,7 +624,7 @@ def _offer_reasoning_after_pick(model_before: str) -> None:
     """Post-flow effort step for ``select_provider_and_model``: when a flow saved a different
     ``model.default`` (every flow persists through ``_save_model_choice``), offer the effort for
     the new model + provider. A flow that made no change (cancel, "No change.") never prompts."""
-    from hermes_cli.config import load_config
+    from moor_cli.config import load_config
     model_cfg = load_config().get("model")
     if not isinstance(model_cfg, dict):
         return
@@ -635,12 +635,12 @@ def _offer_reasoning_after_pick(model_before: str) -> None:
 
 
 def _prompt_main_reasoning_effort(model: str, provider: str) -> None:
-    """The effort step every ``hermes model`` flow shares: after a main-model pick, offer the
+    """The effort step every ``moor model`` flow shares: after a main-model pick, offer the
     model's supported levels (Copilot publishes a per-model set; everything else gets the full
     ladder) and persist ``agent.reasoning_effort``. Skipped when the catalog says the route has
     no reasoning control; "Skip" leaves the current value alone."""
-    from hermes_cli.config import load_config, save_config
-    from hermes_cli.setup import _current_reasoning_effort, _set_reasoning_effort
+    from moor_cli.config import load_config, save_config
+    from moor_cli.setup import _current_reasoning_effort, _set_reasoning_effort
     efforts = _main_model_reasoning_efforts(model, provider)
     if efforts is None:
         return
@@ -655,10 +655,10 @@ def _prompt_main_reasoning_effort(model: str, provider: str) -> None:
 
 def _main_model_reasoning_efforts(model: str, provider: str) -> Optional[list[str]]:
     """Levels to offer for *model* on *provider*: None when the route has no reasoning control."""
-    from hermes_constants import VALID_REASONING_EFFORTS
+    from moor_constants import VALID_REASONING_EFFORTS
     slug = (provider or "").strip().lower()
     if slug == "copilot":
-        from hermes_cli.models import github_model_reasoning_efforts
+        from moor_cli.models import github_model_reasoning_efforts
         return github_model_reasoning_efforts(model) or None
     try:
         from agent.models_dev import get_model_capabilities
@@ -921,11 +921,11 @@ def _build_provider_picker_rows(config: dict, active: str, provider_labels: dict
         else:
             slug = row["slug"]
             label = canonical_descs.get(slug, provider_labels.get(slug, slug))
-            if slug == "nous":
+            if slug == "moor":
                 # Same free-tier rule as the gateway/TUI pickers: relabel for a guest, hide
-                # when nous.guest is off, untouched for a real account.
-                from hermes_cli.model_switch_providers import _free_tier_nous_row
-                tier_row = _free_tier_nous_row({"name": label, "models": []})
+                # when moor.guest is off, untouched for a real account.
+                from moor_cli.model_switch_providers import _free_tier_moor_row
+                tier_row = _free_tier_moor_row({"name": label, "models": []})
                 if tier_row is None:
                     continue
                 label = tier_row["name"]

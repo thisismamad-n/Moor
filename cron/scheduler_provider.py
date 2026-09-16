@@ -55,7 +55,7 @@ def _guarded_store_write(action, description, *args, **kwargs):
 
     The gateway runs the provider on an unsupervised daemon thread: one escaping exception
     there stops cron silently while the gateway keeps serving (#111010). Heartbeat/error
-    markers are diagnostics for ``hermes cron status`` — losing one write to a broken store
+    markers are diagnostics for ``moor cron status`` — losing one write to a broken store
     must degrade to a logged warning, not thread death.
     """
     try:
@@ -275,8 +275,8 @@ def fire_overdue_jobs(
     concurrent late external retry is de-duplicated by the store CAS; waits out
     ``cron.misfire_grace_minutes`` so the external retry gets first right. Returns jobs dispatched.
     """
-    # `hermes pause` ESTOP: skip the sweep entirely. No state to unwind — the
-    # next housekeeping pass after `hermes resume` catches overdue work up
+    # `moor pause` ESTOP: skip the sweep entirely. No state to unwind — the
+    # next housekeeping pass after `moor resume` catches overdue work up
     # through the existing claim_fire path. Distinct component name from the
     # ticker's "cron" so the log-once mechanism fires independently.
     with contextlib.suppress(ImportError):
@@ -424,8 +424,8 @@ class InProcessCronScheduler(CronScheduler):
         # ── Multiplex profiles ──────────────────────────────────────────── When profile_homes is set
         # (multiplex_profiles on), tick EACH profile's cron store on every tick cycle so secondary-profile
         # jobs actually fire instead of languishing in a store no ticker owns (#69377). Without this, only
-        # the process-global HERMES_HOME (the default profile) is ticked. Heartbeats and recovery are also
-        # scoped per profile so `hermes cron status` reflects liveness for every profile independently.
+        # the process-global MOOR_HOME (the default profile) is ticked. Heartbeats and recovery are also
+        # scoped per profile so `moor cron status` reflects liveness for every profile independently.
         if profile_homes is not None and (callable(profile_homes) or profile_homes):
             self._start_multiplex(
                 stop_event, profile_homes=profile_homes, adapters=adapters, loop=loop,
@@ -443,7 +443,7 @@ class InProcessCronScheduler(CronScheduler):
                 logger.warning(
                     "Marked %d interrupted cron execution(s) unknown after restart", recovered
                 )
-            # Heartbeat before the first sleep so `hermes cron status` sees a live ticker
+            # Heartbeat before the first sleep so `moor cron status` sees a live ticker
             # immediately.
             record_ticker_heartbeat()
         except BaseException as e:
@@ -477,7 +477,7 @@ class InProcessCronScheduler(CronScheduler):
                     logger.info("Cron tick yielded: %s", e)
                 else:
                     logger.error("Cron tick error: %s", e, exc_info=True)
-                # Persist the reason so `hermes cron status` (separate process) shows WHY.
+                # Persist the reason so `moor cron status` (separate process) shows WHY.
                 _guarded_store_write(
                     record_ticker_error, "tick error", f"{type(e).__name__}: {e}"
                 )

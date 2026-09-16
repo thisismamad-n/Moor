@@ -92,7 +92,7 @@ class ClassifiedError:
 
 # Billing exhaustion (not transient rate limit). "out of extra usage" is the
 # Anthropic OAuth Pro/Max overage bucket depleted (HTTP 400).
-# The Nous gateway's own words for "the free tier will not serve this" — a billing wall for a
+# The Moor gateway's own words for "the free tier will not serve this" — a billing wall for a
 # named account, the tier refusing for an anonymous one (see ``_WELCOME_403_NAMED_PATTERNS``).
 _FREE_TIER_REFUSAL_PATTERNS = ("model_not_supported_on_free_tier", "not available on the free tier")
 _BILLING_PATTERNS = (
@@ -422,7 +422,7 @@ _V_REASONING_MANDATORY = _v(_R.reasoning_mandatory, should_compress=False, shoul
 # other provider can fix that output, so falling back only replays the same broken turn 4-5 times
 # (20-60s per occurrence, #12770). Abort this call; the loop's argument repair handles the retry.
 _V_MALFORMED_TOOL_ARGS = _v(_R.format_error, retryable=False, should_fallback=False)
-# A reasoning-mandatory route answering ``reasoning: {enabled: false}`` (Nous Portal + OpenRouter wording).
+# A reasoning-mandatory route answering ``reasoning: {enabled: false}`` (Moor Portal + OpenRouter wording).
 _REASONING_MANDATORY_PATTERN = "reasoning is mandatory"
 
 
@@ -563,8 +563,8 @@ _WELCOME_403_NAMED_PATTERNS = _CONTENT_POLICY_BLOCKED_PATTERNS + tuple(
     p for p in _BILLING_PATTERNS if p not in _FREE_TIER_REFUSAL_PATTERNS)
 
 
-def _nous_welcome_tier(c: _Ctx) -> Optional[Verdict]:
-    """The Nous inference gateway's welcome-tier (free tier) refusals, read from the structured body.
+def _moor_welcome_tier(c: _Ctx) -> Optional[Verdict]:
+    """The Moor inference gateway's welcome-tier (free tier) refusals, read from the structured body.
 
     A 429 carrying a fairshare ``reason`` is either a tier gate (``model_not_free`` /
     ``feature_not_free``: the model or feature is never served on the free tier, so retrying is
@@ -573,7 +573,7 @@ def _nous_welcome_tier(c: _Ctx) -> Optional[Verdict]:
     400/403 whose message names the wrong host or a dark tier is deterministic for the request.
     The parsed refusal rides ``error_context`` so the terminal copy can say what happened.
     """
-    from hermes_cli.anon_auth import (
+    from moor_cli.anon_auth import (
         WELCOME_TIER_GATE_REASONS, parse_welcome_refusal, welcome_route_refusal)
     status = c.status_code
     if status == 429:
@@ -588,7 +588,7 @@ def _nous_welcome_tier(c: _Ctx) -> Optional[Verdict]:
         return _v(_R.rate_limit, should_fallback=True, error_context=ctx)
     # The route-keyed dark-tier 403 applies only to a 403 that says nothing else: a safety refusal
     # or a billing wall on the welcome host keeps its own classification (and its own recovery).
-    plain_403 = c.provider == "nous" and not any(p in c.msg for p in _WELCOME_403_NAMED_PATTERNS)
+    plain_403 = c.provider == "moor" and not any(p in c.msg for p in _WELCOME_403_NAMED_PATTERNS)
     kind = welcome_route_refusal(status, c.msg, c.base_url if plain_403 else None)
     if kind is None:
         return None
@@ -601,7 +601,7 @@ def _nous_welcome_tier(c: _Ctx) -> Optional[Verdict]:
 def _provider_special_cases(c: _Ctx) -> Optional[Verdict]:
     """Highest-priority provider-specific shapes that a status code would misroute."""
     msg, status = c.msg, c.status_code
-    welcome = _nous_welcome_tier(c)
+    welcome = _moor_welcome_tier(c)
     if welcome is not None:
         return welcome
     # Safety refusal before status classification so a 400 block isn't downgraded
@@ -729,7 +729,7 @@ def classify_api_error(
 ) -> ClassifiedError:
     """Classify an API error into a structured recovery recommendation (see ``_STAGES``).
 
-    ``base_url`` (optional) is the route the call went to; the Nous welcome tier keys its
+    ``base_url`` (optional) is the route the call went to; the Moor welcome tier keys its
     dark-tier 403 on it because that refusal carries no distinguishing message."""
     status_code = _extract_status_code(error)
     # Copilot/GitHub Models RateLimitError may not set .status_code; force 429.

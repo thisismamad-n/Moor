@@ -1,7 +1,7 @@
 """A fresh process recovers the last successfully parsed config.yaml when the file is broken.
 
 The in-process last-known-good (#31188 port) only helps a long-running gateway. A CLI restart or
-``hermes config get`` against broken YAML used to run on ``DEFAULT_CONFIG`` — dropping every
+``moor config get`` against broken YAML used to run on ``DEFAULT_CONFIG`` — dropping every
 override, including ``approvals.deny`` (#102945). Successful loads now leave a ``good`` copy in
 ``backups/config/`` and the fallback reads it.
 """
@@ -12,7 +12,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from hermes_cli.config_backups import list_config_backups
+from moor_cli.config_backups import list_config_backups
 
 REPO = Path(__file__).resolve().parents[2]
 GOOD = (
@@ -24,9 +24,9 @@ BROKEN = "approvals:\n  deny: [unclosed\n"
 
 
 def _fresh_load(home: Path) -> tuple[dict, str]:
-    env = {**os.environ, "HERMES_HOME": str(home), "PYTHONPATH": str(REPO), "LKG_TOKEN": "expanded-secret"}
+    env = {**os.environ, "MOOR_HOME": str(home), "PYTHONPATH": str(REPO), "LKG_TOKEN": "expanded-secret"}
     proc = subprocess.run(
-        [sys.executable, "-c", "import json; from hermes_cli.config import load_config; print(json.dumps(load_config()))"],
+        [sys.executable, "-c", "import json; from moor_cli.config import load_config; print(json.dumps(load_config()))"],
         cwd=REPO, env=env, text=True, capture_output=True, check=True, stdin=subprocess.DEVNULL,
     )
     return json.loads(proc.stdout), proc.stderr

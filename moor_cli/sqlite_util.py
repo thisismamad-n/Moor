@@ -22,7 +22,7 @@ def open_db(
     busy_timeout_ms: int = 5000,
     wal: bool = True,
     foreign_keys: bool = False,
-    synchronous_full: bool = False,
+    synchromoor_full: bool = False,
     row_factory=sqlite3.Row,
     check_same_thread: bool = True,
     wal_lock_retries: int = 1,
@@ -37,7 +37,7 @@ def open_db(
     three. Only the transient ``database is locked`` from that pragma is retried (``wal_lock_retries``):
     a first opener initializing a shared DB can make it ignore the busy timeout, notably on Windows.
     """
-    from hermes_state_wal import apply_wal_with_fallback
+    from moor_state_wal import apply_wal_with_fallback
 
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -57,7 +57,7 @@ def open_db(
                     time.sleep(0.01 * (2**attempt))
         if foreign_keys:
             conn.execute("PRAGMA foreign_keys=ON")
-        if synchronous_full:
+        if synchromoor_full:
             conn.execute("PRAGMA synchronous=FULL")
         if initialize is not None:
             initialize(conn)

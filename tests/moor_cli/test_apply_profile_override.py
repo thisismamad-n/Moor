@@ -269,16 +269,16 @@ class TestGeneralizedSupervisorMarkers:
         """A Desktop-owned `serve --ssh-session-token-file` child names its profile explicitly
         (or none for the root home); the remote host's sticky active_profile must not re-home
         it, or Settings read one profile's config.yaml while the user edits another."""
-        hermes_root = self._root_home(tmp_path)
+        moor_root = self._root_home(tmp_path)
         result = _run_apply_profile_override(
             tmp_path,
             monkeypatch,
-            hermes_home=str(hermes_root),
+            moor_home=str(moor_root),
             active_profile="telegram_nick",
-            argv=["hermes", "serve", "--isolated", "--host", "127.0.0.1", "--port", "0",
+            argv=["moor", "serve", "--isolated", "--host", "127.0.0.1", "--port", "0",
                   "--ssh-session-token-file", "/tmp/x/y.token"],
         )
-        assert result == str(hermes_root)
+        assert result == str(moor_root)
 
     def test_generated_systemd_unit_exports_supervised_marker(
         self, tmp_path, monkeypatch

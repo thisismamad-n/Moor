@@ -51,7 +51,7 @@ import { en } from "@/i18n/en";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { PluginSlot } from "@/plugins";
 import { LoadErrorNotice } from "@/components/LoadErrorNotice";
-import { Segmented } from "@nous-research/ui/ui/components/segmented";
+import { Segmented } from "@moor-research/ui/ui/components/segmented";
 import { AutomationBlueprints } from "@/components/AutomationBlueprints";
 import { cn, themedBody } from "@/lib/utils";
 import { errorMessage } from "@/lib/api-error";

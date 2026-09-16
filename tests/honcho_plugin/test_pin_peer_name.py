@@ -538,7 +538,7 @@ class TestPinTransition:
         from gateway.run_agent_cache import GatewayAgentCacheMixin
 
         cfg_path = tmp_path / "honcho.json"
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         monkeypatch.setattr(GatewayAgentCacheMixin, "_MEMORY_IDENTITY_PROVIDER_MEMO", {})
 
         cfg_path.write_text(json.dumps({"apiKey": "k", "peerName": "Igor", "pinPeerName": True}))
@@ -557,8 +557,8 @@ class TestPinTransition:
         from plugins.memory.honcho import HonchoMemoryProvider
 
         cfg_path = tmp_path / "honcho.json"
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-        base = {"apiKey": "k", "peerName": "Igor", "aiPeer": "hermes"}
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
+        base = {"apiKey": "k", "peerName": "Igor", "aiPeer": "moor"}
         provider = HonchoMemoryProvider()
 
         cfg_path.write_text(json.dumps({**base, "sessionPeerPrefix": True, "sessionAiPeerPrefix": False}))
@@ -569,18 +569,18 @@ class TestPinTransition:
         assert sig_user_only != sig_both
 
     def test_identity_signature_reflects_a_repointed_host_workspace(self, tmp_path, monkeypatch):
-        """``hermes honcho peers map`` can repoint a host block's workspace; the cached agent's manager
+        """``moor honcho peers map`` can repoint a host block's workspace; the cached agent's manager
         is bound to the old one until the signature changes."""
         from plugins.memory.honcho import HonchoMemoryProvider
 
         cfg_path = tmp_path / "honcho.json"
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-        base = {"apiKey": "k", "peerName": "Igor", "aiPeer": "hermes"}
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
+        base = {"apiKey": "k", "peerName": "Igor", "aiPeer": "moor"}
         provider = HonchoMemoryProvider()
 
-        cfg_path.write_text(json.dumps({**base, "hosts": {"hermes": {"workspace": "old"}}}))
+        cfg_path.write_text(json.dumps({**base, "hosts": {"moor": {"workspace": "old"}}}))
         sig_old = provider.identity_signature()["workspace"]
-        cfg_path.write_text(json.dumps({**base, "hosts": {"hermes": {"workspace": "new"}}}))
+        cfg_path.write_text(json.dumps({**base, "hosts": {"moor": {"workspace": "new"}}}))
         sig_new = provider.identity_signature()["workspace"]
 
         assert (sig_old, sig_new) == ("old", "new")

@@ -783,11 +783,11 @@ def test_default_namespace_rows_stay_in_launch_store_under_secondary_scope(multi
     root, profile = multiplex_homes
     store = _multiplex_store(root)
 
-    scope = set_hermes_home_override(str(profile))
+    scope = set_moor_home_override(str(profile))
     try:
         db = store._db_for_key("agent:main:telegram:dm:1")
     finally:
-        reset_hermes_home_override(scope)
+        reset_moor_home_override(scope)
 
     assert Path(db.db_path) == root / "state.db"
 
@@ -814,9 +814,9 @@ def test_profile_named_main_keeps_its_own_namespace_and_store(multiplex_homes):
     assert _parse_session_key(main_key)["profile"] == "main"
     assert "profile" not in _parse_session_key(default_key)
 
-    scope = set_hermes_home_override(str(main_home))
+    scope = set_moor_home_override(str(main_home))
     try:
         assert Path(store._db_for_key(main_key).db_path) == main_home / "state.db"
         assert Path(store._db_for_key(default_key).db_path) == root / "state.db"
     finally:
-        reset_hermes_home_override(scope)
+        reset_moor_home_override(scope)

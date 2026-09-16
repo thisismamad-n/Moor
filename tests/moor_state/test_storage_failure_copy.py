@@ -8,17 +8,17 @@ import sqlite3
 
 import pytest
 
-from hermes_state_user_copy import describe_storage_failure, storage_failure_details
+from moor_state_user_copy import describe_storage_failure, storage_failure_details
 
 
 @pytest.mark.parametrize(
     ("exc", "code", "command"),
     [
         (sqlite3.OperationalError("database is locked"), "storage_locked", "try again"),
-        (sqlite3.OperationalError("attempt to write a readonly database"), "storage_readonly", "hermes doctor --fix"),
-        (sqlite3.DatabaseError("database disk image is malformed"), "storage_corrupt", "hermes doctor --fix"),
+        (sqlite3.OperationalError("attempt to write a readonly database"), "storage_readonly", "moor doctor --fix"),
+        (sqlite3.DatabaseError("database disk image is malformed"), "storage_corrupt", "moor doctor --fix"),
         (OSError(28, "No space left on device"), "disk_full", "Free some disk space"),
-        (None, "storage_unavailable", "hermes doctor --fix"),
+        (None, "storage_unavailable", "moor doctor --fix"),
     ],
 )
 def test_each_cause_has_a_stable_code_and_an_action(exc, code, command):

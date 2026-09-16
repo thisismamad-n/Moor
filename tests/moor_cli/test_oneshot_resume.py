@@ -1,4 +1,4 @@
-"""Tests for `hermes -z --resume <session>` (#105892).
+"""Tests for `moor -z --resume <session>` (#105892).
 
 The oneshot path used to accept ``--resume``/``-c`` in the parser but silently drop
 them: ``_run_oneshot_from_args`` ran before any session-arg normalization and never
@@ -14,8 +14,8 @@ from __future__ import annotations
 
 import pytest
 
-from hermes_state import SessionDB
-from hermes_cli.oneshot import (
+from moor_state import SessionDB
+from moor_cli.oneshot import (
     _apply_stored_session_runtime,
     _load_resume_target,
     _ModelChoice,
@@ -72,7 +72,7 @@ class TestLoadResumeTarget:
     def test_empty_session_keeps_resolved_id(self, tmp_path):
         # Chat's contract: a resumed session with no messages starts fresh (no rows to
         # replay) but the turn is recorded under the SELECTED id. Dropping the id here
-        # re-minted a session for `hermes -z "hello" -c <title> --create-if-missing`,
+        # re-minted a session for `moor -z "hello" -c <title> --create-if-missing`,
         # leaving the freshly created titled session empty (review on #105957).
         db = _db_with_session(tmp_path, "s1")
         try:
@@ -170,7 +170,7 @@ class TestRunAgentResumeRuntime:
     and a reopened session row (both regressions from the review on #105957)."""
 
     def test_run_agent_uses_stored_runtime_and_reopens_row(self, tmp_path, monkeypatch):
-        import hermes_cli.oneshot as oneshot_mod
+        import moor_cli.oneshot as oneshot_mod
 
         db = SessionDB(db_path=tmp_path / "state.db")
         db.create_session(session_id="s1", source="cli")
@@ -195,13 +195,13 @@ class TestRunAgentResumeRuntime:
                 pass
 
         monkeypatch.setattr(oneshot_mod, "_create_session_db_for_oneshot", lambda: db)
-        monkeypatch.setattr("hermes_cli.config.load_config", lambda: {"model": {"default": "ambient-model", "provider": "openrouter"}})
+        monkeypatch.setattr("moor_cli.config.load_config", lambda: {"model": {"default": "ambient-model", "provider": "openrouter"}})
         monkeypatch.setattr(
-            "hermes_cli.runtime_provider.resolve_runtime_provider",
+            "moor_cli.runtime_provider.resolve_runtime_provider",
             lambda **_kw: {"api_key": "resolved", "base_url": None, "provider": "custom:stored",
                           "requested_provider": "custom:stored", "api_mode": "chat", "credential_pool": None})
-        monkeypatch.setattr("hermes_cli.tools_config._get_platform_tools", lambda _cfg, _p: [])
-        monkeypatch.setattr("hermes_cli.mcp_startup.ensure_mcp_discovery_before_agent_build", lambda **_kw: None)
+        monkeypatch.setattr("moor_cli.tools_config._get_platform_tools", lambda _cfg, _p: [])
+        monkeypatch.setattr("moor_cli.mcp_startup.ensure_mcp_discovery_before_agent_build", lambda **_kw: None)
         monkeypatch.setattr("run_agent.AIAgent", _FakeAgent)
 
         try:
@@ -217,7 +217,7 @@ class TestRunAgentResumeRuntime:
             db.close()
 
     def test_run_agent_explicit_model_beats_stored_runtime(self, tmp_path, monkeypatch):
-        import hermes_cli.oneshot as oneshot_mod
+        import moor_cli.oneshot as oneshot_mod
 
         db = SessionDB(db_path=tmp_path / "state.db")
         db.create_session(session_id="s1", source="cli")
@@ -236,13 +236,13 @@ class TestRunAgentResumeRuntime:
                 pass
 
         monkeypatch.setattr(oneshot_mod, "_create_session_db_for_oneshot", lambda: db)
-        monkeypatch.setattr("hermes_cli.config.load_config", lambda: {"model": {"default": "ambient-model", "provider": "openrouter"}})
+        monkeypatch.setattr("moor_cli.config.load_config", lambda: {"model": {"default": "ambient-model", "provider": "openrouter"}})
         monkeypatch.setattr(
-            "hermes_cli.runtime_provider.resolve_runtime_provider",
+            "moor_cli.runtime_provider.resolve_runtime_provider",
             lambda **_kw: {"api_key": "resolved", "base_url": None, "provider": "openrouter",
                           "requested_provider": "openrouter", "api_mode": "chat", "credential_pool": None})
-        monkeypatch.setattr("hermes_cli.tools_config._get_platform_tools", lambda _cfg, _p: [])
-        monkeypatch.setattr("hermes_cli.mcp_startup.ensure_mcp_discovery_before_agent_build", lambda **_kw: None)
+        monkeypatch.setattr("moor_cli.tools_config._get_platform_tools", lambda _cfg, _p: [])
+        monkeypatch.setattr("moor_cli.mcp_startup.ensure_mcp_discovery_before_agent_build", lambda **_kw: None)
         monkeypatch.setattr("run_agent.AIAgent", _FakeAgent)
 
         try:
@@ -261,7 +261,7 @@ class TestRunOneshotForwardsResume:
             captured.update(kwargs, prompt=prompt)
             return "ok", {"final_response": "ok"}
 
-        monkeypatch.setattr("hermes_cli.oneshot._run_agent", _fake_run_agent)
+        monkeypatch.setattr("moor_cli.oneshot._run_agent", _fake_run_agent)
         rc = run_oneshot("hello", model="m", provider="custom", resume="sess-1")
         assert rc == 0
         assert captured["prompt"] == "hello"

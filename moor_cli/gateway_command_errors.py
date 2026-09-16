@@ -1,6 +1,6 @@
-"""User-facing copy for ``hermes gateway start/stop/restart`` failures on systemd hosts.
+"""User-facing copy for ``moor gateway start/stop/restart`` failures on systemd hosts.
 
-``hermes_cli/gateway.py`` is a facade; this sibling owns the small exception -> guidance table so
+``moor_cli/gateway.py`` is a facade; this sibling owns the small exception -> guidance table so
 the most common Linux service failures (``systemctl`` exited non-zero, or there is no ``systemctl``
 at all) end as a next step instead of a traceback.
 """
@@ -17,17 +17,17 @@ class SystemctlUnavailableError(RuntimeError):
         super().__init__("systemctl is not available on this system")
 
 
-_JOURNAL_HINT = 'journalctl --user -u hermes-gateway --since "5 min ago"'
+_JOURNAL_HINT = 'journalctl --user -u moor-gateway --since "5 min ago"'
 
 _SYSTEMCTL_FAILED_LINES = (
     "Could not {verb} the gateway service; systemd reported an error.",
-    "See why with `hermes gateway status --deep` or `{journal}`.",
-    "To reinstall the service run `hermes gateway install --force`.",
+    "See why with `moor gateway status --deep` or `{journal}`.",
+    "To reinstall the service run `moor gateway install --force`.",
 )
 
 _NO_SYSTEMCTL_LINES = (
-    "This system has no systemd, so Hermes cannot install a background service here.",
-    "Run the gateway directly with `hermes gateway run` (keep it alive with tmux or screen).",
+    "This system has no systemd, so Moor cannot install a background service here.",
+    "Run the gateway directly with `moor gateway run` (keep it alive with tmux or screen).",
 )
 
 

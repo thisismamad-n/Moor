@@ -143,7 +143,7 @@ def _set_model(rid, params, key, value, session):
         # --once keeps its specific 5001; other sessionless model sets 4001 so
         # --global cannot persist profile defaults before session.create (#106397:
         # an older Desktop client sent a fresh-draft pick this way).
-        from hermes_cli.model_switch import parse_model_switch_args
+        from moor_cli.model_switch import parse_model_switch_args
         if parse_model_switch_args(str(value)).is_once:
             result = _apply_model_switch("", {"agent": None}, value, confirm_expensive_model=confirmed)
         else:

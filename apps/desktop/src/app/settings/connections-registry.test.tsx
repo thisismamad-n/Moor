@@ -72,7 +72,7 @@ describe('ConnectionsRegistrySection', () => {
   it('refreshes a cached roster immediately after a successful connection test', async () => {
     _resetFleetRosterForTests()
     const getAgentRoster = vi.fn().mockResolvedValue({ agents: [], sources: [] })
-    Object.assign(window.hermesDesktop!, { getAgentRoster })
+    Object.assign(window.moorDesktop!, { getAgentRoster })
 
     try {
       await refreshFleetRoster()

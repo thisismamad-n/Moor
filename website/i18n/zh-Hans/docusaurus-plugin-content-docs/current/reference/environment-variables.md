@@ -613,7 +613,7 @@ export MOOR_WRITE_SAFE_ROOT=/path/to/project:/home/you/.moor
 
 | 变量 | 描述 |
 |----------|-------------|
-| `HERMES_SESSION_ID` | **自动导出到 Hermes 生成的每个工具子进程**（`terminal`、`execute_code`、持久 shell、Docker/Singularity 后端、委托子 agent 运行）。由 agent 设置为当前会话 ID；从工具调用的用户脚本可读取它，以将其输出、遥测或副作用与原始 Hermes 会话关联。**不应手动设置**——从父 shell 覆盖仅在 agent 运行外生效，且 agent 启动会话时会被覆盖。 |
+| `MOOR_SESSION_ID` | **自动导出到 Moor 生成的每个工具子进程**（`terminal`、`execute_code`、持久 shell、Docker/Singularity 后端、委托子 agent 运行）。由 agent 设置为当前会话 ID；从工具调用的用户脚本可读取它，以将其输出、遥测或副作用与原始 Moor 会话关联。**不应手动设置**——从父 shell 覆盖仅在 agent 运行外生效，且 agent 启动会话时会被覆盖。 |
 
 ## 上下文压缩（仅 config.yaml）
 

@@ -39,12 +39,12 @@ def _restore_sys_modules():
 
     The eviction also drops the stale submodule attribute a purged module left on its PARENT
     package (see `_evict_module`), which `sys.modules` alone does not cover: after the test,
-    `hermes_cli.X` could hold a freshly imported copy while the cache holds the original, and a
-    later `patch("hermes_cli.X.fn")` would miss the module the code under test resolves. Restore
+    `moor_cli.X` could hold a freshly imported copy while the cache holds the original, and a
+    later `patch("moor_cli.X.fn")` would miss the module the code under test resolves. Restore
     the submodule bindings of the checkout-owned packages too — only those, so any other package
     global a test leaks still shows up as pollution.
     """
-    from hermes_cli.update_cmd_maint import _stale_purge_prefixes
+    from moor_cli.update_cmd_maint import _stale_purge_prefixes
 
     snapshot = dict(sys.modules)
     owned = _stale_purge_prefixes()
@@ -75,18 +75,18 @@ def _fake_module(name: str) -> types.ModuleType:
 
 
 def _install_stale_main_dashboard(**attrs) -> types.ModuleType:
-    """A pre-pull ``main_dashboard`` stand-in, bound the way ``hermes_cli.main``'s eager import
-    leaves it: in ``sys.modules`` AND as an attribute of the protected ``hermes_cli`` package."""
-    import hermes_cli
+    """A pre-pull ``main_dashboard`` stand-in, bound the way ``moor_cli.main``'s eager import
+    leaves it: in ``sys.modules`` AND as an attribute of the protected ``moor_cli`` package."""
+    import moor_cli
 
-    stale = _fake_module("hermes_cli.main_dashboard")
+    stale = _fake_module("moor_cli.main_dashboard")
     vars(stale).update(attrs)
-    sys.modules["hermes_cli.main_dashboard"] = stale
-    hermes_cli.main_dashboard = stale
+    sys.modules["moor_cli.main_dashboard"] = stale
+    moor_cli.main_dashboard = stale
     return stale
 
 
-def test_purge_evicts_hermes_prefixed_modules():
+def test_purge_evicts_moor_prefixed_modules():
     victims = [
         "moor_cli.cli_output",
         "moor_cli.gateway",
@@ -211,9 +211,9 @@ def test_purge_keeps_plan_record_class_identity():
 
 
 def test_stale_top_level_utils_scenario_end_to_end():
-    """The 2026-09-12 field failure: `hermes update` from a pre-`base_url_origin`
+    """The 2026-09-12 field failure: `moor update` from a pre-`base_url_origin`
     checkout kept the old top-level `utils` cached, and the restart phase's import of
-    `hermes_cli.gateway` died on `from utils import base_url_origin`."""
+    `moor_cli.gateway` died on `from utils import base_url_origin`."""
     stale = types.ModuleType("utils")
     real = sys.modules.get("utils")
     sys.modules["utils"] = stale
@@ -225,7 +225,7 @@ def test_stale_top_level_utils_scenario_end_to_end():
             raised = True
         assert raised, "precondition: stale utils must lack base_url_origin"
 
-        cli_main._purge_stale_hermes_modules()
+        cli_main._purge_stale_moor_modules()
 
         from utils import base_url_origin  # noqa: F401
     finally:
@@ -234,34 +234,34 @@ def test_stale_top_level_utils_scenario_end_to_end():
             sys.modules["utils"] = real
 
 
-def test_purge_protects_hermes_logging():
-    # A second copy of hermes_logging starts a second QueueListener over the same log
+def test_purge_protects_moor_logging():
+    # A second copy of moor_logging starts a second QueueListener over the same log
     # files while the first keeps running: its listener/handler state is module-global.
-    real = sys.modules.get("hermes_logging")
-    sentinel = _fake_module("hermes_logging")
-    sys.modules["hermes_logging"] = sentinel
+    real = sys.modules.get("moor_logging")
+    sentinel = _fake_module("moor_logging")
+    sys.modules["moor_logging"] = sentinel
     try:
-        cli_main._purge_stale_hermes_modules()
-        assert sys.modules.get("hermes_logging") is sentinel
+        cli_main._purge_stale_moor_modules()
+        assert sys.modules.get("moor_logging") is sentinel
     finally:
-        sys.modules.pop("hermes_logging", None)
+        sys.modules.pop("moor_logging", None)
         if real is not None:
-            sys.modules["hermes_logging"] = real
+            sys.modules["moor_logging"] = real
 
 
 def test_purge_drops_stale_package_attribute_so_from_import_rereads_source():
-    """Field failure #112604: `hermes_cli.main` imports `main_dashboard` at CLI start, so the
-    updater process holds it as an ATTRIBUTE of the (protected) `hermes_cli` package. Evicting
-    only the sys.modules entry left `from hermes_cli import main_dashboard` handing the PRE-pull
+    """Field failure #112604: `moor_cli.main` imports `main_dashboard` at CLI start, so the
+    updater process holds it as an ATTRIBUTE of the (protected) `moor_cli` package. Evicting
+    only the sys.modules entry left `from moor_cli import main_dashboard` handing the PRE-pull
     module to the dashboard cleanup, which then died on a symbol the pull had added
     (`AttributeError ... has no attribute '_loaded_launchd_backend_jobs'`).
     """
     stale = _install_stale_main_dashboard()
 
-    cli_main._purge_stale_hermes_modules()
+    cli_main._purge_stale_moor_modules()
 
     assert not hasattr(stale, "_loaded_launchd_backend_jobs")
-    from hermes_cli import main_dashboard as pulled
+    from moor_cli import main_dashboard as pulled
 
     assert pulled is not stale, "call-time import was handed the pre-pull module"
     assert getattr(pulled, "__stale_sentinel__", False) is False
@@ -272,19 +272,19 @@ def test_dashboard_cleanup_survives_a_pre_pull_main_dashboard():
     """End-to-end shape of #112604: the post-update dashboard cleanup runs after the purge, and
     `_kill_stale_dashboard_processes` resolves its helpers then. With the pre-pull
     `main_dashboard` still reachable, the cleanup aborted on
-    `AttributeError: module 'hermes_cli.main_dashboard' has no attribute
+    `AttributeError: module 'moor_cli.main_dashboard' has no attribute
     '_loaded_launchd_backend_jobs'` — after the code update had already succeeded.
     """
     # The pre-pull module DOES scan processes; it only lacks the launchd symbol the pull added,
     # so a cleanup handed this module reaches the launchd snapshot line and dies there.
     _install_stale_main_dashboard(_find_stale_dashboard_pids=lambda **_kw: [999999])
 
-    cli_main._purge_stale_hermes_modules()
+    cli_main._purge_stale_moor_modules()
 
     # The pulled scanner reads the host's process table through `dashboard_procs`; the stale
     # stand-in never does. Stubbing the table keeps the test off real processes AND records
     # which module the cleanup resolved.
-    from hermes_cli import dashboard_procs
+    from moor_cli import dashboard_procs
     table_reads = []
     with patch.object(dashboard_procs, "_iter_process_table", lambda: table_reads.append(1) or []):
         result = dashboard_procs._kill_stale_dashboard_processes("regression")

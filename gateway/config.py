@@ -405,7 +405,7 @@ class PlatformConfig:
         data = _coerce_dict(data)
         home = data.get("home_channel")
         # Adapters read their settings from ``extra`` (``config.extra.get("port")``), but users
-        # write them where the docs and ``hermes config set platforms.webhook.port`` put them:
+        # write them where the docs and ``moor config set platforms.webhook.port`` put them:
         # directly under the platform block. Promote every non-typed top-level key so neither
         # spelling is silently dropped (#10206); an explicit ``extra:`` value wins on a clash.
         extra = {**{k: v for k, v in data.items() if k not in cls._TYPED_KEYS}, **_coerce_dict(data.get("extra", {}))}

@@ -580,7 +580,7 @@ def ensure_audit_log(audit_path: Path) -> None:
 
 
 def write_proxy_config(config: Dict) -> Path:
-    """Serialize the config dict to ``<hermes_home>/proxy/proxy.yaml`` (safe_dump, no Python tags).
+    """Serialize the config dict to ``<moor_home>/proxy/proxy.yaml`` (safe_dump, no Python tags).
 
     The file holds proxy tokens: written 0600 from creation, never at process umask."""
     if (yaml := _yaml()) is None:

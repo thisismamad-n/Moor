@@ -157,12 +157,12 @@ def test_bridge_config_failure_does_not_crash(monkeypatch):
 def test_secondary_home_override_does_not_latch_ambient_env(tmp_path, monkeypatch):
     """#107422: first bridge under a secondary profile must not poison os.environ.
 
-    Multiplexed dashboard sets ``set_hermes_home_override`` for profile B. If
+    Multiplexed dashboard sets ``set_moor_home_override`` for profile B. If
     ``_ensure_terminal_env_bridged`` ran there (no terminal scope yet), the
     one-shot latch used to write B's docker policy into process-global env and
     every later unscoped launch-profile tool call inherited it.
     """
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import reset_moor_home_override, set_moor_home_override
 
     launch_home = tmp_path / "launch"
     secondary_home = tmp_path / "profiles" / "docker-bee"
@@ -179,7 +179,7 @@ def test_secondary_home_override_does_not_latch_ambient_env(tmp_path, monkeypatc
         '    - /bee/vol:/data\n',
         encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_HOME", str(launch_home))
+    monkeypatch.setenv("MOOR_HOME", str(launch_home))
     # Clean ambient — the dashboard process starts without TERMINAL_ENV.
     for name in (
         "TERMINAL_ENV",
@@ -188,12 +188,12 @@ def test_secondary_home_override_does_not_latch_ambient_env(tmp_path, monkeypatc
     ):
         monkeypatch.delenv(name, raising=False)
 
-    token = set_hermes_home_override(str(secondary_home))
+    token = set_moor_home_override(str(secondary_home))
     try:
         # Unscoped call under secondary home (the residual path).
         terminal_tool._ensure_terminal_env_bridged()
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
     assert "TERMINAL_ENV" not in os.environ
     assert "TERMINAL_DOCKER_IMAGE" not in os.environ

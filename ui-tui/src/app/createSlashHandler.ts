@@ -1,4 +1,4 @@
-import { parseCommandDispatch, parseSlashCommand } from '@hermes/shared/slash'
+import { parseCommandDispatch, parseSlashCommand } from '@moor/shared/slash'
 
 import type { SlashExecResponse } from '../gatewayTypes.js'
 import { rpcErrorMessage } from '../lib/rpc.js'

@@ -13,8 +13,8 @@ from moor_cli.config import (
     get_env_path,
     migrate_config,
 )
-from hermes_cli.config_backups import backup_config, list_config_backups
-from hermes_cli.config_migrations import (
+from moor_cli.config_backups import backup_config, list_config_backups
+from moor_cli.config_migrations import (
     SUPPORT_FLOOR_VERSION,
     support_floor_message,
 )

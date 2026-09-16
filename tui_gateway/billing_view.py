@@ -73,10 +73,10 @@ def _serialize_auto_reload(ar, format_money) -> dict | None:
 
 def _serialize_billing_state(state, *, free_tier: bool = False) -> dict:
     """Serialize a BillingState for the wire (Decimals → strings, money-safe). ``free_tier`` marks the
-    Nous free tier: no account, no balance, nothing to pay; the renderer branches on it before
+    Moor free tier: no account, no balance, nothing to pay; the renderer branches on it before
     ``logged_in``."""
     from agent.billing_view import format_money
-    from hermes_cli.anon_auth import GUEST_MODEL
+    from moor_cli.anon_auth import GUEST_MODEL
 
     card = mc = None
     if state.card is not None:

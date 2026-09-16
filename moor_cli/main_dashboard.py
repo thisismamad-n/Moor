@@ -210,7 +210,7 @@ def _try_restart_systemd_service(svc_name: str, cgroup_path: str | None = None) 
     return False
 
 
-# launchd plist directories that can supervise a ``hermes dashboard`` / ``hermes serve`` backend on
+# launchd plist directories that can supervise a ``moor dashboard`` / ``moor serve`` backend on
 # macOS, with the launchctl domain their jobs load into (LaunchAgents: ``gui/<uid>`` or ``user/<uid>``,
 # probed per label like the gateway helpers; LaunchDaemons: ``system``). Both LaunchAgents dirs are
 # per-user domains, so they share the ``agent`` kind.
@@ -226,14 +226,14 @@ def _loaded_launchd_backend_jobs(
     plist_dirs: list[tuple[str, Path]] | None = None,
 ) -> list[tuple[str, str, list[str], int | None]]:
     """``(domain, label, program_arguments, live_pid)`` for every LOADED launchd job whose
-    ``ProgramArguments`` is a ``hermes dashboard`` / ``hermes serve`` backend. macOS only (empty
+    ``ProgramArguments`` is a ``moor dashboard`` / ``moor serve`` backend. macOS only (empty
     elsewhere). Reads the plists (unreadable/malformed ones are skipped) and asks ``launchctl print``
     per candidate label — a job that is not loaded in any domain is not returned, so an operator's
     stale plist never claims a process."""
     if sys.platform != "darwin":
         return []
     import plistlib
-    from hermes_cli.gateway import _launchd_print_service_pid
+    from moor_cli.gateway import _launchd_print_service_pid
     uid = os.getuid()  # windows-footgun: ok — darwin-only branch
     jobs: list[tuple[str, str, list[str], int | None]] = []
     for kind, plist_dir in (plist_dirs if plist_dirs is not None else _launchd_plist_dirs()):
@@ -296,7 +296,7 @@ def _restart_launchd_job(domain: str, label: str, old_pid: int | None, *, timeou
     take that fresh process down), then require launchd to report a live PID other than *old_pid*
     within *timeout*. A kickstart that returns 0 only means "restart requested"; a job that is loaded
     but never comes back on a fresh PID is a failure the operator must hear about."""
-    from hermes_cli.gateway import _wait_for_launchd_service_pid
+    from moor_cli.gateway import _wait_for_launchd_service_pid
     try:
         if _run_probe(["launchctl", "kickstart", f"{domain}/{label}"], timeout=30).returncode != 0:
             return False

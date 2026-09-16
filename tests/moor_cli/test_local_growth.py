@@ -230,14 +230,14 @@ def test_preset_restores_grown_window_midladder(moor_home, tmp_path, monkeypatch
     assert restored.window >= grown, "override must lift the launch window"
 
 
-def test_mtp_plan_matches_cost_at_initial_and_restored_windows(hermes_home, tmp_path, monkeypatch):
+def test_mtp_plan_matches_cost_at_initial_and_restored_windows(moor_home, tmp_path, monkeypatch):
     from dataclasses import replace
     from types import SimpleNamespace
 
-    from hermes_cli.local_runtime import presets
-    from hermes_cli.local_runtime.context_policy import FLOOR, RUNTIME_OVERHEAD_BYTES, ub_logits_bytes
-    from hermes_cli.local_runtime.estimator import HardwareBudget, LayerKind, ModelProfile, ctx_bytes
-    from hermes_cli.local_runtime.growth import save_window_override
+    from moor_cli.local_runtime import presets
+    from moor_cli.local_runtime.context_policy import FLOOR, RUNTIME_OVERHEAD_BYTES, ub_logits_bytes
+    from moor_cli.local_runtime.estimator import HardwareBudget, LayerKind, ModelProfile, ctx_bytes
+    from moor_cli.local_runtime.growth import save_window_override
 
     gib = 1 << 30
     profile = ModelProfile(name="mtp-fit", weights_bytes=16 * gib, embd_table_bytes=0,
@@ -290,13 +290,13 @@ def test_mtp_plan_matches_cost_at_initial_and_restored_windows(hermes_home, tmp_
     assert profile.weights_bytes + ctx_bytes(priced, control.window) + stacked <= device
 
 
-def test_growth_requires_an_admissible_materialized_preset(hermes_home, tmp_path, monkeypatch):
+def test_growth_requires_an_admissible_materialized_preset(moor_home, tmp_path, monkeypatch):
     from dataclasses import replace
     from types import SimpleNamespace
 
-    from hermes_cli.local_runtime import bootstrap, catalog, growth, hardware, presets
-    from hermes_cli.local_runtime.context_policy import FLOOR, RUNTIME_OVERHEAD_BYTES, ub_logits_bytes
-    from hermes_cli.local_runtime.estimator import HardwareBudget, ctx_bytes
+    from moor_cli.local_runtime import bootstrap, catalog, growth, hardware, presets
+    from moor_cli.local_runtime.context_policy import FLOOR, RUNTIME_OVERHEAD_BYTES, ub_logits_bytes
+    from moor_cli.local_runtime.estimator import HardwareBudget, ctx_bytes
 
     entry = next(e for e in catalog.CATALOG if e.mtp and e.mmproj)
     model_id = entry.variants[-1].model_id
@@ -306,7 +306,7 @@ def test_growth_requires_an_admissible_materialized_preset(hermes_home, tmp_path
     monkeypatch.setattr(bootstrap, "staged_models", lambda: list(mdir.glob("*.gguf")))
     monkeypatch.setattr(bootstrap, "get_supervisor", lambda: SimpleNamespace(is_idle=lambda m: True))
     monkeypatch.setattr(growth, "is_managed_endpoint", lambda url: True)
-    from hermes_cli.local_runtime import gguf, estimator
+    from moor_cli.local_runtime import gguf, estimator
     monkeypatch.setattr(gguf, "read_gguf_header", lambda p: _header_stub())
     monkeypatch.setattr(estimator, "profile_from_gguf", lambda h: profile)
     monkeypatch.setattr(presets, "read_gguf_header", lambda p: _header_stub())
@@ -321,7 +321,7 @@ def test_growth_requires_an_admissible_materialized_preset(hermes_home, tmp_path
     next_need = profile.weights_bytes + ctx_bytes(priced, next_window) + overhead
     budget = HardwareBudget(floor_need, floor_need, 0, True)
     monkeypatch.setattr(hardware, "probe_budget", lambda **kw: budget)
-    from hermes_cli.local_runtime.binaries import runtimes_root
+    from moor_cli.local_runtime.binaries import runtimes_root
     preset_path = runtimes_root() / "presets.ini"
     calls = []
 
@@ -345,7 +345,7 @@ def test_growth_requires_an_admissible_materialized_preset(hermes_home, tmp_path
     assert growth.maybe_grow_window(model_id, **{**args, "current_window": next_window}) is None
 
 
-def test_sampling_ladder_file_beats_catalog_beats_nothing(hermes_home, tmp_path, monkeypatch):
+def test_sampling_ladder_file_beats_catalog_beats_nothing(moor_home, tmp_path, monkeypatch):
     """The sampling deference ladder: the GGUF's own general.sampling.*
     wins per key, catalog fills only what the file left silent, and a
     model with neither gets no sampling keys at all (llama.cpp defaults).

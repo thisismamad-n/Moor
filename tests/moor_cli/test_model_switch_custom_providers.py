@@ -2229,9 +2229,9 @@ def test_same_provider_switch_on_session_only_custom_endpoint_keeps_endpoint(mon
     picked."""
     for var in ("OPENROUTER_API_KEY", "OPENROUTER_BASE_URL", "CUSTOM_BASE_URL", "CUSTOM_API_KEY", "OPENAI_API_KEY"):
         monkeypatch.delenv(var, raising=False)
-    monkeypatch.setattr("hermes_cli.model_switch.load_config", lambda: {"model": {"provider": "openrouter", "default": "x"}}, raising=False)
+    monkeypatch.setattr("moor_cli.model_switch.load_config", lambda: {"model": {"provider": "openrouter", "default": "x"}}, raising=False)
     monkeypatch.setattr(
-        "hermes_cli.models.probe_api_models",
+        "moor_cli.models.probe_api_models",
         lambda api_key, base_url, **kw: {"models": ["m-a", "m-b"], "url": base_url + "/models", "base_url": base_url,
                                           "suggested_base_url": None, "used_fallback": False})
 

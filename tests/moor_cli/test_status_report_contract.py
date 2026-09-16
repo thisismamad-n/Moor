@@ -1,6 +1,6 @@
 """Contract: the CLI, gateway and TUI /status renderers report the SAME common facts.
 
-Every surface renders through ``hermes_cli.status_report.build_status_fields``; each keeps
+Every surface renders through ``moor_cli.status_report.build_status_fields``; each keeps
 its own header, labels (the gateway is i18n) and extras. This test feeds the three real
 renderers the same session facts and asserts every common value appears in each output —
 a contract between one builder and three renderers, not a snapshot of any layout.
@@ -17,7 +17,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from gateway.config import Platform
 from gateway.platforms.event import MessageEvent
 from gateway.session import SessionEntry, SessionSource
-from hermes_cli.cli_session_mixin import CLISessionMixin
+from moor_cli.cli_session_mixin import CLISessionMixin
 
 SESSION_ID = "status-contract-7f3a"
 MODEL = "vendor/distinctive-model-9000"
@@ -26,7 +26,7 @@ TITLE = "Distinctive status title"
 CREATED = datetime(2031, 3, 14, 15, 9)
 UPDATED = datetime(2031, 3, 15, 1, 5)
 TOKENS = 1_234_567
-HOME = "~/.hermes-status-contract"
+HOME = "~/.moor-status-contract"
 
 COMMON_VALUES = (
     SESSION_ID, MODEL, PROVIDER, TITLE,
@@ -99,7 +99,7 @@ def _render_tui() -> str:
 
 
 def test_three_status_surfaces_report_the_same_common_fields():
-    with patch("hermes_constants.display_hermes_home", return_value=HOME), \
+    with patch("moor_constants.display_moor_home", return_value=HOME), \
          patch("tools.approval_context._get_approval_mode", side_effect=RuntimeError("n/a")):
         outputs = {"cli": _render_cli(), "gateway": _render_gateway(), "tui": _render_tui()}
 

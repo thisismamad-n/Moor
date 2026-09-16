@@ -16,14 +16,14 @@ def build_debug_parser(subparsers, *, cmd_debug: Callable) -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""\
 Examples:
-    hermes debug share              Upload debug report (asks for confirmation)
-    hermes debug share --yes        Skip confirmation (for scripts/CI)
-    hermes debug share --lines 500  Include more log lines
-    hermes debug share --expire 30  Keep dpaste.com fallback pastes for 30 days
-    hermes debug share --local      Print report locally (no upload)
-    hermes debug share --no-redact  Disable upload-time secret redaction
-    hermes debug share --nous       Upload to Nous-internal storage (private)
-    hermes debug delete <url>       Delete a previously uploaded paste
+    moor debug share              Upload debug report (asks for confirmation)
+    moor debug share --yes        Skip confirmation (for scripts/CI)
+    moor debug share --lines 500  Include more log lines
+    moor debug share --expire 30  Keep dpaste.com fallback pastes for 30 days
+    moor debug share --local      Print report locally (no upload)
+    moor debug share --no-redact  Disable upload-time secret redaction
+    moor debug share --moor       Upload to Moor-internal storage (private)
+    moor debug delete <url>       Delete a previously uploaded paste
 """)
     debug_sub = debug_parser.add_subparsers(dest="debug_command")
     share_parser = debug_sub.add_parser(

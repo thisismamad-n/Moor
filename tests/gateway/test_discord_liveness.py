@@ -97,8 +97,8 @@ def _make_adapter(
     max_latency=1.0,
     max_event_silence: float | None = None,
 ) -> DiscordAdapter:
-    monkeypatch.setenv("HERMES_DISCORD_LIVENESS_INTERVAL_SECONDS", str(interval))
-    monkeypatch.setenv("HERMES_DISCORD_LIVENESS_FAILURE_THRESHOLD", str(threshold))
+    monkeypatch.setenv("MOOR_DISCORD_LIVENESS_INTERVAL_SECONDS", str(interval))
+    monkeypatch.setenv("MOOR_DISCORD_LIVENESS_FAILURE_THRESHOLD", str(threshold))
     extra = {
         "websocket_heartbeat_ack_max_age_seconds": max_ack_age,
         "websocket_max_latency_seconds": max_latency,

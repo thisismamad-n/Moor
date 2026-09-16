@@ -27,7 +27,7 @@ DESKTOP_ENTRY_NAME = "moor.desktop"
 # (updater relaunch) launches. See launched_from_shell().
 SHELL_LAUNCH_ENV_VAR = "DESKTOP_STARTUP_ID"
 # Write end of the reveal pipe handed to Electron; one byte means "main window is on screen".
-READY_FD_ENV_VAR = "HERMES_DESKTOP_READY_FD"
+READY_FD_ENV_VAR = "MOOR_DESKTOP_READY_FD"
 REVEAL_BYTE = b"r"  # what linux-launcher-ready.ts writes; anything else is finish()'s wake-up
 
 _SHELL_NAMES = ("bash", "sh", "dash", "zsh", "ksh")
@@ -219,9 +219,9 @@ def _resolve_moor_bin_for_desktop_entry(
         sys.argv[0] = original_argv0
 
     # A resolver miss (argv[0] is ``-c`` under ``python -m`` on a cold relaunch AND PATH has no
-    # ``hermes``) must NOT return None here: that skipped the durable-wrapper probe below and persisted
+    # ``moor``) must NOT return None here: that skipped the durable-wrapper probe below and persisted
     # the module form, so the entry's bytes flipped on every alternating launch context — and
-    # gnome-shell 50.x crashes when hermes.desktop changes while its ShellApp is STARTING (#110885).
+    # gnome-shell 50.x crashes when moor.desktop changes while its ShellApp is STARTING (#110885).
     # ``primary is None`` implies ``rerouted is None`` (the rerun only hides argv[0]), so only the
     # probe can still find anything.
     if primary and rerouted is not None:
@@ -565,13 +565,13 @@ def _launcher_entry_management_enabled() -> bool:
     """Whether config.yaml allows rewriting an EXISTING launcher entry.
 
     ``desktop.manage_launcher_entry: false`` opts out of the every-launch
-    rewrite: a hand-edited ``hermes.desktop`` is then left alone instead
+    rewrite: a hand-edited ``moor.desktop`` is then left alone instead
     of silently reverting (#101097's clobber complaint). A MISSING entry
     is still created regardless — the opt-out protects user edits, not
     first-run presence. Any config error reads as enabled (default).
     """
     try:
-        from hermes_cli.config import load_config_readonly
+        from moor_cli.config import load_config_readonly
 
         desktop_cfg = (load_config_readonly() or {}).get("desktop") or {}
         raw = desktop_cfg.get("manage_launcher_entry", True)
@@ -646,7 +646,7 @@ class DeferredDesktopEntryInstall:
     """Install the entry once the desktop window is on screen — never while the shell's
     ShellApp is STARTING.
 
-    The launcher hands Electron the write end of a pipe (``HERMES_DESKTOP_READY_FD``); Electron
+    The launcher hands Electron the write end of a pipe (``MOOR_DESKTOP_READY_FD``); Electron
     writes one byte when the main window is revealed and a worker thread then installs the entry.
     An exit without a reveal (boot crash, early quit) does NOT heal: gnome-shell keeps the ShellApp
     in STARTING until the startup-notification sequence completes or times out (mutter, ~15 s),

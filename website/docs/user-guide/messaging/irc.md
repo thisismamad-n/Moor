@@ -15,7 +15,7 @@ IRC is plain text: there is no voice, image, file, thread, reaction, typing, or 
 
 ## Configure Moor
 
-You can configure IRC two ways — environment variables (for a quick env-only setup) or the `gateway` block in `~/.hermes/config.yaml`.
+You can configure IRC two ways — environment variables (for a quick env-only setup) or the `gateway` block in `~/.moor/config.yaml`.
 
 ### Option A — config.yaml
 

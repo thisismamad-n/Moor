@@ -28,9 +28,9 @@ from urllib.parse import urlparse
 
 from agent.memory_provider import spawn_context_thread as _spawn_context_thread
 from agent.secret_scope import get_secret
-from hermes_cli.profiles import _get_default_hermes_home
-from hermes_constants import get_hermes_home
-from hermes_state_common import TITLE_SOURCE_DERIVED, TITLE_SOURCE_LLM
+from moor_cli.profiles import _get_default_moor_home
+from moor_constants import get_moor_home
+from moor_state_common import TITLE_SOURCE_DERIVED, TITLE_SOURCE_LLM
 
 from plugins.memory.honcho.client_cache import (
     _DEFAULT_HTTP_TIMEOUT, _client_cache_key, _client_slots, _client_slots_lock,
@@ -42,7 +42,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-HOST = "hermes"
+HOST = "moor"
 _AUTOMATIC_SESSION_TITLE_SOURCES = frozenset({TITLE_SOURCE_DERIVED, TITLE_SOURCE_LLM})
 
 
@@ -73,11 +73,11 @@ def _host_block(raw: dict, host: str) -> dict:
 
 
 def resolve_active_host() -> str:
-    """Honcho host key: HERMES_HONCHO_HOST (profile-scoped .env), else the active profile. The config's
+    """Honcho host key: MOOR_HONCHO_HOST (profile-scoped .env), else the active profile. The config's
     ``defaultHost`` is honored only for the default profile so named profiles stay isolated — which is
     also why the override is read through the secret scope: from raw environ it would fold every
     multiplexed profile onto the default profile's host block and peer."""
-    explicit = (get_secret("HERMES_HONCHO_HOST", "") or "").strip()
+    explicit = (get_secret("MOOR_HONCHO_HOST", "") or "").strip()
     if explicit:
         return explicit
     try:

@@ -15,7 +15,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Union
 
-from hermes_state_common import _BOUNDARY_END_REASONS
+from moor_state_common import _BOUNDARY_END_REASONS
 
 # Hidden from browsing/searching — integrations (MOOR_SESSION_SOURCE=tool), delegate
 # subagent runs, kanban workers are not the user's history.
@@ -610,8 +610,8 @@ def session_search(query: str = "", role_filter: str = None, limit: int = 3, db=
                    after: str = None, before: str = None, exclude_session_ids: Optional[List[str]] = None) -> str:
     """Run session search, closing DBs opened here. Positional order is frozen for old callers;
     new parameters are appended after ``detail``."""
-    from hermes_state import format_session_db_unavailable
-    from hermes_state_registry import acquire, release_or_close
+    from moor_state import format_session_db_unavailable
+    from moor_state_registry import acquire, release_or_close
     owned_dbs: List[Any] = []
     if db is None:
         db = _quiet(acquire, None, "SessionDB unavailable for session_search")

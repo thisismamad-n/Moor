@@ -18,17 +18,17 @@ from pathlib import Path
 
 import pytest
 
-import hermes_state
-import hermes_state_wal
-from hermes_state import SessionDB
+import moor_state
+import moor_state_wal
+from moor_state import SessionDB
 
 
 def pin_wal(monkeypatch) -> None:
     """Pin WAL so this host's vulnerable SQLite still matches production topology."""
     monkeypatch.setattr(
-        hermes_state_wal, "is_sqlite_wal_reset_vulnerable", lambda version_info=None: False
+        moor_state_wal, "is_sqlite_wal_reset_vulnerable", lambda version_info=None: False
     )
-    monkeypatch.setattr(hermes_state_wal, "resolve_journal_mode", lambda: "wal")
+    monkeypatch.setattr(moor_state_wal, "resolve_journal_mode", lambda: "wal")
 
 
 def make_db(path: Path, session_id: str, content: str) -> SessionDB:
@@ -63,7 +63,7 @@ def lose_sidecars(db_path: Path, *, rename: bool) -> None:
 
 def write_second_generation(db_path: Path, n_rows: int) -> int:
     """From a process that does NOT already hold this db open, mint a fresh WAL generation through the path
-    (as any non-hermes opener would), write ``n_rows`` messages and checkpoint them into the main file.
+    (as any non-moor opener would), write ``n_rows`` messages and checkpoint them into the main file.
     Returns the message count on the path afterwards. MUST run in a different process from the writer that
     holds the deleted generation — two live handles on one db in one process collide on the -shm."""
     conn = sqlite3.connect(str(db_path), timeout=5.0, isolation_level=None)
@@ -117,14 +117,14 @@ _GATEWAY_CHILD = textwrap.dedent(
     """
     import gc, json, os, sys
     from pathlib import Path
-    repo, hermes_home, db_path = sys.argv[1], sys.argv[2], sys.argv[3]
+    repo, moor_home, db_path = sys.argv[1], sys.argv[2], sys.argv[3]
     sys.path.insert(0, repo)
-    os.environ["HERMES_HOME"] = hermes_home
-    import hermes_state_wal
-    if hermes_state_wal.is_sqlite_wal_reset_vulnerable():
-        hermes_state_wal.is_sqlite_wal_reset_vulnerable = lambda version_info=None: False
-    hermes_state_wal.resolve_journal_mode = lambda: "wal"
-    from hermes_state import DeletedWalGenerationError, SessionDB
+    os.environ["MOOR_HOME"] = moor_home
+    import moor_state_wal
+    if moor_state_wal.is_sqlite_wal_reset_vulnerable():
+        moor_state_wal.is_sqlite_wal_reset_vulnerable = lambda version_info=None: False
+    moor_state_wal.resolve_journal_mode = lambda: "wal"
+    from moor_state import DeletedWalGenerationError, SessionDB
 
     def emit(**e):
         sys.stdout.write(json.dumps(e) + "\\n"); sys.stdout.flush()
@@ -228,17 +228,17 @@ def gateway_writer(tmp_path: Path):
     """Spawn the gateway writer child on ``tmp_path / "state.db"`` and yield a :class:`GatewayWriter`.
 
     The child is torn down (stdin closed, then wait → terminate → kill) on exit from the block."""
-    repo_root = os.path.dirname(os.path.abspath(hermes_state.__file__))
-    hermes_home = tmp_path / "home"
-    hermes_home.mkdir()
+    repo_root = os.path.dirname(os.path.abspath(moor_state.__file__))
+    moor_home = tmp_path / "home"
+    moor_home.mkdir()
     path = tmp_path / "state.db"
     stderr_path = tmp_path / "writer-stderr.log"
     with stderr_path.open("w", encoding="utf-8") as stderr:
         proc = subprocess.Popen(
-            [sys.executable, "-c", _GATEWAY_CHILD, repo_root, str(hermes_home), str(path)],
+            [sys.executable, "-c", _GATEWAY_CHILD, repo_root, str(moor_home), str(path)],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=stderr,
             text=True, encoding="utf-8", bufsize=1,
-            env={**os.environ, "HERMES_STATE_DB_GUARD_BYPASS": "1"},
+            env={**os.environ, "MOOR_STATE_DB_GUARD_BYPASS": "1"},
         )
         gw = GatewayWriter(proc, path, stderr_path)
         try:

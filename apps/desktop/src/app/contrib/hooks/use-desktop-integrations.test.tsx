@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { setApiRequestConnection, setApiRequestProfile } from '@/hermes'
+import { setApiRequestConnection, setApiRequestProfile } from '@/moor'
 import { createClientSessionState } from '@/lib/chat-runtime'
 import { $confirmRequest, runConfirm, settleConfirm } from '@/store/confirm'
 import { $hubInstalledOverride } from '@/store/hub-actions'
@@ -579,7 +579,7 @@ describe('useDesktopIntegrations', () => {
     function listen() {
       render({ profileReady: true, resumeLastSession: false })
 
-      return vi.mocked(window.hermesDesktop.onDeepLink!).mock.calls[0]![0]
+      return vi.mocked(window.moorDesktop.onDeepLink!).mock.calls[0]![0]
     }
 
     afterEach(() => {
@@ -614,7 +614,7 @@ describe('useDesktopIntegrations', () => {
         return {}
       })
 
-      desktopWindow.hermesDesktop = { ...desktopWindow.hermesDesktop, api } as unknown as Window['hermesDesktop']
+      desktopWindow.moorDesktop = { ...desktopWindow.moorDesktop, api } as unknown as Window['moorDesktop']
       const deepLink = listen()
       const installs = () => api.mock.calls.filter(([r]) => r.path === '/api/skills/hub/install')
       const identifier = 'skills-sh/owner/repo/skill'
@@ -664,14 +664,14 @@ describe('useDesktopIntegrations', () => {
   describe('notification click -> focus-session id translation', () => {
     function withFocusSession(): (sessionId: string) => void {
       let handler: ((sessionId: string) => void) | undefined
-      desktopWindow.hermesDesktop = {
-        ...desktopWindow.hermesDesktop,
+      desktopWindow.moorDesktop = {
+        ...desktopWindow.moorDesktop,
         onFocusSession: (cb: (sessionId: string) => void) => {
           handler = cb
 
           return () => undefined
         }
-      } as unknown as Window['hermesDesktop']
+      } as unknown as Window['moorDesktop']
 
       return sessionId => handler?.(sessionId)
     }

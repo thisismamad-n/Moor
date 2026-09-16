@@ -10,7 +10,7 @@ import threading
 from typing import Optional
 import uuid
 
-from hermes_constants import get_default_hermes_root
+from moor_constants import get_default_moor_root
 from utils import atomic_write_text
 
 _INSTALL_ID_FILENAME = "install_id"
@@ -69,8 +69,8 @@ def read_or_create_install_id(root: Path | None = None) -> Optional[str]:
     if not mint:
         return existing
     try:
-        from hermes_constants import mkdir_under_hermes_home
-        mkdir_under_hermes_home(root)
+        from moor_constants import mkdir_under_moor_home
+        mkdir_under_moor_home(root)
         # Windows byte-range locks can report a same-process conflict instead of waiting for another
         # thread: serialize threads here, then keep the file lock as the cross-process publication fence.
         with _INSTALL_ID_PUBLICATION_LOCK, _install_id_file_lock(root):

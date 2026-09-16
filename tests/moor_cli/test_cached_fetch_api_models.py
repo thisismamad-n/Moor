@@ -139,7 +139,7 @@ class TestCacheOnly:
         return {"fp": fp, "at": time.time() - age_seconds, "models": list(models)}
 
     def _call(self, cache, *, fp="fp", expect_revalidate=False, **kwargs):
-        import hermes_cli.models as mod
+        import moor_cli.models as mod
 
         with patch.object(mod, "_load_provider_models_cache", return_value=cache), \
              patch.object(mod, "_custom_endpoint_fingerprint", return_value=fp), \
@@ -282,9 +282,9 @@ class TestCachedFetchApiModelsDiskRoundTrip:
     def test_same_url_distinct_credentials_keep_separate_rows(self, tmp_path, monkeypatch):
         """N custom_providers rows sharing one proxy URL with different keys (#106184): a probe
         for key B must not evict key A's catalog, and a cache-only read for A must still hit."""
-        import hermes_cli.models as mod
+        import moor_cli.models as mod
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         monkeypatch.setattr(mod, "fetch_api_models", lambda key, *a, **k: [f"models-for-{key}"])
 
         url = "https://proxy.example.com/v1"
@@ -386,7 +386,7 @@ class TestProbeApiModelsNegativeCache:
 
     @pytest.fixture(autouse=True)
     def _clear_probe_neg_cache(self):
-        import hermes_cli.models as mod
+        import moor_cli.models as mod
 
         mod._probe_neg_cache.clear()
         yield
@@ -396,7 +396,7 @@ class TestProbeApiModelsNegativeCache:
         raise TimeoutError("connect timed out")
 
     def test_repeat_failure_within_ttl_skips_network(self, monkeypatch):
-        import hermes_cli.models as mod
+        import moor_cli.models as mod
 
         monkeypatch.setattr(mod, "_urlopen_model_catalog_request", self._fail)
         r1 = mod.probe_api_models("", "https://blackhole.invalid/v1", timeout=1.0)
@@ -413,7 +413,7 @@ class TestProbeApiModelsNegativeCache:
     def test_http_error_from_a_reachable_host_is_not_cached_as_unreachable(self, monkeypatch):
         import urllib.error
 
-        import hermes_cli.models as mod
+        import moor_cli.models as mod
 
         def _unauthorized(req, **kw):
             raise urllib.error.HTTPError(req.full_url, 401, "Unauthorized", {}, None)
@@ -424,7 +424,7 @@ class TestProbeApiModelsNegativeCache:
         assert "reachable.invalid:443" not in mod._probe_neg_cache
 
     def test_expired_entry_reprobes_and_success_clears_it(self, monkeypatch):
-        import hermes_cli.models as mod
+        import moor_cli.models as mod
 
         key = "blackhole.invalid:443"
         old = time.monotonic() - mod._PROBE_NEG_TTL - 1

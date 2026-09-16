@@ -79,7 +79,7 @@ class MoorMCPOAuthProvider(MoorProviderMixin, *_SDK_BASES):
         ``expires_at``) makes the SDK refresh first. Metadata is restored from disk, else discovered
         pre-flight when we hold tokens but no metadata: otherwise ``_refresh_token`` guesses
         ``{server_url}/token`` (wrong for split-origin providers), 404s, and we fall to browser reauth."""
-        await super()._initialize()  # HermesProviderMixin: restores metadata from disk, enforces issuer binding
+        await super()._initialize()  # MoorProviderMixin: restores metadata from disk, enforces issuer binding
         tokens = self.context.current_tokens
         if tokens is not None and tokens.expires_in is not None:
             # The SDK maps a zero TTL to ``time.time()`` and accepts equality

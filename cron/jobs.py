@@ -27,14 +27,14 @@ except ImportError:  # pragma: no cover - non-Windows
     msvcrt = None
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 from cron.env_settings import cron_env_setting
 from typing import Optional, Dict, List, Any, Callable, Set, Tuple, Union, Collection
 
 logger = logging.getLogger(__name__)
 
-from hermes_time import now as _hermes_now
-from hermes_time import get_timezone
+from moor_time import now as _moor_now
+from moor_time import get_timezone
 from utils import atomic_replace, atomic_write_text
 
 # croniter is imported lazily (slow import, only needed for cron exprs). HAS_CRONITER stays a
@@ -198,7 +198,7 @@ _DEFAULT_CRON_INACTIVITY_TIMEOUT = 600.0
 def _oneshot_run_claim_ttl_seconds() -> float:
     """One-shot running-claim TTL from ``MOOR_CRON_TIMEOUT``: unset/invalid → 600s → 1800s;
     ``0`` (unlimited) → the fixed floor; positive N → ``max(N * headroom, floor)``."""
-    raw = cron_env_setting("HERMES_CRON_TIMEOUT").strip()
+    raw = cron_env_setting("MOOR_CRON_TIMEOUT").strip()
     try:
         timeout = float(raw) if raw else _DEFAULT_CRON_INACTIVITY_TIMEOUT
     except (ValueError, TypeError):
@@ -561,14 +561,14 @@ def _is_recoverable_error_job(job: Dict[str, Any]) -> bool:
 
 def _secure_dir(path: Path):
     """Owner-only (0700) via the shared helper, so cron/ and cron/output honor the same managed/
-    container/HERMES_HOME_MODE rules as the rest of HERMES_HOME (#10757)."""
-    from hermes_cli.config import _secure_dir as _shared_secure_dir
+    container/MOOR_HOME_MODE rules as the rest of MOOR_HOME (#10757)."""
+    from moor_cli.config import _secure_dir as _shared_secure_dir
     _shared_secure_dir(path)
 
 
 def _secure_file(path: Path):
     """Owner-only (0600) via the shared helper (managed/container skip included)."""
-    from hermes_cli.config import _secure_file as _shared_secure_file
+    from moor_cli.config import _secure_file as _shared_secure_file
     _shared_secure_file(path)
 
 
@@ -826,7 +826,7 @@ def parse_schedule(schedule: str) -> Dict[str, Any]:
         except ValueError:
             raise ValueError(
                 f"Invalid duration '{duration_str}' after 'in '. Use e.g. 'in 30m', 'in 2h'.")
-        now = _hermes_now()
+        now = _moor_now()
         # Durations measure elapsed time, not wall-clock hours across a DST transition.
         run_at = (now.astimezone(timezone.utc) + timedelta(minutes=minutes)).astimezone(now.tzinfo)
         return {"kind": "once", "run_at": run_at.isoformat(), "display": f"once in {duration_str}"}
@@ -1570,7 +1570,7 @@ def _resolve_default_model_snapshot() -> Optional[str]:
     """Default model resolved as the ticker's ``run_job`` does, so unpinned jobs can snapshot it and
     keep running on it after a later swap. ``None`` on missing config or failure ("no snapshot")."""
     try:
-        from hermes_cli.config_effective import load_user_config_effective
+        from moor_cli.config_effective import load_user_config_effective
 
         cfg_path = get_moor_home() / "config.yaml"
         if not cfg_path.exists():
@@ -2210,7 +2210,7 @@ def trigger_job(job_id: str, extra_prompt: Optional[str] = None) -> Optional[Dic
 
 def _claim_owner_is_dead(claim: Dict[str, Any]) -> bool:
     """True when the claim's ``by`` names a process on THIS host that provably no longer exists.
-    ``_machine_id()`` stamps ``host:pid[:token]``; a foreign host, an explicit HERMES_MACHINE_ID,
+    ``_machine_id()`` stamps ``host:pid[:token]``; a foreign host, an explicit MOOR_MACHINE_ID,
     or any liveness-probe failure returns False (fail safe: only a proven death shortens the TTL)."""
     parts = str(claim.get("by") or "").split(":")
     if len(parts) < 2 or not parts[1].isdigit():
@@ -2229,7 +2229,7 @@ def _claim_is_live(claim: Any, now: datetime, ttl_seconds: float) -> bool:
     """True for a well-formed claim aged within ``[0, ttl)`` whose owner is not provably dead:
     future-dated (clock/TZ skew) or malformed claims count as stale so they can never wedge a
     job, and a same-host owner pid that has exited releases the claim immediately instead of
-    after the TTL (a killed ``hermes cron run`` otherwise blocks the next manual run for the
+    after the TTL (a killed ``moor cron run`` otherwise blocks the next manual run for the
     full window with "already being fired")."""
     if not isinstance(claim, dict) or not claim.get("at"):
         return False
@@ -3337,7 +3337,7 @@ def save_job_output(job_id: str, output: str):
     job_output_dir = _job_output_dir(job_id)
     _ensure_cron_dir(job_output_dir)
     _secure_dir(job_output_dir)
-    output_file = job_output_dir / f"{_hermes_now().strftime('%Y-%m-%d_%H-%M-%S')}.md"
+    output_file = job_output_dir / f"{_moor_now().strftime('%Y-%m-%d_%H-%M-%S')}.md"
     atomic_write_text(output_file, output, tmp_prefix=".output_", mode=0o600)
     _secure_file(output_file)
     # Bound per-job output growth so long-running deploys don't fill the disk (#52383).

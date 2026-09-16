@@ -415,7 +415,7 @@ def _salvage_rowid_bounds(source: sqlite3.Connection, table: str) -> dict[str, A
         return result
 
     # An ordered LIMIT 1 walks the table b-tree and dies on a damaged edge leaf, while the
-    # aggregate lets the planner answer from any covering index (every Hermes table has at
+    # aggregate lets the planner answer from any covering index (every Moor table has at
     # least a PRIMARY KEY autoindex). Ask it before falling back to the synthetic domain:
     # bisecting from INT64_MIN burned the whole query budget on a 4-row table (#98050).
     missing = [edge for edge in ("low", "high") if rows[edge] is None]

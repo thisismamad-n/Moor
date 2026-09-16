@@ -1,5 +1,5 @@
-import { ConfirmDialog, host } from '@hermes/plugin-sdk'
-import type { useI18n } from '@hermes/plugin-sdk'
+import { ConfirmDialog, host } from '@moor/plugin-sdk'
+import type { useI18n } from '@moor/plugin-sdk'
 
 import { CreateAgentDialog, CreateGroupChatDialog, GroupDialog } from './create-dialog'
 import type { useRoster } from './data'
@@ -107,7 +107,7 @@ export function renderRosterDialogs({
             <span>
               {'This will permanently delete the bot '}
               <span className="font-medium text-foreground">{deleting.name}</span>
-              {' and its associated Hermes profile at '}
+              {' and its associated Moor profile at '}
               <span className="font-mono text-xs">{deleting.path}</span>. This cannot be undone.
             </span>
           ) : null

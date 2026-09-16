@@ -293,10 +293,10 @@ There is no general "point any TUI at any standalone gateway port" mode. In part
 
 ### If the connection drops
 
-- **Spawned gateway (default):** when the gateway process dies mid-session the TUI says *Hermes stopped unexpectedly — restarting and reopening your chat*, respawns it (bounded to a few attempts per minute) and reopens the same saved session. The reply that was in flight is lost with the process.
-- **Attached gateway (dashboard chat):** when only the WebSocket drops the TUI says *Connection to Hermes lost — reconnecting and reopening your chat…*, reconnects with growing backoff and reattaches to the same session — including a reply that is still streaming on the backend. Nothing is resubmitted.
+- **Spawned gateway (default):** when the gateway process dies mid-session the TUI says *Moor stopped unexpectedly — restarting and reopening your chat*, respawns it (bounded to a few attempts per minute) and reopens the same saved session. The reply that was in flight is lost with the process.
+- **Attached gateway (dashboard chat):** when only the WebSocket drops the TUI says *Connection to Moor lost — reconnecting and reopening your chat…*, reconnects with growing backoff and reattaches to the same session — including a reply that is still streaming on the backend. Nothing is resubmitted.
 
-If you want multiple surfaces to share one set of sessions, use the shared `~/.hermes/state.db` (see [Sessions](sessions.md)) or the web dashboard's embedded chat (see [Web Dashboard](features/web-dashboard.md#chat)) — not a hand-set gateway URL.
+If you want multiple surfaces to share one set of sessions, use the shared `~/.moor/state.db` (see [Sessions](sessions.md)) or the web dashboard's embedded chat (see [Web Dashboard](features/web-dashboard.md#chat)) — not a hand-set gateway URL.
 
 ## Reverting to the classic CLI
 

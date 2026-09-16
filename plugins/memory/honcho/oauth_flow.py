@@ -372,9 +372,9 @@ _flows_by_target: dict[tuple[str, str], tuple[FlowStatus, threading.Thread | Non
 
 def _flow_target() -> tuple[str, str] | None:
     """(config_path, host) of the active profile override, or None when unscoped."""
-    from hermes_constants import get_hermes_home_override
+    from moor_constants import get_moor_home_override
 
-    if get_hermes_home_override() is None:
+    if get_moor_home_override() is None:
         return None
     return str(resolve_config_path()), resolve_active_host()
 
@@ -412,7 +412,7 @@ def start_loopback_flow_background(
     """Launch the loopback flow in a daemon thread; returns the initial status.
     Idempotent while pending, so a double-click can't open two tabs / bind :8765 twice."""
     global _flow_thread
-    # Resolve under the caller's profile scope NOW — a context-local HERMES_HOME override can't reach the worker.
+    # Resolve under the caller's profile scope NOW — a context-local MOOR_HOME override can't reach the worker.
     target = _flow_target()
     config_path = config_path or (Path(target[0]) if target else resolve_config_path())
     host = host or (target[1] if target else resolve_active_host())

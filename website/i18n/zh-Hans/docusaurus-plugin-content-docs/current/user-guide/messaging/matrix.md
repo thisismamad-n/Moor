@@ -16,11 +16,11 @@ Moor 兼容任何 Matrix homeserver——Synapse、Conduit、Dendrite 或 matrix
 
 | 场景 | 行为 |
 |---------|----------|
-| **私聊（DM）** | Hermes 响应每条消息，无需 `@提及`。每个 DM 有独立的会话。设置 `MATRIX_DM_MENTION_THREADS=true` 可在 DM 中被 `@提及` 时创建线程。 |
-| **房间** | 默认情况下，Hermes 需要 `@提及` 才会响应。设置 `MATRIX_REQUIRE_MENTION=false` 或将房间 ID 添加到 `MATRIX_FREE_RESPONSE_ROOMS` 可开启自由响应模式。房间邀请会被自动接受。 |
-| **线程** | Hermes 支持 Matrix 线程（MSC3440）。在线程中回复时，Hermes 会将线程上下文与主房间时间线隔离。机器人已参与的线程无需提及即可响应。 |
-| **自动线程** | 默认情况下，Hermes 会为其在房间中响应的每条消息自动创建线程，以保持对话隔离。设置 `MATRIX_AUTO_THREAD=false` 可禁用此功能。设置 `MATRIX_DM_AUTO_THREAD=true`（默认 false）可同时为私聊消息自动创建线程——这与 `MATRIX_DM_MENTION_THREADS` 不同，后者仅在私聊中 @提及 Bot 时才创建线程。 |
-| **多用户共享房间** | 默认情况下，Hermes 在房间内按用户隔离会话历史。同一房间中的两个人不会共享同一对话记录，除非你明确禁用该功能。 |
+| **私聊（DM）** | Moor 响应每条消息，无需 `@提及`。每个 DM 有独立的会话。设置 `MATRIX_DM_MENTION_THREADS=true` 可在 DM 中被 `@提及` 时创建线程。 |
+| **房间** | 默认情况下，Moor 需要 `@提及` 才会响应。设置 `MATRIX_REQUIRE_MENTION=false` 或将房间 ID 添加到 `MATRIX_FREE_RESPONSE_ROOMS` 可开启自由响应模式。房间邀请会被自动接受。 |
+| **线程** | Moor 支持 Matrix 线程（MSC3440）。在线程中回复时，Moor 会将线程上下文与主房间时间线隔离。机器人已参与的线程无需提及即可响应。 |
+| **自动线程** | 默认情况下，Moor 会为其在房间中响应的每条消息自动创建线程，以保持对话隔离。设置 `MATRIX_AUTO_THREAD=false` 可禁用此功能。设置 `MATRIX_DM_AUTO_THREAD=true`（默认 false）可同时为私聊消息自动创建线程——这与 `MATRIX_DM_MENTION_THREADS` 不同，后者仅在私聊中 @提及 Bot 时才创建线程。 |
+| **多用户共享房间** | 默认情况下，Moor 在房间内按用户隔离会话历史。同一房间中的两个人不会共享同一对话记录，除非你明确禁用该功能。 |
 | **LaTeX 数学公式** | 回复中的 `$...$`（行内）和 `$$...$$`（独立行）会以 Element 的 `data-mx-maths` 标记发送，启用了 **设置 → 实验室 → 渲染消息中的 LaTeX 数学公式** 的客户端会用 KaTeX 排版。未配对的美元符号（`$5 or $10`）保持原样，纯文本 `body` 仍保留原始 TeX 供其他客户端显示。 |
 
 :::tip

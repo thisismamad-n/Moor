@@ -1,5 +1,5 @@
-import { contrastRatio, ensureContrast, mix, parseColor, relativeLuminance, toHex } from '@hermes/shared/color'
-import type { SkinBranding, SkinColors } from '@hermes/shared/skin'
+import { contrastRatio, ensureContrast, mix, parseColor, relativeLuminance, toHex } from '@moor/shared/color'
+import type { SkinBranding, SkinColors } from '@moor/shared/skin'
 
 import { desaturate, grayOf, liftForContrast } from './lib/color.js'
 
@@ -69,7 +69,7 @@ export interface Theme {
 
 // ── Color math ───────────────────────────────────────────────────────
 //
-// Generic color computation lives in @hermes/shared/color (the primitives,
+// Generic color computation lives in @moor/shared/color (the primitives,
 // shared with the desktop) and lib/color.ts (TUI-only lifts and re-toning);
 // this file keeps only the ANSI-256 remapping that is specific to the
 // limited-palette Apple Terminal path. contrastRatio/ensureContrast are
@@ -252,7 +252,7 @@ export function themeToneHex(tone: string): string {
 // ── Defaults ─────────────────────────────────────────────────────────
 
 const BRAND: ThemeBrand = {
-  name: 'Hermes Agent',
+  name: 'Moor Agent',
   icon: '☤',
   prompt: '❯',
   welcome: 'Type your message or /help for commands.',

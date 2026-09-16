@@ -148,15 +148,15 @@ class TestBuildJobPromptScansSkillContent:
     def test_cron_skill_receives_declared_config(
         self, cron_env, configured_value, expected_value
     ):
-        hermes_home, scheduler = cron_env
-        skill_dir = hermes_home / "skills" / "cron-config"
+        moor_home, scheduler = cron_env
+        skill_dir = moor_home / "skills" / "cron-config"
         skill_dir.mkdir(parents=True)
         (skill_dir / "SKILL.md").write_text(
             "---\n"
             "name: cron-config\n"
             "description: Uses configured cron data\n"
             "metadata:\n"
-            "  hermes:\n"
+            "  moor:\n"
             "    config:\n"
             "      - key: cron_config.data_dir\n"
             "        description: Directory used by the cron skill\n"
@@ -165,7 +165,7 @@ class TestBuildJobPromptScansSkillContent:
             encoding="utf-8",
         )
         if configured_value is not None:
-            (hermes_home / "config.yaml").write_text(
+            (moor_home / "config.yaml").write_text(
                 "skills:\n"
                 "  config:\n"
                 "    cron_config:\n"

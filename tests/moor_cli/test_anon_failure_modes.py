@@ -1,8 +1,8 @@
-"""Nous free tier: every way the account service or the wire can refuse the free tier, and what
-Hermes does with each (the failure-mode contract behind the desktop's onboarding copy).
+"""Moor free tier: every way the account service or the wire can refuse the free tier, and what
+Moor does with each (the failure-mode contract behind the desktop's onboarding copy).
 
 Driven through a fake NAS whose responses are the ones the real service sends (see the code table
-in ``hermes_cli.anon_auth``), never through mocked-away client code.
+in ``moor_cli.anon_auth``), never through mocked-away client code.
 """
 
 from __future__ import annotations
@@ -12,10 +12,10 @@ import json
 import httpx
 import pytest
 
-from hermes_cli import anon_auth, anon_sign_in, free_tier_bootstrap
-from hermes_cli.auth import _load_auth_store
+from moor_cli import anon_auth, anon_sign_in, free_tier_bootstrap
+from moor_cli.auth import _load_auth_store
 
-from tests.hermes_cli.anon_portal import PORTAL, WELCOME, install_portal  # noqa: F401
+from tests.moor_cli.anon_portal import PORTAL, WELCOME, install_portal  # noqa: F401
 
 
 @pytest.fixture
@@ -31,10 +31,10 @@ def _mint_error(nas) -> anon_auth.AuthError:
 
 def _exchange_error(nas) -> anon_auth.AuthError:
     """Mint (the credential is persisted before any exchange), then exchange it at first use."""
-    from hermes_cli.auth_nous import resolve_nous_runtime_credentials
+    from moor_cli.auth_moor import resolve_moor_runtime_credentials
     assert anon_auth.is_guest_state(anon_auth.ensure_portal_identity(explicit=True))
     with pytest.raises(anon_auth.AuthError) as exc:
-        resolve_nous_runtime_credentials()
+        resolve_moor_runtime_credentials()
     return exc.value
 
 
@@ -46,7 +46,7 @@ class TestNasRefusalCodes:
         nas.create_response = httpx.Response(404, json={"error": "not_found"})
         err = _mint_error(nas)
         assert err.code == anon_auth.ANON_GATE_CLOSED and err.retryable is False
-        assert "Nous account" in str(err) and "free" in str(err)
+        assert "Moor account" in str(err) and "free" in str(err)
         # Terminal: no later attempt this process, whatever the clock says.
         assert anon_auth.ensure_portal_identity(explicit=True) is None
         assert nas.creates() == 1
@@ -74,10 +74,10 @@ class TestNasRefusalCodes:
         nas.token_response = httpx.Response(428, json={"error": "pow_required", "pow": {"bits": 31}})
         err = _exchange_error(nas)
         assert err.code == anon_auth.ANON_POW_REQUIRED and err.retryable is False
-        assert str(err).startswith("The Nous server asked for a proof of work, but that isn't implemented")
+        assert str(err).startswith("The Moor server asked for a proof of work, but that isn't implemented")
         # The credential from ``create`` is kept, so a later NAS without PoW exchanges it instead
         # of minting again.
-        assert anon_auth.is_guest_state(_load_auth_store()["providers"]["nous"])
+        assert anon_auth.is_guest_state(_load_auth_store()["providers"]["moor"])
         assert nas.creates() == 1
 
     def test_locked_account_is_dead_and_never_replaced(self, nas):
@@ -86,26 +86,26 @@ class TestNasRefusalCodes:
         assert isinstance(err, anon_auth.AnonCredentialDead)
         assert err.code == anon_auth.ANON_ACCOUNT_LOCKED
         # Retired, and NOT replaced by a fresh identity: the way forward is a sign-in.
-        assert "nous" not in _load_auth_store().get("providers", {})
+        assert "moor" not in _load_auth_store().get("providers", {})
         assert nas.creates() == 1
 
     def test_a_locked_account_is_never_replaced_through_connectors_either(self, nas):
-        from hermes_cli.auth import _auth_store_lock, _save_auth_store
-        from tests.hermes_cli.anon_portal import make_jwt
+        from moor_cli.auth import _auth_store_lock, _save_auth_store
+        from tests.moor_cli.anon_portal import make_jwt
         from tools import managed_tool_gateway as mtg
         anon_auth.ensure_portal_identity(explicit=True)
         with _auth_store_lock():
             store = _load_auth_store()
-            store["providers"]["nous"]["expires_at"] = "2000-01-01T00:00:00+00:00"
-            store["providers"]["nous"]["access_token"] = make_jwt(exp=1)
+            store["providers"]["moor"]["expires_at"] = "2000-01-01T00:00:00+00:00"
+            store["providers"]["moor"]["access_token"] = make_jwt(exp=1)
             _save_auth_store(store)
         nas.token_response = httpx.Response(403, json={"error": "account_locked"})
-        assert mtg.read_nous_access_token() is None
-        assert "nous" not in _load_auth_store().get("providers", {})
+        assert mtg.read_moor_access_token() is None
+        assert "moor" not in _load_auth_store().get("providers", {})
         assert nas.creates() == 1
 
     def test_unknown_token_is_replaced_once_at_first_use(self, nas):
-        from hermes_cli.auth_nous import resolve_nous_runtime_credentials
+        from moor_cli.auth_moor import resolve_moor_runtime_credentials
         first = anon_auth.ensure_portal_identity(explicit=True)
         original = nas.handler
 
@@ -117,12 +117,12 @@ class TestNasRefusalCodes:
             return original(request)
         nas.handler = _first_only  # type: ignore[method-assign]
         try:
-            creds = resolve_nous_runtime_credentials()
+            creds = resolve_moor_runtime_credentials()
         finally:
             nas.handler = original  # type: ignore[method-assign]
         assert creds["base_url"].startswith(WELCOME)
         assert nas.creates() == 2
-        assert _load_auth_store()["providers"]["nous"]["anon_token"] != first["anon_token"]
+        assert _load_auth_store()["providers"]["moor"]["anon_token"] != first["anon_token"]
 
     def test_a_5xx_or_non_json_body_is_a_retryable_server_error(self, nas):
         nas.create_response = httpx.Response(500, text="<html>oops</html>")
@@ -252,7 +252,7 @@ class TestBootstrapRecord:
         nas.raise_transport = None
         record = free_tier_bootstrap.retry_bootstrap_mint(force=True, announce=False)
         assert record.has_identity is True and record.other_providers is True
-        assert _load_auth_store().get("active_provider") != "nous"
+        assert _load_auth_store().get("active_provider") != "moor"
 
     def test_a_late_failed_build_never_overwrites_a_success_that_landed_meanwhile(self, nas, monkeypatch):
         """The background loop and the user's click can race: the loop's build (no identity, still
@@ -289,7 +289,7 @@ class TestSignInFailures:
         (anon_auth.ANON_RATE_LIMITED, 45, True, "busy"),
         (anon_auth.ANON_GATE_PAUSED, 0, True, "busy"),
         (anon_auth.ANON_UNREACHABLE, 0, True, "internet connection"),
-        (anon_auth.ANON_GATE_CLOSED, 0, False, "Nous account"),
+        (anon_auth.ANON_GATE_CLOSED, 0, False, "Moor account"),
         (anon_auth.ANON_POW_REQUIRED, 0, False, "proof of work"),
     ])
     def test_a_service_verdict_keeps_its_code_wait_and_copy(self, code, retry_after, retryable, needle):
@@ -299,7 +299,7 @@ class TestSignInFailures:
         assert state.retryable is retryable
         assert state.retry_after == retry_after
         assert needle in state.copy
-        assert "Hermes " not in state.copy and "http" not in state.copy
+        assert "Moor " not in state.copy and "http" not in state.copy
 
     def test_the_wire_failing_reads_as_unreachable(self):
         state = anon_sign_in._failed_from_exception(httpx.ReadTimeout("slow"))
@@ -319,11 +319,11 @@ class TestSignInFailures:
 
 
 def test_extra_welcome_hosts_make_a_local_stand_in_the_welcome_host(monkeypatch):
-    """``HERMES_EXTRA_WELCOME_HOSTS`` (env-only) extends the ROUTE predicate so a rehearsal against a
+    """``MOOR_EXTRA_WELCOME_HOSTS`` (env-only) extends the ROUTE predicate so a rehearsal against a
     local stand-in gets the free tier's rules — including the route-keyed dark-tier 403."""
-    monkeypatch.delenv("HERMES_EXTRA_WELCOME_HOSTS", raising=False)
+    monkeypatch.delenv("MOOR_EXTRA_WELCOME_HOSTS", raising=False)
     assert anon_auth.route_is_welcome_host("http://127.0.0.1:8765/v1") is False
-    monkeypatch.setenv("HERMES_EXTRA_WELCOME_HOSTS", "127.0.0.1, localhost")
+    monkeypatch.setenv("MOOR_EXTRA_WELCOME_HOSTS", "127.0.0.1, localhost")
     assert anon_auth.route_is_welcome_host("http://127.0.0.1:8765/v1") is True
     assert anon_auth.route_is_welcome_host("http://localhost:9/v1") is True
     assert anon_auth.welcome_route_refusal(403, "You tried to access something", "http://127.0.0.1:8765/v1") == "tier_disabled"

@@ -11,15 +11,15 @@ import time
 
 import pytest
 
-from hermes_cli import kanban_db as kb
-from hermes_cli import kanban_db_connect as kbc
-from hermes_cli import kanban_db_dispatch as kbd
+from moor_cli import kanban_db as kb
+from moor_cli import kanban_db_connect as kbc
+from moor_cli import kanban_db_dispatch as kbd
 
 
 @pytest.fixture
 def board(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_KANBAN_CRASH_GRACE_SECONDS", "0")
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_KANBAN_CRASH_GRACE_SECONDS", "0")
     conn = kbc.connect(tmp_path / "kanban.db")
     try:
         yield conn

@@ -36,8 +36,8 @@
 //     force a needless full re-login every ~15 min — hence cookiesHaveLiveSession.
 import { readStatusCode } from './api-transport'
 
-const AT_COOKIE_VARIANTS = ['__Host-hermes_session_at', '__Secure-hermes_session_at', 'hermes_session_at']
-const RT_COOKIE_VARIANTS = ['__Host-hermes_session_rt', '__Secure-hermes_session_rt', 'hermes_session_rt']
+const AT_COOKIE_VARIANTS = ['__Host-moor_session_at', '__Secure-moor_session_at', 'moor_session_at']
+const RT_COOKIE_VARIANTS = ['__Host-moor_session_rt', '__Secure-moor_session_rt', 'moor_session_rt']
 
 // The Moor portal (NAS) does NOT use Moor gateway session cookies — it is a
 // Privy-authed Next.js app. NAS `auth()` (src/server/auth/session.ts) reads the
@@ -138,7 +138,7 @@ function gatewayTicketFailure(error, authMessage, transportMessage) {
     // cookie path only sees a 401/403 after the gateway's transparent AT/RT
     // rotation has already failed, and the native-bearer path only after
     // mintGatewayWsTicket's forced /auth/native/refresh has. Nothing will
-    // change until the user signs in, so tag it the way startHermes latches
+    // change until the user signs in, so tag it the way startMoor latches
     // (isReauthRequiredError): the boot is marked non-retryable and the
     // overlay's Sign in button stops flickering away under the renderer's
     // transient-boot retry loop (#95701).

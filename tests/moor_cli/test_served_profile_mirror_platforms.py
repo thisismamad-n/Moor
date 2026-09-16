@@ -16,26 +16,26 @@ import pytest
 
 @pytest.fixture
 def served_root(tmp_path, monkeypatch):
-    root = tmp_path / "hermes"
+    root = tmp_path / "moor"
     (root / "profiles" / "alpha").mkdir(parents=True)
     (root / "config.yaml").write_text("gateway: {multiplex_profiles: true}\n")
-    (root / "gateway.pid").write_text(json.dumps({"pid": os.getpid(), "hermes_home": str(root)}))
+    (root / "gateway.pid").write_text(json.dumps({"pid": os.getpid(), "moor_home": str(root)}))
     (root / "gateway_state.json").write_text(json.dumps({
-        "pid": os.getpid(), "hermes_home": str(root), "gateway_state": "running",
+        "pid": os.getpid(), "moor_home": str(root), "gateway_state": "running",
         "served_profiles": ["default", "alpha", "beta"],
         "platforms": {
             "api_server": {"state": "connected", "listener_base": "http://127.0.0.1:45719"},
             "webhook": {"state": "fatal", "error_code": "port_in_use"},
             "alpha:telegram": {"state": "connected"},
         }}))
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("MOOR_HOME", str(root))
     monkeypatch.delenv("GATEWAY_MULTIPLEX_PROFILES", raising=False)
-    import hermes_constants
+    import moor_constants
     import gateway.status as status
     # Liveness is a verified identity; this pytest process passes as the default gateway only by
     # wearing a gateway command line.
-    monkeypatch.setattr(status, "_read_process_cmdline", lambda pid: "hermes gateway run")
-    monkeypatch.setattr(hermes_constants, "_default_hermes_root_memo", None)
+    monkeypatch.setattr(status, "_read_process_cmdline", lambda pid: "moor gateway run")
+    monkeypatch.setattr(moor_constants, "_default_moor_root_memo", None)
     return root
 
 
@@ -55,7 +55,7 @@ def test_served_profile_projects_the_default_listener_mirrors_with_their_url(ser
 
 
 def test_messaging_card_for_a_served_profile_reads_connected_not_restart_needed(served_root, monkeypatch):
-    from hermes_cli.web_routers import messaging
+    from moor_cli.web_routers import messaging
     monkeypatch.setattr(messaging, "_platform_enablement", lambda *a, **k: (True, True, None))
     entry = {"id": "api_server", "name": "API server", "description": "", "docs_url": "", "env_vars": [],
              "required_env": []}

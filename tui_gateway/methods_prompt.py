@@ -218,7 +218,7 @@ def _legacy_group_fence_error(rid, session, params):
         hosted = probe_hosted_room(default_db_path(), room_id=room_id)
         peer = False
         if not hosted:
-            from hermes_constants import profile_name_for_home
+            from moor_constants import profile_name_for_home
             peer = probe_peer_room_reservation(
                 default_db_path(), room_id=room_id, target_profile=(
                     profile_name_for_home(session.get("profile_home"))
@@ -440,14 +440,14 @@ def _truncate_history_for_submit(rid, sid, session, params, requested_rebind_ids
 
 def _storage_error_data(failure, raw) -> dict:
     """Machine-readable error data: ``code`` lets a GUI pick a "Run doctor" / "Retry" action."""
-    from hermes_state_user_copy import storage_failure_details
+    from moor_state_user_copy import storage_failure_details
     return {"code": failure.code, "cause": failure.cause, "details": storage_failure_details(raw)}
 
 
 def _persist_session_row_for_submit(rid, session):
     """Lazily persist the DB row now that the user sent a message (a branch becomes real
     here); the error reply is the only user-visible signal (desktop maps it to a toast)."""
-    from hermes_state_user_copy import describe_storage_failure
+    from moor_state_user_copy import describe_storage_failure
     try:
         if _ensure_session_db_row(session) is False:
             failure = describe_storage_failure(_db_error)

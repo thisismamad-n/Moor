@@ -264,7 +264,7 @@ RUN cd plugins/platforms/photon/sidecar && \
 # Google Chat's [google-chat] extra (google-cloud-pubsub + Chat API clients)
 # is baked so hosted/immutable images can enable the adapter without writing
 # the sealed venv. Runtime --install-deps still routes through lazy_deps into
-# HERMES_LAZY_INSTALL_TARGET when the extra is not present.
+# MOOR_LAZY_INSTALL_TARGET when the extra is not present.
 #
 # The editable link is created after the source copy below.
 COPY pyproject.toml uv.lock ./

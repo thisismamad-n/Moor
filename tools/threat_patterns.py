@@ -87,7 +87,7 @@ _PATTERNS: List[Tuple[str, str, str]] = [
     (r'(?:\b(?:echo|cat|cp|mv|dd|tee|install|printf|rsync|scp|ln|append|add|write'
      r'|sed|chmod|chown|truncate|rm|touch|curl|wget|git)\b|\bopen\s*\(|>>?)'
      r'[^\n]{0,512}(?:\$HOME/\.ssh|~/\.ssh)', "ssh_access", "strict"),
-    (r'\$HOME/\.hermes/\.env|\~/\.hermes/\.env', "hermes_env", "strict"),
+    (r'\$HOME/\.moor/\.env|\~/\.moor/\.env', "moor_env", "strict"),
     (rf'{_MODIFY}(?:AGENTS\.md|CLAUDE\.md|\.cursorrules|\.clinerules)', "agent_config_mod", "strict"),
     (rf'{_MODIFY}\.moor/(config\.yaml|SOUL\.md)', "moor_config_mod", "strict"),
 

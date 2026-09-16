@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli.model_switch import switch_model
+from moor_cli.model_switch import switch_model
 
 LISTING = ["deepseek-v4-flash-0731", "deepseek-v4-flash", "deepseek-v4-pro"]
 
@@ -41,7 +41,7 @@ def endpoint(monkeypatch):
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     base_url = f"http://127.0.0.1:{srv.server_port}/v1"
     monkeypatch.setenv("HYPER_KEY", "test-key-12345")
-    (Path(os.environ["HERMES_HOME"]) / "config.yaml").write_text(
+    (Path(os.environ["MOOR_HOME"]) / "config.yaml").write_text(
         "model:\n  provider: custom:hyper\n  default: deepseek-v4-flash-0731\n"
         f"providers:\n  hyper:\n    base_url: {base_url}\n    api_key_env: HYPER_KEY\n")
     try:
@@ -52,7 +52,7 @@ def endpoint(monkeypatch):
 
 @pytest.mark.parametrize("explicit_provider", ["hyper", "custom:hyper"])
 def test_unlisted_id_on_user_provider_is_kept_verbatim(endpoint, explicit_provider):
-    from hermes_cli.config import get_compatible_custom_providers, load_config
+    from moor_cli.config import get_compatible_custom_providers, load_config
 
     cfg = load_config()
     result = switch_model(

@@ -32,10 +32,10 @@ _TRANSCRIPT_SPOOL_SEQ = itertools.count()
 
 
 def _get_flush_dir():
-    """Return the pending-messages flush directory under the active HERMES_HOME."""
-    from hermes_constants import get_hermes_home
-    flush_dir = get_hermes_home() / "pending_messages"
-    from hermes_constants import assert_named_profile_home_live
+    """Return the pending-messages flush directory under the active MOOR_HOME."""
+    from moor_constants import get_moor_home
+    flush_dir = get_moor_home() / "pending_messages"
+    from moor_constants import assert_named_profile_home_live
     assert_named_profile_home_live(flush_dir)
     flush_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
     if os.name == "posix":

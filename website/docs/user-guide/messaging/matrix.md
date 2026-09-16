@@ -23,7 +23,7 @@ Before setup, here's the part most people want to know: how Moor behaves once it
 | **Commands** | Moor accepts normal `/commands` when your Matrix client sends them. If your client reserves `/` for local commands, use `!commands` instead; Moor normalizes known `!command` aliases to `/command`. |
 | **Interactive controls** | Dangerous-command approval and `/model` selection can use Matrix reactions. Approval reactions can be limited to the user who requested the action. |
 | **Thinking and tool activity** | Matrix uses threaded, editable thinking/tool-activity panes when gateway progress is enabled, so updates do not flood the main room timeline. |
-| **Shared rooms with multiple users** | By default, Hermes isolates session history per user inside the room. Two people talking in the same room do not share one transcript unless you explicitly disable that. |
+| **Shared rooms with multiple users** | By default, Moor isolates session history per user inside the room. Two people talking in the same room do not share one transcript unless you explicitly disable that. |
 | **LaTeX math** | `$...$` (inline) and `$$...$$` (display) in replies are sent as Element `data-mx-maths` markup, so clients with **Settings → Labs → Render LaTeX maths in messages** typeset them with KaTeX. Unpaired dollars (`$5 or $10`) stay literal, and the plain-text `body` keeps the raw TeX for other clients. |
 
 :::tip
@@ -409,9 +409,9 @@ When E2EE is enabled, Moor:
 
 ### Matrix Tools and Controls
 
-Hermes does not expose Matrix-specific agent tools (such as room creation, invites, or redaction) — the agent interacts with Matrix through normal message delivery. The adapter uses reactions and redactions internally to power approval prompts and pickers.
+Moor does not expose Matrix-specific agent tools (such as room creation, invites, or redaction) — the agent interacts with Matrix through normal message delivery. The adapter uses reactions and redactions internally to power approval prompts and pickers.
 
-If `MATRIX_ALLOWED_ROOMS` is set, Hermes only responds in those rooms (DMs are exempt).
+If `MATRIX_ALLOWED_ROOMS` is set, Moor only responds in those rooms (DMs are exempt).
 
 Reaction controls use:
 

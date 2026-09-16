@@ -527,7 +527,7 @@ class TestLongRunningNotificationOwnership:
         from gateway.run import GatewayRunner
         from gateway.turn_context import TurnContext
 
-        monkeypatch.setenv("HERMES_AGENT_NOTIFY_INTERVAL", "0.01")
+        monkeypatch.setenv("MOOR_AGENT_NOTIFY_INTERVAL", "0.01")
         runner = object.__new__(GatewayRunner)
         runner._running_agents = {}
         runner._draining = runner._restart_requested = False

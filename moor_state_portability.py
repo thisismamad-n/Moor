@@ -13,9 +13,9 @@ from typing import Any, Dict, List, Optional
 
 from agent.skill_commands import SKILL_SCAFFOLD_SQL_LIKE
 from utils import safe_json_loads
-from hermes_cli.timefmt import coerce_epoch
-from hermes_state_ids import new_session_id
-from hermes_state_common import SCHEMA_SQL, _PREVIEW_RAW_SUBQUERY_SQL, _shape_preview, _sql_session_last_active
+from moor_cli.timefmt import coerce_epoch
+from moor_state_ids import new_session_id
+from moor_state_common import SCHEMA_SQL, _PREVIEW_RAW_SUBQUERY_SQL, _shape_preview, _sql_session_last_active
 
 # Pre-split logger identity so log filtering/capture is unchanged.
 logger = logging.getLogger("moor_state")
@@ -86,7 +86,7 @@ def _export_timings(messages: List[Dict[str, Any]], session_id: Optional[str] = 
 
     Exports get attached to bug reports; a reader should not have to infer from raw
     timestamps whether a slow turn was one long model gap or many small tool
-    intervals. Hermes persists no model/tool stopwatch samples, so message
+    intervals. Moor persists no model/tool stopwatch samples, so message
     timestamps are the durable floor (``complete`` is therefore always False).
     Ids, roles, counts and durations only — never prompt text, arguments or results.
     Corrupt timestamp cells go through ``coerce_epoch`` like every other reader: they

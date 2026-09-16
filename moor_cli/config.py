@@ -23,13 +23,13 @@ from typing import Dict, Any, Optional, List, Tuple, Set
 
 import yaml
 
-from hermes_cli.cli_output import line_input
-from hermes_cli.colors import Colors, color
-from hermes_cli import managed_scope
-from hermes_cli.default_soul import DEFAULT_SOUL_MD, is_legacy_template_soul
-from hermes_cli.secret_prompt import masked_secret_prompt
-# Re-export from hermes_constants — canonical definition lives there.
-from hermes_constants import get_hermes_home, get_process_hermes_home  # noqa: F401
+from moor_cli.cli_output import line_input
+from moor_cli.colors import Colors, color
+from moor_cli import managed_scope
+from moor_cli.default_soul import DEFAULT_SOUL_MD, is_legacy_template_soul
+from moor_cli.secret_prompt import masked_secret_prompt
+# Re-export from moor_constants — canonical definition lives there.
+from moor_constants import get_moor_home, get_process_moor_home  # noqa: F401
 from utils import atomic_replace, atomic_yaml_write, fast_safe_load, file_signature
 
 logger = logging.getLogger(__name__)
@@ -50,12 +50,12 @@ class InvalidUserConfigError(RuntimeError):
 
 
 _PARSE_FAILURE_FALLBACK_MSG = {
-    "last-known-good": "Hermes is running on the settings it loaded before the edit until it is fixed, so recent changes are not applied.",
-    "last-known-good-backup": "Hermes is running on your last good settings until it is fixed, so recent changes are not applied.",
+    "last-known-good": "Moor is running on the settings it loaded before the edit until it is fixed, so recent changes are not applied.",
+    "last-known-good-backup": "Moor is running on your last good settings until it is fixed, so recent changes are not applied.",
     "refuse-write": "Nothing was written, so the existing file is preserved."}
 _PARSE_FAILURE_DEFAULTS_MSG = (
-    "Hermes is running on default settings until it is fixed, so none of your saved settings are applied.")
-_PARSE_FAILURE_REPAIR_MSG = "Open it with `hermes config edit`, fix {where}, then run `hermes config check`."
+    "Moor is running on default settings until it is fixed, so none of your saved settings are applied.")
+_PARSE_FAILURE_REPAIR_MSG = "Open it with `moor config edit`, fix {where}, then run `moor config check`."
 
 
 def _yaml_error_location(exc: Exception) -> str:
@@ -73,7 +73,7 @@ def _yaml_error_details(exc: Exception) -> str:
 
 
 def format_config_parse_failure(config_path: Path, exc: Exception, *, fallback: str = "defaults") -> str:
-    """User copy for an unparseable config.yaml: what happened, what Hermes is doing, how to fix.
+    """User copy for an unparseable config.yaml: what happened, what Moor is doing, how to fix.
     Only the problem line/column is printed; the raw PyYAML text goes to a ``Details:`` line."""
     where = _yaml_error_location(exc)
     at = f" at {where}" if where else ""
@@ -101,14 +101,14 @@ def _warn_config_parse_failure(
     if key in _CONFIG_PARSE_WARNED:
         return
     _CONFIG_PARSE_WARNED.add(key)
-    from hermes_cli.config_backups import backup_config
+    from moor_cli.config_backups import backup_config
     backup_path = backup_config(config_path, "corrupt")
     msg = format_config_parse_failure(config_path, exc, fallback=fallback)
     if backup_path is not None:
         msg += f" A copy of the broken file was saved to {backup_path}."
     logger.warning("%s Details: %s", msg, _yaml_error_details(exc))
     try:
-        sys.stderr.write(f"⚠️  hermes config: {msg}\n    Details: {_yaml_error_details(exc)}\n")
+        sys.stderr.write(f"⚠️  moor config: {msg}\n    Details: {_yaml_error_details(exc)}\n")
         sys.stderr.flush()
     except Exception:
         pass
@@ -263,8 +263,8 @@ _NIX_STORE = Path("/nix/store")
 # Homebrew is no longer a supported distribution: these markers fall through to git/unknown
 # detection instead of blocking config writes.
 _IGNORED_MANAGED_VALUES = frozenset({"brew", "homebrew"})
-# Explicit opt-out (``HERMES_MANAGED=false``): without this a bool-shaped value became a package
-# manager literally named "false" and is_managed() blocked `hermes update` (#12864).
+# Explicit opt-out (``MOOR_MANAGED=false``): without this a bool-shaped value became a package
+# manager literally named "false" and is_managed() blocked `moor update` (#12864).
 _MANAGED_FALSE_VALUES = frozenset({"false", "0", "no", "off"})
 
 
@@ -510,13 +510,13 @@ def require_parseable_user_config(*, ignore_user_config: bool = False) -> None:
             return
         parse_error = TypeError(f"top-level YAML value must be a mapping, got {type(data).__name__}")
 
-    from hermes_cli.config_backups import backup_config
+    from moor_cli.config_backups import backup_config
     backup_path = backup_config(config_path, "corrupt")
     where = _yaml_error_location(parse_error)
     message = (
-        f"Hermes stopped because your settings file ({config_path}) has a formatting error"
-        f"{f' at {where}' if where else ''}. Fix it with `hermes config edit` and check with "
-        "`hermes config check`, or add --ignore-user-config to run once with default settings.")
+        f"Moor stopped because your settings file ({config_path}) has a formatting error"
+        f"{f' at {where}' if where else ''}. Fix it with `moor config edit` and check with "
+        "`moor config check`, or add --ignore-user-config to run once with default settings.")
     if backup_path is not None:
         message += f" A copy of the broken file is at {backup_path}."
     message += f" Details: {_yaml_error_details(parse_error)}"
@@ -571,9 +571,9 @@ def _chown_to_moor_uid(path) -> None:
 
 
 def _secure_dir(path):
-    """chmod a directory owner-only (0700) and apply HERMES_UID/GID ownership. No-op when managed;
-    in a container only an explicit HERMES_HOME_MODE is applied. HERMES_HOME_MODE (e.g. 0701)
-    overrides the mode so a web server can traverse HERMES_HOME to a served subdirectory without
+    """chmod a directory owner-only (0700) and apply MOOR_UID/GID ownership. No-op when managed;
+    in a container only an explicit MOOR_HOME_MODE is applied. MOOR_HOME_MODE (e.g. 0701)
+    overrides the mode so a web server can traverse MOOR_HOME to a served subdirectory without
     directory listings.
 
     Also applies ``MOOR_UID``/``MOOR_GID``-based ownership when those env vars are set (#34107 — Docker
@@ -582,12 +582,12 @@ def _secure_dir(path):
     """
     if is_managed():
         return
-    explicit_mode = os.environ.get("HERMES_HOME_MODE", "").strip()
+    explicit_mode = os.environ.get("MOOR_HOME_MODE", "").strip()
     # Same skip as _secure_file: a bind-mounted data dir is often shared with sibling containers
     # running as other UIDs (web UI, permissions fixers); forcing 0700 on it locks them out on every
-    # start (#10757). An explicit HERMES_HOME_MODE is the operator's choice and is still applied.
+    # start (#10757). An explicit MOOR_HOME_MODE is the operator's choice and is still applied.
     if _is_container() and not explicit_mode:
-        _chown_to_hermes_uid(path)
+        _chown_to_moor_uid(path)
         return
     try:
         mode = int(explicit_mode or "700", 8)
@@ -663,8 +663,8 @@ def ensure_moor_home():
     assert_named_profile_home_live(home)
     if key in _MOOR_HOME_ENSURED and home.is_dir():
         return
-    from hermes_cli.config_home import initialize_home
-    initialize_home(home, _HERMES_HOME_SUBDIRS, _HERMES_HOME_ENSURED)
+    from moor_cli.config_home import initialize_home
+    initialize_home(home, _MOOR_HOME_SUBDIRS, _MOOR_HOME_ENSURED)
 
 
 # ---- Config loading/saving ----
@@ -946,7 +946,7 @@ _ENV_CONFIG_KEYS = frozenset({
 
 
 def _is_env_config_key(key: str) -> bool:
-    """Return whether `hermes config set` routes this credential-shaped key to .env through the
+    """Return whether `moor config set` routes this credential-shaped key to .env through the
     provider credential lifecycle. Non-secret env settings (``*_HOME_CHANNEL``, ``*_ALLOWED_USERS``)
     are ``config_env_routing.is_env_setting_key`` and take the plain ``.env`` path."""
     if "." in key:
@@ -1143,7 +1143,7 @@ def _validate_voice(config: Dict[str, Any], issues: List[ConfigIssue]) -> None:
 def _validate_timezone(config: Dict[str, Any], issues: List[ConfigIssue]) -> None:
     """``timezone`` must be an IANA name the runtime can load.
 
-    ``hermes_time._get_zoneinfo()`` swallows an invalid name behind a single WARNING in the
+    ``moor_time._get_zoneinfo()`` swallows an invalid name behind a single WARNING in the
     gateway log, then runs the agent clock AND every cron schedule on server-local time.
     Surface it here, where doctor and the startup check both look. Silent when the
     interpreter has no tz database at all (bare Windows without ``tzdata``) — nothing can be
@@ -1154,7 +1154,7 @@ def _validate_timezone(config: Dict[str, Any], issues: List[ConfigIssue]) -> Non
     tz = config.get("timezone")
     hint = ("Use an IANA zone name such as America/New_York or Asia/Tokyo (see "
             "`timedatectl list-timezones`). With an invalid value the agent clock and cron "
-            "schedules silently fall back to server-local time. HERMES_TIMEZONE overrides "
+            "schedules silently fall back to server-local time. MOOR_TIMEZONE overrides "
             "this key when set.")
     if tz is not None and not isinstance(tz, str):
         _issue(issues, "error", f"timezone must be an IANA zone name string, got {tz!r}", hint)
@@ -1250,7 +1250,7 @@ def validate_config_structure(config: Optional[Dict[str, Any]] = None) -> List["
         try:
             config = load_config()
         except Exception as exc:
-            from hermes_cli.config_home import config_load_issue
+            from moor_cli.config_home import config_load_issue
             return [config_load_issue(exc)]
 
     issues: List[ConfigIssue] = []
@@ -1999,13 +1999,13 @@ def _refuse_overwrite(config_path: Path, reason: str, exc: Exception, fix: str) 
 
 
 def _backups_dir_display() -> str:
-    from hermes_constants import display_hermes_home
-    return f"{display_hermes_home()}/backups/config/"
+    from moor_constants import display_moor_home
+    return f"{display_moor_home()}/backups/config/"
 
 
 _FIX_PERMS = "Fix the file permissions or move it aside first."
 _FIX_YAML = (
-    "Fix it with `hermes config edit` and check with `hermes config check`, or copy the newest good "
+    "Fix it with `moor config edit` and check with `moor config check`, or copy the newest good "
     "file from {backups} over config.yaml.")
 
 
@@ -2207,11 +2207,11 @@ def _last_known_good_fallback(config_path: Path, path_key: str, cache_sig, exc: 
     lkg = _LAST_EXPANDED_CONFIG_BY_PATH.get(path_key)
     fallback = "last-known-good"
     if lkg is None:
-        # Fresh process (CLI restart, `hermes config get`): nothing loaded yet in this process, so
+        # Fresh process (CLI restart, `moor config get`): nothing loaded yet in this process, so
         # fall back to the newest byte-exact copy the last successful parse left in backups/config/.
         # It holds the raw file (``${VAR}`` templates intact), so it goes through the same
         # canonicalize -> expand -> managed-overlay pipeline as a normal load.
-        from hermes_cli.config_backups import load_newest_good_backup
+        from moor_cli.config_backups import load_newest_good_backup
         raw_good = load_newest_good_backup(config_path)
         if raw_good is not None:
             normalized = _canonicalize_config(_deep_merge(copy.deepcopy(DEFAULT_CONFIG), raw_good))
@@ -2287,7 +2287,7 @@ def _load_config_impl(*, want_deepcopy: bool) -> Dict[str, Any]:
                 # A copy of the file that just parsed is what a FRESH process falls back to when the
                 # next edit breaks the YAML (see _last_known_good_fallback). backup_config() skips
                 # byte-identical repeats and keeps a bounded count, so steady-state loads cost one stat.
-                from hermes_cli.config_backups import backup_config
+                from moor_cli.config_backups import backup_config
                 backup_config(config_path, "good")
             except Exception as e:
                 lkg_copy = _last_known_good_fallback(config_path, path_key, cache_sig, e)
@@ -2991,7 +2991,7 @@ def show_config():
 
     print()
     print(color("┌─────────────────────────────────────────────────────────┐", Colors.CYAN))
-    print(color("│              ☤ Hermes Configuration                    │", Colors.CYAN))
+    print(color("│              ☤ Moor Configuration                    │", Colors.CYAN))
     print(color("└─────────────────────────────────────────────────────────┘", Colors.CYAN))
     _show_managed_banner()
 
@@ -3219,8 +3219,8 @@ def warn_unpinned_cron_jobs_after_model_config_change(
     print(
         f"ℹ️  {affected} unpinned cron {noun} {verb} running on the {axis} it was created under "
         f"(its {axis}_snapshot), not the new global {axis}. To move it, pin it with "
-        "`hermes cron edit <job_id> --provider <provider> --model <model>` or set a fleet default "
-        "with `hermes config set cron.model <model>`.")
+        "`moor cron edit <job_id> --provider <provider> --model <model>` or set a fleet default "
+        "with `moor config set cron.model <model>`.")
 
 
 def _default_value_for_key(dotted_key: str):
@@ -3542,19 +3542,19 @@ def set_config_value(key: str, value: str, force: bool = False):
             "(leading, trailing, or doubled '.').")
     _exit_if_key_managed(key, "set")
     if _is_env_config_key(key):
-        from hermes_cli.credential_lifecycle import save_provider_env_credential
+        from moor_cli.credential_lifecycle import save_provider_env_credential
 
         # Unified lifecycle: also rotates any config.yaml mirror of the old value so a stale
         # higher-precedence copy can't win (#62269).
         save_provider_env_credential(key.upper(), value)
         print(f"✓ Set {key} in {get_env_path()}")
         return
-    from hermes_cli.config_env_routing import is_env_setting_key, save_env_setting
+    from moor_cli.config_env_routing import is_env_setting_key, save_env_setting
 
     if is_env_setting_key(key):
         # Every UPPER_SNAKE name is an environment setting: same file the platform setup flows and
         # /sethome write, and the only one os.getenv readers see. config.yaml never gets one from
-        # here, --force included (#111848). The env writer's denylist (HERMES_YOLO_MODE, PATH, ...)
+        # here, --force included (#111848). The env writer's denylist (MOOR_YOLO_MODE, PATH, ...)
         # therefore also refuses the config.yaml detour that used to bridge those into os.environ.
         try:
             save_env_setting(key, value)
@@ -3627,7 +3627,7 @@ def get_config_value(key: str, *, as_json: bool = False, raw: bool = False):
     """Print a resolved configuration value. Credentials are masked unless ``--raw`` or
     ``security.redact_secrets: false``: ``print`` bypasses the log redactor, and the agent runs
     this command from sessions whose transcripts persist (#84106, #110758)."""
-    from hermes_cli.config_env_routing import is_env_setting_key, read_env_setting
+    from moor_cli.config_env_routing import is_env_setting_key, read_env_setting
 
     if _is_env_config_key(key):
         env_value = get_env_value(key.upper())
@@ -3672,7 +3672,7 @@ def unset_config_value(key: str):
             _exit_invalid(f"Config key not set: {key}")
         print(f"✓ Unset {key} from {get_env_path()}")
         return
-    from hermes_cli.config_env_routing import is_env_setting_key, remove_env_setting
+    from moor_cli.config_env_routing import is_env_setting_key, remove_env_setting
 
     if is_env_setting_key(key):
         # Also drops a stale top-level config.yaml copy left by older `config set` runs (#111848).
@@ -3723,12 +3723,12 @@ def _run_write_command(fn, *args) -> None:
         _exit_invalid(f"✗ {exc}")
 
 
-_USAGE_GET = ("Usage: hermes config get <key> [--json] [--raw]", [
-    "hermes config get model", "hermes config get terminal.backend",
-    "hermes config get skills.config --json"], None)
-_USAGE_SET = ("Usage: hermes config set [--force] <key> <value>", [
-    "hermes config set model anthropic/claude-sonnet-4", "hermes config set terminal.backend docker",
-    "hermes config set OPENROUTER_API_KEY sk-or-..."], [
+_USAGE_GET = ("Usage: moor config get <key> [--json] [--raw]", [
+    "moor config get model", "moor config get terminal.backend",
+    "moor config get skills.config --json"], None)
+_USAGE_SET = ("Usage: moor config set [--force] <key> <value>", [
+    "moor config set model anthropic/claude-sonnet-4", "moor config set terminal.backend docker",
+    "moor config set OPENROUTER_API_KEY sk-or-..."], [
     "", "  --force: skip the unknown-key notice for unrecognized keys,",
     "           and allow a scalar to replace a whole mapping section"])
 _USAGE_UNSET = ("Usage: moor config unset <key>", [

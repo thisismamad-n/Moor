@@ -37,7 +37,7 @@ const LOCKFILE_SCHEMA_VERSION = 2
 // args, served-token reconciliation). A mismatch forces a clean respawn.
 const PROTOCOL_VERSION = 1
 const READY_RE = READY_IN_MERGED_OUTPUT_RE // the remote log is `>> log 2>&1`: merged, not line-accurate
-const REMOTE_LOCK_DIR = '~/.hermes/desktop-ssh'
+const REMOTE_LOCK_DIR = '~/.moor/desktop-ssh'
 const SUPPORTED_REMOTE_OS = new Set(['Linux', 'Darwin'])
 const DEFAULT_READY_TIMEOUT_MS = 45_000
 const READY_POLL_INTERVAL_MS = 750
@@ -252,7 +252,7 @@ async function probeMoorVersion(ssh, moorPath) {
   try {
     // Watchdogged: a hung remote CLI must die remotely instead of orphaning
     // when the local ssh child is SIGKILLed (#110478).
-    const out = (await ssh.exec(withRemoteTimeout(`${expandRemotePath(hermesPath)} --version 2>&1`))).trim()
+    const out = (await ssh.exec(withRemoteTimeout(`${expandRemotePath(moorPath)} --version 2>&1`))).trim()
 
     return (out.split('\n')[0] || '').trim()
   } catch {
@@ -1102,7 +1102,7 @@ function buildSpawnCommand(moorPath, profile, opts: any = {}) {
 
   const dashCmd =
     `ulimit -n ${REMOTE_NOFILE_SOFT_LIMIT} 2>/dev/null || true; ` +
-    `exec env HERMES_DESKTOP=1${opts.guestOnboarding === true ? ' HERMES_GUEST_ONBOARDING=1' : ''} ${hermes} ${profileArgs}${subCmd}`
+    `exec env MOOR_DESKTOP=1${opts.guestOnboarding === true ? ' MOOR_GUEST_ONBOARDING=1' : ''} ${moor} ${profileArgs}${subCmd}`
 
   const detachedShell = `eval "exec $1>&-"; ${dashCmd} </dev/null >> ${logPath} 2>&1 & echo $!`
   const detachedSpawn = `child=$("$(command -v setsid || echo nohup)" sh -c ${shq(detachedShell)} moor-update-child "$1" & echo $!)`
@@ -1164,7 +1164,7 @@ async function remoteSupportsSshOwnership(ssh, moorPath) {
   // child and dies remotely instead of orphaning (#110478). The `$( (` space
   // is load-bearing: without it the shell parses `$((` as arithmetic expansion.
   const out = await ssh.exec(
-    `help="$( ${withRemoteTimeout(`${hermes} serve --help 2>&1`)} )"; ` +
+    `help="$( ${withRemoteTimeout(`${moor} serve --help 2>&1`)} )"; ` +
       `printf '%s' "$help" | grep -q ssh-session-token-file && ` +
       `printf '%s' "$help" | grep -q ssh-owner-nonce && echo YES || echo NO`
   )
@@ -1212,11 +1212,11 @@ async function scrapeReadyPort(ssh, logPath, { timeoutMs = DEFAULT_READY_TIMEOUT
 async function spawnRemoteDashboard(
   ssh,
   {
-    hermesPath,
+    moorPath,
     profile,
     token,
     ownershipId,
-    hermesHome = '~/.hermes',
+    moorHome = '~/.moor',
     guestOnboarding = false,
     assertInstallClear = async () => {}
   }
@@ -1288,7 +1288,7 @@ async function spawnRemoteDashboard(
         spawnNonce,
         tokenFilePath,
         logPath,
-        hermesHome,
+        moorHome,
         guestOnboarding,
         ownershipId,
         reservationNonce: spawnNonce,
@@ -1592,9 +1592,9 @@ async function connect(deps) {
     profile,
     token: spawnToken,
     ownershipId,
-    hermesHome,
+    moorHome,
     guestOnboarding,
-    assertInstallClear: () => assertRemoteInstallUpdateClear(ssh, hermesHome)
+    assertInstallClear: () => assertRemoteInstallUpdateClear(ssh, moorHome)
   })
 
   if (spawned.existing) {

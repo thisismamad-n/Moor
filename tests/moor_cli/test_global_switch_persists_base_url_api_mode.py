@@ -9,7 +9,7 @@ Both ``_handle_model_switch`` (typed ``/model <name>``) and
 persistence block wrote ``model.default``/``model.provider`` but never
 touched ``base_url``/``api_mode`` at all. Fix: sync both on every global
 switch, clearing to ``None`` when the resolved result doesn't need them — now the
-canonical ``hermes_cli.model_switch.persist_model_selection`` shape shared by every
+canonical ``moor_cli.model_switch.persist_model_selection`` shape shared by every
 surface.
 """
 
@@ -84,7 +84,7 @@ def _run_switch(monkeypatch, result, cmd="/model MiniMax-M3 --global"):
         saved[key] = value
 
     monkeypatch.setattr("utils.atomic_roundtrip_yaml_update", _fake_save)
-    monkeypatch.setattr("hermes_cli.model_switch.switch_model", lambda **kw: result)
+    monkeypatch.setattr("moor_cli.model_switch.switch_model", lambda **kw: result)
     monkeypatch.setattr(
         "moor_cli.inventory.load_picker_context",
         lambda: (_ for _ in ()).throw(RuntimeError("no picker context in test")),
@@ -112,7 +112,7 @@ def test_session_only_switch_does_not_touch_config(monkeypatch):
     monkeypatch.setattr(cli_mod, "_cprint", lambda *a, **k: None)
     save_calls = []
     monkeypatch.setattr("utils.atomic_roundtrip_yaml_update", lambda *a, **k: save_calls.append(a))
-    monkeypatch.setattr("hermes_cli.model_switch.switch_model", lambda **kw: _make_result())
+    monkeypatch.setattr("moor_cli.model_switch.switch_model", lambda **kw: _make_result())
     monkeypatch.setattr(
         "moor_cli.inventory.load_picker_context",
         lambda: (_ for _ in ()).throw(RuntimeError("no picker context in test")),
@@ -138,7 +138,7 @@ def _run_apply(monkeypatch, result, persist_global=True):
         saved[key] = value
 
     monkeypatch.setattr("utils.atomic_roundtrip_yaml_update", _fake_save)
-    cli_mod.HermesCLI._apply_model_switch_result(_StubCLI(), result, persist_global)
+    cli_mod.MoorCLI._apply_model_switch_result(_StubCLI(), result, persist_global)
     return saved
 
 

@@ -249,8 +249,8 @@
     },
     "moor": {
       "metadata": {
-        "display_name": "Nous Portal",
-        "note": "The entry labeled \"default\": true is the model Hermes silently lands on when the user never picked one."
+        "display_name": "Moor Portal",
+        "note": "The entry labeled \"default\": true is the model Moor silently lands on when the user never picked one."
       },
       "models": [
         {

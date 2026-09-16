@@ -369,8 +369,8 @@ moor sessions export telegram-history.jsonl --source telegram
 moor sessions export session.jsonl --session-id 20250305_091523_a1b2c3d4
 
 # Point at a directory (existing, or ending in /) and the file is named for you:
-# ~/exports/hermes_session_20250305_091523_a1b2c3d4.jsonl
-hermes sessions export ~/exports/ --session-id 20250305_091523_a1b2c3d4
+# ~/exports/moor_session_20250305_091523_a1b2c3d4.jsonl
+moor sessions export ~/exports/ --session-id 20250305_091523_a1b2c3d4
 
 # Redact API keys/tokens/credentials from the exported content
 moor sessions export backup.jsonl --redact
@@ -378,7 +378,7 @@ moor sessions export backup.jsonl --redact
 
 Exported files contain one JSON object per line with full session metadata and all messages.
 
-Each record also carries a `timings` block derived from the message timestamps, so a reader of an export attached to a bug report can tell a single long model gap from many small tool round-trips without reconstructing it by hand. It holds only ids, roles, counts and durations — `wall_clock_ms`, `largest_gap_ms`, `role_counts`, `tool_calls_emitted` and per-message `intervals` — never prompt text, tool arguments or results, so it survives `--redact` unchanged. Hermes does not persist a model/tool stopwatch, so `complete` is always `false`; when a session has no timestamped messages, `available` is `false` and `unavailable_reason` says why. The block is rebuilt on every export and ignored (and not counted toward size limits) on import.
+Each record also carries a `timings` block derived from the message timestamps, so a reader of an export attached to a bug report can tell a single long model gap from many small tool round-trips without reconstructing it by hand. It holds only ids, roles, counts and durations — `wall_clock_ms`, `largest_gap_ms`, `role_counts`, `tool_calls_emitted` and per-message `intervals` — never prompt text, tool arguments or results, so it survives `--redact` unchanged. Moor does not persist a model/tool stopwatch, so `complete` is always `false`; when a session has no timestamped messages, `available` is `false` and `unavailable_reason` says why. The block is rebuilt on every export and ignored (and not counted toward size limits) on import.
 
 #### HTML
 
@@ -647,8 +647,8 @@ routing is the only thing the repair changes. Back up first
 
 ## Importing Sessions from Claude Code and Codex CLI
 
-Started a conversation in another agent CLI? You can pull it into Hermes and
-continue it here. Hermes reads Claude Code's session logs
+Started a conversation in another agent CLI? You can pull it into Moor and
+continue it here. Moor reads Claude Code's session logs
 (`~/.claude/projects/`, or `$CLAUDE_CONFIG_DIR/projects/` when Claude Code's
 config dir is relocated) and Codex CLI's rollouts (`~/.codex/sessions/`, or
 `$CODEX_HOME/sessions/`) — the foreign files are only read, never modified.
@@ -672,7 +672,7 @@ the id plus a ready-to-paste `moor --resume <id>` command.
 `--resume @claude` / `--resume @codex` show the same picker and drop you
 straight into the imported conversation.
 
-**Hermes Desktop** has the same importer in the command palette (**Import
+**Moor Desktop** has the same importer in the command palette (**Import
 session**). It lists the logs on the machine the
 connected backend runs on — not the computer running the app — shows a
 read-only preview, and **Continue in Moor** copies the conversation into the
@@ -986,5 +986,5 @@ moor sessions prune --older-than 30 --yes
 ```
 
 :::tip
-Auto-prune is **on by default**: ended sessions that have been inactive for `sessions.retention_days` (default 90) are removed at startup, and active sessions are never touched (see [Automatic Cleanup](#automatic-cleanup) above). Session history powers `session_search` recall across past conversations, so if you want to keep every ended session forever, set `sessions.auto_prune: false` in `config.yaml`, or raise `retention_days`. With auto-prune off, `hermes sessions prune` remains available for one-off cleanup (observed failure mode without any pruning: a 384 MB `state.db` with ~1000 sessions slowing down FTS5 inserts and `/resume` listing).
+Auto-prune is **on by default**: ended sessions that have been inactive for `sessions.retention_days` (default 90) are removed at startup, and active sessions are never touched (see [Automatic Cleanup](#automatic-cleanup) above). Session history powers `session_search` recall across past conversations, so if you want to keep every ended session forever, set `sessions.auto_prune: false` in `config.yaml`, or raise `retention_days`. With auto-prune off, `moor sessions prune` remains available for one-off cleanup (observed failure mode without any pruning: a 384 MB `state.db` with ~1000 sessions slowing down FTS5 inserts and `/resume` listing).
 :::

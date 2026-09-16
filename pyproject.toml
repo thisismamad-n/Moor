@@ -1,7 +1,7 @@
 
 
 [project]
-name = "hermes-agent"
+name = "moor-agent"
 version = "0.21.3"
 description = "The self-improving AI agent — creates skills from experience, improves them during use, and runs anywhere"
 readme = "README.md"
@@ -348,7 +348,7 @@ google-chat = [
   # Google Chat adapter (Pub/Sub inbound + Chat REST). Kept out of [all] so a
   # quarantined google-cloud-pubsub cannot break every fresh install; Docker
   # bakes `--extra google-chat` and lazy_deps installs into
-  # HERMES_LAZY_INSTALL_TARGET on sealed hosted images.
+  # MOOR_LAZY_INSTALL_TARGET on sealed hosted images.
   "google-cloud-pubsub==2.39.0",
   "google-api-python-client==2.194.0",
   "google-auth==2.55.1",
@@ -608,7 +608,7 @@ markers = [
     "real_concurrent_gate: opt out of the autouse stub that disables _detect_concurrent_moor_instances",
     "real_agent_prewarm: opt out of the autouse stub that disables the tui_gateway deferred agent pre-warm timer",
     "real_retry_backoff: opt out of the tests/agent autouse stub that zeroes jittered_backoff",
-    "requires_wal: needs the runtime to actually enable SQLite WAL mode (skipped where Hermes falls back to journal_mode=DELETE)",
+    "requires_wal: needs the runtime to actually enable SQLite WAL mode (skipped where Moor falls back to journal_mode=DELETE)",
     "no_isolate: opt out of per-file subprocess isolation (tests share mutable module-level state)",
     "ssh: marks tests requiring a reachable SSH server (skipped in normal CI)",
     "linux_only: exercises Linux-specific behaviour; skipped on other hosts",

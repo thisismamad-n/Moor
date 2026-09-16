@@ -293,11 +293,11 @@ def test_first_run_always_runs_agent(moor_env, monkeypatch):
     assert "state A" in observed["prompts"][0]
 
 
-def test_bidi_monitor_output_is_sanitized_before_agent(hermes_env, monkeypatch):
+def test_bidi_monitor_output_is_sanitized_before_agent(moor_env, monkeypatch):
     """Runtime monitor data with a WhatsApp-style bidi marker must not block the job (#111523)."""
     from cron.scheduler import run_job
 
-    job = _make_monitor_job(hermes_env, "printf 'Alice\\342\\200\\252 Work\\n'\n")
+    job = _make_monitor_job(moor_env, "printf 'Alice\\342\\200\\252 Work\\n'\n")
     observed: dict = {}
     _install_agent_stubs(monkeypatch, observed)
 
@@ -310,7 +310,7 @@ def test_bidi_monitor_output_is_sanitized_before_agent(hermes_env, monkeypatch):
     assert "Alice Work" in observed["prompts"][0]
 
 
-def test_unchanged_output_suppresses_agent_run(hermes_env, monkeypatch):
+def test_unchanged_output_suppresses_agent_run(moor_env, monkeypatch):
     from cron.jobs import get_job
     from cron.scheduler import SILENT_MARKER, run_job
 

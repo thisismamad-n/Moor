@@ -1,6 +1,6 @@
 import type { McpCatalogResponse, McpServerSummary } from '@/types/moor'
 
-import { capabilityScoped, hermesApi, type ProfileScope, profileScoped, scopedDialPriority } from './client'
+import { capabilityScoped, moorApi, type ProfileScope, profileScoped, scopedDialPriority } from './client'
 
 export interface McpTestResult {
   ok: boolean
@@ -87,7 +87,7 @@ export function addMcpServer(
   },
   profile?: ProfileScope
 ): Promise<McpServerSummary> {
-  return window.hermesDesktop.api<McpServerSummary>({
+  return window.moorDesktop.api<McpServerSummary>({
     ...capabilityScoped(profile),
     path: '/api/mcp/servers',
     method: 'POST',
@@ -98,7 +98,7 @@ export function addMcpServer(
 /** Remove one server from `mcp_servers` (the inline setup card's rollback
  *  when a directory install is cancelled after the config write). */
 export function removeMcpServer(name: string, profile?: ProfileScope): Promise<{ ok: boolean }> {
-  return window.hermesDesktop.api<{ ok: boolean }>({
+  return window.moorDesktop.api<{ ok: boolean }>({
     ...capabilityScoped(profile),
     path: `/api/mcp/servers/${encodeURIComponent(name)}`,
     method: 'DELETE'

@@ -25,7 +25,7 @@ def record(name):
     temp.replace(target)
 record(role)
 if role == 'owner':
-    from hermes_cli.local_runtime.processes import spawn_server
+    from moor_cli.local_runtime.processes import spawn_server
     proc, job = spawn_server([sys.executable, __file__, str(root), 'router'],
                              close_fds=False)
     (root / 'ready').write_text('ready')
@@ -86,7 +86,7 @@ def _kill(identity):
 def test_owner_exit_kills_router_tree_not_external(tmp_path, stop_mode, nested):
     script = tmp_path / 'disposable server.py'
     script.write_text(_SCRIPT)
-    env = dict(os.environ, HERMES_HOME=str(tmp_path / 'home'),
+    env = dict(os.environ, MOOR_HOME=str(tmp_path / 'home'),
                PYTHONPATH=str(Path(__file__).resolve().parents[2]))
     launchers = []
     outer_job = None
@@ -95,7 +95,7 @@ def test_owner_exit_kills_router_tree_not_external(tmp_path, stop_mode, nested):
             for role in ('control', 'owner'):
                 cmd = [sys.executable, str(script), str(tmp_path), role]
                 if nested and role == 'owner':
-                    from hermes_cli.local_runtime.processes import spawn_server
+                    from moor_cli.local_runtime.processes import spawn_server
                     launcher, outer_job = spawn_server(cmd, env=env, stdout=log, stderr=log)
                 else:
                     launcher = subprocess.Popen(cmd, env=env, stdout=log, stderr=log)
@@ -145,7 +145,7 @@ def test_owner_exit_kills_router_tree_not_external(tmp_path, stop_mode, nested):
 def test_failed_setup_never_runs_child_and_releases_handles(tmp_path, monkeypatch, failure):
     import ctypes
     from ctypes import wintypes
-    from hermes_cli.local_runtime import processes
+    from moor_cli.local_runtime import processes
 
     marker = tmp_path / 'child executed'
     jobs, children, handles = [], [], []

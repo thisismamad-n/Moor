@@ -22,7 +22,7 @@ _skill_commands_home: Optional[str] = None
 _publish_lock = threading.Lock()
 # ``\w`` keeps Unicode letters (CJK, Cyrillic) so a ``name: 小说拆条`` skill registers ``/小说拆条``
 # instead of slugging to "" and being dropped (#12351); Telegram's ``[a-z0-9_]`` menu limit is
-# applied by hermes_cli/commands_platforms.py, not here.
+# applied by moor_cli/commands_platforms.py, not here.
 _SKILL_INVALID_CHARS = re.compile(r"[^\w-]")
 _SKILL_MULTI_HYPHEN = re.compile(r"-{2,}")
 
@@ -587,7 +587,7 @@ def build_preloaded_skills_prompt(
 ) -> tuple[str, list[str], list[str]]:
     """Load skills for session-wide CLI/TUI preloading; returns (prompt_text,
     loaded_skill_names, missing_identifiers). Disabled skills count as missing:
-    this path bypasses the scan-time filter, and ``hermes -s <skill>`` must not
+    this path bypasses the scan-time filter, and ``moor -s <skill>`` must not
     force-load an operator-disabled skill. *excluded_loaded_names* are canonical
     names the session already carries (skills.auto_load): they resolve as loaded
     but are not rendered again.
@@ -613,7 +613,7 @@ def resolve_auto_load_skills(user_config: dict | None = None) -> list[str]:
     empty when unset, malformed, or the config is unreadable."""
     if user_config is None:
         try:
-            from hermes_cli.config import load_config_readonly
+            from moor_cli.config import load_config_readonly
             user_config = load_config_readonly()
         except Exception:
             return []
@@ -634,10 +634,10 @@ def build_auto_load_prompt(
 
     *home_override* makes home resolution EXPLICIT (same seam as ``build_skills_system_prompt``): the config,
     the disabled list and the ``<home>/skills`` lookup all resolve under that home, so a gateway build thread
-    that lost the HERMES_HOME ContextVar cannot pin the launch profile's skills into another profile's prompt.
+    that lost the MOOR_HOME ContextVar cannot pin the launch profile's skills into another profile's prompt.
     """
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-    home_token = set_hermes_home_override(str(home_override)) if home_override is not None else None
+    from moor_constants import reset_moor_home_override, set_moor_home_override
+    home_token = set_moor_home_override(str(home_override)) if home_override is not None else None
     try:
         auto_skills = resolve_auto_load_skills(user_config)
         if not auto_skills:
@@ -653,4 +653,4 @@ def build_auto_load_prompt(
         return "\n\n".join(prompt_parts), loaded_names, missing
     finally:
         if home_token is not None:
-            reset_hermes_home_override(home_token)
+            reset_moor_home_override(home_token)

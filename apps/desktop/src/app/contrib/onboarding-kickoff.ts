@@ -77,7 +77,7 @@ async function adoptGuideSession(
   }
 }
 
-/** Seeds the runbook and a pre-written greeting on hermes-setup before the phase advances.
+/** Seeds the runbook and a pre-written greeting on moor-setup before the phase advances.
  * The seeded assistant row shows the chat's first message without a model turn. */
 export function useOnboardingKickoff({
   createBackendSessionForSend,

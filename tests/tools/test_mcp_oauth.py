@@ -167,8 +167,8 @@ class TestMoorTokenStorage:
         from mcp.shared.auth import OAuthMetadata
         from tools.mcp_oauth_device import DeviceOAuthMetadata
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-        storage = HermesTokenStorage("bad-server")
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
+        storage = MoorTokenStorage("bad-server")
         d = tmp_path / "mcp-tokens"
         d.mkdir(parents=True)
         (d / "bad-server.json").write_text("NOT VALID JSON{{{")

@@ -202,10 +202,10 @@ class TestIsGenuineMoorRateLimit:
     def test_a_welcome_host_429_with_exhausted_buckets_trips_the_breaker(
         self, rate_guard_env, monkeypatch,
     ):
-        from agent.nous_rate_guard import (
-            is_genuine_nous_rate_limit,
-            nous_rate_limit_remaining,
-            record_nous_rate_limit,
+        from agent.moor_rate_guard import (
+            is_genuine_moor_rate_limit,
+            moor_rate_limit_remaining,
+            record_moor_rate_limit,
         )
 
         headers = {
@@ -213,9 +213,9 @@ class TestIsGenuineMoorRateLimit:
             "x-ratelimit-remaining-requests-1h": "0",
             "x-ratelimit-reset-requests-1h": "600",
         }
-        assert is_genuine_nous_rate_limit(headers=headers) is True
-        record_nous_rate_limit(headers=headers)
-        assert nous_rate_limit_remaining() > 0
+        assert is_genuine_moor_rate_limit(headers=headers) is True
+        record_moor_rate_limit(headers=headers)
+        assert moor_rate_limit_remaining() > 0
         verdict, _buffered, statuses = TestWelcomeRouteCopy._drive_guard(
             "https://welcome-api.nousresearch.com/v1", monkeypatch
         )
@@ -265,14 +265,14 @@ class TestWelcomeRouteCopy:
     def _drive_guard(base_url, monkeypatch):
         from types import SimpleNamespace
 
-        from agent import nous_rate_guard
-        from agent.turn_api_call import nous_rate_limit_guard
+        from agent import moor_rate_guard
+        from agent.turn_api_call import moor_rate_limit_guard
 
-        monkeypatch.setattr(nous_rate_guard, "nous_rate_limit_remaining", lambda: 600)
+        monkeypatch.setattr(moor_rate_guard, "moor_rate_limit_remaining", lambda: 600)
         buffered = []
         statuses = []
         agent = SimpleNamespace(
-            provider="nous",
+            provider="moor",
             base_url=base_url,
             log_prefix="",
             _buffer_vprint=buffered.append,
@@ -281,7 +281,7 @@ class TestWelcomeRouteCopy:
             _flush_status_buffer=lambda: None,
             _persist_session=lambda *_args: None,
         )
-        verdict = nous_rate_limit_guard(
+        verdict = moor_rate_limit_guard(
             agent,
             _retry=None,
             api_messages=[],
@@ -295,7 +295,7 @@ class TestWelcomeRouteCopy:
         return verdict, buffered, statuses
 
     def test_the_welcome_host_rate_limit_message_names_the_slash_command(self, monkeypatch):
-        from hermes_cli import anon_auth
+        from moor_cli import anon_auth
 
         verdict, buffered, statuses = self._drive_guard(
             "https://welcome-api.nousresearch.com/v1", monkeypatch
@@ -306,7 +306,7 @@ class TestWelcomeRouteCopy:
         assert statuses == [f"⏳ {expected}"]
         assert expected in verdict.result["final_response"]
         assert "/login" in expected
-        assert "Nous Portal" not in expected
+        assert "Moor Portal" not in expected
         assert buffered == [f"⏳ {expected} Trying fallback..."]
 
     def test_a_non_welcome_route_keeps_todays_sentence(self, monkeypatch):
@@ -314,7 +314,7 @@ class TestWelcomeRouteCopy:
             "https://inference-api.nousresearch.com/v1", monkeypatch
         )
 
-        expected = "Your Nous account has hit its rate limit; it resets in 10m."
+        expected = "Your Moor account has hit its rate limit; it resets in 10m."
         assert verdict.action == "return"
         assert statuses == [f"⏳ {expected}"]
         assert verdict.result["final_response"].startswith(f"⏳ {expected}\n\n")

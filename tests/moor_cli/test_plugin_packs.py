@@ -186,7 +186,7 @@ def test_load_pack_missing_file_errors():
 # ---------------------------------------------------------------------------
 
 def _fake_catalog_entry(name):
-    from hermes_cli.plugin_catalog import CatalogCapabilities, PluginCatalogEntry
+    from moor_cli.plugin_catalog import CatalogCapabilities, PluginCatalogEntry
     return PluginCatalogEntry(
         name=name, repo="https://github.com/idx-owner/idx-repo", sha=SHA_B, description="d", maintainer="idx-owner",
         capabilities=CatalogCapabilities(provides_tools=["tools"]))
@@ -197,7 +197,7 @@ def test_resolve_pack_plugins_uses_catalog_for_bare_names():
     bare_name = pack.plugins[1].name
     fake_entry = _fake_catalog_entry(bare_name)
     with mock.patch(
-        "hermes_cli.plugin_catalog.load_catalog_live",
+        "moor_cli.plugin_catalog.load_catalog_live",
         return_value=[fake_entry],
     ):
         resolved = resolve_pack_plugins(pack)
@@ -214,7 +214,7 @@ def test_resolve_pack_plugins_carries_catalog_miss_as_error():
         )
     )
     with mock.patch(
-        "hermes_cli.plugin_catalog.load_catalog_live", return_value=[]
+        "moor_cli.plugin_catalog.load_catalog_live", return_value=[]
     ):
         resolved = resolve_pack_plugins(pack)
     assert resolved[0].identifier is None

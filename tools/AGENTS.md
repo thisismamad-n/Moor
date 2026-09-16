@@ -43,14 +43,14 @@ Rules for tool code:
   web_search"). Those tools may be unavailable (missing key, disabled toolset) and the model
   hallucinates calls to them. Cross-references are added dynamically in `get_tool_definitions()` in
   `model_tools.py` — see the `browser_navigate` / `execute_code` post-processing blocks.
-- **Paths in schema descriptions use `display_hermes_home()`** (schema is built at import; under
-  multiplex it shows the launch home, which is display-only). **State files use `get_hermes_home()`**
-  at call time, never `Path.home()/.hermes` and never a module constant, so each served profile gets
+- **Paths in schema descriptions use `display_moor_home()`** (schema is built at import; under
+  multiplex it shows the launch home, which is display-only). **State files use `get_moor_home()`**
+  at call time, never `Path.home()/.moor` and never a module constant, so each served profile gets
   its own state.
 - **No `offset`/`limit` on instructional tools** (skills, prompts, playbooks) — models read page 1
   and skip the rest (root rubric).
 - **`check_fn` answers reachability/opt-in for the profile it runs under, never surface.** Results
-  are TTL-cached in `registry.py::_check_fn_cache` keyed by `hermes_home_key()`, and one process
+  are TTL-cached in `registry.py::_check_fn_cache` keyed by `moor_home_key()`, and one process
   serves many sessions AND many profiles: a probe reads credentials through
   `agent.secret_scope.get_secret`, never bare `os.getenv` (that answers with the launch profile's
   `.env` for everyone). The registry classifies an `UnscopedSecretError` from
@@ -85,9 +85,9 @@ never an `elif` on a backend name (root shape rules). Remote-backend file visibi
 fixed at the mount, not by adding a tool.
 
 **Every spawn goes through one env builder.** `environments/local.py::build_subprocess_env` (+
-`hermes_constants.apply_subprocess_home_env`, `env_passthrough.py::resolve_passthrough_value`) is
+`moor_constants.apply_subprocess_home_env`, `env_passthrough.py::resolve_passthrough_value`) is
 how a terminal, `execute_code`, background process, delegation child, ACP or MCP stdio child gets
-its environment; a child that acts FOR the served profile (`hermes -p X` workers, `key_cmd`
+its environment; a child that acts FOR the served profile (`moor -p X` workers, `key_cmd`
 helpers, browser drivers, Bot Chat relay turns) uses `environments/local.py::
 served_profile_child_env(target_home=, inherit_credentials=)`: launch-profile `.env` /
 `TERMINAL_*` residue dropped (`strip_launch_profile_env`), the target home pinned, only the

@@ -1,8 +1,8 @@
-"""Non-interactive HTTPS credentials for Hermes's internal git clones (private plugin/MCP/profile repos).
+"""Non-interactive HTTPS credentials for Moor's internal git clones (private plugin/MCP/profile repos).
 
 :func:`noninteractive_git_env` deliberately disables credential helpers, askpass and global git
 config so a hostile repo cannot make our plumbing prompt or hang. The cost is that a *private*
-repo the user can already clone from their shell fails inside ``hermes plugins install`` with
+repo the user can already clone from their shell fails inside ``moor plugins install`` with
 "could not read Username" (or hangs on a GUI askpass until the timeout). This module resolves a
 credential up front, from sources the user already owns, and passes it to git as a one-shot
 ``http.<origin>/.extraheader`` in the environment — never in the URL and never in ``.git/config``,
@@ -27,7 +27,7 @@ import subprocess
 import urllib.parse
 from typing import Mapping, Optional
 
-from hermes_cli._subprocess_compat import noninteractive_git_env, windows_hide_flags
+from moor_cli._subprocess_compat import noninteractive_git_env, windows_hide_flags
 
 logger = logging.getLogger(__name__)
 

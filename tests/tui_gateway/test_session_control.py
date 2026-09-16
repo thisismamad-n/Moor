@@ -303,7 +303,7 @@ class TestManagerOnlyMutations:
             assert _error(_call(server, "session.control", session_id=sid, action=action, args=args))["code"] == 4004
 
     def test_goal_unwait_clears_the_real_barrier_through_shared_command(self, server, session):
-        from hermes_cli.goals import GoalManager
+        from moor_cli.goals import GoalManager
 
         sid, key, _ = session
         _save_goal(key)

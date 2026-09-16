@@ -32,7 +32,7 @@ def _make_project(root: Path) -> None:
 def _ledger_on(monkeypatch):
     """The ledger is inert unless verify-on-stop is enabled; ``clear_verify_env`` (requested
     explicitly, so it runs after this) strips it again for the enabled()-logic tests."""
-    monkeypatch.setenv("HERMES_VERIFY_ON_STOP", "1")
+    monkeypatch.setenv("MOOR_VERIFY_ON_STOP", "1")
 
 
 @pytest.fixture

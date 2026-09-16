@@ -181,10 +181,10 @@ class TestScopedGatewayPidQuery:
         profile_dir.mkdir(parents=True)
         record = {
             "pid": 4242,
-            "kind": "hermes-gateway",
-            "argv": ["python", "-m", "hermes_cli.main", "gateway", "--profile", "wiki"],
+            "kind": "moor-gateway",
+            "argv": ["python", "-m", "moor_cli.main", "gateway", "--profile", "wiki"],
             "start_time": 123,
-            "hermes_home": str(profile_dir.resolve()),
+            "moor_home": str(profile_dir.resolve()),
         }
         pid_path = profile_dir / "gateway.pid"
         pid_path.write_text(json.dumps(record))
@@ -193,14 +193,14 @@ class TestScopedGatewayPidQuery:
 
     def test_scoped_query_reports_live_foreign_profile_pid(self, tmp_path, monkeypatch):
         # The serve process polls from the DEFAULT home; the live wiki record must still count.
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "default-home"))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / "default-home"))
         profile_dir, pid_path, _ = self._write_scoped_profile(tmp_path)
         monkeypatch.setattr(status, "is_gateway_runtime_lock_active", lambda lock: True)
         monkeypatch.setattr(status, "_pid_exists", lambda pid: True)
         monkeypatch.setattr(status, "_get_process_start_time", lambda pid: 123)
         monkeypatch.setattr(
             status, "_read_process_cmdline",
-            lambda pid: "python -m hermes_cli.main gateway --profile wiki",
+            lambda pid: "python -m moor_cli.main gateway --profile wiki",
         )
         assert status.get_running_pid(pid_path) == 4242
         assert pid_path.exists()
@@ -208,7 +208,7 @@ class TestScopedGatewayPidQuery:
 
     def test_scoped_query_still_cleans_dead_pid_record(self, tmp_path, monkeypatch):
         # A dead PID's stale record is still cleanup-unlinked, scoped or not.
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "default-home"))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / "default-home"))
         profile_dir, pid_path, _ = self._write_scoped_profile(tmp_path)
         monkeypatch.setattr(status, "is_gateway_runtime_lock_active", lambda lock: True)
         monkeypatch.setattr(status, "_pid_exists", lambda pid: False)
@@ -418,7 +418,7 @@ class TestGatewayRuntimeStatus:
         ``connected`` write, not only the watcher's. A gateway restart after an escalation stamps
         ``connected`` from the startup path / adapter, which left the flag sticky for weeks on a
         healthy Telegram record."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         status.write_runtime_status(
             platform="telegram", platform_state="retrying", needs_attention=True,
             retrying_since="2026-08-30T07:53:47+00:00",

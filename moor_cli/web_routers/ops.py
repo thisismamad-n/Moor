@@ -250,8 +250,8 @@ async def set_webhook_enabled(name: str, body: WebhookEnabledToggle):
 
 @router.post("/api/gateway/start")
 async def start_gateway(profile: Optional[str] = None):
-    from hermes_cli.web_server_gateway import multiplexed_profile_refusal
-    # The spawned `hermes -p X gateway start` would refuse with exit 78 into an action log nobody reads;
+    from moor_cli.web_server_gateway import multiplexed_profile_refusal
+    # The spawned `moor -p X gateway start` would refuse with exit 78 into an action log nobody reads;
     # surface the same refusal here so the UI can point at the multiplexer instead of showing "started".
     refusal = await asyncio.to_thread(multiplexed_profile_refusal, profile, "start")
     if refusal:
@@ -263,7 +263,7 @@ async def start_gateway(profile: Optional[str] = None):
 
 @router.post("/api/gateway/stop")
 async def stop_gateway(profile: Optional[str] = None):
-    from hermes_cli.web_server_gateway import multiplexed_profile_refusal
+    from moor_cli.web_server_gateway import multiplexed_profile_refusal
     # A served profile has no gateway of its own to stop: the child prints "No gateway running for this
     # profile" (exit 0) while the multiplexer keeps serving it and the UI flips to "stopped".
     refusal = await asyncio.to_thread(multiplexed_profile_refusal, profile, "stop")

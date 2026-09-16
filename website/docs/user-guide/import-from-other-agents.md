@@ -51,15 +51,15 @@ Claude's `Bash(npm run test:*)` prefix rules become `npm run test*` globs. Non-`
 - **Merges, not replaces.** Memory entries are deduplicated against your existing `MEMORY.md`; allowlist/denylist patterns merge with what's already in `config.yaml`.
 - **Conflicts are skipped by default.** An MCP server or skill that already exists in Moor is reported as a conflict; pass `--overwrite` to replace it.
 - **Malformed files don't abort the run.** A broken `settings.json` or `config.toml` becomes a per-item error in the report while everything else still imports.
-- Coming from OpenClaw instead? Use [`hermes claw migrate`](../guides/migrate-from-openclaw.md).
+- Coming from OpenClaw instead? Use [`moor claw migrate`](../guides/migrate-from-openclaw.md).
 
 ## Keeping imports in sync
 
-Every successful import registers its source (and the digest of everything it read) in `~/.hermes/import-sync.json`. When the other agent's setup changes later — new skills, edited `CLAUDE.md`/`AGENTS.md`, added MCP servers — pull the changes in with:
+Every successful import registers its source (and the digest of everything it read) in `~/.moor/import-sync.json`. When the other agent's setup changes later — new skills, edited `CLAUDE.md`/`AGENTS.md`, added MCP servers — pull the changes in with:
 
 ```bash
-hermes import-agent --sync            # re-import every changed source
-hermes import-agent --sync --dry-run  # preview what a sync would do
+moor import-agent --sync            # re-import every changed source
+moor import-agent --sync --dry-run  # preview what a sync would do
 ```
 
 Sync is prompt-free and cheap: sources whose files are unchanged are skipped by digest comparison, so it is safe to run on a schedule (e.g. a daily [cron job](features/cron.md)). Rules:
@@ -71,4 +71,4 @@ Sync is prompt-free and cheap: sources whose files are unchanged are skipped by 
 
 This mirrors ChatGPT Work's *Settings > Import* automatic updates, adapted to an explicit, inspectable command instead of a background service.
 
-The manifest is per profile. A profile created with `hermes profile create <name> --clone --sync-imports` carries it over, so `hermes -p <name> import-agent --sync` keeps pulling from the same external trees (see [Profiles](./profiles.md#keep-a-clones-imported-agent-setups-synced---sync-imports)).
+The manifest is per profile. A profile created with `moor profile create <name> --clone --sync-imports` carries it over, so `moor -p <name> import-agent --sync` keeps pulling from the same external trees (see [Profiles](./profiles.md#keep-a-clones-imported-agent-setups-synced---sync-imports)).

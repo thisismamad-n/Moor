@@ -1939,7 +1939,7 @@ def interactive_setup() -> None:
     from moor_cli.setup import (
         prompt, prompt_yes_no, save_env_value, get_env_value, print_header, print_info, print_warning, print_success,
     )
-    from hermes_cli.setup_platforms import declines_reconfigure
+    from moor_cli.setup_platforms import declines_reconfigure
     def ask(label: str, env: str) -> str:
         return prompt(label, default=get_env_value(env) or "")
 
@@ -1947,7 +1947,7 @@ def interactive_setup() -> None:
     existing_relay = get_env_value("BUZZ_RELAY_URL")
     if declines_reconfigure("Buzz", "Reconfigure Buzz?", "BUZZ_RELAY_URL"):
         return
-    print_info("Connect Hermes to a Buzz community (Block's Nostr-based human+agent platform).")
+    print_info("Connect Moor to a Buzz community (Block's Nostr-based human+agent platform).")
     print_info("   Requires the buzz CLI binary and a Nostr key that is a community member.")
     print()
     relay = prompt("Relay URL (e.g. https://mycommunity.communities.buzz.xyz)", default=existing_relay or "")

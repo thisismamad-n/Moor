@@ -56,7 +56,7 @@ def test_failed_desktop_rebuild_withholds_success_completion():
 
 def test_handoff_venv_repair_finishes_node_and_web_phase(tmp_path):
     """A successful Python repair must not bypass the remaining update work."""
-    project_root = tmp_path / "hermes"
+    project_root = tmp_path / "moor"
     venv_python = project_root / "venv" / "Scripts" / "python.exe"
     venv_python.parent.mkdir(parents=True)
     venv_python.touch()
@@ -70,7 +70,7 @@ def test_handoff_venv_repair_finishes_node_and_web_phase(tmp_path):
         patch.object(update_cmd, "_check_and_apply_config_migration"),
         patch.object(update_cmd, "_rebuild_desktop_after_update", return_value=True),
         patch.object(update_cmd, "_print_verified_update_completion", return_value=True) as completion,
-        patch("hermes_cli.managed_uv.ensure_uv", return_value="uv"),
+        patch("moor_cli.managed_uv.ensure_uv", return_value="uv"),
         patch.object(update_cmd, "_m") as m,
     ):
         m.return_value.PROJECT_ROOT = project_root

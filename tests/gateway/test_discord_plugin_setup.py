@@ -85,7 +85,7 @@ class TestDiscordTokenShapeGuard:
     (port of openclaw/openclaw#140531)."""
 
     def test_numeric_app_id_reprompts_then_accepts_real_token(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         saved, removed, errors = {}, [], []
         real_token = "«redacted»." + "part2.part3"
         _patch_setup_io(
@@ -101,7 +101,7 @@ class TestDiscordTokenShapeGuard:
         assert any("application ID" in e for e in errors)
 
     def test_non_numeric_token_saves_without_error(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         saved, removed, errors = {}, [], []
         _patch_setup_io(monkeypatch, _PROMPTS_BLANK, saved, removed, existing={})
         monkeypatch.setattr(cli_output_mod, "print_error", lambda *a, **_kw: errors.append(" ".join(map(str, a))))

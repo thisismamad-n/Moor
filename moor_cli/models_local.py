@@ -367,10 +367,10 @@ def _lmstudio_server_root(base_url: Optional[str]) -> Optional[str]:
 
 def _lmstudio_request_headers(api_key: Optional[str] = None) -> dict:
     """HTTP headers for LM Studio native API requests."""
-    from hermes_cli.models import _HERMES_USER_AGENT
+    from moor_cli.models import _MOOR_USER_AGENT
     from agent.command_token_source import materialize_probe_api_key
     token = materialize_probe_api_key(api_key)
-    return {"User-Agent": _HERMES_USER_AGENT, **({"Authorization": f"Bearer {token}"} if token else {})}
+    return {"User-Agent": _MOOR_USER_AGENT, **({"Authorization": f"Bearer {token}"} if token else {})}
 
 
 def _lmstudio_fetch_raw_models(

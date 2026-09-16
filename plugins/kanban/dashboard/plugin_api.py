@@ -28,14 +28,14 @@ from fastapi import (
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
-from hermes_cli import kanban_db
-from hermes_cli.web_read_coalescing import coalesced_read
-from hermes_cli import kanban_db_connect as kbc
-from hermes_cli import kanban_db_notify as kbn
-from hermes_cli import kanban_db_dispatch as kbd
-from hermes_cli import kanban_db_workspace as kbw
-from hermes_cli import kanban_diagnostics as kd
-from hermes_cli.kanban_db import KANBAN_ATTACHMENT_MAX_BYTES, _collision_free_path, _safe_attachment_name
+from moor_cli import kanban_db
+from moor_cli.web_read_coalescing import coalesced_read
+from moor_cli import kanban_db_connect as kbc
+from moor_cli import kanban_db_notify as kbn
+from moor_cli import kanban_db_dispatch as kbd
+from moor_cli import kanban_db_workspace as kbw
+from moor_cli import kanban_diagnostics as kd
+from moor_cli.kanban_db import KANBAN_ATTACHMENT_MAX_BYTES, _collision_free_path, _safe_attachment_name
 
 log = logging.getLogger(__name__)
 

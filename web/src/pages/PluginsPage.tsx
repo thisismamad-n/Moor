@@ -899,7 +899,7 @@ export default function PluginsPage() {
 
           <p className="text-xs tracking-[0.06em] text-text-tertiary">
             {t.pluginsPage.catalogHint ??
-              "Curated, Nous-reviewed plugins pinned to exact commits."}
+              "Curated, Moor-reviewed plugins pinned to exact commits."}
           </p>
 
           <Input
@@ -924,7 +924,7 @@ export default function PluginsPage() {
                 target="_blank"
                 rel="noreferrer"
               >
-                {t.pluginsPage.catalogEmptyDocsLink ?? "Learn about Hermes plugins"}
+                {t.pluginsPage.catalogEmptyDocsLink ?? "Learn about Moor plugins"}
               </a>
             </p>
           ) : (
@@ -1381,8 +1381,8 @@ function CatalogEntryCard(props: CatalogEntryCardProps) {
             </a>
           ) : null}
 
-          {entry.requires_hermes ? (
-            <span>hermes {entry.requires_hermes}</span>
+          {entry.requires_moor ? (
+            <span>moor {entry.requires_moor}</span>
           ) : null}
 
           {entry.platforms.length ? (

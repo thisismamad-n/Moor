@@ -1,4 +1,4 @@
-"""Nous free tier, inference side: the dark-tier 403 keyed on the route, the one-shot model move
+"""Moor free tier, inference side: the dark-tier 403 keyed on the route, the one-shot model move
 after ``model_not_free``, the wrong-host heal, the long-wait rule for structured ``rate_limited``
 refusals, and the plain outage sentence once retries are spent.
 
@@ -41,8 +41,8 @@ def _refusal(reason: str, *, retry_after: int = 0, alternates=None) -> MockAPIEr
                                 "alternates": alternates or [], "upgrade_url": "https://portal.example/signup"})
 
 
-def _classify(err: MockAPIError, *, model: str = "nous/welcome", base_url: str = WELCOME):
-    return classify_api_error(err, provider="nous", model=model, base_url=base_url)
+def _classify(err: MockAPIError, *, model: str = "moor/welcome", base_url: str = WELCOME):
+    return classify_api_error(err, provider="moor", model=model, base_url=base_url)
 
 
 class TestDarkTier403:
@@ -76,9 +76,9 @@ class TestDarkTier403:
 def _agent(**overrides):
     lines = []
     agent = SimpleNamespace(
-        provider="nous", model="gpt-5", base_url=WELCOME, log_prefix="", _rate_limit_state=None,
+        provider="moor", model="gpt-5", base_url=WELCOME, log_prefix="", _rate_limit_state=None,
         _vprint=lambda text, force=False: lines.append(text),
-        _try_refresh_nous_client_credentials=lambda **kw: True,
+        _try_refresh_moor_client_credentials=lambda **kw: True,
     )
     for k, v in overrides.items():
         setattr(agent, k, v)
@@ -90,11 +90,11 @@ class TestOneShotRecoveries:
     def test_model_not_free_moves_the_session_onto_the_alternate_and_retries_once(self):
         from agent.turn_recovery import _recover_welcome_tier
         agent = _agent()
-        classified = _classify(_refusal("model_not_free", alternates=["nous/welcome"]), model="gpt-5")
+        classified = _classify(_refusal("model_not_free", alternates=["moor/welcome"]), model="gpt-5")
         retry = TurnRetryState()
         assert _recover_welcome_tier(agent, classified, retry) is True
-        assert agent.model == "nous/welcome"
-        assert agent._nous_model_switch == ("gpt-5", "nous/welcome")
+        assert agent.model == "moor/welcome"
+        assert agent._moor_model_switch == ("gpt-5", "moor/welcome")
         assert "without signing in" in agent.lines[0]
         # Once: a second refusal in the same attempt falls through to the terminal path.
         assert _recover_welcome_tier(agent, classified, retry) is False
@@ -109,7 +109,7 @@ class TestOneShotRecoveries:
     def test_a_wrong_host_refusal_re_reads_the_route_once(self):
         from agent.turn_recovery import _recover_welcome_tier
         calls = []
-        agent = _agent(_try_refresh_nous_client_credentials=lambda **kw: calls.append(kw) or True)
+        agent = _agent(_try_refresh_moor_client_credentials=lambda **kw: calls.append(kw) or True)
         body = {"status": 400, "message": "Anonymous accounts must use https://welcome-api.nousresearch.com for inference."}
         classified = _classify(_gateway_error(400, body), base_url=PAID)
         assert classified.error_context["welcome_route"] == "anon_on_paid_host"
@@ -120,7 +120,7 @@ class TestOneShotRecoveries:
 
     def test_a_wrong_host_refusal_whose_heal_fails_falls_through(self):
         from agent.turn_recovery import _recover_welcome_tier
-        agent = _agent(_try_refresh_nous_client_credentials=lambda **kw: False)
+        agent = _agent(_try_refresh_moor_client_credentials=lambda **kw: False)
         body = {"status": 400, "message": "Anonymous accounts must use https://welcome-api.nousresearch.com for inference."}
         assert _recover_welcome_tier(agent, _classify(_gateway_error(400, body), base_url=PAID), TurnRetryState()) is False
 
@@ -131,36 +131,36 @@ class TestLongWaitRule:
         ("rate_limited", 0, False), ("at_capacity", 30, False), ("admission_closed", 30, False),
     ])
     def test_only_a_long_rate_limited_refusal_is_an_exhausted_allowance(self, reason, retry_after, expected):
-        from agent.nous_rate_guard import is_long_welcome_rate_limit
+        from agent.moor_rate_guard import is_long_welcome_rate_limit
         classified = _classify(_refusal(reason, retry_after=retry_after))
         assert is_long_welcome_rate_limit(classified.error_context) is expected
 
     def test_no_refusal_is_not_long(self):
-        from agent.nous_rate_guard import is_long_welcome_rate_limit
+        from agent.moor_rate_guard import is_long_welcome_rate_limit
         assert is_long_welcome_rate_limit({}) is False and is_long_welcome_rate_limit(None) is False
 
     def test_the_turn_records_a_long_refusal_from_the_classifiers_context(self, monkeypatch):
         """The turn hands the guard TWO contexts: its own (``extract_api_error_context``), which
         never carries ``welcome_refusal``, and the classifier's, which does. The breaker must key on
         the latter and record the reset it computed."""
-        import agent.nous_rate_guard as guard
-        from agent.turn_recovery import _is_genuine_nous_rate_limit
+        import agent.moor_rate_guard as guard
+        from agent.turn_recovery import _is_genuine_moor_rate_limit
         recorded = []
-        monkeypatch.setattr(guard, "record_nous_rate_limit", lambda **kw: recorded.append(kw))
+        monkeypatch.setattr(guard, "record_moor_rate_limit", lambda **kw: recorded.append(kw))
         err = _refusal("rate_limited", retry_after=600)
         turn_ctx = extract_api_error_context(err)
         assert "welcome_refusal" not in turn_ctx
         classified = _classify(err)
-        assert _is_genuine_nous_rate_limit(_agent(), err, turn_ctx, classified) is True
+        assert _is_genuine_moor_rate_limit(_agent(), err, turn_ctx, classified) is True
         assert recorded and recorded[0]["error_context"]["reset_at"] == classified.error_context["reset_at"]
         # The same body from the PAID host is not an allowance verdict: main's header rule stands.
         recorded.clear()
-        assert _is_genuine_nous_rate_limit(_agent(base_url=PAID), err, turn_ctx, classified) is False
+        assert _is_genuine_moor_rate_limit(_agent(base_url=PAID), err, turn_ctx, classified) is False
         assert recorded == []
         # A short one is not an exhausted allowance: nothing recorded, the turn waits it out.
         recorded.clear()
         short = _refusal("rate_limited", retry_after=5)
-        assert _is_genuine_nous_rate_limit(_agent(), short, extract_api_error_context(short), _classify(short)) is False
+        assert _is_genuine_moor_rate_limit(_agent(), short, extract_api_error_context(short), _classify(short)) is False
         assert recorded == []
 
 
@@ -169,7 +169,7 @@ class TestOutageCopy:
                                         FailoverReason.server_error])
     def test_a_spent_transport_failure_on_the_welcome_host_reads_as_one_sentence(self, reason):
         from agent.turn_recovery import _welcome_outage_copy
-        from hermes_cli.anon_auth import FREE_TIER_OUTAGE_COPY
+        from moor_cli.anon_auth import FREE_TIER_OUTAGE_COPY
         assert _welcome_outage_copy(WELCOME, SimpleNamespace(reason=reason)) == FREE_TIER_OUTAGE_COPY
 
     def test_other_routes_and_other_reasons_keep_the_technical_summary(self):
@@ -199,7 +199,7 @@ class TestTerminalResultsCarryTheFreeTierBlock:
         result = nonretryable_client_error_result(
             self._terminal_agent(), err, classified, status_code=403, api_kwargs=None, api_messages=[],
             messages=[], conversation_history=[], api_call_count=1, approx_tokens=10,
-            provider="nous", base_url=WELCOME, model="nous/welcome")
+            provider="moor", base_url=WELCOME, model="moor/welcome")
         # The chat text names /login; the card text (a button beside it) leaves that tail off.
         assert "switched off" in result["final_response"] and "/login" in result["final_response"]
         assert result["free_tier"]["kind"] == "disabled"
@@ -214,7 +214,7 @@ class TestTerminalResultsCarryTheFreeTierBlock:
         result = max_retries_exhausted_result(
             self._terminal_agent(), err, classified, max_retries=3, is_rate_limited=True, error_msg="429",
             api_kwargs=None, api_messages=[], messages=[], conversation_history=[], api_call_count=3,
-            approx_tokens=10, provider="nous", base_url=WELCOME, model="nous/welcome")
+            approx_tokens=10, provider="moor", base_url=WELCOME, model="moor/welcome")
         assert result["free_tier"]["kind"] == "at_capacity"
         assert "really busy" in result["free_tier"]["message"] and "/login" not in result["free_tier"]["message"]
         assert "/login" in result["final_response"]
@@ -226,7 +226,7 @@ class TestTerminalResultsCarryTheFreeTierBlock:
         result = max_retries_exhausted_result(
             self._terminal_agent(), err, classified, max_retries=3, is_rate_limited=False, error_msg="503",
             api_kwargs=None, api_messages=[], messages=[], conversation_history=[], api_call_count=3,
-            approx_tokens=10, provider="nous", base_url=WELCOME, model="nous/welcome")
+            approx_tokens=10, provider="moor", base_url=WELCOME, model="moor/welcome")
         assert result["free_tier"]["kind"] == "outage"
 
     def test_the_same_outage_on_the_paid_host_is_not_stamped(self):
@@ -235,5 +235,5 @@ class TestTerminalResultsCarryTheFreeTierBlock:
         result = max_retries_exhausted_result(
             self._terminal_agent(), err, _classify(err, base_url=PAID), max_retries=3, is_rate_limited=False,
             error_msg="503", api_kwargs=None, api_messages=[], messages=[], conversation_history=[],
-            api_call_count=3, approx_tokens=10, provider="nous", base_url=PAID, model="hermes-4")
+            api_call_count=3, approx_tokens=10, provider="moor", base_url=PAID, model="hermes-4")
         assert "free_tier" not in result

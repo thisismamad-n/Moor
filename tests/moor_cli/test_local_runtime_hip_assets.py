@@ -6,7 +6,7 @@ verified against GitHub release assets on both sides of each transition.
 
 import pytest
 
-from hermes_cli.local_runtime.binaries import BinaryResolutionError, resolve_assets
+from moor_cli.local_runtime.binaries import BinaryResolutionError, resolve_assets
 
 
 @pytest.mark.parametrize("tag,linux_suffix,windows_suffix", [

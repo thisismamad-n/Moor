@@ -136,12 +136,12 @@ def test_download_authenticates_via_query_token(forced_files_client):
 
 def test_download_resolves_paths_in_the_originating_profile_session(local_files_client, monkeypatch):
     from pathlib import Path
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
 
     client, home = local_files_client
     monkeypatch.setattr(Path, "home", lambda: home)
-    hermes_home = home / "isolated-hermes"
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    moor_home = home / "isolated-moor"
+    monkeypatch.setenv("MOOR_HOME", str(moor_home))
     session_cwd = home / "project"
     session_cwd.mkdir()
     gateway_cwd = home / "gateway"
@@ -152,7 +152,7 @@ def test_download_resolves_paths_in_the_originating_profile_session(local_files_
     (gateway_cwd / artifact.name).write_bytes(b"wrong gateway artifact")
     for profile, sid, cwd in [("default", "origin-session", str(session_cwd)),
                               ("other", "other-session", str(gateway_cwd))]:
-        db_home = hermes_home if profile == "default" else hermes_home / "profiles" / profile
+        db_home = moor_home if profile == "default" else moor_home / "profiles" / profile
         db_home.mkdir(parents=True, exist_ok=True)
         (db_home / "config.yaml").write_text("{}", encoding="utf-8")
         db = SessionDB(db_path=db_home / "state.db")

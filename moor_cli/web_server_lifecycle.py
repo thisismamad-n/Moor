@@ -178,12 +178,12 @@ def _eager_reconcile_own_session_db() -> None:
     two-writer corruption vector, #107688 / #100896). Access-mode semantics
     (bootstrap of a missing store, ONE writable heal of a stale schema, so the
     #79531 contract holds) live in the routers' own-store opener,
-    :func:`hermes_cli.web_server_sessions._open_session_db_at_path`. Never
+    :func:`moor_cli.web_server_sessions._open_session_db_at_path`. Never
     raises: an unfixable store still gets the per-poll read-probe heal.
     """
     try:
-        from hermes_cli.web_server_sessions import _open_session_db_for_profile
-        from hermes_state_registry import release_or_close
+        from moor_cli.web_server_sessions import _open_session_db_for_profile
+        from moor_state_registry import release_or_close
 
         release_or_close(_open_session_db_for_profile(None, read_only=True))
     except Exception as exc:

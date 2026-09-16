@@ -21,7 +21,7 @@ from agent.credential_pool import (  # custom_provider_pool_key_candidates is re
     load_pool,
 )
 from agent.secret_scope import get_secret_str
-from hermes_cli.auth import (  # resolve_external_process_provider_credentials is read via origin by runtime_provider_backends
+from moor_cli.auth import (  # resolve_external_process_provider_credentials is read via origin by runtime_provider_backends
     ACTUAL_LOCAL_NOAUTH_PLACEHOLDER, AuthError, DEFAULT_CODEX_BASE_URL, DEFAULT_QWEN_BASE_URL, DEFAULT_XAI_OAUTH_BASE_URL,
     PROVIDER_REGISTRY, _agent_key_is_usable, _moor_inference_env_override, format_auth_error, resolve_provider,
     resolve_moor_runtime_credentials, resolve_codex_runtime_credentials, resolve_xai_oauth_runtime_credentials,
@@ -29,10 +29,10 @@ from hermes_cli.auth import (  # resolve_external_process_provider_credentials i
     resolve_external_process_provider_credentials,  # noqa: F401
     has_usable_secret, is_actual_local_base_url, normalize_actual_base_url,
 )
-from hermes_cli import config as _config_mod
-from hermes_cli import models as _models  # attribute access keeps ``hermes_cli.models.<name>`` patches effective
-from hermes_constants import OPENROUTER_BASE_URL
-from hermes_cli.providers import determine_api_mode, is_actual_route, is_official_openai_host, nous_api_mode
+from moor_cli import config as _config_mod
+from moor_cli import models as _models  # attribute access keeps ``moor_cli.models.<name>`` patches effective
+from moor_constants import OPENROUTER_BASE_URL
+from moor_cli.providers import determine_api_mode, is_actual_route, is_official_openai_host, moor_api_mode
 from utils import base_url_host_matches, base_url_hostname, env_int
 
 
@@ -337,8 +337,8 @@ def _moor_min_key_ttl() -> int:
     return max(60, env_int("MOOR_MOOR_MIN_KEY_TTL_SECONDS", 1800))
 
 
-def _resolve_nous_creds() -> Dict[str, Any]:
-    return resolve_nous_runtime_credentials(timeout_seconds=float(get_secret_str("HERMES_NOUS_TIMEOUT_SECONDS", "15")))
+def _resolve_moor_creds() -> Dict[str, Any]:
+    return resolve_moor_runtime_credentials(timeout_seconds=float(get_secret_str("MOOR_MOOR_TIMEOUT_SECONDS", "15")))
 
 
 def _finalize_base_url(provider: str, api_mode: str, base_url: str) -> str:
@@ -411,7 +411,7 @@ def resolve_requested_provider(requested: Optional[str] = None) -> str:
     cfg_provider = _get_model_config().get("provider")
     if isinstance(cfg_provider, str) and cfg_provider.strip():
         return cfg_provider.strip().lower()
-    return get_secret_str("HERMES_INFERENCE_PROVIDER", "").strip().lower() or "auto"
+    return get_secret_str("MOOR_INFERENCE_PROVIDER", "").strip().lower() or "auto"
 
 
 # ── extracted collaborators (re-exported; see module docstring) ────────────────────────────
@@ -451,9 +451,9 @@ def _pool_entry_mode_and_url(provider, entry, model_cfg, effective_model, base_u
         api_mode, default_url = _POOL_ENTRY_SIMPLE_MODES[provider]
         if provider == "openai-codex":
             # Pool entries retain the canonical ChatGPT URL, but the profile-wide
-            # HERMES_CODEX_BASE_URL override must apply consistently to every
+            # MOOR_CODEX_BASE_URL override must apply consistently to every
             # credential source, including pooled OAuth credentials.
-            override_url = get_secret_str("HERMES_CODEX_BASE_URL", "").strip().rstrip("/")
+            override_url = get_secret_str("MOOR_CODEX_BASE_URL", "").strip().rstrip("/")
             if override_url:
                 return api_mode, override_url
         return api_mode, base_url or (default_url() if callable(default_url) else default_url)
@@ -496,7 +496,7 @@ def _openrouter_should_use_pool(requested_provider, model_cfg, explicit_api_key,
     cfg_base_url = str(model_cfg.get("base_url") or "").strip()
     env_base_urls = get_secret_str("OPENAI_BASE_URL", "").strip() or get_secret_str("OPENROUTER_BASE_URL", "").strip()
     # A config base_url under provider: openrouter is a mirror only when it is NOT the canonical
-    # OpenRouter host — `hermes setup` persists https://openrouter.ai/api/v1 for plain installs,
+    # OpenRouter host — `moor setup` persists https://openrouter.ai/api/v1 for plain installs,
     # and treating that as custom would drop the auth.json pool (empty key).
     cfg_is_mirror = bool(cfg_base_url) and (
         _cfg_provider(model_cfg) in {"auto", "custom"}

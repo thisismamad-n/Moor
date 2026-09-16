@@ -7,16 +7,16 @@ from fastapi.testclient import TestClient
 
 @pytest.mark.parametrize("serving_profile", ["work", None])
 def test_message_pages_identify_the_serving_profile(tmp_path, monkeypatch, serving_profile):
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
 
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    default_home = tmp_path / ".hermes"
+    default_home = tmp_path / ".moor"
     work_home = default_home / "profiles" / "work" if serving_profile else default_home / "custom-home"
     default_home.mkdir(parents=True)
     work_home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(work_home))
-    # conftest redirects this legacy override independently of HERMES_HOME.
-    monkeypatch.setattr("hermes_state.DEFAULT_DB_PATH", work_home / "state.db")
+    monkeypatch.setenv("MOOR_HOME", str(work_home))
+    # conftest redirects this legacy override independently of MOOR_HOME.
+    monkeypatch.setattr("moor_state.DEFAULT_DB_PATH", work_home / "state.db")
 
     for home, count in ((default_home, 1), (work_home, 199)):
         db = SessionDB(db_path=home / "state.db")
@@ -29,7 +29,7 @@ def test_message_pages_identify_the_serving_profile(tmp_path, monkeypatch, servi
         finally:
             db.close()
 
-    from hermes_cli.web_routers.sessions import manage_router
+    from moor_cli.web_routers.sessions import manage_router
 
     app = FastAPI()
     app.include_router(manage_router)

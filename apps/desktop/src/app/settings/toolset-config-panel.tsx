@@ -336,7 +336,7 @@ function PostSetupRunner({ toolset, postSetupKey, installed = false, onComplete,
                 message: copy.postSetupErrorMessage(prettyName(postSetupKey)),
                 action: {
                   label: copy.postSetupOpenLogs,
-                  onClick: () => void window.hermesDesktop?.revealLogs?.().catch(() => undefined)
+                  onClick: () => void window.moorDesktop?.revealLogs?.().catch(() => undefined)
                 },
                 secondaryAction: { label: copy.postSetupRunAgain, onClick: () => void run() }
               }
@@ -656,7 +656,7 @@ export function ToolsetConfigPanel({ toolset, onConfiguredChange, profile }: Too
       const start = await startOAuthLogin('moor', profile)
 
       if (start.flow !== 'device_code') {
-        notifyNousAuthFailed(`unexpected flow: ${start.flow}`)
+        notifyMoorAuthFailed(`unexpected flow: ${start.flow}`)
 
         return
       }
@@ -692,27 +692,27 @@ export function ToolsetConfigPanel({ toolset, onConfiguredChange, profile }: Too
         }
 
         if (polled.status !== 'pending') {
-          notifyNousAuthFailed(polled.error_message || `Sign-in ${polled.status}`)
+          notifyMoorAuthFailed(polled.error_message || `Sign-in ${polled.status}`)
 
           return
         }
       }
     } catch (err) {
       if (mountedRef.current) {
-        notifyNousAuthFailed(err instanceof Error ? err.message : String(err))
+        notifyMoorAuthFailed(err instanceof Error ? err.message : String(err))
       }
     }
   }
 
   // Plain failure copy with the raw poll status under Details and a one-click
   // retry of the same sign-in flow (desktop-26).
-  function notifyNousAuthFailed(detail: string) {
+  function notifyMoorAuthFailed(detail: string) {
     notify({
       kind: 'error',
       title: copy.nousAuthFailed,
       message: copy.nousAuthFailedMessage,
       detail,
-      action: { label: copy.nousAuthTryAgain, onClick: () => void signInToNousPortal() }
+      action: { label: copy.nousAuthTryAgain, onClick: () => void signInToMoorPortal() }
     })
   }
 

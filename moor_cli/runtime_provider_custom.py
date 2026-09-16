@@ -11,7 +11,7 @@ import logging
 import os
 from typing import Any, Callable, Dict, Optional
 
-from hermes_cli.providers import custom_provider_aliases, custom_provider_slug
+from moor_cli.providers import custom_provider_aliases, custom_provider_slug
 from agent.secret_scope import get_secret_str
 from utils import base_url_hostname
 
@@ -263,7 +263,7 @@ def canonical_custom_identity(*, base_url: Optional[str] = None, config_provider
             return identity
         # The managed server has no custom-provider config entry. Recover its menu key
         # from the ownership-checked endpoint, never from a model name or a fixed port.
-        from hermes_cli.local_runtime.endpoint import _state_endpoint
+        from moor_cli.local_runtime.endpoint import _state_endpoint
         endpoint = _state_endpoint()
         if endpoint and _normalize_base_url_for_match(base_url) == _normalize_base_url_for_match(endpoint["base_url"]):
             return "llamacpp"

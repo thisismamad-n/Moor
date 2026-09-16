@@ -273,24 +273,24 @@ class TestMigrateGoalToSession:
 
 
 class TestSessionDbCacheAfterProfileDelete:
-    """``hermes profile delete`` force-closes every registry handle under the profile home
+    """``moor profile delete`` force-closes every registry handle under the profile home
     (``close_all_under``) and rmtrees it; recreating the same name in the long-lived dashboard
     process must not keep persisting goals into the torn-down handle."""
 
-    def test_delete_then_recreate_gets_a_live_store(self, hermes_home):
+    def test_delete_then_recreate_gets_a_live_store(self, moor_home):
         import shutil
 
-        import hermes_state
-        import hermes_state_registry as registry
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-        from hermes_cli.goals import GoalState, _get_session_db, load_goal, save_goal
+        import moor_state
+        import moor_state_registry as registry
+        from moor_constants import reset_moor_home_override, set_moor_home_override
+        from moor_cli.goals import GoalState, _get_session_db, load_goal, save_goal
 
         # conftest re-points DEFAULT_DB_PATH at one fixed file; the registry must resolve the
         # scoped profile home here, as production does.
-        with patch.object(hermes_state, "DEFAULT_DB_PATH", hermes_state._IMPORT_DEFAULT_DB_PATH):
-            profile = hermes_home / "profiles" / "p1"
+        with patch.object(moor_state, "DEFAULT_DB_PATH", moor_state._IMPORT_DEFAULT_DB_PATH):
+            profile = moor_home / "profiles" / "p1"
             profile.mkdir(parents=True)
-            token = set_hermes_home_override(profile)
+            token = set_moor_home_override(profile)
             try:
                 save_goal("s1", GoalState(goal="before delete"))
                 stale = _get_session_db()
@@ -304,7 +304,7 @@ class TestSessionDbCacheAfterProfileDelete:
                 assert (profile / "state.db").exists()
                 assert load_goal("s2").goal == "after recreate"
             finally:
-                reset_hermes_home_override(token)
+                reset_moor_home_override(token)
                 registry.close_all_under(profile)
 
 
@@ -454,10 +454,10 @@ class TestWaitBarrier:
             proc.terminate()
             proc.wait(timeout=10)
 
-    def test_wait_on_rejects_a_pid_not_alive_on_this_host(self, hermes_home, monkeypatch):
+    def test_wait_on_rejects_a_pid_not_alive_on_this_host(self, moor_home, monkeypatch):
         """Regression for #110826: do not persist a barrier for remote/dead PIDs."""
-        from hermes_cli import goals
-        from hermes_cli.goals import GoalManager
+        from moor_cli import goals
+        from moor_cli.goals import GoalManager
 
         monkeypatch.setattr(goals, "_pid_alive", lambda pid: False)
         mgr = GoalManager(session_id="wb-dead")
@@ -541,11 +541,11 @@ class TestJudgeDrivenWait:
         import subprocess, sys
         return subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
 
-    def test_judge_wait_on_dead_pid_continues_instead_of_parking(self, hermes_home):
+    def test_judge_wait_on_dead_pid_continues_instead_of_parking(self, moor_home):
         """#110826: a judge ``wait_on_pid`` naming a pid this host cannot observe (remote, or
         already exited) must not park — the barrier would lift and re-park every turn."""
-        from hermes_cli import goals
-        from hermes_cli.goals import GoalManager
+        from moor_cli import goals
+        from moor_cli.goals import GoalManager
 
         mgr = GoalManager(session_id="jw-dead-pid", default_max_turns=10)
         mgr.set("ship the PR")
@@ -559,12 +559,12 @@ class TestJudgeDrivenWait:
         assert mgr.state.waiting_on_pid is None
         assert mgr.is_waiting() is False
 
-    def test_judge_wait_on_pid_dying_between_check_and_park_continues(self, hermes_home):
+    def test_judge_wait_on_pid_dying_between_check_and_park_continues(self, moor_home):
         """The pid may exit between the judge path's liveness probe and ``wait_on``'s own
         re-check; that race must land on the same continue decision, not raise out of
         ``evaluate_after_turn`` (callers swallow the error and the continuation is lost)."""
-        from hermes_cli import goals
-        from hermes_cli.goals import GoalManager
+        from moor_cli import goals
+        from moor_cli.goals import GoalManager
 
         mgr = GoalManager(session_id="jw-toctou-pid", default_max_turns=10)
         mgr.set("ship the PR")
@@ -580,9 +580,9 @@ class TestJudgeDrivenWait:
         assert mgr.state.waiting_on_pid is None
         assert mgr.is_waiting() is False
 
-    def test_judge_wait_pid_parks_loop(self, hermes_home):
-        from hermes_cli import goals
-        from hermes_cli.goals import GoalManager
+    def test_judge_wait_pid_parks_loop(self, moor_home):
+        from moor_cli import goals
+        from moor_cli.goals import GoalManager
 
         proc = self._spawn_sleeper()
         try:
@@ -964,12 +964,12 @@ class TestBlockedVerdict:
         assert "unachievable" in (mgr.state.paused_reason or "").lower()
 
 
-def test_goal_session_db_is_the_registry_shared_handle(hermes_home):
+def test_goal_session_db_is_the_registry_shared_handle(moor_home):
     """GoalManager must borrow the process-wide registry handle for ``state.db`` rather than
     minting a bare ``SessionDB()``: a second writer per profile carries its own token-writer
     thread and close-time checkpoint beside the gateway's handle (the #90837 corruption shape)."""
-    from hermes_cli import goals
-    import hermes_state_registry as registry
+    from moor_cli import goals
+    import moor_state_registry as registry
 
     db = goals._get_session_db()
     assert db is not None

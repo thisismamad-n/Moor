@@ -1748,7 +1748,7 @@ class TestAtexitFinalization(TestTurnTraceIsolation):
         credentials at all — it ends the open roots and flushes each settled client, so neither
         profile loses its pending traces."""
         from agent import secret_scope
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from moor_constants import reset_moor_home_override, set_moor_home_override
 
         mod = self._fresh_plugin()
         monkeypatch.setattr(secret_scope, "_MULTIPLEX_ACTIVE", True)
@@ -1770,16 +1770,16 @@ class TestAtexitFinalization(TestTurnTraceIsolation):
         for profile in ("alpha", "beta"):
             home = tmp_path / profile
             home.mkdir()
-            home_token = set_hermes_home_override(home)
+            home_token = set_moor_home_override(home)
             scope_token = secret_scope.set_secret_scope({
-                "HERMES_LANGFUSE_PUBLIC_KEY": f"pk-lf-{profile}-0123456789",
-                "HERMES_LANGFUSE_SECRET_KEY": f"sk-lf-{profile}-0123456789",
+                "MOOR_LANGFUSE_PUBLIC_KEY": f"pk-lf-{profile}-0123456789",
+                "MOOR_LANGFUSE_SECRET_KEY": f"sk-lf-{profile}-0123456789",
             })
             try:
                 self._run_turn(mod, session=f"{profile}-turn", turn_n=0, finalize=False)
             finally:
                 secret_scope.reset_secret_scope(scope_token)
-                reset_hermes_home_override(home_token)
+                reset_moor_home_override(home_token)
 
         assert len(mod._TRACE_STATE) == 2 and len(mod._LANGFUSE_CLIENT_BY_HOME) == 2
         assert mod._LANGFUSE_CLIENT is None and secret_scope.current_secret_scope() is None

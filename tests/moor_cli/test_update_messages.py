@@ -1,4 +1,4 @@
-"""User-facing wording contracts for ``hermes update`` failure/partial output.
+"""User-facing wording contracts for ``moor update`` failure/partial output.
 
 Invariants only (what the user must be able to read and act on), never whole-string snapshots.
 """
@@ -9,8 +9,8 @@ import subprocess
 
 import pytest
 
-from hermes_cli import update_cmd
-import hermes_cli.update_receipt as ur
+from moor_cli import update_cmd
+import moor_cli.update_receipt as ur
 
 
 class TestFleetMatrixVerdict:
@@ -29,9 +29,9 @@ class TestFleetMatrixVerdict:
         assert len(verdict) == 1
         assert verdict[0].startswith("✗")
         assert "2 gateway" in out
-        assert "hermes gateway restart" in out
-        assert "hermes -p <profile> gateway restart" in out
-        assert "hermes gateway status" in out
+        assert "moor gateway restart" in out
+        assert "moor -p <profile> gateway restart" in out
+        assert "moor gateway status" in out
 
     def test_unknown_rows_print_no_verdict(self, capsys):
         fleet = [{"profile": "default", "pid": 1, "code_sha": None, "state": "unknown"}]
@@ -59,7 +59,7 @@ class TestCalledProcessErrorMessage:
         assert "code update itself succeeded" in lines[0]
         assert "returned non-zero exit status" not in lines[0]
         assert "disk full" in out
-        assert "hermes update" in out
+        assert "moor update" in out
         assert "Re-downloading" not in out
 
     def test_non_dep_failure_moves_repr_to_details_line(self, capsys, no_exit, monkeypatch):

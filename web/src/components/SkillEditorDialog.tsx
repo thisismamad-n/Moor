@@ -10,7 +10,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@nous-research/ui/ui/components/dialog";
+} from "@moor-research/ui/ui/components/dialog";
 import { errorMessage } from "@/lib/api-error";
 
 /* ------------------------------------------------------------------ */

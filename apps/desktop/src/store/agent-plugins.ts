@@ -205,7 +205,7 @@ export async function installAgentPlugin(
     catalogName?: string
     /** Pin a custom source to one full commit SHA (team-wide reproducible install). */
     ref?: string
-    /** Target profile's HERMES_HOME (null/undefined = backend launch profile). */
+    /** Target profile's MOOR_HOME (null/undefined = backend launch profile). */
     profile?: string | null
   }
 ): Promise<AgentPluginInstallResult> {

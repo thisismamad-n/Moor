@@ -154,13 +154,13 @@ def test_find_entry_for_model_resolves_split_ids():
 def test_catalog_and_preset_agree_on_identical_model_facts(tmp_path, monkeypatch):
     from types import SimpleNamespace
 
-    from hermes_cli.local_runtime import bootstrap, catalog, presets
-    from hermes_cli.local_runtime.context_policy import RUNTIME_OVERHEAD_BYTES, ub_logits_bytes
-    from hermes_cli.local_runtime.estimator import ctx_bytes
-    from hermes_cli.web_routers.local_models import _catalog_row
+    from moor_cli.local_runtime import bootstrap, catalog, presets
+    from moor_cli.local_runtime.context_policy import RUNTIME_OVERHEAD_BYTES, ub_logits_bytes
+    from moor_cli.local_runtime.estimator import ctx_bytes
+    from moor_cli.web_routers.local_models import _catalog_row
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.setattr("hermes_cli.web_routers.local_models._engine_too_old", lambda tag: False)
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
+    monkeypatch.setattr("moor_cli.web_routers.local_models._engine_too_old", lambda tag: False)
     for entry in catalog.CATALOG:
         variant = entry.variants[0]
         profile = entry.profile(variant)

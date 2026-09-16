@@ -43,14 +43,14 @@ import { useProfileScope } from "@/contexts/useProfileScope";
 import { ToolsetConfigDrawer } from "@/components/ToolsetConfigDrawer";
 import { SkillEditorDialog } from "@/components/SkillEditorDialog";
 import { LoadErrorNotice } from "@/components/LoadErrorNotice";
-import { useToast } from "@nous-research/ui/hooks/use-toast";
-import { Toast } from "@nous-research/ui/ui/components/toast";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
-import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { ListItem } from "@nous-research/ui/ui/components/list-item";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { Switch } from "@nous-research/ui/ui/components/switch";
+import { useToast } from "@moor-research/ui/hooks/use-toast";
+import { Toast } from "@moor-research/ui/ui/components/toast";
+import { Card, CardContent, CardHeader, CardTitle } from "@moor-research/ui/ui/components/card";
+import { Badge } from "@moor-research/ui/ui/components/badge";
+import { Button } from "@moor-research/ui/ui/components/button";
+import { ListItem } from "@moor-research/ui/ui/components/list-item";
+import { Spinner } from "@moor-research/ui/ui/components/spinner";
+import { Switch } from "@moor-research/ui/ui/components/switch";
 import {
   Dialog,
   DialogContent,

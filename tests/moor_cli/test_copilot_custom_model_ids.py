@@ -10,7 +10,7 @@ Every such call failed, for both custom models a tenant had configured.
 
 import pytest
 
-from hermes_cli.models import normalize_copilot_model_id
+from moor_cli.models import normalize_copilot_model_id
 
 
 # ``owner/sub/model`` — the shape an enterprise BYOK custom model has (tenant name sanitized).
@@ -24,7 +24,7 @@ CUSTOM_MODEL_IDS = [
 @pytest.mark.parametrize("model_id", CUSTOM_MODEL_IDS)
 def test_two_slash_custom_model_id_is_passed_through(model_id):
     """A two-slash id IS a Copilot id — normalize nothing, catalog or no catalog."""
-    # ``hermes_cli/model_normalize.py`` calls this without an api_key, so the catalog is always
+    # ``moor_cli/model_normalize.py`` calls this without an api_key, so the catalog is always
     # empty on the runtime path that produced the 400.
     assert normalize_copilot_model_id(model_id, catalog=[], api_key=None) == model_id
     assert normalize_copilot_model_id(

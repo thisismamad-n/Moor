@@ -53,13 +53,13 @@ def _make_session(session_id="sess_1"):
 
 
 def _make_real_session(tmp_path, monkeypatch, *, source, session_id):
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
     from run_agent import AIAgent
 
-    hermes_home = tmp_path / "hermes_home"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    db_path = hermes_home / "state.db"
+    moor_home = tmp_path / "moor_home"
+    moor_home.mkdir()
+    monkeypatch.setenv("MOOR_HOME", str(moor_home))
+    db_path = moor_home / "state.db"
     db = SessionDB(db_path=db_path)
     db.create_session(session_id, source=source)
 
@@ -76,13 +76,13 @@ def _make_real_session(tmp_path, monkeypatch, *, source, session_id):
 
     session = _make_session(session_id)
     session["agent"] = agent
-    session["profile_home"] = str(hermes_home)
+    session["profile_home"] = str(moor_home)
     session["source"] = source
     return db_path, session, agent
 
 
 def _read_real_row(db_path, session_id):
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
 
     db = SessionDB(db_path=db_path)
     try:

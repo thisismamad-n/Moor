@@ -1,8 +1,8 @@
 import {
-  buildHermesWebSocketUrl,
+  buildMoorWebSocketUrl,
   type ModelOptionProvider,
   type ModelOptionsResult,
-} from "@hermes/shared";
+} from "@moor/shared";
 
 // The dashboard can be served either at the root of its host (e.g.
 // https://kanban.tilos.com/) or under a URL prefix when reverse-proxied
@@ -980,9 +980,9 @@ export const api = {
     fetchJSON<GatewayMigratePlan>("/api/gateway/migrate/plan"),
   migrateGatewayToMultiplex: () =>
     fetchJSON<ActionResponse>("/api/gateway/migrate", { method: "POST" }),
-  updateHermes: () =>
-    fetchJSON<ActionResponse>("/api/hermes/update", { method: "POST" }),
-  checkHermesUpdate: (force = false) =>
+  updateMoor: () =>
+    fetchJSON<ActionResponse>("/api/moor/update", { method: "POST" }),
+  checkMoorUpdate: (force = false) =>
     fetchJSON<UpdateCheckResponse>(
       `/api/moor/update/check${force ? "?force=true" : ""}`,
     ),
@@ -1379,7 +1379,7 @@ export interface AuthMeResponse {
   expires_at: number;
 }
 
-/** Preflight for `hermes gateway migrate --multiplex` (mirrors the CLI plan JSON). */
+/** Preflight for `moor gateway migrate --multiplex` (mirrors the CLI plan JSON). */
 export interface GatewayMigratePlan {
   already_multiplexed: boolean;
   blockers: string[];
@@ -2702,7 +2702,7 @@ export interface CatalogEntry {
   sha_short: string;
   tier: "official" | "community";
   maintainer: string;
-  requires_hermes: string;
+  requires_moor: string;
   platforms: string[];
   capabilities: CatalogCapabilities;
   docs_url: string;

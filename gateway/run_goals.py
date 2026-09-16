@@ -141,7 +141,7 @@ class GatewayGoalsMixin:
             or self._queue_depth(quick_key, adapter=adapter) > 0
         ):
             return  # keep missed intervals due until user work has drained
-        from hermes_cli.heartbeat import HeartbeatManager
+        from moor_cli.heartbeat import HeartbeatManager
 
         mgr = HeartbeatManager(session_id=session_id)
         if not mgr.has_heartbeat():
@@ -358,7 +358,7 @@ class GatewayGoalsMixin:
         if state is None or not state.awaiting_response:
             return
         # The --until judge is a sync aux-LLM call — keep it off the event loop, but carry the
-        # contextvars: a bare executor hop drops the profile HERMES_HOME override and secret scope,
+        # contextvars: a bare executor hop drops the profile MOOR_HOME override and secret scope,
         # so a served secondary's tick would be written into the DEFAULT profile's state.db.
         decision = await self._run_in_executor_with_context(mgr.complete_tick, final_response or "")
         msg = decision.get("message") or ""
@@ -370,7 +370,7 @@ class GatewayGoalsMixin:
     ) -> None:
         """Inject one due /loop wakeup into its session, applying every deferral rule. ``profile`` is
         the store being scanned (None = default); a ``profile`` persisted in the route wins."""
-        from hermes_cli.loops import LoopManager, goal_blocks_loop_tick
+        from moor_cli.loops import LoopManager, goal_blocks_loop_tick
 
         if state.awaiting_response or now < state.next_due_at:
             return
@@ -460,7 +460,7 @@ class GatewayGoalsMixin:
                     else nullcontext())
 
         async def _scan_one_store(profile_name: Optional[str]) -> None:
-            from hermes_cli.loops import list_active_loops
+            from moor_cli.loops import list_active_loops
 
             # Warm once per scan: the scan reads every persisted loop and a cold cache would
             # run the state.db init on the loop thread before the first read.

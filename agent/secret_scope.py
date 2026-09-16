@@ -36,14 +36,14 @@ def is_multiplex_active() -> bool:
 
 def serves_routed_profile() -> bool:
     """True when the current task runs for a profile other than the process's own: always under
-    multiplexing, else when a HERMES_HOME override names another home (dashboard/desktop backend,
+    multiplexing, else when a MOOR_HOME override names another home (dashboard/desktop backend,
     per-profile cron ticker). The MCP registry scope and the check_fn cache key both follow this
     predicate so a served profile's view never aliases the launch profile's (#111151)."""
     if is_multiplex_active():
         return True
-    from hermes_constants import get_hermes_home_override, get_process_hermes_home, hermes_home_key
-    override = get_hermes_home_override()
-    return override is not None and hermes_home_key(override) != hermes_home_key(get_process_hermes_home())
+    from moor_constants import get_moor_home_override, get_process_moor_home, moor_home_key
+    override = get_moor_home_override()
+    return override is not None and moor_home_key(override) != moor_home_key(get_process_moor_home())
 
 
 _SECRET_SCOPE: ContextVar[Optional[Mapping[str, str]]] = ContextVar("_SECRET_SCOPE", default=None)
@@ -67,9 +67,9 @@ class UnscopedSecretError(RuntimeError):
             secret_name, developer_detail = "", secret_name
         what = f"this profile's {secret_name}" if secret_name else "this profile's API key"
         super().__init__(
-            f"Hermes could not read {what} (an internal profile-scoping bug on the multiplexed "
-            "gateway, not your configuration). Run `hermes gateway restart`; if it keeps happening, "
-            "report it with `hermes debug share`."
+            f"Moor could not read {what} (an internal profile-scoping bug on the multiplexed "
+            "gateway, not your configuration). Run `moor gateway restart`; if it keeps happening, "
+            "report it with `moor debug share`."
         )
         self.secret_name = secret_name
         self.developer_detail = developer_detail
@@ -96,11 +96,11 @@ def current_secret_scope() -> Optional[Mapping[str, str]]:
 # fail-closed path would wrongly crash). Keep this tight — when in doubt a
 # value is a profile secret. Membership is exact name OR prefix.
 _GLOBAL_ENV_EXACT = frozenset({
-    # Hermes runtime / deployment
-    "HERMES_HOME", "HERMES_PROFILE", "HERMES_GATEWAY_LOCK_DIR",
-    "HERMES_MAX_ITERATIONS", "HERMES_API_TIMEOUT",
-    "HERMES_REDACT_SECRETS", "HERMES_NOUS_TIMEOUT_SECONDS",
-    "_HERMES_GATEWAY",
+    # Moor runtime / deployment
+    "MOOR_HOME", "MOOR_PROFILE", "MOOR_GATEWAY_LOCK_DIR",
+    "MOOR_MAX_ITERATIONS", "MOOR_API_TIMEOUT",
+    "MOOR_REDACT_SECRETS", "MOOR_MOOR_TIMEOUT_SECONDS",
+    "_MOOR_GATEWAY",
     # OS / interpreter
     "PATH", "HOME", "USER", "LANG", "LC_ALL", "TZ", "PWD", "SHELL", "TMPDIR",
     "VIRTUAL_ENV", "PYTHONPATH", "SSL_CERT_FILE",
@@ -202,7 +202,7 @@ def _strip_inline_comment(value: str) -> str:
 
 
 def _parse_env_value(raw_value: str) -> str:
-    """Parse the small .env value subset Hermes writes itself (bare, 'single', or "double" with
+    """Parse the small .env value subset Moor writes itself (bare, 'single', or "double" with
     ``\\"`` / ``\\\\`` escapes)."""
     value = raw_value.strip()
     if len(value) >= 2 and value[0] == value[-1] == '"':
@@ -220,7 +220,7 @@ def _parse_env_value(raw_value: str) -> str:
 
 
 def load_env_file(env_path: Path) -> Dict[str, str]:
-    """THE ``.env`` tokenizer: every reader (profile scope, ``hermes_cli.config.load_env``, the dashboard
+    """THE ``.env`` tokenizer: every reader (profile scope, ``moor_cli.config.load_env``, the dashboard
     scrub, skill secret capture, managed .env, setup prompts) parses through here so no two boundaries
     disagree on which keys/values a file defines. Dict only — never touches ``os.environ``. ``export``
     prefix, ``#`` comments, quote escapes reversed; ``utf-8-sig`` so a BOM doesn't prefix the first key.
@@ -267,14 +267,14 @@ def build_profile_secret_scope(moor_home: Path) -> Dict[str, str]:
     # into that profile's own mapping. A secondary never inherits it (#80099 class).
     from gateway.config_loader import bridged_allow_all_users
     bridged = bridged_allow_all_users()
-    if bridged is not None and _is_process_home(hermes_home):
+    if bridged is not None and _is_process_home(moor_home):
         secrets.setdefault("GATEWAY_ALLOW_ALL_USERS", bridged)
     return secrets
 
 
-def _is_process_home(hermes_home: Path) -> bool:
-    from hermes_constants import get_process_hermes_home
+def _is_process_home(moor_home: Path) -> bool:
+    from moor_constants import get_process_moor_home
     try:
-        return Path(hermes_home).resolve() == get_process_hermes_home().resolve()
+        return Path(moor_home).resolve() == get_process_moor_home().resolve()
     except OSError:
         return False

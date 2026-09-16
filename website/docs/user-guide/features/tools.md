@@ -239,8 +239,8 @@ Unrelated conversations and requests without a bound owning session cannot read
 retained receipts, even with an exact process handle. `process(action="list")`
 also includes retained results for the current task or conversation.
 
-Hermes keeps the newest **64 completed results**, for up to **7 days after
-completion**, under `logs/process-results/` in the profile's Hermes home. Each
+Moor keeps the newest **64 completed results**, for up to **7 days after
+completion**, under `logs/process-results/` in the profile's Moor home. Each
 receipt contains at most the existing rolling **200,000-character output tail**,
 with terminal secret-redaction rules always applied, even when live-output
 redaction is disabled. Receipts expire on subsequent

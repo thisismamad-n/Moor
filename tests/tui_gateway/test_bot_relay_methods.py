@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 
 import tui_gateway.server as srv
-from hermes_cli.dashboard_auth.ws_tickets import INTERNAL_PROVIDER, INTERNAL_USER_ID
+from moor_cli.dashboard_auth.ws_tickets import INTERNAL_PROVIDER, INTERNAL_USER_ID
 from tools import bot_relay
 
 
@@ -209,7 +209,7 @@ def test_deliver_write_failure_still_removes_tempfile(home, monkeypatch, tmp_pat
     err = srv._methods["bot_relay.deliver"](1, {"profile": "ops", "message": "x"})
     assert "error" in err
     assert made, "mkstemp was never reached"
-    assert not glob.glob(str(tmp_path / "hermes-relay-dm-*")), "tempfile leaked"
+    assert not glob.glob(str(tmp_path / "moor-relay-dm-*")), "tempfile leaked"
 
 
 @pytest.fixture
@@ -237,13 +237,13 @@ def fake_runs(monkeypatch):
     ({}, None),
 ], ids=["sender fields", "sender on another connection", "no sender fields"])
 def test_deliver_child_env_carries_the_envelope_sender_on_every_attempt(home, monkeypatch, fake_runs, sender, expected):
-    """HERMES_TURN_AUTHOR on the child comes from the envelope's sender fields alone: the retry gets the same
+    """MOOR_TURN_AUTHOR on the child comes from the envelope's sender fields alone: the retry gets the same
     author, and without sender fields a stale author on the gateway's own environment never reaches the child."""
     from agent.turn_author import TURN_AUTHOR_ENV
 
     calls, outcomes = fake_runs
     outcomes.extend([(1, "HTTP 429 rate limit"), (0, "")])
-    monkeypatch.setenv("HERMES_RELAY_TEST_MARKER", "kept")
+    monkeypatch.setenv("MOOR_RELAY_TEST_MARKER", "kept")
     monkeypatch.setenv(TURN_AUTHOR_ENV, json.dumps({"id": "bot:stale", "name": "stale", "is_bot": True}))
 
     _result(srv._methods["bot_relay.deliver"](1, {"profile": "ops", "message": "ping", **sender}))
@@ -251,7 +251,7 @@ def test_deliver_child_env_carries_the_envelope_sender_on_every_attempt(home, mo
     envs = [c["env"] for c in calls]
     assert len(envs) == 2
     assert [json.loads(e[TURN_AUTHOR_ENV]) if TURN_AUTHOR_ENV in e else None for e in envs] == [expected, expected]
-    assert all(e["HERMES_RELAY_TEST_MARKER"] == "kept" for e in envs)
+    assert all(e["MOOR_RELAY_TEST_MARKER"] == "kept" for e in envs)
 
 
 class _Client:
@@ -315,23 +315,23 @@ def test_deliver_refuses_a_sender_from_a_logged_in_client(home, fake_runs, bound
 
 @pytest.mark.parametrize("subdir", ["profiles/ops", "dev"])
 def test_gateway_drains_the_mailbox_the_tools_write_to(tmp_path, monkeypatch, subdir):
-    """Both ends of the relay mailbox derive the install root from HERMES_HOME with ONE formula.
-    The writer side (``message_agent``'s ``_hermes_root``) and the drain side
+    """Both ends of the relay mailbox derive the install root from MOOR_HOME with ONE formula.
+    The writer side (``message_agent``'s ``_moor_root``) and the drain side
     (``methods_bot_relay._relay_root``) must agree for a ``profiles/<name>`` home AND for an
-    arbitrary subdir of the native ``~/.hermes`` — a split here is silent non-delivery."""
-    from tools.bot_mode_probe import _default_home, _hermes_root
+    arbitrary subdir of the native ``~/.moor`` — a split here is silent non-delivery."""
+    from tools.bot_mode_probe import _default_home, _moor_root
     from tui_gateway import methods_bot_relay
 
     monkeypatch.setenv("HOME", str(tmp_path))
-    home = tmp_path / ".hermes" / subdir
+    home = tmp_path / ".moor" / subdir
     home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
 
-    writer_root = _hermes_root(Path(_default_home()))
+    writer_root = _moor_root(Path(_default_home()))
     target = {"profile": "scout", "handle": "scout", "connection_id": "cloud-1",
               "connection_label": "", "title": "", "description": ""}
     env = bot_relay.enqueue_envelope(
-        writer_root, target=target, message="m", sender_profile="default", sender_handle="hermes")
+        writer_root, target=target, message="m", sender_profile="default", sender_handle="moor")
 
     assert methods_bot_relay._relay_root() == writer_root
     drained = _result(srv._methods["bot_relay.outbox.drain"](1, {}))

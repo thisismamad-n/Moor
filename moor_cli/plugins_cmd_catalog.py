@@ -1,7 +1,7 @@
-"""``hermes plugins`` catalog surface: resolution, provenance sidecar, search/browse/info/validate,
+"""``moor plugins`` catalog surface: resolution, provenance sidecar, search/browse/info/validate,
 catalog-aware update, plus the dashboard/TUI-facing catalog payload helpers.
 
-Sibling of :mod:`hermes_cli.plugins_cmd` (the installer core, enable/disable state and console helpers
+Sibling of :mod:`moor_cli.plugins_cmd` (the installer core, enable/disable state and console helpers
 live there and are imported late — this module is imported BY ``plugins_cmd``).
 """
 
@@ -14,28 +14,28 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from hermes_cli.plugin_catalog import (
+from moor_cli.plugin_catalog import (
     PluginCatalogEntry, entry_capability_summary, filter_entries, find_removed, get_live_catalog_entry,
     load_catalog_live, load_removed_list, _NAME_RE,
 )
 
 logger = logging.getLogger(__name__)
 
-CATALOG_SIDECAR = ".hermes-catalog.json"
+CATALOG_SIDECAR = ".moor-catalog.json"
 
 
 # ── Resolution / provenance ──────────────────────────────────────────────────
 
 def looks_like_catalog_name(identifier: str) -> bool:
     """Bare ``[a-z0-9_-]`` token — not a URL, ``owner/repo`` or path."""
-    from hermes_cli.plugins_cmd import _URL_SCHEMES
+    from moor_cli.plugins_cmd import _URL_SCHEMES
     return bool(identifier) and "/" not in identifier and "\\" not in identifier \
         and not identifier.startswith(_URL_SCHEMES) and bool(_NAME_RE.match(identifier))
 
 
 def raise_if_removed(*candidates: str) -> None:
     """``PluginOperationError`` when any candidate (name or repo URL) is on the kill list."""
-    from hermes_cli.plugins_cmd import PluginOperationError
+    from moor_cli.plugins_cmd import PluginOperationError
     for candidate in candidates:
         removed = find_removed(candidate)
         if removed is not None:
@@ -43,24 +43,24 @@ def raise_if_removed(*candidates: str) -> None:
             if removed.date:
                 detail += f" (removed {removed.date})"
             raise PluginOperationError(
-                f"Plugin '{removed.name}' was removed from the Hermes plugin catalog and is blocked from "
+                f"Plugin '{removed.name}' was removed from the Moor plugin catalog and is blocked from "
                 f"installation: {detail}")
 
 
 def resolve_catalog_name(identifier: str, console) -> PluginCatalogEntry:
     """Bare name → live catalog entry, or exit 1 with a pointer to ``search``."""
-    from hermes_cli.plugins_cmd import _fail
+    from moor_cli.plugins_cmd import _fail
     entry = get_live_catalog_entry(identifier)
     if entry is None:
         _fail(console, (
-            f"[red]Error:[/red] '{identifier}' is not in the Hermes plugin catalog and is not a Git URL or "
-            "owner/repo shorthand. Browse entries with `hermes plugins search`."))
+            f"[red]Error:[/red] '{identifier}' is not in the Moor plugin catalog and is not a Git URL or "
+            "owner/repo shorthand. Browse entries with `moor plugins search`."))
         raise SystemExit(1)  # _fail exits; keeps type-checkers honest
     return entry
 
 
 def write_catalog_sidecar(target: Path, entry: PluginCatalogEntry) -> None:
-    """``.hermes-catalog.json`` inside the install dir — how ``update``/``list``/dashboards know the plugin
+    """``.moor-catalog.json`` inside the install dir — how ``update``/``list``/dashboards know the plugin
     came from the catalog and at which pin."""
     sidecar = {
         "catalog_name": entry.name, "repo": entry.repo, "sha": entry.sha, "tier": entry.tier,
@@ -109,7 +109,7 @@ def install_catalog_entry(entry: PluginCatalogEntry, *, force: bool, ref: Option
                           allow_removed: bool = False, scan_decision_cb=None) -> tuple:
     """``_install_plugin_core`` at the catalog pin (an explicit *ref* wins) + provenance sidecar.
     Returns the core's ``(target, manifest, installed_name)``."""
-    from hermes_cli.plugins_cmd import _install_plugin_core
+    from moor_cli.plugins_cmd import _install_plugin_core
     if not allow_removed:
         raise_if_removed(entry.name, entry.repo)
     target, manifest, installed_name = _install_plugin_core(
@@ -121,13 +121,13 @@ def install_catalog_entry(entry: PluginCatalogEntry, *, force: bool, ref: Option
 def repin_catalog_plugin(target: Path, sidecar: dict) -> tuple[str, bool]:
     """Re-pin a catalog install to the current catalog SHA (never ``git pull``). Returns
     ``(new_sha, changed)``; raises ``PluginOperationError`` when the entry left the catalog."""
-    from hermes_cli.plugins_cmd import PluginOperationError, _get_enabled_set, _save_enabled_set
+    from moor_cli.plugins_cmd import PluginOperationError, _get_enabled_set, _save_enabled_set
     catalog_name = str(sidecar["catalog_name"])
     entry = get_live_catalog_entry(catalog_name)
     if entry is None:
         raise PluginOperationError(
             f"Plugin '{catalog_name}' is no longer in the catalog — it may have been removed. "
-            "See `hermes plugins info` and the removed blocklist.")
+            "See `moor plugins info` and the removed blocklist.")
     if str(sidecar.get("sha") or "").strip().lower() == entry.sha:
         return entry.sha, False
     was_enabled = _get_enabled_set()  # the force reinstall must not flip activation state
@@ -137,7 +137,7 @@ def repin_catalog_plugin(target: Path, sidecar: dict) -> tuple[str, bool]:
 
 
 def cmd_update_catalog(name: str, target: Path, sidecar: dict, console) -> None:
-    from hermes_cli.plugins_cmd import PluginOperationError, _fail
+    from moor_cli.plugins_cmd import PluginOperationError, _fail
     console.print(f"[dim]Checking catalog pin for {name}...[/dim]")
     try:
         sha, changed = repin_catalog_plugin(target, sidecar)
@@ -161,9 +161,9 @@ def _capability_counts(entry: PluginCatalogEntry) -> str:
 
 
 def _render_entries(entries: List[PluginCatalogEntry], console) -> None:
-    from hermes_cli.plugins_cmd import _table
+    from moor_cli.plugins_cmd import _table
     table = _table(((("Name", "bold")), ("Category", None), ("Tier", None), ("Description", None),
-                    ("Pinned", "dim"), ("Capabilities", "dim")), title="Hermes Plugin Catalog (curated)")
+                    ("Pinned", "dim"), ("Capabilities", "dim")), title="Moor Plugin Catalog (curated)")
     for e in sorted(entries, key=lambda e: (e.category, e.tier != "official", e.name)):
         tier = "[cyan]official[/cyan]" if e.tier == "official" else "[magenta]community[/magenta]"
         desc = e.description if len(e.description) <= 60 else e.description[:57] + "..."
@@ -171,12 +171,12 @@ def _render_entries(entries: List[PluginCatalogEntry], console) -> None:
     console.print()
     console.print(table)
     console.print()
-    console.print("[dim]Details:[/dim] hermes plugins info <name>    [dim]Install:[/dim] hermes plugins install <name>")
+    console.print("[dim]Details:[/dim] moor plugins info <name>    [dim]Install:[/dim] moor plugins install <name>")
 
 
 def cmd_search(term: str = "", *, json_output: bool = False) -> None:
     """Search the curated catalog (name/description/declared tools); empty term = browse everything."""
-    from hermes_cli.plugins_cmd import _console
+    from moor_cli.plugins_cmd import _console
     matches = filter_entries(load_catalog_live(), term)
     if json_output:
         print(json.dumps({"query": term, "results": [e.to_dict() for e in matches]}, indent=2))
@@ -191,7 +191,7 @@ def cmd_search(term: str = "", *, json_output: bool = False) -> None:
 
 def cmd_info(name: str) -> None:
     """Full catalog entry for *name*; falls back to installed-plugin details for non-catalog names."""
-    from hermes_cli.plugins_cmd import _console, cmd_show
+    from moor_cli.plugins_cmd import _console, cmd_show
     entry = get_live_catalog_entry(name)
     if entry is None:
         cmd_show(name)
@@ -204,7 +204,7 @@ def cmd_info(name: str) -> None:
         console.print(entry.description)
     console.print()
     rows = [("Repo", entry.repo), ("Subdir", entry.subdir), ("Pinned SHA", entry.sha),
-            ("Maintainer", entry.maintainer), ("Requires", f"hermes {entry.requires_hermes}" if entry.requires_hermes else ""),
+            ("Maintainer", entry.maintainer), ("Requires", f"moor {entry.requires_moor}" if entry.requires_moor else ""),
             ("Platforms", ", ".join(entry.platforms)), ("Docs", entry.docs_url)]
     for label, value in rows:
         if value:
@@ -219,14 +219,14 @@ def cmd_info(name: str) -> None:
         console.print(f"[red bold]✗ REMOVED from catalog: {removed.reason or 'no reason recorded'}"
                       f"{f' ({removed.date})' if removed.date else ''}[/red bold]")
         console.print()
-    console.print(f"[dim]Install:[/dim]     hermes plugins install {entry.name}")
+    console.print(f"[dim]Install:[/dim]     moor plugins install {entry.name}")
     console.print()
 
 
 def cmd_validate(path: str, as_json: bool = False) -> None:
     """Catalog-admission validation of a plugin directory (the CI gate); exits 0/1."""
-    from hermes_cli.plugin_validate import validate_plugin_dir
-    from hermes_cli.plugins_cmd import _console
+    from moor_cli.plugin_validate import validate_plugin_dir
+    from moor_cli.plugins_cmd import _console
     report = validate_plugin_dir(Path(path))
     if as_json:
         print(json.dumps(report.to_dict(), indent=2))
@@ -248,7 +248,7 @@ def cmd_validate(path: str, as_json: bool = False) -> None:
 def installed_catalog_state(installed: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
     """Catalog entries merged with local state for the dashboard. *installed* maps every alias (name
     and registry key) of a discovered plugin to ``{"dir", "runtime_status"}``. A catalog name rarely
-    equals the manifest name (``hermes-plugin-x`` vs ``x``), so installs are matched through the
+    equals the manifest name (``moor-plugin-x`` vs ``x``), so installs are matched through the
     sidecar's ``catalog_name`` first and by name only as a fallback."""
     by_catalog_name: Dict[str, Dict[str, Any]] = {}
     for local in installed.values():

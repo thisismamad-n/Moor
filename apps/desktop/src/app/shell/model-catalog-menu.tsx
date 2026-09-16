@@ -1,5 +1,5 @@
-import type { ModelOptionProvider, ModelOptionsResult } from '@hermes/shared'
-import { DEFAULT_REASONING_EFFORT } from '@hermes/shared'
+import type { ModelOptionProvider, ModelOptionsResult } from '@moor/shared'
+import { DEFAULT_REASONING_EFFORT } from '@moor/shared'
 import { useStore } from '@nanostores/react'
 import { useQuery } from '@tanstack/react-query'
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react'
@@ -43,7 +43,7 @@ import {
 } from '@/store/model-visibility'
 import { $collapsedProviders, toggleCollapsedProvider } from '@/store/provider-collapse'
 import { $defaultReasoningEffort } from '@/store/session'
-import type { LocalModelLoadProgress } from '@/types/hermes'
+import type { LocalModelLoadProgress } from '@/types/moor'
 
 import { type FastControl, ModelEditSubmenu, resolveFastControl } from './model-edit-submenu'
 

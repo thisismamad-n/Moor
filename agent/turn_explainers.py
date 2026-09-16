@@ -113,18 +113,18 @@ _PERSISTENCE_CAUSE_EXPLANATIONS: Dict[str, str] = {
         "please send it again in a moment."
     ),
     # The forensic runbook for both (WAL generations, manifest.json, sidecars) lives in the
-    # logger.error at hermes_state.py::_raise_if_db_replaced — never in the chat reply.
+    # logger.error at moor_state.py::_raise_if_db_replaced — never in the chat reply.
     "replaced": (
-        "the session database file was replaced while Hermes was running, so this "
-        "message was not saved (a copy is kept in {home}/sessions/). Stop Hermes "
-        "(`hermes gateway stop`), run `hermes doctor` — not `hermes doctor --fix`, which "
+        "the session database file was replaced while Moor was running, so this "
+        "message was not saved (a copy is kept in {home}/sessions/). Stop Moor "
+        "(`moor gateway stop`), run `moor doctor` — not `moor doctor --fix`, which "
         "would repair the wrong file in place — then start it again and send your message "
         "once more. Advanced recovery steps are in the log."
     ),
     "deleted_wal": (
-        "the session database was changed or replaced while Hermes was running, so this "
-        "message was not saved (a copy is kept in {home}/sessions/). Stop Hermes "
-        "(`hermes gateway stop`), run `hermes doctor`, then start it again and send your "
+        "the session database was changed or replaced while Moor was running, so this "
+        "message was not saved (a copy is kept in {home}/sessions/). Stop Moor "
+        "(`moor gateway stop`), run `moor doctor`, then start it again and send your "
         "message once more. Advanced recovery steps are in the log."
     ),
     "corrupt": (
@@ -132,10 +132,10 @@ _PERSISTENCE_CAUSE_EXPLANATIONS: Dict[str, str] = {
         "reported structural corruption (the transcript would "
         "have been lost on restart). Freeing disk space will "
         "not help. Recovery options:\n"
-        "1. Run `hermes {profile_arg}doctor --fix`\n"
+        "1. Run `moor {profile_arg}doctor --fix`\n"
         "2. Stop the gateway, then recover with:\n"
-        "   hermes {profile_arg}sessions recover --source {db_path} --inspect-only\n"
-        "   (if it reports recoverable) hermes {profile_arg}sessions recover "
+        "   moor {profile_arg}sessions recover --source {db_path} --inspect-only\n"
+        "   (if it reports recoverable) moor {profile_arg}sessions recover "
         "--source {db_path} --output recovered-state.db\n"
         "   — recovery snapshots the damaged file first; do NOT "
         "run `sqlite3 ... \".recover\"` against the live "
@@ -150,20 +150,20 @@ _PERSISTENCE_CAUSE_EXPLANATIONS: Dict[str, str] = {
         "the turn was stopped because the session search index (FTS5) "
         "is corrupt and could not be detached, so this message was not "
         "saved. The message store itself is not damaged: do not run "
-        "recovery tools or restore a backup. Run `hermes {profile_arg}doctor --fix` "
-        "(or restart Hermes, which repairs the index on open), then "
+        "recovery tools or restore a backup. Run `moor {profile_arg}doctor --fix` "
+        "(or restart Moor, which repairs the index on open), then "
         "send your message again."
     ),
     "disk": (
-        "Hermes couldn't save this conversation to disk, so it stopped rather than lose "
+        "Moor couldn't save this conversation to disk, so it stopped rather than lose "
         "your messages. The disk is probably full: free some space (or fix the permissions "
         "on {home}/state.db), then send your message again."
     ),
 }
 _PERSISTENCE_DEFAULT_EXPLANATION = (
-    "Hermes couldn't save this conversation, so it stopped rather than lose your messages. "
-    "Possible causes: the drive is out of room, or another Hermes process is holding the "
-    "database. Close other Hermes windows, run `hermes doctor` to check storage, then send "
+    "Moor couldn't save this conversation, so it stopped rather than lose your messages. "
+    "Possible causes: the drive is out of room, or another Moor process is holding the "
+    "database. Close other Moor windows, run `moor doctor` to check storage, then send "
     "your message again."
 )
 
@@ -366,21 +366,21 @@ class TurnExplainersMixin:
         if body is not None and "{model}" in body:
             body = body.format(model=model or "The model")
         if body is None and reason == "session_persistence_failed":
-            from hermes_constants import display_hermes_home
+            from moor_constants import display_moor_home
 
             body = _PERSISTENCE_CAUSE_EXPLANATIONS.get(
                 persistence_cause or "unknown", _PERSISTENCE_DEFAULT_EXPLANATION
-            ).replace("{home}", display_hermes_home())
+            ).replace("{home}", display_moor_home())
             if persistence_cause in ("corrupt", "fts_index"):
                 # Copy-pasteable, so name the store that actually failed and pin the profile:
                 # a multi-profile backend (Desktop serve) hosts sessions whose state.db is NOT
-                # the process default, and a bare `hermes` follows active_profile (#105887).
-                from hermes_constants import get_default_hermes_root, profile_cli_selector
-                from hermes_state import _default_db_path
+                # the process default, and a bare `moor` follows active_profile (#105887).
+                from moor_constants import get_default_moor_root, profile_cli_selector
+                from moor_state import _default_db_path
 
                 body = body.replace("{profile_arg}", profile_cli_selector())
                 body = body.replace("{db_path}", str(db_path or _default_db_path()))
                 body = body.replace(
-                    "{backups_dir}", str(get_default_hermes_root() / "backups")
+                    "{backups_dir}", str(get_default_moor_root() / "backups")
                 )
         return _NO_REPLY + body if body else ""

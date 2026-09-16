@@ -282,7 +282,7 @@ _IDENTICAL_CALL_NOTICE = (
 )
 
 _IDENTICAL_CYCLE_NOTICE = (
-    "[hermes note: the last {count} rounds repeated the same cycle of {period} tool calls "
+    "[moor note: the last {count} rounds repeated the same cycle of {period} tool calls "
     "(ending with {tool_name}) with identical arguments and identical results. "
     "Do not repeat the batch — change arguments, use a different tool, or "
     "proceed with what you have.]"

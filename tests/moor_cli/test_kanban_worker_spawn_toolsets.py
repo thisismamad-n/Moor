@@ -141,21 +141,21 @@ def test_default_spawn_resolves_env_passthrough_under_multiplex(monkeypatch, tmp
     forward the ASSIGNEE profile's own value, never crash on an unscoped read or leak the
     dispatcher's ambient os.environ (#109494).
     """
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".moor"
     profile = root / "profiles" / "elias"
     profile.mkdir(parents=True)
     root.joinpath("config.yaml").write_text(
         "terminal:\n  env_passthrough:\n    - MY_PASSTHROUGH_VAR\n", encoding="utf-8")
     profile.joinpath("config.yaml").write_text("{}\n", encoding="utf-8")
     profile.joinpath(".env").write_text("MY_PASSTHROUGH_VAR=elias-value\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("MOOR_HOME", str(root))
     monkeypatch.setenv("MY_PASSTHROUGH_VAR", "dispatcher-value")
 
     from agent.secret_scope import set_multiplex_active
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import kanban_db_dispatch as kbd
+    from moor_cli import kanban_db as kb
+    from moor_cli import kanban_db_dispatch as kbd
 
-    monkeypatch.setattr(kbd, "_resolve_hermes_argv", lambda: ["hermes"])
+    monkeypatch.setattr(kbd, "_resolve_moor_argv", lambda: ["moor"])
 
     captured = {}
 
@@ -211,7 +211,7 @@ toolsets:
     # Opt-in is no longer inferred for ordinary chats. The dispatcher-owned
     # worker gets lifecycle tools at schema assembly, independently of the
     # assignee's saved chat selection.
-    monkeypatch.setenv("HERMES_KANBAN_TASK", "t_spawn_tools")
+    monkeypatch.setenv("MOOR_KANBAN_TASK", "t_spawn_tools")
     from model_tools import get_tool_definitions
     names = {t["function"]["name"] for t in get_tool_definitions(resolved, quiet_mode=True, skip_tool_search_assembly=True)}
     assert "kanban_complete" in names

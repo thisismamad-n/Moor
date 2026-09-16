@@ -912,7 +912,7 @@ def is_connected(config) -> bool:
 
 
 def _env_enablement() -> Optional[Dict[str, Any]]:
-    """``env_enablement_fn``: seed ``PlatformConfig.extra`` from env-only setups so ``hermes status`` sees them."""
+    """``env_enablement_fn``: seed ``PlatformConfig.extra`` from env-only setups so ``moor status`` sees them."""
     if not _env_credentials_present():
         return None
     return _seed_extra_from_env(_ENV_SEED_KEYS, home_env="LINE_HOME_CHANNEL")
@@ -948,10 +948,10 @@ _SETUP_PROMPTS = (  # (env var, prompt, masked)
 
 
 def interactive_setup() -> None:
-    """``hermes setup line`` wizard (writes ``~/.hermes/.env``); CLI helpers are lazy-imported."""
-    from hermes_cli.config import get_env_value, save_env_value
-    from hermes_cli.cli_output import print_header, print_info, prompt
-    from hermes_cli.setup_platforms import declines_reconfigure
+    """``moor setup line`` wizard (writes ``~/.moor/.env``); CLI helpers are lazy-imported."""
+    from moor_cli.config import get_env_value, save_env_value
+    from moor_cli.cli_output import print_header, print_info, prompt
+    from moor_cli.setup_platforms import declines_reconfigure
     print_header("LINE Messaging API")
     if declines_reconfigure("LINE", "Reconfigure LINE?", "LINE_CHANNEL_ACCESS_TOKEN"):
         return

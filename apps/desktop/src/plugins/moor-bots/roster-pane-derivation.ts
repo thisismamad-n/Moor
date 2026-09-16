@@ -213,7 +213,7 @@ export function sortRosterBots(sourceWithSelectedOwner: RosterRow[], allMeta: Re
   // freshly created bot tops the list until another bot gets a message.
   // No special slot for the primary bot — it competes on recency too.
   const activityOf = (bot: RosterRow): number => {
-    const created = botRosterMeta(bot, allMeta)?.created || bot.ui_meta?.['hermes-bots']?.created || 0
+    const created = botRosterMeta(bot, allMeta)?.created || bot.ui_meta?.['moor-bots']?.created || 0
     const lastMsg = (botActivitySession(bot)?.last_active || 0) * 1000
 
     return Math.max(created, lastMsg)

@@ -502,7 +502,7 @@ class TestManagedGatewayErrorTranslation:
 
         managed_gateway = MagicMock()
         managed_gateway.gateway_origin = "https://fal-queue-gateway.example.com"
-        managed_gateway.nous_user_token = "test-token"
+        managed_gateway.moor_user_token = "test-token"
         monkeypatch.setattr(
             image_tool, "_resolve_managed_fal_gateway", lambda: managed_gateway
         )
@@ -534,7 +534,7 @@ class TestManagedGatewayErrorTranslation:
         assert "Charge authorization failed" in msg
         assert "BILLING_ERROR" in msg
         assert "unsupported_pricing_meter" in msg
-        assert "Nous Portal billing" in msg
+        assert "Moor Portal billing" in msg
         assert "may not yet be enabled" not in msg
 
 

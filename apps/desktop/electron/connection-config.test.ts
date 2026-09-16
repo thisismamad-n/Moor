@@ -1401,7 +1401,7 @@ test('OAuth ticket-mint 401 stays on the reauth path (never Cloud-down)', () => 
   assert.equal((wrapped as any).statusCode, 401)
 })
 
-test('FIX #95701: a confirmed 401/403 ticket rejection is tagged isReauthRequired so startHermes latches it', () => {
+test('FIX #95701: a confirmed 401/403 ticket rejection is tagged isReauthRequired so startMoor latches it', () => {
   for (const statusCode of [401, 403]) {
     const source = Object.assign(new Error(`${statusCode}: rejected`), { statusCode })
     const wrapped = gatewayTicketFailure(source, 'auth copy', 'transport copy') as any
@@ -1421,7 +1421,7 @@ test('FIX #95701: a confirmed 401/403 ticket rejection is tagged isReauthRequire
 test('FIX #95701: transport and server failures at the ticket mint stay retryable — never reauth', () => {
   for (const source of [
     Object.assign(new Error('503: unavailable'), { statusCode: 503 }),
-    new Error('Timed out connecting to Hermes backend after 8000ms'),
+    new Error('Timed out connecting to Moor backend after 8000ms'),
     Object.assign(new Error('read ECONNRESET'), { code: 'ECONNRESET' })
   ]) {
     const wrapped = gatewayTicketFailure(source, 'auth copy', 'transport copy') as any

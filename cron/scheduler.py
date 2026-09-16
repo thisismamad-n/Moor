@@ -35,13 +35,13 @@ from typing import Any, Callable, List, Optional, Protocol
 # `moor update`) otherwise fail with ModuleNotFoundError for moor_time et al.
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 from cron.env_settings import cron_env_setting
-from hermes_cli._subprocess_compat import windows_hide_flags
-from hermes_cli.config import (
+from moor_cli._subprocess_compat import windows_hide_flags
+from moor_cli.config import (
     load_config, load_config_readonly, resolve_cron_model_drift_defaults)
-from hermes_cli.fallback_config import get_fallback_chain
-from hermes_time import now as _hermes_now
+from moor_cli.fallback_config import get_fallback_chain
+from moor_time import now as _moor_now
 from agent.interrupt_compat import request_hard_interrupt
 from agent.delegation_context import (
     enter_non_dispatcher_owned_context, exit_non_dispatcher_owned_context)
@@ -111,7 +111,7 @@ def _fallback_chain_phrase() -> str:
     if chain:
         return "No backup provider succeeded either."
     return (
-        "No backup provider is configured — add one with `hermes fallback add`, "
+        "No backup provider is configured — add one with `moor fallback add`, "
         "or set a cron-wide default via `cron.model` + `cron.model_provider` in config.yaml."
     )
 
@@ -262,7 +262,7 @@ def _summarize_cron_failure_for_delivery(job: dict, error: str | None) -> str:
     message = generic_failure_notice(job_name, job_id, cleaned)
 
     # Import-class failures (#95294 part 3): a long-lived gateway whose checkout was updated
-    # underneath it (interrupted `hermes update`, manual git pull) serves MIXED modules and every
+    # underneath it (interrupted `moor update`, manual git pull) serves MIXED modules and every
     # agent cron job dies with `cannot import name X`. The error reads like a code bug, so APPEND
     # cause + fix — never replace the raw error, which carries the failing symbol. Fail-safe: skew
     # is None on non-git/no-fingerprint; no_agent jobs excluded (a fresh subprocess resolves
@@ -406,7 +406,7 @@ def _resolve_cron_enabled_toolsets(job: dict, cfg: dict) -> list[str]:
     except Exception as exc:
         raise RuntimeError(
             "Cron toolset resolution failed, so this run was refused rather than given every "
-            f"tool. Check `platform_toolsets.cron` in config.yaml (`hermes cron doctor`): {exc}"
+            f"tool. Check `platform_toolsets.cron` in config.yaml (`moor cron doctor`): {exc}"
         ) from exc
 
 
@@ -542,7 +542,7 @@ def get_running_job_ids() -> "frozenset[str]":
 
 def get_running_job_details() -> list[dict]:
     """Per in-flight job: ``{"job_id", "elapsed_s", "worker_pid"}`` (``worker_pid`` None for in-process
-    runs). The drain wait publishes this so ``hermes update`` can say WHICH job it is waiting on."""
+    runs). The drain wait publishes this so ``moor update`` can say WHICH job it is waiting on."""
     now = time.time()
     with _running_lock:
         return [
@@ -595,7 +595,7 @@ def _inflight_min_allowance_minutes() -> float:
             val = float(_cfg_val)
             if val > 0:
                 return val
-    raw = cron_env_setting("HERMES_CRON_INFLIGHT_MAX_MINUTES").strip()
+    raw = cron_env_setting("MOOR_CRON_INFLIGHT_MAX_MINUTES").strip()
     if raw:
         try:
             val = float(raw)
@@ -926,7 +926,7 @@ def _cron_inactivity_seconds() -> float:
     """Parse MOOR_CRON_TIMEOUT (seconds). 0 = unlimited; bad input = 600. Shared by the
     inactivity monitor and the cwd-lock bound so they can't drift: the lock bound must stay >= the
     inactivity limit or waiters fail while a healthy holder runs."""
-    raw = cron_env_setting("HERMES_CRON_TIMEOUT").strip()
+    raw = cron_env_setting("MOOR_CRON_TIMEOUT").strip()
     if not raw:
         return 600.0
     try:
@@ -1333,8 +1333,8 @@ def _snapshot_pin(job: dict, axis: str, current: str, job_id: str) -> str:
     if snapshot and current and snapshot.lower() != current.lower():
         logger.info(
             "Job '%s': running on creation-snapshot %s %r (global default is now %r); "
-            "`hermes cron resnap %s` adopts the new default (stays unpinned), "
-            "`hermes cron edit %s --%s <value>` or cron.%s in config.yaml pins it.",
+            "`moor cron resnap %s` adopts the new default (stays unpinned), "
+            "`moor cron edit %s --%s <value>` or cron.%s in config.yaml pins it.",
             job_id, axis, snapshot, current, job_id, job_id, axis,
             "model" if axis == "model" else "model_provider")
     return snapshot
@@ -1342,15 +1342,15 @@ def _snapshot_pin(job: dict, axis: str, current: str, job_id: str) -> str:
 
 def _load_cron_job_config(job: dict, job_id: str, job_name: str) -> _CronJobConfig:
     """Load config.yaml and resolve the run's model: per-job override > cron.model (fleet default) >
-    creation snapshot > HERMES_MODEL > config ``model:``. Re-read every tick (no cache) so
-    ``hermes cron edit --model`` applies next tick."""
-    model = job.get("model") or cron_env_setting("HERMES_MODEL") or ""
+    creation snapshot > MOOR_MODEL > config ``model:``. Re-read every tick (no cache) so
+    ``moor cron edit --model`` applies next tick."""
+    model = job.get("model") or cron_env_setting("MOOR_MODEL") or ""
     _cron_default_provider = ""
     _cfg: dict = {}
     _model_cfg: Any = {}
     try:
-        from hermes_cli.config_effective import load_user_config_effective
-        _cfg_path = str(_get_hermes_home() / "config.yaml")
+        from moor_cli.config_effective import load_user_config_effective
+        _cfg_path = str(_get_moor_home() / "config.yaml")
         if os.path.exists(_cfg_path):
             _cfg = load_user_config_effective(Path(_cfg_path))
             # Coerce null to {} so a falsy default never clobbers a resolved env value.
@@ -1365,7 +1365,7 @@ def _load_cron_job_config(job: dict, job_id: str, job_name: str) -> _CronJobConf
                     model = _cron_default_model
                 else:
                     _, _global_model = resolve_cron_model_drift_defaults(
-                        _cfg, environ={"HERMES_MODEL": cron_env_setting("HERMES_MODEL")})
+                        _cfg, environ={"MOOR_MODEL": cron_env_setting("MOOR_MODEL")})
                     model = _snapshot_pin(job, "model", _global_model, job_id) or _global_model or model
     except Exception as e:
         logger.warning("Job '%s': failed to load config.yaml, using defaults: %s", job_id, e)
@@ -1376,7 +1376,7 @@ def _load_cron_job_config(job: dict, job_id: str, job_name: str) -> _CronJobConf
         raise RuntimeError(
             f"Cron job '{job_name}' has no model configured "
             f"(job.model={job.get('model')!r}, "
-            f"HERMES_MODEL={cron_env_setting('HERMES_MODEL')!r}, "
+            f"MOOR_MODEL={cron_env_setting('MOOR_MODEL')!r}, "
             "config.yaml model.default missing or empty). "
             f"Set a per-job model via "
             f"`moor cron edit {job_id} --model <name>` or set a "
@@ -1395,7 +1395,7 @@ def _load_prefill_messages(cfg: dict, job_id: str) -> Optional[list]:
     """Prefill messages from env or config.yaml (top-level key canonical; agent.* is legacy)."""
     agent_cfg = cfg.get("agent", {}) if isinstance(cfg.get("agent", {}), dict) else {}
     prefill_file = (
-        cron_env_setting("HERMES_PREFILL_MESSAGES_FILE")
+        cron_env_setting("MOOR_PREFILL_MESSAGES_FILE")
         or cfg.get("prefill_messages_file", "")
         or agent_cfg.get("prefill_messages_file", "")
     )
@@ -1466,8 +1466,8 @@ def _blocked_config_result(job_id: str, job_name: str, _pf_reason: str) -> tuple
         "The pre-run configuration check found a problem, so the agent did not run "
         "(nothing was charged).\n\n"
         f"**Reason:** {_pf_reason}\n\n"
-        "Hermes tries again at the next scheduled time and clears this state on the first healthy "
-        "run; this alert is not repeated. Check with `hermes cron doctor`. Set `cron.preflight: "
+        "Moor tries again at the next scheduled time and clears this state on the first healthy "
+        "run; this alert is not repeated. Check with `moor cron doctor`. Set `cron.preflight: "
         "false` in config.yaml to disable this check."
     )
     return False, blocked_doc, "", f"{marker} {_pf_reason}"
@@ -1478,7 +1478,7 @@ def _resolve_job_runtime(job: dict, job_id: str, jc: _CronJobConfig) -> tuple[di
     ``(runtime, model)``; provider+model swap atomically (never swap only the provider while keeping
     a paid primary model). Provider precedence: per-job pin > cron.model_provider > creation
     snapshot > persisted global config."""
-    from hermes_cli.runtime_provider import (
+    from moor_cli.runtime_provider import (
         resolve_runtime_provider, format_runtime_provider_error)
     from moor_cli.auth import AuthError
 
@@ -1520,7 +1520,7 @@ def _resolve_job_runtime(job: dict, job_id: str, jc: _CronJobConfig) -> tuple[di
             if not fb_provider or not fb_model:
                 continue
             try:
-                from hermes_cli.fallback_config import effective_runtime_provider, resolve_entry_api_key
+                from moor_cli.fallback_config import effective_runtime_provider, resolve_entry_api_key
 
                 fb_kwargs = {"requested": fb_provider, "target_model": fb_model}
                 if entry.get("base_url"):
@@ -2093,8 +2093,8 @@ def _reload_dotenv_and_publish_delivery_target(job: dict) -> None:
     from moor_cli.env_loader import load_moor_dotenv, reset_secret_source_cache
     from gateway.session_context import _VAR_MAP
 
-    reset_secret_source_cache(_get_hermes_home())
-    load_hermes_dotenv(hermes_home=_get_hermes_home())
+    reset_secret_source_cache(_get_moor_home())
+    load_moor_dotenv(moor_home=_get_moor_home())
 
     delivery_target = _resolve_delivery_target(job)
     if delivery_target:
@@ -3117,7 +3117,7 @@ def _launch_external_cron_worker(job: dict) -> bool:
         reset_secret_scope,
         set_secret_scope,
     )
-    from hermes_cli.env_loader import hydrate_profile_secret_sources
+    from moor_cli.env_loader import hydrate_profile_secret_sources
     from tools.environments.local import build_subprocess_env, strip_launch_profile_env
     from tools.process_registry import (
         restart_safe_gateway_child_argv,
@@ -3167,26 +3167,26 @@ def _launch_external_cron_worker(job: dict) -> bool:
         payload_path.unlink(missing_ok=True)
         raise
 
-    profile_home = _get_hermes_home().resolve()
+    profile_home = _get_moor_home().resolve()
     hydrate_profile_secret_sources(profile_home)
     secret_token = set_secret_scope(build_profile_secret_scope(profile_home))
     try:
         worker_env = strip_launch_profile_env(build_subprocess_env(
             scrub_secrets=multiplex_active,
             inherit_profile_home=True,
-            extra={"HERMES_HOME": str(profile_home)},
+            extra={"MOOR_HOME": str(profile_home)},
         ))
     finally:
         reset_secret_scope(secret_token)
     worker_env = systemd_user_bus_env(worker_env)
-    # Unattended worker: the gateway sets HERMES_EXEC_ASK at startup (interactive launches set
+    # Unattended worker: the gateway sets MOOR_EXEC_ASK at startup (interactive launches set
     # the other two), and an inherited presence var makes every env-fallback consumer in the
     # child (`_is_interactive_cli`, sudo prompting, `check_cronjob_requirements`) believe a
     # human is present to answer (#110932).
     for _presence_var in (
-        "HERMES_INTERACTIVE",
-        "HERMES_GATEWAY_SESSION",
-        "HERMES_EXEC_ASK",
+        "MOOR_INTERACTIVE",
+        "MOOR_GATEWAY_SESSION",
+        "MOOR_EXEC_ASK",
     ):
         worker_env.pop(_presence_var, None)
     try:
@@ -3606,7 +3606,7 @@ def _sweep_stale_inflight_for_tick(due_jobs: list) -> None:
 def _resolve_max_parallel_workers() -> Optional[int]:
     """Max workers: env > config.yaml > unbounded (MOOR_CRON_MAX_PARALLEL=1 restores serial)."""
     try:
-        _env_par = cron_env_setting("HERMES_CRON_MAX_PARALLEL").strip()
+        _env_par = cron_env_setting("MOOR_CRON_MAX_PARALLEL").strip()
         if _env_par:
             return int(_env_par) or None
     except (ValueError, TypeError):

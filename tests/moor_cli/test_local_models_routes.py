@@ -56,7 +56,7 @@ def test_status_shape_and_defaults(client):
 
 def test_status_renders_degraded_when_config_cannot_be_read(client, monkeypatch):
     """The status pane is garnish: an unreadable/uninitialized config renders defaults, never a 500."""
-    from hermes_cli import config as config_mod
+    from moor_cli import config as config_mod
 
     def _boom():
         raise FileNotFoundError("profile home is gone")
@@ -82,12 +82,12 @@ def test_status_tracks_preset_spill_and_restored_window(client, tmp_path, monkey
     from dataclasses import replace
     from types import SimpleNamespace
 
-    from hermes_cli.local_runtime import bootstrap, presets
-    from hermes_cli.local_runtime.binaries import runtimes_root
-    from hermes_cli.local_runtime.context_policy import FLOOR, RUNTIME_OVERHEAD_BYTES, ub_logits_bytes
-    from hermes_cli.local_runtime.estimator import HardwareBudget, LayerKind, ModelProfile, ctx_bytes
-    from hermes_cli.local_runtime.growth import save_window_override
-    from hermes_cli.web_routers import local_models
+    from moor_cli.local_runtime import bootstrap, presets
+    from moor_cli.local_runtime.binaries import runtimes_root
+    from moor_cli.local_runtime.context_policy import FLOOR, RUNTIME_OVERHEAD_BYTES, ub_logits_bytes
+    from moor_cli.local_runtime.estimator import HardwareBudget, LayerKind, ModelProfile, ctx_bytes
+    from moor_cli.local_runtime.growth import save_window_override
+    from moor_cli.web_routers import local_models
 
     # Dense spill has no override-tensor flag: status must use the recorded decision.
     profile = ModelProfile("status-mtp", 16 << 30, 0, 262144,

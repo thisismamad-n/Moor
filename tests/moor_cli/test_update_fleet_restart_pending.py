@@ -360,7 +360,7 @@ def test_run_pending_restart_true_when_no_gateways(monkeypatch, capsys):
         update_cmd_fleet, "_restart_macos_launchd_gateways", lambda *a, **k: None
     )
     # And the Windows scope: an installed Windows gateway service would be restarted for real.
-    monkeypatch.setattr("hermes_cli.gateway_windows.is_installed", lambda: False)
+    monkeypatch.setattr("moor_cli.gateway_windows.is_installed", lambda: False)
     assert update_cmd._run_pending_fleet_restart() is True
     assert "Pending fleet restart completed" in capsys.readouterr().out
 
@@ -493,11 +493,11 @@ def test_clean_update_defers_desktop_owned_serve_and_clears_marker(
     Desktop open ends ``partial``/exit 1 and re-arms ``fleet_restart_pending``
     with nothing that could ever discharge it. It is surfaced (``deferred``,
     relaunch hint) rather than dropped."""
-    from hermes_cli.update_inventory import (
+    from moor_cli.update_inventory import (
         RuntimeRecord, UpdatePlan, _restart_mechanism,
     )
-    import hermes_cli.update_inventory as ui
-    import hermes_cli.process_identity as pi
+    import moor_cli.update_inventory as ui
+    import moor_cli.process_identity as pi
 
     args = _update_args()
     _patch_update_deps(monkeypatch, tmp_path, _make_head_moved_side_effect())
@@ -517,14 +517,14 @@ def test_clean_update_defers_desktop_owned_serve_and_clears_marker(
 
     def _match(p, **kw):
         kw["restarted_services"] = list(kw.get("restarted_services") or []) + [
-            "hermes-gateway.service"
+            "moor-gateway.service"
         ]
         return real_match(p, **kw)
 
     monkeypatch.setattr(ui, "match_runtime_outcomes", _match)
     # The gateway leg is healthy on the new code; only the Desktop serve is left.
     monkeypatch.setattr(
-        "hermes_cli.update_receipt.collect_fleet_versions",
+        "moor_cli.update_receipt.collect_fleet_versions",
         lambda **_k: [{"profile": "default", "pid": 4444, "code_sha": "def456",
                        "code_version": "0.21.0", "state": "current"}],
     )
@@ -534,7 +534,7 @@ def test_clean_update_defers_desktop_owned_serve_and_clears_marker(
         lambda **_k: [{"pid": 6161, "purpose": "serve", "create_time": 1000.0}],
     )
 
-    hermes_main.cmd_update(args)  # no SystemExit(1)
+    moor_main.cmd_update(args)  # no SystemExit(1)
 
     out = capsys.readouterr().out
     assert "pid 6161" in out and "pre-update code" in out
@@ -542,7 +542,7 @@ def test_clean_update_defers_desktop_owned_serve_and_clears_marker(
     assert "Planned runtimes the restart phase never touched" not in out
     assert not update_cmd._fleet_restart_pending_marker_path().exists()
 
-    latest = get_hermes_home() / "logs" / "update_receipts" / "latest.json"
+    latest = get_moor_home() / "logs" / "update_receipts" / "latest.json"
     receipt = json.loads(latest.read_text(encoding="utf-8"))
     assert receipt["outcome"] == "success"
     by_pid = {o["pid"]: o["outcome"] for o in receipt["runtime_outcomes"]}
@@ -685,7 +685,7 @@ def test_startup_warn_silent_when_nothing_pending(capsys):
 
 # ── Self-heal: marker left behind by a supervisor-level restart (#105417 / #111272) ──
 #
-# `systemctl --user restart hermes-gateway` never runs this module's clear path, and an update
+# `systemctl --user restart moor-gateway` never runs this module's clear path, and an update
 # whose fleet probe answered empty exits before clearing — so the marker survives a restart
 # that DID bring the fleet to the pulled code, and every later CLI call warns forever. The
 # marker is discharged when (and only when) the fleet provably serves expected_sha.
@@ -701,7 +701,7 @@ def test_startup_warn_discharged_when_fleet_current(monkeypatch, capsys):
     update_cmd._write_fleet_restart_pending_marker(expected_sha=disk_sha)
     _patch_marker_sha(monkeypatch, disk_sha)
     monkeypatch.setattr(
-        "hermes_cli.update_receipt.collect_fleet_versions",
+        "moor_cli.update_receipt.collect_fleet_versions",
         lambda **kwargs: [
             {"profile": "default", "pid": 42, "code_sha": disk_sha, "code_version": "0.21.0", "state": "current"}
         ],
@@ -727,7 +727,7 @@ def test_startup_warn_discharged_when_fleet_current(monkeypatch, capsys):
 def test_startup_warn_kept_without_positive_evidence(monkeypatch, capsys, disk_sha, fleet):
     update_cmd._write_fleet_restart_pending_marker(expected_sha="e" * 40)
     _patch_marker_sha(monkeypatch, disk_sha)
-    monkeypatch.setattr("hermes_cli.update_receipt.collect_fleet_versions", lambda **kwargs: fleet)
+    monkeypatch.setattr("moor_cli.update_receipt.collect_fleet_versions", lambda **kwargs: fleet)
 
     update_cmd._warn_pending_fleet_restart_on_startup()
 
@@ -740,7 +740,7 @@ def test_startup_warn_kept_when_receipt_owed_gateway_is_down(monkeypatch, capsys
     disk_sha = "e" * 40
     update_cmd._write_fleet_restart_pending_marker(expected_sha=disk_sha)
     _patch_marker_sha(monkeypatch, disk_sha)
-    receipt_dir = get_hermes_home() / "logs" / "update_receipts"
+    receipt_dir = get_moor_home() / "logs" / "update_receipts"
     receipt_dir.mkdir(parents=True)
     (receipt_dir / "latest.json").write_text(
         json.dumps(
@@ -757,7 +757,7 @@ def test_startup_warn_kept_when_receipt_owed_gateway_is_down(monkeypatch, capsys
         encoding="utf-8",
     )
     monkeypatch.setattr(
-        "hermes_cli.update_receipt.collect_fleet_versions",
+        "moor_cli.update_receipt.collect_fleet_versions",
         lambda **kwargs: [
             {"profile": "alpha", "pid": 42, "code_sha": disk_sha, "code_version": "0.21.0", "state": "current"}
         ],

@@ -668,7 +668,7 @@ class TestSnapshotIsCredentialStore:
         src.mkdir(parents=True)
         (tmp_path / "real" / "Local State").write_text("{}")
         _auth_db((src / "Cookies"), "db")
-        monkeypatch.setattr(bc, "get_hermes_home", lambda: tmp_path / "hh")
+        monkeypatch.setattr(bc, "get_moor_home", lambda: tmp_path / "hh")
         called = {"paths": []}
         with patch("moor_cli.config._secure_dir",
                    side_effect=lambda p: called["paths"].append(p)):
@@ -1074,7 +1074,7 @@ class TestWindowsLockedProfileCopy:
         import sqlite3
         import subprocess
         import sys
-        import hermes_cli.browser_connect as bc
+        import moor_cli.browser_connect as bc
 
         src, dst = tmp_path / "Cookies", tmp_path / "out" / "Cookies"
         dst.parent.mkdir()
@@ -1088,7 +1088,7 @@ class TestWindowsLockedProfileCopy:
         try:
             result = subprocess.run(
                 [sys.executable, "-c",
-                 "from hermes_cli.browser_connect import _copy_auth_file; "
+                 "from moor_cli.browser_connect import _copy_auth_file; "
                  "import sys; print(_copy_auth_file(sys.argv[1], sys.argv[2]))",
                  str(src), str(dst)],
                 capture_output=True, text=True, timeout=15, stdin=subprocess.DEVNULL)
@@ -1109,7 +1109,7 @@ class TestWindowsLockedProfileCopy:
         import sqlite3
         import subprocess
         import sys
-        import hermes_cli.browser_connect as bc
+        import moor_cli.browser_connect as bc
 
         src, dst = tmp_path / "Cookies", tmp_path / "out" / "Cookies"
         dst.parent.mkdir()

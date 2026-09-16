@@ -23,8 +23,8 @@ from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import Any, Dict, Optional
 
-from hermes_cli.timeouts import get_provider_request_timeout, get_provider_stale_timeout
-from hermes_constants import PARTIAL_STREAM_STUB_ID, FINISH_REASON_LENGTH
+from moor_cli.timeouts import get_provider_request_timeout, get_provider_stale_timeout
+from moor_constants import PARTIAL_STREAM_STUB_ID, FINISH_REASON_LENGTH
 from agent.error_classifier import (
     FailoverReason, PROVIDER_STREAM_EMPTY_FRAME_ERROR_CODE, PROVIDER_STREAM_NON_JSON_ERROR_CODE)
 from agent.sdk_transform_bypass import bypass_chat_sdk_request_transform
@@ -1351,7 +1351,7 @@ def _build_chat_completions_kwargs(agent, api_messages, tools_for_api, reasoning
 
     _prefs = _provider_preferences_for_agent(agent)
 
-    _qwen_meta = {"sessionId": agent.session_id or "hermes", "promptId": str(uuid.uuid4())} if _is_qwen else None
+    _qwen_meta = {"sessionId": agent.session_id or "moor", "promptId": str(uuid.uuid4())} if _is_qwen else None
     _profile = None
     with contextlib.suppress(Exception):
         from providers import get_provider_profile
@@ -1884,7 +1884,7 @@ def try_activate_fallback(agent, reason: "FailoverReason | None" = None) -> bool
 
         try:
             from agent.auxiliary_client import resolve_provider_client
-            from hermes_cli.fallback_config import resolve_entry_api_key
+            from moor_cli.fallback_config import resolve_entry_api_key
             # Pass the entry's base_url/api_key so custom endpoints (Ollama Cloud) resolve instead
             # of falling through to OpenRouter defaults.
             fb_base_url_hint = (fb.get("base_url") or "").strip() or None
@@ -1903,13 +1903,13 @@ def try_activate_fallback(agent, reason: "FailoverReason | None" = None) -> bool
                 unavailable.add(fb_key)
                 continue
             try:
-                from hermes_cli.model_normalize import normalize_model_for_provider
+                from moor_cli.model_normalize import normalize_model_for_provider
                 fb_model = normalize_model_for_provider(fb_model, fb_provider)
             except Exception as _norm_err:
                 logger.warning("Could not normalize fallback model %r for provider %r: %s", fb_model, fb_provider, _norm_err)
 
             fb_base_url = str(fb_client.base_url)
-            from hermes_cli.providers import is_actual_route
+            from moor_cli.providers import is_actual_route
             if is_actual_route(fb_provider, fb_base_url):
                 fb_api_mode = "chat_completions"
             elif not fb_api_mode_explicit and fb_api_mode == "chat_completions":
@@ -1964,7 +1964,7 @@ def try_activate_fallback(agent, reason: "FailoverReason | None" = None) -> bool
                 model=agent.model, base_url=agent.base_url, provider=fb_provider, is_codex_backend=fb_provider == "openai-codex")
             return True
         except Exception as e:
-            if fb_provider == "nous":
+            if fb_provider == "moor":
                 unavailable.add(fb_key)
             logger.error("Failed to activate fallback %s: %s", fb_model, e)
             continue  # try next in chain
@@ -2745,7 +2745,7 @@ class _StreamingCall(StreamingWaitMonitor):
         response = self._attempt_stream_response = getattr(raw_stream, "response", None)
         self.agent._capture_rate_limits(response)
         self.agent._capture_credits(response)
-        self.agent._capture_nous_model_switch(response)
+        self.agent._capture_moor_model_switch(response)
         self.agent._stream_diag_capture_response(self.clients.diag, response)
         self.agent._check_openrouter_cache_status(response)
         self._writer_token = claim_stream_writer(self.agent)
@@ -3255,9 +3255,9 @@ class _StreamingCall(StreamingWaitMonitor):
         return self._call_anthropic(request_client)
 
     def _call(self):
-        _max_stream_retries = env_int("HERMES_STREAM_RETRIES", 2)
+        _max_stream_retries = env_int("MOOR_STREAM_RETRIES", 2)
         # The one stream_options compatibility retry (#9705) is not a network retry and must not
-        # consume the transient budget: on the last attempt (or HERMES_STREAM_RETRIES=0) the
+        # consume the transient budget: on the last attempt (or MOOR_STREAM_RETRIES=0) the
         # handler returned True and the loop ended with neither a response nor an error set.
         self._compat_retries = 0
         _stream_attempt = -1

@@ -111,7 +111,7 @@ export function extractDroppedFiles(transfer: DataTransfer): DroppedFile[] {
   const result: DroppedFile[] = []
   const seenPaths = new Set<string>()
   const seenFiles = new Set<File>()
-  const getPath = window.hermesDesktop?.getPathForFile
+  const getPath = window.moorDesktop?.getPathForFile
   const urls = droppedLinkUrls(transfer)
 
   // In-app drags first — they carry richer metadata (isDirectory) than the
@@ -638,14 +638,14 @@ export function useComposerActions({
   /**
    * Convert a very large plain-text paste into a `.txt` attachment chip.
    * The trimmed, sanitized paste text is written to a
-   * Hermes-managed composer-pastes file via the main process, then attached
+   * moor-managed composer-pastes file via the main process, then attached
    * through the same `@file:` pipeline as a manually attached text file.
    * Returns false (paste stays inline) when the desktop bridge is missing
    * or the write fails.
    */
   const attachPastedText = useCallback(
     async (text: string) => {
-      const save = window.hermesDesktop?.savePastedText
+      const save = window.moorDesktop?.savePastedText
 
       if (!text || !save) {
         return false

@@ -4,14 +4,14 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import kanban_db as kb
-from hermes_cli.kanban_db_graph import decompose_triage_task
-from hermes_cli import kanban_db_connect as kbc
+from moor_cli import kanban_db as kb
+from moor_cli.kanban_db_graph import decompose_triage_task
+from moor_cli import kanban_db_connect as kbc
 
 
 def test_completed_decomposition_survives_retriage(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "moor"))
     with kbc.connect_closing() as conn:
         prerequisite = kb.create_task(conn, title="prerequisite", tenant="business-a")
         root = kb.create_task(conn, title="root", triage=True, tenant="business-a", parents=[prerequisite])
@@ -37,9 +37,9 @@ def test_completed_decomposition_survives_retriage(tmp_path, monkeypatch):
 
 def test_parent_tenant_is_inherited_at_creation_boundary(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
-    monkeypatch.delenv("HERMES_TENANT", raising=False)
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "moor"))
+    monkeypatch.delenv("MOOR_TENANT", raising=False)
+    monkeypatch.delenv("MOOR_KANBAN_TASK", raising=False)
     from tools.kanban_tools import _handle_create
     with kbc.connect_closing() as conn:
         unscoped = kb.create_task(conn, title="unscoped")

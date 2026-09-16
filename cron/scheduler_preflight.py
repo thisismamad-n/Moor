@@ -96,7 +96,7 @@ def _preflight_check_provider_key(job: dict, cfg: dict) -> Optional[str]:
     _cron_cfg = cfg.get("cron") if isinstance(cfg.get("cron"), dict) else {}
     requested = (
         job.get("provider") or str((_cron_cfg or {}).get("model_provider") or "").strip() or None)
-    model = job.get("model") or cron_env_setting("HERMES_MODEL") or ""
+    model = job.get("model") or cron_env_setting("MOOR_MODEL") or ""
 
     from moor_cli.auth import AuthError
     try:
@@ -323,7 +323,7 @@ def _empty_requested_mcp_toolsets(job: dict, cfg: dict) -> Optional[str]:
     requested = [str(name) for name in (job.get("enabled_toolsets") or [])]
     if not requested:
         return None
-    from hermes_cli.tools_config import enabled_mcp_server_names
+    from moor_cli.tools_config import enabled_mcp_server_names
     from toolsets import resolve_toolset
     missing = [name for name in requested
                if name in enabled_mcp_server_names(cfg) and not resolve_toolset(name)]

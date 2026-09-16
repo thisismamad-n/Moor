@@ -162,7 +162,7 @@ def test_status_line_mentions_gates():
 def test_failing_gate_short_circuits_judge():
     mgr = _mgr_with_goal("gate-fail-sid")
     mgr.add_gate("exit 5")
-    with patch("hermes_cli.goals.judge_goal") as mock_judge:
+    with patch("moor_cli.goals.judge_goal") as mock_judge:
         decision = mgr.evaluate_after_turn("I think it's done!")
     mock_judge.assert_not_called()
     assert decision["verdict"] == "gate_failed"
@@ -190,7 +190,7 @@ def test_gate_retry_exhaustion_pauses_goal():
     mgr = _mgr_with_goal("gate-exhaust-sid")
     mgr.add_gate("exit 1")
     mgr.state.gates[0].max_retries = 2
-    with patch("hermes_cli.goals.judge_goal") as mock_judge:
+    with patch("moor_cli.goals.judge_goal") as mock_judge:
         d1 = mgr.evaluate_after_turn("attempt one")
         d2 = mgr.evaluate_after_turn("attempt two")
         d3 = mgr.evaluate_after_turn("attempt three")
@@ -216,7 +216,7 @@ def test_failed_gate_reruns_when_untracked_file_content_changes(tmp_path, monkey
 
     mgr = _mgr_with_goal("gate-content-sid")
     mgr.add_gate(f"grep -q after {result}")
-    with patch("hermes_cli.goals.judge_goal", return_value=("done", "ok", False, None, False)) as judge:
+    with patch("moor_cli.goals.judge_goal", return_value=("done", "ok", False, None, False)) as judge:
         d1 = mgr.evaluate_after_turn("turn 1")
         result.write_text("after", encoding="utf-8")
         d2 = mgr.evaluate_after_turn("turn 2")
@@ -230,7 +230,7 @@ def test_gate_continuation_respects_turn_budget():
     mgr = GoalManager(session_id="gate-budget-sid", default_max_turns=1)
     mgr.set("budget goal")
     mgr.add_gate("exit 1")
-    with patch("hermes_cli.goals.judge_goal"):
+    with patch("moor_cli.goals.judge_goal"):
         decision = mgr.evaluate_after_turn("only turn")
     assert decision["status"] == "paused"
     assert decision["should_continue"] is False

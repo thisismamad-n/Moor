@@ -71,11 +71,11 @@ def maybe_grow_window(model_id: str, *, base_url: str, session_tokens: int,
     """
     from moor_cli.local_runtime.bootstrap import (
         get_supervisor, refresh_local_runtime, staged_models)
-    from hermes_cli.local_runtime.context_policy import growth_decision
-    from hermes_cli.local_runtime.estimator import profile_from_gguf
-    from hermes_cli.local_runtime.gguf import model_id_from_stem, read_gguf_header
-    from hermes_cli.local_runtime.hardware import probe_budget
-    from hermes_cli.local_runtime.presets import preset_for_model, read_preset_decisions
+    from moor_cli.local_runtime.context_policy import growth_decision
+    from moor_cli.local_runtime.estimator import profile_from_gguf
+    from moor_cli.local_runtime.gguf import model_id_from_stem, read_gguf_header
+    from moor_cli.local_runtime.hardware import probe_budget
+    from moor_cli.local_runtime.presets import preset_for_model, read_preset_decisions
 
     sup = get_supervisor()
     if sup is None or not is_managed_endpoint(base_url):

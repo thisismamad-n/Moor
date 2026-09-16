@@ -22,11 +22,11 @@ import re
 from dataclasses import dataclass
 from typing import Optional
 
-from hermes_cli import kanban_db as kb
-from hermes_cli.kanban_db_graph import decompose_triage_task
-from hermes_cli import kanban_db_connect as kbc
-from hermes_cli import profiles as profiles_mod
-from hermes_cli.kanban_specify import (
+from moor_cli import kanban_db as kb
+from moor_cli.kanban_db_graph import decompose_triage_task
+from moor_cli import kanban_db_connect as kbc
+from moor_cli import profiles as profiles_mod
+from moor_cli.kanban_specify import (
     _call_aux, _extract_json_blob, _load_triage_task, _task_prompt_fields, _title_body,
 )
 from moor_cli.kanban_specify import _profile_author as _specify_author
@@ -194,7 +194,7 @@ class _Routing:
 
 
 def _load_routing() -> _Routing:
-    from hermes_cli.config import load_config_readonly
+    from moor_cli.config import load_config_readonly
     try:
         cfg = load_config_readonly()
     except Exception:  # decompose_task promises ok=False, never a raise, on config trouble

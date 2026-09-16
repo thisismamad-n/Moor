@@ -25,9 +25,9 @@ All of this is available to Moor itself through the `cronjob` tool, so you can c
 :::tip
 **Which model does a cron job run on?** Resolution at fire time is: per-job pin → `cron.model` in `config.yaml` → the global default from `moor model`.
 
-- **Per-job pin** — set by *you* via the dashboard, `hermes cron create/edit --model … --provider …`, or by editing `~/.hermes/cron/jobs.json`. Once set, it sticks until you change it. The agent's `cronjob` tool cannot set or change per-job models — inference pins are user-owned.
-- **`cron.model` / `cron.model_provider`** — a cron-fleet default: every unpinned job runs on this model, independent of your chat model. Set it once (`hermes config set cron.model <name>`) and switching your chat model with `hermes model` or `/model` never touches your cron fleet.
-- **Global default** — only when neither of the above is set does a job follow `hermes model`. Hermes **snapshots** the provider and model at creation, and that snapshot is the job's effective pin: if you later switch the global default (`hermes model`, `/model`, `hermes config set model.default …`), the job **keeps running on the model and provider it was created under** and logs one INFO line per run noting the difference. A global model change never stops a scheduled job, and an unattended job never silently inherits a switch to a paid provider/model (#44585). To move a job to the new default, **resnap** it (`hermes cron resnap <job_id>`, or `--all` for every unpinned job) so it adopts the current default while staying unpinned, pin it (`hermes cron edit <job_id> --provider <provider> --model <model>`), or set `cron.model` to move the whole fleet at once. Jobs created before snapshots existed keep following the live global default.
+- **Per-job pin** — set by *you* via the dashboard, `moor cron create/edit --model … --provider …`, or by editing `~/.moor/cron/jobs.json`. Once set, it sticks until you change it. The agent's `cronjob` tool cannot set or change per-job models — inference pins are user-owned.
+- **`cron.model` / `cron.model_provider`** — a cron-fleet default: every unpinned job runs on this model, independent of your chat model. Set it once (`moor config set cron.model <name>`) and switching your chat model with `moor model` or `/model` never touches your cron fleet.
+- **Global default** — only when neither of the above is set does a job follow `moor model`. Moor **snapshots** the provider and model at creation, and that snapshot is the job's effective pin: if you later switch the global default (`moor model`, `/model`, `moor config set model.default …`), the job **keeps running on the model and provider it was created under** and logs one INFO line per run noting the difference. A global model change never stops a scheduled job, and an unattended job never silently inherits a switch to a paid provider/model (#44585). To move a job to the new default, **resnap** it (`moor cron resnap <job_id>`, or `--all` for every unpinned job) so it adopts the current default while staying unpinned, pin it (`moor cron edit <job_id> --provider <provider> --model <model>`), or set `cron.model` to move the whole fleet at once. Jobs created before snapshots existed keep following the live global default.
 
 Whichever provider a job resolves to, its provider-specific request settings (e.g. `request_overrides` such as `extra_body`/`extra_headers` for custom providers) carry into the scheduled run just like an interactive session.
 
@@ -107,11 +107,11 @@ An unpinned job stays on the provider/model it was created under, so changing yo
 never changes (or stops) your cron fleet. When you *do* want scheduled jobs to move:
 
 ```bash
-hermes cron edit <job_id> --provider <provider> --model <model>   # one job
-hermes config set cron.model <model>                               # every unpinned job
+moor cron edit <job_id> --provider <provider> --model <model>   # one job
+moor config set cron.model <model>                               # every unpinned job
 ```
 
-`hermes config set model.default …` and the Desktop model picker list the unpinned jobs that will
+`moor config set model.default …` and the Desktop model picker list the unpinned jobs that will
 keep their original model so you can decide deliberately. Stored snapshots are refreshed whenever
 you edit a job's provider, model, or base URL.
 
@@ -119,8 +119,8 @@ Resnapping refreshes an unpinned job's stored snapshot to the current global res
 pinning it, so it keeps tracking future changes:
 
 ```bash
-hermes cron resnap <job_id>   # one job
-hermes cron resnap --all      # every unpinned agent job
+moor cron resnap <job_id>   # one job
+moor cron resnap --all      # every unpinned agent job
 ```
 
 The agent-facing `cronjob` tool accepts the same action (`action=resnap job_id=<id>` or
@@ -128,7 +128,7 @@ The agent-facing `cronjob` tool accepts the same action (`action=resnap job_id=<
 
 ## Skill-backed cron jobs
 
-A cron job can load one or more skills before it runs the prompt. Each skill loads exactly as it does from `/skill-name` in a chat session, including the `[Skill config ...]` block with its resolved `metadata.hermes.config` values from `config.yaml`.
+A cron job can load one or more skills before it runs the prompt. Each skill loads exactly as it does from `/skill-name` in a chat session, including the `[Skill config ...]` block with its resolved `metadata.moor.config` values from `config.yaml`.
 
 ### Single skill
 
@@ -263,17 +263,17 @@ What they do:
 
 **Name-based lookup.** All four mutating verbs (`pause`, `resume`, `run`, `remove`, `edit`) plus the agent's `cronjob` tool now accept a job **name** (case-insensitive) in place of the hex ID. The agent and CLI both prefer an exact ID match if one exists; ambiguous name matches (multiple jobs sharing the same name) are refused with the full list of candidate IDs so you can pick one explicitly. Names are not unique, so this guard is load-bearing — it prevents silently mutating the wrong job when two share a name.
 
-### Pausing everything: `hermes pause`
+### Pausing everything: `moor pause`
 
-`hermes pause [--reason ...]` is the global emergency stop (`hermes resume` lifts it). While it is engaged no scheduled cron fire starts, whichever door it arrives through: the built-in ticker skips its dispatch, the managed-cron (hosted scheduler) fire webhook answers `503` with `Retry-After: 60` so the scheduler redelivers the fire after you resume, and the [misfire catch-up](#misfire-catch-up) sweep stays idle instead of force-firing everything that was held back. Runs already in flight are never killed, and nothing is lost: due work catches up on the first tick or sweep after `hermes resume`. Explicit manual runs (`hermes cron run`, the dashboard's Trigger button) are an operator override and still execute while paused.
+`moor pause [--reason ...]` is the global emergency stop (`moor resume` lifts it). While it is engaged no scheduled cron fire starts, whichever door it arrives through: the built-in ticker skips its dispatch, the managed-cron (hosted scheduler) fire webhook answers `503` with `Retry-After: 60` so the scheduler redelivers the fire after you resume, and the [misfire catch-up](#misfire-catch-up) sweep stays idle instead of force-firing everything that was held back. Runs already in flight are never killed, and nothing is lost: due work catches up on the first tick or sweep after `moor resume`. Explicit manual runs (`moor cron run`, the dashboard's Trigger button) are an operator override and still execute while paused.
 
 ### Creating a job paused (safe canary)
 
 Create a canary without a create-then-pause scheduling race:
 
 ```bash
-hermes cron create "every 1h" "Post the digest" --paused --paused-reason "Awaiting review"
-hermes cron resume <job_id>
+moor cron create "every 1h" "Post the digest" --paused --paused-reason "Awaiting review"
+moor cron resume <job_id>
 ```
 
 `--paused` stores `enabled: false`, `state: paused`, `next_run_at: null`, a pause
@@ -382,7 +382,7 @@ ledger is included in quick backups.
 
 Scheduled attempts also record their exact scheduled instant, separately from
 the time they were claimed. If an old `jobs.json` snapshot re-arms an occurrence
-that the retained ledger records as completed, Hermes skips that replay and
+that the retained ledger records as completed, Moor skips that replay and
 re-anchors recurring jobs. This works even when the snapshot predates the
 dispatch stamp or the original run started late. Explicit manual runs do not
 consume a scheduled occurrence's identity.
@@ -440,9 +440,9 @@ job plus a normalized signature of the error text, in the same per-profile
 ledger database as the execution history.
 
 ```bash
-hermes cron incidents                 # list incidents (newest activity first)
-hermes cron incidents --state alerted # filter: detected | alerted | resolved | closed
-hermes cron incidents ack <id>        # acknowledge — stop re-pinging
+moor cron incidents                 # list incidents (newest activity first)
+moor cron incidents --state alerted # filter: detected | alerted | resolved | closed
+moor cron incidents ack <id>        # acknowledge — stop re-pinging
 ```
 
 Acknowledging an incident silences the per-run failure ping for that exact
@@ -548,7 +548,7 @@ error. A delivery failure does not count toward the job's `failure_streak`
 - `bot-chat:<profile>` targets another profile **on the same machine**. Names are validated against `moor profile list` when the job is created; profiles on other gateways or machines can never be targeted, so same-named profiles across machines are unambiguous.
 - Each delivery costs the target bot one full agent turn — mind the schedule frequency.
 - Composes with other targets (`bot-chat,telegram`) but is never included in `all`.
-- If the canonical chat is open in a mailbox-capable Desktop/TUI backend, delivery is **durably queued immediately**, whether the bot is idle or busy. Only that live owner runs the incoming turn; cron does not start a competing CLI writer. If a CLI-only or older unsupported owner holds the chat, cron retains the never-started output under the sending profile's `cron/bot_chat_pending/<receipt-id>.json`. Later scheduler ticks deliver after that owner releases the chat, in admission order. Deferred work retains its admitted destination home and receipt ID even if the scheduler's launch root changes; a missing/renamed destination is not recreated or resolved to another profile. A `transferred` pending record points to the live-owner receipt, not a failed turn. Malformed JSON records are retained and logged without blocking other queued outputs. With no owner, the existing `hermes chat -c "Bot Chat" --create-if-missing` lane remains available (normal session ownership checks still apply). That child uses the exact destination home already checked by cron, including custom roots; inherited `HOME` or a changed active profile cannot redirect it. A missing destination directory is refused before launch, not recreated. A deferred request is claimed before launching that lane; interruption or an uncertain subprocess result never causes an automatic resend.
+- If the canonical chat is open in a mailbox-capable Desktop/TUI backend, delivery is **durably queued immediately**, whether the bot is idle or busy. Only that live owner runs the incoming turn; cron does not start a competing CLI writer. If a CLI-only or older unsupported owner holds the chat, cron retains the never-started output under the sending profile's `cron/bot_chat_pending/<receipt-id>.json`. Later scheduler ticks deliver after that owner releases the chat, in admission order. Deferred work retains its admitted destination home and receipt ID even if the scheduler's launch root changes; a missing/renamed destination is not recreated or resolved to another profile. A `transferred` pending record points to the live-owner receipt, not a failed turn. Malformed JSON records are retained and logged without blocking other queued outputs. With no owner, the existing `moor chat -c "Bot Chat" --create-if-missing` lane remains available (normal session ownership checks still apply). That child uses the exact destination home already checked by cron, including custom roots; inherited `HOME` or a changed active profile cannot redirect it. A missing destination directory is refused before launch, not recreated. A deferred request is claimed before launching that lane; interruption or an uncertain subprocess result never causes an automatic resend.
 - Never-started outputs have no TTL: if an unsupported owner never releases, they remain queued rather than being silently dropped. Receipts retain their payloads indefinitely. An unexpected delivery exception is logged and retained as `ambiguous`, without stopping sibling deliveries in that drain; claimed/ambiguous attempts are never automatically replayed.
 - **Queued is not completed.** Cron records receipt IDs and `queued`/`claimed` statuses in `last_delivery_queued`, with delivery outcome `queued` (neither delivered nor failed). A successful job shows `delivery_queued`; genuine errors on other targets still take precedence as delivery failures. The bot may complete later. The durable receipt in the target profile's `runtime/bot_live_delivery/<receipt-id>.json` is authoritative; cron's historical status is not automatically refreshed.
 - Rechecking the same execution inspects its existing receipt, even if the owner has disappeared. It never falls back to another writer after acceptance. `failed`, `cancelled`, or `ambiguous` receipts are not automatically replayed; inspect the chat and receipt before intentionally starting new work. Each new cron execution has a distinct delivery ID.
@@ -928,7 +928,7 @@ This is separate from `last_fire_error` (scheduler handoff) and `last_delivery_e
 Those fields can correctly be empty when the agent itself failed.
 
 For a connection failure, inspect the run document under `cron/output/<job_id>/` in the active
-Hermes home. Its `## Error` section includes the chained traceback, with credential patterns
+Moor home. Its `## Error` section includes the chained traceback, with credential patterns
 and URL credentials redacted. The file uses the existing private output-file permissions;
 traceback locals are not captured. Delivery notices and `last_error` retain the concise error,
 not the full traceback. Review diagnostics before sharing: redaction is not a guarantee that
@@ -953,7 +953,7 @@ passed, the job **catches up once** when the scheduler is back: a slot missed
 inside a restart gap fires exactly one time, a slot that already ran before the
 restart is never run again, and a long outage collapses into a single run rather
 than one run per missed slot. Paused jobs never catch up. Each catch-up shows in
-`hermes cron list` as `⚠ late` / `⚠ catch-up after missed fire`.
+`moor cron list` as `⚠ late` / `⚠ catch-up after missed fire`.
 
 To avoid that catch-up load after a planned gateway stop, set:
 
@@ -962,7 +962,7 @@ cron:
   catch_up_missed: false   # default: true
 ```
 
-Or run `hermes config set cron.catch_up_missed false`. With this opt-out, a recurring
+Or run `moor config set cron.catch_up_missed false`. With this opt-out, a recurring
 job later than its existing grace window (half its period, clamped to 120 seconds–2
 hours) is re-anchored to its next future occurrence without firing now. The skip is
 logged. Jobs inside grace and explicit manual triggers still run normally; if the
@@ -1112,7 +1112,7 @@ cronjob(action="create", name="weekly-news-summary",
         prompt="Summarize this week's AI news: ...")
 ```
 
-When `enabled_toolsets` is set on a job it wins; otherwise the `hermes tools` cron-platform config wins; otherwise Hermes falls back to the built-in defaults. If the cron-platform toolset config cannot be read at all (for example a malformed `platform_toolsets` block in `config.yaml`), the run fails with a recorded error instead of quietly running with every tool — check `hermes cron list` / `hermes cron doctor`. This matters for cost control: carrying `browser`, `delegation` into every tiny "fetch news" job bloats the tool-schema prompt on every LLM call.
+When `enabled_toolsets` is set on a job it wins; otherwise the `moor tools` cron-platform config wins; otherwise Moor falls back to the built-in defaults. If the cron-platform toolset config cannot be read at all (for example a malformed `platform_toolsets` block in `config.yaml`), the run fails with a recorded error instead of quietly running with every tool — check `moor cron list` / `moor cron doctor`. This matters for cost control: carrying `browser`, `delegation` into every tiny "fetch news" job bloats the tool-schema prompt on every LLM call.
 
 If the job drives a site you're logged into, the login has to be in place before the run — a scheduled tick has nobody to answer a prompt. [Scheduled and unattended runs](./browser.md#scheduled-and-unattended-runs) covers that setup.
 

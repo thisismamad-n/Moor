@@ -12,7 +12,7 @@ from agent.context_compressor import (
 )
 from moor_state import SessionDB
 
-from tests.hermes_cli.test_cli_init import _make_cli
+from tests.moor_cli.test_cli_init import _make_cli
 
 
 def _composite_carrier(ask="REAL ASK"):

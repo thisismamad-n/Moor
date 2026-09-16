@@ -47,7 +47,7 @@ moor config set OPENROUTER_API_KEY sk-or-...  # Saves to .env
 ```
 
 :::tip
-The `hermes config set` command automatically routes values to the right file — every `UPPER_SNAKE` name (`OPENROUTER_API_KEY`, `DISCORD_HOME_CHANNEL`, `TELEGRAM_GROUP_ALLOWED_USERS`, `HERMES_TIMEZONE`, …) is an environment variable and is saved to `.env`, never to `config.yaml`; dotted settings go to `config.yaml`. Any other `UPPER_SNAKE` name is saved to `.env` as-is (it is exported to the process environment for plugins and skills); names on the env writer's denylist (`HERMES_YOLO_MODE`, `PATH`, …) are refused. A misspelled path under a known section (`gateway.discord.foo`) is refused with a did-you-mean before anything is written; pass `--force` to write it anyway.
+The `moor config set` command automatically routes values to the right file — every `UPPER_SNAKE` name (`OPENROUTER_API_KEY`, `DISCORD_HOME_CHANNEL`, `TELEGRAM_GROUP_ALLOWED_USERS`, `MOOR_TIMEZONE`, …) is an environment variable and is saved to `.env`, never to `config.yaml`; dotted settings go to `config.yaml`. Any other `UPPER_SNAKE` name is saved to `.env` as-is (it is exported to the process environment for plugins and skills); names on the env writer's denylist (`MOOR_YOLO_MODE`, `PATH`, …) are refused. A misspelled path under a known section (`gateway.discord.foo`) is refused with a did-you-mean before anything is written; pass `--force` to write it anyway.
 :::
 
 ## Configuration Precedence
@@ -97,9 +97,9 @@ database:
   # Journal mode for state.db: wal (default) or delete.
   # Use delete on filesystems where WAL is unsafe (network mounts). On
   # virtiofs/9p bind mounts (Docker Desktop, Podman on macOS, OrbStack)
-  # Hermes detects the mount and creates fresh databases in delete mode
+  # Moor detects the mount and creates fresh databases in delete mode
   # automatically. Note: an existing on-disk WAL database is never
-  # live-downgraded — Hermes keeps WAL and logs an error telling you the
+  # live-downgraded — Moor keeps WAL and logs an error telling you the
   # configured delete did not apply (or that the WAL database sits on a
   # cross-VM mount). To convert an existing database, stop
   # every process using it and run a one-time offline
@@ -124,9 +124,9 @@ example a database an operator had manually converted to `delete` — and
 names `database.journal_mode` as the setting that makes the choice stick.
 The reverse never happens automatically: a database that is already in WAL
 mode is not live-downgraded when you set `journal_mode: delete` (a downgrade
-under open connections can corrupt it). `hermes doctor` warns
+under open connections can corrupt it). `moor doctor` warns
 `<db> is in WAL mode despite database.journal_mode=delete` until you stop
-every Hermes process for the profile and run a one-time offline
+every Moor process for the profile and run a one-time offline
 `PRAGMA journal_mode=DELETE` on the file.
 
 ## Environment Variable Substitution
@@ -167,9 +167,9 @@ Passive update checks (CLI banner, TUI badge, dashboard, desktop app) ask the
 GitHub REST API for the tip of `main` and, when it differs from your checkout,
 the compare endpoint for the exact count and changelog. They never run
 `git fetch`, and every install asks at most **once per 24 hours** (a failed check
-retries after an hour). Applying an update (`hermes update`, or the desktop's
+retries after an hour). Applying an update (`moor update`, or the desktop's
 Update button) always fetches fresh and invalidates the cached answer. Explicit
-checks — `hermes update --check`, the desktop's "Check for Updates…" menu item,
+checks — `moor update --check`, the desktop's "Check for Updates…" menu item,
 Settings → About → "Check now" — bypass the cache.
 
 ### SSH authentication
@@ -178,7 +178,7 @@ The startup update check reads the origin URL with the same isolated Git
 configuration used for its network calls. Global `url.*.insteadOf` rewrites
 therefore cannot hide an official SSH remote from the public HTTPS path.
 
-Hermes's isolated internal Git commands default to `ssh -o BatchMode=yes`:
+Moor's isolated internal Git commands default to `ssh -o BatchMode=yes`:
 unknown host keys, passwords, and encrypted keys needing a passphrase fail
 instead of opening a terminal prompt. Trusted hosts with usable keys or an
 SSH agent continue to authenticate. This does not change your Git or SSH
@@ -190,7 +190,7 @@ custom identity or transport commands can be retained there. Include
 `-o BatchMode=yes` in such an override if it must remain non-interactive;
 an override that permits prompting can still interrupt a background check.
 
-`hermes update` settings live under `updates` in `config.yaml`:
+`moor update` settings live under `updates` in `config.yaml`:
 
 ```yaml
 updates:
@@ -202,9 +202,9 @@ updates:
 
 `pre_update_backup` is the single pre-update safety knob: `quick` (default) snapshots critical state files (pairing data, cron jobs, config, auth; files over 1 GiB are skipped) into `state-snapshots/`; `full` additionally zips all of `MOOR_HOME` into `backups/` and can add minutes on large homes; `off` disables both. Legacy booleans are honored (`true` → `full`, `false` → `off`).
 
-Point-in-time copies of `config.yaml` itself (taken before `hermes setup` rewrites it, before `hermes migrate` edits it, every time the file parses successfully, and when it fails to parse) go to `backups/config/config.yaml.<reason>.<timestamp>`. Identical repeats are skipped and only the newest five per reason are kept, so they never pile up beside `config.yaml`. If `config.yaml` is broken, Hermes serves the newest `good` copy instead of built-in defaults and warns on every start until the YAML is fixed; the broken file is never modified.
+Point-in-time copies of `config.yaml` itself (taken before `moor setup` rewrites it, before `moor migrate` edits it, every time the file parses successfully, and when it fails to parse) go to `backups/config/config.yaml.<reason>.<timestamp>`. Identical repeats are skipped and only the newest five per reason are kept, so they never pile up beside `config.yaml`. If `config.yaml` is broken, Moor serves the newest `good` copy instead of built-in defaults and warns on every start until the YAML is fixed; the broken file is never modified.
 
-For git installs, Hermes auto-stashes dirty tracked files and untracked files before checking out the update branch or pulling. Interactive terminal updates prompt before restoring that stash. Non-interactive updates (desktop/chat app, gateway, or `--yes`) use `updates.non_interactive_local_changes`: `stash` restores local source edits after a successful pull, while `discard` drops the update-created stash after a successful pull. Use `discard` only on managed installs where local source edits are never meant to persist.
+For git installs, Moor auto-stashes dirty tracked files and untracked files before checking out the update branch or pulling. Interactive terminal updates prompt before restoring that stash. Non-interactive updates (desktop/chat app, gateway, or `--yes`) use `updates.non_interactive_local_changes`: `stash` restores local source edits after a successful pull, while `discard` drops the update-created stash after a successful pull. Use `discard` only on managed installs where local source edits are never meant to persist.
 
 Before that stash step, Moor also restores tracked `package-lock.json` diffs left by npm install/build churn. Commit or manually stash intentional lockfile edits before updating.
 
@@ -238,9 +238,9 @@ swept hourly by gateway housekeeping and once per process on CLI-only
 installs. Set `temp_dir` to an existing absolute path to redirect session
 temp anywhere else; user-set paths are never auto-pruned.
 
-`desktop.font_family` sets the font for chat and the rest of the Hermes Desktop interface (the terminal pane has its own key above). Give it one installed family name (for example, `OpenDyslexic` or `Atkinson Hyperlegible`) or a CSS font stack; Hermes keeps the active theme's own stack behind it so CJK and emoji glyphs still resolve, and an empty value uses the theme's font. Edit it in **Settings → Appearance → Chat Font**.
+`desktop.font_family` sets the font for chat and the rest of the Moor Desktop interface (the terminal pane has its own key above). Give it one installed family name (for example, `OpenDyslexic` or `Atkinson Hyperlegible`) or a CSS font stack; Moor keeps the active theme's own stack behind it so CJK and emoji glyphs still resolve, and an empty value uses the theme's font. Edit it in **Settings → Appearance → Chat Font**.
 
-`terminal.font_family` controls the embedded terminal in Hermes Desktop. It accepts either one locally installed family name (for example, `MesloLGS NF`) or a CSS font stack. Hermes appends its bundled JetBrains Mono stack as a fallback, and an empty value keeps the default. You can edit the same profile-scoped setting in **Settings → Appearance → Terminal Font**; no Google Fonts download or system-font permission is required.
+`terminal.font_family` controls the embedded terminal in Moor Desktop. It accepts either one locally installed family name (for example, `MesloLGS NF`) or a CSS font stack. Moor appends its bundled JetBrains Mono stack as a fallback, and an empty value keeps the default. You can edit the same profile-scoped setting in **Settings → Appearance → Terminal Font**; no Google Fonts download or system-font permission is required.
 
 For cloud sandboxes such as Modal, Daytona, and Vercel Sandbox, `container_persistent: true` means Moor will try to preserve filesystem state across sandbox recreation. It does not promise that the same live sandbox, PID space, or background processes will still be running later.
 
@@ -781,7 +781,7 @@ skills:
     - github-pr-workflow
 ```
 
-Resolved once per session when the system prompt is first built (so the prompt stays cache-stable; edits apply to the next session). Missing or disabled skills warn and are skipped; `--ignore-rules` / `HERMES_IGNORE_RULES=1` suppresses the list. Profile-scoped. See [CLI — persistent auto-load](/user-guide/cli#persistent-auto-load-via-config).
+Resolved once per session when the system prompt is first built (so the prompt stays cache-stable; edits apply to the next session). Missing or disabled skills warn and are skipped; `--ignore-rules` / `MOOR_IGNORE_RULES=1` suppresses the list. Profile-scoped. See [CLI — persistent auto-load](/user-guide/cli#persistent-auto-load-via-config).
 
 ### Guard on agent-created skill writes
 
@@ -1178,9 +1178,9 @@ agent:
 
 `agent.max_turns` is **unlimited by default** — the turn cap caused more problems than it solved (silent mid-task truncation), so out of the box Moor runs a conversation turn to completion. To impose a cap, set a positive integer. To be explicit about "no limit", any of these case-insensitive spellings work: `"none"`, `"null"`, `"unlimited"`, `"infinite"`, `"infinity"`, `"inf"`, `0`, `-1` (they resolve to a `sys.maxsize` sentinel so the loop never exits on a turn count).
 
-`agent.budget_warning_ratio` is off by default for ordinary and delegated conversations. When set to a value strictly between `0` and `1` alongside a finite `max_turns`, Hermes appends one model-visible checkpoint notice to the latest tool result after the threshold is reached. The notice rearms each conversation turn and uses each agent's own iteration budget. It only appends to a current tool-result tail, never an older turn, and does not add a synthetic user/system message or change the existing exhaustion grace call. Dispatcher-owned Kanban workers receive a completion checkpoint at 90% by default (an explicit ratio changes that threshold), while their tools are still available. The checkpoint asks for verified completion or a durable progress comment, not premature success.
+`agent.budget_warning_ratio` is off by default for ordinary and delegated conversations. When set to a value strictly between `0` and `1` alongside a finite `max_turns`, Moor appends one model-visible checkpoint notice to the latest tool result after the threshold is reached. The notice rearms each conversation turn and uses each agent's own iteration budget. It only appends to a current tool-result tail, never an older turn, and does not add a synthetic user/system message or change the existing exhaustion grace call. Dispatcher-owned Kanban workers receive a completion checkpoint at 90% by default (an explicit ratio changes that threshold), while their tools are still available. The checkpoint asks for verified completion or a durable progress comment, not premature success.
 
-`agent.api_max_retries` controls how many times Hermes retries a provider API call on transient errors (rate limits, connection drops, 5xx) **before** fallback-provider switching engages. The default is `3` — four attempts total. If you have [fallback providers](/user-guide/features/fallback-providers) configured and want to fail over faster, drop this to `0` so the first transient error on your primary immediately hands off to the fallback instead of churning retries against the flaky endpoint.
+`agent.api_max_retries` controls how many times Moor retries a provider API call on transient errors (rate limits, connection drops, 5xx) **before** fallback-provider switching engages. The default is `3` — four attempts total. If you have [fallback providers](/user-guide/features/fallback-providers) configured and want to fail over faster, drop this to `0` so the first transient error on your primary immediately hands off to the fallback instead of churning retries against the flaky endpoint.
 
 ## Wall-Clock Run Budget
 
@@ -1218,7 +1218,7 @@ agent:
 
 `verify_on_stop` accepts `true` (on everywhere), `false` (off — the default), or `"auto"` (legacy surface-aware behavior: on for interactive coding surfaces — CLI, TUI, desktop — and programmatic callers; off for messaging surfaces like Telegram/Discord where the verification narrative reads as chat noise). Off is the default everywhere: fresh installs ship `false` and the config migration turned it off on existing installs, so enabling it is an explicit opt-in. The `MOOR_VERIFY_ON_STOP` env var overrides the config value when set.
 
-The evidence that feeds this guard (which test/lint/build commands ran, which files were edited since) lives in `~/.hermes/verification_evidence.db`. That ledger is only written or created while the guard is enabled; with `verify_on_stop: false` nothing is recorded and an existing file can be deleted freely.
+The evidence that feeds this guard (which test/lint/build commands ran, which files were edited since) lives in `~/.moor/verification_evidence.db`. That ledger is only written or created while the guard is enabled; with `verify_on_stop: false` nothing is recorded and an existing file can be deleted freely.
 
 For a user/plugin policy gate at the same point — keep the agent going with your own checks — see the [`pre_verify` hook](/user-guide/features/hooks#pre_verify).
 
@@ -1260,7 +1260,7 @@ Cron jobs and delegated subagents stream too. They run the request inline on the
 
 `model.streaming: false` forces non-streaming requests for the whole session — parent and subagents alike. It is an escape hatch for self-hosted OpenAI-compatible servers whose *streaming* tool-call path is broken (for example vLLM with `--tool-call-parser qwen3_xml` plus a reasoning parser can leak tool-call markup into plain text and return zero `tool_calls`, so delegated tasks silently no-op). Default is `true`; leave it unless you hit that class of bug, since non-streaming calls lose the liveness properties described above. This is separate from `display.streaming`, which only controls token rendering in the terminal.
 
-Hermes also switches a session to non-streaming on its own when streaming cannot make progress: the provider reports that streaming is not supported, or an OpenAI-compatible gateway answers a streaming request with a contentless SSE frame (a bare `data:` / `event: ping` keepalive with no payload, typical of a degraded relay). The turn is retried without streaming, a warning is shown, and streaming stays off for the rest of that session.
+Moor also switches a session to non-streaming on its own when streaming cannot make progress: the provider reports that streaming is not supported, or an OpenAI-compatible gateway answers a streaming request with a contentless SSE frame (a bare `data:` / `event: ping` keepalive with no payload, typical of a degraded relay). The turn is retried without streaming, a warning is shown, and streaming stays off for the rest of that session.
 
 ```yaml
 model:
@@ -1400,7 +1400,7 @@ Auxiliary task blocks additionally accept a `reasoning_effort` knob:
 
 This is the per-task counterpart of the global `agent.reasoning_effort`: run compression at `low` or vision at `none` to cut side-task latency and cost when your main model is an expensive reasoning model, without touching your main chat behavior. It applies to auxiliary-client tasks such as `vision`, `compression`, `title_generation`, and `curator`, across all three auxiliary wire formats (chat completions, Codex Responses, Anthropic Messages). An explicit `extra_body.reasoning` on the same task wins over the shorthand.
 
-**Background review is different:** a same-model review fork always inherits the parent's reasoning effort. `auxiliary.background_review.reasoning_effort` is ignored on that path, including when the parent provider/model is explicitly selected. This preserves byte-identical reasoning settings, system prompt, full conversation snapshot, and tool definitions for prompt-cache parity; there is no independent-effort switch for same-model reviews. See [background review reasoning](/user-guide/features/memory#same-model-review-reasoning). When the review is routed to a different provider/model, `reasoning_effort` applies to that routed fork (unset = the routed provider's default). Hermes prints a one-time warning when the key is set but the review runs on the main model.
+**Background review is different:** a same-model review fork always inherits the parent's reasoning effort. `auxiliary.background_review.reasoning_effort` is ignored on that path, including when the parent provider/model is explicitly selected. This preserves byte-identical reasoning settings, system prompt, full conversation snapshot, and tool definitions for prompt-cache parity; there is no independent-effort switch for same-model reviews. See [background review reasoning](/user-guide/features/memory#same-model-review-reasoning). When the review is routed to a different provider/model, `reasoning_effort` applies to that routed fork (unset = the routed provider's default). Moor prints a one-time warning when the key is set but the review runs on the main model.
 
 **MoA also uses a different configuration:** reasoning depth for Mixture-of-Agents is configured **per slot** in the MoA preset (`moa.presets.<name>.reference_models[].reasoning_effort` / `aggregator.reasoning_effort`), not on the `moa_reference`/`moa_aggregator` auxiliary blocks — see [Mixture of Agents](/user-guide/features/mixture-of-agents).
 
@@ -2067,7 +2067,7 @@ Both keys are display-only and CLI-only: they are suppressed in quiet mode, when
 
 ### File-mutation verifier
 
-When `display.file_mutation_verifier` is `true` (default), Hermes appends a one-line advisory to the assistant's final response whenever a `write_file` or `patch` call failed during the turn and the target file was neither written successfully afterwards (under any spelling of its path) nor otherwise changed on disk before the turn ended. This catches the "batch of parallel patches, half silently fail, model summarises success" class of over-claim without requiring you to manually run `git status` after every edit.
+When `display.file_mutation_verifier` is `true` (default), Moor appends a one-line advisory to the assistant's final response whenever a `write_file` or `patch` call failed during the turn and the target file was neither written successfully afterwards (under any spelling of its path) nor otherwise changed on disk before the turn ended. This catches the "batch of parallel patches, half silently fail, model summarises success" class of over-claim without requiring you to manually run `git status` after every edit.
 
 Example footer:
 
@@ -2080,7 +2080,7 @@ Example footer:
 
 Set `file_mutation_verifier: false` (or `MOOR_FILE_MUTATION_VERIFIER=0`) to suppress the footer. The verifier only fires when real failures are outstanding at turn end — a model that retries a failed patch and succeeds within the same turn will not trigger it for that file.
 
-**Trust the verifier over the model's summary.** The footer means the listed edit calls **failed** and Hermes saw no later change to those files, even if the assistant's closing message says the task is done. It only tracks `write_file`/`patch` receipts plus a modification-time check at turn end, so run `git status` or `read_file` to confirm what actually landed. Common causes:
+**Trust the verifier over the model's summary.** The footer means the listed edit calls **failed** and Moor saw no later change to those files, even if the assistant's closing message says the task is done. It only tracks `write_file`/`patch` receipts plus a modification-time check at turn end, so run `git status` or `read_file` to confirm what actually landed. Common causes:
 
 - **Write denied** — path is on the credential denylist or outside `MOOR_WRITE_SAFE_ROOT` (see [File write safety](./security.md#file-write-safety))
 - **Patch mismatch** — `old_string` did not match the file on disk
@@ -2090,8 +2090,8 @@ Example footer when writes are blocked:
 
 ```
 ⚠️ File-mutation verifier: 2 file edit(s) FAILED this turn despite any wording above that may suggest otherwise. Run `git status` or `read_file` to confirm what actually landed.
-  • ~/.hermes/cron/jobs.json — [patch] Write denied: '…' is outside HERMES_WRITE_SAFE_ROOT (/path/to/project)
-  • ~/.hermes/scripts/monitor.py — [write_file] Write denied: '…' is outside HERMES_WRITE_SAFE_ROOT (/path/to/project)
+  • ~/.moor/cron/jobs.json — [patch] Write denied: '…' is outside MOOR_WRITE_SAFE_ROOT (/path/to/project)
+  • ~/.moor/scripts/monitor.py — [write_file] Write denied: '…' is outside MOOR_WRITE_SAFE_ROOT (/path/to/project)
 ```
 
 If writes to Moor state (cron jobs, skills, scripts under `~/.moor/`) are failing, check whether `MOOR_WRITE_SAFE_ROOT` is set in your environment. For cron changes, use the `cronjob` tool or `moor cron edit` instead of patching `jobs.json` directly.
@@ -2442,7 +2442,7 @@ whatsapp:
   unauthorized_dm_decline_message: "Sorry, this assistant is private."
   ```
 
-  `hermes gateway setup` offers this as "Politely decline unknown senders" when you leave the allowlist empty; it writes `platforms.<platform>.unauthorized_dm_behavior: decline`.
+  `moor gateway setup` offers this as "Politely decline unknown senders" when you leave the allowlist empty; it writes `platforms.<platform>.unauthorized_dm_behavior: decline`.
 
 - Email defaults to `ignore` unless `platforms.email.unauthorized_dm_behavior: pair` is set, because inboxes can contain unrelated unread mail.
 - Platform sections override the global default, so you can keep pairing enabled broadly while making one platform quieter.
@@ -2602,7 +2602,7 @@ timezone: "America/New_York"   # IANA timezone (default: "" = server-local time)
 
 Supported values: any IANA timezone identifier (e.g. `America/New_York`, `Europe/London`, `Asia/Kolkata`, `UTC`). Leave empty or omit for server-local time.
 
-`hermes doctor` (and the startup config check) reports a value the runtime cannot load — a typo such as `Asia/Tokio` would otherwise silently put the agent clock and every cron schedule on server-local time. `HERMES_TIMEZONE` overrides this key when set.
+`moor doctor` (and the startup config check) reports a value the runtime cannot load — a typo such as `Asia/Tokio` would otherwise silently put the agent clock and every cron schedule on server-local time. `MOOR_TIMEZONE` overrides this key when set.
 
 ## Discord
 
@@ -2636,7 +2636,7 @@ security:
     shared_files: []
 ```
 
-- `redact_secrets` — when `true`, automatically detects and redacts patterns that look like API keys, tokens, and passwords in tool output before it enters the conversation context and logs. **On by default**. Set to `false` explicitly only when you need raw credential-like strings for debugging or redactor development. Reading a secret-bearing file (`.env`-style files, shell rc/profile files, the Hermes `config.yaml` under `HERMES_HOME` and its `backups/config/` copies) with `read_file`, `search_files` or a terminal `cat`/`grep` also masks credential-shaped assignments (`SOME_API_TOKEN: …`) with a non-reusable `«redacted-secret»` marker, whatever the value looks like; ordinary source and project config files keep only the vendor-prefix patterns so fixtures such as `MAX_TOKENS: 100` are never mangled.
+- `redact_secrets` — when `true`, automatically detects and redacts patterns that look like API keys, tokens, and passwords in tool output before it enters the conversation context and logs. **On by default**. Set to `false` explicitly only when you need raw credential-like strings for debugging or redactor development. Reading a secret-bearing file (`.env`-style files, shell rc/profile files, the Moor `config.yaml` under `MOOR_HOME` and its `backups/config/` copies) with `read_file`, `search_files` or a terminal `cat`/`grep` also masks credential-shaped assignments (`SOME_API_TOKEN: …`) with a non-reusable `«redacted-secret»` marker, whatever the value looks like; ordinary source and project config files keep only the vendor-prefix patterns so fixtures such as `MAX_TOKENS: 100` are never mangled.
 - `tirith_enabled` — when `true`, terminal commands are scanned by [Tirith](https://github.com/sheeki03/tirith) before execution to detect potentially dangerous operations.
 - `tirith_path` — path to the tirith binary. Set this if tirith is installed in a non-standard location.
 - `tirith_timeout` — maximum seconds to wait for a tirith scan. Commands proceed if the scan times out.
@@ -2761,7 +2761,7 @@ delegation:
 
 **Subagent fallback chain:** Set `delegation.fallback_providers` to give workers their own chain (same entry shape as the top-level list). An explicitly pinned child (by provider, endpoint, or model) uses that chain only when it is declared; otherwise it fails loudly instead of borrowing the parent agent's route. For an unpinned child, an absent or `null` setting preserves parent-chain inheritance. Use `fallback_providers: []` under `delegation:` to disable child fallback entirely.
 
-**Direct endpoint override:** If you want the obvious custom-endpoint path, set `delegation.base_url`, `delegation.api_key`, and `delegation.model`. That sends subagents directly to that OpenAI-compatible endpoint and takes precedence over `delegation.provider`. If `delegation.api_key` is omitted, Hermes falls back to `OPENAI_API_KEY` only. When `delegation.provider` is set alongside `delegation.base_url`, the explicit endpoint and key still win, but that provider's request settings (`extra_body` overrides and max output tokens from your `custom_providers` entry) are carried into the subagent.
+**Direct endpoint override:** If you want the obvious custom-endpoint path, set `delegation.base_url`, `delegation.api_key`, and `delegation.model`. That sends subagents directly to that OpenAI-compatible endpoint and takes precedence over `delegation.provider`. If `delegation.api_key` is omitted, Moor falls back to `OPENAI_API_KEY` only. When `delegation.provider` is set alongside `delegation.base_url`, the explicit endpoint and key still win, but that provider's request settings (`extra_body` overrides and max output tokens from your `custom_providers` entry) are carried into the subagent.
 
 **Per-child request settings (`request_overrides`):** `delegation.request_overrides` is a dict of request settings sent on every subagent API call. Top-level keys are API kwargs (e.g. `service_tier`); an `extra_body` sub-dict is merged into the request's `extra_body`. It is honored on **all three** resolution branches — direct `base_url`, named `provider`, and pure inherit — so the key always takes effect. Precedence: explicit `request_overrides` values merge **over** any runtime- or parent-derived overrides — top-level explicit keys win, and `extra_body` is deep-merged one level so runtime `extra_body` keys (e.g. a provider's `thinking: {type: disabled}` personality) survive unless your key redefines them. The canonical use case is OpenRouter routing hints for delegation children:
 
@@ -2775,7 +2775,7 @@ delegation:
       provider:
         sort: throughput   # route children to the fastest OpenRouter provider
 ```
-**Wire protocol (`api_mode`):** Hermes auto-detects the wire protocol from `delegation.base_url` (e.g. paths ending in `/anthropic` → `anthropic_messages`; Codex / native Anthropic / Kimi-coding hostnames keep their existing detection). For endpoints the heuristic can't classify — for example Azure AI Foundry, MiniMax, Zhipu GLM, or LiteLLM proxies fronting an Anthropic-shaped backend — set `delegation.api_mode` explicitly to one of `chat_completions`, `codex_responses`, or `anthropic_messages`. Leave it empty (the default) to keep auto-detection.
+**Wire protocol (`api_mode`):** Moor auto-detects the wire protocol from `delegation.base_url` (e.g. paths ending in `/anthropic` → `anthropic_messages`; Codex / native Anthropic / Kimi-coding hostnames keep their existing detection). For endpoints the heuristic can't classify — for example Azure AI Foundry, MiniMax, Zhipu GLM, or LiteLLM proxies fronting an Anthropic-shaped backend — set `delegation.api_mode` explicitly to one of `chat_completions`, `codex_responses`, or `anthropic_messages`. Leave it empty (the default) to keep auto-detection.
 
 The delegation provider uses the same credential resolution as CLI/gateway startup. All configured providers are supported: `openrouter`, `moor`, `copilot`, `zai`, `kimi-coding`, `minimax`, `minimax-cn`. When a provider is set, the system automatically resolves the correct base URL, API key, and API mode — no manual credential wiring needed.
 
@@ -2895,7 +2895,7 @@ dashboard:
 - `trusted_proxies` — IP addresses or bounded CIDR networks allowed to supply `X-Forwarded-Proto` and `X-Forwarded-For`. Loopback remains trusted automatically. Configure this when the TLS reverse proxy connects from another container or host. Prefer the proxy's exact IP; use a small dedicated network only when its address is dynamic. Wildcards and `/0` networks are rejected.
 - `oauth` / `basic_auth` / `drain_auth` — auth provider config read by the bundled dashboard-auth plugins. The drain secret itself is **not** set here; it's provisioned via the `MOOR_DASHBOARD_DRAIN_SECRET` env var. See [Web Dashboard](/user-guide/features/web-dashboard) for full auth setup.
 - `ws_ping_interval` / `ws_ping_timeout` — WebSocket keepalive tuning for non-loopback binds (loopback connections never ping). Raise these on high-latency links (Tailscale, distant SSH tunnels) where the 20 s defaults can manufacture spurious 1006 disconnects.
-- `ssh_isolated_idle_grace_s` (default `900`) — a Desktop-owned `hermes serve --isolated` backend reached over SSH is detached from the SSH session on purpose, so a laptop that sleeps mid-connection cannot tear it down; each dark-wake reconnect used to leave another backend holding `state.db`. The backend now retires itself once no client WebSocket has been connected for this long and no agent turn is running (a turn keeps it alive; an unreadable turn state keeps it alive too). Set high if you rely on a detached backend finishing long work after the laptop sleeps. Such backends also send a slow WebSocket ping (60 s, 10 min timeout) so a half-open tunnel is noticed.
-- `ws_orphan_reap_grace_s` — how long a WS-detached session waits before the orphan reaper collects it. Raise alongside the keepalive values if clients reconnect slowly. Periodic session maintenance also completes cleanup for closed sockets and re-arms a missing orphan timer, so a detached chat cannot keep its ownership lease solely because its initial cleanup or timer was lost. Reconnecting cancels that timer; active delegated work and healthy running turns remain protected by the normal orphan-reaper checks. (`HERMES_TUI_WS_ORPHAN_REAP_GRACE_S` remains as an internal override.)
+- `ssh_isolated_idle_grace_s` (default `900`) — a Desktop-owned `moor serve --isolated` backend reached over SSH is detached from the SSH session on purpose, so a laptop that sleeps mid-connection cannot tear it down; each dark-wake reconnect used to leave another backend holding `state.db`. The backend now retires itself once no client WebSocket has been connected for this long and no agent turn is running (a turn keeps it alive; an unreadable turn state keeps it alive too). Set high if you rely on a detached backend finishing long work after the laptop sleeps. Such backends also send a slow WebSocket ping (60 s, 10 min timeout) so a half-open tunnel is noticed.
+- `ws_orphan_reap_grace_s` — how long a WS-detached session waits before the orphan reaper collects it. Raise alongside the keepalive values if clients reconnect slowly. Periodic session maintenance also completes cleanup for closed sockets and re-arms a missing orphan timer, so a detached chat cannot keep its ownership lease solely because its initial cleanup or timer was lost. Reconnecting cancels that timer; active delegated work and healthy running turns remain protected by the normal orphan-reaper checks. (`MOOR_TUI_WS_ORPHAN_REAP_GRACE_S` remains as an internal override.)
 - `ws_orphan_activity_stale_s` (default `600`) — how long a detached **running** turn's activity clock (the same clock the `agent.turn_liveness` watchdog samples: API waits, stream tokens, tool heartbeats) must be idle before the orphan reaper interrupts it. A client-absent turn that is still actively producing keeps running to completion detached — closing the laptop, backgrounding the mobile app, or a desktop update no longer cancels healthy long turns; only a genuinely wedged turn is interrupted. Set `0` to interrupt at the grace window regardless of activity (old behavior).
-- `startup_orphan_sweep` (default `true`) — the WS-orphan reap timer above is in-process, so a gateway restart (update, crash, systemd) before it fires leaves the session row open forever — phantom "active" work in `/resume` and dashboards. On every gateway boot — both the stdio TUI (`entry.main`) and the desktop/dashboard WebSocket sidecar (`handle_ws`) — rows with source `tui` / `desktop` / `subagent` / `unknown` (a row the token-accounting guard had to materialize itself) whose start time **and** newest message are both older than the session TTL (`HERMES_TUI_SESSION_TTL_S`, default 6 hours) are closed with `end_reason: startup_orphan_reap`. Messaging-platform sessions (Telegram, Discord, …) are never touched, live in-memory sessions (a client that already resumed) are excluded, and swept sessions remain resumable.
+- `startup_orphan_sweep` (default `true`) — the WS-orphan reap timer above is in-process, so a gateway restart (update, crash, systemd) before it fires leaves the session row open forever — phantom "active" work in `/resume` and dashboards. On every gateway boot — both the stdio TUI (`entry.main`) and the desktop/dashboard WebSocket sidecar (`handle_ws`) — rows with source `tui` / `desktop` / `subagent` / `unknown` (a row the token-accounting guard had to materialize itself) whose start time **and** newest message are both older than the session TTL (`MOOR_TUI_SESSION_TTL_S`, default 6 hours) are closed with `end_reason: startup_orphan_reap`. Messaging-platform sessions (Telegram, Discord, …) are never touched, live in-memory sessions (a client that already resumed) are excluded, and swept sessions remain resumable.

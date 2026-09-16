@@ -14,28 +14,28 @@ You need at least one way to connect to an LLM. Use `moor model` to switch provi
 
 | Provider | Setup |
 |----------|-------|
-| **Nous Portal** | `hermes model` (OAuth, subscription-based) |
-| **OpenAI Codex** | `hermes model` → **ChatGPT or Codex Subscription** (ChatGPT OAuth, uses Codex models) |
-| **GitHub Copilot** | `hermes model` (OAuth device code flow, `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `gh auth token`) |
-| **GitHub Copilot ACP** | `hermes model` (spawns local `copilot --acp --stdio`) |
-| **Anthropic** | `hermes model` (Claude Max + extra usage credits via OAuth; also supports Anthropic API key or manual setup-token — see note below) |
-| **OpenRouter** | `OPENROUTER_API_KEY` in `~/.hermes/.env`, or `hermes auth add openrouter --type oauth` (browser login via OpenRouter's PKCE flow; stores a key in the credential pool) |
-| **Ramp Router** | `RAMP_ROUTER_API_KEY` in `~/.hermes/.env` (provider: `router`; aliases: `ramp-router`, `ramp`, `router.com`; Responses-native gateway, live account-scoped catalog) |
-| **Fireworks AI** | `FIREWORKS_API_KEY` in `~/.hermes/.env` (provider: `fireworks`; aliases: `fireworks-ai`, `fw`) |
-| **NovitaAI** | `NOVITA_API_KEY` in `~/.hermes/.env` (provider: `novita`, 200+ models, Model API, Agent Sandbox, GPU Cloud) |
-| **AI Gateway** | `AI_GATEWAY_API_KEY` in `~/.hermes/.env` (provider: `ai-gateway`) |
-| **z.ai / GLM** | `GLM_API_KEY` in `~/.hermes/.env` (provider: `zai`) |
-| **Kimi / Moonshot** | `KIMI_API_KEY` in `~/.hermes/.env` (provider: `kimi-coding`) |
-| **Kimi / Moonshot (China)** | `KIMI_CN_API_KEY` in `~/.hermes/.env` (provider: `kimi-coding-cn`; aliases: `kimi-cn`, `moonshot-cn`) |
-| **Arcee AI** | `ARCEEAI_API_KEY` in `~/.hermes/.env` (provider: `arcee`; aliases: `arcee-ai`, `arceeai`) |
-| **GMI Cloud** | `GMI_API_KEY` in `~/.hermes/.env` (provider: `gmi`; aliases: `gmi-cloud`, `gmicloud`) |
-| **Nebius Token Factory** | `NEBIUS_API_KEY` in `~/.hermes/.env` (provider: `nebius-token-factory`; aliases: `nebius`, `nebius-tf`, `tokenfactory`) |
-| **Actual Computer** | `ACTUAL_API_KEY` in `~/.hermes/.env` for the hosted relay; set `model.base_url` in `config.yaml` for a local daemon (no key needed on loopback). Provider: `actual`; aliases: `actual-computer`, `actualcomputer`, `aci`. |
-| **MiniMax** | `MINIMAX_API_KEY` in `~/.hermes/.env` (provider: `minimax`) |
-| **MiniMax China** | `MINIMAX_CN_API_KEY` in `~/.hermes/.env` (provider: `minimax-cn`) |
-| **xAI (Grok) — Responses API** | `XAI_API_KEY` in `~/.hermes/.env` (provider: `xai`) |
-| **xAI Grok OAuth (SuperGrok)** | `hermes model` → "xAI Grok OAuth (SuperGrok / Premium+)" — browser login, no API key. See [guide](../guides/xai-grok-oauth.md) |
-| **Qwen Cloud (Alibaba DashScope)** | `DASHSCOPE_API_KEY` in `~/.hermes/.env` (provider: `alibaba`; mainland-China endpoint: `alibaba-cn`) |
+| **Moor Portal** | `moor model` (OAuth, subscription-based) |
+| **OpenAI Codex** | `moor model` → **ChatGPT or Codex Subscription** (ChatGPT OAuth, uses Codex models) |
+| **GitHub Copilot** | `moor model` (OAuth device code flow, `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `gh auth token`) |
+| **GitHub Copilot ACP** | `moor model` (spawns local `copilot --acp --stdio`) |
+| **Anthropic** | `moor model` (Claude Max + extra usage credits via OAuth; also supports Anthropic API key or manual setup-token — see note below) |
+| **OpenRouter** | `OPENROUTER_API_KEY` in `~/.moor/.env`, or `moor auth add openrouter --type oauth` (browser login via OpenRouter's PKCE flow; stores a key in the credential pool) |
+| **Ramp Router** | `RAMP_ROUTER_API_KEY` in `~/.moor/.env` (provider: `router`; aliases: `ramp-router`, `ramp`, `router.com`; Responses-native gateway, live account-scoped catalog) |
+| **Fireworks AI** | `FIREWORKS_API_KEY` in `~/.moor/.env` (provider: `fireworks`; aliases: `fireworks-ai`, `fw`) |
+| **NovitaAI** | `NOVITA_API_KEY` in `~/.moor/.env` (provider: `novita`, 200+ models, Model API, Agent Sandbox, GPU Cloud) |
+| **AI Gateway** | `AI_GATEWAY_API_KEY` in `~/.moor/.env` (provider: `ai-gateway`) |
+| **z.ai / GLM** | `GLM_API_KEY` in `~/.moor/.env` (provider: `zai`) |
+| **Kimi / Moonshot** | `KIMI_API_KEY` in `~/.moor/.env` (provider: `kimi-coding`) |
+| **Kimi / Moonshot (China)** | `KIMI_CN_API_KEY` in `~/.moor/.env` (provider: `kimi-coding-cn`; aliases: `kimi-cn`, `moonshot-cn`) |
+| **Arcee AI** | `ARCEEAI_API_KEY` in `~/.moor/.env` (provider: `arcee`; aliases: `arcee-ai`, `arceeai`) |
+| **GMI Cloud** | `GMI_API_KEY` in `~/.moor/.env` (provider: `gmi`; aliases: `gmi-cloud`, `gmicloud`) |
+| **Nebius Token Factory** | `NEBIUS_API_KEY` in `~/.moor/.env` (provider: `nebius-token-factory`; aliases: `nebius`, `nebius-tf`, `tokenfactory`) |
+| **Actual Computer** | `ACTUAL_API_KEY` in `~/.moor/.env` for the hosted relay; set `model.base_url` in `config.yaml` for a local daemon (no key needed on loopback). Provider: `actual`; aliases: `actual-computer`, `actualcomputer`, `aci`. |
+| **MiniMax** | `MINIMAX_API_KEY` in `~/.moor/.env` (provider: `minimax`) |
+| **MiniMax China** | `MINIMAX_CN_API_KEY` in `~/.moor/.env` (provider: `minimax-cn`) |
+| **xAI (Grok) — Responses API** | `XAI_API_KEY` in `~/.moor/.env` (provider: `xai`) |
+| **xAI Grok OAuth (SuperGrok)** | `moor model` → "xAI Grok OAuth (SuperGrok / Premium+)" — browser login, no API key. See [guide](../guides/xai-grok-oauth.md) |
+| **Qwen Cloud (Alibaba DashScope)** | `DASHSCOPE_API_KEY` in `~/.moor/.env` (provider: `alibaba`; mainland-China endpoint: `alibaba-cn`) |
 | **Alibaba Cloud (Coding Plan)** | `ALIBABA_CODING_PLAN_API_KEY` (falls back to `DASHSCOPE_API_KEY`) (provider: `alibaba-coding-plan`, alias: `alibaba_coding`; mainland-China endpoint: `alibaba-coding-plan-cn` with `ALIBABA_CODING_PLAN_CN_API_KEY`, falling back to the shared keys) — separate billing SKU, different endpoint |
 | **Alibaba Cloud (Token Plan)** | `ALIBABA_TOKEN_PLAN_API_KEY` in `~/.moor/.env` (provider: `alibaba-token-plan`; mainland-China endpoint: `alibaba-token-plan-cn` with `ALIBABA_TOKEN_PLAN_CN_API_KEY`, falling back to the shared key) — Model Studio flat-token tier |
 | **Kilo Code** | `KILOCODE_API_KEY` in `~/.moor/.env` (provider: `kilocode`) |
@@ -61,7 +61,7 @@ You need at least one way to connect to an LLM. Use `moor model` to switch provi
 | **LM Studio** | `moor model` → "LM Studio" (provider: `lmstudio`, optional `LM_API_KEY`) |
 | **Custom Endpoint** | `moor model` → choose "Custom endpoint" (saved in `config.yaml`) |
 
-All three OpenCode providers send an opaque, per-conversation `x-opencode-session` header on every request (main turns on every transport plus auxiliary calls such as compression and titles; headless Kanban `specify`/`decompose` and dashboard estimate calls use a per-task key). OpenCode uses it to pin a conversation to one backend so its prompt cache stays warm; the value is derived from the Hermes session id (or the Kanban task id) and carries no personal data.
+All three OpenCode providers send an opaque, per-conversation `x-opencode-session` header on every request (main turns on every transport plus auxiliary calls such as compression and titles; headless Kanban `specify`/`decompose` and dashboard estimate calls use a per-task key). OpenCode uses it to pin a conversation to one backend so its prompt cache stays warm; the value is derived from the Moor session id (or the Kanban task id) and carries no personal data.
 
 For the official API-key path, see the dedicated [Google Gemini guide](/guides/google-gemini).
 
@@ -92,9 +92,9 @@ Don't have a subscription yet? Get one at [portal.nousresearch.com/manage-subscr
 :::info Codex Note
 The OpenAI Codex provider authenticates via device code (open a URL, enter a code). Moor stores the resulting credentials in its own auth store under `~/.moor/auth.json` and can import existing Codex CLI credentials from `~/.codex/auth.json` when present. No Codex CLI installation is required.
 
-If a token refresh fails with a terminal error (HTTP 4xx, `invalid_grant`, revoked grant, etc.), Hermes marks the refresh token as dead and stops replaying it so you don't see a flood of identical auth failures. The next request surfaces a typed re-auth message instead. Run `hermes auth add openai-codex` (or `hermes model` → **ChatGPT or Codex Subscription**) to start a fresh device-code login; the quarantine clears on the next successful exchange.
+If a token refresh fails with a terminal error (HTTP 4xx, `invalid_grant`, revoked grant, etc.), Moor marks the refresh token as dead and stops replaying it so you don't see a flood of identical auth failures. The next request surfaces a typed re-auth message instead. Run `moor auth add openai-codex` (or `moor model` → **ChatGPT or Codex Subscription**) to start a fresh device-code login; the quarantine clears on the next successful exchange.
 
-Device login can fail with `[SSL: UNEXPECTED_EOF_WHILE_READING]` or a TLS handshake timeout on Python/OpenSSL 3.5+ when a middlebox rejects post-quantum groups such as X25519MLKEM768 (curl may still work). Hermes does not change default TLS policy. Point `OPENSSL_CONF` at a config that restricts `Groups` to classic curves before running `hermes model`, or diagnose with TLS 1.2:
+Device login can fail with `[SSL: UNEXPECTED_EOF_WHILE_READING]` or a TLS handshake timeout on Python/OpenSSL 3.5+ when a middlebox rejects post-quantum groups such as X25519MLKEM768 (curl may still work). Moor does not change default TLS policy. Point `OPENSSL_CONF` at a config that restricts `Groups` to classic curves before running `moor model`, or diagnose with TLS 1.2:
 
 ```ini
 openssl_conf = openssl_init
@@ -160,7 +160,7 @@ If you'd rather not track per-provider plan semantics at all, [Moor Portal](#moo
 
 Use Claude models directly through the Anthropic API — no OpenRouter proxy needed. Supports three auth methods:
 
-When no explicit environment credential is selected, Hermes-owned OAuth grants
+When no explicit environment credential is selected, moor-owned OAuth grants
 in the credential pool take precedence over a borrowed Claude Code login. The
 borrowed login remains the fallback when no owned OAuth grant is available.
 Auxiliary authentication recovery refreshes the credential used by the failed
@@ -370,7 +370,7 @@ No configuration is needed — caching activates automatically when an xAI endpo
 
 xAI also ships a dedicated TTS endpoint (`/v1/tts`). Select **xAI TTS** in `moor tools` → Voice & TTS, or see the [Voice & TTS](../user-guide/features/tts.md#text-to-speech) page for config.
 
-**Retired xAI model migration (May 15, 2026):** xAI is retiring `grok-4*`, `grok-3`, `grok-code-fast-1`, and `grok-imagine-image-pro` on 2026-05-15. `hermes doctor` and `hermes chat` startup both detect any config still pointing at a retired ref and print the recommended replacement. Use `hermes migrate xai` for a one-shot config rewrite — dry-run by default, add `--apply` to write changes (a timestamped copy of the previous config lands in `backups/config/` first).
+**Retired xAI model migration (May 15, 2026):** xAI is retiring `grok-4*`, `grok-3`, `grok-code-fast-1`, and `grok-imagine-image-pro` on 2026-05-15. `moor doctor` and `moor chat` startup both detect any config still pointing at a retired ref and print the recommended replacement. Use `moor migrate xai` for a one-shot config rewrite — dry-run by default, add `--apply` to write changes (a timestamped copy of the previous config lands in `backups/config/` first).
 
 ```bash
 moor migrate xai          # preview replacements
@@ -615,11 +615,11 @@ Your own hardware as a private inference cluster via [Actual Computer](https://a
 # Hosted relay (ACTUAL_API_KEY in ~/.moor/.env)
 moor chat --provider actual --model <model-id-from-your-cluster>
 
-# Local daemon (model.base_url in ~/.hermes/config.yaml, no key)
-hermes chat --provider actual --model <installed-model-name>
+# Local daemon (model.base_url in ~/.moor/config.yaml, no key)
+moor chat --provider actual --model <installed-model-name>
 ```
 
-Store provider settings in `~/.hermes/config.yaml`; only the hosted API key belongs in `.env`:
+Store provider settings in `~/.moor/config.yaml`; only the hosted API key belongs in `.env`:
 ```yaml
 model:
   provider: "actual"
@@ -628,7 +628,7 @@ model:
 ```
 
 Notes:
-- Model IDs come from your cluster's `GET /v1/models` — discover with `hermes model` or `curl -s https://api.actual.inc/v1/models -H "Authorization: Bearer $ACTUAL_API_KEY"`.
+- Model IDs come from your cluster's `GET /v1/models` — discover with `moor model` or `curl -s https://api.actual.inc/v1/models -H "Authorization: Bearer $ACTUAL_API_KEY"`.
 - Bare hosts in `model.base_url` are normalized: `http://127.0.0.1:8080` becomes `http://127.0.0.1:8080/v1` automatically. The legacy `ACTUAL_BASE_URL` environment variable is a fallback when no Actual URL is configured in YAML.
 - Actual uses `/v1/chat/completions` for chat, compaction, title generation, and every other auxiliary task. This also applies to custom providers targeting `api.actual.inc`, model switches, and fallbacks. Legacy Responses settings in the main model, custom provider, or auxiliary task configuration are overridden automatically.
 - Reasoning effort is clamped to Actual's supported range (`none/low/medium/high/max`) — a global `xhigh`/`ultra` setting will not 400 requests.
@@ -890,7 +890,7 @@ moor model
 **Tool calling:** Use `--tool-call-parser` with the appropriate parser for your model family: `qwen` (Qwen 2.5), `llama3`, `llama4`, `deepseekv3`, `mistral`, `glm`. Without this flag, tool calls come back as plain text.
 
 :::caution SGLang defaults to 128 max output tokens
-If responses seem truncated, check the server's generation default and configure it on the server (for example SGLang's `--default-max-tokens`). Hermes does not expose an output-token cap setting.
+If responses seem truncated, check the server's generation default and configure it on the server (for example SGLang's `--default-max-tokens`). Moor does not expose an output-token cap setting.
 :::
 
 ---
@@ -1159,8 +1159,8 @@ model:
 #### Responses get cut off mid-sentence
 
 **Possible causes:**
-1. **Low output limit on the server** — configure the server's generation default (for example SGLang's `--default-max-tokens`). Hermes does not expose an output-token cap setting. Response length is distinct from the conversation's context window (`context_length`).
-2. **Context exhaustion** — The model filled its context window. Increase `model.context_length` or enable [context compression](/user-guide/configuration#context-compression) in Hermes.
+1. **Low output limit on the server** — configure the server's generation default (for example SGLang's `--default-max-tokens`). Moor does not expose an output-token cap setting. Response length is distinct from the conversation's context window (`context_length`).
+2. **Context exhaustion** — The model filled its context window. Increase `model.context_length` or enable [context compression](/user-guide/configuration#context-compression) in Moor.
 
 ---
 
@@ -1256,16 +1256,16 @@ model:
 ### Context Length Detection
 
 :::note Context windows and output limits are different
-**`context_length`** is the **total context window** — the combined budget for input *and* output tokens (e.g. 200,000 for Claude Opus 4.6). Hermes uses this to decide when to compress history and to validate API requests.
+**`context_length`** is the **total context window** — the combined budget for input *and* output tokens (e.g. 200,000 for Claude Opus 4.6). Moor uses this to decide when to compress history and to validate API requests.
 
 Output limits govern a single generated response, not the conversation history.
-Hermes no longer reads `model.max_tokens`, `HERMES_MAX_TOKENS`, provider output-cap
+Moor no longer reads `model.max_tokens`, `MOOR_MAX_TOKENS`, provider output-cap
 settings, or `model_overrides.*.*.max_output_tokens`. Remove these legacy settings.
 Custom OpenAI-compatible endpoints receive no automatic catalog-sized output cap.
 Their server defaults apply; these can be lower than the model maximum.
 
 Native Anthropic Messages (including the native Anthropic Bedrock path) requires
-`max_tokens`, so Hermes supplies an internal value. Bedrock Converse is a separate
+`max_tokens`, so Moor supplies an internal value. Bedrock Converse is a separate
 protocol: its optional `inferenceConfig.maxTokens` is omitted by default, which
 [AWS documents as the model maximum](https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_InferenceConfiguration.html).
 Internal bounded tasks and provider-specific protocol requirements remain implementation
@@ -1353,7 +1353,7 @@ Native local-model probes remove inherited Authorization on a failed explicit
 callable while retaining unrelated configured headers. Chat retains its normal
 error handling.
 
-Enterprise gateways often issue short-lived bearer tokens (SSO/OIDC brokers, cloud IAM, internal auth proxies) rather than static API keys, so a token copied into `.env` goes stale mid-session and requests start returning 401. `key_cmd` names a command that *prints* a token; Hermes runs it and caches the result until shortly before expiry, so long sessions keep working with no restart:
+Enterprise gateways often issue short-lived bearer tokens (SSO/OIDC brokers, cloud IAM, internal auth proxies) rather than static API keys, so a token copied into `.env` goes stale mid-session and requests start returning 401. `key_cmd` names a command that *prints* a token; Moor runs it and caches the result until shortly before expiry, so long sessions keep working with no restart:
 
 ```yaml
 providers:
@@ -1370,7 +1370,7 @@ The command must print **only** the token on stdout: either bare, or as JSON wit
 Precedence: an explicit `--api-key` flag still wins; otherwise `key_cmd` beats a static `api_key`/`key_env` on the same entry. The minted credential applies to the main agent turn and to auxiliary tasks (title generation, compression, vision, embedding) alike.
 
 Model discovery also honors `key_cmd` for both `providers:` and legacy
-`custom_providers:` entries, including `hermes model` setup. Helpers run only when
+`custom_providers:` entries, including `moor model` setup. Helpers run only when
 an authenticated live catalog probe is needed: disabled discovery and warm catalog
 cache reads do not mint tokens. Catalogs are scoped to the command identity, so
 rotating a bearer does not invalidate the catalog. Probe helpers use their own

@@ -2,12 +2,12 @@
 from pathlib import Path
 from types import SimpleNamespace
 
-from hermes_cli.local_runtime import presets, supervisor
-from hermes_cli.local_runtime.estimator import HardwareBudget, ModelProfile
+from moor_cli.local_runtime import presets, supervisor
+from moor_cli.local_runtime.estimator import HardwareBudget, ModelProfile
 
 
 def test_preset_roundtrip_keeps_refusals_and_dense_spill(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     mdir = tmp_path / "models"
     mdir.mkdir()
     for name in ("allowed", "refused"):
@@ -28,9 +28,9 @@ def test_preset_roundtrip_keeps_refusals_and_dense_spill(tmp_path, monkeypatch):
 
 def test_optional_draft_is_enabled_only_with_room_at_the_selected_window(tmp_path, monkeypatch):
     from dataclasses import replace
-    from hermes_cli.local_runtime import bootstrap, catalog
+    from moor_cli.local_runtime import bootstrap, catalog
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     entry = next(e for e in catalog.CATALOG if e.draft)
     main = tmp_path / f"{entry.variants[0].model_id}.gguf"
     draft = bootstrap.assets_dir() / entry.draft.local_name
@@ -50,8 +50,8 @@ def test_optional_draft_is_enabled_only_with_room_at_the_selected_window(tmp_pat
     assert with_draft.keys["model-draft"] == str(draft)
     assert with_draft.keys["spec-type"] == "draft-dspark"
     # Full target-window f16 state and logits count even above the draft's native window.
-    from hermes_cli.local_runtime.context_policy import RUNTIME_OVERHEAD_BYTES, ub_logits_bytes
-    from hermes_cli.local_runtime.estimator import LayerKind, ctx_bytes
+    from moor_cli.local_runtime.context_policy import RUNTIME_OVERHEAD_BYTES, ub_logits_bytes
+    from moor_cli.local_runtime.estimator import LayerKind, ctx_bytes
 
     draft_profile = replace(draft_profile, n_ctx_train=32768,
                             layers=[(LayerKind.FULL, 4096)] * 4, n_vocab=32768)
@@ -71,7 +71,7 @@ def test_optional_draft_is_enabled_only_with_room_at_the_selected_window(tmp_pat
 
 
 def test_supervisor_with_presets_does_not_scan_unadmitted_files(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     ini = tmp_path / "presets.ini"
     ini.write_text("[allowed]\nmodel = allowed.gguf\nctx-size = 65536\n")
     calls = []

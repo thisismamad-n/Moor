@@ -346,7 +346,7 @@ def served_profile_child_env(
     base: "Mapping[str, str] | None" = None, *, target_home: "str | Path | None" = None,
     inherit_credentials: bool = False,
 ) -> dict[str, str]:
-    """Child env for a process that acts FOR the active (possibly served) profile: ``hermes -p X``
+    """Child env for a process that acts FOR the active (possibly served) profile: ``moor -p X``
     workers, ``key_cmd`` helpers, browser drivers. The process env is the LAUNCH profile's. When the
     target is a ROUTED home (not the launch profile's — under multiplex or a Desktop/dashboard backend
     serving ``?profile=`` with the flag off) the launch ``.env`` residue and bridged ``TERMINAL_*`` are
@@ -355,19 +355,19 @@ def served_profile_child_env(
     never recorded in ``.env`` or a source snapshot, so a name-based strip cannot see it and the target
     overlay cannot remove it. ``inherit_credentials=True`` is for children that legitimately run with
     the profile's credentials (they run the agent or mint its token): the target profile's own secrets
-    (its ``.env`` + hydrated sources, what a standalone ``hermes -p X`` loads itself) are overlaid — never
+    (its ``.env`` + hydrated sources, what a standalone ``moor -p X`` loads itself) are overlaid — never
     a sibling profile's. Under multiplex with neither a target nor a bound scope the call raises
     (``get_secret``'s fail-closed contract): minting with the launch environ would sign in as the wrong
     profile. ``False`` keeps the provider scrub; the caller re-adds the few keys the child needs via
     ``get_secret``. ``target_home`` defaults to the active override; ``base`` replaces the
-    ``hermes_subprocess_env`` snapshot."""
+    ``moor_subprocess_env`` snapshot."""
     from agent.secret_scope import (
         UnscopedSecretError, build_profile_secret_scope, current_secret_scope, is_multiplex_active)
-    from hermes_constants import get_hermes_home_override
-    env = dict(base) if base is not None else hermes_subprocess_env(inherit_credentials=inherit_credentials)
-    target = str(target_home or get_hermes_home_override() or "")
+    from moor_constants import get_moor_home_override
+    env = dict(base) if base is not None else moor_subprocess_env(inherit_credentials=inherit_credentials)
+    target = str(target_home or get_moor_home_override() or "")
     if target:
-        env["HERMES_HOME"] = target
+        env["MOOR_HOME"] = target
         if _is_routed_home(target):
             strip_launch_profile_env(env, target)
             _scrub_credentials(env, inherit_credentials=False)
@@ -387,9 +387,9 @@ def served_profile_child_env(
 
 def _is_routed_home(target_home: "str | Path") -> bool:
     """True when ``target_home`` is not the process's own (launch) home."""
-    from hermes_constants import get_process_hermes_home
+    from moor_constants import get_process_moor_home
     try:
-        return Path(target_home).resolve() != get_process_hermes_home().resolve()
+        return Path(target_home).resolve() != get_process_moor_home().resolve()
     except OSError:
         return True
 
@@ -397,20 +397,20 @@ def _is_routed_home(target_home: "str | Path") -> bool:
 def strip_launch_profile_env(env: dict, target_home: "str | Path | None" = None) -> dict:
     """Drop the LAUNCH profile's residue from a child env built for another served profile.
     ``os.environ`` holds the default profile's ``.env`` and its bridged ``TERMINAL_*`` settings;
-    the secret scrub removes credentials but not settings (``HERMES_MODEL``, ``TERMINAL_ENV``,
-    ``HERMES_LANGUAGE``...), so a standalone ``hermes -p X`` worker and a served one saw different
+    the secret scrub removes credentials but not settings (``MOOR_MODEL``, ``TERMINAL_ENV``,
+    ``MOOR_LANGUAGE``...), so a standalone ``moor -p X`` worker and a served one saw different
     envs. The child re-loads X's own ``.env`` and bridges X's config itself. ``target_home``
     defaults to the active home override; no-op when there is no target or the target IS the
     launch profile. The authority test is "does this task serve a routed home", not "is the
     gateway-wide multiplex flag on": the Desktop/dashboard backend serves ``?profile=B`` by
-    installing a HERMES_HOME override without that flag."""
+    installing a MOOR_HOME override without that flag."""
     from agent.secret_scope import _is_global_env, load_env_file
-    from hermes_constants import get_hermes_home_override, get_process_hermes_home
-    target = target_home or get_hermes_home_override()
+    from moor_constants import get_moor_home_override, get_process_moor_home
+    target = target_home or get_moor_home_override()
     if not target or not _is_routed_home(target):
         return env
-    launch_home = get_process_hermes_home()
-    from hermes_cli.config import TERMINAL_CONFIG_ENV_MAP
+    launch_home = get_process_moor_home()
+    from moor_cli.config import TERMINAL_CONFIG_ENV_MAP
     for key in set(load_env_file(launch_home / ".env")) | set(TERMINAL_CONFIG_ENV_MAP.values()):
         if not _is_global_env(key) or key.startswith("TERMINAL_"):
             env.pop(key, None)

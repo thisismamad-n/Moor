@@ -10,19 +10,19 @@ import os
 
 import yaml
 
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 from tools.checkpoint_manager import CheckpointManager, checkpoint_footprint_notice
 
 
 def _write_config(enabled: bool, cap_mb: int) -> None:
-    home = get_hermes_home()
+    home = get_moor_home()
     home.mkdir(parents=True, exist_ok=True)
     (home / "config.yaml").write_text(
         yaml.safe_dump({"checkpoints": {"enabled": enabled, "max_total_size_mb": cap_mb}}), encoding="utf-8")
 
 
 def test_notice_only_when_enabled_and_over_cap(tmp_path, monkeypatch):
-    base = get_hermes_home() / "checkpoints"
+    base = get_moor_home() / "checkpoints"
     monkeypatch.setattr("tools.checkpoint_manager.CHECKPOINT_BASE", base)
     work = tmp_path / "proj"
     work.mkdir()
@@ -41,6 +41,6 @@ def test_notice_only_when_enabled_and_over_cap(tmp_path, monkeypatch):
 
 
 def test_doctor_registers_the_checkpoint_store_check():
-    from hermes_cli.doctor import DOCTOR_CHECKS
-    from hermes_cli.doctor_state import _check_checkpoint_store
+    from moor_cli.doctor import DOCTOR_CHECKS
+    from moor_cli.doctor_state import _check_checkpoint_store
     assert any(check is _check_checkpoint_store for _title, check in DOCTOR_CHECKS)

@@ -34,11 +34,11 @@ command. A hook with no concrete consumer is speculative infrastructure and is r
 
 The ONLY discovery system for out-of-tree plugins. One YAML per entry, 40-hex SHA pin mandatory,
 human-merged via PR (`plugin-catalog/README.md` = admission policy; `plugin-catalog-ci.yml` clones
-each changed entry at its pin and runs `hermes plugins validate`). `removed.yaml` is the kill list —
+each changed entry at its pin and runs `moor plugins validate`). `removed.yaml` is the kill list —
 every install path (CLI, dashboard, TUI) refuses matches; only the CLI has a loud `--allow-removed`.
-Code: `hermes_cli/plugin_catalog.py` (loader, live refresh from
+Code: `moor_cli/plugin_catalog.py` (loader, live refresh from
 `/docs/api/plugin-catalog.json` published by the docs build, in-tree fallback),
-`hermes_cli/plugins_cmd_catalog.py` (resolution, `.hermes-catalog.json` provenance sidecar,
+`moor_cli/plugins_cmd_catalog.py` (resolution, `.moor-catalog.json` provenance sidecar,
 search/info/validate, re-pin on `update`, dashboard/TUI payloads). Never add a second name index:
 bare names resolve through the catalog or error.
 
@@ -62,8 +62,8 @@ on an "existing config" signal (`_explicitly_configured`) so existing users keep
 `on_session_start`/`on_session_end`/`sync_turn`/`shutdown` are invoked from the turn (bound) AND
 from eviction, shutdown, `tui_gateway` teardown and cron completion (bound by the caller via
 `_run_release_in_profile_scope`, `_session_profile_runtime_scope`, `_profile_cron_scope`). One
-process serves several profiles, so a provider never caches `hermes_home` from `initialize()` as
-"the" home — key state by the home it is handed per call (`hermes_home_key()`) — and never reads
+process serves several profiles, so a provider never caches `moor_home` from `initialize()` as
+"the" home — key state by the home it is handed per call (`moor_home_key()`) — and never reads
 `os.environ` for credentials (`agent.secret_scope.get_secret`; a `check_fn` too). Background
 work starts via `agent.memory_provider.spawn_context_thread`, never a bare `threading.Thread`,
 or the worker runs with no scope and fails closed (or writes into the launch profile's tenant).

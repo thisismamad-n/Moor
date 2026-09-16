@@ -96,7 +96,7 @@ from moor_cli.update_cmd_git import (  # noqa: F401
     _print_parked_branch_kept_notice, _print_parked_branch_skip_warning,
     _prune_orphan_rescue_refs, _should_skip_upstream_prompt, _sync_fork_with_upstream,
     _sync_with_upstream_if_needed)
-from hermes_cli.update_cmd_maint import (  # noqa: F401
+from moor_cli.update_cmd_maint import (  # noqa: F401
     _PRE_UPDATE_SNAPSHOT_KEEP, _PRE_UPDATE_SNAPSHOT_MAX_FILE_SIZE,
     _STALE_PURGE_PROTECTED,
     _UPDATE_RUNTIME_RELOAD_MODULES, _clear_stale_sqlite_sidecars,
@@ -150,7 +150,7 @@ def _record_update_step(step: str, ok: bool, detail: str = "") -> None:
 
 
 # A fetch whose transport dead-stalls (HTTP/2 to GitHub on some networks, a black-holed proxy)
-# otherwise leaves `hermes update` on "Fetching updates..." forever (#93759, #95777). Five
+# otherwise leaves `moor update` on "Fetching updates..." forever (#93759, #95777). Five
 # minutes is generous for a scoped single-branch fetch and still ends in a real error.
 NETWORK_GIT_TIMEOUT_SECONDS = 300
 
@@ -436,7 +436,7 @@ def _log_only_write(text: str) -> None:
     log_file = getattr(stream, "_log", None)
     with suppress(Exception):
         if log_file is None:
-            log_path = get_hermes_home() / "logs" / "update.log"
+            log_path = get_moor_home() / "logs" / "update.log"
             log_path.parent.mkdir(parents=True, exist_ok=True)
             with log_path.open("a", encoding="utf-8") as fallback:
                 fallback.write(text)
@@ -449,7 +449,7 @@ def _run_logged_subprocess(cmd, *, cwd=None, env=None):
     """Stream combined build output to update.log, retaining it for failure reporting."""
     import codecs
     import io
-    from hermes_cli._subprocess_compat import kill_process_tree, windows_hide_flags
+    from moor_cli._subprocess_compat import kill_process_tree, windows_hide_flags
 
     child_env = dict(os.environ if env is None else env)
     child_env.setdefault("PYTHONUNBUFFERED", "1")
@@ -537,7 +537,7 @@ def _cmd_update_check(branch: str = "main", *, branch_explicit: bool = False):
         # The depth-1 fetch above leaves the previous tip behind as a ``.git/shallow`` graft
         # (git never removes old grafts); prune the stale ones so the file stops growing and
         # merge-base / the orphan-divergence heuristic keep working (#105951).
-        from hermes_cli.gitlock import repair_broken_shallow_boundaries, prune_stale_shallow_grafts
+        from moor_cli.gitlock import repair_broken_shallow_boundaries, prune_stale_shallow_grafts
         repaired = repair_broken_shallow_boundaries(_m().PROJECT_ROOT)
         if repaired:
             print(f"  (restored {repaired} broken shallow boundary(ies))")
@@ -593,7 +593,7 @@ def _print_update_check_result(behind: int | None, compare_branch: str) -> None:
         print(f"☤ Update available: {behind} {'commit' if behind == 1 else 'commits'} behind {compare_branch}.")
     else:
         print(f"☤ Update available (behind {compare_branch}).")
-    from hermes_cli.config import recommended_update_command
+    from moor_cli.config import recommended_update_command
     print(f"  Run '{recommended_update_command()}' to install.")
 
 
@@ -1163,13 +1163,13 @@ def _handle_update_called_process_error(
             print(f"✗ {stage} (the code update itself succeeded).")
             _print_called_process_error_tail(e)
             print()
-            print("  Hermes may not start until the dependencies are installed. Fix the error above")
-            print("  (usually network or disk space), then run `hermes update` again.")
+            print("  Moor may not start until the dependencies are installed. Fix the error above")
+            print("  (usually network or disk space), then run `moor update` again.")
             if _m()._is_windows():
-                print("  If `hermes update` itself will not start, retry through the venv interpreter:")
+                print("  If `moor update` itself will not start, retry through the venv interpreter:")
                 print(
                     '    venv\\Scripts\\python.exe -c '
-                    '"from hermes_cli.main import main; main()" update --yes')
+                    '"from moor_cli.main import main; main()" update --yes')
         else:
             print(f"✗ {stage}.")
             print(f"  Details: {e}")
@@ -1320,7 +1320,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
     opts = _resolve_update_options(args, gateway_mode)
     gw_input_fn, assume_yes = opts.gw_input_fn, opts.assume_yes
 
-    print("☤ Updating Hermes Agent...")
+    print("☤ Updating Moor Agent...")
     print()
 
     _pre_update_plan = _begin_update_receipt_and_plan(args)
@@ -1381,7 +1381,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
             print("  (removed %d aborted-fetch pack temp file(s))" % len(swept))
         # Shallow installer checkouts collect one `.git/shallow` graft per past depth-1 fetch
         # (#105951); stale grafts break merge-base and push this run into the divergence path.
-        from hermes_cli.gitlock import repair_broken_shallow_boundaries, prune_stale_shallow_grafts
+        from moor_cli.gitlock import repair_broken_shallow_boundaries, prune_stale_shallow_grafts
         repaired = repair_broken_shallow_boundaries(_m().PROJECT_ROOT)
         if repaired:
             print(f"  (restored {repaired} broken shallow boundary(ies))")

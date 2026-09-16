@@ -67,7 +67,7 @@ describe('GatewaySettings', () => {
     }
     const agentSignIn = vi.fn()
     const applyConnectionConfig = vi.fn()
-    Object.assign(window.hermesDesktop, {
+    Object.assign(window.moorDesktop, {
       applyConnectionConfig,
       cloud: {
         status: vi.fn().mockResolvedValue({ signedIn: false }),
@@ -89,7 +89,7 @@ describe('GatewaySettings', () => {
     getConnectionConfig.mockResolvedValue({ ...localConnection, mode: 'cloud' })
     const agentSignIn = vi.fn().mockResolvedValue({ connected: true })
     const applyConnectionConfig = vi.fn().mockResolvedValue({ ...localConnection, mode: 'cloud' })
-    Object.assign(window.hermesDesktop, {
+    Object.assign(window.moorDesktop, {
       applyConnectionConfig,
       cloud: {
         status: vi.fn().mockResolvedValue({ signedIn: true }),

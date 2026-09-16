@@ -115,14 +115,14 @@ Use the **Move up** and **Move down** arrows beside a room to choose its positio
 
 - **One visible conversation.** Public messages and each member's reply stay readable in arrival order, with the speaker's name and timestamp. Starting another topic does not collapse earlier replies. **Reply in thread** continues that topic without reordering the room; **Activity** is a secondary status view, not a replacement for messages. Private Bot Chats remain separate.
 - Your message triggers up to **three serial rounds** of member turns. @-mentioned Bots respond (everyone responds when nobody is mentioned); each Bot replies briefly or passes, and the room settles when a full round stays silent.
-- Teammates can hand off to the primary Bot with `@hermes`, including in older saved rooms; Bots on other gateways keep their device-qualified tags (for example, `@default-vera`).
+- Teammates can hand off to the primary Bot with `@moor`, including in older saved rooms; Bots on other gateways keep their device-qualified tags (for example, `@default-vera`).
 - Bots pull each other in with `@name`, and escalate real judgment calls to you with `@user` — the group row shows a **needs you** badge when that happens. Pending questions and command approvals also light that badge; resolving the last prompt clears only prompt attention, not an independent mention. Prompts follow a renamed room, while disbanding retires them even if a member's in-flight poll arrives later.
 - Hard caps (10 messages per send, 3 rounds) keep rooms from spinning.
 - Each member keeps its own persistent room session, so room context survives like any other conversation.
 - **Not every Bot replies to every message.** Speaking is each member's own choice — a Bot replies only when it has something new to add and passes otherwise, and @-mentioning specific members scopes the round to them. Expect the members you addressed (or whoever has something to say) to speak, and the rest to stay quiet.
-- **Rooms keep running when you close the Desktop.** When every member of a room lives on the same gateway, that gateway owns turn scheduling through a durable driver: closing Hermes Desktop (or losing its connection) does not stop a room mid-discussion, and the Desktop simply catches up from the room's log when it reconnects. `groups.capabilities` on the gateway reports `driver: true` when this applies. Rooms whose members span several machines are different: each member's turns run on its own gateway, and the cross-connection courier described under *Bot-to-bot messaging* still applies to them.
+- **Rooms keep running when you close the Desktop.** When every member of a room lives on the same gateway, that gateway owns turn scheduling through a durable driver: closing Moor Desktop (or losing its connection) does not stop a room mid-discussion, and the Desktop simply catches up from the room's log when it reconnects. `groups.capabilities` on the gateway reports `driver: true` when this applies. Rooms whose members span several machines are different: each member's turns run on its own gateway, and the cross-connection courier described under *Bot-to-bot messaging* still applies to them.
 - **Rooms can span machines.** The New Group Chat picker seats Bots from any registered connection; each member's turns run on its own machine, in its own room session there. Cross-machine members carry a device badge (`dixie · Mac Mini`) in the room and in other members' transcripts, and the disambiguated `@name-device` handle works in room mentions — so same-named agents on two machines never blur together.
-- **Plugins can watch members work.** The durable room log records `turn.started` and `turn.settled`; what a member does in between (tools, approvals, streamed text) is projected to plugins through the [`on_room_member_activity`](/user-guide/features/hooks#on_room_member_activity) hook with room, member and turn coordinates, so community clients can build tool cards and live member status on top of Group Chat without reading Hermes internals.
+- **Plugins can watch members work.** The durable room log records `turn.started` and `turn.settled`; what a member does in between (tools, approvals, streamed text) is projected to plugins through the [`on_room_member_activity`](/user-guide/features/hooks#on_room_member_activity) hook with room, member and turn coordinates, so community clients can build tool cards and live member status on top of Group Chat without reading Moor internals.
 
 ## Bot-to-bot messaging
 
@@ -158,8 +158,8 @@ A failed delivery turn is retried at most once, and only when a retry can actual
 
 When a target has no live Desktop or TUI owner, local delivery opens that
 profile's canonical Bot Chat through a quiet CLI turn. The transport prefers
-the Hermes entrypoint beside the sending runtime's Python interpreter, so an
-unrelated or older `hermes` on a service's `PATH` cannot take precedence when
+the Moor entrypoint beside the sending runtime's Python interpreter, so an
+unrelated or older `moor` on a service's `PATH` cannot take precedence when
 that sibling entrypoint exists. `--in ~` selects the working directory; the
 explicit Bot Chat title is resolved in the target profile's session database.
 
@@ -173,7 +173,7 @@ Every gateway you register in **Settings → Connections** — local, remote URL
 
 - **Rosters propagate on their own.** While the Desktop runs, it periodically tells each connected gateway which agents live on the *other* connections. Every Bot Chat's teammate roster then lists them ("Teammates on OTHER connected machines"), with names, roles, and which machine they're on — and the roster refreshes when agents appear, disappear, or get renamed (capability epoch).
 - **`message_agent` reaches them directly.** A Bot on your laptop messages the cloud agent with `message_agent(target="moxie", …)` exactly like a local teammate. If the same handle exists on several machines, disambiguate with `target="moxie@<connection>"` (the tool's error tells the Bot the exact forms). Delivery rides the Desktop: the sending gateway queues the message, the Desktop relays it to the target connection's own gateway, the target Bot runs a turn in its canonical Bot Chat, and the reply comes back to the sender as the same background completion notification local DMs use. Messages to different Bots are delivered side by side, so one Bot's long turn never delays another Bot's mail (or ages it past `bot_mode.envelope_ttl_seconds`); messages to the *same* Bot are delivered in order, one turn at a time.
-- **The Desktop is the courier.** Cross-connection delivery works while a Desktop that knows both connections is running (it holds the sockets and the credentials — gateways never see each other's auth). If the Desktop is closed mid-delivery, the sender's Bot is told the reply didn't arrive rather than left hanging. For always-on machine-to-machine messaging with no Desktop in the loop, register a peer (`hermes peer`, below) — the two routes coexist.
+- **The Desktop is the courier.** Cross-connection delivery works while a Desktop that knows both connections is running (it holds the sockets and the credentials — gateways never see each other's auth). If the Desktop is closed mid-delivery, the sender's Bot is told the reply didn't arrive rather than left hanging. For always-on machine-to-machine messaging with no Desktop in the loop, register a peer (`moor peer`, below) — the two routes coexist.
 
 ### Bot-initiated DMs across machines (`moor peer`)
 
@@ -285,7 +285,7 @@ See [Connecting Desktop to Many Moor Instances](./multi-connection-desktop.md) f
 
 ## Warm Bot Backends (how many bots run at once)
 
-Each local Bot runs in its own backend process, and Desktop keeps at most **Settings → Advanced → Warm Bot Backends** of them alive at once (default 3, ~60 MB each). Idle backends are reaped after the idle timeout next to that setting (default 10 minutes); the `Hermes backend for profile "<name>" exited (1)` line in `desktop.log` that follows an idle-reap message is that cleanup, not a crash. A Bot you open while every slot is busy waits up to 30 seconds for a slot, then fails with *timed out waiting for a free local slot*.
+Each local Bot runs in its own backend process, and Desktop keeps at most **Settings → Advanced → Warm Bot Backends** of them alive at once (default 3, ~60 MB each). Idle backends are reaped after the idle timeout next to that setting (default 10 minutes); the `Moor backend for profile "<name>" exited (1)` line in `desktop.log` that follows an idle-reap message is that cleanup, not a crash. A Bot you open while every slot is busy waits up to 30 seconds for a slot, then fails with *timed out waiting for a free local slot*.
 
 Reads of another Bot's chat history and background transcript refreshes do **not** take a slot — only an interactive open or a running turn does. If you drive a large fleet (group chats with many members, or Kanban dispatch across many profiles), raise Warm Bot Backends toward the number of Bots you expect to be active at the same time and give the machine the memory to match. Setting it higher than the profiles you actually use only adds startup work.
 

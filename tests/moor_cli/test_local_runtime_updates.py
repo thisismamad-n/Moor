@@ -55,19 +55,19 @@ def test_default_tag_flows_from_default_config(moor_home):
 
 
 @pytest.mark.parametrize("pin", [None, "b10679", "b10412"])
-def test_preferred_b10964_update_offer_respects_explicit_pins(hermes_home, pin):
+def test_preferred_b10964_update_offer_respects_explicit_pins(moor_home, pin):
     """Existing unpinned installs get the shipped upgrade; user pins win."""
     from fastapi.testclient import TestClient
 
-    from hermes_cli import web_server
-    from hermes_cli.config import load_config
+    from moor_cli import web_server
+    from moor_cli.config import load_config
 
     runtime = {"enabled": True}
     if pin is not None:
         runtime["tag"] = pin
-    (hermes_home / "config.yaml").write_text(
+    (moor_home / "config.yaml").write_text(
         json.dumps({"local_runtime": runtime}), encoding="utf-8")
-    _install_fake_tag(hermes_home, "b10679")
+    _install_fake_tag(moor_home, "b10679")
 
     client = TestClient(web_server.app)
     client.headers[web_server._SESSION_HEADER_NAME] = web_server._SESSION_TOKEN
@@ -81,7 +81,7 @@ def test_preferred_b10964_update_offer_respects_explicit_pins(hermes_home, pin):
     assert status["update_available"] is (expected_tag != "b10679")
 
 
-def test_update_available_requires_enabled_and_installed(hermes_home, monkeypatch):
+def test_update_available_requires_enabled_and_installed(moor_home, monkeypatch):
     """The flag's truth table: enabled+installed+configured-missing only."""
     from fastapi.testclient import TestClient
 

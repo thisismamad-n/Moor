@@ -78,7 +78,7 @@ def test_combined_openrouter_preset_reference_rejects_unknown_base_model():
 def test_combined_preset_near_miss_base_is_not_rewritten():
     """A base model close to a listed id is the user's pick, not a typo — the verdict rejects with a
     suggestion instead of swapping the model under the preset."""
-    with patch("hermes_cli.models.fetch_api_models", return_value=["openai/gpt-5.4"]):
+    with patch("moor_cli.models.fetch_api_models", return_value=["openai/gpt-5.4"]):
         result = validate_requested_model(
             "openai/gpt-5.44@preset/email-copywriter",
             "openrouter",

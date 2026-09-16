@@ -218,26 +218,26 @@ class TestResolveMoorBinWindowsPyGuard:
     def test_posix_python_launcher_falls_through_to_path(self, monkeypatch, tmp_path):
         """A Python source launcher must not be re-executed through its shebang.
 
-        The git installer invokes ``hermes`` with the venv interpreter while the
+        The git installer invokes ``moor`` with the venv interpreter while the
         source launcher's shebang uses ``/usr/bin/env python3``.  Re-executing
         that source file directly can therefore escape the venv and lose core
         dependencies such as PyYAML.
         """
         if sys.platform == "win32":
             pytest.skip("POSIX semantics")
-        script = tmp_path / "hermes"
+        script = tmp_path / "moor"
         script.write_text("#!/usr/bin/env python3\n")
         script.chmod(0o755)
-        wrapper = tmp_path / "bin" / "hermes"
+        wrapper = tmp_path / "bin" / "moor"
         wrapper.parent.mkdir()
         wrapper.write_text("#!/usr/bin/env bash\n")
         wrapper.chmod(0o755)
         monkeypatch.setattr(relaunch_mod.sys, "argv", [str(script), "chat"])
         monkeypatch.setattr(
             relaunch_mod.shutil, "which",
-            lambda name: str(wrapper) if name == "hermes" else None,
+            lambda name: str(wrapper) if name == "moor" else None,
         )
-        assert relaunch_mod.resolve_hermes_bin() == str(wrapper)
+        assert relaunch_mod.resolve_moor_bin() == str(wrapper)
 
     def test_posix_python_launcher_on_path_falls_back_to_current_python(
         self, monkeypatch, tmp_path
@@ -245,25 +245,25 @@ class TestResolveMoorBinWindowsPyGuard:
         """PATH must not re-select the Python launcher rejected from argv[0]."""
         if sys.platform == "win32":
             pytest.skip("POSIX semantics")
-        script = tmp_path / "hermes"
+        script = tmp_path / "moor"
         script.write_text("#!/usr/bin/env python3\n")
         script.chmod(0o755)
         monkeypatch.setattr(relaunch_mod.sys, "argv", [str(script), "chat"])
         monkeypatch.setattr(
             relaunch_mod.shutil,
             "which",
-            lambda name: str(script) if name == "hermes" else None,
+            lambda name: str(script) if name == "moor" else None,
         )
 
-        assert relaunch_mod.resolve_hermes_bin() is None
+        assert relaunch_mod.resolve_moor_bin() is None
 
         # A console script pinned to the running interpreter keeps the venv: still exec-able.
-        pinned = tmp_path / "pinned" / "hermes"
+        pinned = tmp_path / "pinned" / "moor"
         pinned.parent.mkdir()
         pinned.write_text(f"#!{sys.executable}\n")
         pinned.chmod(0o755)
         monkeypatch.setattr(relaunch_mod.sys, "argv", [str(pinned), "chat"])
-        assert relaunch_mod.resolve_hermes_bin() == str(pinned)
+        assert relaunch_mod.resolve_moor_bin() == str(pinned)
 
     @pytest.mark.windows_only
     def test_windows_py_argv0_with_no_moor_on_path_returns_none(self, monkeypatch, tmp_path):

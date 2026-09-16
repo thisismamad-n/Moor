@@ -3,7 +3,7 @@ title: "Middleware"
 description: "Behavior-changing plugin middleware for LLM and tool calls: contract, execution order, examples"
 ---
 
-# Hermes Middleware
+# Moor Middleware
 
 Moor middleware is the behavior-changing companion to observer hooks.
 Observer hooks report what happened. Middleware can change what happens by

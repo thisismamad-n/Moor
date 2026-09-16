@@ -3,7 +3,7 @@
  * @mention parse, the round-robin driver, the #93129 member holds, the stop
  * path, and the user send that starts it all.
  */
-import { host } from '@hermes/plugin-sdk'
+import { host } from '@moor/plugin-sdk'
 
 import { botFriendlyNames, botHandle, mentionNameForms } from './data'
 import { recordGroupActivity } from './group-activity'
@@ -59,7 +59,7 @@ export function parseGroupChatMentions(text: unknown, members: GroupMember[]) {
   for (const member of members) {
     const title = String(member.title || '').trim()
     // Normalize legacy "default" handles without aliasing device-qualified
-    // defaults to @hermes: that would retarget the primary tag by roster order.
+    // defaults to @moor: that would retarget the primary tag by roster order.
     const handle = String(botHandle(member.name, member) || '').trim()
 
     const forms = new Set([

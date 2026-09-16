@@ -951,7 +951,7 @@ class GatewayBusySessionMixin:
     async def _busy_goal_command(self, event: MessageEvent, quick_key: str, source):
         # Control verbs are safe mid-run (state only); setting new goal text is rejected so we don't
         # race a second continuation against the current turn. wait/gate take an argument.
-        from hermes_cli.goal_command import is_goal_control
+        from moor_cli.goal_command import is_goal_control
 
         if is_goal_control(event.get_command_args() or ""):
             return await self._handle_goal_command(event)

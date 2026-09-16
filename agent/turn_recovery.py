@@ -32,7 +32,7 @@ from agent.turn_failure_copy import (
     site_copy, stamp_failure,
 )
 from agent.turn_retry_state import TurnRetryState
-from hermes_constants import display_hermes_home
+from moor_constants import display_moor_home
 from utils import base_url_host_matches
 
 logger = logging.getLogger("agent.conversation_loop")
@@ -268,16 +268,16 @@ def _print_moor_401_diagnostics(agent: Any, api_error: Exception) -> None:
     if _body_text:
         _plines(agent, f"   Response: {_body_text}")
     try:
-        from hermes_cli.anon_auth import route_is_welcome_host
+        from moor_cli.anon_auth import route_is_welcome_host
         if route_is_welcome_host(getattr(agent, "base_url", "")):
             # The free tier has no credits, no agent key and no auth.json to inspect: its session
             # ended and could not be replaced. The two doors are a sign-in or another provider.
-            _plines(agent, "   Your session ended and Hermes couldn't start a new one.",
-                    "   Sign in with a Nous account (it's free), or switch providers with /model.")
+            _plines(agent, "   Your session ended and Moor couldn't start a new one.",
+                    "   Sign in with a Moor account (it's free), or switch providers with /model.")
             return
     except Exception:
         pass
-    if not _print_nous_entitlement_guidance(agent, "Nous model access"):
+    if not _print_moor_entitlement_guidance(agent, "Moor model access"):
         _plines(agent, "   Most likely: Portal OAuth expired, account out of credits, or agent key revoked.")
     _plines(
         agent,
@@ -481,7 +481,7 @@ def _recover_format_errors(
 
 
 def _recover_welcome_tier(agent: Any, classified: Any, _retry: TurnRetryState) -> bool:
-    """Two one-shot repairs for the Nous free tier, both silent on the wire and named once in chat.
+    """Two one-shot repairs for the Moor free tier, both silent on the wire and named once in chat.
 
     ``model_not_free``: the session asked the welcome host for a model it does not serve; move
     to the first alternate the gateway named (its own model) and retry, instead of failing the
@@ -489,7 +489,7 @@ def _recover_welcome_tier(agent: Any, classified: Any, _retry: TurnRetryState) -
     identity (a stale route); re-read the credentials, which heals the URL, and retry.
 
     Reads the CLASSIFIER's context (``classified.error_context``): that is where
-    ``_nous_welcome_tier`` parks ``welcome_refusal`` / ``welcome_route``. The turn's other context
+    ``_moor_welcome_tier`` parks ``welcome_refusal`` / ``welcome_route``. The turn's other context
     (``extract_api_error_context``) never carries them."""
     ctx = getattr(classified, "error_context", None) or {}
     refusal = ctx.get("welcome_refusal") if isinstance(ctx, dict) else None
@@ -501,17 +501,17 @@ def _recover_welcome_tier(agent: Any, classified: Any, _retry: TurnRetryState) -
         if target and target != requested:
             try:
                 agent.model = target
-                agent._nous_model_switch = (requested, target)
+                agent._moor_model_switch = (requested, target)
             except Exception:
                 return False
             _vlines(agent, f"↪️  {requested} isn't available without signing in; using {target} for now. Retrying...")
-            logger.info("%sNous free tier: moved %s -> %s after model_not_free", agent.log_prefix, requested, target)
+            logger.info("%sMoor free tier: moved %s -> %s after model_not_free", agent.log_prefix, requested, target)
             return True
     route = ctx.get("welcome_route") if isinstance(ctx, dict) else None
     if route == "anon_on_paid_host" and not _retry.welcome_route_heal_attempted:
         _retry.welcome_route_heal_attempted = True
         try:
-            healed = bool(agent._try_refresh_nous_client_credentials(force=True))
+            healed = bool(agent._try_refresh_moor_client_credentials(force=True))
         except Exception:
             healed = False
         if healed:
@@ -707,13 +707,13 @@ def _print_nonretryable_auth_guidance(
 
 
 def _welcome_tier_guidance(classified: Any, *, model: Any, in_chat: bool, door: bool = True) -> str:
-    """Copy for a Nous free-tier refusal the classifier parsed (``welcome_refusal`` /
+    """Copy for a Moor free-tier refusal the classifier parsed (``welcome_refusal`` /
     ``welcome_route`` in ``error_context``); empty for every other error."""
     ctx = getattr(classified, "error_context", None) or {}
     refusal, route = ctx.get("welcome_refusal"), ctx.get("welcome_route")
     if not refusal and not route:
         return ""
-    from hermes_cli.anon_auth import welcome_refusal_copy, welcome_route_refusal_copy
+    from moor_cli.anon_auth import welcome_refusal_copy, welcome_route_refusal_copy
     if refusal:
         return welcome_refusal_copy(refusal, model=str(model or ""), in_chat=in_chat, door=door)
     return welcome_route_refusal_copy(str(route), in_chat=in_chat, door=door)
@@ -748,11 +748,11 @@ def _stamp_free_tier(result: Dict[str, Any], kind: str, message: str) -> Dict[st
 
 
 def _welcome_outage_copy(base_url: Any, classified: Any) -> str:
-    """On the Nous free tier, a transport / server failure that outlived every retry reads as one
+    """On the Moor free tier, a transport / server failure that outlived every retry reads as one
     plain sentence (the free model is having trouble) rather than the technical summary. Empty
     for every other route and for rate limits / billing, which have their own copy."""
     try:
-        from hermes_cli.anon_auth import FREE_TIER_OUTAGE_COPY, route_is_welcome_host
+        from moor_cli.anon_auth import FREE_TIER_OUTAGE_COPY, route_is_welcome_host
         if not route_is_welcome_host(base_url):
             return ""
         # Not ``unknown``: that is the classifier's catch-all for status-less local failures, which
@@ -776,7 +776,7 @@ def _missing_vendor_prefix_suggestion(api_error: Exception, provider: Any, model
     if getattr(api_error, "status_code", None) != 404:
         return None
     try:
-        from hermes_cli.model_normalize import suggest_prefixed_model_id
+        from moor_cli.model_normalize import suggest_prefixed_model_id
 
         return suggest_prefixed_model_id(str(provider or ""), str(model or ""))
     except Exception:
@@ -826,24 +826,24 @@ def nonretryable_client_error_result(
         if _prefix_suggestion:
             _vlines(agent, f"      Did you mean '{_prefix_suggestion}'? It looks like the vendor prefix is missing.")
     elif classified.reason not in _NONRETRYABLE_LABELS:
-        _vlines(agent, f"   💡 Fix: pick another model (/model), or check `{display_hermes_home()}/logs/agent.log`.")
+        _vlines(agent, f"   💡 Fix: pick another model (/model), or check `{display_moor_home()}/logs/agent.log`.")
     # Content-policy blocks: the provider refused this prompt, so recovery is a rephrase
     # or another model, not key/retry advice.
     if classified.reason == FailoverReason.content_policy_blocked:
         _vlines(
             agent,
             f"   💡 {CONTENT_POLICY_NEXT_STEPS}",
-            "      To route future blocks to another provider automatically: hermes fallback add",
+            "      To route future blocks to another provider automatically: moor fallback add",
         )
     # TLS certificate failures are environment problems — name the knobs for each cause.
     if classified.reason == FailoverReason.ssl_cert_verification:
         _vlines(
             agent,
-            "   💡 Hermes couldn't verify the provider's security certificate. This fails the same",
+            "   💡 Moor couldn't verify the provider's security certificate. This fails the same",
             "      way on every retry — fix the environment, then try again:",
             "      • Corporate TLS-inspecting proxy? Point Python at its CA bundle:",
             "        export SSL_CERT_FILE=/path/to/corp-ca.pem  (also REQUESTS_CA_BUNDLE)",
-            "      • Missing/stale system CA store? Refresh it (in Hermes's venv: `uv pip install",
+            "      • Missing/stale system CA store? Refresh it (in Moor's venv: `uv pip install",
             "        --upgrade certifi`; macOS: run 'Install Certificates.command').",
             "      • Self-signed local endpoint (llama.cpp, LM Studio, vLLM)? Use http://",
             "        for localhost, or add the server's cert to your trust store.",
@@ -1404,8 +1404,8 @@ def _eager_fallback_status(classified: Any, is_upstream: bool, is_transport_fail
     return "⚠️ Rate limited — switching to fallback provider..."
 
 
-def _is_genuine_nous_rate_limit(agent: Any, api_error: Exception, error_context: Any, classified: Any = None) -> bool:
-    """Record a genuine account-level Nous 429 to the cross-session breaker; upstream
+def _is_genuine_moor_rate_limit(agent: Any, api_error: Exception, error_context: Any, classified: Any = None) -> bool:
+    """Record a genuine account-level Moor 429 to the cross-session breaker; upstream
     capacity 429s (no exhausted bucket in headers or last-known state) are left alone.
 
     *error_context* is the turn's (``extract_api_error_context``); *classified* brings the
@@ -1414,20 +1414,20 @@ def _is_genuine_nous_rate_limit(agent: Any, api_error: Exception, error_context:
     place the user is told that signing in lifts it."""
     _genuine = False
     try:
-        from agent.nous_rate_guard import (
-            is_genuine_nous_rate_limit, is_long_welcome_rate_limit, record_nous_rate_limit)
+        from agent.moor_rate_guard import (
+            is_genuine_moor_rate_limit, is_long_welcome_rate_limit, record_moor_rate_limit)
         _err_resp = getattr(api_error, "response", None)
         _err_hdrs = getattr(_err_resp, "headers", None) if _err_resp else None
-        from hermes_cli.anon_auth import route_is_welcome_host
+        from moor_cli.anon_auth import route_is_welcome_host
         _classified_ctx = getattr(classified, "error_context", None) or {}
         # Route-gated: only the welcome host's fairshare body is an allowance verdict; a paid-host
         # 429 keeps main's rule (an exhausted x-ratelimit bucket), whatever its body says.
         _genuine = (
             (route_is_welcome_host(getattr(agent, "base_url", "")) and is_long_welcome_rate_limit(_classified_ctx))
-            or is_genuine_nous_rate_limit(headers=_err_hdrs, last_known_state=agent._rate_limit_state))
+            or is_genuine_moor_rate_limit(headers=_err_hdrs, last_known_state=agent._rate_limit_state))
         if _genuine:
             _merged = {**(error_context if isinstance(error_context, dict) else {}), **_classified_ctx}
-            record_nous_rate_limit(headers=_err_hdrs, error_context=_merged)
+            record_moor_rate_limit(headers=_err_hdrs, error_context=_merged)
         else:
             logger.info(
                 "Moor 429 looks like upstream capacity "
@@ -1603,7 +1603,7 @@ def route_classified_error(
         and agent.provider == "moor"
         and classified.reason == FailoverReason.rate_limit
         and not recovered_with_pool
-        and _is_genuine_nous_rate_limit(agent, api_error, error_context, classified)
+        and _is_genuine_moor_rate_limit(agent, api_error, error_context, classified)
     ):
         # Re-enter the loop exactly once so the top-of-loop Moor guard runs
         # (retry_count = max_retries would skip it entirely).

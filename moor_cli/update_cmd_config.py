@@ -22,8 +22,8 @@ def _reload_config_modules() -> None:
     import importlib
     importlib.invalidate_caches()
     for mod_name in (
-        "hermes_cli.config_defaults", "hermes_cli.config", "hermes_cli.tools_config",
-        "hermes_cli.config_migrations", "hermes_cli._subprocess_compat", "hermes_cli.dashboard_procs"):
+        "moor_cli.config_defaults", "moor_cli.config", "moor_cli.tools_config",
+        "moor_cli.config_migrations", "moor_cli._subprocess_compat", "moor_cli.dashboard_procs"):
         mod = sys.modules.get(mod_name)
         if mod is not None:
             try:
@@ -175,20 +175,20 @@ def _check_and_apply_config_migration(
         _run_migrate_config_fresh)
     print()
     print("→ Checking configuration for new options...")
-    # Evict EVERY cached Hermes module before touching migration code: the updater is the
+    # Evict EVERY cached Moor module before touching migration code: the updater is the
     # pre-pull process, and a migration step's call-time import (``_migrate_to_45`` →
-    # ``hermes_cli.tools_config._configurable_keys``) resolves against whatever old module
+    # ``moor_cli.tools_config._configurable_keys``) resolves against whatever old module
     # object is still cached — reloading a hand-picked list re-fixes this per symptom
     # (#111271). The purge is the class fix already used by the fleet-restart phase.
-    from hermes_cli.update_cmd import _m
+    from moor_cli.update_cmd import _m
     # A config-check failure must not break an otherwise-successful update.
     try:
-        _m()._purge_stale_hermes_modules()
+        _m()._purge_stale_moor_modules()
         # Reload BEFORE any config reads so all checks use the updated code.
         _reload_config_modules()
         # Post-purge this re-executes the NEW config.py; it still fails if the pulled tree
         # is internally inconsistent, hence the try.
-        from hermes_cli.config import get_missing_env_vars, get_missing_config_fields
+        from moor_cli.config import get_missing_env_vars, get_missing_config_fields
         # Log, point at the manual command, and return. See #91360.
         missing_env = get_missing_env_vars(required_only=True)
         missing_config = get_missing_config_fields()

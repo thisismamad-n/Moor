@@ -19,8 +19,8 @@ from moor_cli.model_normalize import normalize_model_for_provider
 from agent.models_dev import (
     ModelCapabilities, ModelInfo, get_model_capabilities, get_model_info, list_provider_models)
 from utils import base_url_host_matches, base_url_hostname, base_url_origin, file_signature
-# Re-exported: callers/tests patch hermes_cli.model_switch.<name>.
-from hermes_cli.model_switch_providers import list_authenticated_providers
+# Re-exported: callers/tests patch moor_cli.model_switch.<name>.
+from moor_cli.model_switch_providers import list_authenticated_providers
 
 
 logger = logging.getLogger(__name__)
@@ -467,7 +467,7 @@ def parse_model_flags_detailed(raw_args: str) -> ModelFlagParseResult:
     ``--once`` is parsed here but interpreted by each caller (each frontend has its own
     live-session restore hook). ``is_global`` / ``is_session`` are raw flag presences; the
     effective persistence decision belongs to :func:`resolve_persist_behavior`. ``reasoning_effort``
-    is the raw level word (validated by :func:`hermes_constants.parse_reasoning_effort` at apply
+    is the raw level word (validated by :func:`moor_constants.parse_reasoning_effort` at apply
     time) so a model pick and its effort travel as ONE request on every surface."""
     # Telegram/iOS auto-convert ``--`` to an em/en dash: normalize a single Unicode dash before
     # a flag keyword.
@@ -594,7 +594,7 @@ def parse_model_switch_args(raw: str) -> ModelSwitchRequest:
     if parsed.is_once and not parsed.model_input and not parsed.explicit_provider:
         errors.append(MODEL_SWITCH_ERR_ONCE_REQUIRES_TARGET)
     if parsed.reasoning_effort:
-        from hermes_constants import parse_reasoning_effort
+        from moor_constants import parse_reasoning_effort
         if parse_reasoning_effort(parsed.reasoning_effort) is None:
             errors.append(MODEL_SWITCH_ERR_BAD_REASONING)
     # First matching flag wins: once > session > global > default.
@@ -1152,7 +1152,7 @@ def _convert_vendor_colon_slug(st: _Switch) -> None:
     a variant tag (:free, :extended, :fast) that must be preserved.
 
     On an aggregator every ``left:right`` is a slug. Elsewhere the colon is converted only when
-    ``left`` names a provider Hermes knows, so ``/model alibaba:qwen3.6-plus`` routes like
+    ``left`` names a provider Moor knows, so ``/model alibaba:qwen3.6-plus`` routes like
     ``alibaba/qwen3.6-plus`` (#9748) while Ollama-style tags (``qwen3.5:4b``) stay intact."""
     raw_input = st.raw_input
     colon_pos = raw_input.find(":")
@@ -1171,7 +1171,7 @@ def _convert_vendor_colon_slug(st: _Switch) -> None:
 
 def _names_known_provider(name: str, st: _Switch) -> bool:
     """Whether ``name`` is a built-in provider id/alias or a provider the user configured."""
-    from hermes_cli.providers import get_provider
+    from moor_cli.providers import get_provider
     if resolve_provider_full(name, st.user_providers, st.custom_providers) is not None:
         return True
     try:
@@ -1250,13 +1250,13 @@ def _route_from_model_input(st: _Switch) -> Optional[ModelSwitchResult]:
     # Steps d.5 / e only apply while the request is still unrouted on the current provider.
     if st.resolved_alias or resolved_in_current_catalog or st.target_provider != current_provider:
         return None
-    if current_provider == "nous":
-        # The welcome host serves nous/welcome only; a model outside it needs an account or a key.
+    if current_provider == "moor":
+        # The welcome host serves moor/welcome only; a model outside it needs an account or a key.
         # Never hop to another provider on the user's behalf here (there is no key to hop to).
-        from hermes_cli.anon_auth import GUEST_MODEL, route_is_welcome_host
+        from moor_cli.anon_auth import GUEST_MODEL, route_is_welcome_host
         if route_is_welcome_host(st.current_base_url) and st.new_model != GUEST_MODEL:
             return st.fail(
-                f"{st.new_model} needs a Nous account or an API key. "
+                f"{st.new_model} needs a Moor account or an API key. "
                 "Use /login to sign in, or /model to pick another provider.")
     config_routed = _route_configured_provider(st)  # d.5 — deliberately NOT gated on ``not is_custom``
     if isinstance(config_routed, ModelSwitchResult):
@@ -1314,7 +1314,7 @@ def _creds_for_switched_provider(st: _Switch) -> Optional[ModelSwitchResult]:
         except Exception as e:
             return st.fail_on_target(
                 f"{st.provider_label} is not connected: no API key or login was found for it. Add one with "
-                f"`hermes auth add {st.target_provider}`, or pick a connected provider in /model.\n"
+                f"`moor auth add {st.target_provider}`, or pick a connected provider in /model.\n"
                 f"  Details: {e}")
     return None
 
@@ -1385,7 +1385,7 @@ def _resolve_switch_credentials(st: _Switch) -> Optional[ModelSwitchResult]:
     # Fills an empty mode (alias cleared it) and overrides a STALE mode carried from previous
     # session state when the host mandates one wire protocol (e.g. gpt-5.x on api.openai.com
     # would otherwise 400 on tools+reasoning).
-    from hermes_cli.providers import is_actual_route
+    from moor_cli.providers import is_actual_route
     mandated_mode = "chat_completions" if is_actual_route(st.target_provider, st.base_url) else host_mandated_api_mode(st.base_url)
     if mandated_mode is not None:
         st.api_mode = mandated_mode
@@ -1559,7 +1559,7 @@ def model_selection_config_updates(result: ModelSwitchResult, current_model_cfg:
         "base_url": result.base_url or None, "api_mode": result.api_mode or None,
     }
     if "context_length" in model_cfg:
-        from hermes_cli.route_identity import should_clear_context_pin
+        from moor_cli.route_identity import should_clear_context_pin
         if should_clear_context_pin(
                 model_cfg.get("default") or model_cfg.get("model"), result.new_model,
                 model_cfg.get("base_url"), result.base_url, model_cfg.get("provider"), result.target_provider):
@@ -1577,7 +1577,7 @@ def model_selection_config_updates(result: ModelSwitchResult, current_model_cfg:
 
 def _route_changed(model_cfg: dict, result: ModelSwitchResult) -> bool:
     """Provider or endpoint differs between the on-disk ``model:`` block and the switch target."""
-    from hermes_cli.route_identity import normalize_route_base_url
+    from moor_cli.route_identity import normalize_route_base_url
     if str(model_cfg.get("provider") or "").strip().lower() != str(result.target_provider or "").strip().lower():
         return True
     return normalize_route_base_url(model_cfg.get("base_url")) != normalize_route_base_url(result.base_url)
@@ -1597,18 +1597,18 @@ def apply_model_selection(model_cfg: Any, result: ModelSwitchResult) -> dict:
 
 def persist_model_selection(result: ModelSwitchResult, config_path: Any = None) -> None:
     """Write a successful :func:`switch_model` result to ``config_path`` (default:
-    ``HERMES_HOME/config.yaml`` — the context override or ``HERMES_HOME`` at call time).
+    ``MOOR_HOME/config.yaml`` — the context override or ``MOOR_HOME`` at call time).
 
     Targeted key writes, not a whole-``model:`` rewrite: a block rewrite destroys sibling keys the
     user set there (``model_slots``, ``model_fallback``, ...). ``should_clear_context_pin`` can do
     cold-start disk I/O — async callers run this on a worker thread."""
     from pathlib import Path
-    from hermes_cli.config import get_config_path, read_user_config_raw, warn_unpinned_cron_jobs_after_model_config_change
+    from moor_cli.config import get_config_path, read_user_config_raw, warn_unpinned_cron_jobs_after_model_config_change
     from utils import atomic_roundtrip_yaml_update
     path = Path(config_path) if config_path else get_config_path()
     for key, value in model_selection_config_updates(result, read_user_config_raw(path).get("model")).items():
         atomic_roundtrip_yaml_update(path, f"model.{key}", value)
-        # Same unpinned-cron notice as `hermes config set` for every model switch.
+        # Same unpinned-cron notice as `moor config set` for every model switch.
         warn_unpinned_cron_jobs_after_model_config_change(f"model.{key}", value)
     try:  # owner-only: config files contain API keys
         os.chmod(path, 0o600)
@@ -1631,7 +1631,7 @@ def _scoped_key_env(name: str) -> str:
     value from the process env or the default ``.env``. Multiplexing on with no scope fails closed
     (``UnscopedSecretError`` -> ""). Otherwise resolve through ``get_env_prefer_dotenv`` — the
     chain ``client_lifecycle`` uses for the actual request — so a ``key_env`` that lives only in
-    ``$HERMES_HOME/.env`` authenticates the ``/model`` verification probe (#109315) and a rotated
+    ``$MOOR_HOME/.env`` authenticates the ``/model`` verification probe (#109315) and a rotated
     ``.env`` beats a stale value inherited from the parent shell."""
     if not name:
         return ""

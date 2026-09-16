@@ -11,7 +11,7 @@ import re
 from typing import Any, Dict, Optional
 
 from agent.secret_scope import get_secret_str
-from hermes_constants import OPENROUTER_BASE_URL
+from moor_constants import OPENROUTER_BASE_URL
 from utils import base_url_host_matches
 
 
@@ -185,7 +185,7 @@ def _resolve_bedrock_runtime(requested_provider: str, model_cfg: Dict[str, Any],
     from agent.bedrock_adapter import (bedrock_openai_base_url, has_aws_credentials, is_anthropic_bedrock_model,
                                        is_openai_bedrock_model, resolve_aws_auth_env_var, resolve_bedrock_bearer_token,
                                        resolve_bedrock_runtime_region, bedrock_guardrail_config)
-    from hermes_cli.config import load_config  # direct (not the origin delegate), as before
+    from moor_cli.config import load_config  # direct (not the origin delegate), as before
     rp = _rp()
     # Explicitly selected bedrock trusts boto3's credential chain (IMDS, ECS/Lambda roles, SSO)
     # which the env-var check can't detect.

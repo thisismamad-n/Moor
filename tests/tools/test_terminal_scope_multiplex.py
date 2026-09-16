@@ -255,12 +255,12 @@ def test_launch_turn_binds_terminal_scope_once_multiplexing_is_active(
         reset_terminal_scope,
     )
 
-    launch_home = tmp_path / ".hermes"
+    launch_home = tmp_path / ".moor"
     launch_home.mkdir()
     (launch_home / "config.yaml").write_text(
         "terminal:\n  backend: local\n", encoding="utf-8"
     )
-    monkeypatch.setenv("HERMES_HOME", str(launch_home))
+    monkeypatch.setenv("MOOR_HOME", str(launch_home))
     # Poison ambient the way the pre-fix latch did — launch scope must win.
     monkeypatch.setenv("TERMINAL_ENV", "docker")
     monkeypatch.setenv("TERMINAL_DOCKER_IMAGE", "bee/img:1")

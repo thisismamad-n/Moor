@@ -57,7 +57,7 @@ class SubagentMonitor:
         return changed
 
     def invalidate(self):
-        from hermes_cli.cli_terminal_mixin import _run_on_app_loop
+        from moor_cli.cli_terminal_mixin import _run_on_app_loop
 
         app = self.app
         if app is not None:
@@ -282,7 +282,7 @@ def build_monitor_application(monitor, **kwargs):
             update_tail()
 
     from prompt_toolkit.styles import Style
-    from hermes_cli.skin_engine import get_prompt_toolkit_style_overrides
+    from moor_cli.skin_engine import get_prompt_toolkit_style_overrides
     kwargs.setdefault('style', Style.from_dict(get_prompt_toolkit_style_overrides()))
     app = Application(layout=layout, key_bindings=kb, full_screen=True, mouse_support=False,
                       before_render=before_render, **kwargs)

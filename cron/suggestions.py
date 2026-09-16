@@ -17,8 +17,8 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from hermes_constants import get_hermes_home
-from hermes_time import now as _hermes_now
+from moor_constants import get_moor_home
+from moor_time import now as _moor_now
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)
@@ -72,7 +72,7 @@ def _load_raw() -> Dict[str, Any]:
 
 def _save_raw(suggestions: List[Dict[str, Any]]) -> None:
     _ensure_dir()
-    payload = {"suggestions": suggestions, "updated_at": _hermes_now().isoformat()}
+    payload = {"suggestions": suggestions, "updated_at": _moor_now().isoformat()}
     atomic_json_write(_current_suggestions_file(), payload, mode=0o600)
 
 

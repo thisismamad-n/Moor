@@ -85,7 +85,7 @@ class TestIRCAdapterLockConflict:
             raise AssertionError("socket must not be opened on a lock conflict")
         monkeypatch.setattr(asyncio, "open_connection", _no_connect)
         adapter = IRCAdapter(PlatformConfig(enabled=True, extra={
-            "server": "irc.example", "nickname": "hermes", "channel": "#x"}))
+            "server": "irc.example", "nickname": "moor", "channel": "#x"}))
         assert await adapter.connect() is False
         assert adapter._fatal_error_code == "irc_lock"
         assert "other" in adapter._fatal_error_message

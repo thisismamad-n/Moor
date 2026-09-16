@@ -19,7 +19,7 @@ status display, gateway setup, and more.
 - `env_enablement_fn: () -> Optional[dict]` — seeds `PlatformConfig.extra`
   (and an optional `home_channel` dict) from env vars BEFORE the adapter is
   constructed.  Without this, env-only setups don't surface in
-  `hermes gateway status` or `get_connected_platforms()` until the SDK
+  `moor gateway status` or `get_connected_platforms()` until the SDK
   instantiates.  Build it from a `(ENV_VAR, extra_key, conv)` table with
   `gateway.platforms._shared.seed_extra_from_env(spec, home_env=...)`; every
   read goes through `_shared.get_scoped_secret` (multiplex-safe, never

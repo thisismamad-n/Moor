@@ -58,7 +58,7 @@ def _start_loopback_listener(flow) -> "http.server.HTTPServer":
                 self.send_response(404)
                 self.end_headers()
                 return
-            body = b"<h1>Authorization received</h1><p>You can close this tab and return to Hermes.</p>"
+            body = b"<h1>Authorization received</h1><p>You can close this tab and return to Moor.</p>"
             status = 200
             try:
                 flow.deliver_callback(**_parse_redirect_query(parsed.query))
@@ -208,17 +208,17 @@ def start_flow(
 
 
 def _lookup(
-    session_id: str, server_name: str, hermes_home: Optional[str] = None,
+    session_id: str, server_name: str, moor_home: Optional[str] = None,
 ) -> "tuple[Dict[str, Any] | None, str | None]":
     """Find a session belonging to the caller's resolved profile."""
-    from hermes_constants import hermes_home_key
+    from moor_constants import moor_home_key
     with _sessions_lock:
         rec = _sessions.get(session_id)
     if rec is None:
         return None, "OAuth session not found or expired"
     if rec["server_name"] != server_name:
         return None, "server name mismatch for session"
-    if hermes_home_key(rec["hermes_home"]) != hermes_home_key(hermes_home):
+    if moor_home_key(rec["moor_home"]) != moor_home_key(moor_home):
         return None, "profile mismatch for session"
     return rec, None
 
@@ -242,9 +242,9 @@ def poll_flow(session_id: str, server_name: str) -> Dict[str, Any]:
     return out
 
 
-def cancel_flow(session_id: str, server_name: str, hermes_home: str) -> Dict[str, Any]:
+def cancel_flow(session_id: str, server_name: str, moor_home: str) -> Dict[str, Any]:
     """Cancel only the owning profile's flow and release its callback waiter."""
-    rec, err = _lookup(session_id, server_name, hermes_home)
+    rec, err = _lookup(session_id, server_name, moor_home)
     if rec is None:
         return {"ok": False, "error_message": err}
     flow = rec["flow"]

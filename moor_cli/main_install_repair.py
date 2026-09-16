@@ -457,7 +457,7 @@ def _run_install_with_heartbeat(
         # both pipes) only drain the child's stdout, so a full stderr
         # pipe (~64KB) blocks the installer forever. Merged into stdout,
         # the output rides the pipe old hand-offs DO drain. This module
-        # is imported when `hermes update` starts, so an update running
+        # is imported when `moor update` starts, so an update running
         # from an old base executes the old copy regardless of the git
         # reset — this protects updates initiated from bases that ship
         # it. (managed_uv.py gets the same fix AND is imported lazily
@@ -1003,7 +1003,7 @@ _CONFIGURED_FEATURES_SCRIPT = (
     "except Exception:\n"
     "    pass\n"
     "try:\n"
-    "    from hermes_cli.config import load_config\n"
+    "    from moor_cli.config import load_config\n"
     "    if (load_config().get('mcp_servers') or {}) and importlib.util.find_spec('mcp') is None:\n"
     "        print('MCP servers\\tinstall the ' + repr('mcp') + ' extra')\n"
     "except Exception:\n"

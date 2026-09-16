@@ -4,7 +4,7 @@ SQLite guards a WAL generation with per-PROCESS POSIX locks, so any raw ``open()
 ``state.db`` or ``-shm`` inside the holder (howtocorrupt.html §2.2) silently drops them; the next
 last-connection close anywhere then checkpoints and unlinks ``-wal``/``-shm`` and the holder
 sticky-halts with ``DeletedWalGenerationError`` (#109727, #110042, #110276, Desktop "chat fails
-after update"). ``hermes_state_lockguard`` re-holds the same ranges as OFD locks that a stray
+after update"). ``moor_state_lockguard`` re-holds the same ranges as OFD locks that a stray
 close cannot cancel. Linux-only: the scenario needs ``/proc``-visible POSIX lock semantics.
 """
 
@@ -16,8 +16,8 @@ from pathlib import Path
 
 import pytest
 
-from hermes_state import SessionDB
-from tests.hermes_state._wal_generation_harness import make_db, pin_wal, require_wal
+from moor_state import SessionDB
+from tests.moor_state._wal_generation_harness import make_db, pin_wal, require_wal
 
 pytestmark = pytest.mark.linux_only
 

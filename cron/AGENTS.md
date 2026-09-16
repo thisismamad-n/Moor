@@ -16,7 +16,7 @@ loaded), multi-platform delivery.
 
 Hardening invariants — each guards a real failure; don't weaken without answering for it:
 - **Inactivity watchdog** on cron agent sessions (`_cron_inactivity_seconds()`): default 600s idle,
-  `HERMES_CRON_TIMEOUT` overrides, `0` = unlimited. It is idle time, not wall-clock — a stalled
+  `MOOR_CRON_TIMEOUT` overrides, `0` = unlimited. It is idle time, not wall-clock — a stalled
   session is hard-interrupted so it cannot monopolise the scheduler, while a long-but-active job
   is never cut off. Attached scripts (pre-run or `no_agent`) are bounded separately by the script
   timeout (`_DEFAULT_SCRIPT_TIMEOUT`, 3600s).
@@ -27,7 +27,7 @@ Hardening invariants — each guards a real failure; don't weaken without answer
   executions ledger's `scheduled_instant` blocks a second fire, `cron.catch_up_missed: false`
   skips past-grace misses with a logged reason. Never drop a slot silently (#107485).
 - Per-home tick lock `<home>/cron/.tick.lock` prevents duplicate ticks across processes for
-  that profile's store; never a `~/.hermes/...` literal.
+  that profile's store; never a `~/.moor/...` literal.
 - **The ticker binds each served profile's scope for the whole tick, including pre-loop code.**
   `scheduler_provider.py::_start_multiplex` is ONE ticker iterating `profiles_to_serve()`
   sequentially under `_profile_cron_scope(home)` (home + secret scope + terminal scope) — never N
@@ -43,7 +43,7 @@ Hardening invariants — each guards a real failure; don't weaken without answer
   reply-facing conversation: origin, origin-less home fallback, user-written bare-platform home,
   or opted-in explicit targets. `all` expansions do not gain home mirror eligibility. Mirrored
   briefs are labelled user turns appended at a turn boundary, preserving role alternation.
-- The cron ticker runs in the desktop-spawned backend when `HERMES_DESKTOP=1` — that env var means
+- The cron ticker runs in the desktop-spawned backend when `MOOR_DESKTOP=1` — that env var means
   "spawned by the app", not "a GUI is watching" (root: capability is a property of the session).
 - Background `delegate_task` is process-local; work that must survive restarts is a cron job or a
   `terminal(background=True, notify_on_complete=True)` process.
@@ -54,7 +54,7 @@ Durable SQLite-backed board letting multiple profiles/workers collaborate. Users
 <verb>`; dispatcher-spawned workers use a dedicated `kanban_*` toolset so their schema footprint is
 zero outside a kanban task (footprint ladder rung 3).
 
-- **CLI:** `hermes_cli/kanban.py` facade + 14 `kanban_*.py` siblings (`boards`, `db`, `db_connect`,
+- **CLI:** `moor_cli/kanban.py` facade + 14 `kanban_*.py` siblings (`boards`, `db`, `db_connect`,
   `db_dispatch`, `db_notify`, `db_graph` (task initialization and decomposition), `workspace`, ...). Verbs: `init, create, list (ls), show, assign, link,
   unlink, comment, attach, attachments, attach-rm, complete, request-review, request-changes,
   reopen-review, block, unblock, archive, tail`, plus `watch, stats, runs, log, assignees, heartbeat,
@@ -62,7 +62,7 @@ zero outside a kanban task (footprint ladder rung 3).
 - **Toolset:** `tools/kanban_tools.py` — `kanban_show, kanban_complete, kanban_request_review,
   kanban_request_changes, kanban_block, kanban_heartbeat, kanban_comment, kanban_create, kanban_link,
   kanban_attach, kanban_attach_url, kanban_attachments`; platforms whose saved selection enables
-  `kanban` (`hermes tools enable kanban --platform <p>`; default-off, in `CONFIGURABLE_TOOLSETS`) get
+  `kanban` (`moor tools enable kanban --platform <p>`; default-off, in `CONFIGURABLE_TOOLSETS`) get
   the full set plus `kanban_list`/`kanban_unblock` for board routing. The check_fn reads the schema
   build's own selection (`tools/kanban_toolset_context.py`), never the legacy top-level `toolsets`
   key alone.
@@ -81,17 +81,17 @@ substring (root). Worker liveness is `(worker_pid, worker_started_at)` — the s
 (`gateway.status.get_process_start_time`) recorded at claim time — never bare PID existence, or a
 recycled PID gets killed on reclaim.
 
-- **Notifications leave through the task's owning profile.** `hermes_cli/kanban_db_notify.py`
+- **Notifications leave through the task's owning profile.** `moor_cli/kanban_db_notify.py`
   subscriptions carry the profile; `gateway/kanban_watchers_notifier.py` delivers via THAT
   profile's adapter under its scope (`_notify_profile_filter`), never the multiplexer's launch
   adapter; a fail-closed skip logs once at WARNING with the remedy, never a bare `continue`.
-  Dispatched workers get `HERMES_KANBAN_BOARD` and the assignee's `HERMES_HOME` pinned in a
+  Dispatched workers get `MOOR_KANBAN_BOARD` and the assignee's `MOOR_HOME` pinned in a
   scrubbed child env (`build_subprocess_env` + `strip_launch_profile_env`); they never inherit the
   default profile's `.env`.
 - **Descendant fence is a path, not a flag.** A delegated child's Kanban marker
   (`agent/delegation_context.py::DELEGATED_CHILD_ENV_MARKER`) carries the fenced board ROOT;
-  `kanban_path_is_fenced(path)` denies mutations only on the dispatcher-pinned `HERMES_KANBAN_DB`
-  or under that root, so a child working against a scratch `HERMES_HOME` keeps a writable board.
+  `kanban_path_is_fenced(path)` denies mutations only on the dispatcher-pinned `MOOR_KANBAN_DB`
+  or under that root, so a child working against a scratch `MOOR_HOME` keeps a writable board.
 
 ## Tests
 

@@ -613,7 +613,7 @@ def test_tool_defs_cache_key_sees_config_replacement_with_pinned_mtime(tmp_path)
 
     cfg = tmp_path / "config.yaml"
     cfg.write_text("mcp_servers:\n  aa: {command: a}\n", encoding="utf-8")
-    with patch("hermes_cli.config.get_config_path", return_value=cfg):
+    with patch("moor_cli.config.get_config_path", return_value=cfg):
         before = _tool_defs_cache_key(None, None, False)
         st = cfg.stat()
         other = tmp_path / "other.yaml"

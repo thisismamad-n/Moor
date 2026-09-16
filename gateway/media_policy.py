@@ -17,21 +17,21 @@ from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
-_FLAG_ENVS = (("strict", "HERMES_MEDIA_DELIVERY_STRICT"), ("trust_recent_files", "HERMES_MEDIA_TRUST_RECENT_FILES"))
-_ALLOW_DIRS_ENV = "HERMES_MEDIA_ALLOW_DIRS"
-_TRUST_RECENT_SECONDS_ENV = "HERMES_MEDIA_TRUST_RECENT_SECONDS"
+_FLAG_ENVS = (("strict", "MOOR_MEDIA_DELIVERY_STRICT"), ("trust_recent_files", "MOOR_MEDIA_TRUST_RECENT_FILES"))
+_ALLOW_DIRS_ENV = "MOOR_MEDIA_ALLOW_DIRS"
+_TRUST_RECENT_SECONDS_ENV = "MOOR_MEDIA_TRUST_RECENT_SECONDS"
 _TRUTHY = frozenset({"1", "true", "yes", "on"})
 
 
 def _routed_gateway_cfg() -> Optional[Dict[str, Any]]:
-    """``gateway`` section of the ROUTED profile's config when a HERMES_HOME override is active
+    """``gateway`` section of the ROUTED profile's config when a MOOR_HOME override is active
     (multiplexed turn), else None. The env bridge is one process-wide copy of the launch profile's
     policy, so a secondary's deliveries must read their own config instead of ``os.environ``."""
-    from hermes_constants import get_hermes_home_override
-    if not get_hermes_home_override():
+    from moor_constants import get_moor_home_override
+    if not get_moor_home_override():
         return None
     try:
-        from hermes_cli.config import load_config_readonly
+        from moor_cli.config import load_config_readonly
         gateway_cfg = load_config_readonly().get("gateway")
     except Exception:
         return {}

@@ -17,11 +17,11 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
-from hermes_cli.web_deps import late
-from hermes_cli.web_server_mcp import _mcp_oauth_flows, _mcp_server_summary, _normalize_mcp_server_create
-from hermes_cli.web_models import MCPCatalogInstall, MCPEnabledToggle, MCPServerCreate, MCPServersReplace
-from hermes_cli.web_routers._common import (
-    _profile_cli_args, _profile_scope, _spawn_hermes_action, config_write_scope, http_failure,
+from moor_cli.web_deps import late
+from moor_cli.web_server_mcp import _mcp_oauth_flows, _mcp_server_summary, _normalize_mcp_server_create
+from moor_cli.web_models import MCPCatalogInstall, MCPEnabledToggle, MCPServerCreate, MCPServersReplace
+from moor_cli.web_routers._common import (
+    _profile_cli_args, _profile_scope, _spawn_moor_action, config_write_scope, http_failure,
     log as _log, scoped_to_thread,
 )
 
@@ -184,7 +184,7 @@ async def test_mcp_server(name: str, profile: Optional[str] = None):
     try:  # probe blocks on a dedicated MCP event loop — keep it off the FastAPI loop
         tools, token_present = await asyncio.to_thread(_secret_scoped(profile, _probe))
     except Exception as exc:
-        from hermes_cli.mcp_config import redact_mcp_probe_text
+        from moor_cli.mcp_config import redact_mcp_probe_text
 
         return {"ok": False, "error": redact_mcp_probe_text(exc), "tools": []}
     if not token_present:

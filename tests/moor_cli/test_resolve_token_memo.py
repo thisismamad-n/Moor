@@ -16,9 +16,9 @@ import moor_cli.auth as auth
 
 @pytest.fixture(autouse=True)
 def _fresh_memo(monkeypatch, tmp_path):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.delenv("HERMES_PORTAL_BASE_URL", raising=False)
-    monkeypatch.delenv("NOUS_PORTAL_BASE_URL", raising=False)
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
+    monkeypatch.delenv("MOOR_PORTAL_BASE_URL", raising=False)
+    monkeypatch.delenv("MOOR_PORTAL_BASE_URL", raising=False)
     monkeypatch.setattr(auth, "_RESOLVE_TOKEN_CACHE", {})
     yield
 
@@ -74,8 +74,8 @@ def test_memo_expires_after_ttl(monkeypatch, tmp_path):
     _write_valid_auth_file(tmp_path)
     calls = _count_transactions(monkeypatch)
 
-    auth.resolve_nous_access_token()
-    cache_key = auth.hermes_home_key()
+    auth.resolve_moor_access_token()
+    cache_key = auth.moor_home_key()
     cached_at, tok = auth._RESOLVE_TOKEN_CACHE[cache_key]
     monkeypatch.setattr(
         auth,
@@ -99,12 +99,12 @@ def test_insecure_callers_bypass_memo(monkeypatch, tmp_path):
 
 def test_memo_does_not_leak_across_multiplex_profile_contexts(tmp_path):
     """A multiplex gateway scopes each profile's context via
-    hermes_constants.set_hermes_home_override (gateway/run.py,
-    tui_gateway/server.py), not the HERMES_HOME env var — the memo must key
+    moor_constants.set_moor_home_override (gateway/run.py,
+    tui_gateway/server.py), not the MOOR_HOME env var — the memo must key
     on that same resolved home, or one profile's context can read another
-    profile's already-cached Nous access token for up to the TTL window.
+    profile's already-cached Moor access token for up to the TTL window.
     """
-    import hermes_constants
+    import moor_constants
 
     profile_a = tmp_path / "profile-a"
     profile_b = tmp_path / "profile-b"
@@ -114,19 +114,19 @@ def test_memo_does_not_leak_across_multiplex_profile_contexts(tmp_path):
     _write_valid_auth_file(profile_b, token="token-b")
 
     token_a = token_b = None
-    reset_token = hermes_constants.set_hermes_home_override(str(profile_a))
+    reset_token = moor_constants.set_moor_home_override(str(profile_a))
     try:
-        token_a = auth.resolve_nous_access_token()
+        token_a = auth.resolve_moor_access_token()
     finally:
-        hermes_constants.reset_hermes_home_override(reset_token)
+        moor_constants.reset_moor_home_override(reset_token)
 
     # Still well within the 5s TTL — this is exactly the race window: profile
-    # B's context calls resolve_nous_access_token() shortly after profile A's.
-    reset_token = hermes_constants.set_hermes_home_override(str(profile_b))
+    # B's context calls resolve_moor_access_token() shortly after profile A's.
+    reset_token = moor_constants.set_moor_home_override(str(profile_b))
     try:
-        token_b = auth.resolve_nous_access_token()
+        token_b = auth.resolve_moor_access_token()
     finally:
-        hermes_constants.reset_hermes_home_override(reset_token)
+        moor_constants.reset_moor_home_override(reset_token)
 
     assert token_a == "token-a"
     assert token_b == "token-b", (

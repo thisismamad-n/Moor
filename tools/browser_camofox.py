@@ -24,8 +24,8 @@ from urllib.parse import SplitResult, urlsplit, urlunsplit
 import requests
 
 from agent.secret_scope import get_secret
-from hermes_cli.config import cfg_get, load_config, read_raw_config
-from hermes_constants import get_hermes_home_override, hermes_home_key
+from moor_cli.config import cfg_get, load_config, read_raw_config
+from moor_constants import get_moor_home_override, moor_home_key
 from tools.browser_camofox_state import get_camofox_identity
 from tools.registry import tool_error
 
@@ -49,7 +49,7 @@ _cmd_timeout_resolved = False
 def _get_command_timeout() -> int:
     """``browser.command_timeout`` (floor 5s, default 30s), cached per profile home after first read."""
     global _cached_cmd_timeout, _cmd_timeout_resolved
-    home = hermes_home_key()
+    home = moor_home_key()
     if _cached_cmd_timeout is None:
         _cached_cmd_timeout = {}
     if _cmd_timeout_resolved and home in _cached_cmd_timeout:
@@ -131,7 +131,7 @@ def check_camofox_available() -> bool:
     except Exception:
         return False
     if resp.status_code == 200:
-        if get_hermes_home_override() is not None:
+        if get_moor_home_override() is not None:
             if url not in _vnc_url_by_camofox_url:
                 _vnc_url_by_camofox_url[url] = _vnc_url_from_health(url, resp)
         elif not _vnc_url_checked:
@@ -142,7 +142,7 @@ def check_camofox_available() -> bool:
 
 def get_vnc_url() -> Optional[str]:
     """Return the VNC URL if the Camofox server exposes one, or None."""
-    if get_hermes_home_override() is not None:
+    if get_moor_home_override() is not None:
         url = get_camofox_url()
         if url not in _vnc_url_by_camofox_url:
             check_camofox_available()

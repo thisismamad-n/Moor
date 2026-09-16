@@ -153,8 +153,8 @@ class TestBackgroundThreadIsolation:
         assert box["client"].kwargs["api_key"] == "key-b"
 
     def test_spawn_context_thread_sees_profile_override(self, tmp_path):
-        """spawn_context_thread must carry the caller's HERMES_HOME override."""
-        from hermes_constants import get_hermes_home
+        """spawn_context_thread must carry the caller's MOOR_HOME override."""
+        from moor_constants import get_moor_home
         from agent.memory_provider import spawn_context_thread
 
         home_b = tmp_path / "profiles" / "b"

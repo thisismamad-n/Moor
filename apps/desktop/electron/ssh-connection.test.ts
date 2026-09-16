@@ -1099,7 +1099,7 @@ test('withRemoteTimeout kills a hung probe remotely instead of orphaning it (#11
   }
 
   // Shape: POSIX watchdog — macOS remotes have no GNU `timeout`.
-  const wrapped = withRemoteTimeout('hermes --version 2>&1', 15)
+  const wrapped = withRemoteTimeout('moor --version 2>&1', 15)
 
   assert.ok(wrapped.includes('sleep 15'), 'watchdog duration honored')
   assert.ok(wrapped.includes('kill -9'), 'watchdog kills the hung child remotely')

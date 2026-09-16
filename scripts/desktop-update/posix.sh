@@ -245,7 +245,7 @@ start_ui() {
   fi
   { [ -f "$html" ] && [ -n "$py" ] && [ -n "$browser" ]; } || { log "shim: no renderer; skipping UI"; return; }
 
-  UI_PROFILE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hermes-update-ui-XXXXXXXX")" || {
+  UI_PROFILE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/moor-update-ui-XXXXXXXX")" || {
     UI_PROFILE_DIR=""
     log "shim: could not allocate a browser profile; skipping UI"
     return

@@ -5,7 +5,7 @@ vi.mock('@/moor', () => ({
   saveMoorConfig: vi.fn(async () => undefined)
 }))
 
-import { saveHermesConfig } from '@/hermes'
+import { saveMoorConfig } from '@/moor'
 
 import { $voiceStopPhrase, applyVoiceStopPhraseFromConfig } from './voice-prefs'
 
@@ -23,14 +23,14 @@ it('keeps the desktop toggle local across config refreshes', async () => {
         })
       }
 
-      vi.mocked(saveHermesConfig).mockClear()
+      vi.mocked(saveMoorConfig).mockClear()
 
       try {
         await prefs.setAutoSpeakReplies(enabled)
         prefs.applyAutoSpeakFromConfig({ voice: { auto_tts: !enabled } })
         expect(prefs.$autoSpeakReplies.get()).toBe(enabled)
-        expect(saveHermesConfig).not.toHaveBeenCalled()
-        expect(localStorage.getItem('hermes.desktop.autoSpeakReplies')).toBe(fails ? null : String(enabled))
+        expect(saveMoorConfig).not.toHaveBeenCalled()
+        expect(localStorage.getItem('moor.desktop.autoSpeakReplies')).toBe(fails ? null : String(enabled))
       } finally {
         write.mockRestore()
       }
@@ -54,11 +54,11 @@ it('migrates the legacy preference once, not on every refresh', async () => {
 
       try {
         prefs.applyAutoSpeakFromConfig(null)
-        expect(localStorage.getItem('hermes.desktop.autoSpeakReplies')).toBeNull()
+        expect(localStorage.getItem('moor.desktop.autoSpeakReplies')).toBeNull()
         prefs.applyAutoSpeakFromConfig({ voice: { auto_tts: enabled } })
         prefs.applyAutoSpeakFromConfig({ voice: { auto_tts: !enabled } })
         expect(prefs.$autoSpeakReplies.get()).toBe(enabled)
-        expect(localStorage.getItem('hermes.desktop.autoSpeakReplies')).toBe(fails ? null : String(enabled))
+        expect(localStorage.getItem('moor.desktop.autoSpeakReplies')).toBe(fails ? null : String(enabled))
       } finally {
         write.mockRestore()
       }

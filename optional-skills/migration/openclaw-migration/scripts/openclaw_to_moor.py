@@ -2574,7 +2574,7 @@ class Migrator:
 
         if session.get("reset") or session.get("resetTriggers") or session.get("reset_triggers"):
             self.record("session-config", "session reset timers", None, "skipped",
-                        "Hermes conversations do not reset on idle or daily timers")
+                        "Moor conversations do not reset on idle or daily timers")
 
         # Archive full session config (identity links, thread bindings, etc.)
         complex_keys = {"identityLinks", "threadBindings", "maintenance", "scope", "sendPolicy"}

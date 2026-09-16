@@ -155,21 +155,21 @@ def test_explanation_persistence_corrupt_cause_never_says_free_space():
     assert "full disk" not in lower
 
 
-def test_explanation_persistence_corrupt_backups_dir_follows_hermes_home(monkeypatch, tmp_path):
-    """Step 3 must name the backups dir under the ACTIVE home, not ~/.hermes (#104250).
+def test_explanation_persistence_corrupt_backups_dir_follows_moor_home(monkeypatch, tmp_path):
+    """Step 3 must name the backups dir under the ACTIVE home, not ~/.moor (#104250).
 
-    Pre-update backups live at ``<hermes_root>/backups`` (``hermes_cli/backup.py``), so a
-    custom-HERMES_HOME deployment told to restore from ``~/.hermes/backups/`` is misdirected
+    Pre-update backups live at ``<moor_root>/backups`` (``moor_cli/backup.py``), so a
+    custom-MOOR_HOME deployment told to restore from ``~/.moor/backups/`` is misdirected
     mid data-loss incident: that directory may not exist at all, or may hold an unrelated
     install's backups.
     """
-    custom_home = tmp_path / "custom-hermes-home"
-    monkeypatch.setenv("HERMES_HOME", str(custom_home / "profiles" / "research"))
+    custom_home = tmp_path / "custom-moor-home"
+    monkeypatch.setenv("MOOR_HOME", str(custom_home / "profiles" / "research"))
     out = AIAgent._format_turn_completion_explanation(
         "session_persistence_failed", "corrupt"
     )
     assert f"{custom_home / 'backups'}" in out
-    assert "~/.hermes/backups" not in out
+    assert "~/.moor/backups" not in out
     assert "{backups_dir}" not in out
 
 
@@ -188,7 +188,7 @@ def test_explanation_persistence_fts_index_never_advises_recovery():
     assert "restore from a backup" not in lower and "backups/" not in lower
     assert "would have been lost" not in lower
     assert "free" not in lower  # never disk-space advice
-    assert "hermes doctor" in lower
+    assert "moor doctor" in lower
     assert "search index" in lower and "not damaged" in lower
     assert "send your message again" in lower  # the handle stays live
 
@@ -205,19 +205,19 @@ def test_explanation_persistence_replaced_cause_forbids_inplace_repair():
 
 
 def test_deleted_wal_cause_is_plain_first_steps_not_a_forensic_runbook():
-    """The WAL-generation runbook lives in the logger.error at hermes_state; the chat reply
+    """The WAL-generation runbook lives in the logger.error at moor_state; the chat reply
     gives the two steps a user can take (stop, doctor) and points at the log."""
-    from hermes_state_errors import PERSISTENCE_ERROR_CAUSES
+    from moor_state_errors import PERSISTENCE_ERROR_CAUSES
 
     out = AIAgent._format_turn_completion_explanation(
         "session_persistence_failed", "deleted_wal"
     ).lower()
     assert "deleted_wal" in PERSISTENCE_ERROR_CAUSES
-    assert "hermes gateway stop" in out and "hermes doctor" in out
+    assert "moor gateway stop" in out and "moor doctor" in out
     assert "send your message once more" in out
     for jargon in ("manifest", "state.db-wal", "sidecar", "header_only", "--inspect-only", "generation"):
         assert jargon not in out, jargon
-    assert "~/.hermes" not in out  # display_hermes_home(), never a hardcoded path
+    assert "~/.moor" not in out  # display_moor_home(), never a hardcoded path
 
 
 def test_explanation_persistence_unknown_cause_is_neutral():
@@ -238,7 +238,7 @@ def test_explanation_persistence_one_arg_backward_compat():
     """Existing one-arg callers must keep working (optional second param)."""
     out = AIAgent._format_turn_completion_explanation("session_persistence_failed")
     assert out.strip() != ""
-    assert "couldn't save" in out.lower() and "hermes doctor" in out.lower()
+    assert "couldn't save" in out.lower() and "moor doctor" in out.lower()
 
 
 def test_explanation_cause_ignored_for_other_reasons():
@@ -388,8 +388,8 @@ def test_classify_persistence_error_fts_provenance_order():
     "provably FTS-only" (#97794 review)."""
     import sqlite3
 
-    from hermes_state import SessionDB, classify_persistence_error
-    from hermes_state_errors import SQLITE_CORRUPT_VTAB, is_fts_scoped_corruption_error
+    from moor_state import SessionDB, classify_persistence_error
+    from moor_state_errors import SQLITE_CORRUPT_VTAB, is_fts_scoped_corruption_error
 
     def _err(text, code=None, cls=sqlite3.DatabaseError):
         exc = cls(text)

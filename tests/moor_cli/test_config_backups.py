@@ -1,18 +1,18 @@
-"""config.yaml backups: one dir, deduped, bounded — never a pile of siblings in HERMES_HOME."""
+"""config.yaml backups: one dir, deduped, bounded — never a pile of siblings in MOOR_HOME."""
 from pathlib import Path
 
-from hermes_cli.config_backups import backup_config, list_config_backups
+from moor_cli.config_backups import backup_config, list_config_backups
 
 
 def test_repeat_backups_dedupe_and_rotate(tmp_path: Path, monkeypatch):
     cfg = tmp_path / "config.yaml"
     cfg.write_text("model: a\n")
     stamps = iter(f"2026010100000{i}" for i in range(10))
-    monkeypatch.setattr("hermes_cli.config_backups.time.strftime", lambda _fmt: next(stamps))
+    monkeypatch.setattr("moor_cli.config_backups.time.strftime", lambda _fmt: next(stamps))
 
     first = backup_config(cfg, "pre-setup", keep=2)
     assert first is not None and first.parent == tmp_path / "backups" / "config"
-    # Same bytes again → no new file (the hermes-setup-three-times case).
+    # Same bytes again → no new file (the moor-setup-three-times case).
     assert backup_config(cfg, "pre-setup", keep=2) is None
     for i in range(3):
         cfg.write_text(f"model: {i}\n")

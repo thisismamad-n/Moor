@@ -66,12 +66,12 @@ end-to-end and exposes no knobs:
   context guarantee.
 - **Memory fit includes the launch configuration**, not just the model file:
   context state, runtime buffers, the vision projector, and MTP buffers all
-  count. For multi-token prediction (MTP), Hermes uses smaller batches when
+  count. For multi-token prediction (MTP), Moor uses smaller batches when
   larger batches would spill at the same context window. MTP stays enabled.
   The same calculation runs when a grown window is restored after restart.
 - **Conversation compression follows a growth check.** If a larger window
   cannot fit, generation is too slow, or the native maximum is reached,
-  Hermes compresses instead of claiming a window the server did not receive.
+  Moor compresses instead of claiming a window the server did not receive.
 - Idle models are unloaded after 15 minutes to free GPU memory; they
   reload automatically on the next message.
 

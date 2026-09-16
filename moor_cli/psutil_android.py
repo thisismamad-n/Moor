@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from hermes_cli.archive_safe import safe_extract_targz
+from moor_cli.archive_safe import safe_extract_targz
 
 # Pinned to a version whose marker line patches cleanly; bump when upstream changes its shape.
 PSUTIL_URL = (

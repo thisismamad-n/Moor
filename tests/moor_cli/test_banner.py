@@ -90,9 +90,9 @@ def test_empty_model_shows_the_free_tier_route_when_it_carries_inference(tmp_pat
     """The banner prints before credentials resolve, so ``model`` is empty on a fresh install. On the
     free tier the route is known locally (identity on disk + tier on): the banner shows its model.
     When nothing resolves the red "no model configured" line stays."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    (tmp_path / ".hermes").mkdir()
-    import hermes_cli.anon_auth as anon_auth
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
+    (tmp_path / ".moor").mkdir()
+    import moor_cli.anon_auth as anon_auth
 
     def render(carries: bool) -> str:
         with (

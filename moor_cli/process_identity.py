@@ -266,8 +266,8 @@ def _append_entry(entry: LedgerEntry) -> bool:
         ]
         pruned.append(asdict(entry))
         try:
-            from hermes_constants import mkdir_under_hermes_home
-            mkdir_under_hermes_home(path.parent)
+            from moor_constants import mkdir_under_moor_home
+            mkdir_under_moor_home(path.parent)
             # argv may carry surrogate-escaped bytes (non-UTF-8 paths); ensure_ascii keeps the
             # utf-8 text handle from raising UnicodeEncodeError (a ValueError, not an OSError).
             atomic_json_write(path, pruned, mode=0o600, ensure_ascii=True)

@@ -122,8 +122,8 @@ _preset_cache: dict[tuple, Any] = {}
 def _resolve_preset_cached(preset_name: str) -> tuple[dict[str, Any], Any]:
     """``(preset, raw moa config)``; the resolved preset is cached per config file signature
     (skips resolve_moa_preset's full validation of the moa block on every create())."""
-    from hermes_cli.config import get_config_path, load_config
-    from hermes_cli.moa_config import resolve_moa_preset
+    from moor_cli.config import get_config_path, load_config
+    from moor_cli.moa_config import resolve_moa_preset
     from utils import file_signature
     try:
         cfg_stamp = file_signature(get_config_path().stat())
@@ -251,10 +251,10 @@ def _slot_runtime(slot: dict[str, Any]) -> dict[str, Any]:
     """
     provider = str(slot.get("provider") or "").strip()
     model = str(slot.get("model") or "").strip()
-    # hermes_home_key() in the key: the resolved api_key/base_url are per-profile, and under a
+    # moor_home_key() in the key: the resolved api_key/base_url are per-profile, and under a
     # multiplex gateway two profiles can share (provider, model) with different accounts.
-    from hermes_constants import hermes_home_key
-    cache_key = (hermes_home_key(), provider, model)
+    from moor_constants import moor_home_key
+    cache_key = (moor_home_key(), provider, model)
     now = time.monotonic()
     with _runtime_cache_lock:
         entry = _runtime_cache.get(cache_key)

@@ -175,19 +175,19 @@ describe('deriveBillingView', () => {
     // A free-tier install is logged_in:false, so this branch must win — otherwise
     // the generic "connect your account" notice sends the user to the portal.
     const view = deriveBillingView(
-      okBilling({ ...loggedOutBillingState, free_tier: true, free_tier_model: 'nous/welcome' }),
+      okBilling({ ...loggedOutBillingState, free_tier: true, free_tier_model: 'moor/welcome' }),
       okSubscription(loggedOutSubscriptionState)
     )
 
     expect(view.status).toBe('free_tier')
-    expect(view.notice).toMatchObject({ title: "You're on the Nous free tier", tone: 'info' })
+    expect(view.notice).toMatchObject({ title: "You're on the Moor free tier", tone: 'info' })
     expect(view.notice?.action?.label).toBe('Sign in')
     expect(view.summary).toEqual([
       { label: 'Plan', value: 'Free tier' },
-      { label: 'Model', value: 'nous/welcome' },
+      { label: 'Model', value: 'moor/welcome' },
       { label: 'Connectors', tone: 'primary', value: 'Included' }
     ])
-    expect(view.plan).toMatchObject({ tierName: 'Nous · free tier' })
+    expect(view.plan).toMatchObject({ tierName: 'Moor · free tier' })
     expect(view.plan?.action).toBeUndefined()
     expect(view.planFootnote).toContain('no balance and nothing to pay')
     expect(view.paymentRow).toBeUndefined()

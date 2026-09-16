@@ -12,8 +12,8 @@ import os
 import shutil
 import sys
 
-from hermes_constants import get_hermes_home
-from hermes_state_ids import new_session_id
+from moor_constants import get_moor_home
+from moor_state_ids import new_session_id
 from pathlib import Path
 from rich.console import Console
 from rich.markup import escape as _escape
@@ -245,7 +245,7 @@ class CLISessionMixin:
 
     def _show_session_status(self):
         """Show gateway-style status for the current CLI session."""
-        from hermes_cli.status_report import build_status_fields, status_lines
+        from moor_cli.status_report import build_status_fields, status_lines
         session_meta = {}
         if self._session_db:
             with contextlib.suppress(Exception):
@@ -293,13 +293,13 @@ class CLISessionMixin:
         except Exception:
             ctx_label = None
 
-        lines = ["Hermes CLI Status", "", *status_lines(fields, "session_id", "path", "title", "model")]
+        lines = ["Moor CLI Status", "", *status_lines(fields, "session_id", "path", "title", "model")]
         try:
             from agent.i18n import t
-            from hermes_cli.auth import resolve_provider
-            from hermes_cli.anon_auth import guest_carries_inference
+            from moor_cli.auth import resolve_provider
+            from moor_cli.anon_auth import guest_carries_inference
 
-            if resolve_provider("auto") == "nous" and guest_carries_inference():
+            if resolve_provider("auto") == "moor" and guest_carries_inference():
                 lines.append(t("gateway.status.free_tier"))
         except Exception:
             pass
@@ -1124,7 +1124,7 @@ class CLISessionMixin:
         msg_count = len(self.conversation_history)
         if not msg_count:
             try:
-                from hermes_cli.skin_engine import get_active_goodbye
+                from moor_cli.skin_engine import get_active_goodbye
                 goodbye = get_active_goodbye("Goodbye! ☤")
             except Exception:
                 goodbye = "Goodbye! ☤"

@@ -34,10 +34,10 @@ def fleet(monkeypatch, tmp_path):
     monkeypatch.setattr("gateway.status._pid_exists", lambda pid: pid in (100, 200))
     # A runtime is a VERIFIED gateway identity: live PID whose command line is a gateway's for that home.
     monkeypatch.setattr("gateway.status._read_process_cmdline", lambda pid: {
-        100: "hermes gateway run", 200: "hermes --profile work gateway run"}.get(pid))
-    monkeypatch.setattr("hermes_cli.gateway._get_service_pids", lambda all_profiles=False: {100})
-    monkeypatch.setattr("hermes_cli.gateway.supports_systemd_services", lambda: True)
-    monkeypatch.setattr("hermes_cli.gateway.find_profile_gateway_processes", lambda exclude_pids=None: [])
+        100: "moor gateway run", 200: "moor --profile work gateway run"}.get(pid))
+    monkeypatch.setattr("moor_cli.gateway._get_service_pids", lambda all_profiles=False: {100})
+    monkeypatch.setattr("moor_cli.gateway.supports_systemd_services", lambda: True)
+    monkeypatch.setattr("moor_cli.gateway.find_profile_gateway_processes", lambda exclude_pids=None: [])
     monkeypatch.setattr(
         "moor_cli.build_info.get_code_identity",
         lambda refresh=False: {"sha": "a" * 40, "short_sha": "a" * 8, "version": "1.0", "source": "git"},
@@ -87,11 +87,11 @@ class TestCollectInventory:
 
     def test_stopped_record_with_recycled_pid_is_not_a_runtime(self, fleet, monkeypatch):
         """#109680: a ``stopped`` record whose PID an unrelated process now holds must not fabricate a
-        gateway the restart phase can never touch (that phantom made `hermes update` exit partial)."""
+        gateway the restart phase can never touch (that phantom made `moor update` exit partial)."""
         work_home = fleet / "home" / "profiles" / "work"
         _write_state(work_home, 200, gateway_state="stopped")
         monkeypatch.setattr("gateway.status._read_process_cmdline", lambda pid: {
-            100: "hermes gateway run", 200: "C:/Windows/system32/dllhost.exe /Processid:{X}"}.get(pid))
+            100: "moor gateway run", 200: "C:/Windows/system32/dllhost.exe /Processid:{X}"}.get(pid))
         plan = ui.collect_runtime_inventory()
         assert [r.profile for r in plan.runtimes] == ["default"]
 

@@ -168,7 +168,7 @@ _EXTRA_KEYS = frozenset({
     "token_type", "scope", "client_id", "portal_base_url", "obtained_at",
     "expires_in", "agent_key_id", "agent_key_expires_in", "agent_key_reused",
     "agent_key_obtained_at", "tls", "secret_source", "secret_fingerprint",
-    # Nous guest identity (``auth_method: anonymous``): the anon_ credential is the refresh material.
+    # Moor guest identity (``auth_method: anonymous``): the anon_ credential is the refresh material.
     "auth_method", "account_tier", "anon_token", "user_id", "org_id",
     # Classified failure semantics for the last exhaustion (agent/error_classifier.py).
     # Providers return 403 for both an edge throttle and a spending limit, so the
@@ -861,7 +861,7 @@ _TOKENS_SINGLETON_PROVIDERS: Dict[str, Tuple[str, str, str, str]] = {
 
 # Providers whose pooled OAuth entries ``_refresh_entry_impl`` can actually refresh. Any other
 # provider is returned unchanged by that path, so callers must not report a refresh for them.
-REFRESHABLE_OAUTH_PROVIDERS = frozenset({"anthropic", "nous", *_TOKENS_SINGLETON_PROVIDERS})
+REFRESHABLE_OAUTH_PROVIDERS = frozenset({"anthropic", "moor", *_TOKENS_SINGLETON_PROVIDERS})
 
 # Providers whose refresh tokens are single-use: the sync -> POST -> write-back
 # sequence must be serialized across processes under the auth-store flock.

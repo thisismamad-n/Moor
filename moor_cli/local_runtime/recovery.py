@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def read_state() -> dict:
-    from hermes_cli.local_runtime.supervisor import state_path
+    from moor_cli.local_runtime.supervisor import state_path
 
     try:
         state = json.loads(state_path().read_text(encoding="utf-8"))
@@ -84,8 +84,8 @@ def _owner_is_dead(state: dict) -> bool:
 def _legacy_orphan_process(state: dict):
     """Older state lacks birth times: require the exact installed binary and launch arguments."""
     from urllib.parse import urlsplit
-    from hermes_cli.local_runtime.bootstrap import models_dir
-    from hermes_cli.local_runtime.supervisor import state_path
+    from moor_cli.local_runtime.bootstrap import models_dir
+    from moor_cli.local_runtime.supervisor import state_path
 
     # A damaged new record must not fall back to weaker legacy evidence.
     if os.name != "nt" or is_modern(state):
@@ -128,7 +128,7 @@ def _legacy_orphan_process(state: dict):
 
 def stop_recorded_orphan() -> bool:
     """Explicit user stop only. Refuse uncertain identity or a living recorded owner."""
-    from hermes_cli.local_runtime.supervisor import LlamaServerSupervisor, state_path
+    from moor_cli.local_runtime.supervisor import LlamaServerSupervisor, state_path
 
     try:
         state = json.loads(state_path().read_text(encoding="utf-8"))

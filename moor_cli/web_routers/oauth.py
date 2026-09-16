@@ -16,8 +16,8 @@ from typing import Any, Callable, Dict, Optional
 
 from fastapi import APIRouter, HTTPException, Request
 
-from hermes_cli.web_deps import LateState, late
-from hermes_cli.web_server_oauth import (
+from moor_cli.web_deps import LateState, late
+from moor_cli.web_server_oauth import (
     _external_process_cli_command, _oauth_profile_name, _oauth_sessions, _oauth_sessions_lock, _truncate_token,
 )
 from moor_cli.web_models import OAuthSubmitBody
@@ -29,16 +29,16 @@ router = APIRouter()
 # Late-bound so a test's monkeypatch on the owning module wins at call time.
 _profile_scope = late("_profile_scope", "moor_cli.web_server_profiles")
 _require_token = late("_require_token")
-_resolve_profile_dir = late("_resolve_profile_dir", "hermes_cli.web_server_profiles")
-_OAUTH_PROVIDER_CATALOG = LateState("_OAUTH_PROVIDER_CATALOG", "hermes_cli.web_server_oauth")
+_resolve_profile_dir = late("_resolve_profile_dir", "moor_cli.web_server_profiles")
+_OAUTH_PROVIDER_CATALOG = LateState("_OAUTH_PROVIDER_CATALOG", "moor_cli.web_server_oauth")
 # Pollers are late-bound: they run on a background thread AFTER the route returns, so a
 # test's monkeypatch on web_server_oauth must win at spawn time, not router-import time.
 # A direct import here made those mocks no-ops — the real poller then hit the network
 # from the leaked thread and segfaulted a later test's collection (CI flake, 2026-09-09).
-_nous_plain_poller = late("_nous_plain_poller", "hermes_cli.web_server_oauth")
-_nous_promotion_poller = late("_nous_promotion_poller", "hermes_cli.web_server_oauth")
-_minimax_poller = late("_minimax_poller", "hermes_cli.web_server_oauth")
-_xai_device_poller = late("_xai_device_poller", "hermes_cli.web_server_oauth")
+_moor_plain_poller = late("_moor_plain_poller", "moor_cli.web_server_oauth")
+_moor_promotion_poller = late("_moor_promotion_poller", "moor_cli.web_server_oauth")
+_minimax_poller = late("_minimax_poller", "moor_cli.web_server_oauth")
+_xai_device_poller = late("_xai_device_poller", "moor_cli.web_server_oauth")
 
 _CODEX_ISSUER = "https://auth.openai.com"
 _JSON_HEADERS = {"Content-Type": "application/json"}
@@ -287,8 +287,8 @@ def _status_card(
 # refresh. xai: source_label is a human-readable origin (auth-store path /
 # credential source), not the internal auth_mode string ("oauth_pkce").
 _PROVIDER_STATUS: Dict[str, tuple[str, Callable[[dict], dict]]] = {
-    "nous": ("get_nous_auth_status_local", lambda r: {**_status_card(
-        r, "nous_portal", r.get("portal_base_url") or "Nous Portal",
+    "moor": ("get_moor_auth_status_local", lambda r: {**_status_card(
+        r, "moor_portal", r.get("portal_base_url") or "Moor Portal",
         _truncate_token(r.get("access_token")), r.get("access_expires_at"), bool(r.get("has_refresh_token")),
     ), "free_tier": bool(r.get("free_tier")), "account_tier": r.get("account_tier")}),
     "openai-codex": ("get_codex_auth_status", lambda r: _status_card(
@@ -338,20 +338,20 @@ def _resolve_provider_status(provider_id: str, status_fn) -> Dict[str, Any]:
     return {"logged_in": False}
 
 
-async def _start_nous_device_code(profile: Optional[str]) -> Dict[str, Any]:
-    """Start a Nous sign-in. Over a free-tier identity (``nous.guest`` on) the whole sign-in is the
+async def _start_moor_device_code(profile: Optional[str]) -> Dict[str, Any]:
+    """Start a Moor sign-in. Over a free-tier identity (``moor.guest`` on) the whole sign-in is the
     shared ``anon_auth.run_sign_in`` flow: this route creates the generator, pulls its first state
     (the transfer's consent link and code) and hands that to the UI, then the poller drains the rest.
     Without a free-tier identity it is the plain device-code flow."""
-    from hermes_cli import anon_auth
-    from hermes_cli.auth import PROVIDER_REGISTRY, _request_device_code
-    from hermes_cli.web_server_profiles import _config_profile_scope, _profile_scope
-    pconfig = PROVIDER_REGISTRY["nous"]
+    from moor_cli import anon_auth
+    from moor_cli.auth import PROVIDER_REGISTRY, _request_device_code
+    from moor_cli.web_server_profiles import _config_profile_scope, _profile_scope
+    pconfig = PROVIDER_REGISTRY["moor"]
     portal_base_url = (
         os.getenv("MOOR_PORTAL_BASE_URL") or os.getenv("MOOR_PORTAL_BASE_URL") or pconfig.portal_base_url
     ).rstrip("/")
     with _profile_scope(_oauth_profile_name(profile)):
-        guest = anon_auth.current_nous_state() if anon_auth.guest_enabled() else None
+        guest = anon_auth.current_moor_state() if anon_auth.guest_enabled() else None
 
     if not anon_auth.is_guest_state(guest):
         device_data = await _httpx_call(lambda client: _request_device_code(
@@ -363,12 +363,12 @@ async def _start_nous_device_code(profile: Optional[str]) -> Dict[str, Any]:
             client_id=pconfig.client_id, scope=pconfig.scope,
             interval=interval, expires_at=time.time() + expires_in)
         return _device_session_started(
-            "nous", profile, _nous_plain_poller, fields, str(device_data["user_code"]),
+            "moor", profile, _moor_plain_poller, fields, str(device_data["user_code"]),
             str(device_data["verification_uri_complete"]), expires_in, interval)
 
     # The session is registered BEFORE the generator exists, so a cancel landing in the start
     # window is already visible to the flow's own cancel check and persist guard.
-    sid, sess = _new_oauth_session("nous", "device_code", profile=profile)
+    sid, sess = _new_oauth_session("moor", "device_code", profile=profile)
 
     def _cancelled() -> bool:
         with _oauth_sessions_lock:
@@ -413,7 +413,7 @@ async def _start_nous_device_code(profile: Optional[str]) -> Dict[str, Any]:
             portal_base_url=portal_base_url, client_id=pconfig.client_id, scope=pconfig.scope,
             device_code="", claim_code=first.code, interval=first.interval,
             expires_at=time.time() + first.expires_in, _sign_in=gen))
-    _start_poller(_nous_promotion_poller, sid)   # last: nothing observes `sess` before it is complete
+    _start_poller(_moor_promotion_poller, sid)   # last: nothing observes `sess` before it is complete
     return {
         "session_id": sid, "flow": "device_code", "user_code": first.code,
         "verification_url": first.link, "expires_in": first.expires_in,
@@ -717,7 +717,7 @@ async def poll_oauth_session(provider_id: str, session_id: str, profile: Optiona
     return {
         "session_id": session_id, "status": sess["status"],
         "error_message": sess.get("error_message"), "expires_at": sess.get("expires_at"),
-        # Nous over a free-tier identity: why a transfer ended, who signed in, and the default model
+        # Moor over a free-tier identity: why a transfer ended, who signed in, and the default model
         # the completion settled on (None when the config was on the user's own model).
         "reason": sess.get("reason"), "account_email": sess.get("account_email"), "model": sess.get("model"),
         # Failed sign-ins over a free-tier identity: can a later attempt succeed, and after how long.

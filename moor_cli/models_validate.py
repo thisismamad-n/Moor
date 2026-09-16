@@ -16,7 +16,7 @@ from difflib import get_close_matches
 from typing import Any, Callable, Optional
 
 from utils import base_url_host_matches
-from hermes_constants import openrouter_variant_base
+from moor_constants import openrouter_variant_base
 
 
 # ── Verdicts ─────────────────────────────────────────────────────────────
@@ -367,7 +367,7 @@ def _validate_anthropic_messages(req: _Request) -> dict[str, Any]:
     """Anthropic Messages transport: probe /v1/models and soft-accept either way, but say which
     happened — a proxy that never implemented the listing is a different situation from a reachable
     listing that simply doesn't name the slug (vendors alias ids: ``kimi-k3`` is served as ``k3``)."""
-    from hermes_cli import models as _m
+    from moor_cli import models as _m
 
     models = _m.fetch_api_models(req.api_key, req.base_url, api_mode=req.api_mode)
     if models is None:
@@ -540,7 +540,7 @@ def validate_requested_model(
     ``persist`` (safe to save to config), ``recognized`` (matched a known provider catalog),
     ``message`` (optional warning / guidance). The requested id is never rewritten: what the user
     selected is what the wire sees."""
-    from hermes_cli import models as _m
+    from moor_cli import models as _m
 
     requested = (model_name or "").strip()
     normalized = _m.normalize_provider(provider)

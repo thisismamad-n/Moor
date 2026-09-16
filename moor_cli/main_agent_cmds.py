@@ -82,7 +82,7 @@ def cmd_acp(args):
         from acp_adapter.entry import main as acp_main
         acp_main([flag for attr, flag in _ACP_FLAGS if getattr(args, attr, False)])
     except ImportError as e:
-        from hermes_cli.main_dep_hints import missing_optional_deps_message
+        from moor_cli.main_dep_hints import missing_optional_deps_message
 
         print(missing_optional_deps_message("ACP server", "its protocol packages", "acp"), file=sys.stderr)
         print(f"Details: {e}", file=sys.stderr)
@@ -107,7 +107,7 @@ def cmd_tools(args):
 def cmd_insights(args):
     db = None
     try:
-        from hermes_state import SessionDB, _default_db_path
+        from moor_state import SessionDB, _default_db_path
         from agent.insights import InsightsEngine
         if not _default_db_path().exists():
             print("No session data yet.")

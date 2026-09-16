@@ -21,8 +21,8 @@ from moor_cli.web_server_dashboard import _invalidate_plugins_hub_cache
 from moor_cli.web_server_memory import (
     _coerce_bool, _field_default, _field_is_set, _field_value, _field_visible, _load_memory_provider, _memory_provider_manifest, _memory_provider_setup_info, _memory_provider_setup_manifest, _normalize_memory_provider_schema, _read_memory_provider_existing_values, _require_memory_provider_ready, _run_setup_command,
 )
-from hermes_cli.web_models import MemoryProviderConfigUpdate, MemoryProviderSetupRequest
-from hermes_cli.web_routers._common import _CONFIG_MUTATION_LOCK, scoped_to_thread
+from moor_cli.web_models import MemoryProviderConfigUpdate, MemoryProviderSetupRequest
+from moor_cli.web_routers._common import _CONFIG_MUTATION_LOCK, scoped_to_thread
 from plugins.memory.config_schema import (
     STORAGE_HONCHO_HOST_BLOCK, ProviderConfigSchema, ProviderField, get_provider_config_schema,
 )
@@ -164,8 +164,8 @@ def _apply_field_values(provider: ProviderConfigSchema, values: Dict[str, str], 
 
 def _write_json_0600(path: Path, data: Dict[str, Any]) -> None:
     from utils import atomic_json_write
-    from hermes_constants import mkdir_under_hermes_home
-    mkdir_under_hermes_home(path.parent)
+    from moor_constants import mkdir_under_moor_home
+    mkdir_under_moor_home(path.parent)
     atomic_json_write(path, data, mode=0o600)
 
 

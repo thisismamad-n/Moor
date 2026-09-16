@@ -604,8 +604,8 @@ def test_idle_sweep_probe_failure_keeps_clock(tmp_path, monkeypatch, stub_server
     handler.models = {"data": [{"id": "stuck-m", "status": {"value": "loaded"}}]}
     handler.slots = []
     handler.unloaded = []
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    from hermes_cli.local_runtime.supervisor import LlamaServerSupervisor
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
+    from moor_cli.local_runtime.supervisor import LlamaServerSupervisor
 
     sup = LlamaServerSupervisor(tmp_path / "i", tmp_path / "m", port=port)
 
@@ -627,8 +627,8 @@ def test_idle_sweep_busy_after_probe_failure_still_resets_clock(
     port, handler = stub_server
     handler.models = {"data": [{"id": "m", "status": {"value": "loaded"}}]}
     handler.unloaded = []
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    from hermes_cli.local_runtime.supervisor import LlamaServerSupervisor
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
+    from moor_cli.local_runtime.supervisor import LlamaServerSupervisor
 
     sup = LlamaServerSupervisor(tmp_path / "i", tmp_path / "m", port=port)
 

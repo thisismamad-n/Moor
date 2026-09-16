@@ -1819,7 +1819,7 @@ class TurnRunner:
                 "final_response": (
                     "⚠️ I couldn't connect to the AI model service, so this message wasn't processed. "
                     "Use /login to sign in again, or /model to pick a different model. If it keeps "
-                    "failing, run `hermes doctor` on the host."),
+                    "failing, run `moor doctor` on the host."),
                 "messages": [], "api_calls": 0, "tools": [],
             }
         pr = runner._provider_routing

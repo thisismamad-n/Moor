@@ -524,8 +524,8 @@ def _hermetic_environment(tmp_path, monkeypatch):
     if tui_server_mod is not None and hasattr(tui_server_mod, "_served_profile_homes"):
         monkeypatch.setattr(tui_server_mod, "_served_profile_homes", set())
 
-    hermes_state_mod = sys.modules.get("hermes_state")
-    if hermes_state_mod is not None and hasattr(hermes_state_mod, "DEFAULT_DB_PATH"):
+    moor_state_mod = sys.modules.get("moor_state")
+    if moor_state_mod is not None and hasattr(moor_state_mod, "DEFAULT_DB_PATH"):
         monkeypatch.setattr(
             moor_state_mod, "DEFAULT_DB_PATH", fake_moor_home / "state.db"
         )
@@ -621,7 +621,7 @@ def _neutralize_git_safe_directory_read(request, monkeypatch):
     if request.node.get_closest_marker("real_safe_directory"):
         return
     try:
-        from hermes_cli import _subprocess_compat
+        from moor_cli import _subprocess_compat
     except Exception:
         return
     monkeypatch.setattr(_subprocess_compat, "_user_safe_directories", lambda base_env: [], raising=False)
@@ -631,19 +631,19 @@ def _neutralize_git_safe_directory_read(request, monkeypatch):
 def _close_leaked_session_dbs():
     """Close every SessionDB a test constructed but forgot to close.
 
-    Root cause of OOM incident 20260816: ~40 files under tests/hermes_cli/
+    Root cause of OOM incident 20260816: ~40 files under tests/moor_cli/
     build ``SessionDB(...)`` directly and never call ``close()``. Each open
     instance holds the writer connection (state.db + -wal fds), up to
     ``_READ_POOL_MAX`` pooled read connections, per-connection SQLite page
     caches, and — once token accounting has run — an ``atexit`` registration
     that pins the instance alive until interpreter exit. Under the sanctioned
     per-file-process runner this is invisible, but a raw single-process
-    ``pytest tests/hermes_cli/`` accumulated 16-25 GB RSS and had to be
+    ``pytest tests/moor_cli/`` accumulated 16-25 GB RSS and had to be
     OOM-killed three times in one day.
 
     Rather than editing every test file, ``SessionDB.__init__`` registers each
-    instance in ``hermes_state_guard._test_instance_registry`` (a WeakSet,
-    populated only when the ``HERMES_TEST_ISOLATION`` marker is set — i.e.
+    instance in ``moor_state_guard._test_instance_registry`` (a WeakSet,
+    populated only when the ``MOOR_TEST_ISOLATION`` marker is set — i.e.
     only under this suite). This teardown closes whatever the test left open.
     ``close()`` is idempotent (``self._conn`` is None afterwards) and also
     unregisters the pinning atexit hook, so instances become collectable.
@@ -653,14 +653,14 @@ def _close_leaked_session_dbs():
     were leaked by an earlier test in the same process) and the simpler
     close-everything sweep is what actually bounds the process.
 
-    Instances opened through ``hermes_state_registry.acquire()`` are skipped:
+    Instances opened through ``moor_state_registry.acquire()`` are skipped:
     on those ``close()`` releases a refcount rather than closing, so a sweep
     would silently retire a shared generation that a wider-scoped fixture
     still holds. The registry owns that lifecycle (``close_all()``).
     """
     yield
     try:
-        from hermes_state_guard import _test_instance_registry as registry
+        from moor_state_guard import _test_instance_registry as registry
     except Exception:
         return
     if not registry:
@@ -1228,17 +1228,17 @@ _OS_MARKS = {
 
 
 def _relocate_basetemp_outside_operator_home(config) -> None:
-    """Move pytest's basetemp out of the operator's platform-native Hermes home.
+    """Move pytest's basetemp out of the operator's platform-native Moor home.
 
-    Every per-test sandbox is ``<basetemp>/.../hermes_test``. ``get_default_hermes_root()``
-    prefers the platform-native home whenever ``HERMES_HOME`` sits *under* it, so a basetemp
-    inside ``~/.hermes`` (or ``%LOCALAPPDATA%\\hermes``, where ``TEMP`` commonly lives on
+    Every per-test sandbox is ``<basetemp>/.../moor_test``. ``get_default_moor_root()``
+    prefers the platform-native home whenever ``MOOR_HOME`` sits *under* it, so a basetemp
+    inside ``~/.moor`` (or ``%LOCALAPPDATA%\\moor``, where ``TEMP`` commonly lives on
     Windows) turns the sandbox back into the live install and ``get_profile_dir("default")``
     writes fixtures over the operator's config.yaml / .env / MEMORY.md (#111101).
     """
-    from hermes_constants import _get_platform_default_hermes_home
+    from moor_constants import _get_platform_default_moor_home
 
-    native = _get_platform_default_hermes_home().resolve()
+    native = _get_platform_default_moor_home().resolve()
     factory = config._tmp_path_factory
     given = factory._given_basetemp
     candidate = given if given is not None else Path(
@@ -1247,13 +1247,13 @@ def _relocate_basetemp_outside_operator_home(config) -> None:
     if not candidate.resolve().is_relative_to(native):
         return
     # The system temp dir may itself be inside the home (Windows TEMP under the
-    # Hermes home). The repo is no escape either: the default install checks it
-    # out *inside* the home (~/.hermes/hermes-agent). A sibling of the native
+    # Moor home). The repo is no escape either: the default install checks it
+    # out *inside* the home (~/.moor/moor-agent). A sibling of the native
     # home is outside it by construction.
     safe_root = None if not Path(tempfile.gettempdir()).resolve().is_relative_to(native) else native.parent
-    safe = Path(tempfile.mkdtemp(prefix="hermes-pytest-basetemp-", dir=safe_root))
+    safe = Path(tempfile.mkdtemp(prefix="moor-pytest-basetemp-", dir=safe_root))
     assert not safe.resolve().is_relative_to(native), (
-        f"pytest basetemp {safe} still resolves inside the operator's Hermes home {native}; "
+        f"pytest basetemp {safe} still resolves inside the operator's Moor home {native}; "
         "refusing to run the suite against the live install (pass --basetemp outside it)"
     )
     factory._given_basetemp = safe
@@ -1682,17 +1682,17 @@ def _live_system_guard(request, monkeypatch):
                 "needed (e.g. an integration test testing the update "
                 "flow against a dedicated throwaway repo)."
             )
-        # Block spawning a REAL gateway runtime (``python -m hermes_cli.main
-        # gateway run|start|restart``). ``_spawn_hermes_action`` launches it
+        # Block spawning a REAL gateway runtime (``python -m moor_cli.main
+        # gateway run|start|restart``). ``_spawn_moor_action`` launches it
         # with start_new_session=True, so it outlives the pytest worker; the
-        # child inherits the pytest-tmp HERMES_HOME, resolves the DEVELOPER's
-        # ``hermes-gateway`` systemd unit (a tmp home hashes to no profile
+        # child inherits the pytest-tmp MOOR_HOME, resolves the DEVELOPER's
+        # ``moor-gateway`` systemd unit (a tmp home hashes to no profile
         # suffix), restarts the live gateway, and the survivors squat the
         # webhook port. 2026-09-03: 39 such orphans lived 6 days after a
         # sibling refactor moved the spawn seam and left tests patching the
         # facade. The canonical matcher, never an argv substring.
         from gateway.status import _gateway_command_subcommand
-        # A gateway launched INSIDE a container (`docker exec … hermes gateway start`) cannot
+        # A gateway launched INSIDE a container (`docker exec … moor gateway start`) cannot
         # reach the host's systemd unit or webhook port; tests/docker/ exists to exercise it.
         in_container = _first_token_basename(cmd_str) in _CONTAINER_RUNTIMES
         if (
@@ -1703,11 +1703,11 @@ def _live_system_guard(request, monkeypatch):
             raise RuntimeError(
                 f"tests/conftest.py live-system guard: blocked "
                 f"subprocess.{name}({cmd!r}) — this would spawn a REAL "
-                "hermes gateway runtime that outlives the test (it is "
+                "moor gateway runtime that outlives the test (it is "
                 "detached), restarts the developer's live gateway, and "
                 "holds the webhook port. Patch the spawn seam where "
-                "production reads it (hermes_cli.web_server_gateway."
-                "_spawn_hermes_action), or mark with "
+                "production reads it (moor_cli.web_server_gateway."
+                "_spawn_moor_action), or mark with "
                 "@pytest.mark.spawns_gateway_lookalike a test that spawns "
                 "and reaps its own stub child."
             )

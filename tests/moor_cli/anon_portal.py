@@ -1,7 +1,7 @@
 """The fake NAS anonymous surface shared by the free-tier tests.
 
 One ``FakePortal`` and one ``install_portal`` behind every ``portal`` fixture: the wire contract is
-exercised through Hermes' real client code, never mocked away. Scenarios flip its behaviour
+exercised through Moor' real client code, never mocked away. Scenarios flip its behaviour
 (``gate_closed``, ``dead_tokens``, a canned ``create_response`` / ``token_response``, or a
 ``raise_transport`` that makes the wire itself fail).
 """
@@ -74,18 +74,18 @@ class FakePortal:
 
 
 def install_portal(monkeypatch, tmp_path, fake: FakePortal | None = None) -> FakePortal:
-    """Route every Nous HTTP client at *fake*, isolate the stores, and reset the per-process memos.
+    """Route every Moor HTTP client at *fake*, isolate the stores, and reset the per-process memos.
 
-    One transport seam: ``httpx.Client`` itself, which ``auth_nous._nous_http_client`` and
-    ``resolve_nous_access_token`` both construct."""
-    from hermes_cli import anon_auth, free_tier_bootstrap
-    from hermes_cli import auth as auth_mod
+    One transport seam: ``httpx.Client`` itself, which ``auth_moor._moor_http_client`` and
+    ``resolve_moor_access_token`` both construct."""
+    from moor_cli import anon_auth, free_tier_bootstrap
+    from moor_cli import auth as auth_mod
 
     fake = fake or FakePortal()
-    monkeypatch.setenv("HERMES_PORTAL_BASE_URL", PORTAL)
-    monkeypatch.setenv("HERMES_ANON_API_SECRET", "test-secret")
-    monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
-    monkeypatch.setenv("HERMES_GUEST_ONBOARDING", "1")
+    monkeypatch.setenv("MOOR_PORTAL_BASE_URL", PORTAL)
+    monkeypatch.setenv("MOOR_ANON_API_SECRET", "test-secret")
+    monkeypatch.setenv("MOOR_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
+    monkeypatch.setenv("MOOR_GUEST_ONBOARDING", "1")
     for var in ("OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "NOUS_API_KEY"):
         monkeypatch.delenv(var, raising=False)
     real_client = httpx.Client
@@ -99,7 +99,7 @@ def install_portal(monkeypatch, tmp_path, fake: FakePortal | None = None) -> Fak
     monkeypatch.setattr("agent.bedrock_adapter.has_aws_credentials", lambda: False)
     anon_auth.reset_mint_memo_for_tests()
     free_tier_bootstrap.reset_for_tests()
-    # resolve_nous_access_token memoises the last token for 5 s per profile home (dict); a token minted
+    # resolve_moor_access_token memoises the last token for 5 s per profile home (dict); a token minted
     # by an earlier test must not be served to this one.
     monkeypatch.setattr(auth_mod, "_RESOLVE_TOKEN_CACHE", {})
     return fake

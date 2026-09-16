@@ -49,7 +49,7 @@ export const LEGACY_OAUTH_PARTITION = 'persist:moor-remote-oauth'
 // The name used to be `${LEGACY_OAUTH_PARTITION}:conn:<id>` (#92183). That
 // jar never worked on Windows; on macOS/Linux a non-primary remote signed in
 // under the old name is re-prompted ONCE after this change (the old
-// `Partitions/hermes-remote-oauth%3Aconn%3A<id>` folder is left on disk,
+// `Partitions/moor-remote-oauth%3Aconn%3A<id>` folder is left on disk,
 // inert). One name on every platform beats a per-OS partition scheme.
 const CONNECTION_PARTITION_PREFIX = `${LEGACY_OAUTH_PARTITION}-conn-`
 

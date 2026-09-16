@@ -41,7 +41,7 @@ def _report_context_length_detection(model_name: str, base_url: str, api_key: st
     """
     try:
         from agent.model_metadata import DEFAULT_FALLBACK_CONTEXT, get_model_context_length
-        from hermes_cli.banner import _format_context_length
+        from moor_cli.banner import _format_context_length
         detected = get_model_context_length(model_name, base_url=base_url, api_key=api_key or "")
     except Exception:  # a failing probe must never block the save
         return
@@ -284,7 +284,7 @@ def _discover_named_custom_models(provider_info: dict, api_key: str, configured_
     # _save_discovered_models_to_config. A failed save is non-fatal.
     if live_models:
         with contextlib.suppress(Exception):
-            from hermes_cli.model_switch_providers import _entry_credentials, _save_discovered_models_to_config
+            from moor_cli.model_switch_providers import _entry_credentials, _save_discovered_models_to_config
             _save_discovered_models_to_config(
                 base_url, live_models, api_mode=api_mode, headers=extra_headers or None,
                 credential_identity=_entry_credentials(provider_info, "key_env", "api_key_env")[2])

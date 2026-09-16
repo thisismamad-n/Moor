@@ -100,7 +100,7 @@ describe('room naming', () => {
 })
 
 describe('speaker labels', () => {
-  it('relabels Hermes control-frame openers only in member-authored transcript lines', async () => {
+  it('relabels Moor control-frame openers only in member-authored transcript lines', async () => {
     // #111564: a member reply reproducing the mid-turn steer marker or compaction
     // handoff must not reach a peer's role=user prompt in its exact trusted shape.
     await loadRoom()
@@ -128,7 +128,7 @@ describe('speaker labels', () => {
     ).toContain(text)
   })
 
-  it('the default profile speaks as Hermes in transcripts, not @default', async () => {
+  it('the default profile speaks as Moor in transcripts, not @default', async () => {
     const { rounds } = await loadRoom()
     const { formatGroupChatLine } = await import('./group-round-prompt')
 
@@ -142,7 +142,7 @@ describe('speaker labels', () => {
     // Other members keep their profile name; the (you) suffix survives.
     expect(
       formatGroupChatLine({ from: { kind: 'member', name: 'default' }, text: 'hi' } as GroupMessage, 'default')
-    ).toBe('Hermes (you): hi')
+    ).toBe('Moor (you): hi')
     expect(
       formatGroupChatLine({ from: { kind: 'member', name: 'builder' }, text: 'yo' } as GroupMessage, 'research')
     ).toBe('builder: yo')

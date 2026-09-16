@@ -40,7 +40,7 @@ def _make_adapter(
     guest_mode=None,
     observe_unmentioned_group_messages=None,
     bots_require_mention=None,
-    bot_username="hermes_bot",
+    bot_username="moor_bot",
 ):
     from plugins.platforms.telegram.adapter import TelegramAdapter
 
@@ -940,7 +940,7 @@ def test_bot_quote_reply_loop_is_broken_by_bots_require_mention():
         is False
     )
 
-    text = "@hermes_bot ping"
+    text = "@moor_bot ping"
     assert (
         gated._should_process_message(
             _bot_sender_message(text, entities=[_mention_entity(text)])

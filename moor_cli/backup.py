@@ -16,11 +16,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from hermes_constants import (
-    LOCAL_RUNTIME_ROOT_DIRS, _get_platform_default_hermes_home, get_default_hermes_root, get_hermes_home,
-    display_hermes_home,
+from moor_constants import (
+    LOCAL_RUNTIME_ROOT_DIRS, _get_platform_default_moor_home, get_default_moor_root, get_moor_home,
+    display_moor_home,
 )
-from hermes_state_dbfile import RETIRED_GENERATION_DIR_SUFFIX
+from moor_state_dbfile import RETIRED_GENERATION_DIR_SUFFIX
 from utils import (
     _preserve_file_mode, _preserve_file_owner, _restore_file_mode, _restore_file_owner, atomic_replace,
     default_new_file_mode,
@@ -38,14 +38,14 @@ _QUICK_SNAPSHOTS_DIR = "state-snapshots"
 
 
 def _snapshot_recovery_hint() -> str:
-    """How to restore a state snapshot. There is no `hermes snapshot` subcommand — only the /snapshot
-    slash command inside a `hermes` session (hermes_cli/commands.py)."""
-    return ("To restore a newer snapshot, start `hermes` in a terminal and run `/snapshot list`, then "
+    """How to restore a state snapshot. There is no `moor snapshot` subcommand — only the /snapshot
+    slash command inside a `moor` session (moor_cli/commands.py)."""
+    return ("To restore a newer snapshot, start `moor` in a terminal and run `/snapshot list`, then "
             "`/snapshot restore <id>` (CLI only).")
 
-# Directory names to skip (matched against each path component). ``hermes-agent`` only matches at
-# the root (``_should_exclude``) so skill dirs like ``skills/.../hermes-agent/`` survive. The
-# dependency/cache entries matter: one plugin venv or pip/uv cache under HERMES_HOME walked
+# Directory names to skip (matched against each path component). ``moor-agent`` only matches at
+# the root (``_should_exclude``) so skill dirs like ``skills/.../moor-agent/`` survive. The
+# dependency/cache entries matter: one plugin venv or pip/uv cache under MOOR_HOME walked
 # file-by-file balloons a backup to hundreds of thousands of entries ("backup stuck for days").
 # Mostly mirrors ``agent.skill_utils.EXCLUDED_SKILL_DIRS``; ``.cache`` is backup-only. ``.archive``
 # is deliberately NOT excluded: the curator's ``skills/.archive/`` holds restorable user skills.
@@ -69,8 +69,8 @@ _EXCLUDED_DIRS = {
     ".cache", ".tox", ".nox", ".pytest_cache", ".mypy_cache", ".ruff_cache",
 }
 
-# Hermes-managed runtime downloads (see ``LOCAL_RUNTIME_ROOT_DIRS``). Matched ONLY at the root of
-# HERMES_HOME and at ``profiles/<name>/`` — a deeper dir of the same name (a skill's ``models/``)
+# moor-managed runtime downloads (see ``LOCAL_RUNTIME_ROOT_DIRS``). Matched ONLY at the root of
+# MOOR_HOME and at ``profiles/<name>/`` — a deeper dir of the same name (a skill's ``models/``)
 # is user data.
 _EXCLUDED_ROOT_DIRS = LOCAL_RUNTIME_ROOT_DIRS
 
@@ -295,7 +295,7 @@ def _iter_backup_files(moor_root: Path, out_path: Path, skipped_dirs: Optional[s
             rel = rel_dir / fname
             fpath = moor_root / rel
             # zipfile.write() follows file symlinks, so skip links before any archive write can
-            # copy data from outside HERMES_HOME; never archive the output zip into itself.
+            # copy data from outside MOOR_HOME; never archive the output zip into itself.
             if _should_exclude(rel) or _is_non_regular_path(fpath):
                 continue
             with suppress(OSError, ValueError):
@@ -620,7 +620,7 @@ def _print_capped(header: str, lines: List[str], indent: str) -> None:
 
 # --- Backup ---
 
-_RUN_BACKUP_PREFIX = "hermes-backup-"
+_RUN_BACKUP_PREFIX = "moor-backup-"
 
 
 def _resolve_backup_output_path(output: Optional[str]) -> Path:
@@ -738,7 +738,7 @@ def _run_backup_locked(args, moor_root: Path) -> None:
     if errors:
         _print_capped(f"\n  Warnings ({len(errors)} files skipped):", errors, "  ")
     else:
-        print(f"\nRestore with: hermes import {out_path.name}")
+        print(f"\nRestore with: moor import {out_path.name}")
     keep = getattr(args, "keep", 0)  # 0 / absent: never prune (non-CLI callers)
     if keep and out_path.name.startswith(_RUN_BACKUP_PREFIX):
         pruned = _prune_prefixed_zips(out_path.parent, _RUN_BACKUP_PREFIX, keep, "backup")

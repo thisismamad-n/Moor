@@ -3,10 +3,10 @@
 Both auth-refresh rungs in ``agent/auxiliary_client.py`` perform their retry with a
 bare ``yield`` inside a ``return`` statement:
 
-    if _is_auth_error(first_err) and client_is_nous:
-        step = _refreshed_nous_step(...)
+    if _is_auth_error(first_err) and client_is_moor:
+        step = _refreshed_moor_step(...)
         if step is not None:
-            return (yield step), None          # nous rung
+            return (yield step), None          # moor rung
     ...
             return (yield _LadderStep(
                 "retry_same_provider", ...)), None   # generic credential rung
@@ -16,16 +16,16 @@ rung's accept predicate claims the error -- so the caller can fall through to th
 rung. An unclaimed failure (a 500, a malformed response) re-raises on purpose, since
 ``_ladder_provider_fallback`` only acts on the reasons in ``_FALLBACK_REASONS``.
 Used this way no exception is caught: when the
-refreshed client also fails (e.g. an out-of-credit 404 on a stale Nous runtime token),
+refreshed client also fails (e.g. an out-of-credit 404 on a stale Moor runtime token),
 the error escapes ``_aux_recovery_ladder`` and ``_ladder_provider_fallback`` never
 runs -- the configured ``auxiliary.<task>.fallback_chain`` is silently skipped. The
 rung right below (credential-pool rotation) documents the intended behavior with "then
 fall through to the provider fallback" and guards its retry with try/except.
 
 The first test drives the real ladder generator with a scripted driver. The second
-exercises the real path end to end: a temp ``HERMES_HOME`` whose ``config.yaml``
+exercises the real path end to end: a temp ``MOOR_HOME`` whose ``config.yaml``
 declares a ``fallback_chain``, the real client construction and HTTP layer against a
-local endpoint, with only the credential sources stubbed (the Nous portal account
+local endpoint, with only the credential sources stubbed (the Moor portal account
 probe and the runtime-credential fetch are external boundaries).
 """
 
@@ -43,7 +43,7 @@ import agent.auxiliary_client as aux
 
 AUX_MODEL = "z-ai/glm-5.3-flash"
 FALLBACK_MODEL = "fallback-model"
-NOUS_HOST = "inference-api.nousresearch.com"
+MOOR_HOST = "inference-api.nousresearch.com"
 
 
 class _ApiError(Exception):
@@ -66,10 +66,10 @@ def _credit_error():
 
 class _FakeClient:
     api_key = "sk-test"
-    base_url = "https://%s/v1" % NOUS_HOST
+    base_url = "https://%s/v1" % MOOR_HOST
 
 
-def _ladder(base_info=("https://%s/v1" % NOUS_HOST), resolved_provider="nous"):
+def _ladder(base_info=("https://%s/v1" % MOOR_HOST), resolved_provider="moor"):
     return aux._aux_recovery_ladder(
         _auth_error(),
         client=_FakeClient(),
@@ -101,22 +101,22 @@ def hermetic(monkeypatch):
         return "chain-response"
 
     monkeypatch.setattr(aux, "_recoverable_pool_provider", lambda *a, **kw: None)
-    monkeypatch.setattr(aux, "_nous_portal_account_has_fresh_paid_access", lambda: False)
+    monkeypatch.setattr(aux, "_moor_portal_account_has_fresh_paid_access", lambda: False)
     monkeypatch.setattr(aux, "_ladder_provider_fallback", _fake_provider_fallback)
     return chain_calls
 
 
 @pytest.mark.parametrize(
     "rung,retry_succeeds",
-    [("nous", False), ("nous", True), ("provider_credential", False)],
+    [("moor", False), ("moor", True), ("provider_credential", False)],
 )
 def test_post_refresh_retry_owns_the_ladder_outcome(
         rung, retry_succeeds, monkeypatch, hermetic):
     """A failed retry resumes the ladder; a successful one returns its response."""
-    if rung == "nous":
-        monkeypatch.setattr(aux, "_refresh_nous_auxiliary_client",
+    if rung == "moor":
+        monkeypatch.setattr(aux, "_refresh_moor_auxiliary_client",
                             lambda **kwargs: (_FakeClient(), AUX_MODEL))
-        expected_step, expected_base = "call", ("https://%s/v1" % NOUS_HOST)
+        expected_step, expected_base = "call", ("https://%s/v1" % MOOR_HOST)
     else:
         monkeypatch.setattr(aux, "_auth_refresh_provider_for_route",
                             lambda *a, **kw: "codex")
@@ -126,7 +126,7 @@ def test_post_refresh_retry_owns_the_ladder_outcome(
 
     ladder = _ladder(
         base_info=expected_base,
-        resolved_provider="nous" if rung == "nous" else "openrouter",
+        resolved_provider="moor" if rung == "moor" else "openrouter",
     )
     performed = []
     failure = _credit_error()
@@ -157,11 +157,11 @@ def test_post_refresh_retry_owns_the_ladder_outcome(
 
 
 @pytest.fixture
-def nous_ladder_endpoint(monkeypatch):
-    """A local endpoint that answers the Nous host, recording every request.
+def moor_ladder_endpoint(monkeypatch):
+    """A local endpoint that answers the Moor host, recording every request.
 
     The routing decision that selects the auth-refresh rung matches on the base URL
-    host, so the endpoint is addressed as the real Nous host and ``getaddrinfo`` is
+    host, so the endpoint is addressed as the real Moor host and ``getaddrinfo`` is
     redirected to the loopback server.
     """
     aux.shutdown_cached_clients()
@@ -169,13 +169,13 @@ def nous_ladder_endpoint(monkeypatch):
     requests = []
     resolve_address = socket.getaddrinfo
 
-    def local_nous_address(host, *args, **kwargs):
-        if host in (NOUS_HOST, NOUS_HOST.encode()):
+    def local_moor_address(host, *args, **kwargs):
+        if host in (MOOR_HOST, MOOR_HOST.encode()):
             host = "127.0.0.1"
         return resolve_address(host, *args, **kwargs)
 
-    monkeypatch.setattr(socket, "getaddrinfo", local_nous_address)
-    monkeypatch.setenv("NO_PROXY", "127.0.0.1,localhost,%s" % NOUS_HOST)
+    monkeypatch.setattr(socket, "getaddrinfo", local_moor_address)
+    monkeypatch.setenv("NO_PROXY", "127.0.0.1,localhost,%s" % MOOR_HOST)
 
     class Handler(BaseHTTPRequestHandler):
         def _send(self, status, payload):
@@ -228,7 +228,7 @@ def nous_ladder_endpoint(monkeypatch):
     )
     thread.start()
     try:
-        yield "http://%s:%d" % (NOUS_HOST, server.server_port), requests
+        yield "http://%s:%d" % (MOOR_HOST, server.server_port), requests
     finally:
         aux.shutdown_cached_clients()
         server.shutdown()
@@ -237,14 +237,14 @@ def nous_ladder_endpoint(monkeypatch):
 
 
 def test_auth_refresh_retry_failure_reaches_the_configured_chain_over_http(
-        tmp_path, monkeypatch, nous_ladder_endpoint):
+        tmp_path, monkeypatch, moor_ladder_endpoint):
     """End to end: the configured chain must serve the retry the refresh could not."""
-    host_url, requests = nous_ladder_endpoint
+    host_url, requests = moor_ladder_endpoint
     local_url = "http://127.0.0.1:%s" % host_url.rsplit(":", 1)[1]
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     monkeypatch.setenv("AUX_FB_KEY", "fallback-test-key")
     config = {
-        "model": {"provider": "nous", "default": AUX_MODEL},
+        "model": {"provider": "moor", "default": AUX_MODEL},
         "providers": {"aux-fb": {"base_url": local_url + "/v1", "key_env": "AUX_FB_KEY"}},
         "auxiliary": {
             "compression": {
@@ -261,10 +261,10 @@ def test_auth_refresh_retry_failure_reaches_the_configured_chain_over_http(
     }
     (tmp_path / "config.yaml").write_text(yaml.safe_dump(config), encoding="utf-8")
     # Credential boundaries: the account probe and the runtime-credential fetch.
-    monkeypatch.setattr(aux, "_nous_portal_account_has_fresh_paid_access", lambda: False)
+    monkeypatch.setattr(aux, "_moor_portal_account_has_fresh_paid_access", lambda: False)
     monkeypatch.setattr(
-        aux, "_resolve_nous_runtime_api",
-        lambda **kwargs: ("fresh-nous-key", host_url + "/v1"),
+        aux, "_resolve_moor_runtime_api",
+        lambda **kwargs: ("fresh-moor-key", host_url + "/v1"),
     )
 
     response = aux.call_llm(
@@ -285,7 +285,7 @@ def test_auth_refresh_retry_failure_reaches_the_configured_chain_over_http(
 
 def test_exhausted_ladder_raises_the_narrowed_error(monkeypatch, hermetic):
     """No chain answers: the retry's own failure surfaces, not the healed 401."""
-    monkeypatch.setattr(aux, "_refresh_nous_auxiliary_client",
+    monkeypatch.setattr(aux, "_refresh_moor_auxiliary_client",
                         lambda **kwargs: (_FakeClient(), AUX_MODEL))
 
     def _no_chain(first_err, route):

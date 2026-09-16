@@ -16,7 +16,7 @@ import {
   connectionScoped,
   getApiRequestConnection,
   getApiRequestProfile,
-  hermesApi,
+  moorApi,
   type ProfileScope,
   profileScoped
 } from './client'

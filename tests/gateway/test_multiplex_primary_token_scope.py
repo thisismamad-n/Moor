@@ -296,7 +296,7 @@ class TestPrimaryMessageRuntimeScope:
         (sharik / ".env").write_text("# no Signal allowlist here\n", encoding="utf-8")
         (sharik / "config.yaml").write_text("{}\n", encoding="utf-8")
 
-        monkeypatch.setattr(run_mod, "get_hermes_home", lambda: home)
+        monkeypatch.setattr(run_mod, "get_moor_home", lambda: home)
         secret_scope.set_multiplex_active(True)
 
         runner = GatewayRunner.__new__(GatewayRunner)

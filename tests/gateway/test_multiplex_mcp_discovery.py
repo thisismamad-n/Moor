@@ -32,7 +32,7 @@ async def test_gateway_boot_discovers_mcp_under_every_profile_home(
         return []
 
     monkeypatch.setattr(
-        "hermes_cli.profiles.profiles_to_serve",
+        "moor_cli.profiles.profiles_to_serve",
         lambda multiplex: homes,
     )
     monkeypatch.setattr(_mcp_discovery, "discover_mcp_tools", fake_discover)
@@ -112,10 +112,10 @@ async def test_reload_mcp_formats_scoped_connection_keys_before_refreshing_cache
     from tools import mcp_tool_discovery as _mcp_discovery
     from tools import mcp_tool_lifecycle as _mcp_lifecycle
 
-    launch_scope = hermes_home_key(tmp_path / "default")
+    launch_scope = moor_home_key(tmp_path / "default")
     worker_home = tmp_path / "profiles" / "worker"
     worker_home.mkdir(parents=True)
-    worker_scope = hermes_home_key(worker_home)
+    worker_scope = moor_home_key(worker_home)
     launch_key = (launch_scope, "default-srv")
     worker_key = (worker_scope, "worker-srv")
 
@@ -162,8 +162,8 @@ async def test_reload_mcp_reports_a_shared_server_to_a_non_owner_profile(
 
     worker_home = tmp_path / "profiles" / "worker"
     worker_home.mkdir(parents=True)
-    worker_scope = hermes_home_key(worker_home)
-    launch_scope = hermes_home_key(tmp_path / "default")
+    worker_scope = moor_home_key(worker_home)
+    launch_scope = moor_home_key(tmp_path / "default")
 
     runner = GatewayRunner.__new__(GatewayRunner)
     runner.config = GatewayConfig(multiplex_profiles=True)
@@ -220,8 +220,8 @@ def test_scope_visibility_rejects_a_foreign_or_differently_authenticated_route(
     from tools import mcp_tool
     from tools import mcp_tool_registration as _mcp_registration
 
-    worker_scope = hermes_home_key(tmp_path / "worker")
-    launch_scope = hermes_home_key(tmp_path / "default")
+    worker_scope = moor_home_key(tmp_path / "worker")
+    launch_scope = moor_home_key(tmp_path / "default")
     live_server = SimpleNamespace(session=object(), _config={"url": "https://default.example/mcp"})
     monkeypatch.setattr(mcp_tool, "_servers", {"shared": live_server})
     monkeypatch.setattr(mcp_tool, "_server_scope_keys", {"shared": launch_scope})
@@ -236,10 +236,10 @@ def test_shared_server_tools_are_callable_and_removed_on_non_owner_reload(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from agent.secret_scope import set_multiplex_active
-    from hermes_constants import (
-        hermes_home_key,
-        reset_hermes_home_override,
-        set_hermes_home_override,
+    from moor_constants import (
+        moor_home_key,
+        reset_moor_home_override,
+        set_moor_home_override,
     )
     from tools import mcp_tool
     from tools import mcp_tool_config as _mcp_config
@@ -250,10 +250,10 @@ def test_shared_server_tools_are_callable_and_removed_on_non_owner_reload(
     launch_home = tmp_path / "default"
     worker_home.mkdir(parents=True)
     launch_home.mkdir()
-    worker_token = set_hermes_home_override(worker_home)
+    worker_token = set_moor_home_override(worker_home)
     previous_multiplex = set_multiplex_active(True)
-    worker_scope = hermes_home_key()
-    launch_scope = hermes_home_key(launch_home)
+    worker_scope = moor_home_key()
+    launch_scope = moor_home_key(launch_home)
     tool = SimpleNamespace(
         name="echo",
         description="Echo a value",
@@ -332,7 +332,7 @@ def test_shared_server_tools_are_callable_and_removed_on_non_owner_reload(
                 target.clear()
                 target.update(value)
         set_multiplex_active(previous_multiplex)
-        reset_hermes_home_override(worker_token)
+        reset_moor_home_override(worker_token)
 
 
 def test_deregister_scope_kwarg_targets_overlay_and_keeps_plugin_confinement() -> None:

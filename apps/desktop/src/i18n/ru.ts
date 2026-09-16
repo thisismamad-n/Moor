@@ -56,7 +56,7 @@ export const ru = defineLocale({
     retry: 'Попробовать снова',
     more: 'Показать ещё',
     pinned: 'Проверенный коммит',
-    snapshotHint: 'Из каталога Hermes. При просмотре нет обращений к исходным репозиториям.',
+    snapshotHint: 'Из каталога Moor. При просмотре нет обращений к исходным репозиториям.',
     installHint: 'Проверьте исходный код перед установкой. Изменения применяются к новым сессиям.',
     results: (count: number) =>
       `${count.toLocaleString('ru')} ${RU_PLURAL(count, 'результат', 'результата', 'результатов')}`,
@@ -1863,7 +1863,7 @@ export const ru = defineLocale({
     sharedGatewayRestartDescription: bots => `Все боты на этом устройстве переподключатся: ${bots}`,
     sharedGatewayRestartConfirm: 'Перезапустить все',
     sharedGatewayRestarted: count => `Общий шлюз перезапущен (ботов: ${count})`,
-    updateHermes: 'Обновить Hermes',
+    updateMoor: 'Обновить Moor',
     reloadWindow: 'Перезагрузить окно',
     actionRunning: 'выполняется',
     actionDone: 'готово',
@@ -2014,11 +2014,11 @@ export const ru = defineLocale({
     telegramQr: {
       title: 'Выберите способ подключения Telegram-бота',
       subtitle:
-        'Оба способа подключают бота под вашим контролем и сохраняют его данные только в этой установке Hermes.',
+        'Оба способа подключают бота под вашим контролем и сохраняют его данные только в этой установке Moor.',
       quickSetup: 'Быстрая настройка',
       recommended: 'Рекомендуется',
       quickHelp:
-        'Отсканируйте QR-код и подтвердите в Telegram. Hermes создаст бота и определит ваш Telegram ID автоматически.',
+        'Отсканируйте QR-код и подтвердите в Telegram. Moor создаст бота и определит ваш Telegram ID автоматически.',
       createWithQr: 'Создать по QR',
       starting: 'Запуск…',
       replaceWarning:
@@ -3076,7 +3076,7 @@ export const ru = defineLocale({
     }
   },
   guidedGreeting: {
-    line: 'Заходите. Я Hermes. Дайте мне пару минут — обустрою тут всё под вас, а потом займёмся тем, что вам правда нужно.\n\nДля начала: как к вам обращаться?',
+    line: 'Заходите. Я Moor. Дайте мне пару минут — обустрою тут всё под вас, а потом займёмся тем, что вам правда нужно.\n\nДля начала: как к вам обращаться?',
     nameSuggestion: (name: string) => `(Могу звать вас просто ${name}, если так удобнее.)`
   },
   install: {

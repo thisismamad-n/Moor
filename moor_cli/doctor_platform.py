@@ -89,11 +89,11 @@ def _format_db_size(db_path: Path) -> str:
         return "size unknown"
 
 
-def _report_database_journal_modes(hermes_home: Path | None = None, version_info: tuple[int, ...] | None = None) -> None:
+def _report_database_journal_modes(moor_home: Path | None = None, version_info: tuple[int, ...] | None = None) -> None:
     """List each database's journal mode; warn on WAL under a vulnerable SQLite, and on a configured
     ``database.journal_mode: delete`` that never took effect."""
-    from hermes_cli.doctor import HERMES_HOME
-    from hermes_state_wal import (
+    from moor_cli.doctor import MOOR_HOME
+    from moor_state_wal import (
         _path_on_cross_vm_fs, _wal_reset_repair_hint, is_sqlite_wal_reset_vulnerable, resolve_journal_mode,
     )
     vulnerable = is_sqlite_wal_reset_vulnerable(version_info)
@@ -120,7 +120,7 @@ def _report_database_journal_modes(hermes_home: Path | None = None, version_info
             check_warn(f"{name} is in WAL mode ({size}) despite database.journal_mode=delete",
                        "(the setting never applied: an existing WAL database is never live-downgraded"
                        + ("; also exposed to the WAL-reset bug" if vulnerable else "")
-                       + ". Stop every Hermes process for this profile, then run a one-time offline "
+                       + ". Stop every Moor process for this profile, then run a one-time offline "
                        "'PRAGMA journal_mode=DELETE' on the file)")
         elif error is not None:
             if vulnerable:
@@ -134,7 +134,7 @@ def _report_database_journal_modes(hermes_home: Path | None = None, version_info
             if vulnerable:
                 exposed.append(name)
             check_warn(f"{name} is in WAL mode on a cross-VM filesystem (virtiofs/9p, {size})",
-                       "(WAL can silently corrupt across the VM boundary; stop every Hermes process and run a one-time "
+                       "(WAL can silently corrupt across the VM boundary; stop every Moor process and run a one-time "
                        "offline 'PRAGMA journal_mode=DELETE' on the file, then set `database.journal_mode: delete` — "
                        "or move the database onto a native/named volume)")
         elif mode == "wal" and vulnerable:

@@ -32,7 +32,7 @@ def test_env_can_disable(clear_kanban_env):
 def test_nudge_disabled_inside_delegated_child(clear_kanban_env):
     from agent.delegation_context import delegated_child_context
 
-    clear_kanban_env.setenv("HERMES_KANBAN_TASK", "t_parent")
+    clear_kanban_env.setenv("MOOR_KANBAN_TASK", "t_parent")
 
     assert kanban_stop_nudge_enabled() is True
     with delegated_child_context():
@@ -44,7 +44,7 @@ def test_nudge_disabled_inside_delegated_child(clear_kanban_env):
 def test_nudge_disabled_inside_non_dispatcher_context(clear_kanban_env):
     from agent.delegation_context import non_dispatcher_owned_context
 
-    clear_kanban_env.setenv("HERMES_KANBAN_TASK", "t_parent")
+    clear_kanban_env.setenv("MOOR_KANBAN_TASK", "t_parent")
 
     assert kanban_stop_nudge_enabled() is True
     with non_dispatcher_owned_context():

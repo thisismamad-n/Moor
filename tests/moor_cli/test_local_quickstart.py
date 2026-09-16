@@ -44,8 +44,8 @@ def test_quickstart_unknown_model_404s(client):
 
 def test_quickstart_without_recommendation_requires_explicit_choice(client, monkeypatch):
     """One budget: automatic setup refuses; an explicit spilled choice reaches activation."""
-    from hermes_cli.local_runtime.estimator import HardwareBudget
-    import hermes_cli.web_routers.local_models as lm
+    from moor_cli.local_runtime.estimator import HardwareBudget
+    import moor_cli.web_routers.local_models as lm
 
     gib = 1 << 30
     budget = HardwareBudget(
@@ -79,7 +79,7 @@ def test_quickstart_without_recommendation_requires_explicit_choice(client, monk
     monkeypatch.setattr(lm, "_run_download_plan", download)
     monkeypatch.setattr(lm.bootstrap, "ensure_local_runtime", start_server)
     monkeypatch.setattr(
-        "hermes_cli.web_server_config._apply_model_assignment_sync",
+        "moor_cli.web_server_config._apply_model_assignment_sync",
         lambda *args: calls.append(("assign", *args)),
     )
     rows = client.get("/api/local-models/catalog").json()["models"]
@@ -121,8 +121,8 @@ def test_quickstart_refuses_when_nothing_fits(client, monkeypatch):
 @pytest.fixture
 def capable_hardware(monkeypatch):
     """Success-path orchestration tests need a model to fit, independent of host load."""
-    from hermes_cli.local_runtime import hardware
-    from hermes_cli.local_runtime.estimator import HardwareBudget
+    from moor_cli.local_runtime import hardware
+    from moor_cli.local_runtime.estimator import HardwareBudget
 
     gib = 1 << 30
     budget = HardwareBudget(
@@ -139,7 +139,7 @@ def test_quickstart_runs_all_three_legs(client, capable_hardware, monkeypatch, t
 
     # Supply the same supported backend to preflight and the stubbed install;
     # host auto-detection may select CUDA without a published Linux archive.
-    from hermes_cli.config import load_config, save_config
+    from moor_cli.config import load_config, save_config
 
     config = load_config()
     config.setdefault("local_runtime", {})["backend"] = "cpu"

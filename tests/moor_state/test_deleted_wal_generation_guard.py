@@ -16,16 +16,16 @@ from pathlib import Path
 
 import pytest
 
-import hermes_state
-import hermes_state_dbfile
-import hermes_state_readpool
-import hermes_state_wal
-from hermes_state import (
+import moor_state
+import moor_state_dbfile
+import moor_state_readpool
+import moor_state_wal
+from moor_state import (
     DeletedWalGenerationError, SessionDB, StateDbReplacedError, _close_time_checkpoint_configurable,
     classify_persistence_error, refuse_deleted_wal_generation,
 )
-from hermes_state_dbfile import _pread_db_header, iter_deleted_sqlite_sidecar_holders
-from tests.hermes_state._wal_generation_harness import (
+from moor_state_dbfile import _pread_db_header, iter_deleted_sqlite_sidecar_holders
+from tests.moor_state._wal_generation_harness import (
     gateway_writer, integrity_ok_path, lose_sidecars, make_db, message_count, pin_wal, require_wal,
     write_second_generation,
 )
@@ -153,7 +153,7 @@ def test_iter_holders_ignores_live_unhashed_dentry(tmp_path, force_wal, monkeypa
             return target + " (deleted)"
         return target
 
-    monkeypatch.setattr(hermes_state_dbfile.os, "readlink", fake_readlink)
+    monkeypatch.setattr(moor_state_dbfile.os, "readlink", fake_readlink)
     try:
         assert iter_deleted_sqlite_sidecar_holders(path) == []
         assert wal.exists()
@@ -169,9 +169,9 @@ def test_iter_holders_ignores_descriptor_closed_during_scan(tmp_path, monkeypatc
     wal = Path(str(path) + "-wal")
     wal.write_bytes(b"current generation")
     vanished_fd = tmp_path / "closed-writable-opener-fd"
-    monkeypatch.setattr(hermes_state_dbfile.sys, "platform", "linux")
+    monkeypatch.setattr(moor_state_dbfile.sys, "platform", "linux")
     monkeypatch.setattr(
-        hermes_state_dbfile,
+        moor_state_dbfile,
         "_iter_proc_fd_targets",
         lambda: iter([(os.getpid(), str(wal) + " (deleted)", str(vanished_fd))]),
     )
@@ -182,7 +182,7 @@ def test_iter_holders_ignores_descriptor_closed_during_scan(tmp_path, monkeypatc
             raise OSError(vanish_errno, os.strerror(vanish_errno), str(target))
         return real_stat(target, *args, **kwargs)
 
-    monkeypatch.setattr(hermes_state_dbfile.os, "stat", stat_vanished)
+    monkeypatch.setattr(moor_state_dbfile.os, "stat", stat_vanished)
 
     assert iter_deleted_sqlite_sidecar_holders(path) == []
 
@@ -207,7 +207,7 @@ def test_write_path_ignores_live_unhashed_dentry(tmp_path, force_wal, monkeypatc
             return target + " (deleted)"
         return target
 
-    monkeypatch.setattr(hermes_state_readpool.os, "readlink", fake_readlink)
+    monkeypatch.setattr(moor_state_readpool.os, "readlink", fake_readlink)
     try:
         assert db._wal_generation_was_lost() is False
         db.append_message("s", role="user", content="after-artifact")

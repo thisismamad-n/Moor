@@ -161,11 +161,11 @@ function textureImage(): HTMLImageElement | null {
     texture = img
   }
 
-  // Not `nous-girl.jpg`: that asset is the BrandMark tile art, dark on white, and
+  // Not `moor-girl.jpg`: that asset is the BrandMark tile art, dark on white, and
   // reads as a solid white block once it is wrapped around a cube. This one is
   // light-on-dark line work, so the faces keep their shading and the channel
   // split has edges to offset.
-  img.src = `${import.meta.env.BASE_URL}intro-nous-girl.png`
+  img.src = `${import.meta.env.BASE_URL}intro-moor-girl.png`
 
   return null
 }

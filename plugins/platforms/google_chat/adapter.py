@@ -194,7 +194,7 @@ def ensure_google_chat_deps() -> bool:
     """ACTIVE installer (registry ``ensure_deps_fn``).
 
     Routes through ``tools.lazy_deps`` so sealed hosted/Docker images write
-    ``HERMES_LAZY_INSTALL_TARGET`` instead of the read-only venv. Resets the
+    ``MOOR_LAZY_INSTALL_TARGET`` instead of the read-only venv. Resets the
     failed-import cache so ``create_adapter()`` can load modules after install.
     ``FeatureUnavailable`` propagates: the registry logs its ``reason`` (quarantine
     404, no writable target, network), which is exactly what a hosted operator needs.
@@ -385,7 +385,7 @@ class GoogleChatAdapter(BasePlatformAdapter):
         self._project_id = self._subscription_path = self._bot_user_id = None  # bot id is users/{id}
         self._supervisor_task: Optional[asyncio.Task] = None
         self._loop: Optional[asyncio.AbstractEventLoop] = None
-        # The profile scope this adapter was connected under (multiplex: HERMES_HOME override + secret
+        # The profile scope this adapter was connected under (multiplex: MOOR_HOME override + secret
         # scope). Pub/Sub callbacks arrive on the gRPC SubscriberClient's own threads with an EMPTY
         # context, and ``run_coroutine_threadsafe`` copies THAT context onto the loop task — so
         # ``_dispatch_message`` and everything it reaches (attachment cache, per-user OAuth token
@@ -405,8 +405,8 @@ class GoogleChatAdapter(BasePlatformAdapter):
         # Last inbound thread per space: DMs get a NEW thread per top-level message but users
         # see one conversation, so thread_id leaves the source (stable session key) and is cached here.
         self._last_inbound_thread: Dict[str, str] = {}
-        from hermes_constants import get_hermes_home as _get_hermes_home
-        self._thread_count_store = _ThreadCountStore(_get_hermes_home() / "google_chat_thread_counts.json")
+        from moor_constants import get_moor_home as _get_moor_home
+        self._thread_count_store = _ThreadCountStore(_get_moor_home() / "google_chat_thread_counts.json")
         # In-flight typing-card creates per chat_id: reserved BEFORE the API call so
         # concurrent _keep_typing calls wait instead of duplicating cards.
         self._typing_card_inflight: Dict[str, asyncio.Event] = {}
@@ -1611,10 +1611,10 @@ Full guide: website/docs/user-guide/messaging/google_chat.md
 
 
 def interactive_setup() -> None:
-    """``hermes setup`` wizard: print GCP instructions, prompt for env vars, persist to ``~/.hermes/.env``."""
-    from hermes_cli.cli_output import print_info, print_success, print_warning, prompt, prompt_yes_no
-    from hermes_cli.config import get_env_value, save_env_value
-    from hermes_cli.setup_platforms import declines_reconfigure
+    """``moor setup`` wizard: print GCP instructions, prompt for env vars, persist to ``~/.moor/.env``."""
+    from moor_cli.cli_output import print_info, print_success, print_warning, prompt, prompt_yes_no
+    from moor_cli.config import get_env_value, save_env_value
+    from moor_cli.setup_platforms import declines_reconfigure
     if declines_reconfigure("Google Chat", "Reconfigure Google Chat?", "GOOGLE_CHAT_SUBSCRIPTION_NAME"):
         return
     for line in _SETUP_WALKTHROUGH.splitlines():

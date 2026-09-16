@@ -16,7 +16,7 @@ from typing import Any, Optional
 
 from agent.i18n import t
 from gateway.platforms.event import MessageEvent
-from hermes_cli.config import atomic_config_write
+from moor_cli.config import atomic_config_write
 from utils import base_url_host_matches
 
 logger = logging.getLogger("gateway.run")  # log-record parity with gateway/run.py
@@ -57,7 +57,7 @@ def _model_switch_skew_guard() -> Optional[str]:
 async def _persist_model_switch_to_config(result, config_path) -> None:
     """Write-through a resolved /model switch to the profile config at ``config_path``, off the
     event loop (the route comparison can do cold-start disk I/O)."""
-    from hermes_cli.model_switch import persist_model_selection
+    from moor_cli.model_switch import persist_model_selection
     await asyncio.to_thread(persist_model_selection, result, config_path)
 
 
@@ -408,7 +408,7 @@ class GatewayModelCommandsMixin:
         rendered confirm buttons itself.
         """
         try:
-            from hermes_cli.model_selection_guards import (
+            from moor_cli.model_selection_guards import (
                 combined_selection_warning, selection_context_for_agent)
             warning = await asyncio.to_thread(
                 combined_selection_warning, result.new_model, provider=result.target_provider,

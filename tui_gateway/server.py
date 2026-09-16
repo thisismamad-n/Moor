@@ -22,13 +22,13 @@ from typing import Any, Callable, NamedTuple, Optional  # noqa: F401  (Callable:
 # Several of these look unused here but are resolved BARE by split-module bodies rebound onto this
 # namespace (method_ctx.bind_module) — deleting one breaks a handler at call time, not import time.
 from agent.secret_scope import build_profile_secret_scope, reset_secret_scope, set_secret_scope  # noqa: F401
-from hermes_constants import (
-    get_hermes_home, get_hermes_home_override, profile_name_for_home,
-    reset_hermes_home_override, set_hermes_home_override)
-from hermes_cli.env_loader import load_hermes_dotenv
+from moor_constants import (
+    get_moor_home, get_moor_home_override, profile_name_for_home,
+    reset_moor_home_override, set_moor_home_override)
+from moor_cli.env_loader import load_moor_dotenv
 from utils import file_signature, is_truthy_value
-from hermes_state_ids import new_session_id
-from tools.environments.local import hermes_subprocess_env
+from moor_state_ids import new_session_id
+from tools.environments.local import moor_subprocess_env
 from agent.replay_cleanup import canonicalize_replay_history
 from agent.compaction_display import project_compaction_message_for_display  # noqa: F401
 from agent.skill_commands import describe_skill_invocation  # noqa: F401
@@ -237,13 +237,13 @@ class _SlashWorker:
         # slash_worker runs the Moor agent → needs provider credentials. Tier-1 secrets
         # (gateway/GitHub/infra) are still stripped (#29157). Global-remote / multi-profile sessions: the
         # worker must resolve config/skills/state against the session's profile home, not the gateway's
-        # launch HERMES_HOME (#40677).
+        # launch MOOR_HOME (#40677).
         from tools.environments.local import served_profile_child_env
 
         # The worker runs the agent → needs provider credentials; tier-1 secrets (gateway/GitHub/
         # infra) are still stripped. A served profile's worker gets THAT profile's home + secrets and
         # none of the launch profile's .env / TERMINAL_* residue, exactly what a standalone
-        # `hermes -p X` would load itself.
+        # `moor -p X` would load itself.
         env = _prepend_tool_paths(served_profile_child_env(target_home=profile_home, inherit_credentials=True))
         # Internal slash workers must import the same checkout as their parent.
         module_root = str(Path(__file__).resolve().parent.parent)
@@ -382,10 +382,10 @@ def _get_db():
         from moor_state_registry import acquire
         try:
             # Pin to import-time launch home (#102526). A bare acquire() follows
-            # get_hermes_home(), which the desktop multiplex cron ticker temporarily
+            # get_moor_home(), which the desktop multiplex cron ticker temporarily
             # overrides per profile at startup — first touch inside a foreign window
             # permanently binds this process-wide handle to the wrong state.db.
-            _db, _db_error = acquire(Path(_hermes_home) / "state.db"), None
+            _db, _db_error = acquire(Path(_moor_home) / "state.db"), None
         except Exception as exc:
             _db_error = str(exc)
             logger.warning("TUI session store unavailable — continuing without state.db features: %s", exc)
@@ -433,7 +433,7 @@ def _profile_db(params: dict | None = None, *, writer: bool = False):
 
     Foreign-profile handles are read-only unless ``writer=True``: that store belongs to ITS
     gateway/dashboard, and a writer here would take its write lock per RPC. Mirrors
-    hermes_cli.web_routers.profiles._read_profile_db."""
+    moor_cli.web_routers.profiles._read_profile_db."""
     profile = (params.get("profile") or "").strip() or None if isinstance(params, dict) else None
     # Launch/own profile → the shared _get_db() handle (left open); another profile → a dedicated
     # handle closed below (app-global remote mode). db is None when unavailable.
@@ -442,10 +442,10 @@ def _profile_db(params: dict | None = None, *, writer: bool = False):
     else:
         try:
             if writer:
-                from hermes_state_registry import acquire
+                from moor_state_registry import acquire
                 db = acquire(Path(profile_home) / "state.db")
             else:
-                from hermes_cli.web_server_sessions import _open_session_db_at_path
+                from moor_cli.web_server_sessions import _open_session_db_at_path
                 db = _open_session_db_at_path(Path(profile_home) / "state.db", read_only=True)
             owns = True
         except Exception as exc:
@@ -463,12 +463,12 @@ def _canonical_profile_request(name: str) -> str:
     """Canonicalize profile basenames emitted by older session-info payloads.
 
     ``Path(default_home).name`` was historically sent as a profile id. Those basenames are
-    installation details — unless a real named profile of that name exists (``hermes`` is a legal
+    installation details — unless a real named profile of that name exists (``moor`` is a legal
     id), in which case it wins; other unknown names keep failing closed in ``_profile_home``.
     """
-    if name.casefold() in {".hermes", "hermes"}:
-        from hermes_cli import profiles as profiles_mod
-        # Check the profiles root directly: get_profile_dir rejects "hermes" as a
+    if name.casefold() in {".moor", "moor"}:
+        from moor_cli import profiles as profiles_mod
+        # Check the profiles root directly: get_profile_dir rejects "moor" as a
         # reserved name, but a pre-reserved-list install may still carry that dir.
         if not (profiles_mod._get_profiles_root() / profiles_mod.normalize_profile_name(name)).is_dir():
             return "default"
@@ -487,7 +487,7 @@ def _response_profile_name(profile: str | None = None) -> str:
 
 
 def _db_unavailable_error(rid, *, code: int):
-    from hermes_state_user_copy import describe_storage_failure, storage_failure_details
+    from moor_state_user_copy import describe_storage_failure, storage_failure_details
     failure = describe_storage_failure(_db_error)
     return _err(
         rid, code,
@@ -508,14 +508,14 @@ def _profile_home(profile: str | None) -> Path | None:
     """Resolve a named profile's home on THIS host, or None for the launch profile."""
     if not (name := _canonical_profile_request((profile or "").strip())):
         return None
-    from hermes_cli import profiles as profiles_mod
+    from moor_cli import profiles as profiles_mod
     try:
         home = Path(profiles_mod.get_profile_dir(name))
     except ValueError:
         home = None
     if home is None or not home.is_dir():
         raise ProfileUnavailableError(f"Profile '{name}' does not exist.")
-    if home.resolve() == Path(_hermes_home).resolve():
+    if home.resolve() == Path(_moor_home).resolve():
         return None  # already the launch profile (no override needed)
     if home not in _served_profile_homes:
         # This process now hosts a second profile home: freeze the launch env as the launch
@@ -534,7 +534,7 @@ _served_profile_homes: set[Path] = set()
 
 
 def _profile_scoped(handler):
-    """Bind ``params['profile']``'s full runtime scope (HERMES_HOME + secrets + terminal policy) around a
+    """Bind ``params['profile']``'s full runtime scope (MOOR_HOME + secrets + terminal policy) around a
     handler, so config.yaml ``${VAR}`` refs, provider credential checks and ``.env`` writes resolve to
     THAT profile (app-global remote mode hits the focused profile). Home alone left ``get_secret`` on the
     launch process's ``os.environ``: ``config.get full`` for a secondary shipped the default profile's
@@ -579,7 +579,7 @@ def _profile_configured_cwd(profile_home: Path | None) -> str | None:
     if profile_home is None:
         return None
     with contextlib.suppress(Exception):
-        from hermes_cli.config_effective import load_user_config_effective
+        from moor_cli.config_effective import load_user_config_effective
         p = Path(profile_home) / "config.yaml"
         return _configured_cwd_from_cfg(load_user_config_effective(p)) if p.exists() else None
     return None
@@ -815,8 +815,8 @@ def handle_request(req: dict) -> dict | None:
         return normalized
     rid, method, params = normalized
     if not (fn := _methods.get(method)):
-        return _err(rid, -32601, f"unknown method: {method} — the client and the Hermes backend are out of sync "
-                    "(different versions); run `hermes update` and restart both")
+        return _err(rid, -32601, f"unknown method: {method} — the client and the Moor backend are out of sync "
+                    "(different versions); run `moor update` and restart both")
     # Test doubles register straight into ``_methods`` without a contract; every production
     # handler comes through ``register_method`` and therefore has one.
     contract = _contracts.METHODS.get(method)
@@ -960,7 +960,7 @@ def _wait_agent_for_prompt(session: dict, rid: str, sid: str) -> dict | None:
 
 
 def _bind_build_profile_scopes(profile_home: "str | None") -> "_TurnScopes | None":
-    """Bind a session profile's HERMES_HOME / secret / terminal scopes for an agent build. ``None`` is the
+    """Bind a session profile's MOOR_HOME / secret / terminal scopes for an agent build. ``None`` is the
     launch profile: its own launch-env secret scope (live env while single-profile, frozen once
     multiplexing is active — a hosted-room turn for a default member otherwise died at build with
     ``UnscopedSecretError`` because the launch profile was treated as "no scope"). Fail-open per scope (the build must not die on
@@ -970,7 +970,7 @@ def _bind_build_profile_scopes(profile_home: "str | None") -> "_TurnScopes | Non
     with contextlib.suppress(Exception):
         return _profile_runtime_scope_tokens(profile_home)
     if profile_home:  # secret/terminal helper failed: keep at least the home + terminal refusal scope
-        scopes.home = set_hermes_home_override(profile_home)
+        scopes.home = set_moor_home_override(profile_home)
         with contextlib.suppress(Exception):
             from tools.terminal_scope import install_profile_terminal_scope
             scopes.terminal = install_profile_terminal_scope(Path(profile_home))
@@ -1124,7 +1124,7 @@ def _start_agent_build(sid: str, session: dict) -> None:
                 current["agent_error"] = AGENT_BUILD_ABANDONED
                 return
             tokens = _set_session_context(key, cwd=_session_cwd(current))
-            # Global-remote: bind the session profile's HERMES_HOME and hand the agent that profile's db —
+            # Global-remote: bind the session profile's MOOR_HOME and hand the agent that profile's db —
             # DEDICATED and ours until _transfer_db_to_agent in the finally; FAIL CLOSED rather than
             # binding the launch DB and bleeding rows into the wrong state.db.
             scopes = _bind_build_profile_scopes(profile_home)
@@ -1255,7 +1255,7 @@ def _load_cfg() -> dict:
     ``_load_cfg() == {}`` sentinels. Fail-open to ``{}``. Never pass the result to ``_save_cfg`` (use
     ``_load_cfg_raw()``)."""
     with contextlib.suppress(Exception):
-        from hermes_cli.config_effective import load_user_config_effective
+        from moor_cli.config_effective import load_user_config_effective
         return load_user_config_effective(_active_config_path())
     return {}
 
@@ -2108,7 +2108,7 @@ def _session_info(agent, session: dict | None = None) -> dict:
     if provider == "custom" and "provider" not in mirror and agent is not None:
         # Clients reuse this identity for new chats without carrying the endpoint or key.
         # Broadcast/resume callers need not be bound to this session's profile.
-        with _profile_build_scope(sess.get("profile_home") or _hermes_home):
+        with _profile_build_scope(sess.get("profile_home") or _moor_home):
             provider = _runtime_model_config(agent).get("provider", provider)
     info: dict = {
         "model": pending_model or mirror.get("model", getattr(agent, "model", "")),
@@ -2238,7 +2238,7 @@ def _resolve_runtime_with_fallback(resolve_kwargs: dict | None = None) -> _Runti
             if not fb_provider or not fb_model:
                 continue
             try:
-                from hermes_cli.fallback_config import effective_runtime_provider, resolve_entry_api_key
+                from moor_cli.fallback_config import effective_runtime_provider, resolve_entry_api_key
                 fb_kwargs: dict = {"requested": fb_provider, "target_model": fb_model,
                                    **({"explicit_base_url": entry["base_url"]} if entry.get("base_url") else {})}
                 if fb_api_key := resolve_entry_api_key(entry):
@@ -2357,7 +2357,7 @@ def _make_agent(
     model, runtime = _resolve_agent_model_runtime(model_override, provider_override)
     _pr = _load_provider_routing()
     platform = _resolve_agent_platform(platform_override)
-    ignore_rules = is_truthy_value(os.environ.get("HERMES_IGNORE_RULES"))
+    ignore_rules = is_truthy_value(os.environ.get("MOOR_IGNORE_RULES"))
     with _sessions_lock:
         session = _sessions.get(sid)
     agent = AIAgent(
@@ -2586,7 +2586,7 @@ def _schedule_agent_build(sid: str, delay: float = 0.05) -> None:
 def _load_resume_transcript(db, stored_id: str, *, model_history_only: bool = False) -> tuple[list, list, list]:
     """(raw_history, display_history, ancestor_prefix) for a cold resume. The full lineage is materialized
     only while it fits sessions.max_resume_messages (the transcript is REST-paginated), else the tip alone."""
-    from hermes_state import SessionResumeTooLargeError
+    from moor_state import SessionResumeTooLargeError
     if model_history_only:
         raw_history = db.get_messages_as_conversation(
             stored_id, repair_alternation=True, include_row_ids=True)

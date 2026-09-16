@@ -1,9 +1,9 @@
-"""Nous free-tier identity: the ``anonymous`` auth method of the ``nous`` provider.
+"""Moor free-tier identity: the ``anonymous`` auth method of the ``moor`` provider.
 
-The identity is created in exactly one place, at boot (``hermes_cli.free_tier_bootstrap``), and only
-while ``HERMES_GUEST_ONBOARDING=1`` (see ``guest_enabled``). The bootstrap mints an anonymous Nous
+The identity is created in exactly one place, at boot (``moor_cli.free_tier_bootstrap``), and only
+while ``MOOR_GUEST_ONBOARDING=1`` (see ``guest_enabled``). The bootstrap mints an anonymous Moor
 account (``POST /api/anonymous/create``); its ``anon_`` credential is later exchanged for short-lived
-JWTs (``POST /api/anonymous/token``). The result is persisted as the singleton ``providers.nous``; it
+JWTs (``POST /api/anonymous/token``). The result is persisted as the singleton ``providers.moor``; it
 becomes ``active_provider`` only when the bootstrap's inventory found nothing else usable, so an
 install with its own key keeps that key for inference and uses the identity for connectors only. In
 the resolver ladder (``resolve_provider``) an existing free-tier identity sits directly above the
@@ -12,11 +12,11 @@ pool, a logged-in ``active_provider``) beats it, and the ladder never creates on
 
 Only two mechanics differ from an OAuth login and both are isolated behind ``is_guest_state``:
 token acquisition (re-exchange the ``anon_`` credential; there is no refresh token) and routing
-(the welcome inference host, single model ``nous/welcome``).
+(the welcome inference host, single model ``moor/welcome``).
 
 Users are never shown the words guest / anonymous / account for this state: surfaces say
-"Nous · free tier". Two user-facing verbs reach the same flow, both keeping the identity's
-connectors: ``hermes auth upgrade`` in a terminal and ``/login`` inside a chat.
+"Moor · free tier". Two user-facing verbs reach the same flow, both keeping the identity's
+connectors: ``moor auth upgrade`` in a terminal and ``/login`` inside a chat.
 
 Lifecycle lives in ONE primitive, :func:`ensure_portal_identity`: adopt what the shared store already
 holds, else mint under the shared-store lock. It is the only minter; nothing else calls
@@ -34,31 +34,31 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, Dict, Optional
 
 from agent.retry_utils import parse_retry_after_seconds
-from hermes_cli.auth_constants import (
-    AuthError, DEFAULT_NOUS_PORTAL_URL, DEFAULT_NOUS_WELCOME_URL, _decode_jwt_claims, httpx)
+from moor_cli.auth_constants import (
+    AuthError, DEFAULT_MOOR_PORTAL_URL, DEFAULT_MOOR_WELCOME_URL, _decode_jwt_claims, httpx)
 
-logger = logging.getLogger("hermes_cli.auth")
+logger = logging.getLogger("moor_cli.auth")
 
 ANON_AUTH_METHOD = "anonymous"
 ANON_CLIENT_ID = "nas-anonymous"
 ANON_ACCOUNT_TIER = "anonymous"
-GUEST_MODEL = "nous/welcome"
+GUEST_MODEL = "moor/welcome"
 ANON_SECRET_HEADER = "x-anonymous-api-secret"
 # The shared secret gates the anonymous surface during its integration phase. It is a deployment
 # secret (Sid's), read from the environment only.
-ANON_SECRET_ENV = "HERMES_ANON_API_SECRET"
+ANON_SECRET_ENV = "MOOR_ANON_API_SECRET"
 # Launch gate for the whole free tier while it is pre-GA: exactly "1" turns it on for this process
 # (CLI, gateway, serve backend alike); anything else leaves every surface behaving as if the free
 # tier did not exist. ``guest_enabled`` is the only reader. Not a user preference: never written to
 # config.yaml or .env, never shown in setup. Deleted at GA together with this comment.
-GUEST_ONBOARDING_ENV = "HERMES_GUEST_ONBOARDING"
+GUEST_ONBOARDING_ENV = "MOOR_GUEST_ONBOARDING"
 GUEST_MINT_TIMEOUT_SECONDS = 5.0
 # Copy shared by every surface that names the free tier (R-USR-1): never guest / anonymous / account.
-FREE_TIER_LABEL = "Nous · free tier"
-UPGRADE_HINT = "Run `hermes auth upgrade` to sign in with a Nous account, or /login inside a chat."
+FREE_TIER_LABEL = "Moor · free tier"
+UPGRADE_HINT = "Run `moor auth upgrade` to sign in with a Moor account, or /login inside a chat."
 FREE_TIER_NOT_SIGNED_IN = (
     "You're not signed in. Free inference and connectors are always on. "
-    "Run `hermes auth` to sign in with a Nous account.")
+    "Run `moor auth` to sign in with a Moor account.")
 
 
 class AnonCredentialDead(AuthError):
@@ -77,10 +77,10 @@ def _anon_err(message: str, code: str, *, retry_after: Optional[float] = None) -
 #
 # Every way the account service (NAS) or the wire can refuse the free tier, as one ``AuthError.code``
 # each. Surfaces key their copy on the code; the message on the error is the surface-agnostic
-# fallback (no ``/login``, no ``hermes`` verb, no guest / anonymous / credential). ``retryable``
+# fallback (no ``/login``, no ``moor`` verb, no guest / anonymous / credential). ``retryable``
 # says whether a later attempt can succeed at all; ``retry_after`` is the wait the server named.
 #
-# What NAS actually sends (nous-account-service ``api/anonymous/gate.ts`` and the routes behind it):
+# What NAS actually sends (moor-account-service ``api/anonymous/gate.ts`` and the routes behind it):
 #   404 ``not_found``             the surface is not enabled on this deployment (terminal)
 #   503 ``temporarily_disabled``  the ops breaker is tripped (transient, no hint)
 #   429 ``temporarily_unavailable`` + Retry-After   per-address / per-credential limits
@@ -103,19 +103,19 @@ ANON_TERMINAL_CODES = frozenset({ANON_GATE_CLOSED, ANON_POW_REQUIRED, ANON_ACCOU
 ANON_UNREACHABLE_CODES = frozenset({ANON_UNREACHABLE, ANON_SERVER_ERROR})
 
 # Copy per code: what happened, then the one honest way forward. The free MODEL is never "off":
-# what is unavailable is using Hermes without signing in, and signing in is free.
+# what is unavailable is using Moor without signing in, and signing in is free.
 _SIGNIN_IS_FREE = "Signing in is free."
 ANON_FAILURE_COPY = {
-    ANON_GATE_CLOSED: f"This version can't be used without a Nous account. {_SIGNIN_IS_FREE}",
-    ANON_GATE_PAUSED: f"Using Hermes without signing in is paused for a moment. {_SIGNIN_IS_FREE}",
+    ANON_GATE_CLOSED: f"This version can't be used without a Moor account. {_SIGNIN_IS_FREE}",
+    ANON_GATE_PAUSED: f"Using Moor without signing in is paused for a moment. {_SIGNIN_IS_FREE}",
     ANON_RATE_LIMITED: "Lots of people are getting started right now. Try again in {wait}. "
                        "Signing in is free and skips the wait.",
-    ANON_POW_REQUIRED: "The Nous server asked for a proof of work, but that isn't implemented in your "
-                       "Agent yet. Sign in with a Nous account to continue.",
+    ANON_POW_REQUIRED: "The Moor server asked for a proof of work, but that isn't implemented in your "
+                       "Agent yet. Sign in with a Moor account to continue.",
     ANON_ACCOUNT_LOCKED: f"This session can't continue without signing in. {_SIGNIN_IS_FREE}",
     ANON_CREDENTIAL_DEAD: "Your session ended. A new one starts on its own.",
-    ANON_UNREACHABLE: "The Nous service couldn't be reached. Check your internet connection and try again.",
-    ANON_SERVER_ERROR: "The Nous service had a hiccup. Try again in a moment.",
+    ANON_UNREACHABLE: "The Moor service couldn't be reached. Check your internet connection and try again.",
+    ANON_SERVER_ERROR: "The Moor service had a hiccup. Try again in a moment.",
 }
 
 
@@ -143,88 +143,88 @@ def anon_failure_copy(code: str, *, retry_after: Any = None) -> str:
 
 
 def guest_enabled() -> bool:
-    """The free tier is on for this process: the launch gate is set AND ``nous.guest`` (default
+    """The free tier is on for this process: the launch gate is set AND ``moor.guest`` (default
     True) has not switched it off. The only place either is read."""
     if (os.environ.get(GUEST_ONBOARDING_ENV) or "").strip() != "1":
         return False
     try:
-        from hermes_cli.config import load_config_readonly
-        nous_cfg = load_config_readonly().get("nous")
+        from moor_cli.config import load_config_readonly
+        moor_cfg = load_config_readonly().get("moor")
     except Exception as exc:  # config unreadable: keep today's behaviour (no guest) rather than mint
-        logger.debug("guest: config unreadable, treating nous.guest as false: %s", exc)
+        logger.debug("guest: config unreadable, treating moor.guest as false: %s", exc)
         return False
-    if not isinstance(nous_cfg, dict):
+    if not isinstance(moor_cfg, dict):
         return True
-    return bool(nous_cfg.get("guest", True))
+    return bool(moor_cfg.get("guest", True))
 
 
 def is_guest_state(state: Any) -> bool:
     return isinstance(state, dict) and state.get("auth_method") == ANON_AUTH_METHOD
 
 
-def current_nous_state() -> Optional[Dict[str, Any]]:
-    """The profile's ``providers.nous`` state without locking or network (status/picker reads)."""
-    from hermes_cli.auth import _load_auth_store, _load_provider_state
+def current_moor_state() -> Optional[Dict[str, Any]]:
+    """The profile's ``providers.moor`` state without locking or network (status/picker reads)."""
+    from moor_cli.auth import _load_auth_store, _load_provider_state
     try:
-        return _load_provider_state(_load_auth_store(), "nous")
+        return _load_provider_state(_load_auth_store(), "moor")
     except Exception as exc:
         logger.debug("guest: auth store unreadable: %s", exc)
         return None
 
 
 def has_guest() -> bool:
-    return is_guest_state(current_nous_state())
+    return is_guest_state(current_moor_state())
 
 
 def guest_carries_inference() -> bool:
-    """True when the profile's Nous identity is the free tier and the free tier is on.
+    """True when the profile's Moor identity is the free tier and the free tier is on.
 
     Profile-level: use for status, picker and notice surfaces. Routing decisions (which model a
     request may carry) must use :func:`route_is_welcome_host` on the SELECTED runtime instead: a
-    credential-pool entry can pick a paid Nous key while the profile singleton is still a guest.
+    credential-pool entry can pick a paid Moor key while the profile singleton is still a guest.
     """
     return guest_enabled() and has_guest()
 
 
 WELCOME_HOSTS = frozenset({"welcome-api.nousresearch.com"})
 # Dev-only: extra hostnames that count as the welcome host, comma-separated (for example
-# ``127.0.0.1`` while ``NOUS_INFERENCE_BASE_URL`` points at a local stand-in). Read from the
+# ``127.0.0.1`` while ``MOOR_INFERENCE_BASE_URL`` points at a local stand-in). Read from the
 # environment, which the user controls, so it sits at the same trust level as the URL override
-# itself; it never widens the NETWORK-side allowlist in ``auth_nous``.
-EXTRA_WELCOME_HOSTS_ENV = "HERMES_EXTRA_WELCOME_HOSTS"
+# itself; it never widens the NETWORK-side allowlist in ``auth_moor``.
+EXTRA_WELCOME_HOSTS_ENV = "MOOR_EXTRA_WELCOME_HOSTS"
 
 
 def welcome_hosts() -> frozenset[str]:
-    """``WELCOME_HOSTS`` plus any ``HERMES_EXTRA_WELCOME_HOSTS`` entries (lowercased hostnames)."""
+    """``WELCOME_HOSTS`` plus any ``MOOR_EXTRA_WELCOME_HOSTS`` entries (lowercased hostnames)."""
     raw = os.environ.get(EXTRA_WELCOME_HOSTS_ENV) or ""
     extra = {part.strip().lower() for part in raw.split(",") if part.strip()}
     return WELCOME_HOSTS | frozenset(extra) if extra else WELCOME_HOSTS
 
 
 def pin_model_for_route(provider: Any, base_url: Any, model: Any) -> Any:
-    """Model policy at agent START: on the Nous welcome host the model is ``nous/welcome``; anywhere
+    """Model policy at agent START: on the Moor welcome host the model is ``moor/welcome``; anywhere
     else the caller's model stands. Used once, when the route is first finalized. Mid-conversation
     route changes go through :func:`route_can_serve_model` instead: a conversation's model is never
     silently rewritten by a credential rotation.
     """
-    if provider == "nous" and route_is_welcome_host(base_url):
+    if provider == "moor" and route_is_welcome_host(base_url):
         if model and model != GUEST_MODEL:
-            logger.info("Nous free tier: using %s instead of configured model %s", GUEST_MODEL, model)
+            logger.info("Moor free tier: using %s instead of configured model %s", GUEST_MODEL, model)
         return GUEST_MODEL
     return model
 
 
 def route_can_serve_model(provider: Any, base_url: Any, model: Any) -> bool:
-    """Eligibility for a credential ROTATION: the welcome host serves only ``nous/welcome``, so a
-    conversation on any other model must not be rotated onto it (and a ``nous/welcome`` conversation
-    may move to the portal host, which serves it too). Non-Nous routes are always eligible."""
-    if provider != "nous" or not route_is_welcome_host(base_url):
+    """Eligibility for a credential ROTATION: the welcome host serves only ``moor/welcome``, so a
+    conversation on any other model must not be rotated onto it (and a ``moor/welcome`` conversation
+    may move to the portal host, which serves it too). Non-Moor routes are always eligible."""
+    if provider != "moor" or not route_is_welcome_host(base_url):
         return True
     return not model or model == GUEST_MODEL
 
 
 def route_is_welcome_host(base_url: Any) -> bool:
-    """The routing predicate for the free tier: the welcome host serves exactly ``nous/welcome``.
+    """The routing predicate for the free tier: the welcome host serves exactly ``moor/welcome``.
 
     Keyed on the resolved endpoint, never on profile state, so a paid pool credential routed to the
     portal host keeps its model even when a guest singleton exists beside it.
@@ -280,7 +280,7 @@ def _raise_for_anon_status(response: httpx.Response, *, action: str) -> Dict[str
     cls, code = (_NAS_REFUSALS.get((status, error)) or _NAS_REFUSALS.get((status, None))
                  or ((AuthError, ANON_POW_REQUIRED) if error == "pow_" else (AuthError, ANON_SERVER_ERROR)))
     if code == ANON_SERVER_ERROR:
-        logger.info("Nous free tier %s failed (%s%s)", action, status, f": {error}" if error else "")
+        logger.info("Moor free tier %s failed (%s%s)", action, status, f": {error}" if error else "")
     retry_after = parse_retry_after_seconds(response.headers)
     raise cls(anon_failure_copy(code, retry_after=retry_after), code=code, retry_after=retry_after,
               retryable=code not in ANON_TERMINAL_CODES)
@@ -292,7 +292,7 @@ def mint_guest(client: httpx.Client, portal_base_url: str) -> Dict[str, Any]:
     payload = _raise_for_anon_status(response, action="sign-up")
     token = payload.get("token")
     if not isinstance(token, str) or not token.startswith("anon_"):
-        logger.info("Nous free tier sign-up returned no credential")
+        logger.info("Moor free tier sign-up returned no credential")
         raise _anon_err(ANON_FAILURE_COPY[ANON_SERVER_ERROR], ANON_SERVER_ERROR)
     return payload
 
@@ -306,14 +306,14 @@ def exchange_anon_jwt(client: httpx.Client, portal_base_url: str, anon_token: st
         f"{portal_base_url.rstrip('/')}/api/anonymous/token", headers=_anon_headers(), json={"token": anon_token})
     payload = _raise_for_anon_status(response, action="token exchange")
     if not isinstance(payload.get("access_token"), str) or not payload["access_token"]:
-        logger.info("Nous free tier token exchange returned no token")
+        logger.info("Moor free tier token exchange returned no token")
         raise _anon_err(ANON_FAILURE_COPY[ANON_SERVER_ERROR], ANON_SERVER_ERROR)
     return payload
 
 
 def apply_exchange_to_state(state: Dict[str, Any], exchanged: Dict[str, Any]) -> None:
     """Write a fresh exchange result into a guest state in place (token, expiry, routing)."""
-    from hermes_cli.auth_nous import _validate_nous_inference_url_from_network
+    from moor_cli.auth_moor import _validate_moor_inference_url_from_network
     access_token = exchanged["access_token"]
     claims = _decode_jwt_claims(access_token)
     now = datetime.now(timezone.utc)
@@ -323,10 +323,10 @@ def apply_exchange_to_state(state: Dict[str, Any], exchanged: Dict[str, Any]) ->
     else:
         expires_at = now + timedelta(seconds=int(exchanged.get("expires_in") or 900))
     # NAS names the welcome host on every exchange; absent (older NAS) or outside the allowlist
-    # (a staging host without NOUS_INFERENCE_BASE_URL set), the literal stands in. Never the paid
+    # (a staging host without MOOR_INFERENCE_BASE_URL set), the literal stands in. Never the paid
     # host: the gateway cross-refuses an anonymous JWT there.
-    inference_url = (_validate_nous_inference_url_from_network(exchanged.get("inference_base_url"))
-                     or DEFAULT_NOUS_WELCOME_URL)
+    inference_url = (_validate_moor_inference_url_from_network(exchanged.get("inference_base_url"))
+                     or DEFAULT_MOOR_WELCOME_URL)
     scope = claims.get("scope") or claims.get("scp") or state.get("scope")
     if isinstance(scope, (list, tuple)):
         scope = " ".join(str(s) for s in scope)
@@ -343,12 +343,12 @@ def apply_exchange_to_state(state: Dict[str, Any], exchanged: Dict[str, Any]) ->
 
 
 def _portal_base_url() -> str:
-    from hermes_cli.auth_nous import _nous_portal_env_override
-    return (_nous_portal_env_override() or DEFAULT_NOUS_PORTAL_URL).rstrip("/")
+    from moor_cli.auth_moor import _moor_portal_env_override
+    return (_moor_portal_env_override() or DEFAULT_MOOR_PORTAL_URL).rstrip("/")
 
 
 def _shared_identity_key(state: Any) -> Optional[str]:
-    """Stable identity of a Nous credential: the anon_ token for a guest, the refresh token for an
+    """Stable identity of a Moor credential: the anon_ token for a guest, the refresh token for an
     account. Used to decide whether two stores hold the SAME identity."""
     if not isinstance(state, dict):
         return None
@@ -365,8 +365,8 @@ def _mint_locked(
     ``carries_inference`` decides whether the new identity also becomes ``active_provider``. The
     bootstrap passes False when its inventory found another usable provider: the identity exists for
     connectors, the user's own provider keeps carrying inference (NS-845 Q1.3)."""
-    from hermes_cli.auth import _store_provider_state, _save_auth_store
-    from hermes_cli.auth_nous import _write_shared_nous_state
+    from moor_cli.auth import _store_provider_state, _save_auth_store
+    from moor_cli.auth_moor import _write_shared_moor_state
     minted = mint_guest(client, portal)
     state: Dict[str, Any] = {
         "auth_method": ANON_AUTH_METHOD, "account_tier": ANON_ACCOUNT_TIER,
@@ -375,10 +375,10 @@ def _mint_locked(
         "user_id": minted.get("user_id"), "org_id": minted.get("org_id"),
         "idle_ttl_days": minted.get("idle_ttl_days"),
     }
-    _store_provider_state(auth_store, "nous", state, set_active=carries_inference)
+    _store_provider_state(auth_store, "moor", state, set_active=carries_inference)
     _save_auth_store(auth_store)
-    _write_shared_nous_state(state)
-    logger.info("Nous free tier ready (identity minted)")
+    _write_shared_moor_state(state)
+    logger.info("Moor free tier ready (identity minted)")
     return state
 
 
@@ -418,8 +418,8 @@ _mint_failures: Dict[str, MintFailure] = {}
 
 
 def _mint_memo_key() -> str:
-    from hermes_constants import get_hermes_home_override, hermes_home_key
-    return "" if get_hermes_home_override() is None else hermes_home_key()
+    from moor_constants import get_moor_home_override, moor_home_key
+    return "" if get_moor_home_override() is None else moor_home_key()
 
 
 def _mint_failure_for_profile() -> Optional[MintFailure]:
@@ -481,7 +481,7 @@ def _note_mint_failure(err: AuthError) -> MintFailure:
 def _reconcile_and_provision(*, timeout_seconds: float, carries_inference: bool = True) -> Optional[Dict[str, Any]]:
     """The lifecycle body, run under profile lock THEN shared lock (the documented order).
 
-    1. The shared store is the identity of record for this Hermes root. If it holds an identity
+    1. The shared store is the identity of record for this Moor root. If it holds an identity
        that differs from the profile's, the profile adopts it (a stale guest never outlives a
        sibling profile's sign-in, and never overwrites it). An adopted free-tier identity claims
        ``active_provider`` under the same rule as a mint; an adopted ACCOUNT always does (the user
@@ -489,31 +489,31 @@ def _reconcile_and_provision(*, timeout_seconds: float, carries_inference: bool 
     2. Otherwise the profile's own identity stands.
     3. Nothing anywhere: mint, persisting the credential before exchanging it.
     """
-    from hermes_cli.auth import (
+    from moor_cli.auth import (
         _auth_store_lock, _load_auth_store, _load_provider_state, _save_auth_store,
         _store_provider_state, _resolve_verify)
-    from hermes_cli.auth_nous import (
-        _nous_http_client, _nous_shared_store_lock, _read_shared_nous_state, _write_shared_nous_state)
+    from moor_cli.auth_moor import (
+        _moor_http_client, _moor_shared_store_lock, _read_shared_moor_state, _write_shared_moor_state)
     portal = _portal_base_url()
     with _auth_store_lock():
         auth_store = _load_auth_store()
-        profile_state = _load_provider_state(auth_store, "nous")
-        with _nous_shared_store_lock(timeout_seconds=max(timeout_seconds, 5.0)):
-            shared = _read_shared_nous_state()
+        profile_state = _load_provider_state(auth_store, "moor")
+        with _moor_shared_store_lock(timeout_seconds=max(timeout_seconds, 5.0)):
+            shared = _read_shared_moor_state()
             if shared and _shared_identity_key(shared) != _shared_identity_key(profile_state):
                 state = dict(shared)
                 _store_provider_state(
-                    auth_store, "nous", state,
+                    auth_store, "moor", state,
                     set_active=carries_inference or not is_guest_state(state))
                 _save_auth_store(auth_store)
-                logger.debug("Nous identity adopted from the shared store")
+                logger.debug("Moor identity adopted from the shared store")
                 return state
             if profile_state:
                 if not shared:
-                    _write_shared_nous_state(profile_state)
+                    _write_shared_moor_state(profile_state)
                 return profile_state
             verify = _resolve_verify(insecure=None, ca_bundle=None, auth_state=None)
-            with _nous_http_client(timeout_seconds, verify) as client:
+            with _moor_http_client(timeout_seconds, verify) as client:
                 return _mint_locked(client, portal, auth_store, carries_inference=carries_inference)
 
 
@@ -521,17 +521,17 @@ def ensure_portal_identity(
     *, explicit: bool, timeout_seconds: float = GUEST_MINT_TIMEOUT_SECONDS,
     carries_inference: bool = True, force: bool = False,
 ) -> Optional[Dict[str, Any]]:
-    """Make sure this profile has a Nous identity (guest or account); mint a guest only if the shared
-    store has none. Returns the ``providers.nous`` state, or None (disabled / failed once already).
+    """Make sure this profile has a Moor identity (guest or account); mint a guest only if the shared
+    store has none. Returns the ``providers.moor`` state, or None (disabled / failed once already).
 
     ``explicit`` is required and must be True: the only callers are the boot bootstrap
     (``free_tier_bootstrap.run_bootstrap``), the desktop's ``free_tier.provision`` retry, and the
-    dead-credential replacements (``auth_nous.resolve_nous_runtime_credentials``,
+    dead-credential replacements (``auth_moor.resolve_moor_runtime_credentials``,
     ``managed_tool_gateway._replace_dead_guest_token``). Nothing creates an identity as a side effect
     of reading status, resolving a provider or fetching a connector bearer (NS-845 Q1.2).
 
     Order: ``guest_enabled`` gate -> reconcile with the shared store -> mint. Locks are taken profile
-    first, then shared, matching every other Nous path. ``carries_inference=False`` leaves
+    first, then shared, matching every other Moor path. ``carries_inference=False`` leaves
     ``active_provider`` alone (the identity is for connectors; another provider does inference).
     Blocking, bounded by ``timeout_seconds``; the bootstrap puts it on its own thread.
 
@@ -546,7 +546,7 @@ def ensure_portal_identity(
     if not guest_enabled():
         return None
     failure = _mint_failure_for_profile()
-    if failure and not force and not current_nous_state() and time.monotonic() < failure.not_before:
+    if failure and not force and not current_moor_state() and time.monotonic() < failure.not_before:
         return None  # in cooldown (or terminal) for this profile; do not hammer the portal
     try:
         state = _reconcile_and_provision(
@@ -554,7 +554,7 @@ def ensure_portal_identity(
     except Exception as exc:
         err = classify_mint_exception(exc)
         noted = _note_mint_failure(err)
-        logger.info("Nous free tier not set up (%s, attempt %d%s)", noted.code, noted.attempts,
+        logger.info("Moor free tier not set up (%s, attempt %d%s)", noted.code, noted.attempts,
                     f", next try in {noted.retry_after:.0f}s" if noted.retryable else ", not retried")
         if err is exc:
             raise
@@ -574,8 +574,8 @@ def refresh_guest_state(state: Dict[str, Any], client: httpx.Client) -> None:
     anon_token = state.get("anon_token")
     if not isinstance(anon_token, str) or not anon_token:
         raise AnonCredentialDead(ANON_FAILURE_COPY[ANON_CREDENTIAL_DEAD], code=ANON_CREDENTIAL_DEAD)
-    from hermes_cli.auth import _nous_portal_base_url
-    apply_exchange_to_state(state, exchange_anon_jwt(client, _nous_portal_base_url(state), anon_token))
+    from moor_cli.auth import _moor_portal_base_url
+    apply_exchange_to_state(state, exchange_anon_jwt(client, _moor_portal_base_url(state), anon_token))
 
 
 def clear_dead_guest(reason: str, *, dead_token: Optional[str] = None) -> None:
@@ -585,28 +585,28 @@ def clear_dead_guest(reason: str, *, dead_token: Optional[str] = None) -> None:
     must not erase a sibling profile's newer sign-in or replacement guest from the shared store. When
     *dead_token* is None the profile's current guest is treated as the failed one.
     """
-    from hermes_cli.auth import (
+    from moor_cli.auth import (
         _auth_store_lock, _load_auth_store, _load_provider_state, _save_auth_store, _store_section)
-    from hermes_cli.auth_nous import _clear_shared_nous_state, _nous_shared_store_lock, _read_shared_nous_state
+    from moor_cli.auth_moor import _clear_shared_moor_state, _moor_shared_store_lock, _read_shared_moor_state
     with _auth_store_lock():
         auth_store = _load_auth_store()
-        state = _load_provider_state(auth_store, "nous")
+        state = _load_provider_state(auth_store, "moor")
         if is_guest_state(state):
             token = dead_token or state.get("anon_token")
             if state.get("anon_token") == token:
-                _store_section(auth_store, "providers").pop("nous", None)
-                _store_section(auth_store, "credential_pool").pop("nous", None)
-                if auth_store.get("active_provider") == "nous":
+                _store_section(auth_store, "providers").pop("moor", None)
+                _store_section(auth_store, "credential_pool").pop("moor", None)
+                if auth_store.get("active_provider") == "moor":
                     auth_store["active_provider"] = None
                 _save_auth_store(auth_store)
         else:
             token = dead_token
-        with _nous_shared_store_lock():
-            shared = _read_shared_nous_state()
+        with _moor_shared_store_lock():
+            shared = _read_shared_moor_state()
             if token and is_guest_state(shared) and shared.get("anon_token") == token:
-                _clear_shared_nous_state(reason)
+                _clear_shared_moor_state(reason)
     _clear_mint_failure()
-    logger.info("Nous free-tier identity retired (%s); a new one is set up on next use", reason)
+    logger.info("Moor free-tier identity retired (%s); a new one is set up on next use", reason)
 
 
 # --- Gateway welcome-tier contract: structured refusals and the model-switch header ------------------
@@ -614,11 +614,11 @@ def clear_dead_guest(reason: str, *, dead_token: Optional[str] = None) -> None:
 # The inference gateway answers a welcome-tier request it will not serve with a structured 429
 # (``{status, message, reason, retry_after, alternates?, upgrade_url?}``), and a request on the wrong
 # host with a 400 (or a 403 while the tier is dark) whose message names the right host. A NAMED
-# account that still asks for ``nous/welcome`` is served the id's backing model and told what to
-# switch to in the ``x-nous-model-switch`` response header. Every rule for reading those lives here;
+# account that still asks for ``moor/welcome`` is served the id's backing model and told what to
+# switch to in the ``x-moor-model-switch`` response header. Every rule for reading those lives here;
 # the error classifier and the turn loop only call in.
 
-MODEL_SWITCH_HEADER = "x-nous-model-switch"
+MODEL_SWITCH_HEADER = "x-moor-model-switch"
 # Fairshare refusal reasons the welcome tier can answer with (api ``FairshareRefusalReason``).
 WELCOME_REFUSAL_REASONS = frozenset(
     {"model_not_free", "feature_not_free", "at_capacity", "admission_closed", "rate_limited"})
@@ -627,23 +627,23 @@ WELCOME_TIER_GATE_REASONS = frozenset({"model_not_free", "feature_not_free"})
 # Gateway messages (lowercased substrings) for a request on the wrong host or a dark tier.
 _WELCOME_ROUTE_REFUSALS = (
     ("anonymous accounts must use", "anon_on_paid_host"),
-    ("serves anonymous hermes agent accounts only", "named_on_welcome_host"),
+    ("serves anonymous moor agent accounts only", "named_on_welcome_host"),
     ("anonymous accounts are not accepted", "tier_disabled"),
 )
 _WELCOME_ROUTE_COPY = {
     # Only reachable when the route heal (``turn_recovery._recover_welcome_tier``) could not move
-    # the session: the one cause left is a user-set NOUS_INFERENCE_BASE_URL naming the paid host.
-    "anon_on_paid_host": "This install is set to use a different Nous server (NOUS_INFERENCE_BASE_URL). "
+    # the session: the one cause left is a user-set MOOR_INFERENCE_BASE_URL naming the paid host.
+    "anon_on_paid_host": "This install is set to use a different Moor server (MOOR_INFERENCE_BASE_URL). "
                          "Unset it to use the free model, or sign in. {signin}",
-    "named_on_welcome_host": "This Nous account needs to reconnect. {model_hint}",
-    "tier_disabled": "Using Hermes without signing in is switched off right now. "
+    "named_on_welcome_host": "This Moor account needs to reconnect. {model_hint}",
+    "tier_disabled": "Using Moor without signing in is switched off right now. "
                      "Sign in to keep chatting, it's free. {signin}",
 }
 # The sign-in door, phrased for a chat surface (slash command) and for a terminal.
 _SIGNIN_CHAT = "To sign in: /login."
-_SIGNIN_TERMINAL = "To sign in: `hermes auth upgrade`."
-_MODEL_HINT_CHAT = "Run /model and pick the Nous row again."
-_MODEL_HINT_TERMINAL = "Run `hermes model` and pick the Nous row again."
+_SIGNIN_TERMINAL = "To sign in: `moor auth upgrade`."
+_MODEL_HINT_CHAT = "Run /model and pick the Moor row again."
+_MODEL_HINT_TERMINAL = "Run `moor model` and pick the Moor row again."
 # Terminal copy for a free-model outage once the retries are spent (5xx, transport failure).
 FREE_TIER_OUTAGE_COPY = ("The free model is having trouble responding right now. "
                          "Try sending your message again in a minute.")
@@ -686,7 +686,7 @@ def welcome_refusal_copy(refusal: Dict[str, Any], *, model: str = "", in_chat: b
     wait = friendly_wait(retry) if retry > 0 else "a little while"
     if reason == "model_not_free":
         what = f"{model} isn't" if model else "That model isn't"
-        return (f"{what} available without signing in, so Hermes uses {serves} for now. "
+        return (f"{what} available without signing in, so Moor uses {serves} for now. "
                 f"Sign in for more models. {signin}").rstrip()
     if reason == "feature_not_free":
         return f"That isn't available without signing in. Sign in to use it, it's free. {signin}".rstrip()
@@ -699,7 +699,7 @@ def welcome_refusal_copy(refusal: Dict[str, Any], *, model: str = "", in_chat: b
     if reason == "rate_limited":
         return (f"You've used up the allowance for chatting without signing in. It refreshes in {wait}. "
                 f"Sign in for a bigger allowance, it's free. {signin}").rstrip()
-    return f"Hermes couldn't send that without signing in. Signing in is free. {signin}".rstrip()
+    return f"Moor couldn't send that without signing in. Signing in is free. {signin}".rstrip()
 
 
 def welcome_route_refusal(status: Any, message: Any, base_url: Any = None) -> Optional[str]:
@@ -723,16 +723,16 @@ def welcome_route_refusal(status: Any, message: Any, base_url: Any = None) -> Op
 
 
 def welcome_route_refusal_copy(kind: str, *, in_chat: bool = True, door: bool = True) -> str:
-    template = _WELCOME_ROUTE_COPY.get(kind) or "Hermes couldn't reach the free model on this route."
+    template = _WELCOME_ROUTE_COPY.get(kind) or "Moor couldn't reach the free model on this route."
     return template.format(
-        host=DEFAULT_NOUS_WELCOME_URL, signin=(_SIGNIN_CHAT if in_chat else _SIGNIN_TERMINAL) if door else "",
+        host=DEFAULT_MOOR_WELCOME_URL, signin=(_SIGNIN_CHAT if in_chat else _SIGNIN_TERMINAL) if door else "",
         model_hint=_MODEL_HINT_CHAT if in_chat else _MODEL_HINT_TERMINAL).rstrip()
 
 
 def note_model_switch(agent: Any, headers: Any) -> Optional[str]:
-    """Record the gateway's ``x-nous-model-switch`` header on *agent* for the next call, if present.
+    """Record the gateway's ``x-moor-model-switch`` header on *agent* for the next call, if present.
 
-    The header arrives on a NAMED account's response that asked for ``nous/welcome`` (the gateway
+    The header arrives on a NAMED account's response that asked for ``moor/welcome`` (the gateway
     served the backing model and billed it normally): the free tier's model no longer belongs in
     this install's configuration. Recorded here, applied by :func:`apply_model_switch` between
     calls so a response still streaming is never re-labelled under itself. Returns the backing id.
@@ -753,7 +753,7 @@ def note_model_switch(agent: Any, headers: Any) -> Optional[str]:
     if backing == requested:
         return None
     try:
-        agent._nous_pending_model_switch = (requested, backing)
+        agent._moor_pending_model_switch = (requested, backing)
     except Exception:
         return None
     return backing
@@ -765,13 +765,13 @@ def apply_model_switch(agent: Any) -> Optional[str]:
 
     Runs once per recorded header, between calls. The conversation keeps its history; only the id
     the next request carries changes, so a promoted account stops relying on the gateway's reverse
-    map. The config write is the same one a sign-in completion uses, so ``hermes model`` and the
+    map. The config write is the same one a sign-in completion uses, so ``moor model`` and the
     gateway's config re-read agree with the live session.
     """
-    pending = getattr(agent, "_nous_pending_model_switch", None)
+    pending = getattr(agent, "_moor_pending_model_switch", None)
     if not pending:
         return None
-    agent._nous_pending_model_switch = None
+    agent._moor_pending_model_switch = None
     requested, backing = pending
     if str(getattr(agent, "model", "") or "") != requested:
         return None  # the session already moved (a /model, a sign-in sweep)
@@ -779,16 +779,16 @@ def apply_model_switch(agent: Any) -> Optional[str]:
     # The gateway's cache check compares agent.model with the config default and evicts on a
     # mismatch it did not cause; this pair names the move so the check can recognise exactly this
     # server-driven switch even when the config write below did not land.
-    agent._nous_model_switch = (requested, backing)
-    logger.info("Nous gateway asked to switch %s -> %s; applied for this session", requested, backing)
+    agent._moor_model_switch = (requested, backing)
+    logger.info("Moor gateway asked to switch %s -> %s; applied for this session", requested, backing)
     try:
-        from hermes_cli.config import load_config_readonly
+        from moor_cli.config import load_config_readonly
         raw = load_config_readonly().get("model")
         model_cfg = raw if isinstance(raw, dict) else ({"default": raw} if isinstance(raw, str) else {})
         if str(model_cfg.get("default") or "").strip() == requested:
-            from hermes_cli.auth import _update_config_for_provider
+            from moor_cli.auth import _update_config_for_provider
             _update_config_for_provider(
-                "nous", str(getattr(agent, "base_url", "") or ""), default_model=backing)
+                "moor", str(getattr(agent, "base_url", "") or ""), default_model=backing)
             logger.info("Config default model moved %s -> %s", requested, backing)
     except Exception as exc:
         logger.debug("model switch: config default left as is: %s", exc)
@@ -806,24 +806,24 @@ def apply_model_switch(agent: Any) -> Optional[str]:
 # dies with the identity; a fresh guest (re-mint, new profile) may announce itself once more.
 GUEST_NOTICE_FLAG = "guest_notice_shown"
 FREE_TIER_AVAILABLE_NOTICE = (
-    "Free Nous inference and connectors are now available. "
+    "Free Moor inference and connectors are now available. "
     "/model to try them, /login to sign in.")
 
 
 def guest_notice_pending() -> bool:
     """True when a guest identity exists and the one-time availability notice has not been shown."""
-    state = current_nous_state()
+    state = current_moor_state()
     return is_guest_state(state) and not bool(state.get(GUEST_NOTICE_FLAG))
 
 
 def mark_guest_notice_shown() -> bool:
-    """Persist ``guest_notice_shown`` on the guest's ``providers.nous`` state (whichever store holds it).
+    """Persist ``guest_notice_shown`` on the guest's ``providers.moor`` state (whichever store holds it).
 
     Returns True when a flag was written; False when there is no guest to mark."""
-    from hermes_cli.auth import (
+    from moor_cli.auth import (
         _auth_file_path, _load_auth_store, _provider_state_transaction, _same_path, _save_auth_store,
         _store_section)
-    with _provider_state_transaction("nous") as (auth_store, state, source_path):
+    with _provider_state_transaction("moor") as (auth_store, state, source_path):
         if not is_guest_state(state) or source_path is None:
             return False
         if state.get(GUEST_NOTICE_FLAG):
@@ -831,22 +831,22 @@ def mark_guest_notice_shown() -> bool:
         state = dict(state)
         state[GUEST_NOTICE_FLAG] = True
         if _same_path(source_path, _auth_file_path()):
-            _store_section(auth_store, "providers")["nous"] = state
+            _store_section(auth_store, "providers")["moor"] = state
             _save_auth_store(auth_store)
         else:
             source_store = _load_auth_store(source_path)
-            _store_section(source_store, "providers")["nous"] = state
+            _store_section(source_store, "providers")["moor"] = state
             _save_auth_store(source_store, target_path=source_path)
     return True
 
 
-# --- ``hermes auth upgrade``: sign the guest into a real Nous account, keeping its connectors ---------
+# --- ``moor auth upgrade``: sign the guest into a real Moor account, keeping its connectors ---------
 #
 # Wire: the normal device-code flow, with a promotion intent registered on NAS BETWEEN the code
 # request and the token poll (``POST /api/anonymous/promotion-intent {token, user_code, device_code}``).
 # NAS then transfers the guest's connectors into whichever account approves that device code. We
 # watch ``POST /api/anonymous/promotion-status {claim_code}`` until it leaves ``pending``; only a
-# ``completed`` promotion is followed by the token grant, which ``persist_nous_credentials`` writes
+# ``completed`` promotion is followed by the token grant, which ``persist_moor_credentials`` writes
 # over the guest singleton and the shared store. The server never reports expiry: our own
 # ``expires_in`` clock ends the wait. User-facing copy never says guest / anonymous / claim.
 
@@ -862,7 +862,7 @@ def register_promotion_intent(
         json={"token": anon_token, "user_code": user_code, "device_code": device_code})
     payload = _raise_for_anon_status(response, action="sign-in")
     if not isinstance(payload.get("claim_code"), str) or not payload["claim_code"]:
-        logger.info("Nous free tier sign-in returned no transfer code")
+        logger.info("Moor free tier sign-in returned no transfer code")
         raise _anon_err(ANON_FAILURE_COPY[ANON_SERVER_ERROR], ANON_SERVER_ERROR)
     return payload
 
@@ -941,22 +941,22 @@ def _account_state_from_token(
     token_data: Dict[str, Any], *, portal_base_url: str, client_id: str, scope: Optional[str], verify: Any,
     timeout_seconds: float,
 ) -> Dict[str, Any]:
-    """The ``providers.nous`` shape for the signed-in account (same fields the device-code login writes)."""
-    from hermes_cli.auth import PROVIDER_REGISTRY, _coerce_ttl_seconds, _optional_base_url, _tls_state_from_verify
-    from hermes_cli.auth_nous import _NOUS_EMPTY_AGENT_KEY_FIELDS, _iso_after, refresh_nous_oauth_from_state
+    """The ``providers.moor`` shape for the signed-in account (same fields the device-code login writes)."""
+    from moor_cli.auth import PROVIDER_REGISTRY, _coerce_ttl_seconds, _optional_base_url, _tls_state_from_verify
+    from moor_cli.auth_moor import _MOOR_EMPTY_AGENT_KEY_FIELDS, _iso_after, refresh_moor_oauth_from_state
     now = datetime.now(timezone.utc)
     ttl = _coerce_ttl_seconds(token_data.get("expires_in", 0))
     inference_url = (
         _optional_base_url(token_data.get("inference_base_url"))
-        or PROVIDER_REGISTRY["nous"].inference_base_url.rstrip("/"))
+        or PROVIDER_REGISTRY["moor"].inference_base_url.rstrip("/"))
     state = {
         "portal_base_url": portal_base_url, "inference_base_url": inference_url,
         "client_id": client_id, "scope": token_data.get("scope") or scope,
         "token_type": token_data.get("token_type", "Bearer"),
         "access_token": token_data["access_token"], "refresh_token": token_data.get("refresh_token"),
         "obtained_at": now.isoformat(), "expires_at": _iso_after(now, ttl), "expires_in": ttl,
-        "tls": _tls_state_from_verify(verify), **_NOUS_EMPTY_AGENT_KEY_FIELDS}
-    state = refresh_nous_oauth_from_state(state, timeout_seconds=timeout_seconds, force_refresh=False)
+        "tls": _tls_state_from_verify(verify), **_MOOR_EMPTY_AGENT_KEY_FIELDS}
+    state = refresh_moor_oauth_from_state(state, timeout_seconds=timeout_seconds, force_refresh=False)
     state["auth_method"] = UPGRADED_AUTH_METHOD
     return state
 
@@ -964,21 +964,21 @@ def _account_state_from_token(
 def settle_after_upgrade(account_state: Dict[str, Any]) -> Dict[str, Any]:
     """After a sign-in from the free tier persisted the account: move the config off the free tier's route.
 
-    Picking the free-tier row may have written ``model.default: nous/welcome`` and ``model.base_url``
+    Picking the free-tier row may have written ``model.default: moor/welcome`` and ``model.base_url``
     = welcome host. An account cannot keep either: the welcome host refuses account tokens, and the
-    portal host serves ``nous/welcome`` as a paid model. When the config is on the free tier's route,
+    portal host serves ``moor/welcome`` as a paid model. When the config is on the free tier's route,
     ``model.base_url`` becomes the account's inference host and ``model.default`` the recommended
-    default for the account's tier (:func:`hermes_cli.models.recommended_nous_default_model`, the
-    same pick as ``GET /api/model/recommended-default``), through the same config write a plain Nous
+    default for the account's tier (:func:`moor_cli.models.recommended_moor_default_model`, the
+    same pick as ``GET /api/model/recommended-default``), through the same config write a plain Moor
     login uses. A config on the user's own model and host is left alone.
 
-    Every sign-in completion (CLI ``hermes auth upgrade``, the desktop poller) calls this once, after
-    ``persist_nous_credentials``. Returns ``{"model": str, "changed": bool}``: ``model`` is the default
+    Every sign-in completion (CLI ``moor auth upgrade``, the desktop poller) calls this once, after
+    ``persist_moor_credentials``. Returns ``{"model": str, "changed": bool}``: ``model`` is the default
     the config now carries (``""`` when it carries none); ``changed`` says whether this call wrote it.
     Never raises: a failed pick or write is logged and reported as ``changed: False`` so the sign-in
     itself still counts.
     """
-    from hermes_cli.config import load_config_readonly
+    from moor_cli.config import load_config_readonly
     try:
         raw = load_config_readonly().get("model")
     except Exception as exc:
@@ -992,20 +992,20 @@ def settle_after_upgrade(account_state: Dict[str, Any]) -> Dict[str, Any]:
         return {"model": current, "changed": False}
     model = current
     if on_welcome_model:
-        from hermes_cli.models import recommended_nous_default_model
+        from moor_cli.models import recommended_moor_default_model
         try:
-            model = str(recommended_nous_default_model().get("model") or "")
+            model = str(recommended_moor_default_model().get("model") or "")
         except Exception as exc:
             logger.debug("sign-in completion: recommended default unavailable: %s", exc)
             model = ""
     try:
-        from hermes_cli.auth import _update_config_for_provider
+        from moor_cli.auth import _update_config_for_provider
         # One write: host and default move together, so a failure leaves the config as it was
         # rather than the account host paired with the welcome model. No eligible recommendation
         # (Portal unreachable, or the plan and org policy admit nothing) clears the default in that
-        # same write; the runtime's silent default applies until the user picks one with `hermes model`.
+        # same write; the runtime's silent default applies until the user picks one with `moor model`.
         _update_config_for_provider(
-            "nous", str(account_state.get("inference_base_url") or ""),
+            "moor", str(account_state.get("inference_base_url") or ""),
             default_model=model if on_welcome_model else None,
             clear_default=on_welcome_model and not model)
     except Exception as exc:
@@ -1016,19 +1016,19 @@ def settle_after_upgrade(account_state: Dict[str, Any]) -> Dict[str, Any]:
 
 def _poll_for_token(*args, **kwargs) -> Dict[str, Any]:
     """Keep both the sign-in module seam and the device-flow seam live at call time."""
-    from hermes_cli.auth_device_flow import _poll_for_token as poll
+    from moor_cli.auth_device_flow import _poll_for_token as poll
     return poll(*args, **kwargs)
 
 
-def persist_nous_credentials(*args, **kwargs):
-    """Keep the existing auth_nous persistence seam behind the sign-in entry point."""
-    from hermes_cli.auth_nous import persist_nous_credentials as persist
+def persist_moor_credentials(*args, **kwargs):
+    """Keep the existing auth_moor persistence seam behind the sign-in entry point."""
+    from moor_cli.auth_moor import persist_moor_credentials as persist
     return persist(*args, **kwargs)
 
 
 # Public sign-in imports remain here for existing callers and module-attribute patches.
 # The flow imports this module only inside calls, so either module can be imported first.
-from hermes_cli.anon_sign_in import (  # noqa: E402
+from moor_cli.anon_sign_in import (  # noqa: E402
     AlreadySignedIn as AlreadySignedIn,
     Code as Code,
     Completed as Completed,
@@ -1066,7 +1066,7 @@ from hermes_cli.anon_sign_in import (  # noqa: E402
     format_wait_line as format_wait_line,
     run_sign_in as run_sign_in,
 )
-from hermes_cli.anon_sign_in_cli import (  # noqa: E402
+from moor_cli.anon_sign_in_cli import (  # noqa: E402
     drain_sign_in_copy as drain_sign_in_copy,
     render_sign_in_cli as render_sign_in_cli,
     render_sign_in_cli_code as render_sign_in_cli_code,

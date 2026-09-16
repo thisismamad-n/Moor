@@ -120,7 +120,7 @@ def _append_to_sqlite(session_id: str, message: dict) -> None:
     Raises on failure: ``mirror_to_session`` reports ``False`` (and warns) only when the
     exception reaches it — swallowing it here made every failed write look mirrored (#10130).
     """
-    from hermes_state_registry import acquire, release_or_close
+    from moor_state_registry import acquire, release_or_close
 
     db = acquire()
     try:

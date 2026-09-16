@@ -5,13 +5,13 @@ from __future__ import annotations
 import contextlib
 from typing import Iterator, Optional
 
-from hermes_cli.anon_sign_in import Code, SignInState, UPGRADE_CANCELLED, UPGRADE_START
+from moor_cli.anon_sign_in import Code, SignInState, UPGRADE_CANCELLED, UPGRADE_START
 
 
 def render_sign_in_cli_code(
     state: Code, *, open_browser: bool = False, chat: bool = True, printer=print) -> None:
     """Print the ``Code`` state alone: the link, the code, and the do-not-share line."""
-    from hermes_cli.auth_device_flow import _print_device_code_instructions
+    from moor_cli.auth_device_flow import _print_device_code_instructions
     _print_device_code_instructions(
         state.link, state.code, open_browser=open_browser, swallow_open_errors=True)
     printer(f"  {state.copy_with_wait if chat else state.copy}")
@@ -41,7 +41,7 @@ def render_sign_in_cli(
     ``chat=True`` renders the in-chat wording; *states* lets a caller hand in a partially drained
     :func:`run_sign_in` generator; *printer* lets a caller pin the output target.
     """
-    from hermes_cli import anon_auth as _core
+    from moor_cli import anon_auth as _core
 
     gen = states if states is not None else _core.run_sign_in(timeout_seconds=timeout_seconds)
     started = False
@@ -69,13 +69,13 @@ def render_sign_in_cli(
 
 
 def upgrade_guest(args) -> int:
-    """``hermes auth upgrade``: sign in with a Nous account, transferring the free tier's connectors.
+    """``moor auth upgrade``: sign in with a Moor account, transferring the free tier's connectors.
 
     Returns 0 on success (or when already signed in), 1 otherwise, 130 on Ctrl-C. Never persists
     anything unless the transfer completed AND the token grant succeeded.
     """
-    from hermes_cli import anon_auth as _core
-    from hermes_cli.auth_device_flow import _is_remote_session
+    from moor_cli import anon_auth as _core
+    from moor_cli.auth_device_flow import _is_remote_session
     timeout_seconds = float(getattr(args, "timeout", None) or 15.0)
     open_browser = not getattr(args, "no_browser", False) and not _is_remote_session()
     return _core.render_sign_in_cli(

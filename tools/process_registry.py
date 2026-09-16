@@ -38,16 +38,16 @@ from tools.process_registry_results import load_completed_results, save_complete
 logger = logging.getLogger(__name__)
 
 # Crash-recovery checkpoint (gateway only)
-CHECKPOINT_PATH = get_hermes_home() / "processes.json"
+CHECKPOINT_PATH = get_moor_home() / "processes.json"
 _CHECKPOINT_PATH_AT_IMPORT = CHECKPOINT_PATH
 
 
 def _checkpoint_path() -> Path:
     """Active profile's checkpoint file at call time: the patched ``CHECKPOINT_PATH`` when a test
-    changed it, else live profile-scoped HERMES_HOME — the multiplexed gateway serves every
+    changed it, else live profile-scoped MOOR_HOME — the multiplexed gateway serves every
     profile from one process, so the import-time constant would pin every profile's process
     checkpoint to the launch home."""
-    return CHECKPOINT_PATH if CHECKPOINT_PATH != _CHECKPOINT_PATH_AT_IMPORT else get_hermes_home() / "processes.json"
+    return CHECKPOINT_PATH if CHECKPOINT_PATH != _CHECKPOINT_PATH_AT_IMPORT else get_moor_home() / "processes.json"
 
 MAX_OUTPUT_CHARS = 200_000      # rolling output buffer
 FINISHED_TTL_SECONDS = 1800     # keep finished processes 30 minutes
@@ -885,7 +885,7 @@ class ProcessRegistry(ProcessCheckpointMixin):
         return ProcessSession(
             id=f"proc_{uuid.uuid4().hex[:12]}", command=command, task_id=task_id,
             owner_task_id=owner_task_id or task_id, session_key=session_key, cwd=cwd,
-            parent_session_id=get_session_env("HERMES_SESSION_ID", ""),
+            parent_session_id=get_session_env("MOOR_SESSION_ID", ""),
             started_at=time.time(), **extra)
 
     @staticmethod

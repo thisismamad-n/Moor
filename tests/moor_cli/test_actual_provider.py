@@ -120,7 +120,7 @@ def test_actual_runtime_uses_hosted_default(monkeypatch):
 
 def test_actual_runtime_repairs_stale_responses_mode(monkeypatch, caplog):
     _clear_actual_env(monkeypatch)
-    caplog.set_level(logging.INFO, logger="hermes_cli.auth")
+    caplog.set_level(logging.INFO, logger="moor_cli.auth")
     monkeypatch.setenv("ACTUAL_API_KEY", "actual-test-key")
     monkeypatch.setattr(
         rp,
@@ -160,7 +160,7 @@ def test_actual_runtime_ignores_legacy_mode_environment(monkeypatch):
 
 
 def test_actual_hostname_detection_repairs_custom_responses_route():
-    from hermes_cli.providers import is_actual_route
+    from moor_cli.providers import is_actual_route
 
     base_url = "https://api.actual.inc/v1"
 
@@ -491,7 +491,7 @@ def test_actual_client_tls_default_does_not_override_explicit_config(monkeypatch
 
 
 def test_actual_oneshot_reasoning_override_reaches_agent(monkeypatch):
-    from hermes_cli import oneshot
+    from moor_cli import oneshot
 
     captured = {}
 
@@ -509,9 +509,9 @@ def test_actual_oneshot_reasoning_override_reaches_agent(monkeypatch):
         def close(self):
             return None
 
-    monkeypatch.setattr("hermes_cli.config.load_config", lambda: {})
+    monkeypatch.setattr("moor_cli.config.load_config", lambda: {})
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "moor_cli.runtime_provider.resolve_runtime_provider",
         lambda **_kwargs: {
             "api_key": "actual-test-key",
             "base_url": DEFAULT_ACTUAL_BASE_URL,
@@ -521,7 +521,7 @@ def test_actual_oneshot_reasoning_override_reaches_agent(monkeypatch):
         },
     )
     monkeypatch.setattr(
-        "hermes_cli.mcp_startup.ensure_mcp_discovery_before_agent_build",
+        "moor_cli.mcp_startup.ensure_mcp_discovery_before_agent_build",
         lambda **_kwargs: None,
     )
     monkeypatch.setattr(oneshot, "_create_session_db_for_oneshot", lambda: None)
@@ -542,8 +542,8 @@ def test_actual_oneshot_reasoning_override_reaches_agent(monkeypatch):
 
 
 def test_oneshot_dispatch_forwards_reasoning_override(monkeypatch):
-    from hermes_cli import main as main_mod
-    from hermes_cli import oneshot
+    from moor_cli import main as main_mod
+    from moor_cli import oneshot
 
     captured = {}
 

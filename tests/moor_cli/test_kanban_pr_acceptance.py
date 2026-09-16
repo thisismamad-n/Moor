@@ -7,8 +7,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
 
-from hermes_cli import kanban_db as kb
-from hermes_cli.kanban_db_connect import connect
+from moor_cli import kanban_db as kb
+from moor_cli.kanban_db_connect import connect
 
 
 @pytest.fixture
@@ -65,7 +65,7 @@ def github(tmp_path, monkeypatch):
                   "print(urllib.request.urlopen(u).read().decode())\n")
     gh.chmod(0o755)
     monkeypatch.setenv("PATH", str(shim) + os.pathsep + os.environ["PATH"])
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "home"))
     kb.init_db()
     try:
         yield state

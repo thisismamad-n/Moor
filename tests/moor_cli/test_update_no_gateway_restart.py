@@ -1,4 +1,4 @@
-"""`hermes update --no-gateway-restart` (#93649).
+"""`moor update --no-gateway-restart` (#93649).
 
 A cron running inside the gateway's own cgroup cannot survive the fleet
 restart phase (SIGUSR1 drain + systemd KillMode=mixed kills the updater
@@ -8,8 +8,8 @@ the pending-restart marker is kept so a later normal update catches up.
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from hermes_cli import update_cmd as uc
-from hermes_cli import update_cmd_fleet as fleet
+from moor_cli import update_cmd as uc
+from moor_cli import update_cmd_fleet as fleet
 
 
 def _opts(**overrides):

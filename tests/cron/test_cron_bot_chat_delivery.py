@@ -135,8 +135,8 @@ def test_deliver_runs_canonical_bot_chat_lane():
 
     assert err is None
     argv = calls["argv"]
-    # The running install's interpreter, not whatever `hermes` PATH names (same order as /update).
-    assert argv[:3] == [sys.executable, "-m", "hermes_cli.main"]
+    # The running install's interpreter, not whatever `moor` PATH names (same order as /update).
+    assert argv[:3] == [sys.executable, "-m", "moor_cli.main"]
     assert argv[3:5] == ["-p", "default"]  # do not follow active_profile
     assert "chat" in argv
     assert "Bot Chat" in argv

@@ -1,5 +1,5 @@
-import { skillInvocationText } from '@hermes/shared'
-import { parseCommandDispatch, parseSlashCommand } from '@hermes/shared'
+import { skillInvocationText } from '@moor/shared'
+import { parseCommandDispatch, parseSlashCommand } from '@moor/shared'
 import { type MutableRefObject, useCallback, useRef } from 'react'
 
 import { getProfiles } from '@/moor'

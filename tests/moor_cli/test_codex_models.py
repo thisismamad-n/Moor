@@ -114,7 +114,7 @@ def test_fetch_from_api_keeps_supported_in_api_false_models(monkeypatch):
 
 def test_astra_requires_live_codex_account_discovery(monkeypatch, tmp_path):
     """Cached/configured Astra names must not manufacture current OAuth entitlement."""
-    from hermes_cli import codex_models
+    from moor_cli import codex_models
 
     (tmp_path / "config.toml").write_text('model = "gpt-6-astra"\n', encoding="utf-8")
     (tmp_path / "models_cache.json").write_text(
@@ -279,7 +279,7 @@ def test_catalog_requests_use_ungated_client_version(monkeypatch):
     from urllib.parse import parse_qs, urlparse
 
     from agent import model_metadata
-    from hermes_cli import codex_models
+    from moor_cli import codex_models
 
     seen_urls = []
 

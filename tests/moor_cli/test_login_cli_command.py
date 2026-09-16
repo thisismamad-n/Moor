@@ -6,8 +6,8 @@ from unittest.mock import MagicMock
 import pytest
 from rich.console import Console
 
-from hermes_cli import anon_auth
-from hermes_cli import cli_commands_mixin as commands
+from moor_cli import anon_auth
+from moor_cli import cli_commands_mixin as commands
 
 
 class _Thread:
@@ -135,12 +135,12 @@ def test_the_handler_never_calls_input_and_uses_the_short_timeout(monkeypatch):
 def test_the_in_chat_and_terminal_completion_use_their_own_copy():
     state = anon_auth.Completed(email="", model="", model_changed=True)
     assert "run /model to pick one" in anon_auth.drain_sign_in_copy(iter([state]), chat=True)
-    assert "run `hermes model` to pick one" in anon_auth.drain_sign_in_copy(iter([state]), chat=False)
+    assert "run `moor model` to pick one" in anon_auth.drain_sign_in_copy(iter([state]), chat=False)
 
 
 def test_the_command_resolves_through_the_cli_fallback():
-    from cli import HermesCLI
-    assert HermesCLI._slash_handler("login") == ("_handle_login_command", True)
+    from cli import MoorCLI
+    assert MoorCLI._slash_handler("login") == ("_handle_login_command", True)
 
 
 def test_the_drain_writes_to_the_console_captured_at_start(monkeypatch):
@@ -231,7 +231,7 @@ def test_the_live_tui_drain_prints_through_cprint_instead_of_the_captured_consol
 def test_upgrade_guest_keeps_the_terminal_timeout(monkeypatch):
     seen = []
     monkeypatch.setattr(anon_auth, "render_sign_in_cli", lambda **kwargs: seen.append(kwargs) or 0)
-    monkeypatch.setattr("hermes_cli.auth_device_flow._is_remote_session", lambda: True)
+    monkeypatch.setattr("moor_cli.auth_device_flow._is_remote_session", lambda: True)
 
     assert anon_auth.upgrade_guest(SimpleNamespace(timeout=None, no_browser=False)) == 0
     assert seen[0]["timeout_seconds"] == 15.0
@@ -239,7 +239,7 @@ def test_upgrade_guest_keeps_the_terminal_timeout(monkeypatch):
 
 
 def test_the_terminal_renderer_keeps_the_original_line_sequence(monkeypatch, capsys):
-    monkeypatch.setattr("hermes_cli.auth_device_flow._is_remote_session", lambda: True)
+    monkeypatch.setattr("moor_cli.auth_device_flow._is_remote_session", lambda: True)
     monkeypatch.setattr(anon_auth, "run_sign_in", lambda **_kwargs: iter([
         anon_auth.Code("https://example.test/sign-in", "CODE-1", 900, 5),
         anon_auth.Waiting(),

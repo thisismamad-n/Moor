@@ -41,7 +41,7 @@ def declines_reconfigure(label: str, question: str, *env_vars: str) -> bool:
     Shared by the core wizards and every platform plugin's ``interactive_setup`` so the
     "already configured? Reconfigure? [y/N]" gate has one wording and one default.
     """
-    from hermes_cli.setup import get_env_value, print_info, prompt_yes_no
+    from moor_cli.setup import get_env_value, print_info, prompt_yes_no
     if not any(get_env_value(v) for v in env_vars):
         return False
     print_info(f"{label}: already configured")

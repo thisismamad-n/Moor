@@ -228,7 +228,7 @@ The learning journey is a timeline view of everything Moor has learned — saved
 
 A skill appears on the timeline as soon as it has a learning signal: it was created in this profile (a `/learn` result or a foreground `skill_manage` create), created by the background review, or used at least once. Bundled skills and hand-written skills that have never been used stay out of the timeline.
 
-Beyond viewing, the journey is also where you **prune and correct** what Hermes has learned:
+Beyond viewing, the journey is also where you **prune and correct** what Moor has learned:
 
 | Command | What it does |
 |---------|--------------|

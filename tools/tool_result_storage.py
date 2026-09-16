@@ -58,8 +58,8 @@ def _prune_spillover_once() -> None:
     """Best-effort prune, at most once per process PER PROFILE HOME (CLI-only installs never run
     housekeeping; a multiplexed gateway must sweep every profile's ``cache/spillover``, not just the
     first one that spilled)."""
-    from hermes_constants import hermes_home_key
-    home_key = hermes_home_key()
+    from moor_constants import moor_home_key
+    home_key = moor_home_key()
     with _spillover_prune_lock:
         if home_key in _spillover_pruned_homes:
             return
@@ -84,7 +84,7 @@ def _is_host_side_env(env) -> bool:
 
 
 def _write_to_spillover(content: str, filename: str):
-    """Write host-side to $HERMES_HOME/cache/spillover; returns path str or None.
+    """Write host-side to $MOOR_HOME/cache/spillover; returns path str or None.
 
     The write is size-verified before the caller tells the model "Full output saved":
     a partially-flushed file (quota, ENOSPC race) fails closed to the bounded inline

@@ -411,7 +411,7 @@ def _clone_failure_message(git_url: str, git_error: str) -> str:
     not parsed as markup."""
     from rich.markup import escape
     return (f"Could not download the plugin from {git_url}. Check the address (browse the catalog "
-            "with `hermes plugins search`), check your internet connection, or, if the repository "
+            "with `moor plugins search`), check your internet connection, or, if the repository "
             "is private, sign in first with `gh auth login` (or set GITHUB_TOKEN in your .env).\n"
             f"Details: {escape(git_error.strip())}")
 
@@ -431,9 +431,9 @@ def _unknown_plugin_message(name: str, *, downloaded_only: bool = False) -> str:
     """``No plugin named ...`` with the exact-name rule and the two commands that resolve it."""
     scope = (" This command only works on downloaded plugins; bundled ones can only be enabled or disabled."
              if downloaded_only else " Bundled plugins can only be enabled or disabled.")
-    return (f"[red]No plugin named '{name}'.[/red] Run `hermes plugins list` to see the exact names "
+    return (f"[red]No plugin named '{name}'.[/red] Run `moor plugins list` to see the exact names "
             f"(nested plugins use their full key, e.g. web/firecrawl).{scope} "
-            "To add one: `hermes plugins install <owner/repo>`.")
+            "To add one: `moor plugins install <owner/repo>`.")
 
 
 # ── Install metadata + git plumbing ─────────────────────────────────────────────────────────
@@ -621,7 +621,7 @@ def _probe_readable(path: Path) -> None:
 
 
 def _ensure_tree_readable(root: Path, plugins_dir: Path) -> None:
-    """Refuse to ship a tree Hermes cannot read back. A clone can land unreadable (Windows ACL
+    """Refuse to ship a tree Moor cannot read back. A clone can land unreadable (Windows ACL
     inheritance -> WinError 5, a mode-000 file) and discovery would then skip the plugin forever
     (#111804); repair ``u+rX`` where the OS supports it, otherwise fail before anything moves."""
     paths = [root]
@@ -743,11 +743,11 @@ def cmd_install(
     """Install a plugin from the curated catalog (bare name), a Git URL, or owner/repo shorthand.
 
     A catalog hit installs the reviewed pinned SHA (an explicit ``--ref`` wins) and records provenance in
-    a ``.hermes-catalog.json`` sidecar; URLs/shorthand are flagged as custom (unreviewed) sources. Every
+    a ``.moor-catalog.json`` sidecar; URLs/shorthand are flagged as custom (unreviewed) sources. Every
     install is checked against the catalog kill list unless *allow_removed*.
     *enable* None prompts "Enable now? [y/N]"; True/False skip the prompt.
     """
-    from hermes_cli import plugins_cmd_catalog as catalog
+    from moor_cli import plugins_cmd_catalog as catalog
     console = _console()
     entry = None
     if catalog.looks_like_catalog_name(identifier):
@@ -756,7 +756,7 @@ def cmd_install(
         console.print(f"[bold]{entry.name}[/bold] [cyan]\\[{entry.tier}][/cyan] [dim]pinned @ {entry.sha[:8]}[/dim]")
         console.print(catalog.entry_capability_summary(entry))
     else:
-        console.print("[yellow]Warning:[/yellow] custom (unreviewed) source — not from the Hermes catalog.")
+        console.print("[yellow]Warning:[/yellow] custom (unreviewed) source — not from the Moor catalog.")
     if allow_removed:
         console.print(
             "[bold red]WARNING:[/bold red] [red]--allow-removed set — skipping the catalog kill-list check. "
@@ -846,7 +846,7 @@ def _pull_plugin_update(target: Path, pinned_msg, not_git_msg, before_pull=None)
 def cmd_update(name: str) -> None:
     """Update an installed plugin by pulling latest from its git remote."""
     from rich.markup import escape
-    from hermes_cli import plugins_cmd_catalog as catalog
+    from moor_cli import plugins_cmd_catalog as catalog
     console = _console()
     target = _require_installed_plugin(name, _plugins_dir(), console)
     sidecar = catalog.read_catalog_sidecar(target)
@@ -1383,7 +1383,7 @@ def cmd_list(args: Any | None = None) -> None:
     enabled = _get_enabled_set()
     disabled = _get_disabled_set()
     entries = _filter_plugin_entries(entries, args, enabled, disabled)
-    from hermes_cli import plugins_cmd_catalog as catalog
+    from moor_cli import plugins_cmd_catalog as catalog
     # Source shows catalog provenance (``catalog:<tier>@<sha8>``) or a ``--ref`` pin
     # (``git pinned@<sha8>``) so a team can eyeball that everyone runs the same commit.
     pins = _read_install_metadata()
@@ -1765,16 +1765,16 @@ def dashboard_install_plugin(
     """Non-interactive install for the dashboard/TUI. *catalog_name* installs a curated entry at its
     pinned SHA (identifier may be empty); *ref* pins a custom source to one full commit SHA (same
     contract as ``--ref``); every path enforces the kill list (no GUI bypass)."""
-    from hermes_cli import plugins_cmd_catalog as catalog
+    from moor_cli import plugins_cmd_catalog as catalog
     warnings: list[str] = []
     entry = None
     if catalog_name:
         entry = catalog.get_live_catalog_entry(catalog_name)
         if entry is None:
-            return {"ok": False, "error": f"'{catalog_name}' is not in the Hermes plugin catalog."}
+            return {"ok": False, "error": f"'{catalog_name}' is not in the Moor plugin catalog."}
         identifier = entry.install_identifier
     else:
-        warnings.append("Custom (unreviewed) source — not from the Hermes catalog.")
+        warnings.append("Custom (unreviewed) source — not from the Moor catalog.")
     try:
         git_url = _resolve_git_url(identifier)[0]
         if git_url.startswith(("http://", "file://")):
@@ -1895,8 +1895,8 @@ def _user_installed_plugin_dir(name: str) -> Optional[Path]:
 
 
 def dashboard_update_user_plugin(name: str) -> dict[str, Any]:
-    """``git pull`` inside ``~/.hermes/plugins/<name>``."""
-    from hermes_cli import plugins_cmd_catalog as catalog
+    """``git pull`` inside ``~/.moor/plugins/<name>``."""
+    from moor_cli import plugins_cmd_catalog as catalog
     target = _user_installed_plugin_dir(name)
     if target is None:
         return {"ok": False, "error": f"Plugin '{name}' was not found under {_plugins_dir()}."}
@@ -1943,7 +1943,7 @@ def _run_plugin_git(
     a network verb talks to so a stored user credential for its host is attached (private repos)."""
     env = noninteractive_git_env()
     if auth_url:
-        from hermes_cli.git_credentials import with_git_auth
+        from moor_cli.git_credentials import with_git_auth
         env = with_git_auth(env, auth_url)
     return subprocess.run(
         [git_exe, *args], capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=timeout,
@@ -2070,7 +2070,7 @@ def _tri_state_flag(args, yes_attr: str, no_attr: str) -> Optional[bool]:
 
 
 def _catalog():
-    from hermes_cli import plugins_cmd_catalog
+    from moor_cli import plugins_cmd_catalog
     return plugins_cmd_catalog
 
 

@@ -24,7 +24,7 @@ if TYPE_CHECKING:  # pragma: no cover — runtime import is lazy (see below)
 
 from utils import atomic_json_write, atomic_yaml_write, base_url_host_matches, base_url_hostname
 
-from hermes_constants import OPENROUTER_MODELS_URL, openrouter_variant_base
+from moor_constants import OPENROUTER_MODELS_URL, openrouter_variant_base
 from agent.message_metadata import PERSISTENCE_ONLY_MESSAGE_FIELDS
 
 logger = logging.getLogger(__name__)
@@ -357,7 +357,7 @@ DEFAULT_CONTEXT_LENGTHS = {
     "qwen3-coder-plus": 1000000, "qwen3-coder": 262144, "qwen3-max": 262144, "qwen": 131072,
     # MiniMax — M3 is 1M; M2.x is 204,800. https://platform.minimax.io/docs/api-reference/text-chat-openai
     "minimax-m3": 1000000, "minimax": 204800,
-    # GLM — Nous + OpenRouter /v1/models (2026-09-09): 5.3 / 5.3-flash 1,310,720 (:batch/:US 1,048,576);
+    # GLM — Moor + OpenRouter /v1/models (2026-09-09): 5.3 / 5.3-flash 1,310,720 (:batch/:US 1,048,576);
     # 5.2 1,048,576; 5 / 5.1 / 4.7 / 4.6 204,800; *-turbo / 4.7-flash 202,752 (the catch-all).
     # The OpenRouter :free variant is capped; the longer key wins.
     "glm-5.3": 1_310_720, "glm-5.3-flash": 1_310_720, "glm-5.3:batch": 1_048_576, "glm-5.3:us": 1_048_576,
@@ -492,7 +492,7 @@ def _strip_openrouter_routing_variant(
 
     Only the id used for LOOKUP is rewritten. The suffixed id the caller holds
     stays on the wire, so the routing opt-in is preserved — the same rule
-    :func:`hermes_cli.models.validate_requested_model` applies. Sharing the
+    :func:`moor_cli.models.validate_requested_model` applies. Sharing the
     base's cache key is intentional: the window is identical, so a variant and
     its base must never disagree.
 
@@ -1238,7 +1238,7 @@ def parse_available_output_tokens_from_error(error_msg: str) -> Optional[int]:
 
 
 # Each entry is a phrase group; the group matches when ALL phrases are present.
-# DashScope, Anthropic (available_tokens / "maximum allowed number of output tokens"), OpenRouter/Nous,
+# DashScope, Anthropic (available_tokens / "maximum allowed number of output tokens"), OpenRouter/Moor,
 # LM Studio/llama.cpp, generic "should be <= N", OpenAI-compat relays.
 _OUTPUT_CAP_SIGNALS = (
     ("range of max_tokens should be",), ("available_tokens",), ("available tokens",),
@@ -1998,7 +1998,7 @@ def get_model_context_length(
     # a user who pinned the fully-suffixed id keeps winning, and BEFORE every
     # cache/catalog lookup below so the base's real window is found instead of
     # a generic family default. Mirrors the validation path's base/suffix split
-    # in hermes_cli.models.validate_requested_model.
+    # in moor_cli.models.validate_requested_model.
     model = _strip_openrouter_routing_variant(model, base_url=base_url, provider=provider)
     # Endpoint-scoped metadata goes AHEAD of the persistent cache so a value learned on a
     # multiplexed provider's other endpoint cannot override it.

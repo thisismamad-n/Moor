@@ -18,8 +18,8 @@ Outputs (both under website/static/api/, CDN-served at /docs/api/):
 - ``plugins.json``        — list of catalog entries for the page (camelCase)
 - ``plugins-meta.json``   — counts by tier + generatedAt + removedCount
 - ``plugin-catalog.json`` — ``{"entries": [raw YAML mappings], "removed": [...]}`` in the loader's own
-  schema; installed Hermes clients fetch this for live catalog refresh
-  (``hermes_cli.plugin_catalog.LIVE_CATALOG_URL``) so new entries and removals reach them without
+  schema; installed Moor clients fetch this for live catalog refresh
+  (``moor_cli.plugin_catalog.LIVE_CATALOG_URL``) so new entries and removals reach them without
   updating. Emitting it here means the docs deploy IS the publish step — no second pipeline.
 """
 
@@ -141,11 +141,11 @@ def load_catalog_entries(catalog_dir: Path, stars: dict[str, int] | None = None)
             "category": category,
             "maintainer": str(raw.get("maintainer") or "").strip(),
             "subdir": str(raw.get("subdir") or "").strip(),
-            "requiresHermes": str(raw.get("requires_hermes") or "").strip(),
+            "requiresMoor": str(raw.get("requires_moor") or "").strip(),
             "platforms": _str_list(raw.get("platforms")),
             "capabilities": _normalize_capabilities(raw.get("capabilities")),
             "docsUrl": str(raw.get("docs_url") or "").strip(),
-            "installCommand": f"hermes plugins install {name}",
+            "installCommand": f"moor plugins install {name}",
             "stars": _repo_stars(repo, stars),
         })
 

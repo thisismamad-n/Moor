@@ -1,5 +1,5 @@
 import { capabilityScoped } from '@/api/client'
-import { addMcpServer, getMcpCatalog, listMcpServers, removeMcpServer } from '@/hermes'
+import { addMcpServer, getMcpCatalog, listMcpServers, removeMcpServer } from '@/moor'
 import { translateNow } from '@/i18n'
 import { completeMcpDesktopOAuth, McpOAuthCancelled } from '@/lib/mcp-dashboard-oauth'
 import { prettyName } from '@/lib/text'

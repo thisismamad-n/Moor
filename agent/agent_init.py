@@ -36,11 +36,11 @@ from agent.think_scrubber import StreamingThinkScrubber
 from agent.tool_guardrails import (
     ToolCallGuardrailConfig, ToolCallGuardrailController
 )
-from hermes_cli.config import cfg_get
-from hermes_cli.route_identity import normalize_route_base_url
-from hermes_cli.timeouts import get_provider_request_timeout
-from hermes_constants import get_hermes_home
-from hermes_state_ids import new_session_id
+from moor_cli.config import cfg_get
+from moor_cli.route_identity import normalize_route_base_url
+from moor_cli.timeouts import get_provider_request_timeout
+from moor_constants import get_moor_home
+from moor_state_ids import new_session_id
 from utils import base_url_host_matches, is_truthy_value
 
 # Same logger name as run_agent so caplog/patches on "run_agent" see our records.
@@ -372,7 +372,7 @@ _EXPLICIT_API_MODES = {
 
 def _resolve_api_mode(agent, api_mode, provider_name, base_url):
     """Set ``agent.api_mode`` (and provider rewrites) — ordered ladder, first match wins."""
-    from hermes_cli.providers import is_actual_route
+    from moor_cli.providers import is_actual_route
     host, url = agent._base_url_hostname, agent._base_url_lower
     if is_actual_route(agent.provider, base_url):
         agent.api_mode = "chat_completions"
@@ -419,7 +419,7 @@ def _resolve_api_mode(agent, api_mode, provider_name, base_url):
 
 
 def _finalize_routing(agent, api_mode, credential_pool):
-    from hermes_cli.providers import is_actual_route
+    from moor_cli.providers import is_actual_route
     # Credential-pool validation runs AFTER provider auto-detection so a pool scoped to
     # "anthropic" isn't rejected for provider=None + anthropic.com URL.
     # Regression from #63048 which placed this check before the URL-based auto-detection block above (fixed
@@ -457,9 +457,9 @@ def _finalize_routing(agent, api_mode, credential_pool):
         if agent.provider not in _AGGREGATOR_PROVIDERS:
             agent.model = normalize_model_for_provider(agent.model, agent.provider)
 
-    # Nous model policy follows the ROUTE (the welcome host serves one model); a credential-pool
+    # Moor model policy follows the ROUTE (the welcome host serves one model); a credential-pool
     # swap can change the route later, so ``_swap_credential`` applies the same helper again.
-    from hermes_cli.anon_auth import pin_model_for_route
+    from moor_cli.anon_auth import pin_model_for_route
     agent.model = pin_model_for_route(agent.provider, agent.base_url, agent.model)
 
     # Auto-upgrade to Responses for GPT-5.x-style models and direct OpenAI URLs, unless
@@ -832,8 +832,8 @@ def _routed_client_kwargs(agent, fallback_model, _provider_timeout) -> Dict[str,
     _routed_client, _ = resolve_provider_client(
         agent.provider or "auto", model=agent.model, raw_codex=True)
     if _routed_client is not None:
-        from hermes_cli.providers import is_actual_route, normalize_provider
-        effective_provider = getattr(_routed_client, "_hermes_aux_effective_provider", "")
+        from moor_cli.providers import is_actual_route, normalize_provider
+        effective_provider = getattr(_routed_client, "_moor_aux_effective_provider", "")
         if is_actual_route(effective_provider):
             agent.provider = normalize_provider(effective_provider)
         return _client_kwargs_from_routed(_routed_client, _provider_timeout)
@@ -919,7 +919,7 @@ def _init_openai_client(agent, api_key, base_url, fallback_model, _provider_time
         client_kwargs = _explicit_client_kwargs(agent, api_key, base_url, _provider_timeout)
     else:
         client_kwargs = _routed_client_kwargs(agent, fallback_model, _provider_timeout)
-    from hermes_cli.providers import is_actual_route
+    from moor_cli.providers import is_actual_route
     if is_actual_route(agent.provider, client_kwargs.get("base_url", "")):
         agent.api_mode = "chat_completions"
         if hasattr(agent, "_transport_cache"):
@@ -2248,9 +2248,9 @@ def init_agent(
     agent.skip_background_review = bool(skip_background_review)
     agent.log_prefix = f"{log_prefix} " if log_prefix else ""
     # Effective base URL for feature detection (prompt caching, reasoning, etc.)
-    from hermes_cli.providers import is_actual_route
+    from moor_cli.providers import is_actual_route
     if is_actual_route(provider, base_url):
-        from hermes_cli.auth import normalize_actual_base_url
+        from moor_cli.auth import normalize_actual_base_url
         base_url = normalize_actual_base_url(base_url)
     agent.base_url = base_url or ""
     provider_name = provider.strip().lower() if isinstance(provider, str) and provider.strip() else None

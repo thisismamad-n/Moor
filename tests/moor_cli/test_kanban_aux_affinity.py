@@ -12,8 +12,8 @@ from unittest.mock import patch
 
 import pytest
 
-from hermes_cli import kanban_decompose as decompose
-from hermes_cli import kanban_specify as specify
+from moor_cli import kanban_decompose as decompose
+from moor_cli import kanban_specify as specify
 
 
 def _capturing_call_llm(seen: list):
@@ -52,7 +52,7 @@ def test_in_turn_caller_keeps_its_declared_affinity_key():
 
 
 def _dashboard_plugin_api():
-    mod_name = "hermes_dashboard_plugin_kanban_aux_affinity_test"
+    mod_name = "moor_dashboard_plugin_kanban_aux_affinity_test"
     if mod_name not in sys.modules:
         plugin_file = Path(__file__).resolve().parents[2] / "plugins" / "kanban" / "dashboard" / "plugin_api.py"
         spec = importlib.util.spec_from_file_location(mod_name, plugin_file)

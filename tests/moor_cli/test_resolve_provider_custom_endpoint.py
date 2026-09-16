@@ -4,7 +4,7 @@ Regression for #108383: ``resolve_provider("auto")`` recognised only registry pr
 ``model.provider``, so the boot inventory (``free_tier_bootstrap``) read a llama.cpp / vLLM /
 ollama install as "nothing configured" and ``setup.status`` reported ``provider_configured:
 False`` — the dashboard's Ink chat parked every new session on "Setup Required" while
-``hermes chat`` (which resolves the runtime directly) worked against the same config.
+``moor chat`` (which resolves the runtime directly) worked against the same config.
 """
 
 from __future__ import annotations
@@ -14,16 +14,16 @@ import pytest
 
 @pytest.fixture
 def isolated_home(tmp_path, monkeypatch):
-    home = tmp_path / "hermes"
+    home = tmp_path / "moor"
     home.mkdir()
     (home / ".env").write_text("", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.delenv("HERMES_GUEST_ONBOARDING", raising=False)
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.delenv("MOOR_GUEST_ONBOARDING", raising=False)
     for var in ("OPENAI_API_KEY", "OPENROUTER_API_KEY", "ANTHROPIC_API_KEY", "OPENAI_BASE_URL",
-                "OPENROUTER_BASE_URL", "HERMES_INFERENCE_PROVIDER", "NOUS_API_KEY"):
+                "OPENROUTER_BASE_URL", "MOOR_INFERENCE_PROVIDER", "NOUS_API_KEY"):
         monkeypatch.delenv(var, raising=False)
     monkeypatch.setattr("agent.bedrock_adapter.has_aws_credentials", lambda: False)
-    from hermes_cli import free_tier_bootstrap as fb
+    from moor_cli import free_tier_bootstrap as fb
     fb.reset_for_tests()
     return home
 
@@ -48,8 +48,8 @@ def isolated_home(tmp_path, monkeypatch):
 )
 def test_configured_custom_endpoint_resolves_as_a_provider(isolated_home, model_block):
     (isolated_home / "config.yaml").write_text(model_block, encoding="utf-8")
-    from hermes_cli.auth import resolve_provider
-    from hermes_cli.free_tier_bootstrap import run_bootstrap
+    from moor_cli.auth import resolve_provider
+    from moor_cli.free_tier_bootstrap import run_bootstrap
 
     assert resolve_provider("auto") == "custom"
     record = run_bootstrap(announce=False)
@@ -66,8 +66,8 @@ def test_stale_remote_base_url_without_a_custom_pin_is_not_a_provider(isolated_h
         "model:\n  default: some/model\n  provider: openrouter\n  base_url: https://api.z.ai/v1\n",
         encoding="utf-8",
     )
-    from hermes_cli.auth import AuthError, resolve_provider
-    from hermes_cli.free_tier_bootstrap import run_bootstrap
+    from moor_cli.auth import AuthError, resolve_provider
+    from moor_cli.free_tier_bootstrap import run_bootstrap
 
     with pytest.raises(AuthError):
         resolve_provider("auto")
@@ -80,8 +80,8 @@ def test_auto_provider_with_loopback_base_url_resolves_without_recursing(isolate
         "model:\n  provider: auto\n  base_url: http://127.0.0.1:8000/v1\n",
         encoding="utf-8",
     )
-    from hermes_cli import runtime_provider
-    from hermes_cli.auth import resolve_provider
+    from moor_cli import runtime_provider
+    from moor_cli.auth import resolve_provider
 
     def unexpected_provider_resolution(_name):
         raise AssertionError("the bare custom trust check must not resolve model.provider=auto")

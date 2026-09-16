@@ -8,7 +8,7 @@ import pytest
 
 @pytest.mark.no_isolate
 def test_reconcile_tears_down_server_dropped_from_config(monkeypatch, tmp_path):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     from tools import mcp_tool
     from tools import mcp_tool_config as _config
     from tools import mcp_tool_discovery as disc
@@ -52,7 +52,7 @@ def test_reconcile_tears_down_server_dropped_from_config(monkeypatch, tmp_path):
 def test_disabled_lazy_and_connecting_entries(monkeypatch, tmp_path):
     """``enabled: false`` counts as dropped; a schema-cache (lazy) registration loses its cached
     tools; a server still mid-connect is reported ``pending`` (torn down on a later pass)."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     from tools import mcp_tool
     from tools import mcp_tool_config as _config
     from tools import mcp_tool_discovery as disc

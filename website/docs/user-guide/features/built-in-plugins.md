@@ -208,9 +208,9 @@ NeMo Relay is no longer a bundled Moor plugin. Do not run `moor plugins enable o
 
 To opt into Relay middleware or exporters, create a standard Relay `plugins.toml`, then set `MOOR_NEMO_RELAY_PLUGINS_TOML` to that file before starting Moor. The policy is process-wide for every profile hosted by that Moor process. See the [NeMo Relay observability configuration](https://docs.nvidia.com/nemo/relay/configure-plugins/observability/about) for ATOF, ATIF, and OpenTelemetry options.
 
-The old `HERMES_NEMO_RELAY_ATOF_*` and `HERMES_NEMO_RELAY_ATIF_*` settings no longer activate exporters — a `.env` that still carries them (and no `HERMES_NEMO_RELAY_PLUGINS_TOML`) exports **nothing**, and the gateway logs one warning saying so. `hermes doctor` reports these stale settings when no replacement `plugins.toml` is selected.
+The old `MOOR_NEMO_RELAY_ATOF_*` and `MOOR_NEMO_RELAY_ATIF_*` settings no longer activate exporters — a `.env` that still carries them (and no `MOOR_NEMO_RELAY_PLUGINS_TOML`) exports **nothing**, and the gateway logs one warning saying so. `moor doctor` reports these stale settings when no replacement `plugins.toml` is selected.
 
-**Automatic migration.** `hermes update` (and `hermes migrate relay`, or `hermes migrate relay --all-profiles` for every profile home) converts the legacy variables into `<hermes home>/relay-plugins.toml`, sets `HERMES_NEMO_RELAY_PLUGINS_TOML` in that profile's `.env`, and comments the legacy lines out (nothing is deleted). Under a multiplexed gateway every profile home gets its own file. The generated file is validated through Relay before it is written; this is the shape it produces (note the `type = "file"` sink discriminator — a sink without it is rejected):
+**Automatic migration.** `moor update` (and `moor migrate relay`, or `moor migrate relay --all-profiles` for every profile home) converts the legacy variables into `<moor home>/relay-plugins.toml`, sets `MOOR_NEMO_RELAY_PLUGINS_TOML` in that profile's `.env`, and comments the legacy lines out (nothing is deleted). Under a multiplexed gateway every profile home gets its own file. The generated file is validated through Relay before it is written; this is the shape it produces (note the `type = "file"` sink discriminator — a sink without it is rejected):
 
 ```toml
 version = 1
@@ -228,15 +228,15 @@ enabled = true
 
 [[components.config.atof.sinks]]
 type = "file"
-output_directory = "/home/you/.hermes/telemetry/nemo-relay/atof"
-filename = "hermes-atof.jsonl"
+output_directory = "/home/you/.moor/telemetry/nemo-relay/atof"
+filename = "moor-atof.jsonl"
 mode = "append"
 
 [components.config.atif]
 enabled = true
-agent_name = "Hermes Agent"
+agent_name = "Moor Agent"
 model_name = "unknown"
-output_directory = "/home/you/.hermes/telemetry/nemo-relay/atif"
+output_directory = "/home/you/.moor/telemetry/nemo-relay/atif"
 filename_template = "trajectory-{session_id}.json"
 
 [components.config.policy]
@@ -245,7 +245,7 @@ unknown_field = "warn"
 unsupported_value = "error"
 ```
 
-Then add `HERMES_NEMO_RELAY_PLUGINS_TOML=/home/you/.hermes/relay-plugins.toml` to `.env` and restart the gateway.
+Then add `MOOR_NEMO_RELAY_PLUGINS_TOML=/home/you/.moor/relay-plugins.toml` to `.env` and restart the gateway.
 
 #### Session-span segmentation (continuous sessions)
 

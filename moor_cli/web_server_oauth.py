@@ -271,11 +271,11 @@ def _record_sign_in_state(sess: Dict[str, Any], state: Any) -> None:
         sess["error_message"] = state.copy
 
 
-@_oauth_poller("nous")
-def _nous_promotion_poller(session_id: str, sess: Dict[str, Any]) -> None:
+@_oauth_poller("moor")
+def _moor_promotion_poller(session_id: str, sess: Dict[str, Any]) -> None:
     """Drain the sign-in the start route began: one shared flow, rendered onto the session.
 
-    The generator was created and advanced to its ``Code`` state by ``_start_nous_device_code``, so
+    The generator was created and advanced to its ``Code`` state by ``_start_moor_device_code``, so
     it is already holding the transfer's codes and its HTTP client. Nothing here is wrapped in
     ``_profile_scope``: that context manager holds a process-global lock and swaps module
     attributes across its ``yield``, and this loop can last the sign-in code's whole expiry. The
@@ -292,16 +292,16 @@ def _nous_promotion_poller(session_id: str, sess: Dict[str, Any]) -> None:
             gen.close()     # unwinds the suspended HTTP client if we leave early
 
 
-@_oauth_poller("nous")
-def _nous_plain_poller(session_id: str, sess: Dict[str, Any]) -> None:
-    """Background poller for a plain Nous device-code login (no free-tier identity to transfer).
+@_oauth_poller("moor")
+def _moor_plain_poller(session_id: str, sess: Dict[str, Any]) -> None:
+    """Background poller for a plain Moor device-code login (no free-tier identity to transfer).
 
     A sign-in that carries the free tier's connectors runs through ``anon_auth.run_sign_in`` and
-    ``_nous_promotion_poller`` instead; this is the "connect another Nous account" path.
+    ``_moor_promotion_poller`` instead; this is the "connect another Moor account" path.
     """
-    from hermes_cli.web_server_profiles import _profile_scope
-    from hermes_cli.auth import _poll_for_token, persist_nous_credentials, refresh_nous_oauth_from_state
-    from hermes_cli import anon_auth
+    from moor_cli.web_server_profiles import _profile_scope
+    from moor_cli.auth import _poll_for_token, persist_moor_credentials, refresh_moor_oauth_from_state
+    from moor_cli import anon_auth
     import httpx
     portal_base_url, client_id = sess["portal_base_url"], sess["client_id"]
 
@@ -322,7 +322,7 @@ def _nous_plain_poller(session_id: str, sess: Dict[str, Any]) -> None:
         )
     if _cancelled():
         return
-    # Same post-processing as _nous_device_code_login (validate/refresh JWT)
+    # Same post-processing as _moor_device_code_login (validate/refresh JWT)
     now = datetime.now(timezone.utc)
     token_ttl = int(token_data.get("expires_in") or 0)
     auth_state = {
@@ -341,14 +341,14 @@ def _nous_plain_poller(session_id: str, sess: Dict[str, Any]) -> None:
         "expires_in": token_ttl,
     }
     with _profile_scope(_oauth_session_profile(session_id)):
-        full_state = refresh_nous_oauth_from_state(auth_state, timeout_seconds=15.0, force_refresh=False)
+        full_state = refresh_moor_oauth_from_state(auth_state, timeout_seconds=15.0, force_refresh=False)
         # The final cancellation check and the save share the session lock, so a cancel cannot
         # land between them.
         with _oauth_sessions_lock:
             if sess.get("cancelled"):
                 sess["status"] = "cancelled"
                 return
-            persist_nous_credentials(full_state)
+            persist_moor_credentials(full_state)
         # A config left on the free tier's route by a retired identity still has to move.
         settled = anon_auth.settle_after_upgrade(full_state)
     with _oauth_sessions_lock:

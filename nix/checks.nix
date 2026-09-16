@@ -825,12 +825,12 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
             configOf = settings: (evalNixosModule ({ enable = true; } // settings)).config;
 
             managed = configOf { };
-            gateway = managed.systemd.services.hermes-agent;
+            gateway = managed.systemd.services.moor-agent;
             gatewayUser = gateway.serviceConfig.User;
 
             # The operator declares the user themselves. Nothing here knows
             # whether they lingered it, so nothing may assume a bus.
-            unmanaged = (configOf { createUser = false; }).systemd.services.hermes-agent;
+            unmanaged = (configOf { createUser = false; }).systemd.services.moor-agent;
 
             failures =
               lib.optional (!((managed.users.users.${gatewayUser}.linger or false) == true))
@@ -842,7 +842,7 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
               ++ lib.optional (lib.hasInfix "/run/user" unmanaged.preStart)
                 "a gateway whose uid is not known to linger must not block on a user bus that may never arrive";
           in
-          pkgs.runCommand "hermes-cron-worker-user-scope" { } (
+          pkgs.runCommand "moor-cron-worker-user-scope" { } (
             if failures != [ ] then
               throw "cron worker user scope check failed:\n${lib.concatMapStringsSep "\n" (f: "  - ${f}") failures}"
             else

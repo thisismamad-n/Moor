@@ -67,13 +67,13 @@ merged local branches still accumulate on busy machines. Reclaim them
 explicitly:
 
 ```bash
-hermes worktree list              # audit: age, size, verdict, reason per tree
-hermes worktree list --json       # machine-readable audit (trees, external trees, branches)
-hermes worktree prune             # remove safe trees + delete merged branches
-hermes worktree prune --dry-run   # show the plan without changing anything
-hermes worktree prune --older-than 7   # only reap trees idle for 7+ days
-hermes worktree prune --trees-only     # leave local branches alone
-hermes worktree prune --branches-only  # leave worktrees alone
+moor worktree list              # audit: age, size, verdict, reason per tree
+moor worktree list --json       # machine-readable audit (trees, external trees, branches)
+moor worktree prune             # remove safe trees + delete merged branches
+moor worktree prune --dry-run   # show the plan without changing anything
+moor worktree prune --older-than 7   # only reap trees idle for 7+ days
+moor worktree prune --trees-only     # leave local branches alone
+moor worktree prune --branches-only  # leave worktrees alone
 ```
 
 Worktrees registered **outside** `.worktrees/` (created by hand or by another
@@ -216,7 +216,7 @@ Start a line with `!` to run it as a shell command instead of sending it to the 
 ```
 > !git status
 > !ls -la
-> !pytest -x tests/hermes_cli
+> !pytest -x tests/moor_cli
 ```
 
 - **Zero cost.** The model is never invoked — no API call, no tokens, no latency.
@@ -299,13 +299,13 @@ To have the same skills active at the start of **every** new session — CLI, TU
 ```yaml
 skills:
   auto_load:
-    - hermes-agent-dev
+    - moor-agent-dev
     - github-pr-workflow
 ```
 
 Each entry is a skill name. The list is resolved once when a session's system prompt is first built and the rendered bytes are reused for the life of the conversation (model switches, compression), so prompt caching stays intact; config edits take effect in the next session. Missing or disabled skills log a warning and are skipped. `-s` names that overlap the list are loaded once.
 
-`--ignore-rules` (equivalently `HERMES_IGNORE_RULES=1`) skips auto-load together with AGENTS.md, SOUL.md, `.cursorrules` and memory injection; explicit `-s` skills still load. The setting is profile-scoped: each profile's `config.yaml` controls its own list.
+`--ignore-rules` (equivalently `MOOR_IGNORE_RULES=1`) skips auto-load together with AGENTS.md, SOUL.md, `.cursorrules` and memory injection; explicit `-s` skills still load. The setting is profile-scoped: each profile's `config.yaml` controls its own list.
 
 ## Skill Slash Commands
 
@@ -558,7 +558,7 @@ Each `/bg` prompt spawns a **completely separate agent session** in a daemon thr
 When a background task finishes, the result appears as a panel in your terminal:
 
 ```
-╭─ ☤ Hermes (background #1) ──────────────────────────────────╮
+╭─ ☤ Moor (background #1) ──────────────────────────────────╮
 │ Found 3 errors in syslog from today:                         │
 │ 1. OOM killer invoked at 03:22 — killed process nginx        │
 │ 2. Disk I/O error on /dev/sda1 at 07:15                      │

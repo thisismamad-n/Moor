@@ -52,7 +52,7 @@ _TRACE_STATE: Dict[str, TraceState] = {}
 # Bounds the leak, not concurrency.
 _MAX_TRACE_STATE = 256
 _LANGFUSE_CLIENT = None
-# Under a multiplexed profile override, one settled client (or _INIT_FAILED) per Hermes home: the
+# Under a multiplexed profile override, one settled client (or _INIT_FAILED) per Moor home: the
 # keys live in each profile's .env, so a single slot would trace profile B into profile A's project
 # (or pin B to A's failed init). The slot above stays for the unscoped single-profile path.
 _LANGFUSE_CLIENT_BY_HOME: Dict[str, Any] = {}
@@ -197,24 +197,24 @@ def _validate_langfuse_key(env_name: str, value: str) -> Optional[str]:
 def _settled_client() -> Any:
     """The active profile's settled client slot value (client, ``_INIT_FAILED`` or ``None`` = never
     built). Never initializes."""
-    from hermes_constants import get_hermes_home_override, hermes_home_key
+    from moor_constants import get_moor_home_override, moor_home_key
 
-    if get_hermes_home_override() is None:
+    if get_moor_home_override() is None:
         return _LANGFUSE_CLIENT
-    return _LANGFUSE_CLIENT_BY_HOME.get(hermes_home_key())
+    return _LANGFUSE_CLIENT_BY_HOME.get(moor_home_key())
 
 
 def _settle_client() -> Any:
     """Build once and store for the active profile. Caller holds ``_LANGFUSE_CLIENT_LOCK``."""
     global _LANGFUSE_CLIENT
-    from hermes_constants import get_hermes_home_override, hermes_home_key
+    from moor_constants import get_moor_home_override, moor_home_key
 
     client = _build_client()
     settled = _INIT_FAILED if client is None else client
-    if get_hermes_home_override() is None:
+    if get_moor_home_override() is None:
         _LANGFUSE_CLIENT = settled
     else:
-        _LANGFUSE_CLIENT_BY_HOME[hermes_home_key()] = settled
+        _LANGFUSE_CLIENT_BY_HOME[moor_home_key()] = settled
     if client is not None:
         # atexit is LIFO: registering AFTER the SDK's constructor means our
         # finalizer runs first, so root spans ended there still get flushed
@@ -248,7 +248,7 @@ def _build_client() -> Optional[Langfuse]:
         )
         return None
 
-    public_key, secret_key = (_secret(f"HERMES_LANGFUSE_{n}") or _secret(f"LANGFUSE_{n}") for n in ("PUBLIC_KEY", "SECRET_KEY"))
+    public_key, secret_key = (_secret(f"MOOR_LANGFUSE_{n}") or _secret(f"LANGFUSE_{n}") for n in ("PUBLIC_KEY", "SECRET_KEY"))
     if not (public_key and secret_key):
         return None
 
@@ -271,10 +271,10 @@ def _build_client() -> Optional[Langfuse]:
     kwargs: Dict[str, Any] = {"public_key": public_key, "secret_key": secret_key}
     for key, name, default in (("base_url", "BASE_URL", "https://cloud.langfuse.com"), ("environment", "ENV", ""),
                                ("release", "RELEASE", "")):
-        value = _secret(f"HERMES_LANGFUSE_{name}") or _secret(f"LANGFUSE_{name}") or default
+        value = _secret(f"MOOR_LANGFUSE_{name}") or _secret(f"LANGFUSE_{name}") or default
         if value:
             kwargs[key] = value
-    sample_rate = _secret("HERMES_LANGFUSE_SAMPLE_RATE")
+    sample_rate = _secret("MOOR_LANGFUSE_SAMPLE_RATE")
     if sample_rate:
         try:
             kwargs["sample_rate"] = float(sample_rate)

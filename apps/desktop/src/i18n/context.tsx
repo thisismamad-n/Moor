@@ -1,4 +1,4 @@
-import { applyDocumentLocale, isRecord } from '@hermes/shared/i18n'
+import { applyDocumentLocale, isRecord } from '@moor/shared/i18n'
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 
 import { getMoorConfigRecord, type MoorConfigRecord, saveMoorConfig } from '@/moor'
@@ -29,18 +29,18 @@ const defaultConfigClient: I18nConfigClient = {
 
     // Merged defaults make an unset language indistinguishable from saved English.
     // Older backends ignore the option and keep returning English as before.
-    return getHermesConfigRecord(undefined, { includeDefaults: false })
+    return getMoorConfigRecord(undefined, { includeDefaults: false })
   },
   saveConfig: config => {
     if (typeof window === 'undefined' || !window.moorDesktop?.api) {
       return Promise.resolve({ ok: true })
     }
 
-    return saveHermesConfig(config, undefined, { preserveLanguage: true })
+    return saveMoorConfig(config, undefined, { preserveLanguage: true })
   }
 }
 
-export function getConfigDisplayLanguage(config: HermesConfigRecord): unknown {
+export function getConfigDisplayLanguage(config: MoorConfigRecord): unknown {
   return isRecord(config.display) ? config.display.language : undefined
 }
 
@@ -144,7 +144,7 @@ export function I18nProvider({ children, configClient = defaultConfigClient, ini
 
           // Keep inference unsaved so OS language changes apply on the next boot
           // until the user explicitly picks a language.
-          const machineProfile = await window.hermesDesktop?.getMachineProfile?.().catch(() => null)
+          const machineProfile = await window.moorDesktop?.getMachineProfile?.().catch(() => null)
 
           if (!cancelled && !userLocaleRef.current) {
             setLocaleState(resolveInitialLocale(undefined, machineProfile?.locale))

@@ -245,7 +245,7 @@ class CLIStatusBarMixin:
         try:
             _fields = self._get_status_bar_field_set()
             if _fields is not None and "git_branch" in _fields:
-                from hermes_cli.status_bar_git import current_git_branch
+                from moor_cli.status_bar_git import current_git_branch
 
                 snapshot["git_branch"] = current_git_branch()
         except Exception:
@@ -1118,7 +1118,7 @@ class CLIStatusBarMixin:
                 text = (" · " if width < 76 else " │ ").join(parts)
             return self._right_align_status_title(text, session_title, width)
         except Exception:
-            return f"☤ {self.model if getattr(self, 'model', None) else 'Hermes'}"
+            return f"☤ {self.model if getattr(self, 'model', None) else 'Moor'}"
 
     def _get_status_bar_fragments(self):
         if (

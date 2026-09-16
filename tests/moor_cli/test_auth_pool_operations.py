@@ -8,8 +8,8 @@ from urllib.parse import parse_qs
 
 import pytest
 
-from hermes_cli import auth_commands
-from hermes_cli.auth import read_credential_pool, write_credential_pool
+from moor_cli import auth_commands
+from moor_cli.auth import read_credential_pool, write_credential_pool
 
 
 @pytest.fixture(autouse=True)
@@ -17,7 +17,7 @@ def isolated_external_auth_stores(tmp_path, monkeypatch):
     from pathlib import Path
 
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(tmp_path / "shared"))
+    monkeypatch.setenv("MOOR_SHARED_AUTH_DIR", str(tmp_path / "shared"))
 
 
 def _rows():
@@ -31,7 +31,7 @@ def _rows():
 
 @pytest.mark.parametrize("status", [200, 503, 401])
 def test_refresh_uses_target_grant_and_preserves_sibling(monkeypatch, status):
-    from hermes_cli import auth_codex
+    from moor_cli import auth_codex
     requests = []
 
     class Endpoint(BaseHTTPRequestHandler):
@@ -86,15 +86,15 @@ def test_refresh_uses_target_grant_and_preserves_sibling(monkeypatch, status):
 def test_add_priority_places_reauthenticated_row_in_multi_entry_pool(monkeypatch):
     rows = _rows()
     rows[1]["source"] = "device_code"
-    write_credential_pool("nous", rows)
-    monkeypatch.setattr(auth_commands.auth_mod, "_read_shared_nous_state", lambda: None)
-    monkeypatch.setattr(auth_commands.auth_mod, "_nous_device_code_login", lambda **_kwargs: {
+    write_credential_pool("moor", rows)
+    monkeypatch.setattr(auth_commands.auth_mod, "_read_shared_moor_state", lambda: None)
+    monkeypatch.setattr(auth_commands.auth_mod, "_moor_device_code_login", lambda **_kwargs: {
         "access_token": "fixture-renewed", "refresh_token": "fixture-renewed-refresh",
         "agent_key": "fixture-agent-key", "expires_at": time.time() + 3600,
     })
     auth_commands.auth_add_command(SimpleNamespace(
-        provider="nous", auth_type="oauth", priority=0, label="reauthenticated"))
-    entries = read_credential_pool("nous")
+        provider="moor", auth_type="oauth", priority=0, label="reauthenticated"))
+    entries = read_credential_pool("moor")
     assert [e["id"] for e in entries] == ["row1", "row0"]
     assert entries[0]["priority"] == 0
 
@@ -110,9 +110,9 @@ def test_refresh_rejects_ambiguous_and_non_oauth_targets():
     write_credential_pool("openrouter", rows[:1])
     with pytest.raises(SystemExit, match="not a refreshable"):
         auth_commands.auth_refresh_command(SimpleNamespace(provider="openrouter", target=None))
-    # Nous's resolver refreshes only its singleton, never an independent pool grant.
-    write_credential_pool("nous", _rows())
-    before = read_credential_pool("nous")
+    # Moor's resolver refreshes only its singleton, never an independent pool grant.
+    write_credential_pool("moor", _rows())
+    before = read_credential_pool("moor")
     with pytest.raises(SystemExit, match="not a refreshable"):
-        auth_commands.auth_refresh_command(SimpleNamespace(provider="nous", target="row0"))
-    assert read_credential_pool("nous") == before
+        auth_commands.auth_refresh_command(SimpleNamespace(provider="moor", target="row0"))
+    assert read_credential_pool("moor") == before

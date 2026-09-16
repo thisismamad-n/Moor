@@ -1,6 +1,6 @@
-"""``hermes gateway restart`` must hand an externally-supervised gateway back to its supervisor.
+"""``moor gateway restart`` must hand an externally-supervised gateway back to its supervisor.
 
-A custom launchd agent (a plist/label outside the canonical ``ai.hermes.gateway`` path, so
+A custom launchd agent (a plist/label outside the canonical ``ai.moor.gateway`` path, so
 ``_installed_service_kind_for`` returns None) fell through to the manual stop + foreground
 ``run_gateway`` fallback. The foreground run stamps the restart CLI's own PID into gateway.pid,
 and every KeepAlive respawn of ``gateway run --external-supervisor`` then refuses with
@@ -12,11 +12,11 @@ from types import SimpleNamespace
 import pytest
 
 from gateway import status as gateway_status
-from hermes_cli import gateway as gw
-from hermes_cli import gateway_supervised_restart as supervised
+from moor_cli import gateway as gw
+from moor_cli import gateway_supervised_restart as supervised
 
 SUPERVISED_ARGV = [
-    "/usr/bin/python", "-m", "hermes_cli.main", "gateway", "run", "--external-supervisor",
+    "/usr/bin/python", "-m", "moor_cli.main", "gateway", "run", "--external-supervisor",
 ]
 
 
@@ -93,7 +93,7 @@ def test_handback_failure_never_takes_ownership(restart_calls, sigusr1_returns, 
 
 
 def test_plain_manual_gateway_still_uses_stop_and_run(restart_calls, monkeypatch):
-    monkeypatch.setattr(gw, "_capture_gateway_argv", lambda pid: ["/usr/bin/python", "-m", "hermes_cli.main", "gateway", "run"])
+    monkeypatch.setattr(gw, "_capture_gateway_argv", lambda pid: ["/usr/bin/python", "-m", "moor_cli.main", "gateway", "run"])
     _run_restart()
     assert restart_calls["sigusr1"] is None, "no supervisor marker: the detached fallback is the restart"
     assert restart_calls["started"], "a plain manually-run gateway must still be restarted in-process"

@@ -49,11 +49,11 @@ def test_wal_probe_unknown_never_emits_set_pragma(monkeypatch, tmp_path, caplog)
     and ``require_wal=True`` must raise instead of reporting an unverified "wal"."""
     import logging
 
-    from hermes_state_wal import WalUnsupportedError, apply_wal_with_fallback
+    from moor_state_wal import WalUnsupportedError, apply_wal_with_fallback
 
     _configure_mode(monkeypatch, tmp_path, "wal")
     _disable_vulnerable_gate(monkeypatch)
-    hermes_state_wal._wal_probe_unknown_paths.clear()
+    moor_state_wal._wal_probe_unknown_paths.clear()
 
     class _SpyConnection(sqlite3.Connection):
         def __init__(self, *args, **kwargs):
@@ -69,10 +69,10 @@ def test_wal_probe_unknown_never_emits_set_pragma(monkeypatch, tmp_path, caplog)
     sibling = sqlite3.connect(str(db_path))
     try:
         assert sibling.execute("PRAGMA journal_mode=WAL").fetchone()[0].lower() == "wal"
-        monkeypatch.setattr("hermes_state_wal._on_disk_journal_mode", lambda _conn: None)
+        monkeypatch.setattr("moor_state_wal._on_disk_journal_mode", lambda _conn: None)
         conn = sqlite3.connect(str(db_path), factory=_SpyConnection)
         try:
-            with caplog.at_level(logging.WARNING, logger="hermes_state_wal"):
+            with caplog.at_level(logging.WARNING, logger="moor_state_wal"):
                 assert apply_wal_with_fallback(conn, db_label="probe-unknown.db") == "wal"
             assert conn.pragmas == []  # nothing touched while ownership is unproven
             assert sibling.execute("PRAGMA journal_mode").fetchone()[0].lower() == "wal"

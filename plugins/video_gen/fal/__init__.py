@@ -279,10 +279,10 @@ def _submit_fal_video_request(endpoint: str, arguments: Dict[str, Any]):
             billing = _managed_fal_billing_error(exc, "endpoint")
             if billing is not None:
                 raise ValueError(
-                    f"Nous Subscription gateway rejected endpoint '{endpoint}' (HTTP {status}): {billing}") from exc
-            raise ValueError(f"Nous Subscription gateway rejected endpoint '{endpoint}' (HTTP {status}). This model may not yet be enabled "
-                             f"on the Nous Portal's FAL proxy. Either:\n  • Set FAL_KEY in your environment to use FAL.ai directly, or\n"
-                             f"  • Pick a different model via `hermes tools` → Video Generation.") from exc
+                    f"Moor Subscription gateway rejected endpoint '{endpoint}' (HTTP {status}): {billing}") from exc
+            raise ValueError(f"Moor Subscription gateway rejected endpoint '{endpoint}' (HTTP {status}). This model may not yet be enabled "
+                             f"on the Moor Portal's FAL proxy. Either:\n  • Set FAL_KEY in your environment to use FAL.ai directly, or\n"
+                             f"  • Pick a different model via `moor tools` → Video Generation.") from exc
         raise
 
 

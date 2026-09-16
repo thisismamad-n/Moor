@@ -134,7 +134,7 @@ Prompt caches are keyed to the model (and on most providers, the account) servin
 :::info Per-Turn, Not Per-Session
 Fallback is **turn-scoped**: each new user message starts with the primary model restored. If the primary fails mid-turn, fallback activates for that turn only. On the next message, Moor tries the primary again. Within a single turn, fallback activates at most once — if the fallback also fails, normal error handling takes over (retries, then error message). This prevents cascading failover loops within a turn while giving the primary model a fresh chance every turn.
 
-The per-turn retry is **reset-aware**: when the primary's credentials report a rate-limit reset time that hasn't elapsed yet (subscription windows like Claude Pro/Max's 5-hour blocks or Codex weekly limits report these as hours or days), Hermes skips the doomed retry and stays on the fallback until the reset passes — avoiding two pointless provider switches (and two prompt-cache invalidations) per turn. Expiry makes the primary eligible for a later retry; it does not schedule a retry or guarantee recovery. Transient 429s without a reset time use an exponential cooldown.
+The per-turn retry is **reset-aware**: when the primary's credentials report a rate-limit reset time that hasn't elapsed yet (subscription windows like Claude Pro/Max's 5-hour blocks or Codex weekly limits report these as hours or days), Moor skips the doomed retry and stays on the fallback until the reset passes — avoiding two pointless provider switches (and two prompt-cache invalidations) per turn. Expiry makes the primary eligible for a later retry; it does not schedule a retry or guarantee recovery. Transient 429s without a reset time use an exponential cooldown.
 
 When a switch arms that cooldown, the fallback notice includes its approximate remaining duration, for example: `Primary retry eligible in ~60 s; recovery is not guaranteed.` Non-rate-limit switches and switches from an already-active cross-provider fallback do not announce a new primary cooldown.
 :::
@@ -214,7 +214,7 @@ Moor uses separate lightweight models for side tasks. Each task has its own prov
 
 ### Auto-Detection Chain
 
-When a task's provider is set to `"auto"` (the default), Hermes first tries the main provider + main model for that auxiliary task. If that route is unavailable or later fails with a capacity-style error, Hermes follows your configured fallback policy and then stops:
+When a task's provider is set to `"auto"` (the default), Moor first tries the main provider + main model for that auxiliary task. If that route is unavailable or later fails with a capacity-style error, Moor follows your configured fallback policy and then stops:
 
 ```text
 Main provider + main model → auxiliary.<task>.fallback_chain →
@@ -239,7 +239,7 @@ Main provider (if vision-capable) → OpenRouter → Moor Portal →
 Codex OAuth → Anthropic → Custom endpoint → give up
 ```
 
-Those built-in chains run **only when no main provider is selected** (`model.provider: auto` or unset). Once you have picked a main provider, an unavailable main route with no `fallback_chain` / `fallback_providers` skips the auxiliary task with a warning instead of guessing another provider you happen to be logged into — an expired xAI or Codex session must never bill your Nous Portal or OpenRouter balance behind your back. Declare a fallback if you want one.
+Those built-in chains run **only when no main provider is selected** (`model.provider: auto` or unset). Once you have picked a main provider, an unavailable main route with no `fallback_chain` / `fallback_providers` skips the auxiliary task with a warning instead of guessing another provider you happen to be logged into — an expired xAI or Codex session must never bill your Moor Portal or OpenRouter balance behind your back. Declare a fallback if you want one.
 
 ### Configuring Auxiliary Providers
 

@@ -1,6 +1,6 @@
 """The plugin-compat layer tells plugin authors where a name went, once, and internal code never trips it.
 
-Kept alongside the compat layer (tests/hermes_cli/test_compat_manifest_targets.py); both are deleted with it.
+Kept alongside the compat layer (tests/moor_cli/test_compat_manifest_targets.py); both are deleted with it.
 """
 import importlib
 import json

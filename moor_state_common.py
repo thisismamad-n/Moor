@@ -33,16 +33,16 @@ def routed_sessions_setting(key: str, env_var: str) -> Any:
     """``sessions.<key>`` for the profile whose state.db this process is touching.
 
     ``gateway/run.py`` bridges the LAUNCH profile's ``sessions.*`` into ``env_var`` (the cross-process
-    carrier CLI/cron children read). Under a multiplexer a routed turn runs with a HERMES_HOME override
+    carrier CLI/cron children read). Under a multiplexer a routed turn runs with a MOOR_HOME override
     and that env slot holds the default profile's value, so a served profile with different
     ``sessions.*`` settings must read its own config.yaml. Unscoped: the env bridge, as before.
     Returns ``None`` when neither source sets the key.
     """
-    from hermes_constants import get_hermes_home_override
+    from moor_constants import get_moor_home_override
 
-    if get_hermes_home_override():
+    if get_moor_home_override():
         try:
-            from hermes_cli.config import load_config_readonly
+            from moor_cli.config import load_config_readonly
             return (load_config_readonly().get("sessions") or {}).get(key)
         except Exception:
             return None
@@ -159,7 +159,7 @@ _COMPRESSION_CHILD_SQL = ("EXISTS (SELECT 1 FROM sessions p        WHERE p.id = 
 _RESET_END_REASONS = ("session_reset", "session_switch", "idle", "daily", "suspended", "resume_pending_expired")
 _RESET_END_REASONS_SQL = ", ".join(f"'{reason}'" for reason in _RESET_END_REASONS)
 # Deliberate conversation boundaries: the reset set plus CLI /new, which ends the predecessor as
-# 'new_session' (hermes_cli/cli_session_mixin.py) without a reset child row.  A compression rotation must
+# 'new_session' (moor_cli/cli_session_mixin.py) without a reset child row.  A compression rotation must
 # never heal one of these (#106459); tools/session_search_tool.py derives its fresh-reset set from it.
 _BOUNDARY_END_REASONS = frozenset(_RESET_END_REASONS) | {"new_session"}
 

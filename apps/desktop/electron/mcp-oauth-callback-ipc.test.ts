@@ -63,9 +63,9 @@ test('wait relays the RFC 9207 iss parameter from the redirect', async () => {
   // mcp 2.x rejects an authorization response omitting `iss` when the server
   // advertised `authorization_response_iss_parameter_supported` (Cloudflare,
   // Resend), so the listener must not drop it.
-  const { id, redirectUri } = (await invoke('hermes:mcp-oauth:listen')) as { id: string; redirectUri: string }
+  const { id, redirectUri } = (await invoke('moor:mcp-oauth:listen')) as { id: string; redirectUri: string }
 
-  const waitPromise = invoke('hermes:mcp-oauth:wait', id, 5000) as Promise<{
+  const waitPromise = invoke('moor:mcp-oauth:wait', id, 5000) as Promise<{
     code: null | string
     iss: null | string
     state: null | string
@@ -81,9 +81,9 @@ test('wait relays the RFC 9207 iss parameter from the redirect', async () => {
 
 test('a redirect without iss reports it as null rather than undefined', async () => {
   // Providers that do not advertise RFC 9207 keep working unchanged.
-  const { id, redirectUri } = (await invoke('hermes:mcp-oauth:listen')) as { id: string; redirectUri: string }
+  const { id, redirectUri } = (await invoke('moor:mcp-oauth:listen')) as { id: string; redirectUri: string }
 
-  const waitPromise = invoke('hermes:mcp-oauth:wait', id, 5000) as Promise<{ iss: null | string }>
+  const waitPromise = invoke('moor:mcp-oauth:wait', id, 5000) as Promise<{ iss: null | string }>
 
   await fetch(`${redirectUri}?code=abc123&state=st-1`)
 

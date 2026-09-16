@@ -16,7 +16,7 @@ vi.mock('@/moor', async importActual => ({
 }))
 
 const desktopPluginsRoot = vi.fn<() => Promise<string>>()
-const readDir = vi.fn<(path: string) => Promise<HermesReadDirResult>>()
+const readDir = vi.fn<(path: string) => Promise<MoorReadDirResult>>()
 const readFileText = vi.fn<(path: string) => Promise<{ text: string; truncated?: boolean }>>()
 const readPluginSource = vi.fn<(path: string) => Promise<{ text: string; truncated?: boolean }>>()
 const watchDirectory = vi.fn<(path: string) => Promise<{ id: string }>>()
@@ -35,7 +35,7 @@ beforeEach(() => {
   stopPreviewFileWatch.mockResolvedValue(true)
   onPreviewFileChanged.mockReset()
   getStatus.mockClear()
-  ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = {
+  ;(window as unknown as { moorDesktop: unknown }).moorDesktop = {
     desktopPluginsRoot,
     onPreviewFileChanged,
     readDir,
@@ -51,18 +51,18 @@ afterEach(() => {
 })
 
 describe('scanDiskPlugins (#66899)', () => {
-  it('scans the Electron-resolved local roots, never the backend hermes_home', async () => {
-    desktopPluginsRoot.mockResolvedValue('/local/.hermes/desktop-plugins')
+  it('scans the Electron-resolved local roots, never the backend moor_home', async () => {
+    desktopPluginsRoot.mockResolvedValue('/local/.moor/desktop-plugins')
     readDir.mockResolvedValue({ entries: [] })
 
     await discoverRuntimePlugins()
 
     expect(desktopPluginsRoot).toHaveBeenCalled()
-    expect(readDir).toHaveBeenCalledWith('/local/.hermes/desktop-plugins')
+    expect(readDir).toHaveBeenCalledWith('/local/.moor/desktop-plugins')
     // Unified halves are COPIED into the app root by Electron; the renderer
     // never scans the (profile-shaped) agent-plugins root itself.
-    expect(readDir).not.toHaveBeenCalledWith('/local/.hermes/plugins')
-    // The remote backend's hermes_home must never feed the local plugin scan.
+    expect(readDir).not.toHaveBeenCalledWith('/local/.moor/plugins')
+    // The remote backend's moor_home must never feed the local plugin scan.
     expect(getStatus).not.toHaveBeenCalled()
     expect(readDir).not.toHaveBeenCalledWith('/remote/box/.moor/desktop-plugins')
   })
@@ -76,18 +76,18 @@ describe('scanDiskPlugins (#66899)', () => {
   })
 
   it('treats a folder without plugin.js as metadata, not a throwing file read', async () => {
-    desktopPluginsRoot.mockResolvedValue('/local/.hermes/desktop-plugins')
+    desktopPluginsRoot.mockResolvedValue('/local/.moor/desktop-plugins')
     readDir.mockImplementation(async dir => {
-      if (dir === '/local/.hermes/desktop-plugins') {
+      if (dir === '/local/.moor/desktop-plugins') {
         return {
-          entries: [{ isDirectory: true, name: 'my-feature', path: '/local/.hermes/desktop-plugins/my-feature' }]
+          entries: [{ isDirectory: true, name: 'my-feature', path: '/local/.moor/desktop-plugins/my-feature' }]
         }
       }
 
-      if (dir === '/local/.hermes/desktop-plugins/my-feature') {
+      if (dir === '/local/.moor/desktop-plugins/my-feature') {
         return {
           entries: [
-            { isDirectory: false, name: 'README.md', path: '/local/.hermes/desktop-plugins/my-feature/README.md' }
+            { isDirectory: false, name: 'README.md', path: '/local/.moor/desktop-plugins/my-feature/README.md' }
           ]
         }
       }
@@ -97,12 +97,12 @@ describe('scanDiskPlugins (#66899)', () => {
 
     await discoverRuntimePlugins()
 
-    expect(readDir).toHaveBeenCalledWith('/local/.hermes/desktop-plugins/my-feature')
+    expect(readDir).toHaveBeenCalledWith('/local/.moor/desktop-plugins/my-feature')
     expect(readFileText).not.toHaveBeenCalled()
   })
 
   it('a DIRECTORY named plugin.js is not a plugin entry (metadata walk rejects it)', async () => {
-    desktopPluginsRoot.mockResolvedValue('/local/.hermes/desktop-plugins')
+    desktopPluginsRoot.mockResolvedValue('/local/.moor/desktop-plugins')
     readDir.mockImplementation(async dir => {
       if (dir === '/local/.moor/desktop-plugins') {
         return { entries: [{ isDirectory: true, name: 'odd', path: '/local/.moor/desktop-plugins/odd' }] }
@@ -125,9 +125,9 @@ describe('scanDiskPlugins (#66899)', () => {
   })
 
   it('loads a unified desktop half (app-root copy + package marker) OPT-IN and tags it with its package', async () => {
-    desktopPluginsRoot.mockResolvedValue('/local/.hermes/desktop-plugins')
+    desktopPluginsRoot.mockResolvedValue('/local/.moor/desktop-plugins')
     let desktopEntryPresent = true
-    const root = '/local/.hermes/desktop-plugins'
+    const root = '/local/.moor/desktop-plugins'
 
     readDir.mockImplementation(async dir => {
       if (dir === root) {
@@ -137,7 +137,7 @@ describe('scanDiskPlugins (#66899)', () => {
       if (dir === `${root}/uni`) {
         return {
           entries: [
-            { isDirectory: false, name: '.hermes-package.json', path: `${root}/uni/.hermes-package.json` },
+            { isDirectory: false, name: '.moor-package.json', path: `${root}/uni/.moor-package.json` },
             { isDirectory: false, name: 'plugin.js', path: `${root}/uni/plugin.js` }
           ]
         }
@@ -150,7 +150,7 @@ describe('scanDiskPlugins (#66899)', () => {
 
     ;(globalThis as unknown as { __uniRegister: unknown }).__uniRegister = register
     readFileText.mockImplementation(async file =>
-      file.endsWith('.hermes-package.json')
+      file.endsWith('.moor-package.json')
         ? { text: JSON.stringify({ package: 'uni-pkg', source: '/x/plugins/uni-pkg/desktop', sourceMtimeMs: 1 }) }
         : { text: 'export default { id: "uni", register: globalThis.__uniRegister }' }
     )
@@ -207,8 +207,8 @@ describe('scanDiskPlugins (#66899)', () => {
 })
 
 describe('watchRuntimePlugins dir watch (#66899)', () => {
-  it('watches the Electron-resolved app root, never the backend hermes_home', async () => {
-    desktopPluginsRoot.mockResolvedValue('/local/.hermes/desktop-plugins')
+  it('watches the Electron-resolved app root, never the backend moor_home', async () => {
+    desktopPluginsRoot.mockResolvedValue('/local/.moor/desktop-plugins')
     readDir.mockResolvedValue({ entries: [] })
     watchDirectory.mockResolvedValue({ id: 'watch-1' })
 
@@ -216,8 +216,8 @@ describe('watchRuntimePlugins dir watch (#66899)', () => {
     // Drain the async scan + startDirWatches chains.
     await vi.waitFor(() => expect(watchDirectory).toHaveBeenCalledTimes(1))
 
-    expect(watchDirectory).toHaveBeenCalledWith('/local/.hermes/desktop-plugins')
-    expect(watchDirectory).not.toHaveBeenCalledWith('/remote/box/.hermes/desktop-plugins')
+    expect(watchDirectory).toHaveBeenCalledWith('/local/.moor/desktop-plugins')
+    expect(watchDirectory).not.toHaveBeenCalledWith('/remote/box/.moor/desktop-plugins')
     expect(getStatus).not.toHaveBeenCalled()
   })
 })
@@ -269,8 +269,8 @@ describe('plugin source reads (512 KiB preview-cap bug)', () => {
   }
 
   it('loads the full source via readPluginSource when the shell offers it', async () => {
-    ;(window.hermesDesktop as unknown as { readPluginSource: unknown }).readPluginSource = readPluginSource
-    desktopPluginsRoot.mockResolvedValue('/local/.hermes/desktop-plugins')
+    ;(window.moorDesktop as unknown as { readPluginSource: unknown }).readPluginSource = readPluginSource
+    desktopPluginsRoot.mockResolvedValue('/local/.moor/desktop-plugins')
     standaloneRootWith('big')
     // The preview read would truncate this source — it must never be used.
     readFileText.mockResolvedValue({ text: '// first 512 KiB only', truncated: true })
@@ -299,7 +299,7 @@ describe('plugin source reads (512 KiB preview-cap bug)', () => {
   })
 
   it('older shell without readPluginSource: a truncated preview read fails LOUDLY, never evaluates', async () => {
-    desktopPluginsRoot.mockResolvedValue('/local/.hermes/desktop-plugins')
+    desktopPluginsRoot.mockResolvedValue('/local/.moor/desktop-plugins')
     standaloneRootWith('huge')
     // 512 KiB window of a larger file — parses fine, but is NOT the plugin.
     readFileText.mockResolvedValue({
@@ -326,7 +326,7 @@ describe('plugin source reads (512 KiB preview-cap bug)', () => {
   })
 
   it('older shell, small plugin (not truncated): still loads through readFileText', async () => {
-    desktopPluginsRoot.mockResolvedValue('/local/.hermes/desktop-plugins')
+    desktopPluginsRoot.mockResolvedValue('/local/.moor/desktop-plugins')
     standaloneRootWith('small')
 
     const register = vi.fn()

@@ -19,8 +19,8 @@ def build_plugins_parser(subparsers, *, cmd_plugins: Callable) -> None:
         "install", help="Install a plugin from the curated catalog, a Git URL, or owner/repo")
     plugins_install.add_argument(
         "identifier",
-        help="Bare plugin catalog entry name (see `hermes plugins search`), Git URL, or owner/repo "
-            "shorthand (e.g. anpicasso/hermes-plugin-chrome-profiles)")
+        help="Bare plugin catalog entry name (see `moor plugins search`), Git URL, or owner/repo "
+            "shorthand (e.g. anpicasso/moor-plugin-chrome-profiles)")
     plugins_install.add_argument(
         "--force", "-f", action="store_true", help="Remove existing plugin and reinstall")
     plugins_install.add_argument(
@@ -39,7 +39,7 @@ def build_plugins_parser(subparsers, *, cmd_plugins: Callable) -> None:
     )
 
     plugins_search = plugins_subparsers.add_parser(
-        "search", help="Search the curated Hermes plugin catalog")
+        "search", help="Search the curated Moor plugin catalog")
     plugins_search.add_argument(
         "term", nargs="?", default="",
         help="Query matched against entry names, descriptions and declared tools (omit to list the whole catalog)")

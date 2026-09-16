@@ -14,7 +14,7 @@ const { hostMock, pluginCtx } = vi.hoisted(() => ({
   pluginCtx: { current: null as null | { i18n?: { t: (key: string, ...args: unknown[]) => string } } }
 }))
 
-vi.mock('@hermes/plugin-sdk', () => ({
+vi.mock('@moor/plugin-sdk', () => ({
   BOT_CHAT_SESSION_HYDRATION_TIMEOUT_MS: 15_000,
   host: hostMock,
   usePluginI18n: () => (key: string) => key
@@ -73,7 +73,7 @@ describe('notifyBotOpenFailure', () => {
 
     const toast = lastToast()
     expect(toast.kind).toBe('error')
-    expect(toast.title).toBe('This bot lives on an older Hermes')
+    expect(toast.title).toBe('This bot lives on an older Moor')
     expect(toast.message).toBe('Update Studio Mac, then try again.')
     expect(toast.message).not.toContain(raw)
     expect(toast.detail).toBe(raw)
@@ -93,7 +93,7 @@ describe('notifyBotOpenFailure', () => {
 
     const toast = lastToast()
     expect(toast.kind).toBe('error')
-    expect(toast.title).toBe('Hermes couldn’t reach the computer this bot runs on')
+    expect(toast.title).toBe('Moor couldn’t reach the computer this bot runs on')
     expect(toast.message).toBe('Check it is online and try again.')
     expect(toast.message).not.toContain(raw)
     expect(toast.detail).toBe(raw)

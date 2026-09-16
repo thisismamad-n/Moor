@@ -336,9 +336,9 @@ class TestLoadGatewayConfig:
     def test_stale_multiplex_allowlist_key_is_ignored(self, tmp_path, monkeypatch):
         # The removed ``multiplex_profile_allowlist`` key may linger in an un-migrated
         # config.yaml; it must not break loading or the multiplex flag.
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text(
+        moor_home = tmp_path / ".moor"
+        moor_home.mkdir()
+        (moor_home / "config.yaml").write_text(
             "gateway:\n"
             "  multiplex_profiles: true\n"
             "  multiplex_profile_allowlist:\n"
@@ -851,10 +851,10 @@ class TestLoadGatewayConfig:
         from gateway.authz_mixin import GatewayAuthorizationMixin
         from gateway.session import SessionSource
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text(yaml_text, encoding="utf-8")
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        moor_home = tmp_path / ".moor"
+        moor_home.mkdir()
+        (moor_home / "config.yaml").write_text(yaml_text, encoding="utf-8")
+        monkeypatch.setenv("MOOR_HOME", str(moor_home))
         monkeypatch.delenv("GATEWAY_ALLOW_ALL_USERS", raising=False)
 
         runner = object.__new__(GatewayAuthorizationMixin)
@@ -872,10 +872,10 @@ class TestLoadGatewayConfig:
         from gateway.authz_mixin import GatewayAuthorizationMixin
         from gateway.session import SessionSource
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text(yaml_text, encoding="utf-8")
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        moor_home = tmp_path / ".moor"
+        moor_home.mkdir()
+        (moor_home / "config.yaml").write_text(yaml_text, encoding="utf-8")
+        monkeypatch.setenv("MOOR_HOME", str(moor_home))
         if env is None:
             monkeypatch.delenv("GATEWAY_ALLOW_ALL_USERS", raising=False)
         else:
@@ -893,19 +893,19 @@ class TestLoadGatewayConfig:
         and the restart/dashboard child envs never carry the bridged value (a sticky env var would make
         the restarted gateway ignore the flipped config and stay open)."""
         from gateway.run_shutdown import GatewayShutdownMixin
-        from hermes_cli.web_server_gateway import _profile_action_environment
+        from moor_cli.web_server_gateway import _profile_action_environment
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text("gateway:\n  allow_all_users: true\n", encoding="utf-8")
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        moor_home = tmp_path / ".moor"
+        moor_home.mkdir()
+        (moor_home / "config.yaml").write_text("gateway:\n  allow_all_users: true\n", encoding="utf-8")
+        monkeypatch.setenv("MOOR_HOME", str(moor_home))
         monkeypatch.delenv("GATEWAY_ALLOW_ALL_USERS", raising=False)
         load_gateway_config()
         assert os.environ.get("GATEWAY_ALLOW_ALL_USERS") == "true"
         assert "GATEWAY_ALLOW_ALL_USERS" not in GatewayShutdownMixin._restart_watcher_env()
         assert "GATEWAY_ALLOW_ALL_USERS" not in _profile_action_environment(["gateway", "restart"])
 
-        (hermes_home / "config.yaml").write_text("gateway:\n  allow_all_users: false\n", encoding="utf-8")
+        (moor_home / "config.yaml").write_text("gateway:\n  allow_all_users: false\n", encoding="utf-8")
         load_gateway_config()
         assert os.environ.get("GATEWAY_ALLOW_ALL_USERS") is None
 
@@ -917,12 +917,12 @@ class TestLoadGatewayConfig:
         from gateway.run import _profile_runtime_scope
         from gateway.session import SessionSource
 
-        hermes_home = tmp_path / ".hermes"
-        secondary = hermes_home / "profiles" / "other"
+        moor_home = tmp_path / ".moor"
+        secondary = moor_home / "profiles" / "other"
         secondary.mkdir(parents=True)
-        (hermes_home / "config.yaml").write_text(
+        (moor_home / "config.yaml").write_text(
             "gateway:\n  allow_all_users: true\n  multiplex_profiles: true\n", encoding="utf-8")
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("MOOR_HOME", str(moor_home))
         monkeypatch.delenv("GATEWAY_ALLOW_ALL_USERS", raising=False)
         runner = object.__new__(GatewayAuthorizationMixin)
         runner.config = load_gateway_config()
@@ -930,7 +930,7 @@ class TestLoadGatewayConfig:
         set_multiplex_active(True)
         try:
             stranger = SessionSource(platform=Platform.TELEGRAM, user_id="999", chat_id="999", chat_type="dm")
-            with _profile_runtime_scope(hermes_home):
+            with _profile_runtime_scope(moor_home):
                 assert runner._is_user_authorized(stranger) is True
             assert "GATEWAY_ALLOW_ALL_USERS" not in build_profile_secret_scope(secondary)
         finally:
@@ -1152,14 +1152,14 @@ class TestWebhookPortBridging:
     def test_root_level_platform_block_adapter_keys_reach_extra(self, tmp_path, monkeypatch):
         """A ROOT-level ``webhook:`` block (not under ``platforms:``) is a supported spelling; its
         adapter keys must reach ``extra`` like the nested form, with nested ``extra:`` winning."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text(
+        moor_home = tmp_path / ".moor"
+        moor_home.mkdir()
+        (moor_home / "config.yaml").write_text(
             "webhook:\n  enabled: true\n  port: 9100\n  host: 127.0.0.2\n  secret: fixture\n"
             "  extra:\n    port: 9999\n",
             encoding="utf-8",
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("MOOR_HOME", str(moor_home))
         monkeypatch.delenv("WEBHOOK_PORT", raising=False)
         wh = load_gateway_config().platforms[Platform.WEBHOOK]
         assert (wh.extra.get("port"), wh.extra.get("host"), wh.extra.get("secret")) == (9999, "127.0.0.2", "fixture")

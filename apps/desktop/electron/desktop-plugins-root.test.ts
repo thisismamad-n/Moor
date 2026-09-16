@@ -13,7 +13,7 @@ import {
 const homes: string[] = []
 
 function makeHome(): string {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-dp-root-'))
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'moor-dp-root-'))
   homes.push(home)
 
   return home
@@ -154,7 +154,7 @@ describe('reconcileUnifiedDesktopHalves', () => {
     const appRoot = path.join(home, 'desktop-plugins')
     write(path.join(home, 'plugins', 'cat', 'desktop', 'plugin.js'), 'x')
     write(
-      path.join(home, 'plugins', 'cat', '.hermes-catalog.json'),
+      path.join(home, 'plugins', 'cat', '.moor-catalog.json'),
       JSON.stringify({ catalog_name: 'cat', repo: 'https://github.com/o/cat.git', sha: 'deadbeef' })
     )
     write(path.join(home, 'plugins', 'raw', 'desktop', 'plugin.js'), 'y')

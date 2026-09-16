@@ -291,17 +291,17 @@ async def test_initialize_marks_zero_ttl_cold_loaded_token_invalid(
     need an expiry that is already in the past before the SDK selects its refresh
     or authorization-code path.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     from mcp.shared.auth import OAuthClientInformationFull, OAuthClientMetadata, OAuthToken
     from pydantic import AnyUrl
 
-    from tools.mcp_oauth import HermesTokenStorage, _get_token_dir
-    from tools.mcp_oauth_manager import _HERMES_PROVIDER_CLS, reset_manager_for_tests
+    from tools.mcp_oauth import MoorTokenStorage, _get_token_dir
+    from tools.mcp_oauth_manager import _MOOR_PROVIDER_CLS, reset_manager_for_tests
 
-    assert _HERMES_PROVIDER_CLS is not None
+    assert _MOOR_PROVIDER_CLS is not None
     reset_manager_for_tests()
 
-    storage = HermesTokenStorage("srv")
+    storage = MoorTokenStorage("srv")
     await storage.set_tokens(
         OAuthToken(
             access_token="expired-access",
@@ -325,12 +325,12 @@ async def test_initialize_marks_zero_ttl_cold_loaded_token_invalid(
         )
     )
 
-    provider = _HERMES_PROVIDER_CLS(
+    provider = _MOOR_PROVIDER_CLS(
         server_name="srv",
         server_url="https://example.com/mcp",
         client_metadata=OAuthClientMetadata(
             redirect_uris=[AnyUrl("http://127.0.0.1:12345/callback")],
-            client_name="Hermes Agent",
+            client_name="Moor Agent",
         ),
         storage=storage,
         redirect_handler=_noop_redirect,

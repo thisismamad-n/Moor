@@ -1,4 +1,4 @@
-"""User-facing cron failure notices: plain words, the real output path, and the exact `hermes cron`
+"""User-facing cron failure notices: plain words, the real output path, and the exact `moor cron`
 command to act on. Contract tests, not snapshots (root AGENTS.md).
 
 The classifier is `agent.error_classifier.classify_api_error`; these tests pin what the copy table
@@ -9,7 +9,7 @@ import re
 
 import cron.scheduler as scheduler
 from cron.scheduler import _compose_run_delivery, _summarize_cron_failure_for_delivery
-from hermes_constants import display_hermes_home
+from moor_constants import display_moor_home
 
 JOB = {"name": "Morning brief", "id": "ab12cd34"}
 _HTTP_LEAD = re.compile(r"failed: (HTTP|Error code:|provider )")
@@ -23,28 +23,28 @@ def _no_chain(monkeypatch):
 def test_generic_failure_names_runs_and_pause_commands_and_the_real_output_dir():
     msg = _summarize_cron_failure_for_delivery(JOB, "[Errno 2] No such file or directory: '/x.py'")
     assert "/x.py" in msg  # the raw detail survives as the cause
-    for cmd in ("hermes cron runs ab12cd34", "hermes cron run ab12cd34", "hermes cron pause ab12cd34"):
+    for cmd in ("moor cron runs ab12cd34", "moor cron run ab12cd34", "moor cron pause ab12cd34"):
         assert f"`{cmd}`" in msg
-    assert f"{display_hermes_home()}/cron/output/ab12cd34/" in msg
+    assert f"{display_moor_home()}/cron/output/ab12cd34/" in msg
     assert "cron output" not in msg  # the unnamed internal location is gone
 
 
 def test_auth_failure_points_at_login_and_a_retry_command(monkeypatch):
     _no_chain(monkeypatch)
     msg = _summarize_cron_failure_for_delivery(JOB, "Error code: 401 - Unauthorized")
-    assert "/login" in msg and "`hermes auth add <provider>`" in msg
-    assert "hermes login" not in msg  # that command was removed
-    assert "`hermes cron run ab12cd34`" in msg
+    assert "/login" in msg and "`moor auth add <provider>`" in msg
+    assert "moor login" not in msg  # that command was removed
+    assert "`moor cron run ab12cd34`" in msg
     assert not _HTTP_LEAD.search(msg)
     assert "401" not in msg
 
 
 def test_rate_and_usage_limit_phrases_still_yield_a_provider_notice(monkeypatch):
     """The old cron regex ladder matched these substrings; the shared classifier must too, or a
-    Nous Portal limit turns into a raw generic notice."""
+    Moor Portal limit turns into a raw generic notice."""
     _no_chain(monkeypatch)
     for text in (
-        "Nous Portal rate limit active until 15:00",
+        "Moor Portal rate limit active until 15:00",
         "RuntimeError: usage limit reached for this key",
         "You have hit your weekly usage limit",
         "insufficient quota",
@@ -52,7 +52,7 @@ def test_rate_and_usage_limit_phrases_still_yield_a_provider_notice(monkeypatch)
         msg = _summarize_cron_failure_for_delivery(JOB, text)
         assert "limit" in msg.lower(), msg
         assert not _HTTP_LEAD.search(msg), msg
-        assert "`hermes cron run ab12cd34`" in msg or "`hermes cron edit ab12cd34" in msg, msg
+        assert "`moor cron run ab12cd34`" in msg or "`moor cron edit ab12cd34" in msg, msg
 
 
 def test_cron_cause_gloss_is_the_shared_table():
@@ -62,7 +62,7 @@ def test_cron_cause_gloss_is_the_shared_table():
 
     for reason in FAILURE_CAUSE_GLOSS:
         notice = provider_failure_notice("Morning brief", "ab12cd34", reason, backup_provider_phrase="x.")
-        assert notice is not None and "`hermes cron" in notice, reason
+        assert notice is not None and "`moor cron" in notice, reason
     assert provider_failure_notice("Morning brief", "ab12cd34", "unknown", backup_provider_phrase="x.") is None
 
 
@@ -72,8 +72,8 @@ def test_transient_provider_failures_never_lead_with_jargon(monkeypatch):
         msg = _summarize_cron_failure_for_delivery(JOB, err)
         assert not _HTTP_LEAD.search(msg), msg
         assert "fallback chain" not in msg.lower()
-        assert "`hermes cron run ab12cd34`" in msg
-        assert "`hermes cron runs ab12cd34`" in msg
+        assert "`moor cron run ab12cd34`" in msg
+        assert "`moor cron runs ab12cd34`" in msg
 
 
 def test_blocked_config_notice_says_it_did_not_run_and_will_self_heal():
@@ -84,6 +84,6 @@ def test_blocked_config_notice_says_it_did_not_run_and_will_self_heal():
     assert "did not run" in text
     assert "provider credential missing: no key" in text
     assert "Nothing was charged" in text
-    assert "`hermes cron doctor`" in text
+    assert "`moor cron doctor`" in text
     for jargon in ("configuration validation", "LLM call", "pre-dispatch"):
         assert jargon not in text

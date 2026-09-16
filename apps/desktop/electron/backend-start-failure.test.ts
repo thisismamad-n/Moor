@@ -72,7 +72,7 @@ test('a CONFIRMED reauth rejection is never auto-retried (missing capability, no
 })
 
 test('unsigned OAuth latches and is never auto-retried; a bare needsOauthLogin hint still retries', () => {
-  // Production composition in startHermes: isReauth = isReauthRequiredError(error).
+  // Production composition in startMoor: isReauth = isReauthRequiredError(error).
   // A bare `{ needsOauthLogin: true }` is the IPC-shaped hint, not a confirmed
   // rejection; gatewayTicketFailure tags a confirmed 401/403 with
   // isReauthRequired itself (#95701, see remote-reauth-latch.test.ts).
@@ -163,7 +163,7 @@ test('FIX #95701: while a reauth rejection is latched, only re-emits of that fai
   // sibling failure that would flip retryable back on.
   assert.equal(shouldHoldBootProgressForReauth(latched, { error: null }), true)
   assert.equal(shouldHoldBootProgressForReauth(latched, {}), true)
-  assert.equal(shouldHoldBootProgressForReauth(latched, { error: 'Could not reach the remote Hermes gateway' }), true)
+  assert.equal(shouldHoldBootProgressForReauth(latched, { error: 'Could not reach the remote Moor gateway' }), true)
 })
 
 test('FIX #95701: with no reauth latch every boot-progress update flows as before', () => {

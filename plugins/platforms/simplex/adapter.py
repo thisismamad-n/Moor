@@ -119,7 +119,7 @@ class SimplexAdapter(BasePlatformAdapter):
         self._pending_responses: Dict[str, asyncio.Future] = {}  # awaited command replies
         self._corr_counter = 0
         # SimpleX has no client-side split, so the split delay equals the plain one.
-        self._text_batch_delay_seconds = float(os.getenv("HERMES_SIMPLEX_TEXT_BATCH_DELAY", "0.8"))
+        self._text_batch_delay_seconds = float(os.getenv("MOOR_SIMPLEX_TEXT_BATCH_DELAY", "0.8"))
         self._text_batch_split_delay_seconds = self._text_batch_delay_seconds
         logger.info(
             "SimpleX adapter initialized: url=%s auto_accept=%s groups=%s",
@@ -638,10 +638,10 @@ _SETUP_PROMPTS = (
 
 
 def interactive_setup() -> None:
-    """``hermes setup gateway`` → SimpleX wizard (writes ``~/.hermes/.env``); CLI helpers are lazy-imported."""
-    from hermes_cli.config import get_env_value, save_env_value
-    from hermes_cli.cli_output import print_header, print_info, prompt
-    from hermes_cli.setup_platforms import declines_reconfigure
+    """``moor setup gateway`` → SimpleX wizard (writes ``~/.moor/.env``); CLI helpers are lazy-imported."""
+    from moor_cli.config import get_env_value, save_env_value
+    from moor_cli.cli_output import print_header, print_info, prompt
+    from moor_cli.setup_platforms import declines_reconfigure
     print_header("SimpleX Chat")
     if declines_reconfigure("SimpleX", "Reconfigure SimpleX?", "SIMPLEX_WS_URL"):
         return

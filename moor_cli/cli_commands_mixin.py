@@ -28,8 +28,8 @@ from rich import box as rich_box
 from rich.markup import escape as _escape
 from rich.panel import Panel
 
-from hermes_constants import display_hermes_home, is_termux as _is_termux_environment
-from hermes_state_ids import new_session_id as mint_session_id
+from moor_constants import display_moor_home, is_termux as _is_termux_environment
+from moor_state_ids import new_session_id as mint_session_id
 from agent.turn_context import extract_api_content_sidecar
 from moor_cli.browser_connect import (
     DEFAULT_BROWSER_CDP_URL, discover_local_cdp_url, find_free_debug_port, is_browser_debug_ready,
@@ -356,7 +356,7 @@ def _without_session_meta(messages) -> list:
 
 
 def _db_unavailable_line() -> str:
-    from hermes_state import format_session_db_unavailable
+    from moor_state import format_session_db_unavailable
     return f"  {format_session_db_unavailable(details=True)}"
 
 
@@ -379,11 +379,11 @@ def _print_side_result_panel(cli, *, header_lines, body, title_suffix, empty_not
     try:
         from moor_cli.skin_engine import get_active_skin
         _skin = get_active_skin()
-        label = _skin.get_branding("response_label", "☤ Hermes")
+        label = _skin.get_branding("response_label", "☤ Moor")
         _resp_color = _maybe_remap_for_light_mode(_skin.get_color("response_border", "#CD7F32"))
         _resp_text = _maybe_remap_for_light_mode(_skin.get_color("banner_text", "#FFF8DC"))
     except Exception:
-        label, _resp_color, _resp_text = "☤ Hermes", "#CD7F32", "#FFF8DC"
+        label, _resp_color, _resp_text = "☤ Moor", "#CD7F32", "#FFF8DC"
     rich_console.print(Panel(
         _render_final_assistant_content(body, mode=cli.final_response_markdown),
         title=f"[{_resp_color} bold]{label} {title_suffix}[/]", title_align="left",
@@ -1177,7 +1177,7 @@ class CLICommandsMixin:
             return _cp("  Agent is busy. Wait for the current turn to finish, then retry /handoff.")
         if not self._session_db:
             with suppress(Exception):
-                from hermes_state_registry import acquire
+                from moor_state_registry import acquire
                 self._session_db = acquire()
         if not self._session_db:
             return _cp(_db_unavailable_line())
@@ -2019,7 +2019,7 @@ class CLICommandsMixin:
 
     def _handle_login_command(self, cmd_original: str) -> None:
         """Start an in-chat sign-in without blocking the input loop while approval is pending."""
-        from hermes_cli import anon_auth
+        from moor_cli import anon_auth
         # Pin the output target now. Under the live TUI ``self.console`` writes straight to
         # patch_stdout's StdoutProxy, which mangles Rich's escapes — there ``None`` keeps the
         # panel on the ``_cprint`` path. Only the slash worker (``_app`` is None) swaps the console.
@@ -2040,7 +2040,7 @@ class CLICommandsMixin:
 
         def _settle_session_model(state) -> None:
             """A completed sign-in moved this profile onto the account: the welcome host is gone and
-            the portal serves ``nous/welcome`` as a paid model, so a session still carrying it must
+            the portal serves ``moor/welcome`` as a paid model, so a session still carrying it must
             move too — the CLI counterpart of the gateway's on-``Completed`` sweep. Only the free
             tier's own model is replaced; a model the user picked while the sign-in was pending
             stands. Writing ``self.model`` is enough: ``chat()`` compares the turn-route signature
@@ -2248,8 +2248,8 @@ class CLICommandsMixin:
 
     # ---- /goal, /loop, /subgoal -----------------------------------------------------------
     def _handle_goal_command(self, cmd: str) -> None:
-        from hermes_cli.goal_command import dispatch_goal_command
-        from hermes_cli.goals import last_user_message_content
+        from moor_cli.goal_command import dispatch_goal_command
+        from moor_cli.goals import last_user_message_content
 
         mgr = self._session_manager(self._get_goal_manager, "Goals")
         if mgr is None:
@@ -2656,8 +2656,8 @@ class CLICommandsMixin:
         choices = [("once", "Update Now", "exit the current session and update Moor Agent"),
                    ("cancel", "Cancel", "keep the current session")]
         raw = self._prompt_text_input_modal(
-            title="☤  Update Hermes Agent",
-            detail="This will exit the current session and run `hermes update`.", choices=choices)
+            title="☤  Update Moor Agent",
+            detail="This will exit the current session and run `moor update`.", choices=choices)
         if raw is None or self._normalize_slash_confirm_choice(raw, choices) != "once":
             print("  🟡 /update cancelled.")
             return False

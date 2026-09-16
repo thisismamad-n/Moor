@@ -1,7 +1,7 @@
 """Live Fireworks smoke test — exercises the Moor runtime, not a raw SDK client.
 
 Opt-in only:
-    HERMES_LIVE_TESTS=1 FIREWORKS_API_KEY=fw_... \\
+    MOOR_LIVE_TESTS=1 FIREWORKS_API_KEY=fw_... \\
         pytest tests/agent/test_fireworks_live.py -q
 
 Unlike a bare OpenAI() client pointed at the endpoint, this drives Moor'

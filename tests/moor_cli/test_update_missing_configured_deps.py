@@ -5,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from hermes_cli import main_install_repair
+from moor_cli import main_install_repair
 
 
 def _run_fallback_with_failed_extra(monkeypatch, capsys, *, extra_fails: str, missing_features):
@@ -28,9 +28,9 @@ def _run_fallback_with_failed_extra(monkeypatch, capsys, *, extra_fails: str, mi
 def test_fallback_names_configured_platform_whose_extra_failed(monkeypatch, capsys):
     out = _run_fallback_with_failed_extra(
         monkeypatch, capsys, extra_fails="feishu",
-        missing_features=[("Feishu / Lark", "Run `hermes setup` to install Feishu support.")])
+        missing_features=[("Feishu / Lark", "Run `moor setup` to install Feishu support.")])
     assert "fail to load them on restart" in out
-    assert "Feishu / Lark" in out and "hermes setup" in out
+    assert "Feishu / Lark" in out and "moor setup" in out
     # Unconfigured features that failed stay a plain "skipped" line, no scary warning.
     quiet = _run_fallback_with_failed_extra(monkeypatch, capsys, extra_fails="feishu", missing_features=[])
     assert "Skipped optional extras that still failed: feishu" in quiet
@@ -48,7 +48,7 @@ def test_configured_features_probe_reads_the_fresh_target_interpreter(tmp_path, 
     (home / "config.yaml").write_text(
         "platforms:\n  feishu:\n    enabled: true\n    extra:\n      app_id: cli_x\n      app_secret: y\n",
         encoding="utf-8")
-    env = {**os.environ, "HERMES_HOME": str(home)}
+    env = {**os.environ, "MOOR_HOME": str(home)}
     monkeypatch.setattr(main_install_repair, "_resolve_install_target_python", lambda *a, **k: Path(sys.executable))
     real_probe = main_install_repair._venv_probe
 

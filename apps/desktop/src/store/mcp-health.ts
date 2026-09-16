@@ -14,7 +14,7 @@
  * the other just learned.
  */
 
-import { getHermesConfigRecord, type McpTestResult, setMcpServerEnabled, testMcpServer } from '@/hermes'
+import { getMoorConfigRecord, type McpTestResult, setMcpServerEnabled, testMcpServer } from '@/moor'
 import { translateNow } from '@/i18n'
 import { classifyProbe, freshProbe, probeCache, probeKey } from '@/lib/mcp-probe-cache'
 import { getServers } from '@/lib/mcp-servers'
@@ -67,7 +67,7 @@ export function shouldNotify(
 // Same time-based snooze the update/skew toasts use (store/updates.ts): a
 // shown toast arms a 24h cooldown for that (profile, server), persisted so an
 // app restart does not re-nudge before the day is up.
-const SNOOZE_KEY_PREFIX = 'hermes:mcp-health-snooze-until:'
+const SNOOZE_KEY_PREFIX = 'moor:mcp-health-snooze-until:'
 const SNOOZE_MS = 24 * 60 * 60 * 1000
 
 function snoozedUntil(key: string): number {

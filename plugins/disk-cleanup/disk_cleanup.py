@@ -115,7 +115,7 @@ def _protected_cron_paths(home: Path) -> frozenset:
 # Paths under $MOOR_HOME that must NEVER be deleted by quick(), regardless of what the stored category
 # says. This is a defense-in-depth guard against stale tracked.json entries from before #34840.
 def _is_protected_cron_path(p: Path) -> bool:
-    return str(p.resolve()) in _protected_cron_paths(get_hermes_home())
+    return str(p.resolve()) in _protected_cron_paths(get_moor_home())
 
 
 def fmt_size(n: float) -> str:

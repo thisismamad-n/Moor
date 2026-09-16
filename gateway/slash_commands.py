@@ -30,7 +30,7 @@ from gateway.slash_commands_model import GatewayModelCommandsMixin
 from gateway.slash_commands_session import GatewaySessionCommandsMixin
 from gateway.slash_commands_login import GatewayLoginCommandsMixin
 from gateway.slash_commands_status import HISTORY_UNREADABLE, GatewayStatusCommandsMixin
-from hermes_cli.config import atomic_config_write, cfg_get
+from moor_cli.config import atomic_config_write, cfg_get
 from utils import atomic_json_write, is_truthy_value
 
 logger = logging.getLogger("gateway.run")
@@ -1179,8 +1179,8 @@ class GatewaySlashCommandsMixin(
 
     async def _handle_debug_command(self, event: MessageEvent) -> str:
         """Handle /debug — upload ONLY the summary (system info + log tails), never full logs, to
-        protect privacy; ``hermes debug share`` from the CLI does full uploads."""
-        from hermes_cli.debug import (_GATEWAY_PRIVACY_NOTICE, _best_effort_sweep_expired_pastes,
+        protect privacy; ``moor debug share`` from the CLI does full uploads."""
+        from moor_cli.debug import (_GATEWAY_PRIVACY_NOTICE, _best_effort_sweep_expired_pastes,
                                       _capture_dump, _is_dpaste_url, _schedule_auto_delete,
                                       collect_debug_report, upload_to_pastebin)
 

@@ -101,8 +101,8 @@ class TestBuildToolTitle:
         assert "github-pitfalls" in title
 
     def test_execute_code_title_includes_first_code_line(self):
-        title = build_tool_title("execute_code", {"code": "\nfrom hermes_tools import terminal\nprint('done')"})
-        assert "from hermes_tools import terminal" in title
+        title = build_tool_title("execute_code", {"code": "\nfrom moor_tools import terminal\nprint('done')"})
+        assert "from moor_tools import terminal" in title
 
     def test_unknown_tool_uses_name(self):
         title = build_tool_title("some_new_tool", {"foo": "bar"})
@@ -114,8 +114,8 @@ class TestBuildToolTitle:
             ("terminal", {"command": "git status --short"}),
             ("read_file", {"path": "/etc/hosts", "offset": 10}),
             ("search_files", {"pattern": "TODO", "path": "src"}),
-            ("web_search", {"query": "hermes agent acp"}),
-            ("execute_code", {"code": "\nfrom hermes_tools import terminal\nprint('done')"}),
+            ("web_search", {"query": "moor agent acp"}),
+            ("execute_code", {"code": "\nfrom moor_tools import terminal\nprint('done')"}),
             ("skill_view", {"name": "github", "file_path": "references/x.md"}),
         ],
     )

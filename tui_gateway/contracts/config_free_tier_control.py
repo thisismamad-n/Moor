@@ -1,7 +1,7 @@
 """Contracts: config, setup readiness, free tier, model inventory, connectors, diagnostics,
 image generation and structured session control.
 
-Handlers: ``tui_gateway/methods_config.py`` (``config.get``, ``setup.*``, ``diagnostics.share_nous``),
+Handlers: ``tui_gateway/methods_config.py`` (``config.get``, ``setup.*``, ``diagnostics.share_moor``),
 ``methods_config_set.py`` (``config.set``), ``methods_free_tier.py``, ``methods_complete.py``
 (``model.options``), ``methods_connectors.py``, ``methods_images.py``, ``methods_session_control.py``
 and ``methods_session.py`` (``verification.status``).
@@ -31,7 +31,7 @@ class ConfigGetParams(ProfileParams):
 
 
 class ConfigProviderRef(OpenModel):
-    """``hermes_cli/models.py::list_available_providers`` row."""
+    """``moor_cli/models.py::list_available_providers`` row."""
 
     id: str
     label: str
@@ -151,16 +151,16 @@ method("setup.runtime_check", params=SetupRuntimeCheckParams, result=SetupRuntim
        doc="Strict provider check through the same runtime resolution the agent uses on session creation.")
 
 
-# ── diagnostics.share_nous ────────────────────────────────────────────────────────────────────
+# ── diagnostics.share_moor ────────────────────────────────────────────────────────────────────
 
 
-class DiagnosticsShareNousParams(Params):
+class DiagnosticsShareMoorParams(Params):
     error_context: str | None = None
     extra_files: dict[str, str] | None = None
     log_lines: int | None = None
 
 
-class DiagnosticsShareNousResult(Result):
+class DiagnosticsShareMoorResult(Result):
     """Structured envelope: ``ok=False`` + ``error`` renders inline instead of failing the RPC."""
 
     ok: bool
@@ -170,8 +170,8 @@ class DiagnosticsShareNousResult(Result):
     error: str | None = None
 
 
-method("diagnostics.share_nous", params=DiagnosticsShareNousParams, result=DiagnosticsShareNousResult,
-       doc="Upload a force-redacted debug bundle to Nous-internal diagnostics storage.")
+method("diagnostics.share_moor", params=DiagnosticsShareMoorParams, result=DiagnosticsShareMoorResult,
+       doc="Upload a force-redacted debug bundle to Moor-internal diagnostics storage.")
 
 
 # ── free tier ─────────────────────────────────────────────────────────────────────────────────
@@ -224,8 +224,8 @@ class ModelOptionsParams(ProfileParams):
 # TODO(common): ModelPricing / ModelCapabilities / ModelOptionProvider are also the row shape of
 # ``model.save_key``'s ``provider`` — the parent consolidates into contracts/common.py.
 class ModelPricing(Result):
-    """``hermes_cli/inventory.py::_apply_pricing`` — formatted $/Mtok strings (``""`` unknown,
-    ``"free"``); the sale fields are Nous Portal-only."""
+    """``moor_cli/inventory.py::_apply_pricing`` — formatted $/Mtok strings (``""`` unknown,
+    ``"free"``); the sale fields are Moor Portal-only."""
 
     input: str
     output: str
@@ -237,7 +237,7 @@ class ModelPricing(Result):
 
 
 class ModelCapabilities(Result):
-    """``hermes_cli/inventory.py::_apply_capabilities``."""
+    """``moor_cli/inventory.py::_apply_capabilities``."""
 
     fast: bool
     reasoning: bool
@@ -245,7 +245,7 @@ class ModelCapabilities(Result):
 
 
 class ModelOptionProvider(OpenModel):
-    """One ``hermes_cli/inventory.py::build_models_payload`` provider row (the union of every field
+    """One ``moor_cli/inventory.py::build_models_payload`` provider row (the union of every field
     the builder sets; ``pricing_pending`` / ``free_tier_pending`` mark the cached-only path)."""
 
     slug: str
@@ -357,7 +357,7 @@ method("image.generate", params=ImageGenerateParams, result=ImageGenerateResult,
 
 
 class GoalContractSnapshot(Result):
-    """``hermes_cli/goals.py::GoalContract.to_dict``."""
+    """``moor_cli/goals.py::GoalContract.to_dict``."""
 
     outcome: str = ""
     verification: str = ""

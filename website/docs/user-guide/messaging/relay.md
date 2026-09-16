@@ -118,11 +118,11 @@ platforms:
 The verdict comes from the same files and merge the gateway loader uses (top-level
 or `gateway.platforms` block, managed overlay) and is applied at activation time.
 Restart the gateway after changing it; an open relay socket is not torn down.
-`hermes gateway enroll` remains available while runtime relay is disabled.
+`moor gateway enroll` remains available while runtime relay is disabled.
 
 | Setting | Where | Meaning |
 |---------|-------|---------|
-| `GATEWAY_RELAY_URL` | env (`~/.hermes/.env`) | Connector relay WebSocket URL. Enables relay unless explicitly disabled in platform configuration. |
+| `GATEWAY_RELAY_URL` | env (`~/.moor/.env`) | Connector relay WebSocket URL. Enables relay unless explicitly disabled in platform configuration. |
 | `gateway.relay_url` | `config.yaml` | Same as above, config-file form (env takes precedence). |
 | `GATEWAY_RELAY_ID` | env | This gateway instance's id (written by `enroll`). |
 | `GATEWAY_RELAY_SECRET` | env | Per-gateway secret authenticating the WebSocket upgrade (written by `enroll`). |

@@ -71,7 +71,7 @@ def _resolve_profile(rid, params):
     name = str(params.get("name") or "").strip()
     if not name:
         return name, None, _err(rid, 4063, "name required")
-    from hermes_cli.profiles import get_profile_dir
+    from moor_cli.profiles import get_profile_dir
     try:
         profile_dir = Path(get_profile_dir(name))
     except ValueError:
@@ -329,7 +329,7 @@ def _mirror_launch_credentials(path, params: dict) -> dict:
     if mirrored["env"] and not is_truthy_value(params.get("clone_channels", False)):
         # Provider/tool keys are what "mirror credentials" means; the launch profile's bot tokens
         # and allowlists would make the new bot collide with it over one Telegram/Discord bot.
-        _best_effort(lambda: _lazy("hermes_cli.profile_channels", "strip_channel_env_file")(path / ".env"))
+        _best_effort(lambda: _lazy("moor_cli.profile_channels", "strip_channel_env_file")(path / ".env"))
     if not share_auth:  # a copy forks token state: the first refresh in either store strands the other
         mirrored["auth"] = _try(lambda: _mirror_secret(path, launch_home, "auth.json",
                                                        lambda src, dst: not dst.exists()), False)

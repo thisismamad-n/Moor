@@ -10,15 +10,15 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 
-from hermes_cli.web_deps import LateState, late
-from hermes_cli.web_server_config import (
+from moor_cli.web_deps import LateState, late
+from moor_cli.web_server_config import (
     _AUX_TASK_SLOTS, _UNSET, _apply_model_assignment_sync, _dashboard_code_skew_guard,
     _prepare_main_assignment,
 )
 from agent.model_metadata import is_local_endpoint
 from starlette.concurrency import run_in_threadpool
-from hermes_cli.web_models import ModelAssignment, MoaConfigPayload, MoaModelSlot
-from hermes_cli.web_routers._common import _CONFIG_MUTATION_LOCK, config_write_scope, http_failure
+from moor_cli.web_models import ModelAssignment, MoaConfigPayload, MoaModelSlot
+from moor_cli.web_routers._common import _CONFIG_MUTATION_LOCK, config_write_scope, http_failure
 
 _log = logging.getLogger("moor_cli.web_server")
 router = APIRouter()
@@ -131,9 +131,9 @@ async def get_model_options(
         return await run_in_threadpool(_build_payload_scoped)
 
 
-def _nous_recommended_default() -> dict:
-    from hermes_cli.models import recommended_nous_default_model
-    return recommended_nous_default_model()
+def _moor_recommended_default() -> dict:
+    from moor_cli.models import recommended_moor_default_model
+    return recommended_moor_default_model()
 
 
 @router.get("/api/model/recommended-default")

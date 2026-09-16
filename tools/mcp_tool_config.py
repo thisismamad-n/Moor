@@ -23,14 +23,14 @@ def _get_mcp_stderr_log() -> Any:
     """Shared append-mode handle for MCP subprocess stderr, cached until shutdown PER PROFILE HOME (a
     multiplexed gateway's secondary profile must log under ITS ``logs/``, not the launch profile's). Must
     expose a real fd (asyncio wires the child's stderr to it); falls back to ``/dev/null``, then real stderr."""
-    from hermes_constants import get_hermes_home, hermes_home_key, mkdir_under_hermes_home
-    home_key = hermes_home_key()
+    from moor_constants import get_moor_home, moor_home_key, mkdir_under_moor_home
+    home_key = moor_home_key()
     with _mcp_stderr_log_lock:
         fh = _mcp_stderr_log_fh.get(home_key)
         if fh is None or fh.closed:
             try:
-                log_dir = get_hermes_home() / "logs"
-                mkdir_under_hermes_home(log_dir)
+                log_dir = get_moor_home() / "logs"
+                mkdir_under_moor_home(log_dir)
                 # Line-buffered so output lands promptly; errors="replace" tolerates garbled binary.
                 fh = open(log_dir / "mcp-stderr.log", "a", encoding="utf-8", errors="replace", buffering=1)
                 fh.fileno()  # confirm a real fd before committing
@@ -113,7 +113,7 @@ def _build_safe_env(user_env: Optional[dict]) -> dict:
     keys, ``XDG_*``, vars injected by an external secret source (users configured that backend
     precisely so subprocesses can consume them), plus the server config's own ``env``."""
     from agent.secret_scope import get_secret
-    from hermes_cli.env_loader import secret_source_names
+    from moor_cli.env_loader import secret_source_names
     env = {
         key: value for key, value in os.environ.items()
         if key in _SAFE_ENV_KEYS or key.upper() in _SAFE_ENV_KEYS_CASE_INSENSITIVE or key.startswith("XDG_")}
@@ -124,7 +124,7 @@ def _build_safe_env(user_env: Optional[dict]) -> dict:
         value = get_secret(key)
         if value is not None:
             env[key] = value
-    for key in ("HERMES_KANBAN_DB", "HERMES_KANBAN_BOARD"):
+    for key in ("MOOR_KANBAN_DB", "MOOR_KANBAN_BOARD"):
         if key in os.environ:
             env[key] = os.environ[key]
     if user_env:
@@ -152,14 +152,14 @@ def _which_with_config_pathext(command: str, path_arg, env: dict):
 def _node_fallback(command: str, *, windows: Optional[bool] = None) -> str:
     """Well-known Node install locations for bare ``npx``/``npm``/``node``; *command* unchanged when none exists.
 
-    The managed tree comes from ``iter_hermes_node_dirs`` (Windows unpacks into ``<home>\\node``, POSIX into
-    ``<home>/node/bin``) under the active profile's ``get_hermes_home()``; on Windows the real files are
+    The managed tree comes from ``iter_moor_node_dirs`` (Windows unpacks into ``<home>\\node``, POSIX into
+    ``<home>/node/bin``) under the active profile's ``get_moor_home()``; on Windows the real files are
     ``npx.cmd``/``node.exe`` (``windows`` injectable, as for ``_npx_bin_candidates``)."""
-    from hermes_constants import get_hermes_home, iter_hermes_node_dirs
+    from moor_constants import get_moor_home, iter_moor_node_dirs
     home = os.path.expanduser("~")
-    # /usr/local/bin: canonical Node location (from-source Linux, Hermes Docker image, Intel Homebrew),
+    # /usr/local/bin: canonical Node location (from-source Linux, Moor Docker image, Intel Homebrew),
     # needed when a hand-authored env.PATH omits it — npx's shebang re-execs /usr/bin/env node.
-    directories = [*map(str, iter_hermes_node_dirs(get_hermes_home())), os.path.join(home, ".local", "bin"),
+    directories = [*map(str, iter_moor_node_dirs(get_moor_home())), os.path.join(home, ".local", "bin"),
                    os.path.join(os.sep, "usr", "local", "bin")]
     candidates = (c for d in directories for c in _npx_bin_candidates(d, command, windows=windows))
     return next((c for c in candidates if os.path.isfile(c) and os.access(c, os.X_OK)), command)

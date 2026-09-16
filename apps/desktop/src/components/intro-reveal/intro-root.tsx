@@ -1,4 +1,4 @@
-import '@nous-research/ui/styles/fonts.css'
+import '@moor-research/ui/styles/fonts.css'
 
 import { createRoot } from 'react-dom/client'
 
@@ -12,7 +12,7 @@ export function mountIntroReveal(): void {
     return
   }
 
-  document.title = 'Hermes'
+  document.title = 'Moor'
   // Every intro measure is in rem, so this one root size scales the whole
   // composition. The app's default 16 px root is sized for a working window, which
   // is too small on a display the user sits back from.
@@ -33,7 +33,7 @@ export function mountIntroReveal(): void {
   // Native ready-to-show can precede the first React paint.
   requestAnimationFrame(() =>
     requestAnimationFrame(() => {
-      window.hermesDesktop?.introReveal?.ready()
+      window.moorDesktop?.introReveal?.ready()
     })
   )
 }

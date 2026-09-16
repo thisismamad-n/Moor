@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
 
-from agent.transports.hermes_tools_mcp_server import HERMES_TOOLS_MCP_SERVER_NAME
+from agent.transports.moor_tools_mcp_server import MOOR_TOOLS_MCP_SERVER_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -426,10 +426,10 @@ def migrate(
         report.migrated_plugins += [f"{p['name']}@{p['marketplace']}" for p in plugins]
     if default_permission_profile:
         report.wrote_permissions_default = default_permission_profile
-    if expose_hermes_tools:
-        translated[HERMES_TOOLS_MCP_SERVER_NAME] = _build_hermes_tools_mcp_entry()
-        if HERMES_TOOLS_MCP_SERVER_NAME not in report.migrated:
-            report.migrated.append(HERMES_TOOLS_MCP_SERVER_NAME)
+    if expose_moor_tools:
+        translated[MOOR_TOOLS_MCP_SERVER_NAME] = _build_moor_tools_mcp_entry()
+        if MOOR_TOOLS_MCP_SERVER_NAME not in report.migrated:
+            report.migrated.append(MOOR_TOOLS_MCP_SERVER_NAME)
     managed_block = render_codex_toml_section(
         translated, plugins=plugins, default_permission_profile=default_permission_profile)
     new_text = managed_block

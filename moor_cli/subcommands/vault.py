@@ -1,4 +1,4 @@
-"""``hermes vault`` subcommand parser."""
+"""``moor vault`` subcommand parser."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ def build_vault_parser(subparsers) -> None:
             "they were saved for and never enter the conversation."
         ),
     )
-    from hermes_cli.vault import register_cli, vault_command
+    from moor_cli.vault import register_cli, vault_command
 
     register_cli(vault_parser)
     vault_parser.set_defaults(func=vault_command)

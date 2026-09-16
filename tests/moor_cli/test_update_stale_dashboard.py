@@ -937,8 +937,8 @@ class TestPostUpdateStaleModuleReload:
         with patch("importlib.reload", side_effect=lambda m: reloaded.append(m.__name__)):
             update_cmd._reload_config_modules()
 
-        assert "hermes_cli._subprocess_compat" in reloaded
-        assert "hermes_cli.dashboard_procs" in reloaded
+        assert "moor_cli._subprocess_compat" in reloaded
+        assert "moor_cli.dashboard_procs" in reloaded
 
 
 class TestLaunchdSupervisedBackends:
@@ -947,7 +947,7 @@ class TestLaunchdSupervisedBackends:
     fails with "port already in use" and the backend that IS running is no longer supervised."""
 
     ARGV = [
-        "/opt/hermes/venv/bin/python", "-m", "hermes_cli.main",
+        "/opt/moor/venv/bin/python", "-m", "moor_cli.main",
         "dashboard", "--host", "0.0.0.0", "--port", "9119", "--no-open", "--skip-build",
     ]
 
@@ -965,8 +965,8 @@ class TestLaunchdSupervisedBackends:
              patch.object(main_dashboard, "_dashboard_cmdline_for_pid", return_value=list(self.ARGV)), \
              patch.object(main_dashboard, "_loaded_launchd_backend_jobs", return_value=jobs), \
              patch.object(main_dashboard, "_restart_launchd_job", return_value=restart_ok) as restart, \
-             patch("hermes_cli.dashboard_procs._process_ancestors", return_value=[]), \
-             patch("hermes_cli.dashboard_procs._hermes_home_for_pid", return_value=None), \
+             patch("moor_cli.dashboard_procs._process_ancestors", return_value=[]), \
+             patch("moor_cli.dashboard_procs._moor_home_for_pid", return_value=None), \
              patch.object(live, "_respawn_dashboard_processes", return_value=[]) as respawn, \
              patch("os.kill", side_effect=self._fake_kill), \
              patch("time.sleep"):
@@ -980,27 +980,27 @@ class TestLaunchdSupervisedBackends:
         is kickstarted; an argv respawn would recreate the port conflict. A failed kickstart counts
         the PID as unrecovered and prints the manual command; a loaded job with a different argv
         and PID leaves the manual-backend respawn untouched (control)."""
-        job = ("system", "ai.hermes.dashboard", list(self.ARGV), None)
+        job = ("system", "ai.moor.dashboard", list(self.ARGV), None)
         result, restart, respawn = self._run(9102, [job])
         respawn.assert_not_called()
-        restart.assert_called_once_with("system", "ai.hermes.dashboard", None)
+        restart.assert_called_once_with("system", "ai.moor.dashboard", None)
         assert result["killed"] == [9102] and result["unrecovered"] == []
         out = capsys.readouterr().out
-        assert "✓ restarted launchd job system/ai.hermes.dashboard" in out
+        assert "✓ restarted launchd job system/ai.moor.dashboard" in out
         assert "when you're ready" not in out
 
-        result, restart, respawn = self._run(9103, [("gui/501", "ai.hermes.dashboard", list(self.ARGV), 9103)],
+        result, restart, respawn = self._run(9103, [("gui/501", "ai.moor.dashboard", list(self.ARGV), 9103)],
                                              restart_ok=False)
         respawn.assert_not_called()
         assert result["unrecovered"] == [9103]
-        assert "run: launchctl kickstart -k gui/501/ai.hermes.dashboard" in capsys.readouterr().out
+        assert "run: launchctl kickstart -k gui/501/ai.moor.dashboard" in capsys.readouterr().out
 
         # A LaunchDaemon lives in the system domain: kickstart needs root, so a non-root hint says sudo.
-        with patch("hermes_cli.dashboard_procs.os.geteuid", return_value=501, create=True):  # windows-footgun: ok — patch target string, create=True
-            self._run(9105, [("system", "ai.hermes.serve", list(self.ARGV), None)], restart_ok=False)
-        assert "run: sudo launchctl kickstart -k system/ai.hermes.serve" in capsys.readouterr().out
+        with patch("moor_cli.dashboard_procs.os.geteuid", return_value=501, create=True):  # windows-footgun: ok — patch target string, create=True
+            self._run(9105, [("system", "ai.moor.serve", list(self.ARGV), None)], restart_ok=False)
+        assert "run: sudo launchctl kickstart -k system/ai.moor.serve" in capsys.readouterr().out
 
-        other = ("gui/501", "ai.hermes.other", ["hermes", "dashboard", "--port", "8300"], 777)
+        other = ("gui/501", "ai.moor.other", ["moor", "dashboard", "--port", "8300"], 777)
         result, restart, respawn = self._run(9104, [other])
         restart.assert_not_called()
         respawn.assert_called_once_with([list(self.ARGV)])
@@ -1018,14 +1018,14 @@ class TestLaunchdSupervisedBackends:
         agents, daemons = tmp_path / "LaunchAgents", tmp_path / "LaunchDaemons"
         agents.mkdir()
         daemons.mkdir()
-        backend_argv = ["/opt/hermes/venv/bin/python", "-m", "hermes_cli.main", "dashboard", "--port", "9119"]
-        serve_argv = ["/opt/hermes/venv/bin/python", "-m", "hermes_cli.main", "serve", "--port", "8642"]
-        gateway_argv = ["/opt/hermes/venv/bin/python", "-m", "hermes_cli.main", "gateway", "run"]
+        backend_argv = ["/opt/moor/venv/bin/python", "-m", "moor_cli.main", "dashboard", "--port", "9119"]
+        serve_argv = ["/opt/moor/venv/bin/python", "-m", "moor_cli.main", "serve", "--port", "8642"]
+        gateway_argv = ["/opt/moor/venv/bin/python", "-m", "moor_cli.main", "gateway", "run"]
         for path, label, argv in (
-            (agents / "ai.hermes.dashboard.plist", "ai.hermes.dashboard", backend_argv),
-            (agents / "ai.hermes.gateway.plist", "ai.hermes.gateway", gateway_argv),
-            (agents / "ai.hermes.serve-old.plist", "ai.hermes.serve-old", serve_argv),
-            (daemons / "ai.hermes.serve.plist", "ai.hermes.serve", serve_argv),
+            (agents / "ai.moor.dashboard.plist", "ai.moor.dashboard", backend_argv),
+            (agents / "ai.moor.gateway.plist", "ai.moor.gateway", gateway_argv),
+            (agents / "ai.moor.serve-old.plist", "ai.moor.serve-old", serve_argv),
+            (daemons / "ai.moor.serve.plist", "ai.moor.serve", serve_argv),
         ):
             with open(path, "wb") as f:
                 plistlib.dump({"Label": label, "ProgramArguments": argv}, f)
@@ -1036,32 +1036,32 @@ class TestLaunchdSupervisedBackends:
 
         def fake_print(domain, label):
             probed.append((domain, label))
-            if (domain, label) == (f"user/{uid}", "ai.hermes.dashboard"):
+            if (domain, label) == (f"user/{uid}", "ai.moor.dashboard"):
                 return (True, 4242)
-            if (domain, label) == ("system", "ai.hermes.serve"):
+            if (domain, label) == ("system", "ai.moor.serve"):
                 return (True, None)
             return (False, None)
 
         monkeypatch.setattr(main_dashboard.sys, "platform", "darwin")
         monkeypatch.setattr(main_dashboard.os, "getuid", lambda: uid, raising=False)
-        with patch("hermes_cli.gateway._launchd_print_service_pid", side_effect=fake_print):
+        with patch("moor_cli.gateway._launchd_print_service_pid", side_effect=fake_print):
             jobs = _no_real_launchd_jobs([("agent", agents), ("daemon", daemons)])
 
         assert jobs == [
-            (f"user/{uid}", "ai.hermes.dashboard", backend_argv, 4242),
-            ("system", "ai.hermes.serve", serve_argv, None),
+            (f"user/{uid}", "ai.moor.dashboard", backend_argv, 4242),
+            ("system", "ai.moor.serve", serve_argv, None),
         ]
-        assert not any(label == "ai.hermes.gateway" for _domain, label in probed)
-        assert probed[:2] == [(f"gui/{uid}", "ai.hermes.dashboard"), (f"user/{uid}", "ai.hermes.dashboard")]
-        assert not any(domain == "system" and label != "ai.hermes.serve" for domain, label in probed)
+        assert not any(label == "ai.moor.gateway" for _domain, label in probed)
+        assert probed[:2] == [(f"gui/{uid}", "ai.moor.dashboard"), (f"user/{uid}", "ai.moor.dashboard")]
+        assert not any(domain == "system" and label != "ai.moor.serve" for domain, label in probed)
 
         owning = main_dashboard._launchd_job_owning_backend
-        assert owning(4242, ["something", "else"], jobs) == (f"user/{uid}", "ai.hermes.dashboard", 4242)
-        assert owning(9999, ["python"], jobs, ancestors=[4242, 1]) == (f"user/{uid}", "ai.hermes.dashboard", 4242)
-        assert owning(9999, serve_argv, jobs) == ("system", "ai.hermes.serve", None)
+        assert owning(4242, ["something", "else"], jobs) == (f"user/{uid}", "ai.moor.dashboard", 4242)
+        assert owning(9999, ["python"], jobs, ancestors=[4242, 1]) == (f"user/{uid}", "ai.moor.dashboard", 4242)
+        assert owning(9999, serve_argv, jobs) == ("system", "ai.moor.serve", None)
         # An earlier detached respawn runs the plist argv plus the ``--no-open`` the respawn path
         # appends; it must still be attributed to the job, or every update respawns it again.
-        assert owning(9999, backend_argv + ["--no-open"], jobs) == (f"user/{uid}", "ai.hermes.dashboard", 4242)
+        assert owning(9999, backend_argv + ["--no-open"], jobs) == (f"user/{uid}", "ai.moor.dashboard", 4242)
         assert owning(9999, serve_argv[:-1] + ["8643"], jobs) is None
         assert owning(9999, None, jobs) is None
         assert owning(4242, None, []) is None

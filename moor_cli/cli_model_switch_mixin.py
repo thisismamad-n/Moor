@@ -37,7 +37,7 @@ def stored_session_route(session_meta, *, current_model, current_provider):
     stored_model = str((session_meta or {}).get("model") or "").strip()
     if not stored_model:
         return None
-    from hermes_state import SessionDB as _SessionDB
+    from moor_state import SessionDB as _SessionDB
     runtime = _SessionDB.session_gateway_runtime(session_meta)
     base_url = runtime.get("base_url") or None
     provider = _heal_bare_custom_provider(runtime.get("provider") or None, base_url=base_url, model=stored_model)
@@ -159,7 +159,7 @@ def _run_confirm_and_apply(cli, target, *args) -> None:
 def _picker_reasoning_rows() -> list[tuple[str, str]]:
     """``(value, label)`` rows for the picker's effort step: the canonical ladder, the off state,
     then a keep-current row (empty value = leave the effort alone)."""
-    from hermes_constants import VALID_REASONING_EFFORTS
+    from moor_constants import VALID_REASONING_EFFORTS
     rows = [(lvl, lvl) for lvl in VALID_REASONING_EFFORTS]
     rows.append(("none", "none (disable reasoning)"))
     rows.append(("", "Keep current effort"))
@@ -198,7 +198,7 @@ def _commit_model_switch(
     ``picker``: tolerate context-resolution errors and label the config write "(--global)"; the
     typed path additionally records the one-turn restore snapshot. ``reasoning_effort`` (from
     ``--reasoning`` or the picker's effort step) is applied after the swap."""
-    from cli import HermesCLI, _cprint
+    from cli import MoorCLI, _cprint
     old_model = cli.model
     snapshot = cli._snapshot_model_runtime() if one_turn else None
     if not cli._stage_and_swap_model(result, old_model):
@@ -209,7 +209,7 @@ def _commit_model_switch(
     if reasoning_effort:
         _apply_reasoning_after_switch(cli, reasoning_effort, persist_global=persist_global and not one_turn)
     if persist_global:
-        from hermes_cli.model_switch import persist_model_selection
+        from moor_cli.model_switch import persist_model_selection
         persist_model_selection(result)
         _cprint("    Saved to config.yaml (--global)" if picker else "    Saved to config.yaml")
     elif one_turn:
@@ -463,7 +463,7 @@ class CLIModelSwitchMixin:
         if not getattr(result, "success", False):
             return True
         try:
-            from hermes_cli.model_selection_guards import (
+            from moor_cli.model_selection_guards import (
                 combined_selection_warning, selection_context_for_agent)
             warning = combined_selection_warning(
                 result.new_model, provider=result.target_provider,

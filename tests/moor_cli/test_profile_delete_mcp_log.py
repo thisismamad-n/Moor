@@ -5,18 +5,18 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import profiles
-from hermes_cli.mcp_config import _probe_single_server
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from moor_cli import profiles
+from moor_cli.mcp_config import _probe_single_server
+from moor_constants import reset_moor_home_override, set_moor_home_override
 from tools import mcp_tool_config
 
 
 @pytest.mark.windows_only
 def test_delete_profile_after_stdio_probe(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     # Do not manage host services or scan unrelated developer processes in this test.
     monkeypatch.setattr(profiles, "_cleanup_gateway_service", lambda *_: None)
     monkeypatch.setattr(profiles, "_stop_profile_backends", lambda *_: None)
@@ -40,11 +40,11 @@ for line in sys.stdin:
         result = {}
     print(json.dumps({"jsonrpc": "2.0", "id": request["id"], "result": result}), flush=True)
 ''', encoding="utf-8")
-    token = set_hermes_home_override(profile)
+    token = set_moor_home_override(profile)
     try:
         assert _probe_single_server("fixture", {"command": sys.executable, "args": [str(server)]}) == [("echo", "Echo")]
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
     try:
         profiles.delete_profile("mcp-probe-delete", yes=True)
         assert not profile.exists()

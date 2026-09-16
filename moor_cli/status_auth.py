@@ -124,23 +124,23 @@ def _render_auth_providers(ctx):
     ctx.moor_inference_present = inference = bool(
         moor_status.get("inference_credential_present") or (info and info.inference_credential_present)
     )
-    if nous_status.get("free_tier"):
+    if moor_status.get("free_tier"):
         # Free tier: never rendered as an account login (no account ids, no refresh row).
-        from hermes_cli.anon_auth import FREE_TIER_LABEL, GUEST_MODEL, UPGRADE_HINT
-        _status._row("Nous Portal", True, f"{FREE_TIER_LABEL} · {GUEST_MODEL}")
+        from moor_cli.anon_auth import FREE_TIER_LABEL, GUEST_MODEL, UPGRADE_HINT
+        _status._row("Moor Portal", True, f"{FREE_TIER_LABEL} · {GUEST_MODEL}")
         _status._detail("", UPGRADE_HINT)
-        inference_url = nous_status.get("inference_base_url")
+        inference_url = moor_status.get("inference_base_url")
         if inference_url:
             _status._detail("Inference:", inference_url)
         for name, getter, hint, rows in _OAUTH_BLOCKS:
             _oauth_block(name, statuses.get(getter, {}), hint, rows)
         return
-    nous_error = nous_status.get("error")
-    _status._row("Nous Portal", logged_in,
-         "logged in" if logged_in else "not logged in (Nous inference key configured)" if inference
-         else "not logged in (run: hermes portal)")
-    portal_url = nous_status.get("portal_base_url") or "(unknown)"
-    inference_url = nous_status.get("inference_base_url") or (info.inference_base_url if info else None)
+    moor_error = moor_status.get("error")
+    _status._row("Moor Portal", logged_in,
+         "logged in" if logged_in else "not logged in (Moor inference key configured)" if inference
+         else "not logged in (run: moor portal)")
+    portal_url = moor_status.get("portal_base_url") or "(unknown)"
+    inference_url = moor_status.get("inference_base_url") or (info.inference_base_url if info else None)
     for label, value, show in (
         ("Portal URL:", portal_url, logged_in or portal_url != "(unknown)" or moor_error),
         ("Inference:", inference_url, inference and inference_url),

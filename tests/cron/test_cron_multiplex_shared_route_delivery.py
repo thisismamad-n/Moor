@@ -123,10 +123,10 @@ def test_guild_scoped_route_authorizes_cron_target_even_when_satellite_has_no_pl
         "gateway": {"multiplex_profiles": True, "profile_routes": [
             {"platform": "discord", "guild_id": "G1", "chat_id": "C1", "profile": "fitness"}]},
     }), encoding="utf-8")
-    monkeypatch.setattr("hermes_constants.get_default_hermes_root", lambda: root)
+    monkeypatch.setattr("moor_constants.get_default_moor_root", lambda: root)
     primary = _primary_adapter()
 
-    token = set_hermes_home_override(str(sat_home))
+    token = set_moor_home_override(str(sat_home))
     try:
         shared = SharedRouteAdapters({Platform.DISCORD: primary}, _primary_profile_routes_for_current_home())
         for satellite_platforms in ({}, {Platform.DISCORD: PlatformConfig(enabled=False)}):
@@ -139,7 +139,7 @@ def test_guild_scoped_route_authorizes_cron_target_even_when_satellite_has_no_pl
             assert error is None, error
             assert primary.sent == ["C1"] and standalone == []
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
 
 def test_live_native_adapter_without_platform_block_is_not_treated_as_disabled():

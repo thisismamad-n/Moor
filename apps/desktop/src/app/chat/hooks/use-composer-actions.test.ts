@@ -108,7 +108,7 @@ function stubTransfer(
   })
 
   return {
-    getData: (mime: string) => (mime === HERMES_PATHS_MIME ? internalRaw : mime === 'text/uri-list' ? uriList : ''),
+    getData: (mime: string) => (mime === MOOR_PATHS_MIME ? internalRaw : mime === 'text/uri-list' ? uriList : ''),
     files: {
       length: files.length,
       item: (i: number) => files[i] ?? null

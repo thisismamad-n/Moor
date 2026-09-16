@@ -47,9 +47,9 @@ def _cmd_status(args) -> int:
         auth = {}
     logged_in = bool(auth.get("logged_in"))
     free_tier = bool(auth.get("free_tier"))
-    _heading("Nous Portal")
+    _heading("Moor Portal")
     if free_tier:
-        from hermes_cli.anon_auth import FREE_TIER_LABEL, GUEST_MODEL, UPGRADE_HINT
+        from moor_cli.anon_auth import FREE_TIER_LABEL, GUEST_MODEL, UPGRADE_HINT
         print(f"  Auth:    {color(f'{FREE_TIER_LABEL} · {GUEST_MODEL}', Colors.GREEN)}")
         print(f"           {UPGRADE_HINT}")
         if auth.get("inference_base_url"):

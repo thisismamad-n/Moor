@@ -9,7 +9,7 @@ from dataclasses import dataclass
 import logging
 from typing import Callable
 
-from hermes_cli import goals
+from moor_cli import goals
 
 logger = logging.getLogger(__name__)
 
@@ -150,7 +150,7 @@ def _set(mgr, arg, *, drafting, last_user_message, render, progress):
     else:
         against = " against the contract above" if state.has_contract() else ""
         output += (f"\nAfter each turn, a judge model checks if the goal is done{against}. "
-                   "Hermes keeps working until it is, you pause/clear it, or the budget is "
+                   "Moor keeps working until it is, you pause/clear it, or the budget is "
                    "exhausted. Use /goal status, /goal show, /goal pause, /goal resume, /goal clear.")
     return GoalCommandResult(output, goals.goal_kick_prompt(state.goal, last_user_message), kickoff=True)
 

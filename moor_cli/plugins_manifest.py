@@ -35,8 +35,8 @@ _KNOWN_MANIFEST_FIELDS: Set[str] = {
     "kind", "hooks", "label", "optional_env", "platforms", "external_dependencies",
     "pip_dependencies", "provides_browser_providers", "provides_web_providers",
     "manifest_version", "api_version", "requires_plugins", "python_dependencies", "config_schema",
-    "license", "homepage", "tags", "capabilities", "emits", "listens", "hermes", "depends",
-    "requires_hermes",
+    "license", "homepage", "tags", "capabilities", "emits", "listens", "moor", "depends",
+    "requires_moor",
 }
 
 # Highest manifest schema version this Moor understands.
@@ -339,9 +339,9 @@ class PluginManifest:
     # Path-derived registry key used by plugins.enabled/disabled and `moor plugins list`: ``disk-cleanup``
     # for a flat plugin, ``image_gen/openai`` for a category plugin. Empty -> name.
     key: str = ""
-    # Hermes version requirement (``">=0.19"``, comma-separated clauses allowed). Unsatisfied plugins are
-    # recorded with an error and skipped before import — see ``requires_hermes_error``.
-    requires_hermes: str = ""
+    # Moor version requirement (``">=0.19"``, comma-separated clauses allowed). Unsatisfied plugins are
+    # recorded with an error and skipped before import — see ``requires_moor_error``.
+    requires_moor: str = ""
     portable: bool = False
     skill_namespace: str = ""
     # Declared capability ids, normalized to KNOWN ids. Declaration is consent metadata, NOT a grant: live
@@ -370,16 +370,16 @@ class PluginManifest:
     listens: List[str] = field(default_factory=list)
 
 
-# ── requires_hermes version gate ─────────────────────────────────────────────
+# ── requires_moor version gate ─────────────────────────────────────────────
 _VERSION_COMPARATOR_RE = re.compile(r"^\s*(>=|<=|==|!=|>|<)\s*(.+?)\s*$")
 
 
-def running_hermes_version() -> str:
-    """Installed ``hermes-agent`` distribution version, else ``hermes_cli.__version__`` (source checkout)."""
+def running_moor_version() -> str:
+    """Installed ``moor-agent`` distribution version, else ``moor_cli.__version__`` (source checkout)."""
     try:
-        return importlib.metadata.version("hermes-agent")
+        return importlib.metadata.version("moor-agent")
     except Exception:
-        from hermes_cli import __version__
+        from moor_cli import __version__
         return __version__
 
 
@@ -409,14 +409,14 @@ def version_satisfies(spec: str, current: str) -> bool:
     return True
 
 
-def requires_hermes_error(manifest: "PluginManifest") -> Optional[str]:
-    """Load-blocking reason when the manifest's ``requires_hermes`` rejects the running version."""
-    if not manifest.requires_hermes:
+def requires_moor_error(manifest: "PluginManifest") -> Optional[str]:
+    """Load-blocking reason when the manifest's ``requires_moor`` rejects the running version."""
+    if not manifest.requires_moor:
         return None
-    current = running_hermes_version()
-    if version_satisfies(manifest.requires_hermes, current):
+    current = running_moor_version()
+    if version_satisfies(manifest.requires_moor, current):
         return None
-    return f"requires hermes {manifest.requires_hermes}, running {current}"
+    return f"requires moor {manifest.requires_moor}, running {current}"
 
 
 def portable_plugin_manifest(child: Path, source: str, prefix: str) -> PluginManifest:
@@ -475,7 +475,7 @@ def parse_manifest_file(
             requires_env=data.get("requires_env", []),
             provides_tools=data.get("provides_tools", []),
             provides_hooks=data.get("provides_hooks", []), source=source, path=str(plugin_dir),
-            kind=kind, key=key, requires_hermes=str(data.get("requires_hermes") or "").strip(),
+            kind=kind, key=key, requires_moor=str(data.get("requires_moor") or "").strip(),
             capabilities=_parse_declared_capabilities(data.get("capabilities"), name),
             **_parse_manifest_v2_fields(data, key), emits=data.get("emits") or [],
             listens=data.get("listens") or [],

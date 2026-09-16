@@ -243,9 +243,9 @@ def _atomic_write(path: Path, write, *, prefix: str, encoding: str = "utf-8", mo
     # A profile delete leaves a tombstone beside its removed home.  Background
     # writers may retain that home in a context variable, so a plain mkdir here
     # would resurrect the profile before the write can fail.
-    from hermes_constants import mkdir_under_hermes_home
+    from moor_constants import mkdir_under_moor_home
 
-    mkdir_under_hermes_home(path.parent)
+    mkdir_under_moor_home(path.parent)
     if mode is None and not path.exists():
         mode = default_new_file_mode()
     original_owner = _preserve_file_owner(path) if preserve_owner else None
@@ -428,9 +428,9 @@ def atomic_roundtrip_yaml_update(path: Union[str, Path], key_path: str, value: A
     from moor_cli.config import _greedy_literal_match, _split_key_path
 
     path = Path(path)
-    from hermes_constants import mkdir_under_hermes_home
+    from moor_constants import mkdir_under_moor_home
 
-    mkdir_under_hermes_home(path.parent)
+    mkdir_under_moor_home(path.parent)
     yaml_rt, config = _roundtrip_load(path)
     current = config
     keys = _split_key_path(key_path)
@@ -474,9 +474,9 @@ def atomic_roundtrip_yaml_save(path: Union[str, Path], new_state: dict) -> None:
     from moor_cli.config import require_readable_config_before_write
 
     path = Path(path)
-    from hermes_constants import mkdir_under_hermes_home
+    from moor_constants import mkdir_under_moor_home
 
-    mkdir_under_hermes_home(path.parent)
+    mkdir_under_moor_home(path.parent)
     require_readable_config_before_write(path)
     yaml_rt, existing = _roundtrip_load(path)
 

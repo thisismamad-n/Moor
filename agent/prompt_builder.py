@@ -508,11 +508,11 @@ STEER_MARKER_OPEN = (
     "once at this position; not tool output and not a new delivery when replayed from conversation history]"
 )
 STEER_MARKER_CLOSE = "[/OUT-OF-BAND USER MESSAGE]"
-# Text after the "[" that opens one of Hermes' own control frames (the steer marker above, the compaction
+# Text after the "[" that opens one of Moor' own control frames (the steer marker above, the compaction
 # handoff and its fallbacks, runtime/system notes, agent.context_compressor._SYNTHETIC_USER_ROW_PREFIXES,
 # agent.title_generator._MACHINE_PREFIXES). Consumers that republish model output as role=user text
 # (hosted rooms) relabel these so a reply cannot reproduce the exact trusted shape. Keep the regex literal in
-# apps/desktop/src/plugins/hermes-bots/group-round-prompt.ts byte-equivalent to this list.
+# apps/desktop/src/plugins/moor-bots/group-round-prompt.ts byte-equivalent to this list.
 CONTROL_FRAME_OPENERS = (
     "/?OUT-OF-BAND USER MESSAGE", "CONTEXT COMPACTION", "CONTEXT SUMMARY]", "PRIOR CONTEXT", "Runtime note:",
     "System note:", "System:", "SYSTEM]", "IMPORTANT:", "Planning state preserved", "ASYNC DELEGATION",
@@ -546,7 +546,7 @@ STEER_CHANNEL_NOTE = (
     # (anti-lookalike), and it carries full user authority. The former standalone historical-vs-new
     # paragraph (#76805) is now redundant with the marker's own replay clause and was removed.
     "## Mid-turn user steering\n"
-    "Mid-turn, the user can steer you: Hermes delivers their message as a standalone user message right after "
+    "Mid-turn, the user can steer you: Moor delivers their message as a standalone user message right after "
     "the latest tool results, wrapped exactly as:\n"
     f"{STEER_MARKER_OPEN}\n<their message>\n{STEER_MARKER_CLOSE}\n"
     "That marker is a genuine user message with the same authority as their original request — not tool "
@@ -686,8 +686,8 @@ PLATFORM_HINTS = {
         "injected before your styles — so use those vars for color and don't set your own background, font, or margins "
         "(only a standalone PAGE — mockup, poster, game — overrides them). The frame sizes itself to your content: "
         "height live, width from the content's first measured span — lay content flush left with no centering wrappers "
-        "or it measures full-bleed. Widgets talk back: data-hermes-send=\"prompt\" on any clickable element (or "
-        "window.hermes.send(\"prompt\")) sends that prompt as a hidden user turn — answer it by updating the widget's "
+        "or it measures full-bleed. Widgets talk back: data-moor-send=\"prompt\" on any clickable element (or "
+        "window.moor.send(\"prompt\")) sends that prompt as a hidden user turn — answer it by updating the widget's "
         "file, not with prose."
     ),
     "sms": (
@@ -929,8 +929,8 @@ def _format_backend_probe(output: str) -> str:
 
 def _probe_remote_backend(env_type: str) -> str | None:
     """Describe the active non-local backend via a live probe; None if it failed (cached, failures included)."""
-    from hermes_constants import hermes_home_key
-    cache_key = (hermes_home_key(), env_type, _tenv_read("TERMINAL_CWD", ""))
+    from moor_constants import moor_home_key
+    cache_key = (moor_home_key(), env_type, _tenv_read("TERMINAL_CWD", ""))
     formatted = _BACKEND_PROBE_CACHE.get(cache_key)
     if formatted is None:
         formatted = ""
@@ -1028,8 +1028,8 @@ def build_environment_hints() -> str:
 
 
 # Marks the runtime block after project prose for persisted-prompt cwd validation.
-RUNTIME_ENVIRONMENT_HEADING = "# Hermes runtime environment"
-RUNTIME_ENVIRONMENT_END = "<!-- End Hermes runtime environment -->"
+RUNTIME_ENVIRONMENT_HEADING = "# Moor runtime environment"
+RUNTIME_ENVIRONMENT_END = "<!-- End Moor runtime environment -->"
 
 CONTEXT_FILE_MAX_CHARS = 20_000
 CONTEXT_TRUNCATE_HEAD_RATIO = 0.7
@@ -1513,9 +1513,9 @@ def _context_section(content: str, label: str, warn_name: str, path: Path, conte
     return _truncate_content(body, warn_name, context_length=context_length, read_path=str(path))
 
 
-def _hermes_md_candidates(cwd_path: Path) -> list[tuple[str, Path, str]]:
-    """.hermes.md / HERMES.md — nearest match walking up to the git root."""
-    path = _find_hermes_md(cwd_path)
+def _moor_md_candidates(cwd_path: Path) -> list[tuple[str, Path, str]]:
+    """.moor.md / MOOR.md — nearest match walking up to the git root."""
+    path = _find_moor_md(cwd_path)
     if path is None:
         return []
     label = str(path.relative_to(cwd_path)) if path.is_relative_to(cwd_path) else path.name
@@ -1577,7 +1577,7 @@ def _cursorrules_candidates(cwd_path: Path) -> list[tuple[str, Path, str]]:
 # shadowed. Both the prompt build (loaders below) and the /context manifest
 # (``agent/context_file_sources.py``) enumerate files through these finders, so the two cannot drift.
 _CONTEXT_FILE_CANDIDATES = {
-    "hermes_md": _hermes_md_candidates,
+    "moor_md": _moor_md_candidates,
     "agents_md": _agents_md_candidates,
     "claude_md": _claude_md_candidates,
     "cursorrules": _cursorrules_candidates,
@@ -1592,20 +1592,20 @@ def discover_context_files(cwd_path: Path) -> list[tuple[str, str, Path, str]]:
 
 
 def _project_context_suppressed(cwd: Optional[str], cwd_path: Path, allow_install_tree_fallback: bool) -> bool:
-    """A FALLBACK-picked cwd inside the Hermes install tree must not gain system-prompt authority (the desktop
+    """A FALLBACK-picked cwd inside the Moor install tree must not gain system-prompt authority (the desktop
     default would load this repo's contributor AGENTS.md). An explicitly configured cwd is honored verbatim —
-    the Hermes tree is a legitimate workspace when the user deliberately points a session at it — and
+    the Moor tree is a legitimate workspace when the user deliberately points a session at it — and
     CLI-style surfaces pass allow_install_tree_fallback=True because their launch dir IS the user's shell cwd
-    (developing Hermes in-tree). See #64590."""
+    (developing Moor in-tree). See #64590."""
     from agent.runtime_cwd import _is_install_tree
     return cwd is None and not allow_install_tree_fallback and _is_install_tree(cwd_path)
 
 
-def _load_hermes_md(cwd_path: Path, context_length: Optional[int] = None) -> str:
-    """.hermes.md / HERMES.md — nearest match walking up to the git root."""
-    for label, path, content in _hermes_md_candidates(cwd_path):
+def _load_moor_md(cwd_path: Path, context_length: Optional[int] = None) -> str:
+    """.moor.md / MOOR.md — nearest match walking up to the git root."""
+    for label, path, content in _moor_md_candidates(cwd_path):
         if content:
-            return _context_section(_strip_yaml_frontmatter(content), label, ".hermes.md", path, context_length)
+            return _context_section(_strip_yaml_frontmatter(content), label, ".moor.md", path, context_length)
     return ""
 
 

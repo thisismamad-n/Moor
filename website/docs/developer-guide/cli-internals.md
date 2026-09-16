@@ -70,16 +70,16 @@ User skins are `~/.moor/skins/<name>.yaml` with the same keys, activated with `/
 
 ## Profiles: multi-instance support
 
-Hermes supports profiles — fully isolated instances, each with its own `HERMES_HOME` (config, API
-keys, memory, sessions, skills, gateway). For single-profile commands (`hermes -p x <cmd>`),
-`_apply_profile_override()` in `hermes_cli/main.py` sets `HERMES_HOME` before any module imports, so
-every `get_hermes_home()` reference scopes to the active profile. The multiplex gateway and the
+Moor supports profiles — fully isolated instances, each with its own `MOOR_HOME` (config, API
+keys, memory, sessions, skills, gateway). For single-profile commands (`moor -p x <cmd>`),
+`_apply_profile_override()` in `moor_cli/main.py` sets `MOOR_HOME` before any module imports, so
+every `get_moor_home()` reference scopes to the active profile. The multiplex gateway and the
 Desktop/dashboard `serve` backend serve several profiles from one process instead: the active
-profile is a contextvar override bound per activity, `os.environ["HERMES_HOME"]` stays the launch
+profile is a contextvar override bound per activity, `os.environ["MOOR_HOME"]` stays the launch
 profile's, and a module-level constant derived from the home freezes to that launch profile (see
 [Gateway Internals § Multiplexed profiles](./gateway-internals.md#multiplexed-profiles)). Profile
 operations are HOME-anchored (`_get_profiles_root()` returns
-`Path.home() / ".hermes" / "profiles"`, not `get_hermes_home() / "profiles"`) so
-`hermes -p coder profile list` sees all profiles regardless of which one is active — intentional.
+`Path.home() / ".moor" / "profiles"`, not `get_moor_home() / "profiles"`) so
+`moor -p coder profile list` sees all profiles regardless of which one is active — intentional.
 Profile-safe coding rules are in the root `AGENTS.md`; multiplex secret-scope rules in
 `gateway/AGENTS.md`.

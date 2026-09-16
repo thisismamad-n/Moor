@@ -891,7 +891,7 @@ def _apply_primary_runtime_fields(agent, rt: Dict[str, Any]) -> None:
     agent.provider = rt["provider"]
     agent.requested_provider = rt.get("requested_provider", agent.provider)
     agent.base_url = rt["base_url"]           # setter updates _base_url_lower
-    from hermes_cli.providers import is_actual_route
+    from moor_cli.providers import is_actual_route
     agent.api_mode = "chat_completions" if is_actual_route(agent.provider, agent.base_url) else rt["api_mode"]
     if hasattr(agent, "_transport_cache"):
         agent._transport_cache.clear()
@@ -1778,7 +1778,7 @@ def create_openai_client(agent, client_kwargs: dict, *, reason: str, shared: boo
     # placeholder as well as the provider: a free slug picked under the paid ``opencode`` profile
     # resolves to the placeholder too, and shipping it as a bearer 401s every request with an
     # empty pool to rotate (#110831).
-    from hermes_cli.models import OPENCODE_ZEN_FREE_KEYLESS_PLACEHOLDER, opencode_zen_free_headers
+    from moor_cli.models import OPENCODE_ZEN_FREE_KEYLESS_PLACEHOLDER, opencode_zen_free_headers
     if agent.provider == "opencode-free" or client_kwargs.get("api_key") == OPENCODE_ZEN_FREE_KEYLESS_PLACEHOLDER:
         client_kwargs["default_headers"] = {**(client_kwargs.get("default_headers") or {}), **opencode_zen_free_headers()}
     # All primary construction and recovery paths must identify Moor to the official Codex
@@ -1850,7 +1850,7 @@ def _restore_switch_snapshot(agent, snapshot: Dict[str, Any]) -> None:
 
 def _resolve_switch_destination(agent, new_model, new_provider, base_url, api_mode, capabilities, old_norm, new_norm):
     """Resolve ``(api_mode, base_url, destination_capabilities)`` for the switch target."""
-    from hermes_cli.providers import determine_api_mode, is_actual_route
+    from moor_cli.providers import determine_api_mode, is_actual_route
     from agent.native_compaction import resolve_native_compaction_capabilities
     from moor_cli.models import opencode_provider_family
     # Pass model so dual-wire providers (Moor Portal anthropic/* -> Messages) resolve correctly.
@@ -1867,7 +1867,7 @@ def _resolve_switch_destination(agent, new_model, new_provider, base_url, api_mo
     if is_actual_route(new_provider, effective_base_url):
         api_mode = "chat_completions"
         if effective_base_url:
-            from hermes_cli.auth import normalize_actual_base_url
+            from moor_cli.auth import normalize_actual_base_url
             base_url = normalize_actual_base_url(effective_base_url)
     destination_capabilities = (
         dict(capabilities)

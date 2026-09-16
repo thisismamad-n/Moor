@@ -22,7 +22,7 @@ from moor_cli.web_deps import late
 from moor_cli.web_server_chat import _ws_auth_ok, _ws_request_is_allowed
 from moor_cli.web_server_gateway import _split_text_for_speak_stream
 from fastapi import HTTPException, WebSocket, WebSocketDisconnect
-from hermes_cli.web_models import AudioTranscriptionRequest, TTSSpeakRequest, TTSLeaseRequest, VoiceLiveSessionRequest
+from moor_cli.web_models import AudioTranscriptionRequest, TTSSpeakRequest, TTSLeaseRequest, VoiceLiveSessionRequest
 from typing import Any, Dict, Optional
 
 _log = logging.getLogger("moor_cli.web_server")
@@ -180,7 +180,7 @@ async def create_voice_live_session(payload: VoiceLiveSessionRequest, profile: O
 
     The project API key stays on this host; the renderer only receives the session id and the
     SDP answer. Client delegation is fixed at creation: every ``session.delegation.created`` the
-    renderer receives becomes a Hermes turn on the session it belongs to.
+    renderer receives becomes a Moor turn on the session it belongs to.
     """
     from tools.voice_live import create_webrtc_session
     # Validate emptiness only: the vendor's SDP parser needs the offer byte-exact, including the

@@ -31,18 +31,18 @@ from starlette.concurrency import run_in_threadpool
 
 from moor_cli.dashboard_auth import (
     get_provider, list_providers, list_session_providers, native_flow)
-from hermes_cli.dashboard_auth import prefix as _prefix_mod
-from hermes_cli.dashboard_auth.audit import AuditEvent, audit_log
-from hermes_cli.dashboard_auth.base import (
+from moor_cli.dashboard_auth import prefix as _prefix_mod
+from moor_cli.dashboard_auth.audit import AuditEvent, audit_log
+from moor_cli.dashboard_auth.base import (
     InvalidCodeError, InvalidCredentialsError, ProviderError, Session)
-from hermes_cli.dashboard_auth.cookies import (
+from moor_cli.dashboard_auth.cookies import (
     clear_pkce_cookie, clear_session_cookies, clear_sso_attempt_cookie, detect_https,
     parse_pkce_payload, read_pkce_cookie, read_session_cookies, set_pkce_cookie,
     set_session_cookies)
-from hermes_cli.dashboard_auth.login_page import (
+from moor_cli.dashboard_auth.login_page import (
     render_login_html, render_native_provider_choice_html)
-from hermes_cli.dashboard_auth.refresh_singleflight import refresh_session_coalesced
-from hermes_cli.dashboard_auth.request_utils import (
+from moor_cli.dashboard_auth.refresh_singleflight import refresh_session_coalesced
+from moor_cli.dashboard_auth.request_utils import (
     access_token_max_age, client_ip as _client_ip, is_safe_next_path)
 
 _log = logging.getLogger(__name__)

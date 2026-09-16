@@ -266,11 +266,11 @@ class TestCronDenyModeAllGuards:
 
     def test_permanent_pattern_key_allows_matching_command_in_cron_deny(self, monkeypatch):
         """A canonical dangerous-pattern key in command_allowlist applies in unattended mode."""
-        monkeypatch.setenv("HERMES_CRON_SESSION", "1")
-        monkeypatch.delenv("HERMES_INTERACTIVE", raising=False)
-        monkeypatch.delenv("HERMES_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("HERMES_EXEC_ASK", raising=False)
-        monkeypatch.delenv("HERMES_YOLO_MODE", raising=False)
+        monkeypatch.setenv("MOOR_CRON_SESSION", "1")
+        monkeypatch.delenv("MOOR_INTERACTIVE", raising=False)
+        monkeypatch.delenv("MOOR_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("MOOR_EXEC_ASK", raising=False)
+        monkeypatch.delenv("MOOR_YOLO_MODE", raising=False)
         approval_module.load_permanent({"script execution via heredoc"})
 
         from unittest.mock import patch as mock_patch
@@ -285,11 +285,11 @@ class TestCronDenyModeAllGuards:
 
     def test_pattern_key_allowlist_does_not_bypass_tirith_in_cron_deny(self, monkeypatch):
         """Approving one dangerous pattern must not suppress an independent Tirith finding."""
-        monkeypatch.setenv("HERMES_CRON_SESSION", "1")
-        monkeypatch.delenv("HERMES_INTERACTIVE", raising=False)
-        monkeypatch.delenv("HERMES_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("HERMES_EXEC_ASK", raising=False)
-        monkeypatch.delenv("HERMES_YOLO_MODE", raising=False)
+        monkeypatch.setenv("MOOR_CRON_SESSION", "1")
+        monkeypatch.delenv("MOOR_INTERACTIVE", raising=False)
+        monkeypatch.delenv("MOOR_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("MOOR_EXEC_ASK", raising=False)
+        monkeypatch.delenv("MOOR_YOLO_MODE", raising=False)
         approval_module.load_permanent({"script execution via heredoc"})
 
         from unittest.mock import patch as mock_patch

@@ -94,7 +94,7 @@ class EntraIdentityConfig:
 @functools.lru_cache(maxsize=1)
 def _default_chain_credential(config: EntraIdentityConfig) -> Any:
     """Cached ``DefaultAzureCredential`` for the unscoped process. ``maxsize=1`` is intentional: a process uses
-    one ``model.entra.*`` block at a time. Only Hermes knobs are passed as kwargs; the rest comes from ``AZURE_*``
+    one ``model.entra.*`` block at a time. Only Moor knobs are passed as kwargs; the rest comes from ``AZURE_*``
     env vars."""
     ai = _require_azure_identity()
     # SDK default already excludes the browser; only pass the kwarg when opting in.
@@ -124,11 +124,11 @@ def _scoped_credential(ai: Any, config: EntraIdentityConfig) -> Any:
 
 def build_credential(config: EntraIdentityConfig) -> Any:
     """Cached Entra credential: the process-wide default chain when unscoped, the routed profile's own
-    credential (built from its secret scope) under a HERMES_HOME override."""
-    from hermes_constants import get_hermes_home_override, hermes_home_key
-    if get_hermes_home_override() is None:
+    credential (built from its secret scope) under a MOOR_HOME override."""
+    from moor_constants import get_moor_home_override, moor_home_key
+    if get_moor_home_override() is None:
         return _default_chain_credential(config)
-    key = (hermes_home_key(), config)
+    key = (moor_home_key(), config)
     credential = _credentials_by_home.get(key)
     if credential is None:
         credential = _credentials_by_home[key] = _scoped_credential(_require_azure_identity(), config)

@@ -19,16 +19,16 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import kanban_db as kb
-from hermes_cli import kanban_db_connect as kbc
-from hermes_cli import kanban_db_dispatch as kbd
+from moor_cli import kanban_db as kb
+from moor_cli import kanban_db_connect as kbc
+from moor_cli import kanban_db_dispatch as kbd
 
 
 @pytest.fixture
 def conn(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     db_path = kb.kanban_db_path(board="default")
     kb._INITIALIZED_PATHS.discard(str(db_path.resolve()))

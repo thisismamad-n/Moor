@@ -462,7 +462,7 @@ def test_advisory_exit_reasons_keep_failed_false_but_carry_a_failure_code(monkey
     """empty_response_exhausted / local_processing_error: Desktop and TUI get a specific code, yet
     ``failed`` stays False so cron silence, the kanban breaker and gateway transcript persistence
     behave exactly as before the code was added."""
-    monkeypatch.setattr("hermes_cli.plugins.invoke_hook", lambda *_a, **_kw: [])
+    monkeypatch.setattr("moor_cli.plugins.invoke_hook", lambda *_a, **_kw: [])
     agent_max = FakeAgent().max_iterations
     for exit_reason, code in (("empty_response_exhausted", "empty_response"),
                               ("local_processing_error(TypeError: x)", "loop_error")):
@@ -475,7 +475,7 @@ def test_advisory_exit_reasons_keep_failed_false_but_carry_a_failure_code(monkey
 
 
 def test_hard_failure_exit_reasons_still_fail_the_turn(monkeypatch):
-    monkeypatch.setattr("hermes_cli.plugins.invoke_hook", lambda *_a, **_kw: [])
+    monkeypatch.setattr("moor_cli.plugins.invoke_hook", lambda *_a, **_kw: [])
     result = _finalize(FakeAgent(), exit_reason="repeated_outer_errors(RuntimeError)", final_response="stopped")
     assert result["failed"] is True and result["completed"] is False
     assert result["failure_reason"] == "loop_error" and result["error"] == "stopped"

@@ -4,7 +4,7 @@ import { getStatus } from '@/moor'
 import { evaluateRuntimeReadiness, type RuntimeReadinessResult } from '@/lib/runtime-readiness'
 import { refreshFreeTierStatus, setFreeTierRoute } from '@/store/free-tier'
 import { $setupReadyTick } from '@/store/live-sync'
-import type { StatusResponse } from '@/types/hermes'
+import type { StatusResponse } from '@/types/moor'
 
 // Statusbar health is ambient chrome, not live data — nothing the user acts on
 // within seconds. 60s + an actively-viewed check keeps traffic low; focus and

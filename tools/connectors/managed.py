@@ -1,4 +1,4 @@
-"""Managed connectors (Nous tool gateway) on the connection operation.
+"""Managed connectors (Moor tool gateway) on the connection operation.
 
 ``connect`` mints a link for every target up front and stores it on the target; ``reconnect``
 reads status first and reinitiates only what is not connected (``force`` always reinitiates).
@@ -185,5 +185,5 @@ def run_managed_action(
         logger.debug("manage_connections %s failed: %s", action, exc)
         return tool_error(
             f"The connector gateway request failed: {exc}. "
-            "If this persists, the user can manage connections in the Nous Portal."
+            "If this persists, the user can manage connections in the Moor Portal."
         )

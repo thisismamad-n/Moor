@@ -237,8 +237,8 @@ class TestProfileScopedMcp:
         (Bitwarden/1Password) never has it in the shared process env, so the
         probe used to send the literal placeholder — or the default profile's
         value of the same name — and the server answered 400 (#109901)."""
-        import hermes_cli.env_loader as env_loader
-        import hermes_cli.mcp_config as mcp_config
+        import moor_cli.env_loader as env_loader
+        import moor_cli.mcp_config as mcp_config
 
         worker_home = isolated_profiles["worker_beta"]
         (worker_home / "config.yaml").write_text(
@@ -250,8 +250,8 @@ class TestProfileScopedMcp:
         # same env name — the probe must not use it.
         monkeypatch.setenv("GITHUB_PERSONAL_ACCESS_TOKEN", "default-profile-token")
 
-        def _worker_sources(hermes_home):
-            if Path(hermes_home).resolve() == worker_home.resolve():
+        def _worker_sources(moor_home):
+            if Path(moor_home).resolve() == worker_home.resolve():
                 return {"GITHUB_PERSONAL_ACCESS_TOKEN": "bw-worker-token"}
             return {}
 
@@ -277,7 +277,7 @@ class TestProfileScopedMcp:
     ):
         """Same class for the read endpoint: a ``${VAR}`` in a secondary profile's server
         ``url`` must expand from THAT profile's secret scope, never the dashboard process env."""
-        import hermes_cli.env_loader as env_loader
+        import moor_cli.env_loader as env_loader
 
         worker_home = isolated_profiles["worker_beta"]
         (worker_home / "config.yaml").write_text(
@@ -286,8 +286,8 @@ class TestProfileScopedMcp:
         monkeypatch.setenv("MCP_GH_URL", "http://default-profile/mcp")
         monkeypatch.setattr(
             env_loader, "get_secret_source_values",
-            lambda hermes_home: {"MCP_GH_URL": "http://worker/mcp"}
-            if Path(hermes_home).resolve() == worker_home.resolve() else {},
+            lambda moor_home: {"MCP_GH_URL": "http://worker/mcp"}
+            if Path(moor_home).resolve() == worker_home.resolve() else {},
         )
 
         resp = client.get("/api/mcp/servers", params={"profile": "worker_beta"})
@@ -301,12 +301,12 @@ class TestProfileScopedModel:
         """These tests pin WHICH profile the write lands in, not catalog validation: the main
         slot now routes through ``switch_model`` (needs credentials + a listed model), so echo the
         request back as an accepted route."""
-        from hermes_cli.model_switch import ModelSwitchResult
+        from moor_cli.model_switch import ModelSwitchResult
 
         def _switch(*, raw_input, explicit_provider, **_kw):
             return ModelSwitchResult(success=True, new_model=raw_input, target_provider=explicit_provider)
 
-        monkeypatch.setattr("hermes_cli.model_switch.switch_model", _switch)
+        monkeypatch.setattr("moor_cli.model_switch.switch_model", _switch)
 
     def test_model_set_main_scoped(self, client, isolated_profiles):
         resp = client.post(
@@ -335,8 +335,8 @@ class TestProfileScopedModel:
         (no providers:, no .env), so validating there rejected every non-env provider and
         create silently returned model_set: false. Validation must see the dashboard home's
         config; the write must still land in the new profile only."""
-        import hermes_cli.profiles as profiles_mod
-        from hermes_constants import get_hermes_home
+        import moor_cli.profiles as profiles_mod
+        from moor_constants import get_moor_home
 
         monkeypatch.setattr(profiles_mod, "create_wrapper_script", lambda name: None)
         (isolated_profiles["default"] / "config.yaml").write_text(
@@ -344,14 +344,14 @@ class TestProfileScopedModel:
         seen: dict = {}
 
         def _switch(*, raw_input, explicit_provider, user_providers, **_kw):
-            from hermes_cli.model_switch import ModelSwitchResult
+            from moor_cli.model_switch import ModelSwitchResult
             seen["user_providers"] = user_providers
-            seen["home"] = get_hermes_home()
+            seen["home"] = get_moor_home()
             if explicit_provider not in user_providers:
                 return ModelSwitchResult(success=False, error_message=f"Unknown provider '{explicit_provider}'.")
             return ModelSwitchResult(success=True, new_model=raw_input, target_provider=explicit_provider)
 
-        monkeypatch.setattr("hermes_cli.model_switch.switch_model", _switch)
+        monkeypatch.setattr("moor_cli.model_switch.switch_model", _switch)
         resp = client.post("/api/profiles", json={"name": "newbie", "provider": "mybox", "model": "qwen3"})
         assert resp.status_code == 200 and resp.json()["model_set"] is True
         assert "mybox" in seen["user_providers"] and seen["home"] == isolated_profiles["default"]

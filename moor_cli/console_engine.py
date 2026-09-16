@@ -591,7 +591,7 @@ def _session_db(*, read_only: bool = True):
     reads attach ``read_only`` so they never add a writer connection beside it (#100896).
     Mutating commands pass ``read_only=False``.
     """
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
     return closing(SessionDB(read_only=read_only))
 
 
@@ -710,7 +710,7 @@ def _sessions_optimize(_engine: MoorConsoleEngine, args: list[str]) -> None:
 
 
 @_captured
-def _sessions_repair(_engine: HermesConsoleEngine, args: list[str]) -> int | None:
+def _sessions_repair(_engine: MoorConsoleEngine, args: list[str]) -> int | None:
     ns = _parse(
         "sessions repair", args, (("--check-only",), dict(action="store_true")),
         (("--no-backup",), dict(action="store_true")))

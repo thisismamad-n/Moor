@@ -23,8 +23,8 @@ import types
 
 import pytest
 
-from hermes_cli import mcp_startup
-from hermes_constants import hermes_home_key
+from moor_cli import mcp_startup
+from moor_constants import moor_home_key
 
 
 @pytest.fixture(autouse=True)
@@ -290,7 +290,7 @@ def test_wait_stays_bounded_when_discovery_is_slow(monkeypatch):
     stop = threading.Event()
     thread = threading.Thread(target=lambda: stop.wait(10), daemon=True)
     thread.start()
-    mcp_startup._mcp_discovery_thread[hermes_home_key()] = thread
+    mcp_startup._mcp_discovery_thread[moor_home_key()] = thread
 
     try:
         start = time.monotonic()

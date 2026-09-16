@@ -9,11 +9,11 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 
-from hermes_cli.local_runtime.context_policy import (
+from moor_cli.local_runtime.context_policy import (
     RUNTIME_OVERHEAD_BYTES, launch_args, plan_launch, ub_logits_bytes)
-from hermes_cli.local_runtime.estimator import (
+from moor_cli.local_runtime.estimator import (
     HardwareBudget, PhysicsRefusal, ctx_bytes, footprint_bytes, profile_from_gguf)
-from hermes_cli.local_runtime.gguf import model_id_from_stem, read_gguf_header
+from moor_cli.local_runtime.gguf import model_id_from_stem, read_gguf_header
 
 logger = logging.getLogger(__name__)
 
@@ -79,8 +79,8 @@ def _draft_fits(path: Path, profile, budget: HardwareBudget, window: int, overhe
 def preset_for_model(gguf: Path, budget: HardwareBudget,
                      mtp_capable: set[str], *, requested_window: int | None = None) -> PresetEntry | None:
     """The launch decision for one staged model, or None when its header is unreadable."""
-    from hermes_cli.local_runtime.catalog import entry_for_model
-    from hermes_cli.local_runtime.growth import load_window_overrides
+    from moor_cli.local_runtime.catalog import entry_for_model
+    from moor_cli.local_runtime.growth import load_window_overrides
 
     model_id = model_id_from_stem(gguf.stem)
     try:
@@ -148,7 +148,7 @@ def generate_presets(models_dir: Path, budget: HardwareBudget, preset_path: Path
             continue
         entries.append(entry)
         # INI comments preserve non-flag facts atomically with the launch policy.
-        sections.append("# hermes-decision: " + json.dumps({
+        sections.append("# moor-decision: " + json.dumps({
             "model_id": entry.model_id, "window": entry.window,
             "spilled": entry.spilled, "refusal": entry.refusal}) + "\n")
         if entry.keys is not None:
@@ -177,8 +177,8 @@ def read_preset_decisions(preset_path: Path | None = None) -> dict[str, PresetEn
         parser.read_string(text)
         recorded = {}
         for line in text.splitlines():
-            if line.startswith("# hermes-decision: "):
-                fact = json.loads(line.removeprefix("# hermes-decision: "))
+            if line.startswith("# moor-decision: "):
+                fact = json.loads(line.removeprefix("# moor-decision: "))
                 recorded[fact["model_id"]] = fact
                 if fact.get("refusal"):
                     out[fact["model_id"]] = PresetEntry(**fact)

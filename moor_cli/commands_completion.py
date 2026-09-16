@@ -31,7 +31,7 @@ def _personalities_from_cli_config() -> Dict[str, Any]:
     global _personalities_memo
     from cli import load_cli_config
     from utils import file_signature
-    from hermes_cli.personality import available_personalities
+    from moor_cli.personality import available_personalities
     try:
         from moor_cli.config import get_config_path
         cfg_path = get_config_path()

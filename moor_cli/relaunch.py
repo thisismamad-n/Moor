@@ -59,14 +59,14 @@ def _extract_inherited_flags(argv: Sequence[str]) -> list[str]:
     return flags
 
 
-def resolve_hermes_bin() -> Optional[str]:
-    """Hermes entry point: ``sys.argv[0]`` if a real executable, else ``which hermes``, else ``None``
-    (caller falls back to ``python -m hermes_cli.main``).
+def resolve_moor_bin() -> Optional[str]:
+    """Moor entry point: ``sys.argv[0]`` if a real executable, else ``which moor``, else ``None``
+    (caller falls back to ``python -m moor_cli.main``).
 
     Python launchers are never returned: on Windows a ``.py`` can't be exec'd directly, and on
     POSIX the git installer runs the extensionless source launcher under the managed venv
     interpreter while its ``#!/usr/bin/env python3`` shebang would pick the system Python and
-    lose the venv. Falling through to ``sys.executable -m hermes_cli.main`` keeps the venv.
+    lose the venv. Falling through to ``sys.executable -m moor_cli.main`` keeps the venv.
     """
     argv0 = sys.argv[0]
     _is_windows = sys.platform == "win32"
@@ -79,7 +79,7 @@ def resolve_hermes_bin() -> Optional[str]:
             return _is_python_script(p)
         # A console script pinned to the running venv (``#!<venv>/bin/python``) keeps the venv and
         # stays exec-able; a shebang that resolves elsewhere (``env python3``) loses it.
-        from hermes_cli.linux_desktop_entry import _needs_interpreter
+        from moor_cli.linux_desktop_entry import _needs_interpreter
 
         return _needs_interpreter(pathlib.Path(p))
 
@@ -93,7 +93,7 @@ def resolve_hermes_bin() -> Optional[str]:
         abs_path = os.path.abspath(argv0)
         if os.access(abs_path, os.X_OK) and not _is_unsafe_python_launcher(abs_path):
             return abs_path
-    path_bin = shutil.which("hermes")
+    path_bin = shutil.which("moor")
     if path_bin and not _is_unsafe_python_launcher(path_bin):
         return path_bin
     return None

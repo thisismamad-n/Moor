@@ -13,7 +13,7 @@ def _cli(history):
     cli = CLICommandsMixin.__new__(CLICommandsMixin)
     cli.conversation_history = history
     cli._pending_input = queue.Queue()
-    from hermes_cli.goals import GoalManager
+    from moor_cli.goals import GoalManager
     cli._get_goal_manager = lambda: GoalManager("kick-test")
     return cli
 

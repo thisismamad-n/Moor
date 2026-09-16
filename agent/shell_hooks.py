@@ -29,7 +29,7 @@ try:
 except ImportError:  # pragma: no cover
     fcntl = None  # type: ignore[assignment]
 
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)
@@ -82,7 +82,7 @@ def _payload_fields(kwargs: Dict[str, Any]) -> Dict[str, Any]:
         cwd = str(Path.cwd())
     except OSError:
         cwd = ""
-    from hermes_cli.profiles import get_active_profile_name
+    from moor_cli.profiles import get_active_profile_name
     return {
         "tool_name": kwargs.get("tool_name"),
         "tool_input": kwargs.get("args") if isinstance(kwargs.get("args"), dict) else None,
@@ -303,7 +303,7 @@ def _spawn(spec: ShellHookSpec, stdin_json: str) -> Dict[str, Any]:
     # Own process group on POSIX so a timed-out hook's descendants are reaped with it (Windows: kill_process_tree
     # / taskkill /T). Hooks that finish in time keep detached helpers alive.
     popen_kwargs: Dict[str, Any] = {"creationflags": windows_hide_flags()} if IS_WINDOWS else {"process_group": 0}
-    # HERMES_HOME follows the routed profile (the import-time environ holds the launch profile's), and
+    # MOOR_HOME follows the routed profile (the import-time environ holds the launch profile's), and
     # under multiplexing os.environ carries the DEFAULT profile's secrets, which a secondary's hook
     # script must not inherit; single-profile runs keep the process env byte-for-byte as before.
     from agent.secret_scope import is_multiplex_active

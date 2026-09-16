@@ -80,7 +80,7 @@ Routes define how different webhook sources are handled. Each route is a named e
 |----------|----------|-------------|
 | `events` | No | List of event types to accept (e.g. `["pull_request"]`). If empty, all events are accepted. Event type is read from `X-GitHub-Event`, `X-GitLab-Event`, or `event_type` in the payload. |
 | `secret` | **Yes** | HMAC secret for signature validation. Falls back to the global `secret` if not set on the route. Set to `"INSECURE_NO_AUTH"` for testing only (skips validation). |
-| `profile` | No | Profile authorized to execute this route when `gateway.multiplex_profiles` is enabled. Omit it for a default-profile-only route; set a profile name (for example `coder`) to bind the route and its secret to `/p/coder/webhooks/<route>`. Dynamic subscriptions set it with `hermes webhook subscribe <name> --route-profile coder`. |
+| `profile` | No | Profile authorized to execute this route when `gateway.multiplex_profiles` is enabled. Omit it for a default-profile-only route; set a profile name (for example `coder`) to bind the route and its secret to `/p/coder/webhooks/<route>`. Dynamic subscriptions set it with `moor webhook subscribe <name> --route-profile coder`. |
 | `prompt` | No | Template string with dot-notation payload access (e.g. `{pull_request.title}`). If omitted, the full JSON payload is dumped into the prompt. Payload fields are untrusted — see [Authenticated does not mean trusted](#authenticated-does-not-mean-trusted). |
 | `filters` | No | Declarative payload filters evaluated after auth/body/event filtering and before agent or direct delivery work. Non-matches return `{"status":"ignored","reason":"filter"}` with HTTP 200. |
 | `script` | No | Filter/transform script under `~/.moor/scripts/`. The webhook payload is passed as JSON on stdin. JSON object stdout replaces the payload before templating; text stdout is exposed as `script_output`; empty stdout, `[SILENT]`, or a nonzero exit code ignores the webhook. |
@@ -197,7 +197,7 @@ How it works:
 - When more than one event was coalesced, the prompt gets a short note telling the agent how many earlier events were superseded.
 - If the `key` does not resolve for an event (the payload lacks the field — e.g. an `issue_comment` event on a route keyed by `pull_request.number`), that event is **dispatched immediately** instead of being coalesced, so unrelated entities never collapse into one group. Pick a key present on every event type the route accepts.
 - Coalesced requests return HTTP 202 with `{"status": "coalesced"}`. Delivery-ID idempotency still runs first, so provider retries of the same delivery are dropped rather than counted.
-- Pending groups are flushed (dispatched immediately) when the adapter disconnects — a gateway reconnect or `hermes gateway stop` — not dropped. Buffered events live in memory, so a hard process kill loses at most the current window's buffered burst.
+- Pending groups are flushed (dispatched immediately) when the adapter disconnects — a gateway reconnect or `moor gateway stop` — not dropped. Buffered events live in memory, so a hard process kill loses at most the current window's buffered burst.
 - `coalesce` applies to agent-mode routes only; combining it with `deliver_only` or `cron_job` is rejected at startup.
 
 ### Script Filters and Transforms
@@ -465,7 +465,7 @@ platforms:
 ### Via the CLI
 
 ```bash
-hermes webhook subscribe pr-feedback \
+moor webhook subscribe pr-feedback \
   --events "pull_request_review" \
   --cron-job "pr-review-sweeper" \
   --prompt "PR #{number} received feedback: {review.body}"

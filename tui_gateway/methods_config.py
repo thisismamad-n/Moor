@@ -259,7 +259,7 @@ def _readiness_check(rid, params, probe):
     # ``profile_home=None`` is the launch profile: once this process multiplexes its probe must
     # run under its own frozen secret scope too (``_profile_runtime_scope_tokens`` binds nothing in
     # a single-profile process), or the first profile-scoped read inside the resolver
-    # (``HERMES_CODEX_BASE_URL`` for openai-codex) fails closed and the UI shows onboarding.
+    # (``MOOR_CODEX_BASE_URL`` for openai-codex) fails closed and the UI shows onboarding.
     with _session_profile_runtime_scope({"profile_home": str(home) if home is not None else None}):
         payload = probe(profile, {"profile": profile} if profile else {})
     return _ok(rid, payload)
@@ -275,8 +275,8 @@ def _(rid, params: dict) -> dict:
     is still missing after the wait, or a named profile is asked about, today's live probe answers.
     The record's fields ride along additively (``ready``, ``free_tier``, ``other_providers``)."""
     try:
-        from hermes_cli.main import _has_any_provider_configured
-        from hermes_cli.free_tier_bootstrap import wait_for_record
+        from moor_cli.main import _has_any_provider_configured
+        from moor_cli.free_tier_bootstrap import wait_for_record
 
         def probe(profile, scoped):
             record = None if profile else wait_for_record()
@@ -331,12 +331,12 @@ def _(rid, params: dict) -> dict:
             if not (callable(api_key) or api_key_text in {"aws-sdk", "no-key-required"}
                     or has_usable_secret(api_key_text) or bool(runtime.get("command"))):
                 return fail(f"No usable credentials found for {provider}.", runtime.get("source"))
-            from hermes_cli.anon_auth import route_is_welcome_host
-            # free_tier is keyed on the SELECTED route (the welcome host serves only nous/welcome), not
-            # on profile state: a paid Nous key beside a free-tier identity must not read as free.
+            from moor_cli.anon_auth import route_is_welcome_host
+            # free_tier is keyed on the SELECTED route (the welcome host serves only moor/welcome), not
+            # on profile state: a paid Moor key beside a free-tier identity must not read as free.
             return {"ok": True, "provider": runtime.get("provider"), "model": model,
                     "source": runtime.get("source"),
-                    "free_tier": provider == "nous" and route_is_welcome_host(runtime.get("base_url")),
+                    "free_tier": provider == "moor" and route_is_welcome_host(runtime.get("base_url")),
                     **scoped}
         return _readiness_check(rid, params, probe)
     except Exception as e:

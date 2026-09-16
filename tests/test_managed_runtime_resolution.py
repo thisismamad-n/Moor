@@ -38,7 +38,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 # through a managed-aware helper rather than PATH.
 _MANAGED_COMMANDS = frozenset({"uv", "node", "npm", "npx"})
 
-# Directories that are not Hermes-owned subprocess code: plugins ship their own
+# Directories that are not moor-owned subprocess code: plugins ship their own
 # resolution policy, tests assert against PATH deliberately, and skills/scripts/
 # evals run as standalone user-invoked programs.
 _EXEMPT_DIRS = (

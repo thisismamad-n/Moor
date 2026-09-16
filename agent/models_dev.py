@@ -19,7 +19,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from utils import atomic_json_write, atomic_write_text
 
-from hermes_constants import openrouter_variant_base
+from moor_constants import openrouter_variant_base
 
 import requests
 
@@ -189,9 +189,9 @@ def _load_etag() -> str:
 def _save_etag(etag: str) -> None:
     def write() -> None:
         etag_path = _get_etag_path()
-        from hermes_constants import mkdir_under_hermes_home
+        from moor_constants import mkdir_under_moor_home
 
-        mkdir_under_hermes_home(etag_path.parent)
+        mkdir_under_moor_home(etag_path.parent)
         atomic_write_text(etag_path, etag)
     _quietly("save models.dev ETag", write)
 

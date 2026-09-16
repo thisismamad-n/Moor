@@ -41,8 +41,8 @@ vi.mock('@/store/notifications', () => ({
 }))
 
 vi.mock('../hooks/use-config-record', () => ({
-  setHermesConfigCache: (config: Record<string, unknown>) => mocks.cache(config),
-  useHermesConfigRecord: () => ({ data: mocks.loadedConfig, dataUpdatedAt: mocks.configUpdatedAt })
+  setMoorConfigCache: (config: Record<string, unknown>) => mocks.cache(config),
+  useMoorConfigRecord: () => ({ data: mocks.loadedConfig, dataUpdatedAt: mocks.configUpdatedAt })
 }))
 
 vi.mock('../hooks/use-on-profile-switch', () => ({
@@ -93,7 +93,7 @@ describe('TerminalFontSetting', () => {
     // gets the merged record so sibling terminal keys survive.
     expect(mocks.save).toHaveBeenCalledWith({ terminal: { font_family: 'MesloLGS NF' } })
     expect(mocks.cache).toHaveBeenCalledWith({
-      display: { skin: 'hermes' },
+      display: { skin: 'moor' },
       terminal: { backend: 'local', cwd: '/workspace', font_family: 'MesloLGS NF' }
     })
   })

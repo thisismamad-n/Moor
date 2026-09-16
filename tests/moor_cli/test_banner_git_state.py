@@ -141,7 +141,7 @@ def test_check_via_local_git_insteadof_rewrite_routes_to_ssh_fastpath(tmp_path, 
     import os
     import subprocess
 
-    from hermes_cli import banner
+    from moor_cli import banner
 
     repo_dir = tmp_path / "repo"
     repo_dir.mkdir()

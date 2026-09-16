@@ -9,7 +9,7 @@ import sys
 from pathlib import Path, PurePath
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
-from hermes_constants import (
+from moor_constants import (
     get_config_path,
     get_skills_dir,
     get_subprocess_home,
@@ -707,10 +707,10 @@ _HOME_VAR_RE = re.compile(r"\$(?:\{HOME\}|HOME)(?=$|[/\\])")
 
 
 def _expand_skill_config_path(value: str) -> str:
-    """Expand ``~`` / ``$HOME`` against the HOME Hermes injects into tool subprocesses.
+    """Expand ``~`` / ``$HOME`` against the HOME Moor injects into tool subprocesses.
 
     Skill config defaults describe paths the agent hands to tools, so in a container where the
-    control process HOME (``/opt/data``) differs from the tool HOME (``{HERMES_HOME}/home``) a
+    control process HOME (``/opt/data``) differs from the tool HOME (``{MOOR_HOME}/home``) a
     plain ``expanduser`` pointed the prompt at a path no tool would ever read (#12260).
     """
     subprocess_home = get_subprocess_home()

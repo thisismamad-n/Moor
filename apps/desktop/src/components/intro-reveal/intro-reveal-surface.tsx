@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 
 import { BrandClose } from './scenes/brand'
 import { SideAgents } from './scenes/side-agents'
-import { BLUE, BLUE_DIM, EASE, NOUS_SHADOW } from './scenes/style'
+import { BLUE, BLUE_DIM, EASE, MOOR_SHADOW } from './scenes/style'
 import { decoded, SPINNER } from './scenes/text'
 import { INTRO_BEATS, INTRO_PROMPT, INTRO_REPLY_WORDS, INTRO_TOOL_ROWS } from './timeline'
 import { useIntroClock } from './use-intro-clock'
@@ -114,7 +114,7 @@ function HeroChat({ frame, viewportRef }: HeroChatProps) {
       style={{
         background: 'rgba(10, 11, 14, 0.88)',
         border: '1px solid rgba(255,255,255,0.09)',
-        boxShadow: NOUS_SHADOW,
+        boxShadow: MOOR_SHADOW,
         animation: 'intro-hover-a 8.4s ease-in-out infinite alternate',
         transform: everywhere ? 'rotateX(4deg) translateZ(-60px) scale(0.86)' : 'rotateX(1.6deg) scale(1)',
         transition: `transform 1100ms ${EASE}`,
@@ -305,7 +305,7 @@ function ViewportNode({ frame, viewportRef }: HeroChatProps) {
         style={{
           background: 'rgba(10, 11, 14, 0.88)',
           border: '1px solid rgba(255,255,255,0.09)',
-          boxShadow: NOUS_SHADOW,
+          boxShadow: MOOR_SHADOW,
           animation: 'intro-hover-b 6.8s ease-in-out infinite alternate',
           opacity: sent && !everywhere ? 1 : 0,
           transform:

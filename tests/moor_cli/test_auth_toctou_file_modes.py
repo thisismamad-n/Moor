@@ -150,4 +150,4 @@ def test_shared_moor_store_writes_0o600_with_0o700_parent(tmp_path, monkeypatch)
     )
 
     data = json.loads(path.read_text())
-    assert data["refresh_token"] == "nous-refresh-xxx"
+    assert data["refresh_token"] == "moor-refresh-xxx"

@@ -13,7 +13,7 @@ Moor has four hook systems that run custom code at key lifecycle points:
 | **[Gateway hooks](#gateway-event-hooks)** | `HOOK.yaml` + `handler.py` in `~/.moor/hooks/` | Gateway only | Logging, alerts, webhooks |
 | **[Plugin hooks](#plugin-hooks)** | `ctx.register_hook()` in a [plugin](/user-guide/features/plugins) | CLI + Gateway | Tool interception, metrics, guardrails |
 | **[Shell hooks](#shell-hooks)** | `hooks:` block in profile `config.yaml` pointing at shell scripts | CLI + Gateway + Desktop/TUI/dashboard chat | Drop-in scripts for blocking, auto-formatting, context injection |
-| **[Outbound webhooks](#outbound-webhooks)** | `hooks.outbound:` list in `~/.hermes/config.yaml` | CLI + Gateway | Push signed lifecycle events to external HTTP endpoints — CI, dashboards, other agents |
+| **[Outbound webhooks](#outbound-webhooks)** | `hooks.outbound:` list in `~/.moor/config.yaml` | CLI + Gateway | Push signed lifecycle events to external HTTP endpoints — CI, dashboards, other agents |
 
 Hook callback errors are isolated and logged rather than crashing the agent. Hooks are not all passive: directive/control hooks can change flow, transforms can replace content, and a shell `pre_tool_call` hook can block or fail closed.
 
@@ -1391,7 +1391,7 @@ def register(ctx):
 
 ### `on_room_member_activity`
 
-Fires while a hosted [Group Chat](/user-guide/bot-mode#groups-and-group-chats) member turn runs. A member executes on a hidden `Group: <room>` session that no client is attached to, so between the room log's `turn.started` and `turn.settled` the turn is a black box. This hook projects the runtime events that session already produces — tool start/complete, approval requests, streamed text and reasoning, errors — stamped with the room coordinates, so a client (Hermes Crew, a dashboard, an audit log) can render tool cards, approval prompts and live member status without inferring anything from text. The Group Chat runtime keeps ownership of execution, scheduling and the durable log; plugins only observe.
+Fires while a hosted [Group Chat](/user-guide/bot-mode#groups-and-group-chats) member turn runs. A member executes on a hidden `Group: <room>` session that no client is attached to, so between the room log's `turn.started` and `turn.settled` the turn is a black box. This hook projects the runtime events that session already produces — tool start/complete, approval requests, streamed text and reasoning, errors — stamped with the room coordinates, so a client (Moor Crew, a dashboard, an audit log) can render tool cards, approval prompts and live member status without inferring anything from text. The Group Chat runtime keeps ownership of execution, scheduling and the durable log; plugins only observe.
 
 **Callback signature:**
 
@@ -1651,7 +1651,7 @@ Five additional observers (RFC #58548) extend the kanban family. All are observe
 
 ## Shell Hooks
 
-Declare shell-script hooks in your profile's `config.yaml` and Hermes will run them as subprocesses whenever the corresponding plugin-hook event fires — in CLI, gateway, Desktop, TUI, and dashboard chat sessions. No Python plugin authoring required.
+Declare shell-script hooks in your profile's `config.yaml` and Moor will run them as subprocesses whenever the corresponding plugin-hook event fires — in CLI, gateway, Desktop, TUI, and dashboard chat sessions. No Python plugin authoring required.
 
 Desktop, TUI, and dashboard chat register hooks when building an agent, using that session's profile configuration and consent allowlist. Switching profiles does not reuse another profile's hooks. Existing hook consent requirements and safe-mode behavior still apply; unapproved hooks are skipped rather than silently approved.
 
@@ -1712,9 +1712,9 @@ Each time the event fires, Moor spawns a subprocess for every matching hook (mat
 }
 ```
 
-`profile` names the Hermes profile that fired the hook (`"default"` outside profiles), so one
+`profile` names the Moor profile that fired the hook (`"default"` outside profiles), so one
 script can serve every profile behind a multiplexed gateway; the subprocess also runs with that
-profile's `HERMES_HOME`. `tool_name` and `tool_input` are `null` for non-tool events (`pre_llm_call`, `subagent_stop`, session lifecycle). The `extra` dict carries all event-specific kwargs (`user_message`, `conversation_history`, `child_role`, `duration_ms`, …). Unserialisable values are stringified rather than omitted.
+profile's `MOOR_HOME`. `tool_name` and `tool_input` are `null` for non-tool events (`pre_llm_call`, `subagent_stop`, session lifecycle). The `extra` dict carries all event-specific kwargs (`user_message`, `conversation_history`, `child_role`, `duration_ms`, …). Unserialisable values are stringified rather than omitted.
 
 **stdout — optional response:**
 

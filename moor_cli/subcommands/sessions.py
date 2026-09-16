@@ -71,7 +71,7 @@ def build_sessions_parser(subparsers, *, cmd_sessions: Callable) -> None:
     sessions_export.add_argument("output", nargs="?", metavar="OUTPUT",
         help="Where to write. jsonl/html/trace: a file path, or a directory (existing, or ending in /) "
             "to write a default-named file into; - for stdout (jsonl/trace only; jsonl requires OUTPUT). "
-            "md/qmd: a directory, one file per session (default: <hermes home>/session-exports)")
+            "md/qmd: a directory, one file per session (default: <moor home>/session-exports)")
     sessions_export.add_argument(
         "--format", choices=["jsonl", "md", "qmd", "html", "trace"], default="jsonl",
         help="Export format (default: jsonl). 'trace' emits Claude Code JSONL "

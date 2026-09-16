@@ -279,10 +279,10 @@ def _kill_pids_windows(pids: list[int], killed: list[int], failed: list[tuple[in
 
 
 # SIGTERM → SIGKILL grace for the dashboard/serve backend. Must outlast the lifespan teardown in
-# hermes_cli/web_server.py::_lifespan: stop_hosted_room_service(timeout=5.0) + the startup-thread
+# moor_cli/web_server.py::_lifespan: stop_hosted_room_service(timeout=5.0) + the startup-thread
 # join(1.0) + PTY_REGISTRY.close_all() (≤1.5s per attached Chat PTY, serial). A SIGKILL inside
 # that window skips close_all(), so the ui-tui / tui_gateway.entry children outlive the backend
-# and keep the deleted state.db-wal inode open — the next hermes start refuses with a FATAL
+# and keep the deleted state.db-wal inode open — the next moor start refuses with a FATAL
 # DeletedWalGenerationError (#111912). The orphan reaper's 1.5s (`_reap_orphaned_desktop_local_serves`)
 # is deliberately shorter: it runs on the Desktop boot path under a 10s ready-probe.
 _POSIX_TERM_GRACE_SECONDS = 10.0
@@ -378,7 +378,7 @@ def _kill_stale_dashboard_processes(
             if launchd_jobs and (job := _launchd_owner(pid, cmdline)):
                 pid_launchd[pid] = job
             elif cmdline:
-                # Manual process: exact argv + HERMES_HOME for the respawn and its profile cap.
+                # Manual process: exact argv + MOOR_HOME for the respawn and its profile cap.
                 # Manually-started process: preserve its exact argv so we can respawn it after the update
                 # (#40449, #68934). Snapshot MOOR_HOME before the kill so per-profile caps still work
                 # after the process is gone (#78821).
@@ -412,7 +412,7 @@ def _kill_stale_dashboard_processes(
             print(f"  ⚠ PID(s) supervised by launchd job {target}: a KeepAlive job restarts itself.\n"
                   f"    To keep it down: launchctl bootout {target}")
         if any(p not in pid_launchd for p in killed):
-            print("  Restart the dashboard when you're ready:\n    hermes dashboard --port <port>")
+            print("  Restart the dashboard when you're ready:\n    moor dashboard --port <port>")
     return {"matched": list(pids), "killed": list(killed), "failed": list(failed),
             "unrecovered": list(unrecovered)}
 
@@ -424,7 +424,7 @@ def _restart_killed_backends(
     """Update path: restart systemd units, kickstart launchd jobs (macOS), respawn manual argv
     (detached, headless, logged to logs/dashboard-restart.log; one per profile, no ``--port 0``).
     Returns PIDs not brought back."""
-    # Two categories: Without this, a remote backend (hermes serve) under Restart=on-failure never comes
+    # Two categories: Without this, a remote backend (moor serve) under Restart=on-failure never comes
     # back after our clean SIGTERM, and the Desktop can't reconnect (#68934). Filtered so Desktop
     # ``serve|dashboard --port 0`` backends are not resurrected and duplicates collapse to one per profile
     # (#78821).
@@ -549,10 +549,10 @@ def _is_desktop_local_serve_cmdline(command: str) -> bool:
     Long-lived headless serves (``--host <tailscale-ip> --port 9119``) must never match —
     those are operator-managed remote backends that legitimately run with ppid 1.
     """
-    from hermes_cli.update_cmd_windows import _hermes_holder_subcommand
+    from moor_cli.update_cmd_windows import _moor_holder_subcommand
     # Canonical token matcher, never argv substrings: ``kanban --preserve-cache`` contains "serve" and
-    # ``vim notes about hermes serve`` contains both markers — this predicate decides a kill.
-    if _hermes_holder_subcommand(command) != "serve":
+    # ``vim notes about moor serve`` contains both markers — this predicate decides a kill.
+    if _moor_holder_subcommand(command) != "serve":
         return False
     tokens = command.lower().split()
     host = _flag_value(tokens, "--host")
@@ -605,11 +605,11 @@ _REMOTE_LOCK_SUBDIR = "desktop-ssh"
 _HEX32 = set("0123456789abcdef")
 
 
-def _hermes_home_dir() -> Path:
-    """The process's Hermes home: remote-backend locks are a process-level asset, so a request scoped
+def _moor_home_dir() -> Path:
+    """The process's Moor home: remote-backend locks are a process-level asset, so a request scoped
     to another profile must still see the same lock dir."""
-    from hermes_constants import get_process_hermes_home
-    return get_process_hermes_home()
+    from moor_constants import get_process_moor_home
+    return get_process_moor_home()
 
 
 def _is_hex(value: object, length: int) -> bool:

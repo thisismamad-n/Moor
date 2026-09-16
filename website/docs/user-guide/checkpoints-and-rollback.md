@@ -94,7 +94,7 @@ checkpoints:
   max_total_size_mb: 500      # hard cap on total store size; oldest commits dropped
   max_file_size_mb: 10        # skip any single file larger than this
 
-  # Auto-maintenance (on by default): sweep ~/.hermes/checkpoints/ in the
+  # Auto-maintenance (on by default): sweep ~/.moor/checkpoints/ in the
   # background — the CLI on a helper thread right after launch, the gateway
   # on its housekeeping tick — and delete project entries whose last_touch is
   # older than retention_days. Runs at most once per min_interval_hours,
@@ -103,7 +103,7 @@ checkpoints:
   # large store. This sweep never deletes "orphan" entries (working directory
   # not found) — a missing workdir is ambiguous (deleted project vs. an
   # unmounted external volume / network share / VPN not yet up), so orphan
-  # cleanup is only ever done via the explicit `hermes checkpoints prune`
+  # cleanup is only ever done via the explicit `moor checkpoints prune`
   # command below, with a confirmation prompt.
   auto_prune: true
   retention_days: 7

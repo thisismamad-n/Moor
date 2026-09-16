@@ -14,7 +14,7 @@ import threading as _threading
 from dataclasses import dataclass, field
 from typing import Any, List, Optional
 from agent.command_token_source import build_command_token_provider, materialize_probe_api_key
-from hermes_cli.providers import custom_provider_aliases, custom_provider_slug, get_label
+from moor_cli.providers import custom_provider_aliases, custom_provider_slug, get_label
 from utils import base_url_host_matches
 
 # Log-record parity with the origin module.
@@ -92,8 +92,8 @@ def _fetch_picker_live_models(
     headers: dict[str, str] | None = None, timeout: float = 5.0,
     api_mode: str | None = None, *, cache: bool = True) -> list[str] | None:
     """Fetch picker models with native Ollama and cached generic discovery."""
-    from hermes_cli.models import _get_ollama_native_headers, cached_fetch_api_models, fetch_api_models
-    from hermes_cli.models_local import (
+    from moor_cli.models import _get_ollama_native_headers, cached_fetch_api_models, fetch_api_models
+    from moor_cli.models_local import (
         _normalize_openai_base_url,
         fetch_ollama_local_models,
         should_use_ollama_native_catalog,
@@ -415,10 +415,10 @@ def _moor_picker_model_ids(curated: dict, force_fresh_moor_tier: bool) -> list:
             union_with_portal_free_recommendations,
             union_with_portal_paid_recommendations,
         )
-        from hermes_cli.auth import get_provider_auth_state
+        from moor_cli.auth import get_provider_auth_state
         # Cache-only: both Portal unions below discard the pricing map (``model_ids, _ = ...``);
         # only the appended ids matter, so a live catalog fetch here buys nothing but latency.
-        pricing = get_pricing_for_provider("nous", cached_only=True) or {}
+        pricing = get_pricing_for_provider("moor", cached_only=True) or {}
         try:
             portal = (get_provider_auth_state("moor") or {}).get("portal_base_url", "") or ""
         except Exception:
@@ -437,16 +437,16 @@ def _moor_picker_model_ids(curated: dict, force_fresh_moor_tier: bool) -> list:
     return model_ids
 
 
-def _free_tier_nous_row(row: dict) -> dict | None:
-    """The one free-tier rule for a Nous picker row, shared by every row builder.
+def _free_tier_moor_row(row: dict) -> dict | None:
+    """The one free-tier rule for a Moor picker row, shared by every row builder.
 
     ``row`` carries at least ``name`` and ``models``. A guest identity carrying inference turns
-    it into "Nous · free tier" with the single model ``nous/welcome`` (the welcome host serves
-    nothing else). A guest that ``nous.guest: false`` has switched off yields ``None``: no Nous
-    row at all, since there is nothing selectable. A real account (or no Nous state) passes the
+    it into "Moor · free tier" with the single model ``moor/welcome`` (the welcome host serves
+    nothing else). A guest that ``moor.guest: false`` has switched off yields ``None``: no Moor
+    row at all, since there is nothing selectable. A real account (or no Moor state) passes the
     row through untouched. Builders that compute the full catalog lazily should pass
     ``models=[]`` and only compute when the returned row still has no models."""
-    from hermes_cli import anon_auth
+    from moor_cli import anon_auth
     if not anon_auth.has_guest():
         return row
     if not anon_auth.guest_enabled():
@@ -682,10 +682,10 @@ class _PickerBuild:
             "slug": slug, "name": name, "is_current": is_current, "is_user_defined": False,
             "models": _cap_models(model_ids, self.max_models, slug if uncapped_ok else ""),
             "total_models": len(model_ids), "source": source}
-        if slug == "nous":
-            # Free-tier identity: one row "Nous · free tier" / nous/welcome, or no row when
-            # nous.guest is off. Still marks the slug seen so a later lap cannot re-emit it.
-            row = _free_tier_nous_row(row)
+        if slug == "moor":
+            # Free-tier identity: one row "Moor · free tier" / moor/welcome, or no row when
+            # moor.guest is off. Still marks the slug seen so a later lap cannot re-emit it.
+            row = _free_tier_moor_row(row)
         if row is not None:
             self.results.append(row)
         self.seen_slugs.add(slug.lower())
@@ -739,12 +739,12 @@ class _PickerBuild:
 
 def _lap_builtin_rows(b: _PickerBuild, data: dict, user_providers: dict) -> None:
     """Section 1: models.dev-mapped providers with api_key auth."""
-    from hermes_cli.model_switch import _declared_model_ids, _scoped_key_env
+    from moor_cli.model_switch import _declared_model_ids, _scoped_key_env
     from agent.models_dev import get_provider_info
-    for hermes_id, mdev_id, pconfig, env_vars in _iter_builtin_candidates(data, b.excluded, b.seen_slugs):
+    for moor_id, mdev_id, pconfig, env_vars in _iter_builtin_candidates(data, b.excluded, b.seen_slugs):
         # Per-profile scope, never raw os.environ: a secondary profile's picker otherwise listed the
         # LAUNCH profile's env-keyed providers and hid its own .env-keyed ones.
-        if not (_any_env(env_vars, _scoped_key_env) or _raw_pool_usable(hermes_id)):
+        if not (_any_env(env_vars, _scoped_key_env) or _raw_pool_usable(moor_id)):
             continue
         model_ids = _live_or_curated_ids(moor_id, b.curated)
         # A providers.<built-in>.models block extends the discovered catalog; section 3 cannot
@@ -766,8 +766,8 @@ def _overlay_has_creds(b: _PickerBuild, pid: str, moor_slug: str, overlay) -> bo
     if overlay.auth_type == "aws_sdk":
         has_creds = _has_aws_sdk_creds_for_listing(moor_slug, b.current_provider)
     else:
-        from hermes_cli.model_switch import _scoped_key_env
-        has_creds = _overlay_has_env_creds(pid, hermes_slug, overlay, _scoped_key_env)
+        from moor_cli.model_switch import _scoped_key_env
+        has_creds = _overlay_has_env_creds(pid, moor_slug, overlay, _scoped_key_env)
     # External-process providers (copilot-acp) hold no key/token/pool entry by design — the
     # spawned ACP subprocess brings its own auth. "Configured" means the executable resolves.
     # "Configured" means the executable resolves, which is exactly what get_auth_status() reports for them;
@@ -833,13 +833,13 @@ def _lap_overlay_rows(b: _PickerBuild, data: dict) -> None:
             from moor_cli.models import cached_provider_model_ids
             model_ids = cached_provider_model_ids(moor_slug)
         elif overlay.auth_type == "aws_sdk":
-            model_ids = _aws_live_or_curated_ids(hermes_slug, b.curated, hermes_slug, pid)
-        elif hermes_slug == "nous":
-            # A guest identity never needs the Portal catalog: add_builtin_row pins nous/welcome
-            # (or drops the row when nous.guest is off), so only a real account fetches.
-            tier_row = _free_tier_nous_row({"name": get_label(hermes_slug), "models": []})
+            model_ids = _aws_live_or_curated_ids(moor_slug, b.curated, moor_slug, pid)
+        elif moor_slug == "moor":
+            # A guest identity never needs the Portal catalog: add_builtin_row pins moor/welcome
+            # (or drops the row when moor.guest is off), so only a real account fetches.
+            tier_row = _free_tier_moor_row({"name": get_label(moor_slug), "models": []})
             real_account = tier_row is not None and not tier_row["models"]
-            model_ids = _nous_picker_model_ids(b.curated, b.force_fresh_nous_tier) if real_account else []
+            model_ids = _moor_picker_model_ids(b.curated, b.force_fresh_moor_tier) if real_account else []
         else:
             model_ids = _live_or_curated_ids(moor_slug, b.curated, moor_slug, pid)
         b.add_builtin_row(
@@ -1171,7 +1171,7 @@ def _finalize_picker_rows(results: list, user_providers, current_model: str) -> 
                 continue
             models = row.get("models") or []
             if current_model not in models:
-                from hermes_cli.models import _model_requires_account_discovery
+                from moor_cli.models import _model_requires_account_discovery
 
                 if _model_requires_account_discovery(row.get("slug"), current_model):
                     break

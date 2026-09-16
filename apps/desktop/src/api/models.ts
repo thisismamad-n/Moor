@@ -1,4 +1,4 @@
-import type { ModelOptionsResult } from '@hermes/shared'
+import type { ModelOptionsResult } from '@moor/shared'
 
 import type {
   AnalyticsResponse,
@@ -7,7 +7,7 @@ import type {
   ModelAssignmentRequest,
   ModelAssignmentResponse,
   ModelInfoResponse
-} from '@/types/hermes'
+} from '@/types/moor'
 
 import { capabilityScoped, moorApi, type ProfileScope, profileScoped, STARTUP_REQUEST_TIMEOUT_MS } from './client'
 
@@ -48,7 +48,7 @@ export function getGlobalModelOptions(
     params.set('explicit_only', '1')
   }
 
-  return hermesApi<ModelOptionsResult>({
+  return moorApi<ModelOptionsResult>({
     ...profileScoped(profile),
     path: params.size > 0 ? `/api/model/options?${params.toString()}` : '/api/model/options',
     timeoutMs: STARTUP_REQUEST_TIMEOUT_MS

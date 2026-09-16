@@ -90,9 +90,9 @@ class TestDoctorToolAvailabilitySummary:
         assert [item["name"] for item in filtered] == ["web"]
 
     def test_image_gen_without_provider_reports_setup_hint_not_system_dependency(self, monkeypatch):
-        """image_gen declares no single env var (FAL / managed Nous / plugin providers); an
+        """image_gen declares no single env var (FAL / managed Moor / plugin providers); an
         unconfigured backend is a setup problem and must say so, and it counts toward the
-        'run hermes setup' summary like any missing key (#9516)."""
+        'run moor setup' summary like any missing key (#9516)."""
         unavailable = [{"name": "image_gen", "env_vars": [], "tools": ["image_generate"]},
                        {"name": "homeassistant", "env_vars": [], "tools": []}]
         monkeypatch.setattr(doctor_tools, "_enabled_cli_toolsets_for_doctor", lambda: {"image_gen"})
@@ -110,9 +110,9 @@ class TestDoctorToolAvailabilitySummary:
         out = buf.getvalue()
 
         image_line = next(line for line in out.splitlines() if "image_gen" in line)
-        assert "hermes tools" in image_line and "system dependency" not in image_line and "unavailable" in image_line
+        assert "moor tools" in image_line and "system dependency" not in image_line and "unavailable" in image_line
         assert "system dependency not met" in next(line for line in out.splitlines() if "homeassistant" in line)
-        assert any("hermes setup" in issue for issue in f.issues)
+        assert any("moor setup" in issue for issue in f.issues)
 
     def test_web_capability_rows_warn_when_selected_provider_not_ready(self, monkeypatch):
         """#78412: selected firecrawl with is_available=False must warn."""
@@ -162,7 +162,7 @@ class TestDoctorToolAvailabilitySummary:
 
 
 class TestDoctorEnvFileEncoding:
-    """Regression for #18637 (bug 3): `hermes doctor` crashed on Windows
+    """Regression for #18637 (bug 3): `moor doctor` crashed on Windows
     Chinese locale (GBK) because `.env` was read with Path.read_text(encoding="utf-8") which
     defaults to the system locale encoding, not UTF-8."""
 
@@ -1150,7 +1150,7 @@ class TestGitHubTokenCheck:
         """gh 2.98+ dropped the `authenticated` field from `gh auth status --json`,
         so that invocation exits 1 even for a logged-in user. A logged-in user on
         such a gh must still be reported as authenticated."""
-        from hermes_cli import doctor_state
+        from moor_cli import doctor_state
 
         def gh_2_98(cmd, **kwargs):
             assert cmd[:3] == ["gh", "auth", "status"], cmd

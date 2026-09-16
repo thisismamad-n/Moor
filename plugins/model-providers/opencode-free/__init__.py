@@ -9,7 +9,7 @@ moor_cli.models.opencode_zen_free_runtime). Select via ``/model free``.
 from typing import Any
 
 from agent.reasoning_effort import ox_alpha_reasoning_extras
-from hermes_cli import __version__ as _HERMES_VERSION
+from moor_cli import __version__ as _MOOR_VERSION
 from providers import register_provider
 from providers.base import ProviderProfile
 

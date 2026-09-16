@@ -166,7 +166,7 @@ class _UnregisteredRecorder(_CallRecorder):
         self._slots: set[str] = set()
 
     def _svc(self, action: str, name: str) -> None:
-        from hermes_cli.service_manager import GatewayNotRegisteredError
+        from moor_cli.service_manager import GatewayNotRegisteredError
         if name not in self._slots:
             raise GatewayNotRegisteredError(name.removeprefix("gateway-"))
         self.calls.append((action, name))
@@ -183,13 +183,13 @@ class _UnregisteredRecorder(_CallRecorder):
 
 
 def _arrange(monkeypatch, tmp_path, mgr, *, profile: str, seed_soul: bool):
-    """Force the s6 branch and make ``tmp_path`` the shared HERMES_HOME the slot maps back to."""
-    from hermes_cli import gateway as gw
-    from hermes_cli import service_manager as sm
+    """Force the s6 branch and make ``tmp_path`` the shared MOOR_HOME the slot maps back to."""
+    from moor_cli import gateway as gw
+    from moor_cli import service_manager as sm
 
     monkeypatch.setattr(sm, "detect_service_manager", lambda: "s6")
     monkeypatch.setattr(sm, "get_service_manager", lambda: mgr)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     profile_dir = tmp_path / "profiles" / profile
     profile_dir.mkdir(parents=True)
     if seed_soul:

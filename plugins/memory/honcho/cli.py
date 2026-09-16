@@ -11,7 +11,7 @@ from pathlib import Path
 from moor_constants import get_moor_home
 from plugins.memory.honcho.client import _first_parsed, _host_block, profile_host_key, resolve_active_host, resolve_config_path, HOST
 from plugins.memory.honcho.session_peers import sanitize_peer_id
-from hermes_cli.config import cfg_get
+from moor_cli.config import cfg_get
 from utils import read_json_or_empty
 
 RULE = "─" * 40
@@ -149,8 +149,8 @@ def _write_config(cfg: dict, path: Path | None = None) -> None:
                 out = _apply_edits(cfg.snapshot, cfg, disk)
             elif path.exists():
                 out = _apply_edits(cfg.snapshot, cfg, _overlay_local(cfg.snapshot, disk))
-        from hermes_constants import mkdir_under_hermes_home
-        mkdir_under_hermes_home(path.parent)
+        from moor_constants import mkdir_under_moor_home
+        mkdir_under_moor_home(path.parent)
         atomic_json_write(path, out, mode=0o600)
         if isinstance(cfg, _ReadConfig):  # a later write on the same object applies only edits made after this one
             cfg.snapshot, cfg.path = copy.deepcopy(dict(cfg)), path
@@ -356,7 +356,7 @@ def cmd_enable(args) -> None:
     block = cfg.setdefault("hosts", {}).setdefault(host, {})
     if not _resolve_api_key(cfg, block, env=False):
         profile = _active_profile_name()
-        setup = "hermes honcho setup" + (f" --target-profile {profile}" if profile != "default" else "")
+        setup = "moor honcho setup" + (f" --target-profile {profile}" if profile != "default" else "")
         return print(f"  {label}Honcho stays disabled: no API key or base URL is configured for this profile, and the default "
                      f"profile's key is not shared.\n  Run '{setup}' to sign in, or set apiKey on hosts.{host} in {_config_path()}.\n")
     if block.get("enabled") is True:
@@ -484,7 +484,7 @@ def _configure_raw_identity_mapping(moor_host, current_pin, current_aliases, cur
                           "runtimePeerPrefix — namespace for unknown IDs (blank for none)")
 
 
-def _setup_identity_mapping(cfg: dict, hermes_host: dict, current_peer: str, new_host: bool) -> None:
+def _setup_identity_mapping(cfg: dict, moor_host: dict, current_peer: str, new_host: bool) -> None:
     """Gateway identity mapping step. Only the gateway supplies a runtime user ID (CLI/TUI/
     desktop fall through to peerName), so the step is gated on gateway detection."""
     current_pin, current_aliases, current_prefix, aliases_from_root, prefix_from_root = (
@@ -498,21 +498,21 @@ def _setup_identity_mapping(cfg: dict, hermes_host: dict, current_peer: str, new
         notice, question = (
             ("\n  Each gateway account (a Telegram user, a Discord user, ...)\n"
              "  resolves to a peer. Honcho builds one representation per peer.",
-             "Running the Hermes gateway (Telegram/Discord/etc.)? (y/N)") if gw_platforms is None else
+             "Running the Moor gateway (Telegram/Discord/etc.)? (y/N)") if gw_platforms is None else
             ("\n  No gateway platforms connected — nothing to map.", "Configure anyway? (y/N)"))
         print(notice)
         if not _yes(_prompt(question, default="n")):
             return
 
-    peer_target = hermes_host.get("peerName") or current_peer or "user"
-    ai_peer_label = hermes_host.get("aiPeer") or cfg.get("aiPeer") or "hermes"
+    peer_target = moor_host.get("peerName") or current_peer or "user"
+    ai_peer_label = moor_host.get("aiPeer") or cfg.get("aiPeer") or "moor"
     # Fresh configs default to the personal shape; configured ones keep their detected shape.
     identity_configured = not new_host or any(k in cfg for k in _IDENTITY_MAPPING_KEYS)
     default_choice = {"single": "1", "hybrid": "2", "multi": "3"}[current_shape] if identity_configured else "1"
     print("\n  This step covers the HUMAN mapping only. Each account using the\n"
           "  gateway resolves to a peer — the entity Honcho reasons about over\n"
           f"  time. This agent is already its own peer ('{ai_peer_label}'), and each\n"
-          "  Hermes profile brings its own AI peer to the gateway.\n"
+          "  Moor profile brings its own AI peer to the gateway.\n"
           "\n  How should accounts resolve?\n"
           "    [1] single peer — one person uses this agent; every account\n"
           f"        resolves to '{peer_target}'. The common personal setup.\n"
@@ -566,7 +566,7 @@ def _setup_identity_mapping(cfg: dict, hermes_host: dict, current_peer: str, new
                                   "Runtime peer prefix for unknown users (e.g. 'telegram_', blank for none)")
             print("  Each gateway account resolves to its own peer." if shape == "multi" else
                   f"  Your accounts resolve to '{peer_target}'; each other account to its own peer.")
-    _echo_identity_mapping(hermes_host)
+    _echo_identity_mapping(moor_host)
 
 
 # ── setup wizard ───────────────────────────────────────────────────────────
@@ -611,11 +611,11 @@ def _headless() -> tuple[bool, bool]:
         return False, True
 
 
-def _apply_grant_to_host(cfg: dict, hermes_host: dict, cred) -> None:
+def _apply_grant_to_host(cfg: dict, moor_host: dict, cred) -> None:
     """Store an OAuth grant on the host block and in ``cfg``'s snapshot. install_grant already wrote it to disk,
     so the final save must not copy it over a rotation that lands during the later prompts."""
-    hermes_host["apiKey"] = cred.access_token
-    hermes_host["oauth"] = cred.oauth_block()
+    moor_host["apiKey"] = cred.access_token
+    moor_host["oauth"] = cred.oauth_block()
     if (snapshot := getattr(cfg, "snapshot", None)) is not None:
         snapshot.setdefault("hosts", {}).setdefault(_host_key(), {}).update(apiKey=cred.access_token, oauth=cred.oauth_block())
     if cred.consent_peer_name:  # default the peer prompt to the consent name
@@ -645,7 +645,7 @@ def _setup_local_auth(cfg: dict, moor_host: dict) -> None:
         print("\n  No local JWT set. Local no-auth ready.")
 
 
-def _setup_device_login(cfg: dict, hermes_host: dict, write_path: Path, *, open_browser: bool) -> bool:
+def _setup_device_login(cfg: dict, moor_host: dict, write_path: Path, *, open_browser: bool) -> bool:
     """RFC 8628 device-code sign-in. Returns False if setup must abort."""
     from plugins.memory.honcho.oauth_flow import (
         AccessDenied, AuthorizationTimeout, DeviceCode, DeviceCodeExpired, DeviceFlowError, authorize_via_device_code,
@@ -675,12 +675,12 @@ def _setup_device_login(cfg: dict, hermes_host: dict, write_path: Path, *, open_
               if isinstance(e, DeviceFlowError) and e.error == "http_429" else f"\n  Device sign-in failed: {e}\n" + _RETRY_HINT)
     else:
         print(" approved")
-        _apply_grant_to_host(cfg, hermes_host, cred)
+        _apply_grant_to_host(cfg, moor_host, cred)
         return True
     return False
 
 
-def _setup_browser_login(cfg: dict, hermes_host: dict, write_path: Path) -> bool:
+def _setup_browser_login(cfg: dict, moor_host: dict, write_path: Path) -> bool:
     """Loopback OAuth sign-in. Tokens merge into the in-memory cfg so the wizard's final save
     keeps them; settings stay wizard-owned (apply_config=False). Returns False on abort."""
     from plugins.memory.honcho.oauth_flow import authorize_via_loopback
@@ -696,7 +696,7 @@ def _setup_browser_login(cfg: dict, hermes_host: dict, write_path: Path) -> bool
     except Exception as e:
         print(f"  OAuth sign-in failed: {e}\n" + _RETRY_HINT)
         return False
-    _apply_grant_to_host(cfg, hermes_host, cred)
+    _apply_grant_to_host(cfg, moor_host, cred)
     return True
 
 
@@ -704,7 +704,7 @@ def _setup_cloud_auth(cfg: dict, moor_host: dict, write_path: Path) -> bool:
     """Cloud auth: OAuth (browser), device code, or API key. Returns False on abort."""
     cfg.pop("baseUrl", None)  # cloud uses SDK default
     from plugins.memory.honcho.oauth import OAuthCredential, is_oauth_access_token
-    existing_oauth = OAuthCredential.from_host_block(hermes_host)
+    existing_oauth = OAuthCredential.from_host_block(moor_host)
     device_available = _device_login_available()
     is_remote, can_browse = _headless()
 
@@ -725,22 +725,22 @@ def _setup_cloud_auth(cfg: dict, moor_host: dict, write_path: Path) -> bool:
                      default=default_method).strip().lower()
 
     if device_available and method in {"device", "d"}:
-        return _setup_device_login(cfg, hermes_host, write_path, open_browser=can_browse and not is_remote)
+        return _setup_device_login(cfg, moor_host, write_path, open_browser=can_browse and not is_remote)
     if method in {"oauth", "o"}:
-        return _setup_browser_login(cfg, hermes_host, write_path)
+        return _setup_browser_login(cfg, moor_host, write_path)
     # A leftover grant on the host block would shadow the pasted key.
-    stale_grant = existing_oauth is not None or is_oauth_access_token(hermes_host.get("apiKey"))
-    current = ("" if stale_grant else hermes_host.get("apiKey", "")) or cfg.get("apiKey", "")
+    stale_grant = existing_oauth is not None or is_oauth_access_token(moor_host.get("apiKey"))
+    current = ("" if stale_grant else moor_host.get("apiKey", "")) or cfg.get("apiKey", "")
     print(f"\n  Current API key: {_mask(current)}")
     if new_key := _prompt("Honcho API key (leave blank to keep current)", secret=True):
         cfg["apiKey"] = new_key
     key = new_key or current
     if not key:
         print("\n  No API key configured. Get yours at https://app.honcho.dev\n"
-              "  Run 'hermes honcho setup' again once you have a key.\n")
+              "  Run 'moor honcho setup' again once you have a key.\n")
         return False
-    hermes_host.pop("oauth", None)
-    hermes_host["apiKey"] = key
+    moor_host.pop("oauth", None)
+    moor_host["apiKey"] = key
     return True
 
 
@@ -777,11 +777,11 @@ def _setup_tuning(cfg: dict, moor_host: dict) -> None:
     raw_recall = _pref(moor_host, cfg, "recallMode", "hybrid")
     _choice_step(moor_host, "recallMode", raw_recall if raw_recall in _MODES else "hybrid", "Recall mode", _MODES)
 
-    hermes_host["recallSync"] = _yes(_prompt(
+    moor_host["recallSync"] = _yes(_prompt(
         "Wait for current-query recall (bounded by request timeout, default 5s)? (y/N)",
-        default="y" if hermes_host.get("recallSync", cfg.get("recallSync", False)) else "n"))
+        default="y" if moor_host.get("recallSync", cfg.get("recallSync", False)) else "n"))
 
-    current_ctx_tokens = _pref(hermes_host, cfg, "contextTokens")
+    current_ctx_tokens = _pref(moor_host, cfg, "contextTokens")
     _menu("Context injection per turn (hybrid/context recall modes only)",
           "uncapped -- no limit (default)",
           "N        -- token limit per turn (e.g. 1200)")
@@ -828,7 +828,7 @@ def _setup_wizard(args) -> None:
     cfg = _read_config()
     write_path, read_path = _local_config_path(), _config_path()
     _refuse_unparseable(write_path)  # before the questions, not after them
-    print(f"\nHoncho memory setup\n{RULE}\n  Honcho gives Hermes persistent cross-session memory.\n  Config: {write_path}")
+    print(f"\nHoncho memory setup\n{RULE}\n  Honcho gives Moor persistent cross-session memory.\n  Config: {write_path}")
     if read_path != write_path and read_path.exists():
         print(f"  (seeding from existing config at {read_path})")
     print()
@@ -837,9 +837,9 @@ def _setup_wizard(args) -> None:
 
     moor_host = cfg.setdefault("hosts", {}).setdefault(_host_key(), {})
     _migrate_pin_key(cfg)  # canonicalize legacy pinPeerName before detection/writes
-    _migrate_pin_key(hermes_host)
+    _migrate_pin_key(moor_host)
     # Taken before the prompts populate the block: an existing install must not default to pinning every account.
-    new_host = not any(k in hermes_host or k in cfg for k in (*_IDENTITY_MAPPING_KEYS, "peerName", "workspace", "enabled"))
+    new_host = not any(k in moor_host or k in cfg for k in (*_IDENTITY_MAPPING_KEYS, "peerName", "workspace", "enabled"))
 
     # --- 1. Cloud or local? ---
     print("  Deployment:\n    cloud -- Honcho cloud (api.honcho.dev)\n    local -- self-hosted Honcho server")
@@ -862,9 +862,9 @@ def _setup_wizard(args) -> None:
         if new := _prompt(label, default=default):
             moor_host[key] = new
 
-    _setup_identity_mapping(cfg, hermes_host, current_peer, new_host)
+    _setup_identity_mapping(cfg, moor_host, current_peer, new_host)
     print("\n  For a gateway with many users and agents, run\n"
-          "  'hermes honcho peers map' to map accounts interactively.")
+          "  'moor honcho peers map' to map accounts interactively.")
 
     _setup_tuning(cfg, moor_host)
     moor_host["enabled"] = True
@@ -1054,11 +1054,11 @@ def _state_db_path() -> Path:
     """Return the state.db path for the targeted profile."""
     if _profile_override and _profile_override not in {"default", "custom"}:
         try:
-            from hermes_cli.profiles import get_profile_dir
+            from moor_cli.profiles import get_profile_dir
             return get_profile_dir(_profile_override) / "state.db"
         except Exception:
             pass
-    return get_hermes_home() / "state.db"
+    return get_moor_home() / "state.db"
 
 
 def _seen_gateway_accounts(db_path: Path) -> list[dict]:
@@ -1205,7 +1205,7 @@ def _classify_workspace_peers(
     active_host = _host_key()
     root_peer = cfg.get("peerName") or ""
 
-    hermes_hosts = {hostk for _, hostk, _ in profile_rows}
+    moor_hosts = {hostk for _, hostk, _ in profile_rows}
     for name, hostk, block in profile_rows:
         pn = block.get("peerName") or root_peer
         ai = block.get("aiPeer") or cfg.get("aiPeer") or hostk
@@ -1218,9 +1218,9 @@ def _classify_workspace_peers(
         who = "this profile" if hostk == active_host else f"profile {name}"
         labels.setdefault(sanitize_peer_id(ai), f"AI peer · {who}")
 
-    # Host blocks that are not Hermes profiles: other apps sharing the config.
+    # Host blocks that are not Moor profiles: other apps sharing the config.
     for hostk, block in (cfg.get("hosts") or {}).items():
-        if hostk in hermes_hosts or not isinstance(block, dict):
+        if hostk in moor_hosts or not isinstance(block, dict):
             continue
         for key, kind in (("peerName", "peer"), ("aiPeer", "AI peer")):
             val = block.get(key)
@@ -1384,14 +1384,14 @@ def cmd_peers_map(args) -> None:
     """Interactively map gateway accounts to Honcho user peers."""
     cfg = _read_config()
     host = _host_key()
-    hermes_host = _host_block(cfg, host)
-    pin, aliases, prefix, aliases_from_root, _ = _resolve_effective_identity_mapping(cfg, hermes_host)
-    peer_name = hermes_host.get("peerName") or cfg.get("peerName") or ""
+    moor_host = _host_block(cfg, host)
+    pin, aliases, prefix, aliases_from_root, _ = _resolve_effective_identity_mapping(cfg, moor_host)
+    peer_name = moor_host.get("peerName") or cfg.get("peerName") or ""
 
     if pin:
         print("\n  pinUserPeer is on: every gateway account resolves to peer")
         print(f"  '{peer_name or '(peerName not set)'}' and aliases have no effect.")
-        print("  Turn the pin off with 'hermes honcho setup' to use per-account peers.")
+        print("  Turn the pin off with 'moor honcho setup' to use per-account peers.")
         if not _yes(_prompt("Edit aliases anyway? (y/N)", default="n")):
             print("  Nothing changed.\n")
             return
@@ -1401,7 +1401,7 @@ def cmd_peers_map(args) -> None:
     client, client_cfg = _peers_map_client()
     workspace = (
         getattr(client_cfg, "workspace_id", None)
-        or hermes_host.get("workspace") or cfg.get("workspace") or host
+        or moor_host.get("workspace") or cfg.get("workspace") or host
     )
     ws_peers = _api_workspace_peers(client)
     # list_profiles() parses every profile's config.yaml; one scan serves every row and re-render.

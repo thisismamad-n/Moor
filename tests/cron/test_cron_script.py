@@ -115,7 +115,7 @@ class TestRunJobScript:
         assert success is False
         assert "Script not found" in output
         assert str(cron_env / "scripts") in output and "profile" in output
-        assert "hermes cron edit" in output
+        assert "moor cron edit" in output
 
 
     def test_script_subprocess_env_sanitized(self, cron_env, monkeypatch):

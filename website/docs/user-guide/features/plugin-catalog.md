@@ -2,22 +2,22 @@
 sidebar_position: 13
 sidebar_label: "Plugin Catalog"
 title: "Plugin Catalog"
-description: "Browse and install reviewed, SHA-pinned Hermes plugins from the curated catalog"
+description: "Browse and install reviewed, SHA-pinned Moor plugins from the curated catalog"
 ---
 
 # Plugin Catalog
 
-The plugin catalog is a curated, human-reviewed directory of Hermes plugins you
+The plugin catalog is a curated, human-reviewed directory of Moor plugins you
 can install by name with a single command:
 
 ```bash
-hermes plugins install <name>
+moor plugins install <name>
 ```
 
 Browse it visually at **[/docs/plugins](/plugins)** — entries are shelved by
 category (Memory, Desktop, Platforms, Web & Browser, Tools, Voice, Automation,
 Models), with search, tier filters (Official / Community), capability chips, and
-**Install in Hermes** buttons and copyable CLI commands for every entry.
+**Install in Moor** buttons and copyable CLI commands for every entry.
 
 In Desktop, open **Capabilities → Plugins → Browse** for the native catalog
 view. It is not an embedded website. **Installed** is a separate tab backed
@@ -48,18 +48,18 @@ This browse snapshot is distinct from the installer's
 
 Each catalog entry is a small YAML file in the
 [`plugin-catalog/`](https://github.com/NousResearch/hermes-agent/tree/main/plugin-catalog)
-directory of the hermes-agent repository, declaring:
+directory of the moor-agent repository, declaring:
 
 | Field | Meaning |
 |---|---|
-| `name` | The catalog key you pass to `hermes plugins install` |
+| `name` | The catalog key you pass to `moor plugins install` |
 | `repo` | The plugin's public git repository |
 | `sha` | The **exact 40-hex commit** that was reviewed — installs check out this pin, not a branch tip |
-| `tier` | `official` (maintained by NousResearch) or `community` |
+| `tier` | `official` (maintained by Moor inc.) or `community` |
 | `category` | Browse shelf: `desktop` (default), `memory`, `platform`, `web`, `tools`, `voice`, `automation`, `models` or `general` |
 | `maintainer` | Who owns the plugin |
 | `capabilities` | Declared tools, hooks, middleware, and required env vars |
-| `requires_hermes` | Minimum Hermes version, e.g. `>=0.19` (optional) |
+| `requires_moor` | Minimum Moor version, e.g. `>=0.19` (optional) |
 | `platforms` | OS restrictions, empty = all (optional) |
 | `docs_url` | External documentation link (optional) |
 
@@ -92,10 +92,10 @@ repository. Review the code of anything you give credentials to.
 
 ## Installing from the catalog
 
-On the website, **Install in Hermes** opens a protocol link of this form:
+On the website, **Install in Moor** opens a protocol link of this form:
 
 ```text
-hermes://plugin/install?repo=owner%2Frepo&catalog_name=example-plugin&sha=0123456789abcdef0123456789abcdef01234567
+moor://plugin/install?repo=owner%2Frepo&catalog_name=example-plugin&sha=0123456789abcdef0123456789abcdef01234567
 ```
 
 `repo` is URL-encoded, including any `#subdir`. Desktop asks you to review the
@@ -106,22 +106,22 @@ only**, not authority to choose or override a commit, and it is not a pin
 guarantee for a standalone desktop plugin.
 
 Use an updated Desktop build for the catalog parameters (and for the public
-Skills Hub's new `hermes://skill/install?identifier=...` route). Older builds
+Skills Hub's new `moor://skill/install?identifier=...` route). Older builds
 may only understand repository-only plugin links. The expanded cards retain
 CLI commands, so you can install by catalog name without Desktop:
 
 ```bash
 # Install a reviewed catalog entry by name (checks out the pinned SHA)
-hermes plugins install <name>
+moor plugins install <name>
 
 # Then enable it, as with any plugin
-hermes plugins enable <name>
+moor plugins enable <name>
 ```
 
 The install prompt shows the entry's capability summary — declared tools,
 hooks, and required env vars — before anything is cloned.
 
-The catalog name and the plugin's own manifest name can differ; `hermes
+The catalog name and the plugin's own manifest name can differ; `moor
 plugins install` prints the installed name, and `enable` takes that one. For
 example the `touchdesigner` entry (a portable Agent Plugins v1 package that
 bundles the twozero MCP server with the `touchdesigner-mcp` skill) installs as
@@ -129,26 +129,26 @@ bundles the twozero MCP server with the `touchdesigner-mcp` skill) installs as
 function-name limits:
 
 ```bash
-hermes plugins install touchdesigner
-hermes plugins enable td
+moor plugins install touchdesigner
+moor plugins enable td
 ```
 
 Portable packages can also carry a stdio MCP server. The `snyk` entry pins the
 Snyk CLI (`npx -y snyk@<version> mcp`) and bundles the `snyk-security-scan`
-skill, so one install gives Hermes code, dependency, container and IaC scanning
+skill, so one install gives Moor code, dependency, container and IaC scanning
 plus the workflow for using it; the catalog name and manifest name match:
 
 ```bash
-hermes plugins install snyk
-hermes plugins enable snyk
+moor plugins install snyk
+moor plugins enable snyk
 ```
 
 ### Updating a catalog install
 
-`hermes plugins update <name>` never runs `git pull` for catalog installs —
+`moor plugins update <name>` never runs `git pull` for catalog installs —
 it compares your installed pin against the current catalog pin and, when the
 catalog moved (via a reviewed PR), force-reinstalls at the new SHA. Your
-enabled/disabled state is preserved. `hermes plugins list` shows catalog
+enabled/disabled state is preserved. `moor plugins list` shows catalog
 installs as `catalog:<tier>@<sha>` so you can see provenance at a glance.
 
 ### Names not in the catalog
@@ -162,13 +162,13 @@ unreviewed name index. Install such plugins by `owner/repo` or Git URL instead
 The docs build publishes the catalog as one JSON document
 (`https://hermes-agent.nousresearch.com/docs/api/plugin-catalog.json`).
 `search`/`install`/`update` fetch it at most every six hours and cache it under
-`~/.hermes/cache/`, so new entries and removals reach installed clients without
-updating Hermes. Offline, the copy shipped with your checkout is used. Removals
+`~/.moor/cache/`, so new entries and removals reach installed clients without
+updating Moor. Offline, the copy shipped with your checkout is used. Removals
 from the in-tree list and the live list are always both enforced.
 
 ### Custom git URLs are different
 
-`hermes plugins install <git-url>` still works for any repository, but it
+`moor plugins install <git-url>` still works for any repository, but it
 bypasses the catalog entirely:
 
 - **No review** — you get whatever is at the branch tip, not a reviewed pin.
@@ -195,7 +195,7 @@ in short, an entry must be:
    the PR (schema, SHA format, reachability).
 5. **Not self-updating** — the catalog build must not download and replace
    its own files; the pinned SHA is the only update path (a SHA-bump PR plus
-   `hermes plugins update <name>`).
+   `moor plugins update <name>`).
 
 Pin updates (bumping `sha` to a newer commit) follow the same PR + review
 process.
@@ -204,6 +204,6 @@ process.
 
 - [Plugins](plugins.md) — the plugin system itself: manifest format, enabling,
   configuration
-- [Built-in Plugins](built-in-plugins.md) — plugins that ship with Hermes
-- [Build a Hermes Plugin](/developer-guide/plugins) — write your own
+- [Built-in Plugins](built-in-plugins.md) — plugins that ship with Moor
+- [Build a Moor Plugin](/developer-guide/plugins) — write your own
 - [Plugin Catalog page](/plugins) — the browsable catalog

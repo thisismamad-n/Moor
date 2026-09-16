@@ -96,10 +96,10 @@ _UNCACHED = object()  # compute() result that must not be memoized
 def _memo(cache_name: str, compute):
     """Return the cached value under module global ``cache_name``, computing (and storing) it once.
 
-    Not consulted under a routed profile (HERMES_HOME override): every memo here is derived from the
+    Not consulted under a routed profile (MOOR_HOME override): every memo here is derived from the
     launch home (its skills tree, its checkout), and the TUI gateway calls these per profile."""
-    from hermes_constants import get_hermes_home_override
-    if get_hermes_home_override() is not None:
+    from moor_constants import get_moor_home_override
+    if get_moor_home_override() is not None:
         return compute()
     cached = globals()[cache_name]
     if cached is not None:
@@ -181,10 +181,10 @@ def _git_run(args: list[str], *, cwd: Optional[Path] = None, timeout: int = 5, t
     encoding. ``network=True`` (ls-remote/fetch) detaches stdin and disables git/GCM prompts so a
     passive update check can never hang on a ``Username for 'https://github.com':`` prompt.
     """
-    from hermes_cli._subprocess_compat import noninteractive_git_env, windows_hide_flags
+    from moor_cli._subprocess_compat import noninteractive_git_env, windows_hide_flags
 
     # The banner/update probes run from GUI-hosted backends too (desktop-spawned
-    # ``hermes serve``), where a bare git child flashes a console window.
+    # ``moor serve``), where a bare git child flashes a console window.
     kwargs: dict = {"creationflags": windows_hide_flags()}
     if network:
         kwargs.update({"stdin": subprocess.DEVNULL, "env": noninteractive_git_env()})
@@ -265,7 +265,7 @@ def upstream_commits_behind(n: int = 20) -> List[Dict[str, Any]]:
     Reads the tips recorded by ``check_for_updates`` so it costs no extra request when the
     compare payload is already memoized for this process.
     """
-    cached = _read_json(get_hermes_home() / ".update_check") or {}
+    cached = _read_json(get_moor_home() / ".update_check") or {}
     head_rev, target_rev = cached.get("head"), cached.get("target")
     if not head_rev or not target_rev or head_rev == target_rev:
         return []
@@ -315,7 +315,7 @@ def _github_branch_tip(repo_slug: str, branch: str) -> Optional[str]:
     def _fetch():
         import urllib.request
         req = urllib.request.Request(
-            url, headers={"Accept": "application/vnd.github.sha", "User-Agent": "hermes-cli-update-check"})
+            url, headers={"Accept": "application/vnd.github.sha", "User-Agent": "moor-cli-update-check"})
         with urllib.request.urlopen(req, timeout=10) as resp:
             return resp.read().decode("utf-8").strip()
     sha = _quiet(_fetch)
@@ -347,7 +347,7 @@ def _check_via_local_git(repo_dir: Path) -> Optional[int]:
     with GitHub, and across the install base that was tens of millions of fetch requests a day
     (GitHub asked us to poll the API instead). Two tip SHAs are enough — the remote one from the
     API, the local one from ``rev-parse`` — and ``_tips_behind`` recovers the exact count through
-    the compare API when they differ. ``git fetch`` happens only inside ``hermes update``.
+    the compare API when they differ. ``git fetch`` happens only inside ``moor update``.
     """
     # Probe the origin URL under the config-isolated env: a global url.<https>.insteadOf rewrite
     # otherwise makes an SSH origin masquerade as HTTPS (#104591).
@@ -365,7 +365,7 @@ def _check_via_local_git(repo_dir: Path) -> Optional[int]:
     global _last_target_rev
     _last_target_rev = target_rev
     # Tip SHAs alone can't distinguish "behind" from a local commit AHEAD of origin/main, and
-    # misreporting an ahead checkout nudges the user into `hermes update`, which can wipe carried
+    # misreporting an ahead checkout nudges the user into `moor update`, which can wipe carried
     # work — hence the ancestor check inside _tips_behind, against the FRESH upstream SHA.
     return _tips_behind(head_rev, target_rev, repo_dir)
 
@@ -377,21 +377,21 @@ def _read_json(path: Path) -> Optional[dict]:
 
 
 def check_for_updates(*, passive: bool = False) -> Optional[int]:
-    """Check whether a Hermes update is available.
+    """Check whether a Moor update is available.
 
-    If ``HERMES_REVISION`` is set (nix builds embed it), compare it to upstream main; otherwise
+    If ``MOOR_REVISION`` is set (nix builds embed it), compare it to upstream main; otherwise
     compare the local checkout's HEAD. Both go through the GitHub API, never ``git fetch``.
     """
     def _read_config_opt_out():
-        from hermes_cli.config import load_config
+        from moor_cli.config import load_config
         return load_config().get("updates", {}).get("check", True) is False
 
     if passive and _quiet(_read_config_opt_out) is True:
         return None
 
-    cache_file = get_hermes_home() / ".update_check"
-    embedded_rev = os.environ.get("HERMES_REVISION") or None
-    # Docker images have no working tree (the image excludes `.git`) and set no HERMES_REVISION.
+    cache_file = get_moor_home() / ".update_check"
+    embedded_rev = os.environ.get("MOOR_REVISION") or None
+    # Docker images have no working tree (the image excludes `.git`) and set no MOOR_REVISION.
     # None makes both the Rich banner and the Ink badge show nothing, mirroring the dashboard's
     # `/api/moor/update/check` short-circuit so the surfaces agree.
     def _install_method():
@@ -401,7 +401,7 @@ def check_for_updates(*, passive: bool = False) -> Optional[int]:
     if _quiet(_install_method) in {"docker", "apt"}:
         return None
     # Cache is invalidated when the embedded rev OR installed version changed since the last check.
-    # For a git checkout the local HEAD is part of the key too: `hermes update` moves HEAD, and a
+    # For a git checkout the local HEAD is part of the key too: `moor update` moves HEAD, and a
     # stale "3 behind" must not survive the update it just prompted.
     now = time.time()
     repo_dir = None if embedded_rev else _resolve_repo_dir()
@@ -770,8 +770,8 @@ def _mcp_failed_line(name: str, transport: str, error: Optional[str]) -> str:
     exact next command, so 'failed' is never the whole story."""
     from rich.markup import escape
     reason = escape(" ".join(str(error or "").split())[:120]) or "no details recorded"
-    next_cmd = (f"hermes mcp login {name}" if re.search(r"\b401\b|unauthori[sz]ed", reason, re.I)
-                else f"hermes mcp test {name}")
+    next_cmd = (f"moor mcp login {name}" if re.search(r"\b401\b|unauthori[sz]ed", reason, re.I)
+                else f"moor mcp test {name}")
     return (f"[red]{name}[/] [dim]({transport})[/] [red]— could not connect:[/] {reason} "
             f"[dim]— run `{next_cmd}`[/]")
 
@@ -851,12 +851,12 @@ def _active_profile_name() -> Optional[str]:
 
 
 def _route_model_for_banner(provider: Any) -> str:
-    """The model the resolved route will actually serve when config names none: today only the Nous
-    free tier (welcome host -> ``nous/welcome``). Read from the boot record and local auth state;
+    """The model the resolved route will actually serve when config names none: today only the Moor
+    free tier (welcome host -> ``moor/welcome``). Read from the boot record and local auth state;
     no network. Empty when nothing resolves, so the caller keeps its "no model configured" line."""
-    if (provider or "auto").strip().lower() not in ("auto", "nous"):
+    if (provider or "auto").strip().lower() not in ("auto", "moor"):
         return ""
-    from hermes_cli.anon_auth import GUEST_MODEL, guest_carries_inference
+    from moor_cli.anon_auth import GUEST_MODEL, guest_carries_inference
     return GUEST_MODEL if guest_carries_inference() else ""
 
 
@@ -866,7 +866,7 @@ def _banner_left_lines(model: str, cwd: str, session_id, context_length, provide
         return f" [dim {dim}]·[/] [dim {dim}]{label}[/]"
     lines = []
     ctx_str = _dim_sep(f"{_format_context_length(context_length)} context") if context_length else ""
-    nous_str = _dim_sep("Nous Research")
+    moor_str = _dim_sep("Moor inc.")
     if not (model or "").strip():
         # Credentials resolve lazily on the first message; the banner prints first. Ask the route
         # the same question so a fresh free-tier install shows its model, not a red "unconfigured".

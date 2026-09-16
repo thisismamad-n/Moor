@@ -3,9 +3,9 @@
 Every ``git fetch --depth 1`` appends the fetched tip to ``.git/shallow`` as a
 new graft and never removes the previous one, so a long-lived shallow installer
 checkout accumulates one line per update check (57 observed in the wild). The
-stale grafts break ``merge-base`` and push ``hermes update`` into the
+stale grafts break ``merge-base`` and push ``moor update`` into the
 orphan-divergence reset path. ``prune_stale_shallow_grafts()`` drops grafts no
-live ref points at; ``hermes update --check`` calls it after its successful
+live ref points at; ``moor update --check`` calls it after its successful
 depth-1 fetch, clearing the grafts accumulated by past checks (the passive
 banner check no longer git-fetches since #107648).
 """
@@ -17,7 +17,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-from hermes_cli.gitlock import prune_stale_shallow_grafts
+from moor_cli.gitlock import prune_stale_shallow_grafts
 
 SHA_A = "a" * 40
 SHA_B = "b" * 40
@@ -91,14 +91,14 @@ def test_prune_is_idempotent_and_noop_without_grafts(tmp_path):
 
 
 def test_update_check_prunes_and_reports_count(tmp_path, monkeypatch, capsys):
-    """`hermes update --check` prunes grafts after its depth-1 fetch and reports the prune."""
-    import hermes_cli.update_cmd as update_cmd
+    """`moor update --check` prunes grafts after its depth-1 fetch and reports the prune."""
+    import moor_cli.update_cmd as update_cmd
 
     fake_root = SimpleNamespace(PROJECT_ROOT=tmp_path)
     monkeypatch.setattr(update_cmd, "_m", lambda: fake_root)
     (tmp_path / ".git").mkdir()
     monkeypatch.setattr(
-        "hermes_cli.update_contract.evaluate_update_admission", lambda root: None
+        "moor_cli.update_contract.evaluate_update_admission", lambda root: None
     )
     monkeypatch.setattr(update_cmd, "_is_shallow_checkout", lambda git_cmd: True)
     monkeypatch.setattr(update_cmd, "_tip_shas", lambda git_cmd, branch: (SHA_A, SHA_B))
@@ -113,10 +113,10 @@ def test_update_check_prunes_and_reports_count(tmp_path, monkeypatch, capsys):
 
     monkeypatch.setattr(update_cmd, "_git_run", fake_git_run)
     monkeypatch.setattr(update_cmd, "_base_git_cmd", lambda: ["git"])
-    monkeypatch.setattr("hermes_cli.banner._github_compare_behind", lambda *a, **k: 0)
+    monkeypatch.setattr("moor_cli.banner._github_compare_behind", lambda *a, **k: 0)
     prune_calls = []
     monkeypatch.setattr(
-        "hermes_cli.gitlock.prune_stale_shallow_grafts",
+        "moor_cli.gitlock.prune_stale_shallow_grafts",
         lambda repo: prune_calls.append(repo) or 2,
     )
 

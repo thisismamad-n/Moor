@@ -19,8 +19,8 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from typing import Any, Callable, Dict, FrozenSet, Optional
 from urllib.parse import parse_qs, urlparse
-from hermes_cli.auth_constants import (
-    AuthError, DEFAULT_NOUS_PORTAL_URL, DEVICE_AUTH_POLL_INTERVAL_CAP_SECONDS,
+from moor_cli.auth_constants import (
+    AuthError, DEFAULT_MOOR_PORTAL_URL, DEVICE_AUTH_POLL_INTERVAL_CAP_SECONDS,
     DEVICE_CODE_GRANT_TYPE, OAUTH_OVER_SSH_DOCS_URL, httpx)
 from utils import is_truthy_value
 
@@ -359,7 +359,7 @@ def _poll_for_token(
 
     def _error(_response, error_payload) -> Exception:
         # Plain copy per OAuth error code; the raw ``code: description`` stays on a Details line.
-        from hermes_cli.auth_error_copy import device_flow_error
+        from moor_cli.auth_error_copy import device_flow_error
         return device_flow_error(
             str(error_payload.get("error", "") or ""),
             str(error_payload.get("error_description") or "Unknown authentication error"))
@@ -376,8 +376,8 @@ def _poll_for_token(
         on_non_json_error=lambda _r: RuntimeError(
             "Token endpoint returned a non-JSON error response"),
         # Enriched at the SOURCE so the CLI login and the dashboard/desktop poller
-        # (web_server_oauth._nous_promotion_poller surfaces it to the UI) both inherit the guidance.
-        on_timeout=lambda: TimeoutError(_nous_device_auth_timeout_message(portal_base_url)))
+        # (web_server_oauth._moor_promotion_poller surfaces it to the UI) both inherit the guidance.
+        on_timeout=lambda: TimeoutError(_moor_device_auth_timeout_message(portal_base_url)))
 
 
 def _prompt_yes_no(prompt: str, *, default: str) -> bool:

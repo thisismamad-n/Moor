@@ -384,13 +384,13 @@ def test_dispatcher_grants_only_the_assigned_worker_scope(tmp_path, monkeypatch)
     import json
     from pathlib import Path
     import sys
-    from hermes_cli import kanban_db as kb
-    from hermes_cli.kanban_db_connect import connect
-    from hermes_cli.kanban_db_dispatch import _default_spawn
+    from moor_cli import kanban_db as kb
+    from moor_cli.kanban_db_connect import connect
+    from moor_cli.kanban_db_dispatch import _default_spawn
 
     monkeypatch.setenv("HOME", str(tmp_path))
     db = tmp_path / "board.db"
-    monkeypatch.setenv("HERMES_KANBAN_DB", str(db))
+    monkeypatch.setenv("MOOR_KANBAN_DB", str(db))
     conn = connect(db)
     tid = kb.create_task(conn, title="assigned child", assignee="default")
     kb.claim_task(conn, tid)
@@ -404,13 +404,13 @@ def test_dispatcher_grants_only_the_assigned_worker_scope(tmp_path, monkeypatch)
         f"result=_handle_complete({{'summary':'assigned worker'}});open({str(output)!r}, 'w').write(result)\n"
     )
     worker.chmod(0o700)
-    monkeypatch.setenv("HERMES_BIN", str(worker))
+    monkeypatch.setenv("MOOR_BIN", str(worker))
     # Building a new worker under an existing task must replace, not inherit, its scope.
-    monkeypatch.setenv("HERMES_KANBAN_TASK", "prior-task")
+    monkeypatch.setenv("MOOR_KANBAN_TASK", "prior-task")
     pid = _default_spawn(task, str(tmp_path), board="default")
     assert pid is not None
     os.waitpid(pid, 0)  # windows-footgun: ok — Linux-only real dispatcher spawn
     assert json.loads(output.read_text())["ok"]
     assert kb.get_task(conn, tid).status == "done"
-    assert os.environ["HERMES_KANBAN_TASK"] == "prior-task"
+    assert os.environ["MOOR_KANBAN_TASK"] == "prior-task"
     conn.close()

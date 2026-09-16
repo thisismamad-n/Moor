@@ -20,7 +20,7 @@ import time
 from typing import Dict, Any, Optional, Union
 from pathlib import Path
 from agent.redact import redact_cdp_url
-from hermes_constants import get_hermes_home, hermes_home_key
+from moor_constants import get_moor_home, moor_home_key
 from utils import env_int
 from moor_cli.config import DEFAULT_CONFIG, cfg_get
 
@@ -140,7 +140,7 @@ AGENT_BROWSER_NPX_SPEC = "agent-browser@^0.26.0"
 
 # Process caches (``_cached_X`` + ``_X_resolved`` pairs) for config-derived lookups;
 # reset by ``cleanup_all_browsers``. Written/read by the sibling modules via ``browser_tool_origin``.
-# The config-derived ones are keyed by profile home (``hermes_home_key()``): the multiplexed
+# The config-derived ones are keyed by profile home (``moor_home_key()``): the multiplexed
 # gateway serves every profile from one process, so a single slot would hand the launch
 # profile's browser settings to every other profile.
 _cached_command_timeout: Optional[Dict[str, int]] = None
@@ -189,7 +189,7 @@ def _cached_browser_cfg(cache_name: str, flag_name: str, key: str, default, pars
     ``cleanup_all_browsers``). The value is stored BEFORE the resolved flag flips so a
     concurrent reader never sees ``resolved=True`` with an empty cache."""
     g = globals()
-    home = hermes_home_key()
+    home = moor_home_key()
     cache = g[cache_name]
     if cache is None:
         cache = g[cache_name] = {}
@@ -625,7 +625,7 @@ def _url_policy_error(url: str, *, auto_local: bool = False) -> Optional[dict]:
     Credential-NAMED query params (``?token=``, ``?signature=``) are deliberately NOT a floor:
     magic links, OAuth callbacks and signed CDN assets are how the agent signs in and browses, and
     a cloud browser already sees every cookie and typed password of the session — refusing the
-    URL protects nothing. Hermes' own secrets leaking into a URL are caught by ``_secret_url_error``."""
+    URL protects nothing. Moor' own secrets leaking into a URL are caught by ``_secret_url_error``."""
     local = _cloud._is_local_backend()
     # Always-blocked floor: cloud metadata / IMDS endpoints are denied regardless of backend, hybrid
     # routing, or allow_private_urls. There's no legitimate agent use case for navigating to 169.254.169.254

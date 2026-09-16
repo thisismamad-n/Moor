@@ -119,7 +119,7 @@ def _flatten_into(node: Any, prefix: str, out: dict[str, str]) -> None:
 
 
 @lru_cache(maxsize=8)
-def _config_language_cached(hermes_home: str) -> str | None:
+def _config_language_cached(moor_home: str) -> str | None:
     """``display.language`` from config.yaml, read once per profile home (``t()`` is a hot path).
     Keyed by home so a multiplexed gateway serving several profiles doesn't freeze the first
     profile's language for every other profile."""
@@ -133,8 +133,8 @@ def _config_language_cached(hermes_home: str) -> str | None:
 
 
 def _config_language() -> str | None:
-    from hermes_constants import get_hermes_home
-    return _config_language_cached(str(get_hermes_home()))
+    from moor_constants import get_moor_home
+    return _config_language_cached(str(get_moor_home()))
 
 
 def reset_language_cache() -> None:
@@ -145,14 +145,14 @@ def reset_language_cache() -> None:
 
 
 def get_language() -> str:
-    """Resolve the active language using env > config > default order. ``HERMES_LANGUAGE`` is a
+    """Resolve the active language using env > config > default order. ``MOOR_LANGUAGE`` is a
     per-profile ``.env`` value, so it is read through the secret scope: under multiplexing a raw
     environ read would impose the default profile's language on every other profile."""
     from agent.secret_scope import UnscopedSecretError, get_secret
     try:
-        env_lang = get_secret("HERMES_LANGUAGE")
+        env_lang = get_secret("MOOR_LANGUAGE")
     except UnscopedSecretError:
-        env_lang = os.environ.get("HERMES_LANGUAGE")  # unscoped default-profile path: environ IS its own value
+        env_lang = os.environ.get("MOOR_LANGUAGE")  # unscoped default-profile path: environ IS its own value
     return _normalize_lang(env_lang) if env_lang else _config_language() or DEFAULT_LANGUAGE
 
 

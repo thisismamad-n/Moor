@@ -23,12 +23,12 @@ from fastapi import APIRouter, HTTPException
 
 from gateway.status import (
     multiplexer_liveness_for_profile, profile_platforms_from_multiplexer, resolve_gateway_liveness)
-from hermes_cli._subprocess_compat import windows_hide_flags
-from hermes_cli.config import OPTIONAL_ENV_VARS, get_env_path, redact_key
-from hermes_constants import get_process_hermes_home
-from hermes_cli.web_deps import LateState, late
-from hermes_cli.web_server_gateway import _restart_gateway_after
-from hermes_cli.web_server_messaging import (
+from moor_cli._subprocess_compat import windows_hide_flags
+from moor_cli.config import OPTIONAL_ENV_VARS, get_env_path, redact_key
+from moor_constants import get_process_moor_home
+from moor_cli.web_deps import LateState, late
+from moor_cli.web_server_gateway import _restart_gateway_after
+from moor_cli.web_server_messaging import (
     _TelegramOnboardingPairing, _WhatsAppOnboardingSession, _messaging_platform_catalog, _telegram_onboarding_error_message, _telegram_onboarding_lock, _telegram_onboarding_pairings, _whatsapp_onboarding_payload, _whatsapp_onboarding_sessions,
 )
 from moor_cli.web_routers._common import http_failure
@@ -281,8 +281,8 @@ def _platform_payloads(scoped_dir: Optional[Path], entries) -> list[dict[str, An
     if runtime is None:
         # A profile served by the multiplexer writes no record of its own; its adapters live in the
         # multiplexer's record under ``<profile>:<platform>``. Unscoped, the profile is the process's
-        # own home (a pooled ``hermes --profile X serve``); the default home resolves to None here.
-        own_home = scoped_dir if scoped_dir is not None else get_process_hermes_home()
+        # own home (a pooled ``moor --profile X serve``); the default home resolves to None here.
+        own_home = scoped_dir if scoped_dir is not None else get_process_moor_home()
         served = multiplexer_liveness_for_profile(own_home)
         if served is not None:
             runtime = {**served[1], "platforms": profile_platforms_from_multiplexer(served[1], own_home.name)}
@@ -894,9 +894,9 @@ async def update_messaging_platform(platform_id: str, body: MessagingPlatformUpd
 def _notify_multiplexer_hot_serve(profile: Optional[str]) -> bool:
     """True when a live multiplexer serves the written profile and was told to rebuild its adapters.
     Unscoped (no ``?profile=``) means THIS process's profile: Desktop routes a pooled
-    ``hermes --profile X serve`` without the query (#109088), so X must resolve here too."""
-    from hermes_cli.gateway import _current_profile_name, named_profile_served_by_running_multiplexer
-    from hermes_cli.gateway_multiplex_served import notify_multiplexer_profiles_changed
+    ``moor --profile X serve`` without the query (#109088), so X must resolve here too."""
+    from moor_cli.gateway import _current_profile_name, named_profile_served_by_running_multiplexer
+    from moor_cli.gateway_multiplex_served import notify_multiplexer_profiles_changed
     name = (profile or "").strip() or _current_profile_name()
     if not name or name == "default" or not named_profile_served_by_running_multiplexer(name):
         return False

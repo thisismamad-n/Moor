@@ -1,4 +1,4 @@
-import { skillCatalogInstallIdentifier } from '@hermes/shared'
+import { skillCatalogInstallIdentifier } from '@moor/shared'
 import { useQuery } from '@tanstack/react-query'
 
 export type CatalogKind = 'skills' | 'plugins'
@@ -18,7 +18,7 @@ export interface CatalogEntry {
   sha: string
   subdir: string
   version: string
-  requiresHermes: string
+  requiresMoor: string
   tags: string[]
   platforms: string[]
   requirements: string[]
@@ -88,7 +88,7 @@ export function parseCatalog(kind: CatalogKind, data: unknown): CatalogEntry[] {
       sha: text(row.sha),
       subdir: text(row.subdir),
       version: text(row.version),
-      requiresHermes: text(row.requiresHermes),
+      requiresMoor: text(row.requiresMoor),
       tags,
       tools,
       hooks,

@@ -549,8 +549,8 @@ class CLIModalMixin:
         flag = "bell_on_prompt" if prompt else "bell_on_complete"
         if not getattr(self, flag, False) or getattr(self, "_terminal_io_broken", False):
             return
-        from hermes_cli.cli_terminal_mixin import _run_on_app_loop, _write_terminal_sequence
-        from hermes_cli.terminal_notify import notification_sequence, write_tty
+        from moor_cli.cli_terminal_mixin import _run_on_app_loop, _write_terminal_sequence
+        from moor_cli.terminal_notify import notification_sequence, write_tty
         body = context or ("input needed" if prompt else "turn complete")
         try:
             seq = "\a" + notification_sequence(

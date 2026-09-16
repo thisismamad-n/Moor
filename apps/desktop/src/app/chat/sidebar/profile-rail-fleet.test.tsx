@@ -150,7 +150,7 @@ const roster: DesktopAgentRoster = {
       connectionKind: 'remote',
       connectionLabel: 'Gateway A',
       profile: 'default',
-      handle: 'hermes-gateway-a'
+      handle: 'moor-gateway-a'
     },
     {
       connectionId: 'gateway-a',

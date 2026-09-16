@@ -1228,10 +1228,10 @@ def _desktop_launch_options() -> tuple[list[str], str, str, str]:
 
 
 def _register_linux_desktop_entry(defer: bool = False):
-    """Install the XDG desktop entry for Hermes Desktop (Linux only, best-effort).
+    """Install the XDG desktop entry for Moor Desktop (Linux only, best-effort).
 
     ``Exec`` and ``Icon`` are absolute so the entry works outside a login shell.
-    ``hermes uninstall --gui`` removes it.
+    ``moor uninstall --gui`` removes it.
 
     ``defer=True`` (app-grid launch) returns a ``DeferredDesktopEntryInstall`` that writes the
     entry only once the Electron window is on screen (#111906); ``None`` when nothing is
@@ -1239,7 +1239,7 @@ def _register_linux_desktop_entry(defer: bool = False):
     """
     from moor_cli.main import PROJECT_ROOT
     try:
-        from hermes_cli.linux_desktop_entry import DeferredDesktopEntryInstall, install_desktop_entry, is_supported
+        from moor_cli.linux_desktop_entry import DeferredDesktopEntryInstall, install_desktop_entry, is_supported
         if not is_supported():
             return None
         if defer:
@@ -1427,7 +1427,7 @@ def _prefer_wsl_d3d12(env: dict) -> None:
     llvmpipe unless GALLIUM_DRIVER selects d3d12, and it must be set before Electron spawns
     its GPU process (setting it from JS is too late). Explicit Mesa choices win; hosts without
     the driver are left alone."""
-    from hermes_constants import is_wsl
+    from moor_constants import is_wsl
     if any(key in env for key in _MESA_DRIVER_OVERRIDES):
         return
     if is_wsl() and _WSL_DXG_DEVICE.exists() and any(driver.is_file() for driver in _WSL_D3D12_DRIVERS):
@@ -1437,9 +1437,9 @@ def _prefer_wsl_d3d12(env: dict) -> None:
 def _desktop_launch_env(args: argparse.Namespace) -> tuple[dict, list[str]]:
     """Electron child env + config-supplied extra flags. ``desktop.*`` config is bridged to env vars
     Electron already reads; an explicit env var wins over config (and over keychain detection)."""
-    from hermes_constants import with_hermes_node_path
-    # with_hermes_node_path() copies os.environ when called with no arg.
-    env = with_hermes_node_path()
+    from moor_constants import with_moor_node_path
+    # with_moor_node_path() copies os.environ when called with no arg.
+    env = with_moor_node_path()
     _prefer_wsl_d3d12(env)
     for attr, key in (
         ("fake_boot", "MOOR_DESKTOP_BOOT_FAKE"), ("ignore_existing", "MOOR_DESKTOP_IGNORE_EXISTING")):
@@ -1559,7 +1559,7 @@ def cmd_gui(args: argparse.Namespace):
     # An app-grid launch (DESKTOP_STARTUP_ID) must not write its own entry while the
     # shell still has the app in STARTING, so it defers the write until Electron
     # reports the window on screen (#111906). --build-only spawns no app: write now.
-    from hermes_cli.linux_desktop_entry import launched_from_shell
+    from moor_cli.linux_desktop_entry import launched_from_shell
     build_only = bool(getattr(args, "build_only", False))
     deferred_entry = _register_linux_desktop_entry(defer=launched_from_shell() and not build_only)
 
@@ -1595,7 +1595,7 @@ def cmd_gui(args: argparse.Namespace):
     if getattr(args, "local", False):
         launch_command.append("--local")
     if not source_mode:
-        print(f"→ Launching packaged Hermes Desktop: {' '.join(launch_command)}")
+        print(f"→ Launching packaged Moor Desktop: {' '.join(launch_command)}")
     pass_fds: tuple[int, ...] = ()
     if deferred_entry is not None:
         env = deferred_entry.child_env(env)

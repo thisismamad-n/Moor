@@ -13,13 +13,13 @@ from types import SimpleNamespace
 import pytest
 
 import cli
-from hermes_cli.kanban_db import KANBAN_RATE_LIMIT_EXIT_CODE
+from moor_cli.kanban_db import KANBAN_RATE_LIMIT_EXIT_CODE
 
 
 @pytest.fixture(autouse=True)
 def _no_inherited_kanban_env(monkeypatch):
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
-    monkeypatch.delenv("HERMES_KANBAN_GOAL_MODE", raising=False)
+    monkeypatch.delenv("MOOR_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("MOOR_KANBAN_GOAL_MODE", raising=False)
 
 
 def _run_non_quiet(monkeypatch, turn_result):
@@ -48,7 +48,7 @@ def _run_non_quiet(monkeypatch, turn_result):
     "reason", ["rate_limit", "upstream_rate_limit", "billing", "overloaded", "server_error", "timeout"]
 )
 def test_dispatcher_spawned_worker_signals_a_provider_outage_not_a_protocol_violation(monkeypatch, reason):
-    monkeypatch.setenv("HERMES_KANBAN_TASK", "t_abc123")
+    monkeypatch.setenv("MOOR_KANBAN_TASK", "t_abc123")
     code = _run_non_quiet(monkeypatch, {"failed": True, "failure_reason": reason})
     assert code == KANBAN_RATE_LIMIT_EXIT_CODE
 

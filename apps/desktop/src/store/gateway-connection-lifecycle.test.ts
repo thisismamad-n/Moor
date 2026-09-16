@@ -618,9 +618,9 @@ describe('secondary stalled-dial budget', () => {
       .fn()
       .mockResolvedValueOnce(descriptorFor('homelab', 'bot-a'))
       .mockRejectedValueOnce(stalled)
-      .mockRejectedValueOnce(new Error('Failed to connect to Hermes gateway'))
+      .mockRejectedValueOnce(new Error('Failed to connect to Moor gateway'))
       .mockRejectedValueOnce(stalled)
-      .mockRejectedValueOnce(new Error('Failed to connect to Hermes gateway'))
+      .mockRejectedValueOnce(new Error('Failed to connect to Moor gateway'))
       .mockRejectedValue(stalled)
 
     installDesktop({ getConnectionFor })

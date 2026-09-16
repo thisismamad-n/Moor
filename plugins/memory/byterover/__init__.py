@@ -83,12 +83,12 @@ def _brv_child_env(brv_path: str) -> Dict[str, str]:
     another profile's — and the launch profile's ``.env`` residue is stripped. Outside multiplex
     the process env IS this profile's own and is passed through unchanged."""
     from agent.secret_scope import UnscopedSecretError, get_secret, is_multiplex_active
-    from hermes_constants import get_hermes_home_override
+    from moor_constants import get_moor_home_override
     from tools.environments.local import build_subprocess_env, strip_launch_profile_env
 
     env = build_subprocess_env(scrub_secrets=False)
     if is_multiplex_active():
-        env = strip_launch_profile_env(env, get_hermes_home_override())
+        env = strip_launch_profile_env(env, get_moor_home_override())
         for key in [k for k in env if k.startswith("BRV_")]:
             env.pop(key, None)
         try:

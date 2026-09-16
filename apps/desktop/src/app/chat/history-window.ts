@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { capabilityScoped, hermesApi, type ProfileScope } from '@/api/client'
+import { capabilityScoped, moorApi, type ProfileScope } from '@/api/client'
 import { type ChatMessage, toChatMessages } from '@/lib/chat-messages'
-import type { SessionMessagesResponse } from '@/types/hermes'
+import type { SessionMessagesResponse } from '@/types/moor'
 
 export const HISTORY_WINDOW_LIMIT = 120
 
@@ -35,7 +35,7 @@ export async function fetchHistoryWindow(
   // The Electron REST bridge cannot transfer AbortSignal over IPC. Cancellation
   // below releases the caller immediately and fences the eventual bounded read;
   // it does not pretend to cancel backend I/O or fall back to a full transcript.
-  const response = await hermesApi<HistoryWindowResponse>({
+  const response = await moorApi<HistoryWindowResponse>({
     ...route,
     ...(typeof scope === 'object' && scope?.connectionId === 'local' ? { connectionId: 'local' } : {}),
     method: 'GET',

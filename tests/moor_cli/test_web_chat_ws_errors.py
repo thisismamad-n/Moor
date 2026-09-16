@@ -8,8 +8,8 @@ happened and what to do, with no errno or exception class in the lead.
 
 from fastapi import HTTPException
 
-from hermes_cli.pty_session import RegistryFull
-from hermes_cli.web_routers.chat_ws_errors import chat_start_failure_message
+from moor_cli.pty_session import RegistryFull
+from moor_cli.web_routers.chat_ws_errors import chat_start_failure_message
 
 
 def test_registry_full_names_the_fix_and_carries_a_message():

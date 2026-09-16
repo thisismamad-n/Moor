@@ -34,7 +34,7 @@ def _provider_pip_dependencies(provider_name: str, declared: list) -> list:
     if provider_name == "hindsight":
         from utils import read_json_or_empty  # BOM-tolerant; {} on missing/corrupt
 
-        cfg = read_json_or_empty(get_hermes_home() / "hindsight" / "config.json")
+        cfg = read_json_or_empty(get_moor_home() / "hindsight" / "config.json")
         # "local" is a legacy alias for "local_embedded"
         if cfg.get("mode", "") in {"local", "local_embedded"}:
             deps.append("hindsight-all")

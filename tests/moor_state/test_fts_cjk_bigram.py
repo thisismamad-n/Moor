@@ -221,10 +221,10 @@ def test_optimize_demote_leaves_established_cjk_index_intact(cjk_so, tmp_path, m
     aborts optimize-storage on every CJK-enabled host before any space is reclaimed."""
     import time as _time
 
-    from hermes_state_common import SCHEMA_SQL
-    from hermes_state_fts import FTS_CJK_TABLE_SQL, FTS_CJK_TRIGGER_SQL
+    from moor_state_common import SCHEMA_SQL
+    from moor_state_fts import FTS_CJK_TABLE_SQL, FTS_CJK_TRIGGER_SQL
 
-    monkeypatch.setenv("HERMES_FTS5_CJK_SO", str(cjk_so))
+    monkeypatch.setenv("MOOR_FTS5_CJK_SO", str(cjk_so))
     db_path = tmp_path / "state.db"
 
     # Hand-build the coexistence shape: legacy inline FTS + a live cjk index.

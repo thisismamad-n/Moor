@@ -16,10 +16,10 @@ import urllib.request
 from dataclasses import dataclass, field
 from pathlib import PurePosixPath
 
-from hermes_cli.local_runtime.context_policy import (
+from moor_cli.local_runtime.context_policy import (
     FLOOR, RUNTIME_OVERHEAD_BYTES, TARGET_WINDOW, LaunchPlan, plan_launch)
-from hermes_cli.local_runtime.estimator import HardwareBudget, LayerKind, ModelProfile, PhysicsRefusal
-from hermes_cli.local_runtime.gguf import model_id_from_stem
+from moor_cli.local_runtime.estimator import HardwareBudget, LayerKind, ModelProfile, PhysicsRefusal
+from moor_cli.local_runtime.gguf import model_id_from_stem
 
 logger = logging.getLogger(__name__)
 

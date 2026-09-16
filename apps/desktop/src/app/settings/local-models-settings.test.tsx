@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { I18nProvider } from '@/i18n'
 import { $localRuntimeInstallStarting, $localRuntimeJobs } from '@/store/local-runtime-jobs'
-import type { LocalCatalogModel, LocalHardware, LocalModelsStatus, LocalRuntimeJob } from '@/types/hermes'
+import type { LocalCatalogModel, LocalHardware, LocalModelsStatus, LocalRuntimeJob } from '@/types/moor'
 
 import { LocalModelsSettings } from './local-models-settings'
 

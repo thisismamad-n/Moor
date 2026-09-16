@@ -127,7 +127,7 @@ async function execProbe(
       throw err
     }
 
-    // One cold-cache / AV miss should not force hermes-setup --update (#61764).
+    // One cold-cache / AV miss should not force moor-setup --update (#61764).
     await run()
   }
 }
@@ -161,13 +161,13 @@ function moorRuntimeImportProbe() {
  * @param {object} [opts.env] - Additional environment for the probe.
  * @returns {boolean}
  */
-async function canImportHermesCli(pythonPath: string, opts: { env?: Record<string, string> } = {}) {
+async function canImportMoorCli(pythonPath: string, opts: { env?: Record<string, string> } = {}) {
   if (!pythonPath) {
     return false
   }
 
   try {
-    await execProbe(pythonPath, ['-c', hermesRuntimeImportProbe()], {
+    await execProbe(pythonPath, ['-c', moorRuntimeImportProbe()], {
       env: { ...process.env, ...(opts.env || {}) },
       stdio: 'ignore',
       timeout: PROBE_TIMEOUT_MS,
@@ -210,13 +210,13 @@ function shouldTrustMoorOverride(moorOverride?: string) {
   return typeof moorOverride === 'string' && moorOverride.trim().length > 0
 }
 
-async function verifyHermesCli(hermesCommand: string, opts?: { shell?: boolean }) {
-  if (!hermesCommand) {
+async function verifyMoorCli(moorCommand: string, opts?: { shell?: boolean }) {
+  if (!moorCommand) {
     return false
   }
 
   try {
-    await execProbe(hermesCommand, ['--version'], {
+    await execProbe(moorCommand, ['--version'], {
       stdio: 'ignore',
       timeout: PROBE_TIMEOUT_MS,
       shell: Boolean(opts?.shell),
@@ -233,7 +233,7 @@ export {
   canImportMoorCli,
   DEFAULT_PROBE_TIMEOUT_MS,
   execProbe,
-  hermesRuntimeImportProbe,
+  moorRuntimeImportProbe,
   isTimeoutError,
   PROBE_TIMEOUT_MS,
   resolveProbeTimeoutMs,

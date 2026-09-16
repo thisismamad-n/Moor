@@ -1,10 +1,10 @@
-"""``hermes gateway migrate --multiplex`` / ``--standalone``: move a per-profile-gateway install onto one
+"""``moor gateway migrate --multiplex`` / ``--standalone``: move a per-profile-gateway install onto one
 multiplexed default gateway (and back), with a table-driven preflight.
 
 Standalone per-profile gateways stay supported; this is a migration path, not a removal. The
 preflight reuses the gateway's own conflict logic (``GatewayRunner._adapter_credential_fingerprint``,
 ``platform_binds_port``, the adapters' ``serves_profile_prefix`` declaration) so its verdict matches
-what the multiplexer would do at startup. ``hermes update`` calls :func:`maybe_auto_migrate_after_update`.
+what the multiplexer would do at startup. ``moor update`` calls :func:`maybe_auto_migrate_after_update`.
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from typing import Callable, Iterator, Optional
 logger = logging.getLogger(__name__)
 
 MANIFEST_NAME = "gateway_migration.json"
-MIGRATE_COMMAND = "hermes gateway migrate --multiplex"
+MIGRATE_COMMAND = "moor gateway migrate --multiplex"
 _SERVED_WAIT_SECONDS = 90.0
 
 
@@ -41,7 +41,7 @@ class ProfileGateway:
     services: list[tuple[str, bool]] = field(default_factory=list)
     run_as_user: Optional[str] = None  # User= recorded by a system-scope systemd unit
     uid: Optional[int] = None  # owner of the gateway process/unit; None = unknown (never "different")
-    runtime_home: Optional[Path] = None  # HERMES_HOME the installed unit pins, when it differs from ``home``
+    runtime_home: Optional[Path] = None  # MOOR_HOME the installed unit pins, when it differs from ``home``
 
     @property
     def is_default(self) -> bool:
@@ -147,7 +147,7 @@ class MigrationPlan:
 
     def eligible_for_migration(self) -> bool:
         """>= 2 profiles, at least one secondary with its own gateway, multiplex off, no blockers.
-        This is the AUTO-migration (``hermes update``) bar; the explicit command also proceeds with
+        This is the AUTO-migration (``moor update``) bar; the explicit command also proceeds with
         zero standalone secondaries (see :func:`cmd_migrate`)."""
         return (
             len(self.profiles) >= 2 and bool(self.standalone_secondaries)
@@ -160,33 +160,33 @@ class MigrationPlan:
 
 @contextlib.contextmanager
 def _home_env(home: Path) -> Iterator[None]:
-    """Run service-manager helpers as if ``home`` were the active HERMES_HOME. Both the contextvar
-    override (``get_hermes_home``) and ``os.environ`` (``gateway.status`` identity files, unit
+    """Run service-manager helpers as if ``home`` were the active MOOR_HOME. Both the contextvar
+    override (``get_moor_home``) and ``os.environ`` (``gateway.status`` identity files, unit
     generation) are switched, then restored."""
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-    import hermes_constants
-    previous = os.environ.get("HERMES_HOME")
-    token = set_hermes_home_override(str(home))
-    os.environ["HERMES_HOME"] = str(home)
-    hermes_constants._default_hermes_root_memo = None
+    from moor_constants import reset_moor_home_override, set_moor_home_override
+    import moor_constants
+    previous = os.environ.get("MOOR_HOME")
+    token = set_moor_home_override(str(home))
+    os.environ["MOOR_HOME"] = str(home)
+    moor_constants._default_moor_root_memo = None
     try:
         yield
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
         if previous is None:
-            os.environ.pop("HERMES_HOME", None)
+            os.environ.pop("MOOR_HOME", None)
         else:
-            os.environ["HERMES_HOME"] = previous
-        hermes_constants._default_hermes_root_memo = None
+            os.environ["MOOR_HOME"] = previous
+        moor_constants._default_moor_root_memo = None
 
 
 def _default_home() -> Path:
-    from hermes_constants import get_default_hermes_root
-    return get_default_hermes_root()
+    from moor_constants import get_default_moor_root
+    return get_default_moor_root()
 
 
 def _profile_homes() -> list[tuple[str, Path]]:
-    from hermes_cli.profiles import profiles_to_serve
+    from moor_cli.profiles import profiles_to_serve
     return list(profiles_to_serve(multiplex=True))
 
 
@@ -200,13 +200,13 @@ def _live_gateway_pid(home: Path) -> Optional[int]:
 
 
 def _gateway_identity(home: Path, pid: Optional[int], services: list[tuple[str, bool]]) -> tuple[Optional[int], Path]:
-    from hermes_cli.gateway_migrate_guards import gateway_identity
+    from moor_cli.gateway_migrate_guards import gateway_identity
     return gateway_identity(home, pid, services)
 
 
 def _installed_services(home: Path) -> list[tuple[str, bool]]:
     """Every installed service for ``home``'s gateway (units / plist on disk), user scope first."""
-    from hermes_cli import gateway as gw
+    from moor_cli import gateway as gw
     found: list[tuple[str, bool]] = []
     with _home_env(home):
         if gw.supports_systemd_services():
@@ -220,14 +220,14 @@ def _systemd_service_user(home: Path, services: list[tuple[str, bool]]) -> Optio
     """Read ``User=`` before migration removes a system-scope unit."""
     if ("systemd", True) not in services:
         return None
-    from hermes_cli import gateway as gw
+    from moor_cli import gateway as gw
     with _home_env(home):
         return gw._read_systemd_user_from_unit(gw.get_systemd_unit_path(system=True))
 
 
 def _service_op(kind: str, system: bool, verb: str, home: Path, *, run_as_user: Optional[str] = None) -> None:
     """``stop`` / ``uninstall`` / ``start`` / ``restart`` / ``install`` on ``home``'s service."""
-    from hermes_cli import gateway as gw
+    from moor_cli import gateway as gw
     with _home_env(home):
         if verb == "install":
             if kind == "launchd":
@@ -239,12 +239,12 @@ def _service_op(kind: str, system: bool, verb: str, home: Path, *, run_as_user: 
 
 
 def _stop_gateway_process(home: Path) -> None:
-    from hermes_cli.profiles import _stop_gateway_process
+    from moor_cli.profiles import _stop_gateway_process
     _stop_gateway_process(home)
 
 
 def _spawn_detached_gateway(home: Path) -> bool:
-    from hermes_cli import gateway as gw
+    from moor_cli import gateway as gw
     with _home_env(home):
         return gw._spawn_detached_gateway()
 
@@ -257,7 +257,7 @@ def _read_multiplex_flag(default_home: Path) -> bool:
     cfg_path = default_home / "config.yaml"
     if not cfg_path.exists():
         return False
-    from hermes_cli.config import read_user_config_raw
+    from moor_cli.config import read_user_config_raw
     cfg = read_user_config_raw(cfg_path) or {}
     gateway_section = cfg.get("gateway") if isinstance(cfg.get("gateway"), dict) else {}
     return bool(cfg.get("multiplex_profiles") or gateway_section.get("multiplex_profiles"))
@@ -265,8 +265,8 @@ def _read_multiplex_flag(default_home: Path) -> bool:
 
 def _write_multiplex_flag(default_home: Path, value: bool) -> None:
     """Set ``gateway.multiplex_profiles`` in the DEFAULT profile's config.yaml through the config API
-    (same read-guard + nested-set + atomic write ``hermes config set`` uses; no raw YAML edits)."""
-    from hermes_cli.config import _set_nested, _write_user_config, require_readable_config_before_write
+    (same read-guard + nested-set + atomic write ``moor config set`` uses; no raw YAML edits)."""
+    from moor_cli.config import _set_nested, _write_user_config, require_readable_config_before_write
     cfg_path = default_home / "config.yaml"
     user_config = require_readable_config_before_write(cfg_path)
     # A stale top-level alias would shadow the nested key the docs describe.
@@ -363,7 +363,7 @@ def platform_serves_profile_prefix(platform_value: str) -> bool:
     with contextlib.suppress(Exception):
         # Plugin-shipped adapters (sms, line, teams, feishu, wecom, ...) only exist in the registry
         # after discovery; a bare CLI process has not run it yet.
-        from hermes_cli.plugins import discover_plugins
+        from moor_cli.plugins import discover_plugins
         discover_plugins()  # idempotent
         from gateway.platform_registry import platform_registry
         entry = platform_registry.get(platform_value)
@@ -414,7 +414,7 @@ def _check_secondary_port_binders(plan: MigrationPlan, configs: dict[str, object
                     f"Profile '{profile.name}' enables {platform.value}, which binds its own port and has no "
                     f"/p/{profile.name}/ ingress on the default listener yet; the multiplexer would skip "
                     f"the whole profile. Disable it there (platforms.{platform.value}.enabled: false) or "
-                    f"keep '{profile.name}' on a standalone gateway (hermes -p {profile.name} gateway start --force)."
+                    f"keep '{profile.name}' on a standalone gateway (moor -p {profile.name} gateway start --force)."
                 )
 
 
@@ -437,7 +437,7 @@ def _load_profile_configs(plan: MigrationPlan) -> dict[str, object]:
 
 def build_migration_plan() -> MigrationPlan:
     """Enumerate profiles + their gateway footprint, then run every preflight check."""
-    from hermes_cli.gateway_multiplex_served import recorded_served_profiles
+    from moor_cli.gateway_multiplex_served import recorded_served_profiles
     default_home = _default_home()
     profiles = []
     for name, home in _profile_homes():
@@ -458,10 +458,10 @@ def build_migration_plan() -> MigrationPlan:
     configs = _load_profile_configs(plan)
     for check in _PREFLIGHT_CHECKS:
         check(plan, configs)
-    from hermes_cli.gateway_migrate_guards import auto_migration_blockers
+    from moor_cli.gateway_migrate_guards import auto_migration_blockers
     # Notices, not blockers: the explicit command is the operator's decision; only the update hook
     # refuses to cross these boundaries on its own.
-    plan.notices.extend(f"Not migrated automatically by `hermes update`: {b}" for b in auto_migration_blockers(plan))
+    plan.notices.extend(f"Not migrated automatically by `moor update`: {b}" for b in auto_migration_blockers(plan))
     plan.notices.append(
         "Profiles created after the migration are served by the running multiplexer as soon as "
         "they exist (it rescans profiles/ on create/delete and every 30s)."
@@ -504,7 +504,7 @@ def format_plan(plan: MigrationPlan, *, dry_run: bool) -> list[str]:
     target = plan.target_service_kind()
     lines.append(f"  - default: {'restart' if plan.default.has_gateway else 'start'} the gateway"
                  + (f" via {target[0]}" if target else " (detached)") + f", verify it serves {len(plan.profiles)} profiles")
-    lines.append(f"  - record the previous state in {plan.default_home / MANIFEST_NAME} (rollback: hermes gateway migrate --standalone)")
+    lines.append(f"  - record the previous state in {plan.default_home / MANIFEST_NAME} (rollback: moor gateway migrate --standalone)")
     return lines + _plan_tail(plan)
 
 
@@ -521,7 +521,7 @@ def _plan_tail(plan: MigrationPlan) -> list[str]:
 
 def _no_manifest_lines(default_home: Path) -> list[str]:
     return [f"✗ No migration manifest at {_manifest_path(default_home)}; nothing to roll back.",
-            "  To leave multiplex mode by hand: hermes config set gateway.multiplex_profiles false && hermes gateway restart"]
+            "  To leave multiplex mode by hand: moor config set gateway.multiplex_profiles false && moor gateway restart"]
 
 
 def _manifest_secondaries(manifest: dict) -> Optional[list[dict]]:
@@ -595,7 +595,7 @@ def format_update_warning(plan: MigrationPlan, auto_blockers: list[str]) -> list
         "  setup, but this install cannot be migrated automatically yet:",
         *[f"    • {b}" for b in (*plan.blockers, *auto_blockers)],
         f"  After fixing the above, run:  {MIGRATE_COMMAND}",
-        "  (`hermes update` will migrate automatically once nothing blocks it.)",
+        "  (`moor update` will migrate automatically once nothing blocks it.)",
     ]
 
 
@@ -658,7 +658,7 @@ def _reconcile_standalone_runtime(default_home: Path, secondary_names: set[str])
 
 def _wait_for_served(default_home: Path, expected: set[str], timeout: float) -> Optional[list[str]]:
     """Poll the default's ``gateway_state.json`` until ``served_profiles`` covers ``expected``."""
-    from hermes_cli.gateway_multiplex_served import recorded_served_profiles
+    from moor_cli.gateway_multiplex_served import recorded_served_profiles
     deadline = time.monotonic() + timeout
     served: Optional[list[str]] = None
     while time.monotonic() < deadline:
@@ -711,8 +711,8 @@ def _preflight_apply(plan: MigrationPlan, target: Optional[tuple[str, bool]], ru
     working per-profile gateway is stopped: rollback is the fallback for surprises, not the plan.
     Mirrors the checks ``systemd_install``/``_service_call`` make on a system unit (root, resolvable
     ``User=``) and the config write's read-guard."""
-    from hermes_cli import gateway as gw
-    from hermes_cli.config import require_readable_config_before_write
+    from moor_cli import gateway as gw
+    from moor_cli.config import require_readable_config_before_write
     try:
         require_readable_config_before_write(plan.default_home / "config.yaml")
     except Exception as exc:
@@ -765,7 +765,7 @@ def apply_migration(plan: MigrationPlan, *, served_wait: float = _SERVED_WAIT_SE
         # Flag off + manifest present = a rollback (or an apply killed before its flag write) that did
         # not finish. Overwriting the manifest would discard the only record of the units to restore.
         _print([f"✗ A previous migration's manifest is still at {_manifest_path(plan.default_home)} (its rollback did not finish).",
-                "  Finish it with: hermes gateway migrate --standalone   (or delete the manifest to start over)"])
+                "  Finish it with: moor gateway migrate --standalone   (or delete the manifest to start over)"])
         return False
     else:
         blocker = _preflight_apply(plan, target, run_as_user)
@@ -791,20 +791,20 @@ def apply_migration(plan: MigrationPlan, *, served_wait: float = _SERVED_WAIT_SE
                 "  ↩ Rolling back to per-profile gateways so no profile is left without one..."])
         rolled_back = rollback_migration(plan.default_home)
         if not rolled_back:
-            print(f"  Re-run {MIGRATE_COMMAND} to resume, or hermes gateway migrate --standalone to roll back.")
+            print(f"  Re-run {MIGRATE_COMMAND} to resume, or moor gateway migrate --standalone to roll back.")
         return False
 
     expected = {p.name for p in plan.profiles}
     served = _wait_for_served(plan.default_home, expected, served_wait)
     if served is not None and expected <= set(served):
         _print(["", f"✓ Migrated: the default gateway now serves {len(served)} profiles: {', '.join(served)}",
-                "  Rollback any time with: hermes gateway migrate --standalone",
+                "  Rollback any time with: moor gateway migrate --standalone",
                 *[f"  • {n}" for n in plan.notices]])
         return True
     missing = sorted(expected - set(served or []))
     _print(["", f"⚠ Migration applied, but the default gateway has not confirmed serving: {', '.join(missing)}",
-            "  Check `hermes gateway status` and the gateway log; the flag and manifest are in place.",
-            "  Rollback: hermes gateway migrate --standalone"])
+            "  Check `moor gateway status` and the gateway log; the flag and manifest are in place.",
+            "  Rollback: moor gateway migrate --standalone"])
     return False
 
 
@@ -882,7 +882,7 @@ def rollback_migration(default_home: Optional[Path] = None) -> bool:
                     print(f"  ✗ default: could not restore rollback manifest ({manifest_exc})")
             ok = False
             print(f"  ✗ default: could not restart its standalone gateway ({exc})")
-            print("    The default gateway is still multiplexing; stop it by hand (hermes gateway stop) and re-run.")
+            print("    The default gateway is still multiplexing; stop it by hand (moor gateway stop) and re-run.")
     if ok:
         print("✓ Rolled back to per-profile gateways.")
     else:
@@ -895,16 +895,16 @@ def rollback_migration(default_home: Optional[Path] = None) -> bool:
 
 def _host_supports_migration() -> Optional[str]:
     """Reason the host cannot be migrated by this command (s6 slots / Windows tasks), else None."""
-    from hermes_cli import gateway as gw
+    from moor_cli import gateway as gw
     if gw._running_under_s6():
         return "s6-supervised container: per-profile gateways are s6 slots; set gateway.multiplex_profiles on the default profile and restart the container instead."
     if gw.is_windows():
-        return "Windows Scheduled Tasks are not migrated automatically; set gateway.multiplex_profiles true, stop the per-profile tasks, and `hermes gateway restart`."
+        return "Windows Scheduled Tasks are not migrated automatically; set gateway.multiplex_profiles true, stop the per-profile tasks, and `moor gateway restart`."
     return None
 
 
 def cmd_migrate(args) -> None:
-    """``hermes gateway migrate [--multiplex|--standalone] [--dry-run] [--yes]``."""
+    """``moor gateway migrate [--multiplex|--standalone] [--dry-run] [--yes]``."""
     if getattr(args, "standalone", False):
         if getattr(args, "dry_run", False):
             default_home = _default_home()
@@ -931,7 +931,7 @@ def cmd_migrate(args) -> None:
     # Zero standalone secondaries is still a migration when the user asks for it explicitly: the flag
     # goes on and the default gateway restarts (the update hook keeps treating that case as a no-op).
     if not getattr(args, "yes", False) and sys.stdin.isatty():
-        from hermes_cli.setup import prompt_yes_no
+        from moor_cli.setup import prompt_yes_no
         if not prompt_yes_no("Apply this migration now?", True):
             print("Aborted; nothing changed.")
             return
@@ -940,11 +940,11 @@ def cmd_migrate(args) -> None:
 
 
 def maybe_auto_migrate_after_update() -> None:
-    """``hermes update`` hook: with >= 2 profiles, per-profile gateways present and multiplex off,
+    """``moor update`` hook: with >= 2 profiles, per-profile gateways present and multiplex off,
     migrate automatically when unblocked (deterministic, never prompts) or print the blocker block.
     ``gateway.auto_multiplex_migration: false`` on the default profile opts out; a secondary behind a
-    service-domain / UNIX-user / HERMES_HOME boundary blocks this path only (the explicit command decides)."""
-    from hermes_cli.gateway_migrate_guards import auto_migration_blockers, auto_migration_opted_out
+    service-domain / UNIX-user / MOOR_HOME boundary blocks this path only (the explicit command decides)."""
+    from moor_cli.gateway_migrate_guards import auto_migration_blockers, auto_migration_opted_out
     if _host_supports_migration() is not None or auto_migration_opted_out(_default_home()):
         return
     plan = build_migration_plan()

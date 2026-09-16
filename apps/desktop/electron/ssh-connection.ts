@@ -42,7 +42,7 @@ const DEFAULT_FORWARD_TIMEOUT_MS = 15_000
 
 // Remote-side watchdog for probe commands, in seconds. runSsh SIGKILLs the
 // LOCAL ssh child on timeout, but the remote command keeps running as an
-// orphan (ppid=1) — a hung remote CLI (e.g. a wedged `hermes --version`)
+// orphan (ppid=1) — a hung remote CLI (e.g. a wedged `moor --version`)
 // accumulates orphans that busy-loop (#110478). Kept under
 // DEFAULT_EXEC_TIMEOUT_MS so the remote kill lands before the local timeout.
 const REMOTE_PROBE_TIMEOUT_SECS = 15

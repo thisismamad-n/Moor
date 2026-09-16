@@ -539,7 +539,7 @@ class TestHeicDetection:
         pillow_heif.register_heif_opener()
         from PIL import Image
         from tools import vision_tools_image_prep as vt
-        isrc = _reload(monkeypatch, tmp_path / "hermes")
+        isrc = _reload(monkeypatch, tmp_path / "moor")
         monkeypatch.setenv("TERMINAL_ENV", "local")
 
         heic = tmp_path / "photo.heic"
@@ -559,7 +559,7 @@ class TestHeicDetection:
         (install pillow-heif) rather than a generic conversion failure — the
         same soft-dependency posture as SVG-without-rasterizer."""
         from tools import vision_tools_image_prep as vt
-        _reload(monkeypatch, tmp_path / "hermes")
+        _reload(monkeypatch, tmp_path / "moor")
         heic = tmp_path / "photo.heic"
         heic.write_bytes(HEIC_HEADER)
 
@@ -591,7 +591,7 @@ class TestHeicDetection:
         if not features.check("avif"):
             pytest.skip("this Pillow build has no native AVIF codec")
         from tools import vision_tools_image_prep as vt
-        _reload(monkeypatch, tmp_path / "hermes")
+        _reload(monkeypatch, tmp_path / "moor")
 
         avif = tmp_path / "photo.avif"
         Image.new("RGB", (8, 8), (10, 180, 90)).save(str(avif), format="AVIF")
@@ -617,7 +617,7 @@ class TestHeicDetection:
         the AV1/Pillow path — not blame pillow-heif alone, which frequently
         ships without any AV1 codec."""
         from tools import vision_tools_image_prep as vt
-        _reload(monkeypatch, tmp_path / "hermes")
+        _reload(monkeypatch, tmp_path / "moor")
         # Valid AVIF brand, but the payload is not decodable by anything.
         broken = tmp_path / "broken.avif"
         broken.write_bytes(AVIF_HEADER)

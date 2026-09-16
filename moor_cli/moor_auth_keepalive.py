@@ -198,10 +198,10 @@ def start_moor_auth_keepalive(
         return None
     # The free tier has no refresh token to keep alive: its access token is re-minted from the
     # anon credential on demand by the request path, so a background refresher has nothing to do.
-    from hermes_cli.anon_auth import is_guest_state
+    from moor_cli.anon_auth import is_guest_state
     try:
-        if is_guest_state(get_provider_auth_state("nous")):
-            logger.debug("Nous auth keepalive skipped: free tier has no refresh token")
+        if is_guest_state(get_provider_auth_state("moor")):
+            logger.debug("Moor auth keepalive skipped: free tier has no refresh token")
             return None
     except Exception:
         pass

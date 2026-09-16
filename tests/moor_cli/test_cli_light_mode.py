@@ -140,11 +140,11 @@ class TestSkinConfigHook:
     def test_badge_preserves_its_paired_colors_in_light_mode(
         self, cli_mod, monkeypatch, skin_name
     ):
-        from hermes_cli.skin_engine import (
+        from moor_cli.skin_engine import (
             get_active_skin, get_prompt_toolkit_style_overrides, set_active_skin,
         )
 
-        monkeypatch.setenv("HERMES_LIGHT", "1")
+        monkeypatch.setenv("MOOR_LIGHT", "1")
         previous = get_active_skin().name
         try:
             set_active_skin(skin_name)

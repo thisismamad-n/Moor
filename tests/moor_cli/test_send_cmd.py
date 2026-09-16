@@ -320,9 +320,9 @@ def test_load_moor_env_latin1_fallback_overrides_shell(tmp_path, monkeypatch):
     moor_home = tmp_path / ".moor"
     moor_home.mkdir()
     # 0xE9 forces the UnicodeDecodeError \u2192 latin-1 stream fallback.
-    (hermes_home / ".env").write_bytes(b"SEND_OVR_LABEL=caf\xe9-file\n")
+    (moor_home / ".env").write_bytes(b"SEND_OVR_LABEL=caf\xe9-file\n")
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("MOOR_HOME", str(moor_home))
     monkeypatch.setenv("SEND_OVR_LABEL", "stale-shell-value")
 
     from importlib import reload

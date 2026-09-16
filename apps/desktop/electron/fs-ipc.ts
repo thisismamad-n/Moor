@@ -89,7 +89,7 @@ export function registerFsIpc({
   // global root.
   async function localPluginsRoot(dirName: string): Promise<string> {
     const profile = readActiveDesktopProfile()
-    const base = profile && profile !== 'default' ? path.join(hermesHome, 'profiles', profile) : hermesHome
+    const base = profile && profile !== 'default' ? path.join(moorHome, 'profiles', profile) : moorHome
 
     return ensureDir(path.join(base, dirName))
   }
@@ -100,22 +100,22 @@ export function registerFsIpc({
   // Earlier builds scoped it per profile; anything left in those folders is
   // moved up once so it does not silently vanish on a profile switch.
   async function desktopPluginsRoot(): Promise<string> {
-    const root = await ensureDir(path.join(hermesHome, DESKTOP_PLUGINS_DIR))
-    await migrateProfileScopedDesktopPlugins(hermesHome, root)
-    await reconcileUnifiedDesktopHalves(hermesHome, root)
+    const root = await ensureDir(path.join(moorHome, DESKTOP_PLUGINS_DIR))
+    await migrateProfileScopedDesktopPlugins(moorHome, root)
+    await reconcileUnifiedDesktopHalves(moorHome, root)
 
     return root
   }
 
-  ipcMain.handle('hermes:fs:desktopPluginsRoot', async () => desktopPluginsRoot())
+  ipcMain.handle('moor:fs:desktopPluginsRoot', async () => desktopPluginsRoot())
 
   // Re-run the unified-half reconcile on demand (after an agent-plugin install /
   // update / uninstall through the gateway) so the app-level copy tracks the
   // package without waiting for the next root resolution.
-  ipcMain.handle('hermes:fs:reconcileDesktopPlugins', async () => {
-    const root = await ensureDir(path.join(hermesHome, DESKTOP_PLUGINS_DIR))
+  ipcMain.handle('moor:fs:reconcileDesktopPlugins', async () => {
+    const root = await ensureDir(path.join(moorHome, DESKTOP_PLUGINS_DIR))
 
-    return reconcileUnifiedDesktopHalves(hermesHome, root)
+    return reconcileUnifiedDesktopHalves(moorHome, root)
   })
 
   // The LOCAL logs root (`<MOOR_HOME>/logs`, profile-aware) — the error
@@ -124,7 +124,7 @@ export function registerFsIpc({
   // plugin roots: valid in every connection mode, created on demand.
   ipcMain.handle('moor:fs:logsRoot', async () => localPluginsRoot('logs'))
 
-  ipcMain.handle('hermes:plugin:probe', async (_event, payload) => {
+  ipcMain.handle('moor:plugin:probe', async (_event, payload) => {
     const identifier = String(payload?.identifier || payload?.repo || '').trim()
 
     if (!identifier) {

@@ -164,8 +164,8 @@ export function PluginInstallModal() {
       : m.agentTargetLocal(
           profileLabel,
           request?.profile && request.profile !== 'default'
-            ? `~/.hermes/profiles/${request.profile}/plugins/`
-            : '~/.hermes/plugins/'
+            ? `~/.moor/profiles/${request.profile}/plugins/`
+            : '~/.moor/plugins/'
         )
 
   // A unified package installed into a local backend carries its own desktop
@@ -247,7 +247,7 @@ export function PluginInstallModal() {
           // the package folder Electron just watched land. Materialise it from
           // there (one source of truth, follows updates/uninstall) instead of
           // cloning a second, standalone copy under another folder name.
-          const touched = (await window.hermesDesktop?.reconcileDesktopPlugins?.()) ?? []
+          const touched = (await window.moorDesktop?.reconcileDesktopPlugins?.()) ?? []
 
           successes.push(m.desktopSuccess(probe.agentName ?? request.repo))
 
@@ -255,7 +255,7 @@ export function PluginInstallModal() {
             await discoverRuntimePlugins()
           }
         } else {
-          const installFn = window.hermesDesktop?.installDesktopPlugin
+          const installFn = window.moorDesktop?.installDesktopPlugin
 
           if (!installFn) {
             errors.push(m.desktopUnavailable)

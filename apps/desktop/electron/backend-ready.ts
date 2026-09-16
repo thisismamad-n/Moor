@@ -7,9 +7,9 @@ const _READY_RE = /^MOOR_(?:BACKEND|DASHBOARD)_READY port=(\d+)/m
 
 // Same sentinel inside a MERGED stdout+stderr buffer (the spawn-time output tail, a remote
 // `>> log 2>&1` file): uvicorn's stderr chunks end without a newline, so the sentinel can be
-// spliced onto them (`...process [4711]HERMES_BACKEND_READY port=65238`) and `^` never lines up
+// spliced onto them (`...process [4711]MOOR_BACKEND_READY port=65238`) and `^` never lines up
 // (#103792). Match on a token boundary instead; `port=<digits>` keeps prose mentions out.
-export const READY_IN_MERGED_OUTPUT_RE = /(?<!\w)HERMES_(?:BACKEND|DASHBOARD)_READY port=(\d+)/
+export const READY_IN_MERGED_OUTPUT_RE = /(?<!\w)MOOR_(?:BACKEND|DASHBOARD)_READY port=(\d+)/
 
 // The announcement clock starts the instant the backend process is spawned —
 // before uvicorn binds its socket. On a cold install the child must first

@@ -3,7 +3,7 @@ import { type BillingBlock } from '@moor/shared'
 
 import type { ErrorSurface } from '@/lib/error-surface'
 import type { ToolResultMetadata } from '@/lib/tool-result-metadata'
-import type { MessageReaction, SessionMessage, UsageStats } from '@/types/hermes'
+import type { MessageReaction, SessionMessage, UsageStats } from '@/types/moor'
 
 export interface TimelinePartMetadata {
   toolResultMetadata?: ToolResultMetadata

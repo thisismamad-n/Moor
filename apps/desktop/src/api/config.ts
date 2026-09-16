@@ -16,7 +16,7 @@ import type {
 
 import {
   capabilityScoped,
-  hermesApi,
+  moorApi,
   type ProfileScope,
   profileScoped,
   scopedDialPriority,
@@ -75,11 +75,11 @@ export function getMoorConfig(profile?: string): Promise<MoorConfig> {
   })
 }
 
-export function getHermesConfigRecord(
+export function getMoorConfigRecord(
   profile?: ProfileScope,
   { includeDefaults = true }: { includeDefaults?: boolean } = {}
-): Promise<HermesConfigRecord> {
-  return window.hermesDesktop.api<HermesConfigRecord>({
+): Promise<MoorConfigRecord> {
+  return window.moorDesktop.api<MoorConfigRecord>({
     ...capabilityScoped(profile),
     ...scopedDialPriority(profile),
     path: includeDefaults ? '/api/config' : '/api/config?include_defaults=false'
@@ -102,12 +102,12 @@ export function getMoorConfigSchema(profile?: null | string): Promise<ConfigSche
   })
 }
 
-export function saveHermesConfig(
-  config: HermesConfigRecord,
+export function saveMoorConfig(
+  config: MoorConfigRecord,
   profile?: null | string,
   { preserveLanguage = false }: { preserveLanguage?: boolean } = {}
 ): Promise<{ ok: boolean }> {
-  return hermesApi<{ ok: boolean }>({
+  return moorApi<{ ok: boolean }>({
     ...profileScoped(profile),
     ...scopedDialPriority(profile),
     path: preserveLanguage ? '/api/config?preserve_language=true' : '/api/config',
@@ -221,7 +221,7 @@ export function deleteCustomEndpoint(id: string): Promise<CustomEndpointsRespons
 }
 
 export function listOAuthProviders(profile?: null | string): Promise<OAuthProvidersResponse> {
-  return hermesApi<OAuthProvidersResponse>({
+  return moorApi<OAuthProvidersResponse>({
     ...profileScoped(profile),
     ...scopedDialPriority(profile),
     path: '/api/providers/oauth'
@@ -232,7 +232,7 @@ export function disconnectOAuthProvider(
   providerId: string,
   profile?: null | string
 ): Promise<{ ok: boolean; provider: string }> {
-  return hermesApi<{ ok: boolean; provider: string }>({
+  return moorApi<{ ok: boolean; provider: string }>({
     ...profileScoped(profile),
     ...scopedDialPriority(profile),
     path: `/api/providers/oauth/${encodeURIComponent(providerId)}`,
@@ -256,7 +256,7 @@ export function submitOAuthCode(
   code: string,
   profile?: null | string
 ): Promise<OAuthSubmitResponse> {
-  return hermesApi<OAuthSubmitResponse>({
+  return moorApi<OAuthSubmitResponse>({
     ...profileScoped(profile),
     ...scopedDialPriority(profile),
     path: `/api/providers/oauth/${encodeURIComponent(providerId)}/submit`,
@@ -278,7 +278,7 @@ export function pollOAuthSession(
 }
 
 export function cancelOAuthSession(sessionId: string, profile?: null | string): Promise<{ ok: boolean }> {
-  return hermesApi<{ ok: boolean }>({
+  return moorApi<{ ok: boolean }>({
     ...profileScoped(profile),
     ...scopedDialPriority(profile),
     path: `/api/providers/oauth/sessions/${encodeURIComponent(sessionId)}`,

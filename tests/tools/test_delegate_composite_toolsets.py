@@ -32,14 +32,14 @@ class TestExpandParentToolsets(unittest.TestCase):
         expanded = _expand_parent_toolsets({"debugging"})
         self.assertTrue({"debugging", "terminal", "web", "file"} <= expanded)
         self.assertNotIn("browser", expanded)
-        self.assertNotIn("hermes-cli", expanded)
+        self.assertNotIn("moor-cli", expanded)
 
     def test_composites_with_allowed_included_tools_are_not_stripped(self):
-        toolsets = ["safe", "hermes-gateway", "hermes-cli", "delegation", "kanban"]
+        toolsets = ["safe", "moor-gateway", "moor-cli", "delegation", "kanban"]
 
         self.assertEqual(
             _strip_blocked_tools(toolsets),
-            ["safe", "hermes-gateway", "hermes-cli"],
+            ["safe", "moor-gateway", "moor-cli"],
         )
 
 

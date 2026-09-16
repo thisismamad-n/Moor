@@ -8,17 +8,17 @@ import time
 from dataclasses import dataclass
 from typing import Any, Callable, ClassVar, ContextManager, Dict, Iterator, Optional
 
-from hermes_cli.auth_constants import httpx
+from moor_cli.auth_constants import httpx
 
 
-UPGRADE_START = "Sign in with a Nous account to unlock more models and tools."
+UPGRADE_START = "Sign in with a Moor account to unlock more models and tools."
 UPGRADE_ALREADY_SIGNED_IN = "Already signed in."
 UPGRADE_DO_NOT_SHARE = "Do not share this code."
 UPGRADE_TIMED_OUT = "That sign-in link has expired. Start again whenever you're ready."
 UPGRADE_NOT_COMPLETED = "Sign-in didn't finish. Try again whenever you're ready."
-UPGRADE_UNAVAILABLE = "The free tier is not available right now; run `hermes auth add nous` to sign in."
+UPGRADE_UNAVAILABLE = "The free tier is not available right now; run `moor auth add moor` to sign in."
 UPGRADE_REASON_COPY = {
-    "user_declined": "No problem, you're still on the free Nous service. Sign in whenever you're ready.",
+    "user_declined": "No problem, you're still on the free Moor service. Sign in whenever you're ready.",
     "superseded": "A newer sign-in code replaced this one. Use the newest one, or start again.",
     "account_retired": "Your session ended before the sign-in finished. A new one starts on its own; "
                        "sign in again whenever you're ready.",
@@ -31,12 +31,12 @@ _RETIRED_REASONS = frozenset({"account_retired", "account_not_anonymous"})
 RETRYABLE_SIGN_IN_REASONS = frozenset({"account_busy"})
 # The account service was busy or unreachable mid sign-in (an ``anon_*`` code from
 # ``anon_auth``): the identity is untouched, so the copy reassures before the way forward.
-UPGRADE_SERVICE_BUSY = ("Signing in couldn't finish because the Nous service is busy. "
+UPGRADE_SERVICE_BUSY = ("Signing in couldn't finish because the Moor service is busy. "
                         "Try again in {wait}. Your session is still here in the meantime.")
-UPGRADE_SERVICE_UNREACHABLE = ("The Nous service couldn't be reached to finish signing you in. "
+UPGRADE_SERVICE_UNREACHABLE = ("The Moor service couldn't be reached to finish signing you in. "
                                "Check your internet connection and try again. Your session is still here.")
 
-UPGRADE_NO_DEFAULT_TERMINAL = "No default model is set yet; run `hermes model` to pick one."
+UPGRADE_NO_DEFAULT_TERMINAL = "No default model is set yet; run `moor model` to pick one."
 UPGRADE_NO_DEFAULT_CHAT = "No default model is set yet; run /model to pick one."
 UPGRADE_WAITING = "Waiting for sign-in..."
 UPGRADE_WAITING_UP_TO = "Waiting for sign-in, up to {minutes}."
@@ -44,9 +44,9 @@ UPGRADE_CANCELLED = "\nSign-in cancelled."
 UPGRADE_UNAVAILABLE_CHAT = "The free tier is not available right now. Try /login again in a moment."
 LOGIN_COMMAND = "/login"
 LOGIN_STARTING = "Starting sign-in..."
-LOGIN_DM_ONLY = "Sign in from a direct message with Hermes."
-LOGIN_BUSY_ELSEWHERE = "Another sign-in is already running on this Hermes. Try again in a few minutes."
-LOGIN_NOT_ALLOWED = "Only an operator of this Hermes can sign it in."
+LOGIN_DM_ONLY = "Sign in from a direct message with Moor."
+LOGIN_BUSY_ELSEWHERE = "Another sign-in is already running on this Moor. Try again in a few minutes."
+LOGIN_NOT_ALLOWED = "Only an operator of this Moor can sign it in."
 # The card form (a surface with its own sign-in button) and the chat form (names /login).
 FREE_TIER_RATE_LIMIT_CARD = (
     "You've used up the allowance for chatting without signing in. It refreshes in {reset}. "
@@ -64,7 +64,7 @@ def format_wait_line(expires_in: int) -> str:
 #
 # One sign-in composition (:func:`run_sign_in`) yields these; every surface is a renderer over them.
 # Each state carries its own user copy, so no renderer ever maps a reason to a string: ``.copy`` is
-# the in-chat form (never a raw exception, a URL or a ``hermes`` verb) and ``.copy_terminal`` the
+# the in-chat form (never a raw exception, a URL or a ``moor`` verb) and ``.copy_terminal`` the
 # form a top-level terminal command prints.
 
 
@@ -198,14 +198,14 @@ class Failed(SignInState):
 
     @property
     def retryable(self) -> bool:
-        from hermes_cli import anon_auth as _core
+        from moor_cli import anon_auth as _core
         if self.reason in RETRYABLE_SIGN_IN_REASONS:
             return True
         return bool(self.reason.startswith("anon_") and self.reason not in _core.ANON_TERMINAL_CODES)
 
     @property
     def copy(self) -> str:
-        from hermes_cli import anon_auth as _core
+        from moor_cli import anon_auth as _core
         ruled = UPGRADE_REASON_COPY.get(self.reason)
         if ruled:
             return ruled
@@ -254,7 +254,7 @@ def _failed_from_exception(exc: BaseException) -> Failed:
     """A ``Failed`` that keeps the account service's own verdict: the ``anon_*`` code and wait hint
     an ``AuthError`` carries, or the wire's shape for a transport error. The raw detail never
     reaches a chat; ``copy_terminal`` may show it when nothing better is known."""
-    from hermes_cli import anon_auth as _core
+    from moor_cli import anon_auth as _core
     err = _core.classify_mint_exception(exc)
     reason = str(err.code or "")
     if reason == _core.ANON_SERVER_ERROR and not isinstance(exc, _core.AuthError):
@@ -270,7 +270,7 @@ def _outcome_state(outcome: Dict[str, Any], anon_token: str) -> SignInState:
     A retiring outcome clears the dead identity here, pinned to the token this attempt started
     from, so a losing attempt can never remove a newer one.
     """
-    from hermes_cli import anon_auth as _core
+    from moor_cli import anon_auth as _core
 
     status = str(outcome.get("status") or "unknown")
     reason = str(outcome.get("reason") or "")
@@ -303,7 +303,7 @@ def run_sign_in(
     scope: Optional[Callable[[], ContextManager[Any]]] = None,
     client_factory: Optional[Callable[[float, Any], ContextManager[httpx.Client]]] = None,
 ) -> Iterator[SignInState]:
-    """Sign the free tier into a Nous account, keeping its connectors. Yields :class:`SignInState`s.
+    """Sign the free tier into a Moor account, keeping its connectors. Yields :class:`SignInState`s.
 
     One composition behind every surface: it reads the current identity itself, mints one when there
     is none, registers the connector transfer, holds ONE absolute deadline across both waits,
@@ -324,10 +324,10 @@ def run_sign_in(
     entered inside the generator, on whichever thread is advancing it.
     *client_factory* is the HTTP client seam, ``client_factory(timeout_seconds, verify)``.
     """
-    from hermes_cli import anon_auth as _core
-    from hermes_cli.auth import PROVIDER_REGISTRY, _resolve_verify
-    from hermes_cli.auth_device_flow import _request_device_code
-    from hermes_cli.auth_nous import _nous_http_client
+    from moor_cli import anon_auth as _core
+    from moor_cli.auth import PROVIDER_REGISTRY, _resolve_verify
+    from moor_cli.auth_device_flow import _request_device_code
+    from moor_cli.auth_moor import _moor_http_client
 
     is_cancelled = cancelled or (lambda: False)
     # Once the server says "completed" the transfer has happened; a cancel only undoes it where the
@@ -343,7 +343,7 @@ def run_sign_in(
     state: Optional[Dict[str, Any]] = None
     try:
         with open_scope():
-            state = _core.current_nous_state()
+            state = _core.current_moor_state()
             if state and not _core.is_guest_state(state):
                 precondition_state = AlreadySignedIn()
             elif not state or not _core.guest_enabled():
@@ -363,11 +363,11 @@ def run_sign_in(
     outcome: Dict[str, Any] = {}
     account_state: Optional[Dict[str, Any]] = None
     try:
-        pconfig = PROVIDER_REGISTRY["nous"]
+        pconfig = PROVIDER_REGISTRY["moor"]
         client_id, scope_str = pconfig.client_id, pconfig.scope
         # A malformed CA bundle raises here, before the wire: inside the try, so it lands on Failed.
         verify = _resolve_verify(insecure=None, ca_bundle=None, auth_state=None)
-        open_client = client_factory or _nous_http_client
+        open_client = client_factory or _moor_http_client
         with open_client(timeout_seconds, verify) as client:
             device = _request_device_code(client, portal, client_id, scope_str)
             intent = _core.register_promotion_intent(
@@ -440,11 +440,11 @@ def run_sign_in(
         with open_scope():
             with guard() as may_persist:
                 if may_persist:
-                    _core.persist_nous_credentials(account_state)
+                    _core.persist_moor_credentials(account_state)
             if may_persist:
                 settled = _core.settle_after_upgrade(account_state)
     except Exception as exc:
-        # persist_nous_credentials takes the auth-store lock, writes auth.json, takes the shared
+        # persist_moor_credentials takes the auth-store lock, writes auth.json, takes the shared
         # store's file lock and reseeds the credential pool: a lock timeout or a read-only home
         # must not escape next(gen).
         yield Failed(reason="", detail=str(exc))

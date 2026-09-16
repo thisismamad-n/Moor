@@ -74,7 +74,7 @@ describe('createMediaProtocolHandler', () => {
         fetchRemoteWithCookies: async () => new Response('cookie', { status: cookieStatus })
       })
 
-      const response = await createMediaProtocolHandler(deps)(request('hermes-media://remote/%2Ftmp%2Fclip.mp4'))
+      const response = await createMediaProtocolHandler(deps)(request('moor-media://remote/%2Ftmp%2Fclip.mp4'))
       expect(response.status).toBe(cookieStatus === 401 || cookieStatus === 403 ? 502 : cookieStatus)
     }
   })
@@ -92,7 +92,7 @@ describe('createMediaProtocolHandler', () => {
     })
 
     const response = await createMediaProtocolHandler(deps)(
-      request(`hermes-media://stream/${encodeURIComponent(file)}`, { Range: 'bytes=10-19' })
+      request(`moor-media://stream/${encodeURIComponent(file)}`, { Range: 'bytes=10-19' })
     )
 
     expect(response.status).toBe(206)
@@ -176,13 +176,13 @@ describe('createMediaProtocolHandler', () => {
     })
 
     await createMediaProtocolHandler(deps)(
-      request('hermes-media://remote/%2Ftmp%2Fclip.mp4', { Range: 'bytes=0-1023' })
+      request('moor-media://remote/%2Ftmp%2Fclip.mp4', { Range: 'bytes=0-1023' })
     )
 
     const [, headers] = vi.mocked(deps.fetchRemote).mock.calls[0]
     expect(headers.get('cf-access-client-id')).toBe('client-id')
     expect(headers.get('range')).toBe('bytes=0-1023')
-    expect(headers.get('x-hermes-session-token')).toBe('secret')
+    expect(headers.get('x-moor-session-token')).toBe('secret')
   })
 
   it('sends the connection extra gateway headers on OAuth cookie-session remote media', async () => {
@@ -196,7 +196,7 @@ describe('createMediaProtocolHandler', () => {
       }))
     })
 
-    await createMediaProtocolHandler(deps)(request('hermes-media://remote/%2Ftmp%2Fclip.mp4'))
+    await createMediaProtocolHandler(deps)(request('moor-media://remote/%2Ftmp%2Fclip.mp4'))
 
     const [, headers] = vi.mocked(deps.fetchRemoteWithCookies).mock.calls[0]
     expect(headers.get('cf-access-client-id')).toBe('client-id')

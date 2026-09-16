@@ -325,7 +325,7 @@ class TestReportDatabaseJournalModes:
         # #110848: startup only refuses WAL for fresh databases on virtiofs/9p; doctor must surface an existing WAL
         # file there (with a non-vulnerable SQLite, where it used to print a plain info line).
         _make_db(tmp_path / "state.db", journal_mode="WAL")
-        monkeypatch.setattr("hermes_state_wal._path_on_cross_vm_fs", lambda p: True)
+        monkeypatch.setattr("moor_state_wal._path_on_cross_vm_fs", lambda p: True)
 
         doctor_platform._report_database_journal_modes(tmp_path, (3, 51, 3))
 
@@ -451,7 +451,7 @@ class TestConfiguredDeleteNeverApplied:
     @pytest.mark.parametrize("version, exposed", [((3, 51, 3), False), (VULNERABLE, True)])
     def test_wal_db_under_configured_delete_warns(self, tmp_path, capsys, monkeypatch, version, exposed):
         _make_db(tmp_path / "state.db", journal_mode="WAL")
-        monkeypatch.setattr("hermes_state_wal.resolve_journal_mode", lambda: "delete")
+        monkeypatch.setattr("moor_state_wal.resolve_journal_mode", lambda: "delete")
 
         doctor_platform._report_database_journal_modes(tmp_path, version)
 
@@ -463,7 +463,7 @@ class TestConfiguredDeleteNeverApplied:
 
     def test_configured_wal_keeps_the_informational_line(self, tmp_path, capsys, monkeypatch):
         _make_db(tmp_path / "state.db", journal_mode="WAL")
-        monkeypatch.setattr("hermes_state_wal.resolve_journal_mode", lambda: "wal")
+        monkeypatch.setattr("moor_state_wal.resolve_journal_mode", lambda: "wal")
 
         doctor_platform._report_database_journal_modes(tmp_path, (3, 51, 3))
 

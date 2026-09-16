@@ -14,7 +14,7 @@ from types import SimpleNamespace
 from typing import Any, Callable, Dict, List
 
 from agent.stream_single_writer import claim_stream_writer, stream_writer_is_current
-from agent.transports.hermes_tools_mcp_server import HERMES_TOOLS_MCP_SERVER_NAME
+from agent.transports.moor_tools_mcp_server import MOOR_TOOLS_MCP_SERVER_NAME
 from agent.sdk_transform_bypass import bypass_sdk_request_transform
 from agent.usage_anchor import set_usage_anchor
 
@@ -195,8 +195,8 @@ def _record_codex_app_server_compaction(agent, turn, *, approx_tokens: int | Non
 # Item types that project to a Moor tool_call (keep in sync with agent/transports/codex_event_projector.py
 # so UI names match recorded names). webSearch is codex's built-in tool: no projector entry, still gets a bubble.
 _CODEX_TOOL_ITEM_TYPES = frozenset({"commandExecution", "fileChange", "mcpToolCall", "dynamicToolCall", "webSearch"})
-# Internal MCP server wrapping Hermes' native tools: its inner dispatch has no tool_progress_callback, so the
-# codex-level mcpToolCall IS the display event and the mcp.hermes-tools.* prefix is stripped (users see Hermes tools).
+# Internal MCP server wrapping Moor' native tools: its inner dispatch has no tool_progress_callback, so the
+# codex-level mcpToolCall IS the display event and the mcp.moor-tools.* prefix is stripped (users see Moor tools).
 _STATIC_TOOL_NAMES = {"commandExecution": "exec_command", "fileChange": "apply_patch", "webSearch": "web_search"}
 _STABLE_ID_PREFIXES = {"commandExecution": "exec", "fileChange": "apply_patch"}
 _MCP_LIKE_ITEM_TYPES = {"mcpToolCall", "dynamicToolCall"}
@@ -213,7 +213,7 @@ def _codex_item_to_tool_name(item: dict) -> str:
     item_type = item.get("type") or ""
     if item_type == "mcpToolCall":
         server, tool = item.get("server") or "mcp", item.get("tool") or "unknown"
-        return tool if server == HERMES_TOOLS_MCP_SERVER_NAME else f"mcp.{server}.{tool}"
+        return tool if server == MOOR_TOOLS_MCP_SERVER_NAME else f"mcp.{server}.{tool}"
     if item_type == "dynamicToolCall":
         return item.get("tool") or "dynamic"
     return _STATIC_TOOL_NAMES.get(item_type) or item_type or "unknown"
@@ -895,7 +895,7 @@ def run_codex_stream(agent, api_kwargs: dict, client: Any = None, on_first_delta
         return bool(agent._interrupt_requested)
 
     def _open_codex_stream(next_api_kwargs: dict[str, Any]):
-        from hermes_cli.providers import is_actual_route
+        from moor_cli.providers import is_actual_route
 
         if is_actual_route(
             getattr(agent, "provider", ""),

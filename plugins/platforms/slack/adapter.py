@@ -4750,8 +4750,8 @@ class SlackAdapter(BasePlatformAdapter):
     _EA_SMART_DENY_LINE = "\n*Smart DENY:* owner override applies to this one operation only."
     _EA_REASON_BUDGET = 500
     _EA_SECTION_CAP = 3000  # a longer section text → invalid_blocks → no buttons at all
-    _EA_ACTION_IDS = {"once": "hermes_approve_once", "session": "hermes_approve_session",
-                      "always": "hermes_approve_always", "deny": "hermes_deny"}
+    _EA_ACTION_IDS = {"once": "moor_approve_once", "session": "moor_approve_session",
+                      "always": "moor_approve_always", "deny": "moor_deny"}
 
     def _exec_approval_cmd_budget(self, description: str, smart_denied: bool) -> int:
         # execute_code approvals embed the whole script, so budget the preview against the cap.
@@ -6561,17 +6561,17 @@ def _write_slack_manifest_and_instruct() -> None:
 def interactive_setup() -> None:
     """Guide the user through Slack bot setup (manifest, tokens, allowlist, home channel).
     CLI helpers are lazy-imported to keep the plugin's import surface small."""
-    from hermes_cli.config import remove_env_value, save_env_value
-    from hermes_cli.cli_output import (
+    from moor_cli.config import remove_env_value, save_env_value
+    from moor_cli.cli_output import (
         prompt, prompt_yes_no, print_header, print_info, print_success, print_warning)
-    from hermes_cli.setup_platforms import declines_reconfigure
+    from moor_cli.setup_platforms import declines_reconfigure
 
     print_header("Slack")
     if declines_reconfigure("Slack", "Reconfigure Slack?", "SLACK_BOT_TOKEN"):
         # Still offer a manifest refresh so new commands get registered.
         if prompt_yes_no(
             "Regenerate the Slack app manifest with the latest command "
-            "list? (recommended after `hermes update`)", True):
+            "list? (recommended after `moor update`)", True):
             _write_slack_manifest_and_instruct()
         return
     for line in _SETUP_STEPS:

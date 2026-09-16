@@ -3,7 +3,7 @@ import subprocess
 
 import pytest
 
-from hermes_cli import update_cmd_fleet as fleet
+from moor_cli import update_cmd_fleet as fleet
 
 
 @pytest.mark.parametrize("graceful,retry", [(False, False), (False, True), (True, False), ("catchup", False)])
@@ -16,7 +16,7 @@ def test_unit_transaction_budget_preserves_scope_and_health(monkeypatch, gracefu
     def systemctl(cmd, *, timeout):
         calls.append((cmd, timeout))
         if "list-units" in cmd:
-            return subprocess.CompletedProcess(cmd, 0, "hermes-serve-test.service loaded active running", "")
+            return subprocess.CompletedProcess(cmd, 0, "moor-serve-test.service loaded active running", "")
         if "show" in cmd:
             assert cmd[:len(scope)] == scope
             output = "42" if "--property=MainPID" in cmd else "TimeoutStopUSec=70s\nTimeoutStartUSec=90s"
@@ -37,7 +37,7 @@ def test_unit_transaction_budget_preserves_scope_and_health(monkeypatch, gracefu
     monkeypatch.setattr(fleet, "_drain_or_signal_gateway_for_update", lambda *a: True)
     health = iter([False, True] if retry else [True])
     monkeypatch.setattr(fleet, "_wait_for_service_active", lambda *a, **kw: next(health))
-    name = "hermes-gateway-test" if graceful else "hermes-serve-test"
+    name = "moor-gateway-test" if graceful else "moor-serve-test"
     restarted, failed = [], []
     fleet._restart_one_systemd_gateway_unit(
         name, scope="system", scope_cmd=scope, drain_budget=45,
@@ -64,8 +64,8 @@ def test_budget_fallback_keeps_real_errors(monkeypatch, limits, outcome):
     monkeypatch.setattr(fleet, "_systemctl", systemctl)
     if outcome == "timeout":
         with pytest.raises(subprocess.TimeoutExpired):
-            fleet._systemctl_reset_and_restart(["systemctl"], "hermes-serve-test")
+            fleet._systemctl_reset_and_restart(["systemctl"], "moor-serve-test")
     else:
-        result = fleet._systemctl_reset_and_restart(["systemctl"], "hermes-serve-test")
+        result = fleet._systemctl_reset_and_restart(["systemctl"], "moor-serve-test")
         assert result.returncode == outcome
         assert result.stderr == "manager diagnostic"

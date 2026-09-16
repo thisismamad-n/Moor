@@ -28,7 +28,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from tools.thread_context import propagate_context_to_thread
 from tools.registry import registry, tool_error
 
-from hermes_time import get_timezone_name
+from moor_time import get_timezone_name
 from tools.code_execution_env import _resolve_child_cwd, _resolve_child_python
 from tools.code_execution_rpc import _rpc_poll_loop
 from tools.tool_output_truncate import head_tail_split, truncation_notice
@@ -146,9 +146,9 @@ _TOOL_STUBS = {
 def _missing_moor_tools_import_hint(m, enabled_tools) -> str:
     missing = m.group(1)
     if missing in {"json_parse", "shell_quote", "retry"}:
-        return (f"Import helpers with `from hermes_tools import {missing}`. "
+        return (f"Import helpers with `from moor_tools import {missing}`. "
                 "If that import failed, the generated module may be stale or another "
-                "hermes_tools may be first on sys.path. Check hermes_tools.__file__ "
+                "moor_tools may be first on sys.path. Check moor_tools.__file__ "
                 "and retry with reset=true.")
     available = sorted(SANDBOX_ALLOWED_TOOLS & set(enabled_tools or SANDBOX_ALLOWED_TOOLS))
     return (f"'{missing}' is not available inside the execute_code sandbox. "
@@ -157,13 +157,13 @@ def _missing_moor_tools_import_hint(m, enabled_tools) -> str:
 
 
 # (regex, formatter(match, enabled_tools)) — first match wins. Production mining (state.db) ranked
-# these as the top execute_code failure classes: hermes_tools import misuse, missing helper
+# these as the top execute_code failure classes: moor_tools import misuse, missing helper
 # imports, treating tool results as strings, importing third-party packages absent from the sandbox.
 _FAILURE_HINT_RULES = (
     (r"cannot import name '(\w+)' from 'moor_tools'", _missing_moor_tools_import_hint),
     (r"NameError: name '(json_parse|shell_quote|retry)' is not defined",
      lambda m, _: f"Import {m.group(1)} before calling it: "
-                  f"from hermes_tools import {m.group(1)}"),
+                  f"from moor_tools import {m.group(1)}"),
     (r"ModuleNotFoundError: No module named '([\w.]+)'",
      lambda m, _: f"'{m.group(1)}' is not installed in the sandbox interpreter. "
                   "Use Python stdlib inside execute_code, or run the code via "
@@ -779,7 +779,7 @@ def _load_config() -> dict:
     """Effective ``code_execution`` section (defaults + user file + managed overlay) — runs while the
     module-level schema is built at tool discovery, so it must not import ``cli``."""
     try:
-        from hermes_cli.config import load_config_readonly
+        from moor_cli.config import load_config_readonly
         cfg = load_config_readonly().get("code_execution", {})
         return cfg if isinstance(cfg, dict) else {}
     except Exception:
@@ -871,7 +871,7 @@ def build_execute_code_schema(enabled_sandbox_tools: set = None,
         "Limits: 5-minute timeout, max 50 tool calls per call. Stdout over "
         "50KB shows head/tail inline; the FULL text is auto-saved to a file whose path rides in the result.\n\n"
         f"{cwd_note}\n\n"
-        "Helpers require imports: `from hermes_tools import json_parse, shell_quote, retry`. "
+        "Helpers require imports: `from moor_tools import json_parse, shell_quote, retry`. "
         "json_parse(text) — tolerant "
         "json.loads for terminal() output; shell_quote(s) — shlex.quote for "
         "dynamic shell args; retry(fn, max_attempts=3, delay=2) — exponential backoff."

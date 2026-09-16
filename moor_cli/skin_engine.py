@@ -55,9 +55,9 @@ def _wings(*glyphs) -> List[List[str]]:
             for g in glyphs]
 
 
-# Branding shared by every Hermes-named built-in (mono/daylight override help_header).
-_HERMES_BRANDING: Dict[str, str] = _branding(
-    "Hermes", "☤", "Goodbye! ☤", prompt="❯", help_header="(^_^)? Available Commands")
+# Branding shared by every moor-named built-in (mono/daylight override help_header).
+_MOOR_BRANDING: Dict[str, str] = _branding(
+    "Moor", "☤", "Goodbye! ☤", prompt="❯", help_header="(^_^)? Available Commands")
 
 _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
     "default": {
@@ -349,13 +349,13 @@ _active_skin_by_home: Dict[str, Tuple[str, SkinConfig]] = {}
 
 
 def _routed_home_key() -> Optional[str]:
-    from hermes_constants import get_hermes_home_override, hermes_home_key
-    return None if get_hermes_home_override() is None else hermes_home_key()
+    from moor_constants import get_moor_home_override, moor_home_key
+    return None if get_moor_home_override() is None else moor_home_key()
 
 
 def _profile_config() -> dict:
     try:
-        from hermes_cli.config import load_config_readonly
+        from moor_cli.config import load_config_readonly
         return load_config_readonly() or {}
     except Exception:
         return {}

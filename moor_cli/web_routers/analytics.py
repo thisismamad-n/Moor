@@ -11,10 +11,10 @@ from typing import Any, Dict, List, Optional
 import yaml
 from fastapi import APIRouter, HTTPException, Query
 
-from hermes_cli.config import get_config_path, read_raw_config
-from hermes_cli.web_deps import late
-from hermes_cli.web_routers._common import corrupt_store_as_status
-from hermes_cli.web_server_profiles import (
+from moor_cli.config import get_config_path, read_raw_config
+from moor_cli.web_deps import late
+from moor_cli.web_routers._common import corrupt_store_as_status
+from moor_cli.web_server_profiles import (
     _approval_mode_of, _aux_task_summary, _aux_usage_rows, _broadcast_gateway_session_info, _is_other_profile, _merge_aux_into_by_model,
 )
 from moor_cli.web_models import RawConfigUpdate
@@ -22,10 +22,10 @@ from moor_cli.web_models import RawConfigUpdate
 router = APIRouter()
 
 # Late-bound so a test's monkeypatch on the owning module wins at call time.
-_open_session_db_for_profile = late("_open_session_db_for_profile", "hermes_cli.web_server_sessions")
-_session_db_path_for_profile = late("_session_db_path_for_profile", "hermes_cli.web_server_sessions")
-_profile_scope = late("_profile_scope", "hermes_cli.web_server_profiles")
-save_config = late("save_config", "hermes_cli.config")
+_open_session_db_for_profile = late("_open_session_db_for_profile", "moor_cli.web_server_sessions")
+_session_db_path_for_profile = late("_session_db_path_for_profile", "moor_cli.web_server_sessions")
+_profile_scope = late("_profile_scope", "moor_cli.web_server_profiles")
+save_config = late("save_config", "moor_cli.config")
 
 # ── Raw YAML config ──────────────────────────────────────────────────────────
 

@@ -12,7 +12,7 @@ import time
 from typing import Any, Callable, Collection, Dict, List, Optional, Tuple
 
 from agent.skill_commands import describe_skill_invocation
-from hermes_state_common import (
+from moor_state_common import (
     FTS_CJK_STALE_KEY, FTS_SQL, FTS_STALE_KEY, FTS_STORAGE_VERSION, FTS_TOOL_CONTENT_PREFIX_CHARS,
     FTS_TOOL_FULL_CONTENT_HIGH_WATER_KEY, FTS_TRIGRAM_EXCLUDED_SOURCES, FTS_TRIGRAM_SQL,
     MAX_FTS5_QUERY_CHARS, SCHEMA_VERSION, _FTS_CJK_TRIGGERS,
@@ -25,7 +25,7 @@ logger = logging.getLogger("moor_state")
 
 def _search_slow_ms() -> float:
     """``sessions.search_slow_ms`` for the served profile (default 1000; 0 logs every call)."""
-    value = routed_sessions_setting("search_slow_ms", "HERMES_SEARCH_SLOW_MS")
+    value = routed_sessions_setting("search_slow_ms", "MOOR_SEARCH_SLOW_MS")
     try:
         return 1000.0 if value is None or str(value).strip() == "" else float(value)
     except (TypeError, ValueError):

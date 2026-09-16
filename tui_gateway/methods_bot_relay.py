@@ -22,9 +22,9 @@ method = _registry.method
 def _relay_root() -> Path:
     """Install root shared by every profile (relay state is install-wide). Same formula as the
     writers (``tools/bot_relay``, ``tools/bot_mode_dm``): both ends of the mailbox must agree for
-    every HERMES_HOME, including non-``profiles/`` subdirs of ``~/.hermes``."""
-    from tools.bot_mode_probe import _default_home, _hermes_root
-    return _hermes_root(Path(_default_home()))
+    every MOOR_HOME, including non-``profiles/`` subdirs of ``~/.moor``."""
+    from tools.bot_mode_probe import _default_home, _moor_root
+    return _moor_root(Path(_default_home()))
 
 
 def _run_delivery(profile: str, tmp: str, env: dict | None = None) -> subprocess.CompletedProcess:
@@ -118,7 +118,7 @@ def _(rid, params: dict, _root=_relay_root, _run=_run_delivery) -> dict:
 
         turn_env = delivery_env(author, live_home)
 
-        fd, tmp = tempfile.mkstemp(prefix="hermes-relay-dm-", suffix=".txt", text=True)
+        fd, tmp = tempfile.mkstemp(prefix="moor-relay-dm-", suffix=".txt", text=True)
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 f.write(message)

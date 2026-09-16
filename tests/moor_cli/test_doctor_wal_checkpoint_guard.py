@@ -1,4 +1,4 @@
-"""#103339 item 2: ``hermes doctor --fix`` never checkpoints state.db through a bare writable ``sqlite3.connect``
+"""#103339 item 2: ``moor doctor --fix`` never checkpoints state.db through a bare writable ``sqlite3.connect``
 — the checkpoint runs on the exclusive repair guard, so an opener arriving after the holder scan is refused."""
 
 from __future__ import annotations
@@ -6,9 +6,9 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-import hermes_state_repair
-from hermes_cli.doctor_report import Finding
-from hermes_cli.doctor_state import _state_db_wal
+import moor_state_repair
+from moor_cli.doctor_report import Finding
+from moor_cli.doctor_state import _state_db_wal
 
 
 def test_doctor_checkpoint_runs_only_on_the_exclusive_repair_guard(tmp_path, monkeypatch):
@@ -33,13 +33,13 @@ def test_doctor_checkpoint_runs_only_on_the_exclusive_repair_guard(tmp_path, mon
 
     monkeypatch.setattr(sqlite3, "connect", _spy)
     guard_connects: list[Path] = []
-    real_durable = hermes_state_repair._connect_repair_durable
+    real_durable = moor_state_repair._connect_repair_durable
 
     def _durable(path, **kwargs):
         guard_connects.append(Path(path))
         return real_durable(path, **kwargs)
 
-    monkeypatch.setattr(hermes_state_repair, "_connect_repair_durable", _durable)
+    monkeypatch.setattr(moor_state_repair, "_connect_repair_durable", _durable)
 
     finding = Finding()
     _state_db_wal(finding, True, db)
@@ -53,7 +53,7 @@ def test_session_count_reads_a_home_with_uri_reserved_characters(tmp_path):
     """`file:` URIs treat '?' and '#' as delimiters; a home named `profile?blue` must still count."""
     import sqlite3
 
-    from hermes_cli.doctor_state import _session_count
+    from moor_cli.doctor_state import _session_count
 
     home = tmp_path / "profile?blue#x"
     home.mkdir()

@@ -170,8 +170,8 @@ def _save_discovery_cache(cache: Dict[str, list]) -> None:
         return
     try:
         from utils import atomic_json_write  # stdlib+yaml only; no cycle
-        from hermes_constants import mkdir_under_hermes_home
-        mkdir_under_hermes_home(path.parent)
+        from moor_constants import mkdir_under_moor_home
+        mkdir_under_moor_home(path.parent)
         atomic_json_write(path, cache, indent=0)
     except Exception as e:
         logger.debug("Could not write tool discovery cache %s: %s", path, e)
@@ -272,7 +272,7 @@ def check_fn_cache_scope() -> Optional[str]:
         pass
     try:
         from agent.secret_scope import serves_routed_profile
-        from hermes_constants import get_hermes_home_override
+        from moor_constants import get_moor_home_override
         if not serves_routed_profile():
             return None
         override = get_moor_home_override()

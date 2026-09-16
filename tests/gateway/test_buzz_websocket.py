@@ -216,7 +216,7 @@ async def test_websocket_loop_reconnects_when_discovery_send_sees_closed_socket(
         await asyncio.Event().wait()
 
     async def rediscover(websocket, subscriptions):
-        await websocket.send(json.dumps(["REQ", "hermes-buzz-dm-1", {}]))
+        await websocket.send(json.dumps(["REQ", "moor-buzz-dm-1", {}]))
 
     monkeypatch.setattr(adapter, "_rediscover_and_subscribe", rediscover)
 

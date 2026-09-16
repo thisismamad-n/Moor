@@ -108,9 +108,9 @@ def aux_probe_mode():
 
 from agent.credential_pool import load_pool
 from agent.model_metadata import MINIMUM_CONTEXT_LENGTH, get_model_context_length
-from hermes_cli.config import get_hermes_home
+from moor_cli.config import get_moor_home
 from agent.auxiliary_health import _custom_health_base_url, _unhealthy_cache_key
-from hermes_constants import OPENROUTER_BASE_URL, hermes_home_key
+from moor_constants import OPENROUTER_BASE_URL, moor_home_key
 from utils import base_url_host_matches, base_url_hostname, base_url_origin, env_float, is_truthy_value, model_forces_max_completion_tokens, normalize_proxy_env_vars
 
 logger = logging.getLogger(__name__)
@@ -910,15 +910,15 @@ _OPENROUTER_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free"
 _MOOR_MODEL = "google/gemini-3.6-flash"
 _MOOR_DEFAULT_BASE_URL = "https://inference-api.nousresearch.com/v1"
 _ANTHROPIC_DEFAULT_BASE_URL = "https://api.anthropic.com"
-_AUTH_JSON_PATH = get_hermes_home() / "auth.json"
+_AUTH_JSON_PATH = get_moor_home() / "auth.json"
 _AUTH_JSON_PATH_AT_IMPORT = _AUTH_JSON_PATH
 
 
 def _auth_json_path():
     """Active profile's ``auth.json`` at call time (a patched ``_AUTH_JSON_PATH`` still wins). The
     import-time constant is the LAUNCH profile's; under multiplexing a secondary's auxiliary calls
-    would otherwise authenticate to Nous with the default profile's token."""
-    from hermes_cli.auth import _auth_file_path
+    would otherwise authenticate to Moor with the default profile's token."""
+    from moor_cli.auth import _auth_file_path
     return _AUTH_JSON_PATH if _AUTH_JSON_PATH != _AUTH_JSON_PATH_AT_IMPORT else _auth_file_path()
 
 # Hosts exposing BOTH ``…/anthropic`` and a sibling OpenAI ``…/v1``. Matched on the URL *host*
@@ -947,7 +947,7 @@ def _to_openai_base_url(base_url: str) -> str:
     """
     url = str(base_url or "").strip().rstrip("/")
     if base_url_hostname(url) == "api.actual.inc":
-        from hermes_cli.auth import normalize_actual_base_url
+        from moor_cli.auth import normalize_actual_base_url
         return normalize_actual_base_url(url)
     if url.endswith("/anthropic"):
         if base_url_host_matches(url, "open.bigmodel.cn") or base_url_host_matches(url, "api.z.ai"):
@@ -1383,7 +1383,7 @@ class _CodexCompletionsAdapter:
             current_issuer_model=wire_model, native_compaction_eligible=False,
         )
         resp_kwargs: Dict[str, Any] = {
-            # Codex only knows the base slug; strip the Hermes ``-900k`` picker suffix.
+            # Codex only knows the base slug; strip the Moor ``-900k`` picker suffix.
             "model": wire_model, "instructions": instructions,
             "input": input_items or [{"role": "user", "content": ""}], "store": False,
         }
@@ -1472,10 +1472,10 @@ class _CodexCompletionsAdapter:
         return resp_kwargs, model, timeout
 
     def create(self, **kwargs) -> Any:
-        from hermes_cli.providers import is_actual_route
+        from moor_cli.providers import is_actual_route
 
         if is_actual_route(
-            getattr(self._client, "_hermes_aux_effective_provider", ""),
+            getattr(self._client, "_moor_aux_effective_provider", ""),
             str(getattr(self._client, "base_url", "") or ""),
         ):
             raise ValueError(
@@ -1887,7 +1887,7 @@ def _read_moor_auth() -> Optional[dict]:
         if not auth_path.is_file():
             return None
         data = json.loads(auth_path.read_text(encoding="utf-8-sig"))
-        if data.get("active_provider") != "nous":
+        if data.get("active_provider") != "moor":
             return None
         provider = data.get("providers", {}).get("moor", {})
         # Must have at least an access_token or agent_key.
@@ -1996,7 +1996,7 @@ def _resolve_xai_oauth_for_aux() -> Optional[Tuple[str, str]]:
                 ).strip()
                 _url = lambda v: str(v or "").strip().rstrip("/")  # noqa: E731
                 base_url = _xai_validate_inference_base_url(
-                    _url(_scoped_key_env("HERMES_XAI_BASE_URL"))
+                    _url(_scoped_key_env("MOOR_XAI_BASE_URL"))
                     or _url(_scoped_key_env("XAI_BASE_URL"))
                     or _url(getattr(entry, "runtime_base_url", None))
                     or _url(getattr(entry, "base_url", None)),
@@ -2257,38 +2257,38 @@ def _try_moor(vision: bool = False) -> Tuple[Optional[OpenAI], Optional[str]]:
         logger.warning("Auxiliary Moor client unavailable: no Moor authentication found (run: moor auth).")
         _mark_provider_unhealthy("moor", ttl=60)
         return None, None
-    if runtime is None and nous:
-        logger.debug("Auxiliary Nous: runtime JWT refresh failed; checking stored auth.json token.")
+    if runtime is None and moor:
+        logger.debug("Auxiliary Moor: runtime JWT refresh failed; checking stored auth.json token.")
     if runtime is not None:
         api_key, base_url = runtime
     else:
-        api_key = _nous_api_key(nous or {})
+        api_key = _moor_api_key(moor or {})
         if not api_key:
             logger.warning(
-                "Auxiliary Nous client unavailable: no usable inference JWT found "
-                "(run: hermes auth add nous)."
+                "Auxiliary Moor client unavailable: no usable inference JWT found "
+                "(run: moor auth add moor)."
             )
-            _mark_provider_unhealthy("nous", ttl=60)
+            _mark_provider_unhealthy("moor", ttl=60)
             return None, None
         base_url = str(
-            (nous or {}).get("inference_base_url") or _scoped_key_env("NOUS_INFERENCE_BASE_URL") or _NOUS_DEFAULT_BASE_URL
+            (moor or {}).get("inference_base_url") or _scoped_key_env("MOOR_INFERENCE_BASE_URL") or _MOOR_DEFAULT_BASE_URL
         ).rstrip("/")
     lane = "vision" if vision else "text"
     # The free tier's host serves exactly one model, for every lane: asking it for the Portal's
     # recommended aux model is a guaranteed 429 ``model_not_free``. Pin the route's model instead.
     # Vision rides the same id (the backing model is multimodal; a backing that is not answers
     # the request with the upstream's own error, which the ladder handles like any other).
-    from hermes_cli.anon_auth import GUEST_MODEL, route_is_welcome_host
-    global auxiliary_is_nous
+    from moor_cli.anon_auth import GUEST_MODEL, route_is_welcome_host
+    global auxiliary_is_moor
     if route_is_welcome_host(base_url):
-        auxiliary_is_nous = True
-        logger.debug("Auxiliary/%s: Nous free tier; using %s", lane, GUEST_MODEL)
+        auxiliary_is_moor = True
+        logger.debug("Auxiliary/%s: Moor free tier; using %s", lane, GUEST_MODEL)
         return _create_openai_client(api_key=api_key, base_url=base_url), GUEST_MODEL
-    auxiliary_is_nous = True
-    logger.debug("Auxiliary client: Nous Portal")
-    # Portal recommended-models is authoritative (tier-aware); _NOUS_MODEL when unreachable/null.
+    auxiliary_is_moor = True
+    logger.debug("Auxiliary client: Moor Portal")
+    # Portal recommended-models is authoritative (tier-aware); _MOOR_MODEL when unreachable/null.
     # Probes skip the lookup: exact model is irrelevant and it hits the network.
-    model = _NOUS_MODEL
+    model = _MOOR_MODEL
     if not _aux_probe_active():
         try:
             from moor_cli.models import get_moor_recommended_aux_model
@@ -2651,8 +2651,8 @@ def clear_runtime_main() -> None:
 def _resolve_custom_runtime() -> Tuple[Optional[str], Optional[str], Optional[str]]:
     """Resolve the active custom/main endpoint like the main CLI (env OPENAI_BASE_URL or config-saved)."""
     try:
-        from hermes_cli.auth import AuthError
-        from hermes_cli.runtime_provider import resolve_runtime_provider
+        from moor_cli.auth import AuthError
+        from moor_cli.runtime_provider import resolve_runtime_provider
         runtime = resolve_runtime_provider(requested="custom")
     except AuthError as exc:
         # Bare 'custom' with nothing configured fails fast in the main resolver: there is no
@@ -2787,9 +2787,9 @@ def _build_xai_oauth_aux_client(model: str) -> Tuple[Optional[Any], Optional[str
 
 
 def _codex_base_url_override() -> str:
-    """Profile-scoped ``HERMES_CODEX_BASE_URL`` (same read as the API-key env vars: under a
+    """Profile-scoped ``MOOR_CODEX_BASE_URL`` (same read as the API-key env vars: under a
     multiplexer the routed profile's .env decides the endpoint, never a sibling's process env)."""
-    return _scoped_key_env("HERMES_CODEX_BASE_URL").rstrip("/")
+    return _scoped_key_env("MOOR_CODEX_BASE_URL").rstrip("/")
 
 
 def _build_codex_client(model: str) -> Tuple[Optional[Any], Optional[str]]:
@@ -4280,12 +4280,12 @@ def _discovery_chain_allowed(main_provider: str, task: Optional[str] = None) -> 
     Once the user picked one, every auxiliary route must be a provider they configured (main,
     ``auxiliary.<task>``, ``fallback_providers``); guessing "whatever else is logged in" bills an
     account they never pointed this session at (xAI OAuth session with a dead token → every
-    compression silently charged to a Nous Portal balance)."""
+    compression silently charged to a Moor Portal balance)."""
     if (main_provider or "").strip().lower() in {"", "auto"}:
         return True
     logger.warning(
         "Auxiliary %s: main provider %s is unavailable and no fallback_chain / fallback_providers is "
-        "configured — refusing to guess another logged-in provider. Re-authenticate (`hermes model`) "
+        "configured — refusing to guess another logged-in provider. Re-authenticate (`moor model`) "
         "or declare a fallback.", task or "call", main_provider)
     return False
 
@@ -4391,7 +4391,7 @@ def _to_async_client(sync_client, model: str, is_vision: bool = False):
     # Headers are rebuilt from scratch here, so re-apply the OpenCode keyless policy from
     # _create_openai_client: the placeholder must never ship as a bearer (see #110831).
     with contextlib.suppress(Exception):
-        from hermes_cli.models import OPENCODE_ZEN_FREE_KEYLESS_PLACEHOLDER, opencode_zen_free_headers
+        from moor_cli.models import OPENCODE_ZEN_FREE_KEYLESS_PLACEHOLDER, opencode_zen_free_headers
         if sync_client.api_key == OPENCODE_ZEN_FREE_KEYLESS_PLACEHOLDER:
             headers = {**(headers or {}), **opencode_zen_free_headers()}
     if headers:
@@ -4547,9 +4547,9 @@ def _log_once_debug(seen: set, key: Any, msg: str, *args: Any) -> None:
 
 
 def _is_actual_auxiliary_route(req: _ResolveRequest, base_url: str) -> bool:
-    from hermes_cli.auth import normalize_actual_base_url
-    from hermes_cli.providers import is_actual_route
-    from hermes_cli.route_identity import normalize_route_base_url
+    from moor_cli.auth import normalize_actual_base_url
+    from moor_cli.providers import is_actual_route
+    from moor_cli.route_identity import normalize_route_base_url
 
     if is_actual_route(req.provider, base_url):
         return True
@@ -4576,7 +4576,7 @@ def _wrap_transport(req: _ResolveRequest, client_obj: Any, final_model_str: str,
             if isinstance(client_obj, CodexAuxiliaryClient)
             else client_obj
         )
-        client._hermes_aux_effective_provider = "actual"
+        client._moor_aux_effective_provider = "actual"
         return client
     needs_codex = not (
         isinstance(client_obj, CodexAuxiliaryClient) or req.raw_codex
@@ -4736,7 +4736,7 @@ def _resolve_custom_branch(req: _ResolveRequest) -> _ResolveResult:
             custom_base, custom_key = _main_base, _main_key
     if custom_base and custom_key:
         if _is_actual_auxiliary_route(req, custom_base):
-            from hermes_cli.auth import normalize_actual_base_url
+            from moor_cli.auth import normalize_actual_base_url
             custom_base = normalize_actual_base_url(custom_base)
         final_model = _normalize_resolved_model(
             model or (main_runtime.get("model") if main_runtime else None) or "gpt-4o-mini", provider,
@@ -4803,7 +4803,7 @@ def _resolve_named_custom_branch(req: _ResolveRequest) -> Optional[_ResolveResul
     # Actual's wire protocol takes precedence over persisted task/provider modes.
     entry_api_mode = (req.api_mode or custom_entry.get("api_mode") or "").strip()
     if _is_actual_auxiliary_route(req, custom_base):
-        from hermes_cli.auth import normalize_actual_base_url
+        from moor_cli.auth import normalize_actual_base_url
         custom_base = normalize_actual_base_url(custom_base)
         entry_api_mode = "chat_completions"
     if not custom_base:
@@ -5410,9 +5410,9 @@ def _client_cache_key(
     # share an entry, and the second builder's _store_cached_client would close the first's client.
     model_key = model or runtime.get("model", "")
     api_key_key = _runtime_cache_discriminator("api_key", api_key or "")
-    # Profile home leads the key: callers that omit api_key (pool / Nous auth.json paths) would
+    # Profile home leads the key: callers that omit api_key (pool / Moor auth.json paths) would
     # otherwise share one client across multiplex profiles holding different credentials.
-    return (hermes_home_key(), provider, async_mode, base_url or "", api_key_key, api_mode or "", runtime_key, is_vision, task_key, pool_hint, model_key)
+    return (moor_home_key(), provider, async_mode, base_url or "", api_key_key, api_mode or "", runtime_key, is_vision, task_key, pool_hint, model_key)
 
 
 def _current_event_loop() -> Any:
@@ -5705,7 +5705,7 @@ def _expand_direct_api_alias(prov: Optional[str], existing_base: Optional[str]) 
     if target_base is None:
         return prov, existing_base
     with contextlib.suppress(Exception):
-        from hermes_cli.runtime_provider import _get_named_custom_provider
+        from moor_cli.runtime_provider import _get_named_custom_provider
         if _get_named_custom_provider(prov) is not None:
             return prov, existing_base
     return "custom", existing_base or _scoped_key_env("OPENAI_BASE_URL").rstrip("/") or target_base
@@ -5845,7 +5845,7 @@ class CompressionFastLane(NamedTuple):
 
 def _fast_lane_config_fields(config: Dict[str, Any]) -> tuple[str, str, bool]:
     """Only explicit reasoning disablement certifies a non-reasoning route."""
-    from hermes_constants import parse_reasoning_effort
+    from moor_constants import parse_reasoning_effort
     provider = str(config.get("provider") or "").strip().lower()
     model = str(config.get("model") or "").strip()
     parsed_effort = parse_reasoning_effort(config.get("reasoning_effort"))
@@ -5986,8 +5986,8 @@ def _acquire_sync_aux_semaphore(task: Optional[str]) -> Optional[threading.Bound
     limit = _get_task_max_concurrency(task)
     if limit is None:
         return None
-    from hermes_constants import hermes_home_key
-    return _cached_semaphore(_aux_sync_semaphores, (hermes_home_key(), task), limit, threading.BoundedSemaphore)
+    from moor_constants import moor_home_key
+    return _cached_semaphore(_aux_sync_semaphores, (moor_home_key(), task), limit, threading.BoundedSemaphore)
 
 
 def _acquire_async_aux_semaphore(task: Optional[str]):
@@ -6000,8 +6000,8 @@ def _acquire_async_aux_semaphore(task: Optional[str]):
         loop = asyncio.get_running_loop()
     except RuntimeError:
         return None
-    from hermes_constants import hermes_home_key
-    return _cached_semaphore(_aux_async_semaphores, (hermes_home_key(), task, id(loop)), limit, asyncio.Semaphore)
+    from moor_constants import moor_home_key
+    return _cached_semaphore(_aux_async_semaphores, (moor_home_key(), task, id(loop)), limit, asyncio.Semaphore)
 
 
 def _reset_aux_semaphores() -> None:
@@ -6194,7 +6194,7 @@ def _merge_aux_extra_body(
             # ``reasoning_config`` is already clamped to the OpenAI-compat wire by _build_call_kwargs.
             merged_extra["reasoning"] = {"enabled": True, "effort": reasoning_config.get("effort") or "medium"}
     # Caller/task ``extra_body.reasoning`` (``auxiliary.<task>.reasoning_effort`` folds in here via
-    # _get_task_extra_body) takes the same wire clamp: Hermes-only ``ultra`` never reaches the
+    # _get_task_extra_body) takes the same wire clamp: moor-only ``ultra`` never reaches the
     # OpenAI-compat wire from any aux task (#112010).
     if isinstance(merged_extra.get("reasoning"), dict):
         from agent.reasoning_effort import clamp_reasoning_config
@@ -6243,7 +6243,7 @@ def _build_call_kwargs(
         kwargs["tools"] = _dedupe_tool_names(tools, provider, model)
     # Provider profiles are the source of truth for reasoning wire shapes (top-level, nested body,
     # or extra_body.reasoning); providers without a reasoning-aware profile keep the generic
-    # ``extra_body.reasoning`` fallback. Clamp Hermes-internal levels (``ultra``) to the
+    # ``extra_body.reasoning`` fallback. Clamp moor-internal levels (``ultra``) to the
     # OpenAI-compat wire ONCE here, before either path sees the config — the same entry clamp the
     # main transport applies (#89503); MoA aggregator/reference and aux calls 400'd without it (#112010).
     from agent.reasoning_effort import clamp_reasoning_config
@@ -6261,7 +6261,7 @@ def _build_call_kwargs(
     if reasoning_config and isinstance(reasoning_config, dict):
         raw_base = base_url or ""
         if (
-            provider_norm == "anthropic" or projection.messages_wire or _nous_on_messages_wire(provider_norm, model)
+            provider_norm == "anthropic" or projection.messages_wire or _moor_on_messages_wire(provider_norm, model)
             or _endpoint_speaks_anthropic_messages(raw_base) or _is_anthropic_compat_endpoint(provider_norm, raw_base)
         ):
             kwargs["_reasoning_config"] = dict(reasoning_config)
@@ -7080,7 +7080,7 @@ def _ladder_credential_rungs(
     client, task, tag, resolved_provider = route.client, route.task, route.tag, route.resolved_provider
     auth_refresh_provider = _auth_refresh_provider_for_route(resolved_provider, route.base_info)
     if (_is_auth_error(first_err) and auth_refresh_provider not in {"auto", "", None}
-            and not client_is_nous):
+            and not client_is_moor):
         refresh_kwargs = ({"failed_api_key": getattr(client, "api_key", "")}
                           if auth_refresh_provider == "anthropic" else {})
         if _refresh_provider_credentials(auth_refresh_provider, **refresh_kwargs):

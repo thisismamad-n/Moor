@@ -40,8 +40,8 @@ async def test_exec_approval_prompt_uses_visible_content_with_command_and_reason
     assert sent["embed"] is not None
 
     prompt_text = sent["content"]
-    assert "Hermes wants to run a command that needs your OK" in prompt_text
-    assert "Do you want Hermes to run this command?" in prompt_text
+    assert "Moor wants to run a command that needs your OK" in prompt_text
+    assert "Do you want Moor to run this command?" in prompt_text
     assert "Requested command" in prompt_text
     assert command in prompt_text
     assert "Why it was flagged" in prompt_text

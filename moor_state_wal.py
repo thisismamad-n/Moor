@@ -255,7 +255,7 @@ def apply_wal_with_fallback(conn: sqlite3.Connection, *, db_label: str = "state.
 
     Returns the mode actually set — or, when the read-only mode probe is blocked by a concurrent opener, ``"wal"``
     as the assumed mode with nothing touched (``require_wal=True`` raises instead). Shared by :class:`SessionDB`
-    and ``hermes_cli.kanban_db_connect.connect``. WAL-incompatible filesystems either raise ``OperationalError`` ("locking protocol" / "disk I/O error") or —
+    and ``moor_cli.kanban_db_connect.connect``. WAL-incompatible filesystems either raise ``OperationalError`` ("locking protocol" / "disk I/O error") or —
     macOS NFS / SMB / AgentFS — silently refuse and stay in DELETE; either way log ERROR once per process per
     ``db_label`` and fall back. ``require_wal=True`` raises :class:`WalUnsupportedError` instead. WAL-reset-bug
     builds (https://sqlite.org/wal.html#walresetbug) never enable WAL on non-WAL files; an already-WAL DB keeps WAL
@@ -539,8 +539,8 @@ _ONCE_LOGS = {
         # operator can fix it (a live downgrade under other openers would destroy their uncheckpointed commits).
         "%s: existing WAL-mode database is on a cross-VM filesystem (virtiofs/9p — typical for Docker Desktop / "
         "OrbStack / Podman host bind mounts). SQLite WAL shared-memory is not coherent across the VM boundary and "
-        "concurrent writers can silently corrupt the database. Hermes does not live-downgrade an on-disk WAL database. "
-        "Fix one of two ways: stop every Hermes process using this database and run a one-time offline "
+        "concurrent writers can silently corrupt the database. Moor does not live-downgrade an on-disk WAL database. "
+        "Fix one of two ways: stop every Moor process using this database and run a one-time offline "
         "'PRAGMA journal_mode=DELETE' on the file (set `database.journal_mode: delete` in config.yaml to keep it), "
         "or move the database onto a native volume (e.g. a named Docker volume). This message fires once per process "
         "per database."),

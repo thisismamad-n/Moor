@@ -16,20 +16,20 @@ from moor_constants import get_moor_home
 
 logger = logging.getLogger(__name__)
 
-RULES_FILE = get_hermes_home() / "feishu_comment_rules.json"
-PAIRING_FILE = get_hermes_home() / "feishu_comment_pairing.json"
+RULES_FILE = get_moor_home() / "feishu_comment_rules.json"
+PAIRING_FILE = get_moor_home() / "feishu_comment_pairing.json"
 _RULES_FILE_AT_IMPORT, _PAIRING_FILE_AT_IMPORT = RULES_FILE, PAIRING_FILE
 
 
 def _rules_file() -> Path:
     """Active profile's rules file at call time: the patched ``RULES_FILE`` when a test changed
-    it, else live profile-scoped HERMES_HOME — the multiplexed gateway serves every profile from
+    it, else live profile-scoped MOOR_HOME — the multiplexed gateway serves every profile from
     one process, so the import-time constant would apply the launch profile's rules everywhere."""
-    return RULES_FILE if RULES_FILE != _RULES_FILE_AT_IMPORT else get_hermes_home() / "feishu_comment_rules.json"
+    return RULES_FILE if RULES_FILE != _RULES_FILE_AT_IMPORT else get_moor_home() / "feishu_comment_rules.json"
 
 
 def _pairing_file() -> Path:
-    return PAIRING_FILE if PAIRING_FILE != _PAIRING_FILE_AT_IMPORT else get_hermes_home() / "feishu_comment_pairing.json"
+    return PAIRING_FILE if PAIRING_FILE != _PAIRING_FILE_AT_IMPORT else get_moor_home() / "feishu_comment_pairing.json"
 
 _VALID_POLICIES = ("allowlist", "pairing")
 

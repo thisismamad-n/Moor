@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { saveHermesConfig } from '@/hermes'
+import { saveMoorConfig } from '@/moor'
 import { useI18n } from '@/i18n'
 import { notifyError } from '@/store/notifications'
 import { CHAT_FONT_SUGGESTIONS, normalizeChatFontFamily, setChatFontFamilyFromConfig } from '@/themes/chat-font'
-import type { HermesConfigRecord } from '@/types/hermes'
+import type { MoorConfigRecord } from '@/types/moor'
 
-import { setHermesConfigCache, useHermesConfigRecord } from '../hooks/use-config-record'
+import { setMoorConfigCache, useMoorConfigRecord } from '../hooks/use-config-record'
 import { useOnProfileSwitch } from '../hooks/use-on-profile-switch'
 import { useProfileSwitchLatch } from '../hooks/use-profile-switch-latch'
 
@@ -18,7 +18,7 @@ import { ListRow } from './primitives'
 const AUTOSAVE_DELAY_MS = 550
 const CONFIG_PATH = 'desktop.font_family'
 
-function fontFamilyFromConfig(config: HermesConfigRecord): string {
+function fontFamilyFromConfig(config: MoorConfigRecord): string {
   return normalizeChatFontFamily(getNested(config, CONFIG_PATH))
 }
 
@@ -30,7 +30,7 @@ function fontFamilyFromConfig(config: HermesConfigRecord): string {
 export function ChatFontSetting() {
   const { t } = useI18n()
   const copy = t.settings.appearance
-  const { data: loadedConfig, dataUpdatedAt } = useHermesConfigRecord()
+  const { data: loadedConfig, dataUpdatedAt } = useMoorConfigRecord()
   const [draft, setDraft] = useState<string | null>(null)
   // The seed effect refuses to reseed while the query still carries the
   // previous profile's stamp. A structurally-shared refetch keeps the object
@@ -80,7 +80,7 @@ export function ChatFontSetting() {
 
       // Sparse patch: PUT /api/config deep-merges; echoing the cached snapshot
       // would overwrite keys other surfaces changed since it loaded.
-      void saveHermesConfig(setNested({}, CONFIG_PATH, value))
+      void saveMoorConfig(setNested({}, CONFIG_PATH, value))
         .then(result => {
           if (!result.ok) {
             throw new Error(t.settings.config.autosaveFailed)
@@ -90,7 +90,7 @@ export function ChatFontSetting() {
             return
           }
 
-          setHermesConfigCache(next)
+          setMoorConfigCache(next)
         })
         .catch(error => {
           if (saveVersionRef.current !== version) {
@@ -126,7 +126,7 @@ export function ChatFontSetting() {
               aria-label={copy.chatFontTitle}
               className="flex-1"
               disabled={draft === null}
-              list="hermes-chat-font-families"
+              list="moor-chat-font-families"
               onChange={event => update(event.target.value)}
               placeholder={copy.chatFontPlaceholder}
               value={value}
@@ -135,7 +135,7 @@ export function ChatFontSetting() {
               {copy.chatFontReset}
             </Button>
           </div>
-          <datalist id="hermes-chat-font-families">
+          <datalist id="moor-chat-font-families">
             {CHAT_FONT_SUGGESTIONS.map(font => (
               <option key={font} value={font} />
             ))}

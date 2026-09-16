@@ -327,13 +327,13 @@ class TestInstallIntegration:
         ("desktop/plugin.js", 'const help = "Add this public key to authorized_keys on the server.";\n'),
     ])
     def test_caution_plugin_accepted_via_callback(self, tmp_path, monkeypatch, filename, content):
-        from hermes_cli import plugins_cmd as pc
+        from moor_cli import plugins_cmd as pc
 
         files = dict(BASE_FILES)
         files[filename] = content
         repo = tmp_path / "repo"
         self._make_git_repo(repo, files)
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / "home"))
         plugins_dir = pc._plugins_dir()
 
         # Declined → blocked

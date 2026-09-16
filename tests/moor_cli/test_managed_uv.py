@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from hermes_cli.managed_uv import _CandidateStageError
+from moor_cli.managed_uv import _CandidateStageError
 
 
 # ---------------------------------------------------------------------------
@@ -168,8 +168,8 @@ class TestResolveUv:
     def test_existing_executable(self, tmp_path):
         uv = tmp_path / "bin" / _UV_BINARY_NAME
         _make_executable(uv)
-        with patch("hermes_cli.managed_uv.get_hermes_home", return_value=tmp_path):
-            from hermes_cli.managed_uv import resolve_uv
+        with patch("moor_cli.managed_uv.get_moor_home", return_value=tmp_path):
+            from moor_cli.managed_uv import resolve_uv
             result = resolve_uv()
             assert result == str(uv)
 
@@ -189,13 +189,13 @@ class TestPipInstallHint:
     def test_names_the_managed_uv_when_present(self, tmp_path):
         uv = tmp_path / "bin" / _UV_BINARY_NAME
         _make_executable(uv)
-        with patch("hermes_cli.managed_uv.get_hermes_home", return_value=tmp_path):
-            from hermes_cli.managed_uv import pip_install_hint
+        with patch("moor_cli.managed_uv.get_moor_home", return_value=tmp_path):
+            from moor_cli.managed_uv import pip_install_hint
             assert pip_install_hint("qrcode") == f"{uv} pip install --python {sys.executable} qrcode"
 
     def test_falls_back_to_bare_uv_when_absent(self, tmp_path):
-        with patch("hermes_cli.managed_uv.get_hermes_home", return_value=tmp_path):
-            from hermes_cli.managed_uv import pip_install_hint
+        with patch("moor_cli.managed_uv.get_moor_home", return_value=tmp_path):
+            from moor_cli.managed_uv import pip_install_hint
             assert pip_install_hint("qrcode") == f"uv pip install --python {sys.executable} qrcode"
 
 
@@ -207,10 +207,10 @@ class TestEnsureUv:
 
     def test_installs_if_missing(self, tmp_path):
         uv = tmp_path / "bin" / _UV_BINARY_NAME
-        with patch("hermes_cli.managed_uv.get_hermes_home", return_value=tmp_path), \
-             patch("hermes_cli.managed_uv.repair_vulnerable_runtime", return_value=_RRR("not-applicable")), \
-             patch("hermes_cli.managed_uv._uv_version", return_value="uv 0.1.2"), \
-             patch("hermes_cli.managed_uv._install_uv") as mock_install:
+        with patch("moor_cli.managed_uv.get_moor_home", return_value=tmp_path), \
+             patch("moor_cli.managed_uv.repair_vulnerable_runtime", return_value=_RRR("not-applicable")), \
+             patch("moor_cli.managed_uv._uv_version", return_value="uv 0.1.2"), \
+             patch("moor_cli.managed_uv._install_uv") as mock_install:
             # Simulate the installer creating the binary (host-native name:
             # uv.exe on Windows, uv on POSIX).
             def fake_install(target):
@@ -245,10 +245,10 @@ class TestEnsureUv:
             "moor_cli.managed_uv._install_uv",
             side_effect=fake_install,
         ), patch(
-            "hermes_cli.managed_uv._uv_version",
+            "moor_cli.managed_uv._uv_version",
             return_value="uv 0.1.2",
         ), patch(
-            "hermes_cli.managed_uv.repair_vulnerable_runtime",
+            "moor_cli.managed_uv.repair_vulnerable_runtime",
             return_value=repair,
         ):
             path = ensure_uv(repair_observer=observed.append)
@@ -364,11 +364,11 @@ class TestUpdateManagedUv:
         vulnerable-runtime repair probe still runs (CVE repair is never gated)."""
         import time
 
-        from hermes_cli.managed_uv import RuntimeRepairResult, update_managed_uv
+        from moor_cli.managed_uv import RuntimeRepairResult, update_managed_uv
 
         uv = tmp_path / "bin" / _UV_BINARY_NAME
         _make_executable(uv)
-        # The stamp reader imports get_hermes_home separately from the binary
+        # The stamp reader imports get_moor_home separately from the binary
         # resolver. Give both paths the same explicit test root.
         stamp = tmp_path / "cache" / ".uv_self_update_stamp"
         stamp.parent.mkdir(parents=True, exist_ok=True)
@@ -378,11 +378,11 @@ class TestUpdateManagedUv:
         recent = time.time() - 60
         os.utime(stamp, (recent, recent))
 
-        with patch("hermes_cli.managed_uv.get_hermes_home", return_value=tmp_path), \
-             patch("hermes_cli.managed_uv._uv_self_update_stamp", return_value=stamp), \
-             patch("hermes_cli.managed_uv.repair_vulnerable_runtime",
+        with patch("moor_cli.managed_uv.get_moor_home", return_value=tmp_path), \
+             patch("moor_cli.managed_uv._uv_self_update_stamp", return_value=stamp), \
+             patch("moor_cli.managed_uv.repair_vulnerable_runtime",
                    return_value=RuntimeRepairResult("skipped")) as mock_repair, \
-             patch("hermes_cli.managed_uv.subprocess.run") as mock_run:
+             patch("moor_cli.managed_uv.subprocess.run") as mock_run:
             result = update_managed_uv()
 
         assert result == str(uv)
@@ -405,11 +405,11 @@ class TestUpdateManagedUv:
         old = _time.time() - UV_SELF_UPDATE_INTERVAL_SECONDS - 60
         _os.utime(stamp, (old, old))
 
-        with patch("hermes_cli.managed_uv.get_hermes_home", return_value=tmp_path), \
-             patch("hermes_cli.managed_uv._uv_self_update_stamp", return_value=stamp), \
-             patch("hermes_cli.managed_uv.repair_vulnerable_runtime", return_value=_RRR("not-applicable")), \
-             patch("hermes_cli.managed_uv._uv_version", return_value="uv 0.2.0"), \
-             patch("hermes_cli.managed_uv.subprocess.run") as mock_run:
+        with patch("moor_cli.managed_uv.get_moor_home", return_value=tmp_path), \
+             patch("moor_cli.managed_uv._uv_self_update_stamp", return_value=stamp), \
+             patch("moor_cli.managed_uv.repair_vulnerable_runtime", return_value=_RRR("not-applicable")), \
+             patch("moor_cli.managed_uv._uv_version", return_value="uv 0.2.0"), \
+             patch("moor_cli.managed_uv.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0, stdout="uv 0.2.0")
             update_managed_uv()
 
@@ -525,7 +525,7 @@ class TestRuntimeRepair:
                  return_value=(generation, candidate_python, fixed),
              ), \
              patch(
-                 "hermes_cli.managed_uv._stage_candidate_venv",
+                 "moor_cli.managed_uv._stage_candidate_venv",
                  side_effect=_CandidateStageError("replacement environment rejected"),
              ):
             result = repair_vulnerable_runtime("uv", project_root=root)
@@ -621,7 +621,7 @@ def _make_candidate_layout(tmp_path):
     root = tmp_path / "checkout"
     root.mkdir()
     (root / "uv.lock").write_text("# lock\n", encoding="utf-8")
-    generation = root / ".hermes-runtime" / "python" / "gen"
+    generation = root / ".moor-runtime" / "python" / "gen"
     python = generation / "bin" / "python"
     python.parent.mkdir(parents=True)
     python.write_text("py", encoding="utf-8")
@@ -642,7 +642,7 @@ class TestStageCandidateVenvCrossPlatform:
     def test_sync_keeps_uv_project_config_and_merges_stderr(self, tmp_path):
         import subprocess
 
-        from hermes_cli.managed_uv import _stage_candidate_venv
+        from moor_cli.managed_uv import _stage_candidate_venv
 
         root, generation, python = _make_candidate_layout(tmp_path)
         created = []
@@ -656,10 +656,10 @@ class TestStageCandidateVenvCrossPlatform:
             synced.append((list(argv), kwargs))
             return _fake_sync_proc([])
 
-        with patch("hermes_cli.managed_uv.subprocess.run", side_effect=fake_run), \
-             patch("hermes_cli.managed_uv.subprocess.Popen", side_effect=fake_popen), \
+        with patch("moor_cli.managed_uv.subprocess.run", side_effect=fake_run), \
+             patch("moor_cli.managed_uv.subprocess.Popen", side_effect=fake_popen), \
              patch(
-                 "hermes_cli.managed_uv._smoke_candidate_venv",
+                 "moor_cli.managed_uv._smoke_candidate_venv",
                  return_value=(True, "", None),
              ):
             candidate = _stage_candidate_venv(
@@ -689,7 +689,7 @@ class TestStageCandidateVenvCrossPlatform:
         """
         import logging
 
-        from hermes_cli.managed_uv import _stage_candidate_venv
+        from moor_cli.managed_uv import _stage_candidate_venv
 
         root, generation, python = _make_candidate_layout(tmp_path)
         lock_error = [
@@ -700,13 +700,13 @@ class TestStageCandidateVenvCrossPlatform:
         ]
 
         with caplog.at_level(logging.WARNING), \
-             patch("hermes_cli.managed_uv.subprocess.run", return_value=MagicMock(returncode=0)), \
+             patch("moor_cli.managed_uv.subprocess.run", return_value=MagicMock(returncode=0)), \
              patch(
-                 "hermes_cli.managed_uv.subprocess.Popen",
+                 "moor_cli.managed_uv.subprocess.Popen",
                  return_value=_fake_sync_proc(lock_error, returncode=1),
              ), \
              patch(
-                 "hermes_cli.managed_uv._smoke_candidate_venv",
+                 "moor_cli.managed_uv._smoke_candidate_venv",
                  return_value=(True, "", None),
              ), \
              pytest.raises(_CandidateStageError) as rejected:
@@ -726,7 +726,7 @@ class TestStageCandidateVenvCrossPlatform:
         assert "Resolving despite existing lockfile" not in reason
         assert "candidate dependency sync failed (rc=1)" in caplog.text
         assert "needs to be updated" in caplog.text
-        assert not list((root / ".hermes-runtime").glob("venv-candidate-*"))
+        assert not list((root / ".moor-runtime").glob("venv-candidate-*"))
 
 
 class TestRuntimeCutover:
@@ -785,11 +785,11 @@ class TestRuntimeCutover:
 class TestInstallUvInternals:
     def test_installer_uses_host_branch_and_managed_directory(self, tmp_path):
         """The native installer receives the managed directory, not a PATH default."""
-        import hermes_cli.managed_uv as managed_uv
+        import moor_cli.managed_uv as managed_uv
 
         target = tmp_path / "bin" / _UV_BINARY_NAME
-        with patch("hermes_cli.managed_uv._install_uv_posix") as mock_posix, \
-             patch("hermes_cli.managed_uv._install_uv_windows") as mock_windows:
+        with patch("moor_cli.managed_uv._install_uv_posix") as mock_posix, \
+             patch("moor_cli.managed_uv._install_uv_windows") as mock_windows:
             managed_uv._install_uv(target)
 
         host_installer, other_installer = (
@@ -1308,7 +1308,7 @@ class TestRepairRetriesAfterUvRefresh:
                  return_value=refresh_result,
              ) as mock_refresh, \
              patch(
-                 "hermes_cli.managed_uv._stage_candidate_venv",
+                 "moor_cli.managed_uv._stage_candidate_venv",
                  side_effect=_CandidateStageError("candidate dependency sync failed (rc=1)"),
              ):
             result = repair_vulnerable_runtime("uv", project_root=root)

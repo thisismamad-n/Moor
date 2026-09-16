@@ -118,7 +118,7 @@ def _close_quietly(db: "SessionDB", debug_message: str) -> None:
     try:
         db.close()
     except Exception as exc:
-        from hermes_state_dbfile import RetiredGenerationCaptureError
+        from moor_state_dbfile import RetiredGenerationCaptureError
         if isinstance(exc, RetiredGenerationCaptureError):
             logger.error("SessionDB for %s did not settle at close: %s", _db_path_of(db), exc)
         else:

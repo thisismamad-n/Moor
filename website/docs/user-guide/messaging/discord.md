@@ -84,7 +84,7 @@ This guide walks you through the full setup process — from creating your bot o
 
 ### Gateway WebSocket health
 
-Discord REST and the Gateway WebSocket are separate transports. A successful REST response (including `fetch_user()` returning HTTP 200) does not prove that the bot can still receive Gateway events. Hermes therefore combines the ready state, client/socket closure state, socket openness, heartbeat ACK age, finite heartbeat latency, and — since the dispatch-side dimension — how long it has been since the last parsed Gateway event.
+Discord REST and the Gateway WebSocket are separate transports. A successful REST response (including `fetch_user()` returning HTTP 200) does not prove that the bot can still receive Gateway events. Moor therefore combines the ready state, client/socket closure state, socket openness, heartbeat ACK age, finite heartbeat latency, and — since the dispatch-side dimension — how long it has been since the last parsed Gateway event.
 
 After the configured number of consecutive unhealthy samples, the adapter emits one retryable fatal event. The existing gateway reconnect watcher creates a fresh adapter; the Discord adapter does not start a second unbounded reconnect loop.
 
@@ -327,7 +327,7 @@ Discord behavior is controlled through two files: **`~/.moor/.env`** for credent
 :::warning Bot-to-bot conversation is not supported
 `DISCORD_ALLOW_BOTS` exists to accept input from a specific trusted bot (e.g. a relay or webhook bot), not to let two Moor profiles talk to each other. The default, `"none"`, ignores all other bots and is the safe setting.
 
-Wiring multiple Hermes profiles to reply to one another in a shared channel — by setting `"mentions"` or `"all"` across several profiles — is an unsupported topology. Discord auto-`@mentions` the replied-to author on every reply, so under `"mentions"` two bots will satisfy each other's mention gate and ack-loop. The gateway's bot loop guard bounds the damage rather than preventing it: after 20 bot-authored messages in one channel inside 5 minutes, further bot messages there are dropped for 10 minutes (tunable under `gateway.bot_loop_guard` in `config.yaml`; human messages are never counted). The supported configuration is still to leave `DISCORD_ALLOW_BOTS` at `"none"`. If you must accept a particular bot, scope the acceptance narrowly and never to another auto-replying agent.
+Wiring multiple Moor profiles to reply to one another in a shared channel — by setting `"mentions"` or `"all"` across several profiles — is an unsupported topology. Discord auto-`@mentions` the replied-to author on every reply, so under `"mentions"` two bots will satisfy each other's mention gate and ack-loop. The gateway's bot loop guard bounds the damage rather than preventing it: after 20 bot-authored messages in one channel inside 5 minutes, further bot messages there are dropped for 10 minutes (tunable under `gateway.bot_loop_guard` in `config.yaml`; human messages are never counted). The supported configuration is still to leave `DISCORD_ALLOW_BOTS` at `"none"`. If you must accept a particular bot, scope the acceptance narrowly and never to another auto-replying agent.
 :::
 
 ### Config File (`config.yaml`)

@@ -334,7 +334,7 @@ class TestSecondaryProfileFatalRecovery:
         _install_secondary_reconnect_context(monkeypatch, runner, adapter)
         synced = []
         runner._sync_voice_mode_state_to_adapter = synced.append
-        monkeypatch.setattr("hermes_cli.env_loader.hydrate_profile_secret_sources", lambda h: {})
+        monkeypatch.setattr("moor_cli.env_loader.hydrate_profile_secret_sources", lambda h: {})
         monkeypatch.setattr(gateway_run, "_load_gateway_config", lambda: {})
         monkeypatch.setattr(runner, "_snapshot_profile_busy_modes", lambda *a, **k: None)
         monkeypatch.setattr("moor_cli.plugins.discover_plugins", lambda: None)
@@ -868,12 +868,12 @@ class TestSecondaryProfileConfigHandling:
     @pytest.mark.asyncio
     async def test_single_profile_start_clears_inherited_served_profiles(self, monkeypatch, tmp_path):
         """``write_runtime_status`` re-stamps the previous writer's record in place, so a multiplexer's
-        ``served_profiles`` survived into a later single-profile run and every `hermes -p X` surface
+        ``served_profiles`` survived into a later single-profile run and every `moor -p X` surface
         kept treating X as served (exit 78 on start, "running via multiplexer" on status)."""
         import json
         from gateway.status import read_runtime_status
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         (tmp_path / "gateway_state.json").write_text(json.dumps(
             {"pid": 1, "gateway_state": "stopped", "served_profiles": ["default", "coder"]}))
         runner = GatewayRunner.__new__(GatewayRunner)
@@ -899,7 +899,7 @@ class TestSecondaryProfileConfigHandling:
             )
 
         monkeypatch.setattr(
-            "hermes_cli.profiles.profiles_to_serve",
+            "moor_cli.profiles.profiles_to_serve",
             lambda multiplex: [
                 ("default", Path("/tmp/default")),
                 ("unsafe", Path("/tmp/unsafe")),

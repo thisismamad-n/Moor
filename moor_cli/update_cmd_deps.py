@@ -12,8 +12,8 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Optional
-from hermes_constants import venv_python_path
-from hermes_cli._subprocess_compat import bounded_probe_run
+from moor_constants import venv_python_path
+from moor_cli._subprocess_compat import bounded_probe_run
 
 # Log-record parity with the origin module.
 logger = logging.getLogger("moor_cli.update_cmd")
@@ -58,10 +58,10 @@ def _critical_module_import_failures(
     marker = f"__MOOR_IMPORT_HEALTH_{secrets.token_hex(16)}__"
     probe = (
         "import importlib, json, sys\n"
-        # Importing hermes_cli.main runs the startup dotenv load, which pulls external secret
+        # Importing moor_cli.main runs the startup dotenv load, which pulls external secret
         # sources (op/bws/command helpers, up to 120s each) unless argv says ``update``. The
         # probe only checks importability, so it inherits the updater's own argv contract.
-        "sys.argv = ['hermes', 'update']\n"
+        "sys.argv = ['moor', 'update']\n"
         "failures = []\n"
         "for name in %r:\n"
         "    try:\n"

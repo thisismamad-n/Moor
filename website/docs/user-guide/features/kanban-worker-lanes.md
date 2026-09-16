@@ -49,18 +49,18 @@ For non-Moor lanes (registered via a plugin), the plugin supplies its own `spawn
 ### Descendant process scope
 
 A task assignment belongs to the dispatcher worker, not to every program it starts.
-Hermes subprocess helpers carry a non-owner fence into shells, execution kernels,
+Moor subprocess helpers carry a non-owner fence into shells, execution kernels,
 cron deliveries, hooks, language servers, and ordinary stdio MCP servers. Later
 children remain fenced even when a script removes the inherited task ID: CLI and
 tool mutations are rejected, rather than treating that script as an orchestrator.
 Board/database routing and workspace paths are retained. Descendants can read an
 existing board without running schema migrations; its owner must initialize it.
 The fence is scoped to the lineage's board root (the marker's value is that root, plus the
-dispatcher-pinned `HERMES_KANBAN_DB`): a descendant that works against a different Kanban
-home — a test or reproduction under a scratch `HERMES_HOME` — gets a normal read-write board.
+dispatcher-pinned `MOOR_KANBAN_DB`): a descendant that works against a different Kanban
+home — a test or reproduction under a scratch `MOOR_HOME` — gets a normal read-write board.
 
 The dispatcher explicitly grants a newly assigned worker its own scope. The managed
-Hermes-tools MCP endpoint can likewise act for its supervising worker, while the
+moor-tools MCP endpoint can likewise act for its supervising worker, while the
 executor's ordinary shell children remain fenced. Workers may only perform lifecycle
 handoffs and attach files to their assigned task; `unblock` remains orchestrator-only.
 Cross-task comments and follow-up task creation retain their existing behavior.

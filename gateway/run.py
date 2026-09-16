@@ -39,8 +39,8 @@ from agent.conversation_loop import INTERRUPT_WAITING_FOR_MODEL_PREFIX
 from agent.interrupt_compat import request_hard_interrupt
 from agent.turn_context import compression_made_progress
 from agent.session_activity import ActivityProvenance
-from hermes_cli.config import _is_ssh_remote_tilde_cwd, cfg_get
-from hermes_cli.fallback_config import get_fallback_chain
+from moor_cli.config import _is_ssh_remote_tilde_cwd, cfg_get
+from moor_cli.fallback_config import get_fallback_chain
 
 # Per-session AIAgent cache bounds (agents are heavy); see _enforce_agent_cache_cap/_session_housekeeping_watcher.
 _AGENT_CACHE_MAX_SIZE = 128
@@ -190,14 +190,14 @@ def hygiene_compaction_recovered(
 def _hygiene_compression_timeout_message(
     *, total_exhausted: bool, elapsed: float, idle_timeout: float, progress_observed: bool) -> str:
     """Describe the host timeout that actually ended hygiene compression. Chat users cannot edit
-    model config, so the copy names /compress, /new and `hermes doctor`, never a config key or the
+    model config, so the copy names /compress, /new and `moor doctor`, never a config key or the
     raw second counts (those stay in the gateway log)."""
     lead = (
         "⚠️ Shortening the conversation history took too long, so I skipped it and kept "
         "everything as-is. Run /compress to try again or /new to start fresh.")
     if total_exhausted:
         return lead
-    return lead + " If this keeps happening, run `hermes doctor` on the host."
+    return lead + " If this keeps happening, run `moor doctor` on the host."
 
 
 def _cached_agent_for_hygiene(gateway, session_key: str):
@@ -580,16 +580,16 @@ def _format_exec_approval_fallback(
         + format_approval_deadline_line(approval_timeout_seconds()))
 
 # Ordered: auth beats policy beats rate-limit beats connection; first match wins. Copy names the
-# slash command the chat user can run; raw provider text stays in the gateway log (`hermes logs`).
+# slash command the chat user can run; raw provider text stays in the gateway log (`moor logs`).
 _PROVIDER_ERROR_REPLIES = (
     (_GATEWAY_AUTH_ERROR_RE, "⚠️ Sign-in to the AI model service failed. Use /login to sign in again, "
-                             "or ask whoever runs this bot to run `hermes doctor` on the host."),
+                             "or ask whoever runs this bot to run `moor doctor` on the host."),
     (_GATEWAY_PROVIDER_POLICY_RE, "⚠️ The AI model service rejected this request. Try rephrasing your "
                                   "message, or use /model to switch models."),
     (_GATEWAY_RATE_LIMIT_RE, "⏱️ The AI model service is rate-limiting requests. Wait a moment, then use /retry."),
     (_GATEWAY_CONNECTION_ERROR_RE, "⚠️ The AI model service isn't reachable right now — the configured model "
                                    "endpoint is not running or is unreachable. Wait a moment and use /retry; "
-                                   "if it persists, run `hermes doctor` on the host."))
+                                   "if it persists, run `moor doctor` on the host."))
 
 
 # Shared by the failed-turn normalizer and ``run_turn._hmwa_agent_error_reply``; canonical
@@ -606,7 +606,7 @@ def _gateway_provider_error_reply(text: str) -> str:
             return reply
     return (
         "⚠️ The AI model service kept failing. Use /retry to try again, or /model to switch "
-        "models. Details are in the gateway log (`hermes logs`).")
+        "models. Details are in the gateway log (`moor logs`).")
 
 
 # Provider/API failure envelope preambles (not ordinary assistant prose), anchored at line start.
@@ -950,7 +950,7 @@ def _warm_turn_machinery_sync() -> int:
     import model_tools
 
     tool_defs = model_tools.get_tool_definitions(quiet_mode=True)
-    from hermes_cli.config import load_config_readonly
+    from moor_cli.config import load_config_readonly
 
     agent_cfg = load_config_readonly().get("agent")
     if not isinstance(agent_cfg, dict) or agent_cfg.get("environment_probe", True):
@@ -1581,7 +1581,7 @@ def _reload_runtime_env_preserving_config_authority() -> None:
 def _bridge_max_turns_from_config(home: "Path") -> None:
     """Re-bridge agent.max_turns (+ sessions.*) per turn; managed overlay applies or it reverts.
     Skipped inside a served secondary's scope: the env slots are the launch profile's and
-    hermes_state reads the routed profile's ``sessions.*`` from its own config under scope."""
+    moor_state reads the routed profile's ``sessions.*`` from its own config under scope."""
     from gateway.platforms._shared import profile_scoped
     if profile_scoped():
         return
@@ -1599,12 +1599,12 @@ def _bridge_max_turns_from_config(home: "Path") -> None:
 def _current_max_iterations() -> int:
     """Return the per-turn iteration budget after runtime env refresh; ``resolve_turn_limit`` maps
     ``agent.max_turns: none``/``unlimited`` (bridged as a string) to the unlimited sentinel, not an
-    ``int()`` crash. A routed profile (HERMES_HOME override, multiplexed turns) reads ITS
-    ``agent.max_turns`` straight from config: the ``HERMES_MAX_ITERATIONS`` bridge is one process-wide
+    ``int()`` crash. A routed profile (MOOR_HOME override, multiplexed turns) reads ITS
+    ``agent.max_turns`` straight from config: the ``MOOR_MAX_ITERATIONS`` bridge is one process-wide
     slot holding the launch profile's value, so every secondary would inherit the default's budget."""
     _reload_runtime_env_preserving_config_authority()
-    from hermes_cli.config import resolve_turn_limit as _resolve_turn_limit
-    override = get_hermes_home_override()
+    from moor_cli.config import resolve_turn_limit as _resolve_turn_limit
+    override = get_moor_home_override()
     if override:
         config_path = Path(override) / 'config.yaml'
         try:
@@ -1613,7 +1613,7 @@ def _current_max_iterations() -> int:
             cfg = {}
         agent_cfg = cfg.get("agent")
         return _resolve_turn_limit(agent_cfg.get("max_turns") if isinstance(agent_cfg, dict) else None)
-    return _resolve_turn_limit(os.getenv("HERMES_MAX_ITERATIONS"))
+    return _resolve_turn_limit(os.getenv("MOOR_MAX_ITERATIONS"))
 
 
 from contextlib import asynccontextmanager as _asynccontextmanager, contextmanager as _contextmanager, suppress
@@ -1631,7 +1631,7 @@ class HygieneTurnHoldExceeded(Exception):
 
 def _multiplex_profile_homes(config: object) -> list[tuple[str, "Path"]]:
     """Return the authoritative profile set for one multiplex gateway config."""
-    from hermes_cli.profiles import profiles_to_serve
+    from moor_cli.profiles import profiles_to_serve
     return list(profiles_to_serve(multiplex=True))
 
 
@@ -1639,8 +1639,8 @@ def _cron_tick_profile_homes(config: object) -> list[tuple[str, "Path"]]:
     """Profile homes the in-process ticker visits under multiplex: the served set PLUS the
     process-active profile: ``profiles_to_serve`` lists default + every live named profile, but a
     ``--profile <name>`` multiplexer's own profile may sit outside ``profiles/`` (custom
-    HERMES_HOME). Adapter startup already skips ``active``."""
-    from hermes_cli.profiles import get_active_profile_name, get_profile_dir
+    MOOR_HOME). Adapter startup already skips ``active``."""
+    from moor_cli.profiles import get_active_profile_name, get_profile_dir
 
     homes = _multiplex_profile_homes(config)
     active = get_active_profile_name() or "default"
@@ -1809,7 +1809,7 @@ async def _discover_gateway_mcp_tools(config: object) -> None:
     No gateway run can complete a browser OAuth flow (nobody watches its stdout; on Windows its
     DEVNULL stdin even passes ``isatty``), so discovery runs with interactive OAuth suppressed — the
     same gate the CLI's background discovery uses. An expired token then parks the server with an
-    actionable ``hermes mcp login`` warning instead of opening an authorize tab.
+    actionable ``moor mcp login`` warning instead of opening an authorize tab.
     """
     from tools.mcp_oauth import suppress_interactive_oauth
     from tools.mcp_tool_discovery import discover_mcp_tools
@@ -2027,7 +2027,7 @@ def _bridge_config_to_env(_cfg: dict) -> None:
 def _load_bridge_config(config_path: Path) -> dict:
     """Effective USER config (no defaults) for the presence-sensitive env bridge: only keys the user
     or the managed layer wrote get bridged, else all of DEFAULT_CONFIG would be exported."""
-    from hermes_cli.config_effective import load_user_config_effective
+    from moor_cli.config_effective import load_user_config_effective
     return load_user_config_effective(config_path)
 
 
@@ -2407,7 +2407,7 @@ def _try_resolve_fallback_provider() -> dict | None:
             return None
         for entry in fb_list:
             try:
-                from hermes_cli.fallback_config import effective_runtime_provider, resolve_entry_api_key
+                from moor_cli.fallback_config import effective_runtime_provider, resolve_entry_api_key
                 runtime = resolve_runtime_provider(
                     requested=entry.get("provider"), explicit_base_url=entry.get("base_url"),
                     explicit_api_key=resolve_entry_api_key(entry))
@@ -2811,12 +2811,12 @@ def _gateway_config_home() -> Path:
 def _load_gateway_config(config_path: "Path | None" = None) -> dict:
     """The effective user config.yaml (managed overlay, ``${VAR}`` expansion, model-key canon; no
     DEFAULT_CONFIG merge) — ``{}`` on any error (fail-open). Defaults to the active gateway home
-    (``_hermes_home`` monkeypatches apply); multiplexers pass a path.
+    (``_moor_home`` monkeypatches apply); multiplexers pass a path.
     """
     if config_path is None:
         config_path = _gateway_config_home() / 'config.yaml'
     try:
-        from hermes_cli.config_effective import load_user_config_effective
+        from moor_cli.config_effective import load_user_config_effective
         return load_user_config_effective(config_path)
     except Exception:
         logger.debug("Could not load gateway config from %s", config_path, exc_info=True)
@@ -2877,10 +2877,10 @@ def _get_channel_override(
     return None
 
 
-def _resolve_hermes_bin() -> Optional[list[str]]:
-    """Hermes update/restart argv: the running interpreter's ``python -m hermes_cli.main``
-    (exactly this install), else ``hermes`` on PATH, else None. The module argv must win: a
-    PATH-first lookup lets an attacker-planted ``hermes`` shadow the running install when
+def _resolve_moor_bin() -> Optional[list[str]]:
+    """Moor update/restart argv: the running interpreter's ``python -m moor_cli.main``
+    (exactly this install), else ``moor`` on PATH, else None. The module argv must win: a
+    PATH-first lookup lets an attacker-planted ``moor`` shadow the running install when
     /update or /restart re-execs it (#111569)."""
     try:
         import importlib.util
@@ -2889,9 +2889,9 @@ def _resolve_hermes_bin() -> Optional[list[str]]:
     except Exception:
         pass
     import shutil
-    hermes_bin = shutil.which("hermes")
-    if hermes_bin:
-        return [hermes_bin]
+    moor_bin = shutil.which("moor")
+    if moor_bin:
+        return [moor_bin]
     return None
 
 
@@ -3066,7 +3066,7 @@ def _normalize_empty_agent_response(
         return (
             "⚠️ Something went wrong and I couldn't finish this reply. Use /retry to try again, "
             "or /new to start a fresh conversation. Technical details are in the gateway log "
-            "(`hermes logs`).")
+            "(`moor logs`).")
 
     api_calls = int(agent_result.get("api_calls", 0) or 0)
     if agent_result.get("interrupted"):
@@ -3638,7 +3638,7 @@ class GatewayRunner(
         # Checkpoint store pruning is a housekeeping chore (``_housekeeping_checkpoint_prune``), not a
         # constructor step: its ``git gc`` repacks the whole store (tens of seconds on a GB store) and
         # here it ran before the control socket, adapters and the code_sha stamp — so the first
-        # restart of the day (the ``hermes update`` one) looked hung and failed fleet verification.
+        # restart of the day (the ``moor update`` one) looked hung and failed fleet verification.
 
     def _init_registries_and_clocks(self) -> None:
         """Pairing stores, hook registry, voice modes, background-task set, liveness and idle clocks."""
@@ -3894,7 +3894,7 @@ class GatewayRunner(
         return "restarting" if self._restart_requested else "shutting down"
 
     def _update_runtime_status(self, gateway_state: Optional[str] = None, exit_reason: Optional[str] = None) -> None:
-        # ``active_work`` names each unit only while draining — that is when an observer (``hermes
+        # ``active_work`` names each unit only while draining — that is when an observer (``moor
         # update``) needs to know WHAT holds the gateway open; a per-turn write would be wasted I/O.
         active_work = self._describe_active_work() if gateway_state == "draining" else None
         _write_runtime_status_quiet(
@@ -5103,7 +5103,7 @@ async def _start_gateway_start_control_socket(runner):
                 "pid": os.getpid(), "drain_timeout": _drain}
 
         def _rescan_profiles_handler() -> dict:
-            """``hermes profile create/delete`` asks the multiplexer to reconcile ``profiles/`` now
+            """``moor profile create/delete`` asks the multiplexer to reconcile ``profiles/`` now
             (the watcher also rescans periodically). Runs on the socket executor: marshal onto the loop
             and wait briefly so the caller learns whether the profile is served."""
             if not getattr(runner.config, "multiplex_profiles", False):

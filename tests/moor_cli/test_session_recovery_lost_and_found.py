@@ -14,10 +14,10 @@ from pathlib import Path
 
 import pytest
 
-from hermes_state import SessionDB
-from hermes_cli import session_recovery
-from hermes_cli import session_schema_history
-from hermes_cli.session_lost_and_found import (
+from moor_state import SessionDB
+from moor_cli import session_recovery
+from moor_cli import session_schema_history
+from moor_cli.session_lost_and_found import (
     STUB_TITLE_PREFIX,
     classify_lost_and_found_row,
     map_lost_and_found_rows,
@@ -1140,7 +1140,7 @@ def test_recovery_lane_refuses_to_verify_when_rows_matched_no_layout(
     """Wiring: ``unrecognized_layout_rows`` from the mapper must reach the
     verifier — once the recognised rows map correctly, the all-rows
     timestamp gate cannot see a few positionally guessed ones."""
-    import hermes_cli.session_lost_and_found as lf_module
+    import moor_cli.session_lost_and_found as lf_module
 
     real = lf_module.map_lost_and_found_rows
 

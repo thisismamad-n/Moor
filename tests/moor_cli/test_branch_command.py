@@ -81,11 +81,11 @@ class TestBranchCommandCLI:
         """Branching is child-first: when create_session fails the user stays on the original
         session, so it must not be marked ended as "branched" (#11030)."""
         from unittest.mock import patch
-        from cli import HermesCLI
+        from cli import MoorCLI
 
         original = cli_instance.session_id
         with patch.object(session_db, "create_session", side_effect=RuntimeError("boom")):
-            HermesCLI._handle_branch_command(cli_instance, "/branch")
+            MoorCLI._handle_branch_command(cli_instance, "/branch")
 
         assert cli_instance.session_id == original
         row = session_db.get_session(original)

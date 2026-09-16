@@ -1014,7 +1014,7 @@ def test_spawn_moor_action_scrubs_gateway_loop_guard_env(monkeypatch, tmp_path):
     """
     import moor_cli.web_server as ws
 
-    monkeypatch.setenv("_HERMES_GATEWAY", "1")
+    monkeypatch.setenv("_MOOR_GATEWAY", "1")
     monkeypatch.setenv("OPENAI_API_KEY", "default-action-provider-key")
     monkeypatch.setattr(_web_server_gateway, "_ACTION_LOG_DIR", tmp_path)
     # Isolate the module-global proc registry: _spawn_moor_action stores
@@ -1035,8 +1035,8 @@ def test_spawn_moor_action_scrubs_gateway_loop_guard_env(monkeypatch, tmp_path):
 
     _web_server_gateway._spawn_moor_action(["gateway", "restart"], "gateway-restart")
 
-    assert "_HERMES_GATEWAY" not in captured["env"]
-    assert captured["env"]["HERMES_NONINTERACTIVE"] == "1"
+    assert "_MOOR_GATEWAY" not in captured["env"]
+    assert captured["env"]["MOOR_NONINTERACTIVE"] == "1"
     # Default-profile actions preserve the historical process environment.
     assert captured["env"]["OPENAI_API_KEY"] == "default-action-provider-key"
 
@@ -1049,11 +1049,11 @@ def test_named_profile_action_isolates_parent_env_and_loads_target_env(monkeypat
     import sys
     from pathlib import Path
 
-    import hermes_cli.env_loader as env_loader
-    import hermes_cli.web_server as ws
+    import moor_cli.env_loader as env_loader
+    import moor_cli.web_server as ws
 
     user_home = tmp_path / "user"
-    default_home = user_home / ".hermes"
+    default_home = user_home / ".moor"
     target_home = default_home / "profiles" / "verifier"
     target_home.mkdir(parents=True)
 
@@ -1079,7 +1079,7 @@ def test_named_profile_action_isolates_parent_env_and_loads_target_env(monkeypat
     )
 
     monkeypatch.setattr(Path, "home", lambda: user_home)
-    monkeypatch.setenv("HERMES_HOME", str(default_home))
+    monkeypatch.setenv("MOOR_HOME", str(default_home))
     for key, value in {
         "DISCORD_BOT_TOKEN": "default-discord",
         "API_SERVER_ENABLED": "true",
@@ -1092,7 +1092,7 @@ def test_named_profile_action_isolates_parent_env_and_loads_target_env(monkeypat
         "ZAI_API_KEY": "default-zai",
         "A2A_AUTH_MINI": "default-a2a-auth",
         "EXTERNAL_PROFILE_AUTH": "default-secret-source-auth",
-        "HERMES_ACP_AUTH_METHOD": "default-acp",
+        "MOOR_ACP_AUTH_METHOD": "default-acp",
         "PROFILE_ENV_TEST_BENIGN": "keep-me",
     }.items():
         monkeypatch.setenv(key, value)
@@ -1119,17 +1119,17 @@ def test_named_profile_action_isolates_parent_env_and_loads_target_env(monkeypat
         return _FakeProc()
 
     monkeypatch.setattr(ws.subprocess, "Popen", _fake_popen)
-    _web_server_gateway._spawn_hermes_action(["-p", "verifier", "gateway", "restart"], "gateway-restart")
+    _web_server_gateway._spawn_moor_action(["-p", "verifier", "gateway", "restart"], "gateway-restart")
 
     child_env = captured["env"]
     assert captured["cmd"][-4:] == ["-p", "verifier", "gateway", "restart"]
-    assert child_env["HERMES_HOME"] == str(target_home)
-    assert child_env["HERMES_NONINTERACTIVE"] == "1"
+    assert child_env["MOOR_HOME"] == str(target_home)
+    assert child_env["MOOR_NONINTERACTIVE"] == "1"
     assert child_env["PROFILE_ENV_TEST_BENIGN"] == "keep-me"
     for leaked_key in (
         "DISCORD_BOT_TOKEN", "API_SERVER_ENABLED", "API_SERVER_KEY", "BLUEBUBBLES_SERVER_URL",
         "BLUEBUBBLES_PASSWORD", "NTFY_TOPIC", "NTFY_TOKEN", "OPENAI_API_KEY", "ZAI_API_KEY",
-        "A2A_AUTH_MINI", "EXTERNAL_PROFILE_AUTH", "HERMES_ACP_AUTH_METHOD",
+        "A2A_AUTH_MINI", "EXTERNAL_PROFILE_AUTH", "MOOR_ACP_AUTH_METHOD",
     ):
         assert leaked_key not in child_env, leaked_key
 
@@ -1141,8 +1141,8 @@ def test_named_profile_action_isolates_parent_env_and_loads_target_env(monkeypat
         [
             sys.executable, "-c",
             "import json, os; "
-            "from hermes_cli.env_loader import load_hermes_dotenv; "
-            "load_hermes_dotenv(hermes_home=os.environ['HERMES_HOME']); "
+            "from moor_cli.env_loader import load_moor_dotenv; "
+            "load_moor_dotenv(moor_home=os.environ['MOOR_HOME']); "
             "keys=['A2A_PORT','OPENAI_API_KEY','TARGET_ONLY_TOKEN','DISCORD_BOT_TOKEN',"
             "'API_SERVER_ENABLED','API_SERVER_KEY','BLUEBUBBLES_SERVER_URL','BLUEBUBBLES_PASSWORD',"
             "'NTFY_TOPIC','NTFY_TOKEN','ZAI_API_KEY','A2A_AUTH_MINI','EXTERNAL_PROFILE_AUTH']; "

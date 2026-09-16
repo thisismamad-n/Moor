@@ -91,33 +91,33 @@ class TestHandleUpdateCommand:
 
 
     @pytest.mark.asyncio
-    async def test_resolve_hermes_bin_module_argv(self):
-        """_resolve_hermes_bin uses the running interpreter's module argv when hermes_cli is
-        importable, even when PATH also offers a ``hermes`` binary (#111569: a PATH-first
+    async def test_resolve_moor_bin_module_argv(self):
+        """_resolve_moor_bin uses the running interpreter's module argv when moor_cli is
+        importable, even when PATH also offers a ``moor`` binary (#111569: a PATH-first
         lookup would re-exec an attacker-planted executable on /update and /restart)."""
         import sys
         from gateway.run import _resolve_moor_bin
 
         fake_spec = MagicMock()
-        with patch("shutil.which", return_value="/tmp/attacker/hermes"), \
+        with patch("shutil.which", return_value="/tmp/attacker/moor"), \
              patch("importlib.util.find_spec", return_value=fake_spec):
             result = _resolve_moor_bin()
 
         assert result == [sys.executable, "-m", "moor_cli.main"]
 
     @pytest.mark.asyncio
-    async def test_resolve_hermes_bin_falls_back_to_path_then_none(self):
-        """Without an importable hermes_cli the argv degrades to PATH, then to None — never a
-        bare ``hermes`` string that a hostile PATH entry could shadow."""
-        from gateway.run import _resolve_hermes_bin
+    async def test_resolve_moor_bin_falls_back_to_path_then_none(self):
+        """Without an importable moor_cli the argv degrades to PATH, then to None — never a
+        bare ``moor`` string that a hostile PATH entry could shadow."""
+        from gateway.run import _resolve_moor_bin
 
-        with patch("shutil.which", return_value="/usr/local/bin/hermes"), \
+        with patch("shutil.which", return_value="/usr/local/bin/moor"), \
              patch("importlib.util.find_spec", return_value=None):
-            assert _resolve_hermes_bin() == ["/usr/local/bin/hermes"]
+            assert _resolve_moor_bin() == ["/usr/local/bin/moor"]
 
         with patch("shutil.which", return_value=None), \
              patch("importlib.util.find_spec", side_effect=ImportError):
-            assert _resolve_hermes_bin() is None
+            assert _resolve_moor_bin() is None
 
 
     @pytest.mark.asyncio
@@ -514,21 +514,21 @@ class TestSendUpdateNotification:
         """A failed update must tell the chat the old version still runs and where to see the
         full error; the raw log is quoted only as a short tail, never the whole 3500-char dump."""
         runner = _make_runner()
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir()
-        (hermes_home / ".update_pending.json").write_text(
+        moor_home = tmp_path / "moor"
+        moor_home.mkdir()
+        (moor_home / ".update_pending.json").write_text(
             json.dumps({"platform": "discord", "chat_id": "111", "user_id": "222"}))
-        (hermes_home / ".update_output.txt").write_text("x" * 3000 + "\nERROR: pip failed\n")
-        (hermes_home / ".update_exit_code").write_text("1")
+        (moor_home / ".update_output.txt").write_text("x" * 3000 + "\nERROR: pip failed\n")
+        (moor_home / ".update_exit_code").write_text("1")
         mock_adapter = AsyncMock()
         runner.adapters = {Platform.DISCORD: mock_adapter}
 
-        with patch("gateway.run._hermes_home", hermes_home):
+        with patch("gateway.run._moor_home", moor_home):
             await runner._send_update_notification()
 
         sent_text = mock_adapter.send.call_args[0][1]
         assert "previous version is still running" in sent_text
-        assert "hermes update" in sent_text and "/update" in sent_text
+        assert "moor update" in sent_text and "/update" in sent_text
         assert "ERROR: pip failed" in sent_text
         assert len(sent_text) < 1200
         assert "exit code" not in sent_text.lower()

@@ -468,12 +468,12 @@ def _session_is_untitled(session_db, session_id: str) -> bool:
 
 def _kanban_task_title() -> Optional[str]:
     """Kanban worker: the card's title, or ``Kanban task <id>`` when the board can't be read; None elsewhere."""
-    task_id = (os.environ.get("HERMES_KANBAN_TASK") or "").strip()
+    task_id = (os.environ.get("MOOR_KANBAN_TASK") or "").strip()
     if not task_id:
         return None
     try:
-        from hermes_cli import kanban_db, kanban_db_connect
-        from hermes_state import SessionDB
+        from moor_cli import kanban_db, kanban_db_connect
+        from moor_state import SessionDB
         with kanban_db_connect.connect_closing() as conn:
             task = kanban_db.get_task(conn, task_id)
         title = " ".join((task.title or "").split()) if task is not None else ""

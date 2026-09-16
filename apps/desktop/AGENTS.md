@@ -204,9 +204,9 @@ actually run rather than inventing a command; when in doubt, read the scripts.
 ## Rehearsing the guided onboarding
 
 From `apps/desktop`, use a fresh temporary directory for each rehearsal and run
-`env -u NODE_ENV HERMES_GUEST_ONBOARDING=1 HERMES_HOME=<tmp>/.hermes HERMES_DESKTOP_USER_DATA_DIR=<tmp>/electron-user-data npm run dev`
+`env -u NODE_ENV MOOR_GUEST_ONBOARDING=1 MOOR_HOME=<tmp>/.moor MOOR_DESKTOP_USER_DATA_DIR=<tmp>/electron-user-data npm run dev`
 (replace `<tmp>` with that directory). To use the portal stand-in, add
-`HERMES_PORTAL_BASE_URL=http://127.0.0.1:8765 HERMES_ANON_API_SECRET=test-secret HERMES_SHARED_AUTH_DIR=<tmp>/.hermes/shared`
+`MOOR_PORTAL_BASE_URL=http://127.0.0.1:8765 MOOR_ANON_API_SECRET=test-secret MOOR_SHARED_AUTH_DIR=<tmp>/.moor/shared`
 before `npm run dev`. Stop Electron and its dev server after the run.
 
 ## The taste test before you hand off
@@ -223,16 +223,16 @@ before `npm run dev`. Stop Electron and its dev server after the run.
 
 If any answer is "not sure," that's the part to go verify.
 
-## Nous free tier: state is pulled, never latched in the renderer
+## Moor free tier: state is pulled, never latched in the renderer
 
-The free tier (a Nous identity with no account, `hermes_cli/anon_auth.py`) reaches the renderer
+The free tier (a Moor identity with no account, `moor_cli/anon_auth.py`) reaches the renderer
 through one JSON-RPC pair: `free_tier.status` (has_guest, enabled, available,
 notice_pending, model, label) read from local auth state with zero network, and
 `free_tier.ack_notice`, which persists the one-time notice flag on the identity itself. The
 first-launch ready screen and the own-key strip are the SAME state rendered for two situations,
 keyed on `notice_pending`; there is no localStorage latch, so the CLI and the desktop cannot
 disagree about whether the notice was shown. Sign-in goes through the existing
-`POST /api/providers/oauth/nous/start` + poll route, which over a free-tier identity registers the
+`POST /api/providers/oauth/moor/start` + poll route, which over a free-tier identity registers the
 connector transfer and reports `reason`, `account_email` and `model` on completion; every entry
 point (Billing, status chip, ready screen) opens the one free-tier sign-in dialog. Never branch on
 provider display names: the picker row carries `free_tier_row`, status cards carry `free_tier`.

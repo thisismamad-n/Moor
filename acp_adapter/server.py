@@ -311,14 +311,14 @@ class MoorACPAgent(SlashCommandsMixin, acp.Agent):
     ) -> tuple[str | None, str, str]:
         """Rebuild the session agent on a new model -> (old provider, new provider, model).
 
-        Resolution goes through ``hermes_cli.model_switch.switch_model`` seeded with the live
+        Resolution goes through ``moor_cli.model_switch.switch_model`` seeded with the live
         agent route — the same catalog/alias/credential validation as CLI/gateway/TUI ``/model``
         — so ACP never hands the session a model no provider can serve. ``provider:model`` picker
         ids become ``--provider``. ACP never persists. ``keep_endpoint`` carries base_url/api_mode
         over when the provider is unchanged."""
-        from hermes_cli.config import get_compatible_custom_providers, load_config
-        from hermes_cli.model_switch import switch_model
-        from hermes_cli.models import parse_model_input
+        from moor_cli.config import get_compatible_custom_providers, load_config
+        from moor_cli.model_switch import switch_model
+        from moor_cli.models import parse_model_input
 
         current_provider = getattr(state.agent, "provider", None)
         explicit_provider, model_input = parse_model_input(raw_model, "")

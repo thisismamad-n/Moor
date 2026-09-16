@@ -6,12 +6,12 @@ import {
   JsonRpcGatewayError,
   reconnectBackoffDelayMs,
   resolveGatewayWsUrl
-} from '@hermes/shared'
+} from '@moor/shared'
 import { useEffect, useRef } from 'react'
 
 import { shouldApplyPostBootProgressError } from '@/components/boot-failure-reauth'
-import type { DesktopBootProgress, HermesConnection } from '@/global'
-import { HermesGateway } from '@/hermes'
+import type { DesktopBootProgress, MoorConnection } from '@/global'
+import { MoorGateway } from '@/moor'
 import { translateNow } from '@/i18n'
 import { desktopDefaultCwd } from '@/lib/desktop-fs'
 import { decideLivenessForceClose, LIVENESS_REPROBE_DELAY_MS } from '@/lib/gateway-liveness-policy'
@@ -423,7 +423,7 @@ export function useGatewayBoot({
         // A manual retry may finish after the user has moved to another route.
         if (!manual || (isActivePrimary() && gatewayActivationEpoch() === manual.activationEpoch)) {
           reconcileBusyStatesOnReconnect()
-          await callbacksRef.current.refreshHermesConfig().catch(() => undefined)
+          await callbacksRef.current.refreshMoorConfig().catch(() => undefined)
           await callbacksRef.current.refreshSessions().catch(() => undefined)
         }
       } catch (err) {
@@ -762,7 +762,7 @@ export function useGatewayBoot({
         return
       }
 
-      // Soft switch / post-boot startHermes re-emits progress — ignore so the
+      // Soft switch / post-boot startMoor re-emits progress — ignore so the
       // cold-boot CONNECTING overlay stays down. Post-boot errors are gated:
       // only confirmed reauth takes the full-screen recovery surface. Transient
       // ticket-mint / host-unreachable failures must stay in the reconnect loop
@@ -835,7 +835,7 @@ export function useGatewayBoot({
     configureGatewayRegistry({
       onServerRequest: request => {
         if (!callbacksRef.current.handleServerRequest(request)) {
-          request.fail(JSON_RPC_METHOD_NOT_FOUND, `Hermes Desktop cannot answer ${request.method}`)
+          request.fail(JSON_RPC_METHOD_NOT_FOUND, `Moor Desktop cannot answer ${request.method}`)
         }
       },
       // The primary socket has no secondary entry to carry registry identity.
@@ -963,7 +963,7 @@ export function useGatewayBoot({
         activeGateway()?.close()
 
         if (!(await ensureActiveGatewayOpen())) {
-          throw new Error('Hermes gateway is not connected')
+          throw new Error('Moor gateway is not connected')
         }
 
         return
@@ -1109,7 +1109,7 @@ export function useGatewayBoot({
         message: translateNow('boot.errors.backgroundExited'),
         durationMs: 0,
         action: {
-          label: translateNow('boot.errors.restartHermes'),
+          label: translateNow('boot.errors.restartMoor'),
           onClick: requestBackendRestart
         },
         secondaryAction: {
@@ -1171,7 +1171,7 @@ export function useGatewayBoot({
         // conn.wsUrl is stale; resolveGatewayWsUrl() re-mints it rather than
         // connecting with a dead ticket. Auth rejection asks for sign-in. This
         // await is bounded like the reconnect path (#93454) so a wedged mint
-        // reaches the recovery affordance instead of hanging "Starting Hermes…".
+        // reaches the recovery affordance instead of hanging "Starting Moor…".
         const wsUrl = await withTimeout(
           resolveGatewayWsUrl(desktop, conn),
           RECONNECT_ATTEMPT_TIMEOUT_MS,

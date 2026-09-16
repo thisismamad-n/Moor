@@ -591,7 +591,7 @@ describe('attached shared-remote group turns (#96493)', () => {
       sharedRemote: true
     }))
 
-    ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = {
+    ;(window as unknown as { moorDesktop: unknown }).moorDesktop = {
       getConnection: vi.fn(async (profile: null | string) => ({ port: 4242, profile, token: 't' })),
       getConnectionFor,
       getGatewayWsUrlFor: vi.fn(async ({ connectionId, profile }: { connectionId: string; profile: string }) => ({

@@ -9,7 +9,7 @@ import {
   getCustomEndpoints,
   saveCustomEndpoint,
   validateCustomEndpoint
-} from '@/hermes'
+} from '@/moor'
 import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
 import { Check, Globe, Loader2, Plus, Save, Trash2, Zap } from '@/lib/icons'

@@ -32,7 +32,7 @@ def _wire_body() -> dict:
     return {
         "model": "hermes-4-70b",
         "messages": [
-            {"role": "system", "content": "You are Hermes."},
+            {"role": "system", "content": "You are Moor."},
             {"role": "user", "content": [
                 {"type": "text", "text": "look at this"},
                 {"type": "image_url", "image_url": {"url": "https://e.example/i.png", "detail": "low"}},
@@ -51,7 +51,7 @@ def _wire_body() -> dict:
         "stream": True,
         "temperature": 0.7,
         "stream_options": {"include_usage": True},
-        "extra_body": {"reasoning": {"effort": "high"}, "provider": {"order": ["nous"]}},
+        "extra_body": {"reasoning": {"effort": "high"}, "provider": {"order": ["moor"]}},
     }
 
 

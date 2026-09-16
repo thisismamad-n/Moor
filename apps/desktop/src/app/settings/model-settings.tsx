@@ -1,5 +1,5 @@
-import type { ModelOptionProvider } from '@hermes/shared'
-import { DEFAULT_REASONING_EFFORT, REASONING_EFFORT_VALUES } from '@hermes/shared'
+import type { ModelOptionProvider } from '@moor/shared'
+import { DEFAULT_REASONING_EFFORT, REASONING_EFFORT_VALUES } from '@moor/shared'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -582,7 +582,7 @@ export function ModelSettings({ onMainModelChanged, scopeProfile }: ModelSetting
       setConfig(next)
 
       try {
-        await saveHermesConfig(setNested({}, key, value), scopeProfile)
+        await saveMoorConfig(setNested({}, key, value), scopeProfile)
       } catch (err) {
         setConfig(prev)
         notifyError(err, m.defaultsFailed)

@@ -461,7 +461,7 @@ def _transform_sudo_command(
     has_configured_password = _configured_password is not None
     sudo_password = _configured_password if has_configured_password else _get_cached_sudo_password()
 
-    # delegate_task children inherit HERMES_INTERACTIVE=1 (and possibly a stale thread-local
+    # delegate_task children inherit MOOR_INTERACTIVE=1 (and possibly a stale thread-local
     # callback on a recycled worker) but have no user on the other side — always headless;
     # configured password and session cache still apply.
     should_prompt_for_sudo = (

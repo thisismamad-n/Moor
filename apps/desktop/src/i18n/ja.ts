@@ -35,7 +35,7 @@ export const ja = defineLocale({
     retry: '再試行',
     more: 'さらに表示',
     pinned: 'レビュー済みコミット',
-    snapshotHint: 'Hermesカタログの情報です。閲覧時に提供元のリポジトリへ接続することはありません。',
+    snapshotHint: 'Moorカタログの情報です。閲覧時に提供元のリポジトリへ接続することはありません。',
     installHint: 'インストール前にソースを確認してください。変更は新しいセッションに適用されます。',
     results: (count: number) => `${count.toLocaleString('ja')}件の結果`,
     back: '結果に戻る'
@@ -416,7 +416,7 @@ export const ja = defineLocale({
       deleteAction: '保存済み項目を削除',
       otpField: '認証キー',
       otpPlaceholder: 'Base32 シークレットまたは otpauth:// リンク',
-      otpHint: '2FA を有効にするときにサイトが表示する「セットアップキー」。保存すると Hermes がコードを生成します。',
+      otpHint: '2FA を有効にするときにサイトが表示する「セットアップキー」。保存すると Moor がコードを生成します。',
       twoFactorBadge: '2FA 自動',
       deleteTitle: 'この項目を削除しますか？',
       deleteDescription: label => `「${label}」は暗号化ボールトから削除されます。元に戻せません。`,
@@ -427,11 +427,11 @@ export const ja = defineLocale({
           'インストール済みのパスワードマネージャーは自動的に検出されます。エージェントがそこからログイン情報を初めて必要とするときにロック解除を求めます（セッションごとに一度）。メモリに残るのはセッショントークンのみで、エージェントはマスターパスワードやログイン情報を一切見ません。',
         toggleFailed: 'パスワードマネージャーの設定を更新できませんでした',
         notInstalled: name =>
-          `未検出です。${name} のコマンドラインツールをインストールしてサインインすると、Hermes が自動的に検出します。`,
-        disabledDesc: '検出済みですが、Hermes では無効になっています。',
+          `未検出です。${name} のコマンドラインツールをインストールしてサインインすると、Moor が自動的に検出します。`,
+        disabledDesc: '検出済みですが、Moor では無効になっています。',
         lockedDesc:
           '検出済み。エージェントがログイン情報を必要とするときにロック解除を求めます。今すぐ解除することもできます。',
-        unlockedDesc: 'このセッションでロック解除済み。30分間操作がないか Hermes を閉じると自動的にロックされます。',
+        unlockedDesc: 'このセッションでロック解除済み。30分間操作がないか Moor を閉じると自動的にロックされます。',
         statusLocked: 'ロック中',
         statusNotDetected: '未検出',
         statusOff: 'オフ',
@@ -586,11 +586,11 @@ export const ja = defineLocale({
         'iMessage風の絵文字タップバック — メッセージにリアクションでき、Moorもあなたのメッセージにリアクションします。',
       tipsTitle: 'アプリ内ヒント',
       tipsDesc:
-        'アプリや Hermes からのヒントをときどき表示します。各ヒントは一度だけ表示されます。利用開始から30日後に自動でオフになりますが、再びオンにできます。',
+        'アプリや Moor からのヒントをときどき表示します。各ヒントは一度だけ表示されます。利用開始から30日後に自動でオフになりますが、再びオンにできます。',
       tipsReset: (count: number) => `${count}件のヒントをもう一度表示`,
       toursTitle: 'ガイドツアー',
       toursDesc:
-        '各ステップを強調しながら、Hermes がアプリを案内します。利用開始から30日後に自動でオフになりますが、再びオンにできます。',
+        '各ステップを強調しながら、Moor がアプリを案内します。利用開始から30日後に自動でオフになりますが、再びオンにできます。',
       composerPopoutTitle: 'フローティング入力欄',
       composerPopoutDesc: '入力欄をドックからドラッグして外せるようにします。オフにすると画面下部に固定されます。',
       vibeHeartsTitle: 'バイブハート',
@@ -1691,7 +1691,7 @@ export const ja = defineLocale({
     sharedGatewayRestartDescription: bots => `このデバイス上のすべてのボットが再接続します: ${bots}`,
     sharedGatewayRestartConfirm: 'すべて再起動',
     sharedGatewayRestarted: count => `共有ゲートウェイを再起動しました（${count} ボット）`,
-    updateHermes: 'Hermes を更新',
+    updateMoor: 'Moor を更新',
     reloadWindow: 'ウィンドウを再読み込み',
     actionRunning: '実行中',
     actionDone: '完了',
@@ -1745,11 +1745,11 @@ export const ja = defineLocale({
     restartFailedManual: 'ゲートウェイの再起動に失敗しました。手動で再起動し、ゲートウェイのログを確認してください。',
     telegramQr: {
       title: 'Telegram ボットの接続方法を選択',
-      subtitle: 'どちらの方法でも、あなたが管理するボットを接続し、資格情報はこの Hermes にのみ保存されます。',
+      subtitle: 'どちらの方法でも、あなたが管理するボットを接続し、資格情報はこの Moor にのみ保存されます。',
       quickSetup: 'クイックセットアップ',
       recommended: '推奨',
       quickHelp:
-        'QR コードをスキャンして Telegram で確認します。Hermes がボットを作成し、あなたの Telegram ユーザー ID を自動検出します。',
+        'QR コードをスキャンして Telegram で確認します。Moor がボットを作成し、あなたの Telegram ユーザー ID を自動検出します。',
       createWithQr: 'QR で作成',
       starting: '開始中…',
       replaceWarning:
@@ -2767,7 +2767,7 @@ export const ja = defineLocale({
   },
 
   guidedGreeting: {
-    line: 'やあ、どうぞ。Hermes です。二分だけください、あなたに合わせて整えます。それから、本当にやりたいことに取りかかりましょう。\n\nまずは、何とお呼びすればいいですか。',
+    line: 'やあ、どうぞ。Moor です。二分だけください、あなたに合わせて整えます。それから、本当にやりたいことに取りかかりましょう。\n\nまずは、何とお呼びすればいいですか。',
     nameSuggestion: (name: string) => `（よければ、${name} さんとお呼びします。）`
   },
   install: {
@@ -3524,7 +3524,7 @@ export const ja = defineLocale({
     sudoCommandUnavailable: 'エージェントからコマンドが提供されていません。会話で確認できない場合はキャンセルしてください。',
     sudoPlaceholder: 'sudo パスワード',
     secretTitle: 'シークレットが必要です',
-    secretDesc: 'Hermes は続行するための認証情報が必要です。',
+    secretDesc: 'Moor は続行するための認証情報が必要です。',
     secretPlaceholder: 'シークレット値',
     vaultUnlockSendFailed: 'マスターパスワードを送信できませんでした',
     vaultUnlockTitle: name => `${name} のロックを解除`,
@@ -3536,7 +3536,7 @@ export const ja = defineLocale({
     vaultSaveSendFailed: 'ログイン情報を保存できませんでした',
     vaultSaveTitle: site => `${site} のログイン情報を保存しますか？`,
     vaultSaveDesc: origin =>
-      `Hermes は ${origin} のサインインページに到達しましたが、保存されたログイン情報がありません。ここで一度入力すると、このマシン上で暗号化して保存され、ページに直接入力されます。モデルはパスワードを一切見ません。`,
+      `Moor は ${origin} のサインインページに到達しましたが、保存されたログイン情報がありません。ここで一度入力すると、このマシン上で暗号化して保存され、ページに直接入力されます。モデルはパスワードを一切見ません。`,
     vaultSaveIdentifierLabel: 'メールアドレスまたはユーザー名',
     vaultSaveIdentifierPlaceholder: 'you@example.com',
     vaultSavePasswordPlaceholder: 'パスワード',
@@ -3546,10 +3546,10 @@ export const ja = defineLocale({
     vaultCodeSendFailed: 'コードを送信できませんでした',
     vaultCodeTitle: site => `${site} の確認コード`,
     vaultCodeDesc: site =>
-      `${site} がワンタイムコード（SMS、メール、または認証アプリ）を求めています。ここに入力すると Hermes がページに入力します。モデルはコードを一切見ません。`,
+      `${site} がワンタイムコード（SMS、メール、または認証アプリ）を求めています。ここに入力すると Moor がページに入力します。モデルはコードを一切見ません。`,
     vaultCodeLabel: 'コード',
     vaultCodeFootnote:
-      'ヒント：「設定 → パスワードとログイン」でこのログインに認証キーを保存すると、Hermes がコードを自動入力します。',
+      'ヒント：「設定 → パスワードとログイン」でこのログインに認証キーを保存すると、Moor がコードを自動入力します。',
     vaultCodeSkip: 'スキップ',
     vaultCodeConfirm: 'コードを入力'
   },

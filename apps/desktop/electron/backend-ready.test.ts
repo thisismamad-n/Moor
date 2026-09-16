@@ -325,7 +325,7 @@ test('the merged-tail seed recovers a sentinel spliced onto a partial stderr lin
 
   // uvicorn's stderr chunk has no trailing newline, so the tail is not line-accurate.
   const port = await waitForDashboardPortAnnouncement(child, {
-    bufferedOutput: () => 'INFO  Started server process [4711]HERMES_BACKEND_READY port=65238',
+    bufferedOutput: () => 'INFO  Started server process [4711]MOOR_BACKEND_READY port=65238',
     timeoutMs: 500
   })
 
@@ -339,7 +339,7 @@ test('the merged-tail seed does not match prose that merely names the sentinel',
     child,
     50,
     () => '',
-    () => 'still waiting for HERMES_BACKEND_READY from the backend\n'
+    () => 'still waiting for MOOR_BACKEND_READY from the backend\n'
   )
 
   await assert.rejects(wait, /Timed out waiting/)

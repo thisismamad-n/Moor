@@ -10,8 +10,8 @@ import sqlite3
 
 import pytest
 
-import hermes_state_wal
-from hermes_state_wal import WalUnsupportedError, _detect_cross_vm_fs, apply_wal_with_fallback
+import moor_state_wal
+from moor_state_wal import WalUnsupportedError, _detect_cross_vm_fs, apply_wal_with_fallback
 
 
 def _mountinfo(tmp_path, lines):
@@ -33,7 +33,7 @@ class TestDetectCrossVmFs:
         ("/data/agent", True),          # fuse.virtiofs bind mount
         ("/mnt/host/db", True),         # 9p bind mount
         ("/mnt/my share/db", True),     # octal-escaped mount point
-        ("/home/user/.hermes", False),  # ext4 root
+        ("/home/user/.moor", False),  # ext4 root
         ("/data/native/db", False),     # ext4 mounted over the virtiofs tree — longest prefix wins
         ("/datastore", False),          # sibling path sharing a prefix string, not a mount prefix
     ])
@@ -47,7 +47,7 @@ class TestDetectCrossVmFs:
     def test_ordinary_filesystems_never_flagged(self, tmp_path, fstype):
         # A false positive here would put every session on DELETE mode — the class bug this pins absent.
         mi = _mountinfo(tmp_path, [f"25 1 8:1 / / rw,relatime shared:1 - {fstype} /dev/sda1 rw"])
-        assert _detect_cross_vm_fs("/home/user/.hermes", mountinfo_path=mi) is False
+        assert _detect_cross_vm_fs("/home/user/.moor", mountinfo_path=mi) is False
 
     def test_missing_mountinfo_conservative_false(self, tmp_path):
         assert _detect_cross_vm_fs("/data", mountinfo_path=str(tmp_path / "nope")) is False
@@ -58,18 +58,18 @@ class TestWalRefusalOnCrossVmFs:
     def _isolate(self, monkeypatch):
         # Pin the WAL-reset vulnerability gate OFF: on builds bundling a vulnerable SQLite (3.50.4 on CI)
         # apply_wal_with_fallback returns via _apply_delete_for_wal_reset_bug before the cross-VM check.
-        monkeypatch.setattr(hermes_state_wal, "is_sqlite_wal_reset_vulnerable", lambda *a, **k: False)
-        monkeypatch.setattr(hermes_state_wal, "resolve_journal_mode", lambda: "wal")
-        hermes_state_wal._cross_vm_warned_paths.clear()
-        hermes_state_wal._cross_vm_existing_wal_warned_paths.clear()
+        monkeypatch.setattr(moor_state_wal, "is_sqlite_wal_reset_vulnerable", lambda *a, **k: False)
+        monkeypatch.setattr(moor_state_wal, "resolve_journal_mode", lambda: "wal")
+        moor_state_wal._cross_vm_warned_paths.clear()
+        moor_state_wal._cross_vm_existing_wal_warned_paths.clear()
 
     def test_fresh_db_on_cross_vm_fs_gets_delete_and_without_detection_gets_wal(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(hermes_state_wal, "_path_on_cross_vm_fs", lambda p: True)
+        monkeypatch.setattr(moor_state_wal, "_path_on_cross_vm_fs", lambda p: True)
         conn = sqlite3.connect(str(tmp_path / "a.db"))
         assert apply_wal_with_fallback(conn, db_label="a.db") == "delete"
         conn.close()
         # Sabotage guard: same environment, detection off -> WAL is enabled, so the refusal above did the work.
-        monkeypatch.setattr(hermes_state_wal, "_path_on_cross_vm_fs", lambda p: False)
+        monkeypatch.setattr(moor_state_wal, "_path_on_cross_vm_fs", lambda p: False)
         conn = sqlite3.connect(str(tmp_path / "b.db"))
         mode = apply_wal_with_fallback(conn, db_label="b.db")
         conn.close()
@@ -77,7 +77,7 @@ class TestWalRefusalOnCrossVmFs:
             pytest.skip("environment refuses WAL for unrelated reasons")
 
     def test_require_wal_raises_on_cross_vm_fs(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(hermes_state_wal, "_path_on_cross_vm_fs", lambda p: True)
+        monkeypatch.setattr(moor_state_wal, "_path_on_cross_vm_fs", lambda p: True)
         conn = sqlite3.connect(str(tmp_path / "state.db"))
         with pytest.raises(WalUnsupportedError, match=r"cross-VM"):
             apply_wal_with_fallback(conn, db_label="state.db", require_wal=True)
@@ -92,7 +92,7 @@ class TestWalRefusalOnCrossVmFs:
         seed.execute("CREATE TABLE t (x)")
         seed.commit()
         seed.close()
-        monkeypatch.setattr(hermes_state_wal, "_path_on_cross_vm_fs", lambda p: True)
+        monkeypatch.setattr(moor_state_wal, "_path_on_cross_vm_fs", lambda p: True)
         conn = sqlite3.connect(str(db))
         assert apply_wal_with_fallback(conn, db_label=str(db)) == "wal"
         conn.close()
@@ -103,7 +103,7 @@ class TestWalRefusalOnCrossVmFs:
         # #110848: the fresh-DB refusal cannot help a database that is already WAL, and staying silent left the
         # reporter with a corrupting state.db and no signal. Keep WAL (never live-downgrade) but say so, once.
         # The WAL-reset-vulnerable SQLite path (Debian/Ubuntu system Pythons) returns early too and must not be silent.
-        monkeypatch.setattr(hermes_state_wal, "is_sqlite_wal_reset_vulnerable", lambda *a, **k: wal_reset_vulnerable)
+        monkeypatch.setattr(moor_state_wal, "is_sqlite_wal_reset_vulnerable", lambda *a, **k: wal_reset_vulnerable)
         db = tmp_path / "already-wal.db"
         seed = sqlite3.connect(str(db))
         if str(seed.execute("PRAGMA journal_mode=WAL").fetchone()[0]).lower() != "wal":
@@ -112,8 +112,8 @@ class TestWalRefusalOnCrossVmFs:
         seed.execute("CREATE TABLE t (x)")
         seed.commit()
         seed.close()
-        monkeypatch.setattr(hermes_state_wal, "_path_on_cross_vm_fs", lambda p: True)
-        with caplog.at_level(logging.ERROR, logger=hermes_state_wal.logger.name):
+        monkeypatch.setattr(moor_state_wal, "_path_on_cross_vm_fs", lambda p: True)
+        with caplog.at_level(logging.ERROR, logger=moor_state_wal.logger.name):
             for _ in range(2):
                 conn = sqlite3.connect(str(db))
                 assert apply_wal_with_fallback(conn, db_label="state.db") == "wal"

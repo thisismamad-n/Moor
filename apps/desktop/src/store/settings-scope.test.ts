@@ -1,7 +1,7 @@
 import { atom } from 'nanostores'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ProfileInfo } from '@/types/hermes'
+import type { ProfileInfo } from '@/types/moor'
 
 // Keep store/profile's side-effecting imports inert — same seam as
 // store/profile.test.ts.

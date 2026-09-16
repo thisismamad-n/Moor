@@ -1122,7 +1122,7 @@ class TestNodeRuntimeNpmResolution:
 
         desktop_dir = PROJECT_ROOT / "apps" / "desktop"
         (desktop_dir / "package.json").write_text("{}", encoding="utf-8")
-        packaged_exe = desktop_dir / "release" / "win-unpacked" / "Hermes.exe"
+        packaged_exe = desktop_dir / "release" / "win-unpacked" / "Moor.exe"
         build_ok = subprocess.CompletedProcess([], 0, stdout="", stderr="")
 
         with (

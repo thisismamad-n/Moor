@@ -69,9 +69,9 @@ moor portal info        # 随时查看登录状态和路由信息
 :::info Codex 说明
 OpenAI Codex 提供商通过设备码（device code）认证——打开一个 URL 并输入验证码。Moor 将生成的凭据存储在 `~/.moor/auth.json` 的自有认证存储中，并在存在 `~/.codex/auth.json` 时可导入现有的 Codex CLI 凭据。无需安装 Codex CLI。
 
-如果 token 刷新因终端错误（HTTP 4xx、`invalid_grant`、授权被撤销等）失败，Hermes 会将该刷新 token 标记为失效并停止重试，避免出现大量重复的认证失败。下一次请求会显示类型化的重新认证提示。运行 `hermes auth add openai-codex`（或 `hermes model` → **ChatGPT or Codex Subscription**）开始新的设备码登录；成功交换后隔离状态自动解除。
+如果 token 刷新因终端错误（HTTP 4xx、`invalid_grant`、授权被撤销等）失败，Moor 会将该刷新 token 标记为失效并停止重试，避免出现大量重复的认证失败。下一次请求会显示类型化的重新认证提示。运行 `moor auth add openai-codex`（或 `moor model` → **ChatGPT or Codex Subscription**）开始新的设备码登录；成功交换后隔离状态自动解除。
 
-在 Python/OpenSSL 3.5+ 上，如果网络中间设备拒绝 X25519MLKEM768 等后量子密钥交换组，设备码登录可能报 `[SSL: UNEXPECTED_EOF_WHILE_READING]` 或 TLS 握手超时（此时 curl 仍可能正常）。Hermes 不会修改默认 TLS 策略。请在运行 `hermes model` 前将 `OPENSSL_CONF` 指向一个把 `Groups` 限制为经典曲线的配置文件，或用 TLS 1.2 进行诊断：
+在 Python/OpenSSL 3.5+ 上，如果网络中间设备拒绝 X25519MLKEM768 等后量子密钥交换组，设备码登录可能报 `[SSL: UNEXPECTED_EOF_WHILE_READING]` 或 TLS 握手超时（此时 curl 仍可能正常）。Moor 不会修改默认 TLS 策略。请在运行 `moor model` 前将 `OPENSSL_CONF` 指向一个把 `Groups` 限制为经典曲线的配置文件，或用 TLS 1.2 进行诊断：
 
 ```ini
 openssl_conf = openssl_init
@@ -992,8 +992,8 @@ model:
 #### 响应在句子中间被截断
 
 **可能原因：**
-1. **服务器上的输出上限（`max_tokens`）过低** — SGLang 默认每次响应 128 tokens。在服务器上设置 `--default-max-tokens`；Hermes 不再提供用户输出上限设置。注意：`max_tokens` 只控制响应长度——与对话历史可以有多长无关（那是 `context_length`）。
-2. **上下文耗尽** — 模型填满了上下文窗口。增加 `model.context_length` 或在 Hermes 中启用[上下文压缩](/user-guide/configuration#context-compression)。
+1. **服务器上的输出上限（`max_tokens`）过低** — SGLang 默认每次响应 128 tokens。在服务器上设置 `--default-max-tokens`；Moor 不再提供用户输出上限设置。注意：`max_tokens` 只控制响应长度——与对话历史可以有多长无关（那是 `context_length`）。
+2. **上下文耗尽** — 模型填满了上下文窗口。增加 `model.context_length` 或在 Moor 中启用[上下文压缩](/user-guide/configuration#context-compression)。
 
 ---
 
@@ -1090,7 +1090,7 @@ model:
 :::note 两个设置，容易混淆
 **`context_length`** 是**总上下文窗口**——输入和输出 token 的合计预算（例如 Claude Opus 4.6 为 200,000）。Moor 用它来决定何时压缩历史记录以及验证 API 请求。
 
-**输出上限**限制单次响应，而非对话历史。Hermes 不再读取 `model.max_tokens`、`HERMES_MAX_TOKENS` 或提供商及模型的输出上限设置。兼容端点使用服务器默认值；该值不一定是模型最大值。原生 Anthropic Messages 仍要求 `max_tokens`，Hermes 会提供内部值。Bedrock Converse 的可选输出限制默认省略。
+**输出上限**限制单次响应，而非对话历史。Moor 不再读取 `model.max_tokens`、`MOOR_MAX_TOKENS` 或提供商及模型的输出上限设置。兼容端点使用服务器默认值；该值不一定是模型最大值。原生 Anthropic Messages 仍要求 `max_tokens`，Moor 会提供内部值。Bedrock Converse 的可选输出限制默认省略。
 
 当自动检测获取的窗口大小不正确时，设置 `context_length`。
 请删除旧的用户输出上限配置；内部任务预算与 MCP 采样安全预算保持不变。

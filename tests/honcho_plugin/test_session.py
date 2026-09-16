@@ -1257,7 +1257,7 @@ class TestContextTokensForwarded:
 
     def _manager(self, context_tokens=4000):
         mgr = HonchoSessionManager(context_tokens=context_tokens)
-        session = HonchoSession(key="cli:test", user_peer_id="robert", assistant_peer_id="hermes",
+        session = HonchoSession(key="cli:test", user_peer_id="robert", assistant_peer_id="moor",
                                 honcho_session_id="sess-1")
         mgr._cache[session.key] = session
         honcho_session = MagicMock()
@@ -1293,7 +1293,7 @@ _FULL_CTX = {
 }
 
 
-def _provider_with_raw(raw, host="hermes"):
+def _provider_with_raw(raw, host="moor"):
     from plugins.memory.honcho.client import HonchoClientConfig, _host_block, _HostLookup
 
     provider = HonchoMemoryProvider()
@@ -1310,7 +1310,7 @@ class TestSessionStartInjection:
               "## AI Self-Representation", "## AI Identity Card"]),
         ({"injection": {"sessionStart": []}}, []),
         ({"injection": {"sessionStart": ["aiCard", "summary"]}}, ["## Session Summary", "## AI Identity Card"]),
-        ({"injection": {"sessionStart": ["summary"]}, "hosts": {"hermes": {"injection": {"sessionStart": ["peerCard"]}}}},
+        ({"injection": {"sessionStart": ["summary"]}, "hosts": {"moor": {"injection": {"sessionStart": ["peerCard"]}}}},
          ["## User Peer Card"]),
     ], ids=["unset-renders-all-in-fixed-order", "empty-list-injects-nothing", "pin-keeps-table-order", "host-block-beats-root"])
     def test_pin_selects_the_rendered_components(self, raw, headings):
@@ -1324,12 +1324,12 @@ class TestSessionStartInjection:
               "## AI Self-Representation", "## AI Identity Card"]),
     ], ids=["pin", "empty-list", "blank-clears-the-pin"])
     def test_desktop_panel_writes_the_pin_the_provider_reads(self, submitted, headings):
-        from hermes_cli.web_routers.memory_providers import _apply_field_values
+        from moor_cli.web_routers.memory_providers import _apply_field_values
         from plugins.memory.honcho.config_schema import CONFIG_SCHEMA
 
         host_block = {"injection": {"sessionStart": ["summary"]}}
         _apply_field_values(CONFIG_SCHEMA, {"injection": submitted}, lambda field: host_block)
-        raw = {"hosts": {"hermes": host_block}}
+        raw = {"hosts": {"moor": host_block}}
         formatted = _provider_with_raw(raw)._format_first_turn_context(_FULL_CTX)
         assert [line for line in formatted.splitlines() if line.startswith("## ")] == headings
 
@@ -1339,7 +1339,7 @@ class TestSessionStartInjection:
 
     def test_initialize_reads_the_pin(self):
         raw = {"injection": {"sessionStart": ["summary"]}}
-        provider = TestDialecticCadenceDefaults._make_provider(cfg_extra={"raw": raw, "host": "hermes"})
+        provider = TestDialecticCadenceDefaults._make_provider(cfg_extra={"raw": raw, "host": "moor"})
         assert provider._session_start_components == frozenset({"summary"})
 
 
@@ -1356,7 +1356,7 @@ class TestInjectionAuditLog:
 
     @pytest.mark.parametrize("raw, env", [
         ({}, None),
-        ({"logging": True, "hosts": {"hermes": {"logging": False}}}, None),
+        ({"logging": True, "hosts": {"moor": {"logging": False}}}, None),
         *[({"logging": value}, None) for value in ("false", "0", "no", "off", "")],
         ({}, "off"),
     ])

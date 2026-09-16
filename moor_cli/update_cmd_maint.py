@@ -28,11 +28,11 @@ _UPDATE_RUNTIME_RELOAD_MODULES = "moor_constants", "tools.environments.local", "
 #: Modules EXECUTING the update survive the purge: evicting them buys nothing (running frames
 #: keep them alive) and reloading them mid-flight is the one genuinely unsafe move.
 #: Two root modules carry process-wide identity state and are refreshed in place by
-#: ``_reload_updated_runtime_modules`` instead: ``hermes_logging`` (a fresh copy starts a SECOND
-#: QueueListener over the same log files while the first keeps running) and ``hermes_constants``
-#: (its ``_HERMES_HOME_OVERRIDE`` ContextVar — a token taken through the old module cannot reset a
+#: ``_reload_updated_runtime_modules`` instead: ``moor_logging`` (a fresh copy starts a SECOND
+#: QueueListener over the same log files while the first keeps running) and ``moor_constants``
+#: (its ``_MOOR_HOME_OVERRIDE`` ContextVar — a token taken through the old module cannot reset a
 #: fresh module's var, and an override set before the purge would silently vanish).
-_STALE_PURGE_PROTECTED = frozenset({"hermes_cli", "hermes_cli.main", "hermes_logging", "hermes_constants"})
+_STALE_PURGE_PROTECTED = frozenset({"moor_cli", "moor_cli.main", "moor_logging", "moor_constants"})
 
 #: The updater's own module family (``update_cmd*``, ``update_receipt``, ``update_inventory``,
 #: ``update_lock``, ...) is protected as a prefix: these hold per-run state — the open receipt
@@ -59,12 +59,12 @@ def _sqlite_partial_completion_lines(sqlite_version: str) -> list[str]:
     """Shared ``⚠ Update partially complete`` wording for a vulnerable post-update SQLite, so the
     two completion banners cannot drift. The lead names the consequence, the second line the
     exact fix command."""
-    from hermes_cli.update_cmd import _m
+    from moor_cli.update_cmd import _m
     return [
         f"⚠ Update partially complete — your Python's SQLite ({sqlite_version}) has a known "
-        "corruption bug. Hermes works, but sessions could be damaged.",
+        "corruption bug. Moor works, but sessions could be damaged.",
         f"  Fix: run the installer again ({_REINSTALL_ONE_LINER[bool(_m()._is_windows())]}) "
-        "which installs a safe Python, then run `hermes doctor` to confirm.",
+        "which installs a safe Python, then run `moor doctor` to confirm.",
     ]
 
 
@@ -96,7 +96,7 @@ def _stale_purge_prefixes() -> frozenset:
     without anything failing, and the symbol that breaks the next update is in whichever one
     drifted out — ``utils`` gaining ``base_url_origin`` / ``file_signature`` were the field cases.
     """
-    from hermes_cli.update_cmd import _m
+    from moor_cli.update_cmd import _m
     names = set()
     for entry in Path(_m().PROJECT_ROOT).iterdir():
         if entry.suffix == ".py" and entry.is_file():
@@ -112,10 +112,10 @@ def _evict_module(modules: dict, name: str) -> bool:
     """Returns True when *name* was cached in *modules*; also unbinds the evicted module from its
     parent package.
 
-    The attribute matters: ``from hermes_cli import main_dashboard`` is resolved by
+    The attribute matters: ``from moor_cli import main_dashboard`` is resolved by
     ``_handle_fromlist``, which is satisfied by the ATTRIBUTE the import system left on the parent
     package — so a purged submodule keeps being handed to call-time imports unless the attribute
-    goes too. The parent (``hermes_cli``) is protected and survives the purge, which is how a
+    goes too. The parent (``moor_cli``) is protected and survives the purge, which is how a
     pre-pull ``main_dashboard`` outlived it and crashed the dashboard cleanup on a symbol the pull
     had just added (#112604).
     """
@@ -130,8 +130,8 @@ def _evict_module(modules: dict, name: str) -> bool:
     return dropped is not None
 
 
-def _purge_stale_hermes_modules() -> None:
-    """Evict every cached Hermes module after the checkout changed in-place. Never raises.
+def _purge_stale_moor_modules() -> None:
+    """Evict every cached Moor module after the checkout changed in-place. Never raises.
 
     The update runs in the pre-pull process; later phases lazily import NEW source into an OLD
     ``sys.modules`` world and die when new code references a symbol missing from a cached
@@ -357,11 +357,11 @@ def _reload_process_scan_modules() -> None:
     ``bounded_probe_run``), the cached OLD module object doesn't have it and the cleanup step crashes with
     ImportError — after the code update itself already succeeded.
 
-    The helpers it imports from ``hermes_cli.main_dashboard`` / ``main_install_repair`` are NOT
-    refreshed here: ``hermes_cli.main`` imports those eagerly at CLI start, so reloading would
+    The helpers it imports from ``moor_cli.main_dashboard`` / ``main_install_repair`` are NOT
+    refreshed here: ``moor_cli.main`` imports those eagerly at CLI start, so reloading would
     rewrite the module dict the running update still holds bindings into. The
-    ``_purge_stale_hermes_modules`` eviction, which runs earlier in the update, is what makes the
-    call-time ``from hermes_cli import main_dashboard`` re-read the pulled source (#112604).
+    ``_purge_stale_moor_modules`` eviction, which runs earlier in the update, is what makes the
+    call-time ``from moor_cli import main_dashboard`` re-read the pulled source (#112604).
     """
     _reload_modules(
         ("moor_cli._subprocess_compat", "moor_cli.dashboard_procs"),
@@ -1035,7 +1035,7 @@ def _print_post_update_notices_and_self_heals() -> None:
         ('cua-driver refresh failed: %s', _refresh_cua_driver_after_update),
         ('Checkpoint footprint notice failed: %s', _print_checkpoint_footprint_notice),
         ('Plugin compat notice failed: %s', _print_plugin_compat_notice),
-        # Legacy HERMES_NEMO_RELAY_ATIF_*/ATOF_* vars produce no traces since the Relay cutover;
+        # Legacy MOOR_NEMO_RELAY_ATIF_*/ATOF_* vars produce no traces since the Relay cutover;
         # generate each profile's relay-plugins.toml instead of leaving exports silently dead.
         ('Relay exporter migration failed: %s', _migrate_relay_exporter_env),
     ):
@@ -1044,7 +1044,7 @@ def _print_post_update_notices_and_self_heals() -> None:
 
 
 def _migrate_relay_exporter_env() -> None:
-    from hermes_cli.relay_plugin_migrate import run_relay_migration_after_update
+    from moor_cli.relay_plugin_migrate import run_relay_migration_after_update
     run_relay_migration_after_update()
 
 

@@ -103,7 +103,7 @@ def _install_fake_tools_package():
     )
     # Keep unrelated imports real; only replace the collaborators this fixture
     # isolates. tools.browser_tool imports redact_cdp_url;
-    # hermes_cli.auth (imported transitively by nous_account /
+    # moor_cli.auth (imported transitively by moor_account /
     # tool_backend_helpers) imports sanitize_borrowed_credential_payload.
     sys.modules["agent.redact"] = types.SimpleNamespace(
         redact_cdp_url=lambda value: str(value),

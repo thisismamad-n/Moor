@@ -232,7 +232,7 @@ async def get_toolsets(profile: Optional[str] = None):
             enabled_by_platform = {
                 platform: _get_platform_tools(config, platform, include_default_mcp_servers=False)
                 for platform in target_platforms}
-            features = get_nous_subscription_features(config)
+            features = get_moor_subscription_features(config)
             # Credential presence resolves through the profile's secret scope: outside this block
             # it read the dashboard process env (another profile's keys) or fails closed.
             configured = {name: _toolset_has_keys(name, config, features=features) for name, _, _ in toolset_rows}

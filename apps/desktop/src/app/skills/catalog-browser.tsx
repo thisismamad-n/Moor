@@ -119,7 +119,7 @@ export const CatalogBrowser = memo(function CatalogBrowser({
     [c.category, prettyName(selected.categoryLabel)],
     [c.version, selected.version],
     [c.platforms, selected.platforms.join(', ')],
-    [c.requires, selected.requiresHermes ? `Hermes ${selected.requiresHermes}` : ''],
+    [c.requires, selected.requiresMoor ? `Moor ${selected.requiresMoor}` : ''],
     [c.pinned, selected.sha ? <code title={selected.sha}>{selected.sha.slice(0, 8)}</code> : '']
   ] as [string, ReactNode][] : []
 

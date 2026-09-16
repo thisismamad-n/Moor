@@ -32,10 +32,10 @@ def moor_tool_gateway_unavailable_message(capability: str = "the Moor Tool Gatew
                                           force_fresh: bool = False) -> str:
     """Return account-aware guidance for an unavailable Moor Tool Gateway path."""
     try:
-        from hermes_cli.nous_account import (
-            format_nous_portal_entitlement_message, get_nous_portal_account_info)
-        message = format_nous_portal_entitlement_message(
-            get_nous_portal_account_info(force_fresh=force_fresh), capability=capability,
+        from moor_cli.moor_account import (
+            format_moor_portal_entitlement_message, get_moor_portal_account_info)
+        message = format_moor_portal_entitlement_message(
+            get_moor_portal_account_info(force_fresh=force_fresh), capability=capability,
             in_chat=True)
         if message:
             return message

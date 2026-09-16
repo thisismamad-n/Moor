@@ -19,7 +19,7 @@ def _uncached_sidebar_endpoints(monkeypatch):
     """Both sidebar endpoints sit behind ``_sidebar_singleflight_cache`` (5s TTL). Every
     test here builds a fresh tmp profile set under the same default query params, so a warm
     entry would answer with another test's payload. TTL 0 makes each request cold."""
-    from hermes_cli.web_routers import profiles as profiles_routes
+    from moor_cli.web_routers import profiles as profiles_routes
 
     monkeypatch.setattr(profiles_routes, "_SIDEBAR_CACHE_TTL_SECONDS", 0.0)
 

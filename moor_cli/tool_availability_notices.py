@@ -11,14 +11,14 @@ from __future__ import annotations
 from typing import Callable, Iterable, Optional
 
 # Toolsets whose ``env_vars`` list is a multi-provider dump that means nothing to a user; render one
-# sentence per toolset instead. Provider names must exist under plugins/web/ (or be the Nous-managed row).
+# sentence per toolset instead. Provider names must exist under plugins/web/ (or be the Moor-managed row).
 _MULTI_PROVIDER_NOTICES: dict[str, str] = {
-    "web": ("[yellow]⚠ Web search is off[/] — no search provider is set up yet (any one of Nous subscription, Exa, "
-            "Tavily, Firecrawl, Brave, or free DuckDuckGo works). Run [bold]hermes setup tools[/] and set one up under "
+    "web": ("[yellow]⚠ Web search is off[/] — no search provider is set up yet (any one of Moor subscription, Exa, "
+            "Tavily, Firecrawl, Brave, or free DuckDuckGo works). Run [bold]moor setup tools[/] and set one up under "
             "\"Web Search & Scraping\"."),
 }
 
-_GENERIC_FOOTER = "[dim]   Run 'hermes setup tools' to configure[/]"
+_GENERIC_FOOTER = "[dim]   Run 'moor setup tools' to configure[/]"
 
 
 def filter_to_enabled_toolsets(unavailable: list[dict], enabled: Iterable[str],
@@ -26,7 +26,7 @@ def filter_to_enabled_toolsets(unavailable: list[dict], enabled: Iterable[str],
     """Keep only the *unavailable* entries this session would actually load.
 
     ``enabled`` is the CLI's toolset selection as configured — on a default install that is a
-    composite bundle such as ``["hermes-cli"]``, never the individual names ``check_tool_availability``
+    composite bundle such as ``["moor-cli"]``, never the individual names ``check_tool_availability``
     reports — so each entry is expanded to tool names through ``resolve`` (``toolsets.resolve_toolset``)
     and an unavailable toolset counts as enabled when its name is listed directly or any of its tools
     is inside the expansion. An empty selection means "everything", so nothing is filtered."""
@@ -58,7 +58,7 @@ def current_terminal_backend() -> str:
 def _terminal_line(backend: str, reason: Optional[str]) -> str:
     detail = f" ({reason})" if reason else ""
     return (f"[yellow]⚠ Terminal tool disabled:[/] the '{backend}' backend is not usable{detail}. "
-            "Run [bold]hermes doctor[/] for details, or [bold]hermes setup terminal[/] to pick another backend.")
+            "Run [bold]moor doctor[/] for details, or [bold]moor setup terminal[/] to pick another backend.")
 
 
 def tool_availability_warning_lines(unavailable: list[dict], *, terminal_reason: Optional[str],

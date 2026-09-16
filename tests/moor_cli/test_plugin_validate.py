@@ -1,4 +1,4 @@
-"""Tests for ``hermes plugins validate`` (hermes_cli/plugin_validate.py).
+"""Tests for ``moor plugins validate`` (moor_cli/plugin_validate.py).
 
 Static manifest checks + subprocess-isolated capability probing against a
 recording stub context.
@@ -10,7 +10,7 @@ from pathlib import Path
 
 import yaml
 
-from hermes_cli.plugin_validate import validate_plugin_dir
+from moor_cli.plugin_validate import validate_plugin_dir
 
 
 def _make_plugin(
@@ -33,14 +33,14 @@ BASE_MANIFEST = {
 }
 
 
-def test_requires_hermes_spec_is_validated(tmp_path):
-    manifest = dict(BASE_MANIFEST, requires_hermes=">=0.21")
+def test_requires_moor_spec_is_validated(tmp_path):
+    manifest = dict(BASE_MANIFEST, requires_moor=">=0.21")
     d = _make_plugin(tmp_path, manifest=manifest)
 
     report = validate_plugin_dir(d)
 
     assert report.ok, report.failures
-    assert ("requires_hermes", True, "spec '>=0.21' parses") in report.checks
+    assert ("requires_moor", True, "spec '>=0.21' parses") in report.checks
 
 
 class TestCapabilityProbe:
@@ -171,16 +171,16 @@ class TestModelProviderKind:
         assert any("registered no ProviderProfile" in f for f in report.failures), report.failures
 
 
-class TestRequiresHermesSpec:
-    """A typo'd ``requires_hermes`` clause must fail admission, not silently gate nothing."""
+class TestRequiresMoorSpec:
+    """A typo'd ``requires_moor`` clause must fail admission, not silently gate nothing."""
 
     def test_typoed_clause_fails_admission(self, tmp_path):
         d = _make_plugin(
-            tmp_path, manifest={**BASE_MANIFEST, "requires_hermes": ">=0.21.1,<0.x"}
+            tmp_path, manifest={**BASE_MANIFEST, "requires_moor": ">=0.21.1,<0.x"}
         )
         report = validate_plugin_dir(d)
         assert not report.ok
         assert any(
-            "requires_hermes" in f and "does not parse" in f for f in report.failures
+            "requires_moor" in f and "does not parse" in f for f in report.failures
         ), report.failures
 

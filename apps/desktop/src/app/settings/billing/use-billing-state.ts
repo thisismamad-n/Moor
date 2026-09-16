@@ -330,17 +330,17 @@ function freeTierView(billing: BillingStateResponse): BillingView {
   return {
     notice: {
       action: { label: 'Sign in', onSelect: openFreeTierSignIn },
-      message: 'Sign in with a Nous account to unlock more models and tools.',
-      title: "You're on the Nous free tier",
+      message: 'Sign in with a Moor account to unlock more models and tools.',
+      title: "You're on the Moor free tier",
       tone: 'info'
     },
     plan: {
       caption:
-        'Runs on nous/welcome with connectors included. Signing in keeps your connectors and adds the tools that need an account and every other model.',
-      tierName: 'Nous · free tier'
+        'Runs on moor/welcome with connectors included. Signing in keeps your connectors and adds the tools that need an account and every other model.',
+      tierName: 'Moor · free tier'
     },
     planFootnote:
-      'The free tier has no balance and nothing to pay. Payment and usage appear when you sign in with a Nous account.',
+      'The free tier has no balance and nothing to pay. Payment and usage appear when you sign in with a Moor account.',
     status: 'free_tier',
     summary: [
       { label: 'Plan', value: 'Free tier' },

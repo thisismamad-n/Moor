@@ -50,7 +50,7 @@ def _get_max_read_chars() -> int:
     cache: ``load_config_readonly`` is already mtime+path cached, and a process-lifetime slot
     would pin the launch profile's value under the multiplexed gateway."""
     try:
-        from hermes_cli.config import load_config_readonly
+        from moor_cli.config import load_config_readonly
         val = load_config_readonly().get("file_read_max_chars")
     except Exception:
         val = None
@@ -573,7 +573,7 @@ def read_file_tool(path: str, offset: int = 1, limit: int = DEFAULT_READ_LIMIT, 
 
     Guard order: NT/device-namespace prefix (raw string, no resolution) →
     device-path blocklist (no I/O) → stat-based special-file guard (host only)
-    → document extraction → binary-extension guard → Hermes internal denylist
+    → document extraction → binary-extension guard → Moor internal denylist
     → negative-result cache → dedup stub → real read.
     """
     try:

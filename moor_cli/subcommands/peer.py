@@ -299,7 +299,7 @@ def _peer_run_ctl(args, action: str, peer_name: str, profile: str | None, base: 
 
 
 def _turn_body(message: str, *, message_key: str, **extra) -> dict:
-    """Request body for one turn. ``author`` is added only when a dispatcher set HERMES_TURN_AUTHOR."""
+    """Request body for one turn. ``author`` is added only when a dispatcher set MOOR_TURN_AUTHOR."""
     from agent.turn_author import turn_author_from_env
 
     body = {message_key: message, **extra}

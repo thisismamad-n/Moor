@@ -36,8 +36,8 @@ its source's installer.
 
 ### Install from the website
 
-The Skills Hub has an **Install in Hermes** button on each installable card. It opens the
-installed Hermes Desktop app with a URL-encoded, source-qualified skill target:
+The Skills Hub has an **Install in Moor** button on each installable card. It opens the
+installed Moor Desktop app with a URL-encoded, source-qualified skill target:
 for example, `official/...` for optional skills or `clawhub/...` for ClawHub.
 Bundled skills use an explicit repository path rather than an ambiguous bare
 name. When an older snapshot lacks that explicit bundled target, the website
@@ -46,10 +46,10 @@ resolving an ambiguous name. The next docs publish supplies those targets.
 The same target is used by native Browse and the card's CLI fallback:
 
 ```text
-hermes://skill/install?identifier=official%2Fsecurity%2F1password
+moor://skill/install?identifier=official%2Fsecurity%2F1password
 ```
 
-Hermes shows **Install “skill-name”?** with separate **Source** and **Install to**
+Moor shows **Install “skill-name”?** with separate **Source** and **Install to**
 rows. Cancel makes no changes. After confirmation, the same dialog shows
 **Installing…**, then **Installed** and a completion notification. Errors stay
 in the dialog so you can read them and retry. Installation uses the existing
@@ -58,7 +58,7 @@ refresh. If you switch profile or connection while the confirmation is open,
 reopen the link for the new destination. Changes apply to
 new sessions; a link cannot bypass scanning or select a different profile.
 
-The public links use `hermes://`, not the development-only `hermes-dev://`
+The public links use `moor://`, not the development-only `moor-dev://`
 scheme. The `skill/install` route requires an updated Desktop build. If the
 app is missing or the link is not recognized, update Desktop or expand the
 card to copy its CLI install command instead.
@@ -928,11 +928,11 @@ moor skills update react --force   # Overwrite a skill you've edited locally
 
 This uses the stored source identifier plus the current upstream bundle content hash to detect drift.
 
-Checks skip network requests for missing or non-directory installs (`orphaned`) and unsafe or unresolvable recorded paths (`invalid_install`). Missing-directory entries can be removed with `hermes skills uninstall <name>`; invalid paths require inspecting and repairing the active profile's `skills/.hub/lock.json` before retrying. No entries are removed automatically.
+Checks skip network requests for missing or non-directory installs (`orphaned`) and unsafe or unresolvable recorded paths (`invalid_install`). Missing-directory entries can be removed with `moor skills uninstall <name>`; invalid paths require inspecting and repairing the active profile's `skills/.hub/lock.json` before retrying. No entries are removed automatically.
 
 Valid installs continue to use their source adapter’s existing synchronous fetch and transport timeouts. There is no strict total deadline for an update check: an unreachable or slow source for an existing install can still delay later entries.
 
-Skills you have edited locally (the on-disk content no longer matches the hash recorded at install time) are **skipped** by `hermes skills update` so your changes are never silently overwritten. Pass `--force` to replace them with the upstream version anyway.
+Skills you have edited locally (the on-disk content no longer matches the hash recorded at install time) are **skipped** by `moor skills update` so your changes are never silently overwritten. Pass `--force` to replace them with the upstream version anyway.
 
 :::tip GitHub rate limits
 Skills hub operations use the GitHub API, which has a rate limit of 60 requests/hour for unauthenticated users. If you see rate-limit errors during install or search, set `GITHUB_TOKEN` in your `.env` file to increase the limit to 5,000 requests/hour. The error message includes an actionable hint when this happens.

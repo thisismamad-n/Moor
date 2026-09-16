@@ -573,11 +573,11 @@ class TestWebServerEndpoints:
         dashboard (close-time checkpoint, possible FTS rebuild) is the
         two-writer corruption vector. Only the stale-schema heal may write.
         """
-        import hermes_state
-        from hermes_constants import get_hermes_home
-        from hermes_state import SessionDB
+        import moor_state
+        from moor_constants import get_moor_home
+        from moor_state import SessionDB
 
-        SessionDB(db_path=get_hermes_home() / "state.db").close()
+        SessionDB(db_path=get_moor_home() / "state.db").close()
 
         writable_opens = []
         real_init = SessionDB.__init__
@@ -587,7 +587,7 @@ class TestWebServerEndpoints:
                 writable_opens.append(kwargs)
             return real_init(self, *args, **kwargs)
 
-        monkeypatch.setattr(hermes_state.SessionDB, "__init__", spy)
+        monkeypatch.setattr(moor_state.SessionDB, "__init__", spy)
         _web_server_lifecycle._eager_reconcile_own_session_db()
 
         assert writable_opens == []
@@ -3269,9 +3269,9 @@ class TestDenormalizeProviderSwitch:
     def test_vendor_slug_switches_off_non_aggregator_provider(self):
         """ollama-local + a vendor/model slug → switch to openrouter and drop
         the stale local base_url (the issue's exact repro)."""
-        from hermes_cli.web_server_config import _denormalize_config_from_web
+        from moor_cli.web_server_config import _denormalize_config_from_web
         from unittest.mock import patch as _patch
-        from hermes_cli.config import save_config
+        from moor_cli.config import save_config
 
         save_config({
             "model": {
@@ -3282,7 +3282,7 @@ class TestDenormalizeProviderSwitch:
             }
         })
 
-        with _patch("hermes_cli.models_detect.provider_has_credentials", lambda p: p == "openrouter"):
+        with _patch("moor_cli.models_detect.provider_has_credentials", lambda p: p == "openrouter"):
             result = _denormalize_config_from_web({"model": "google/gemini-2.5-flash"})
         model = result["model"]
         assert model["provider"] == "openrouter"
@@ -3295,13 +3295,13 @@ class TestDenormalizeProviderSwitch:
     def test_context_length_override_survives_provider_switch(self):
         """An explicit context-length override must persist alongside a
         provider switch."""
-        from hermes_cli.web_server_config import _denormalize_config_from_web
+        from moor_cli.web_server_config import _denormalize_config_from_web
         from unittest.mock import patch as _patch
-        from hermes_cli.config import save_config
+        from moor_cli.config import save_config
 
         save_config({"model": {"default": "llama3.2", "provider": "ollama-local"}})
 
-        with _patch("hermes_cli.models_detect.provider_has_credentials", lambda p: p == "openrouter"):
+        with _patch("moor_cli.models_detect.provider_has_credentials", lambda p: p == "openrouter"):
             result = _denormalize_config_from_web({
                 "model": "google/gemini-2.5-flash",
                 "model_context_length": 128000,
@@ -3315,11 +3315,11 @@ class TestDenormalizeProviderSwitch:
         ``PUT /api/config`` — not fall back to the flat string, which the deep-merge would
         write OVER the on-disk ``model:`` dict (provider/base_url/api_mode/slots destroyed)."""
         from starlette.testclient import TestClient
-        from hermes_constants import get_hermes_home
-        from hermes_cli.model_switch import ModelSwitchResult
-        from hermes_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
+        from moor_constants import get_moor_home
+        from moor_cli.model_switch import ModelSwitchResult
+        from moor_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
-        cfg_path = get_hermes_home() / "config.yaml"
+        cfg_path = get_moor_home() / "config.yaml"
         cfg_path.write_text(
             "model:\n"
             "  default: llama3.2\n"
@@ -3331,8 +3331,8 @@ class TestDenormalizeProviderSwitch:
             "    fast: qwen3\n",
             encoding="utf-8")
         before = cfg_path.read_bytes()
-        monkeypatch.setattr("hermes_cli.models_detect.provider_has_credentials", lambda p: p == "openrouter")
-        monkeypatch.setattr("hermes_cli.model_switch.switch_model",
+        monkeypatch.setattr("moor_cli.models_detect.provider_has_credentials", lambda p: p == "openrouter")
+        monkeypatch.setattr("moor_cli.model_switch.switch_model",
                             lambda **_kw: ModelSwitchResult(success=False, error_message="models.dev offline"))
 
         client = TestClient(app)
@@ -4544,7 +4544,7 @@ class TestDashboardPluginManifestExtensions:
         """A denied plugin directory or manifest must not prevent valid plugins loading."""
         from pathlib import Path
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         self._write_plugin(tmp_path, "valid", {
             "name": "valid",
             "label": "Valid Plugin",
@@ -4556,7 +4556,7 @@ class TestDashboardPluginManifestExtensions:
         (denied_plugin / "dashboard").mkdir(parents=True)
         (denied_plugin / "dashboard" / "manifest.json").write_text("{}", encoding="utf-8")
 
-        from hermes_cli import web_server_dashboard
+        from moor_cli import web_server_dashboard
         original_search_dirs = web_server_dashboard._dashboard_plugin_search_dirs
         original_scandir = web_server_dashboard.os.scandir
         original_exists = Path.exists

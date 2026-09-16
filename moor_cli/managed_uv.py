@@ -55,7 +55,7 @@ def resolve_uv() -> Optional[str]:
 def pip_install_hint(package: str) -> str:
     """Copy-pasteable command that installs *package* into the running interpreter.
 
-    Names Hermes' own uv when it exists: the installer drops it in ``$HERMES_HOME/bin``
+    Names Moor' own uv when it exists: the installer drops it in ``$MOOR_HOME/bin``
     without putting that on PATH, so a bare ``uv`` would fail for installer-only users.
     """
     return f"{resolve_uv() or 'uv'} pip install --python {sys.executable} {package}"
@@ -207,14 +207,14 @@ def _uv_version(uv_bin: str) -> str:
 
 
 def _record_runtime_repair(repair: RuntimeRepairResult) -> None:
-    """Put the repair outcome into the update receipt (no-op outside ``hermes update``).
+    """Put the repair outcome into the update receipt (no-op outside ``moor update``).
 
     Receipts are built only from explicit ``record_step``/``record_skip`` calls, so without this
     a failed repair left ``outcome: partial`` with no step naming the reason or the SQLite
     versions. A deferred or not-applicable repair is a skip WITH its reason, not a failed step:
     every pip/non-venv install would otherwise carry a red step in every receipt.
     """
-    from hermes_cli.update_receipt import record_skip, record_step
+    from moor_cli.update_receipt import record_skip, record_step
 
     detail = (
         f"{repair.status}: {repair.detail}" if repair.detail else repair.status
@@ -622,7 +622,7 @@ def _stream_sync(argv: list[str], *, cwd: Path, env: dict[str, str]) -> tuple[in
     into stdout and forwarded line by line instead of being captured and reprinted at the end.
 
     The tail is kept anyway: with inherited stdout the child's diagnosis survived in console
-    scrollback only, and the rejection carried a bare exit code — "hermes update says the SQLite
+    scrollback only, and the rejection carried a bare exit code — "moor update says the SQLite
     repair failed and never says why".
     """
     proc = subprocess.Popen(

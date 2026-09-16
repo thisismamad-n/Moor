@@ -183,7 +183,7 @@ delegate_task(
 
 ## Batch Mode Details
 
-When a top-level agent provides a `tasks` array, Hermes returns one background handle and runs the subagents in parallel. By default the call returns **one** consolidated message once every task has finished. Results are delivered only between the parent's turns: the parent should finish anything that does not depend on the children, then end its turn rather than polling transcripts, artifacts, or CI while it waits.
+When a top-level agent provides a `tasks` array, Moor returns one background handle and runs the subagents in parallel. By default the call returns **one** consolidated message once every task has finished. Results are delivered only between the parent's turns: the parent should finish anything that does not depend on the children, then end its turn rather than polling transcripts, artifacts, or CI while it waits.
 
 ### Independent completions (opt-in)
 
@@ -344,7 +344,7 @@ Both roles retain `execute_code` (programmatic tool calling) so children can bat
 Each subagent has an iteration limit (default: 250) that controls how many tool-calling turns it can take. The limit is set globally in `config.yaml` and applies to every child; it is not a per-call parameter of `delegate_task`:
 
 ```yaml
-# In ~/.hermes/config.yaml
+# In ~/.moor/config.yaml
 delegation:
   max_iterations: 60   # lower it for fleets of simple tasks, raise it for long investigations
 ```

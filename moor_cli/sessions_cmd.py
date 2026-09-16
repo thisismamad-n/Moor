@@ -14,8 +14,8 @@ import sys
 from functools import partial
 from pathlib import Path
 
-from hermes_cli.cli_output import print_truncated
-from hermes_cli.sessions_cmd_browse import _relative_time, _session_browse_picker
+from moor_cli.cli_output import print_truncated
+from moor_cli.sessions_cmd_browse import _relative_time, _session_browse_picker
 
 
 def get_moor_home():
@@ -46,7 +46,7 @@ def _confirm_prompt(prompt: str) -> bool:
 
 
 def _not_found(session_id) -> int:
-    print(f"No session '{session_id}'. Run: hermes sessions list to find the id.")
+    print(f"No session '{session_id}'. Run: moor sessions list to find the id.")
     return 1
 
 
@@ -262,7 +262,7 @@ def _default_exclude(args):
 
 
 def _cmd_list(db, args):
-    from hermes_state_sessions import workspace_key as _ws_key
+    from moor_state_sessions import workspace_key as _ws_key
     # LIMIT lives in the query, so probe one row past the cap: it is the only way to know the
     # page was cut without a second COUNT query (``--limit 0`` is ``LIMIT 0``: no rows, no probe).
     limit = args.limit
@@ -397,9 +397,9 @@ def _export_flat(kind, args, collect):
         return
     sessions = collect()
     if sessions is not None:
-        from hermes_cli.session_export import default_save_filename
+        from moor_cli.session_export import default_save_filename
         name = (default_save_filename(sessions[0].get("id", ""), args.format) if len(sessions) == 1
-                else f"hermes_sessions.{args.format}")
+                else f"moor_sessions.{args.format}")
         args.output = _output_file_in_dir(args.output, name)
         _write_output(args.output, *render(args, sessions))
 
@@ -980,7 +980,7 @@ def _print_empty_store(action: str, args) -> None:
     if action == "stats":
         print("Total sessions: 0\nTotal messages: 0")
     elif action == "pinned":
-        print("[]" if getattr(args, "json", False) else "No pinned sessions. Pin one with: hermes sessions pin <session_id>")
+        print("[]" if getattr(args, "json", False) else "No pinned sessions. Pin one with: moor sessions pin <session_id>")
     else:
         print("No sessions found.")
 
@@ -991,7 +991,7 @@ def cmd_sessions(args, sessions_parser=None):
     if pre is not None:
         return pre(args)
     observational = action in _OBSERVATIONAL_DB_ACTIONS
-    from hermes_state import SessionDB, _default_db_path
+    from moor_state import SessionDB, _default_db_path
     try:
         db = SessionDB(read_only=observational)
     except Exception as e:
@@ -999,7 +999,7 @@ def cmd_sessions(args, sessions_parser=None):
         if observational and not _default_db_path().exists():
             return _print_empty_store(action, args)
         print("Could not open your session history database. "
-              "Run: hermes sessions repair to fix it (a backup is made first).")
+              "Run: moor sessions repair to fix it (a backup is made first).")
         print(f"Details: {e}")
         return 1
     try:
@@ -1010,12 +1010,12 @@ def cmd_sessions(args, sessions_parser=None):
         try:
             return handler(db, args)
         except sqlite3.OperationalError as e:
-            from hermes_state_repair import _schema_not_built
+            from moor_state_repair import _schema_not_built
 
             if not observational or not _schema_not_built(e):
                 raise
             # A read-only opener skips schema migration, so a store from an older release can lack a column.
-            print(f"Error: session database needs migration — run any writing hermes command first ({e})")
+            print(f"Error: session database needs migration — run any writing moor command first ({e})")
             return 1
     finally:
         db.close()

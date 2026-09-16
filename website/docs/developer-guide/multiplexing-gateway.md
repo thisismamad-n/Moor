@@ -207,6 +207,6 @@ out of scope for this document.
 
 - [Multi-profile gateways](../user-guide/multi-profile-gateways.md) — user-facing guide, including `profile_routes`
   and the standalone one-gateway-per-profile alternative.
-- `agent/secret_scope.py`, `hermes_constants.py`, `gateway/profile_routing.py`,
-  `gateway/run.py` (`_profile_runtime_scope`), `hermes_cli/profiles.py`
+- `agent/secret_scope.py`, `moor_constants.py`, `gateway/profile_routing.py`,
+  `gateway/run.py` (`_profile_runtime_scope`), `moor_cli/profiles.py`
   (`profiles_to_serve`), `gateway/session.py`, `tui_gateway/methods_profiles.py`.

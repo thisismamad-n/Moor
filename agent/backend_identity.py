@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
-from hermes_cli.route_identity import normalize_route_base_url
+from moor_cli.route_identity import normalize_route_base_url
 
 logger = logging.getLogger(__name__)
 

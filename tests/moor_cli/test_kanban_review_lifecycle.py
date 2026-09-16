@@ -27,11 +27,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli import kanban_db as kb
-from hermes_cli import kanban_db_connect as kbc
-from hermes_cli import kanban_db_notify as kbn
-from hermes_cli import kanban_db_dispatch as kbd
-from hermes_cli import kanban_ops
+from moor_cli import kanban_db as kb
+from moor_cli import kanban_db_connect as kbc
+from moor_cli import kanban_db_notify as kbn
+from moor_cli import kanban_db_dispatch as kbd
+from moor_cli import kanban_ops
 
 
 @pytest.fixture
@@ -512,7 +512,7 @@ def test_dispatch_json_exposes_suppression_reasons(
 def test_dispatch_text_and_daemon_stuck_warning_name_guard_reason(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """The plain `hermes kanban dispatch` output and the standalone daemon's
+    """The plain `moor kanban dispatch` output and the standalone daemon's
     "dispatcher stuck" warning both say WHY a ready card was held (#111910):
     a guarded card must not look like an idle tick with `Spawned: 0`."""
     res = kbd.DispatchResult(respawn_guarded=[("t_held", "active_pr")], memory_pressure="elevated")

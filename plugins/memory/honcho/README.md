@@ -56,9 +56,9 @@ Both layers are joined, then truncated to fit `contextTokens` budget via `_trunc
 
 ### Current-Query Recall (opt-in)
 
-Set `"recallSync": true` in `$HERMES_HOME/honcho.json` (at the root or under
-`hosts.hermes`), or enable **Current-query recall** in the memory settings or
-`hermes honcho setup`. An explicit host-level `false` overrides root-level `true`.
+Set `"recallSync": true` in `$MOOR_HOME/honcho.json` (at the root or under
+`hosts.moor`), or enable **Current-query recall** in the memory settings or
+`moor honcho setup`. An explicit host-level `false` overrides root-level `true`.
 
 In `context` and `hybrid` modes, due base and dialectic retrievals use the current
 user request before inference. The whole wait, including session initialization,
@@ -205,7 +205,7 @@ In gateway deployments (Telegram, Discord, Slack, etc.) each user arrives with a
 
 A dashboard login is a runtime identity too. The desktop passes `<provider>:<user id>` (for example `basic:alice` or `oidc:google-oauth2|1183…`) as the runtime user, so a logged-in session resolves like a gateway user: alias, then prefix, else the raw id. Enabling dashboard login on an install that ran on `peerName` moves new sessions to that peer. Keep the old history with `pinUserPeer: true` or a `userPeerAliases` entry for the login id. Without a login the desktop still uses `peerName`.
 
-> **Deprecated:** `pinPeerName` is a legacy alias for `pinUserPeer`, still read for back-compat (`pinUserPeer` wins where both are set). `hermes honcho setup` migrates it onto `pinUserPeer` on touch and never writes it.
+> **Deprecated:** `pinPeerName` is a legacy alias for `pinUserPeer`, still read for back-compat (`pinUserPeer` wins where both are set). `moor honcho setup` migrates it onto `pinUserPeer` on touch and never writes it.
 
 **Resolver ladder** (first match wins):
 
@@ -219,7 +219,7 @@ A dashboard login is a runtime identity too. The desktop passes `<provider>:<use
 7. neither                       → session init fails with a one-time notice; no peer is minted
 ```
 
-Step 7 used to derive a peer from the session key (`user-default-<dir>`). That put a desktop or CLI session with no `peerName` on a phantom peer per directory, so its turns and memory never reached the operator's own peer (#93326). Set `peerName` (`hermes honcho peer --user <name>`) or run under a gateway that supplies a user ID.
+Step 7 used to derive a peer from the session key (`user-default-<dir>`). That put a desktop or CLI session with no `peerName` on a phantom peer per directory, so its turns and memory never reached the operator's own peer (#93326). Set `peerName` (`moor honcho peer --user <name>`) or run under a gateway that supplies a user ID.
 
 **Why no `pinAiPeer`?** The AI peer is already pinned by construction — `aiPeer` is the only AI-side identity setting and the resolver never overrides it. Only the user-side peer has the runtime-vs-config tension that `pinUserPeer` resolves.
 
@@ -233,11 +233,11 @@ Step 7 used to derive a peer from the session key (`user-default-<dir>`). That p
 
 Pick **[e]** at the prompt to set the three keys directly instead of going through the tree.
 
-**Interactive mapping — `hermes honcho peers map`.** The setup tree covers the common shapes; `hermes honcho peers map` is the full identity view for a gateway with many users and agents. It joins two sources: the workspace's peers fetched from the Honcho API (labeled from local config — your peer, each profile's AI peer, alias targets, runtime peers of seen accounts, `user-*` fallback peers, honestly `unrecognized` otherwise), and the gateway accounts recorded in the local session store (platform, runtime ID, name, and what each currently resolves to, with `✓` when that peer already exists and `○ new` when it would be created on first message).
+**Interactive mapping — `moor honcho peers map`.** The setup tree covers the common shapes; `moor honcho peers map` is the full identity view for a gateway with many users and agents. It joins two sources: the workspace's peers fetched from the Honcho API (labeled from local config — your peer, each profile's AI peer, alias targets, runtime peers of seen accounts, `user-*` fallback peers, honestly `unrecognized` otherwise), and the gateway accounts recorded in the local session store (platform, runtime ID, name, and what each currently resolves to, with `✓` when that peer already exists and `○ new` when it would be created on first message).
 
 Mapping targets are picked from the workspace list (`p3`) rather than typed, so a typo cannot silently create a fresh peer; typing a name stays available for the deliberate new-peer case, and `-` clears an alias. Every assignment states its consequence: aliases move future messages only, and a runtime peer left behind keeps its history. `p<N>` alone peeks at a peer's card. `w` lists every workspace the key can reach — the wrong-workspace fallback when the peers shown aren't yours — and lets you browse one and, on explicit confirmation, repoint the profile's `workspace` at it. For a standalone workspace browser beyond mapping, [honcho-cli](https://pypi.org/project/honcho-cli/) is an optional companion (`uv tool install honcho-cli`).
 
-With multiple profiles: saving a root-cascading map asks whether the edit applies to all profiles (root) or forks this profile's host block; a root write with profiles on other workspaces warns that picked peers may not exist there; and the accounts table marks siblings that resolve the same account to a different peer (`≠ dreamer→bob`). Offline, the command degrades to typed targets over the local account list. `hermes honcho peers` without `map` stays a read-only view.
+With multiple profiles: saving a root-cascading map asks whether the edit applies to all profiles (root) or forks this profile's host block; a root write with profiles on other workspaces warns that picked peers may not exist there; and the accounts table marks siblings that resolve the same account to a different peer (`≠ dreamer→bob`). Offline, the command degrades to typed targets over the local account list. `moor honcho peers` without `map` stays a read-only view.
 
 **Un-pinning (single → per-user).** Flipping `pinUserPeer` from `true` to `false` does not migrate data. Memory accumulated under `peerName` while pinned stays there; runtime users now resolve to fresh, empty peers. To preserve your own continuity, choose the **pooled** path — alias your runtime IDs back to `peerName` so your turns keep landing on the pooled history while other users get their own peers. The wizard offers this steer automatically when it detects you're un-pinning a previously pinned profile.
 
@@ -274,10 +274,10 @@ The Honcho session name determines which conversation bucket memory lands in. Re
 | Priority | Source | Example session name |
 |----------|--------|---------------------|
 | 1 | Gateway session key (Telegram, Discord, etc.) | `"agent-main-telegram-dm-8439114563"` |
-| 2 | `per-session` strategy | Hermes session ID (`20260415_a3f2b1`) |
+| 2 | `per-session` strategy | Moor session ID (`20260415_a3f2b1`) |
 | 3 | Manual map (`sessions` config) | `"myproject-main"` |
 | 4 | Explicit `/title` command (non-automatic title) | `"refactor-auth"` |
-| 5 | `per-repo` strategy | Git root directory name (`hermes-agent`) |
+| 5 | `per-repo` strategy | Git root directory name (`moor-agent`) |
 | 6 | `per-directory` strategy | Directory basename (`my-project`) |
 | 7 | `global` strategy | Workspace name |
 
@@ -285,21 +285,21 @@ Messaging gateway platforms always resolve via priority 1 (per-chat isolation) r
 
 Directory strategies and manual mappings use the logical session workspace, not the backend process's launch directory. Desktop/TUI and ACP pass the workspace during agent construction; deferred Desktop/TUI builds use the same session cwd. With no non-empty construction cwd, Honcho uses the runtime resolver: session cwd context, scoped `terminal.cwd`, then the launch directory. No process-wide `chdir` is needed.
 
-Automatically generated Hermes titles (`derived` or `llm`) are display metadata and do not override `sessionStrategy`. An explicit user title remains an intentional session-name override for non-gateway, non-`per-session` sessions.
+Automatically generated Moor titles (`derived` or `llm`) are display metadata and do not override `sessionStrategy`. An explicit user title remains an intentional session-name override for non-gateway, non-`per-session` sessions.
 
 Sessions created before title provenance was recorded retain legacy behavior: because an old automatic title cannot be distinguished from an old user title, a title with no source is treated as an explicit override.
 
-If `sessionPeerPrefix` is `true`, the user peer name is prepended: `alice-hermes-agent`.
+If `sessionPeerPrefix` is `true`, the user peer name is prepended: `alice-moor-agent`.
 
 If `sessionAiPeerPrefix` is `true`, the AI peer (`aiPeer`) is prepended to the final name on **every** path — including priority 3. This is the symmetric counterpart to `sessionPeerPrefix` and exists because the gateway session key is AI-peer-agnostic: when several AI peers share one workspace, peer name, and gateway chat key, they would otherwise collide on a single session. With `aiPeer: ivy`, priority 3 becomes `ivy-agent-main-telegram-dm-8439114563`.
 
 #### Bot DMs (`a2aSessions`)
 
-In bot mode another Hermes profile can DM this agent. The relay marks that turn with author `bot:<profile>`. A gateway platform marks a bot sender with its platform user id and a bot flag. Either way the turn never reaches the human's session. With `a2aSessions: true` (default) the turn is written into `<session>:a2a:<this agent's aiPeer>:<sanitized sender id>-<8-char digest>`: the sender's message under the sender's peer, the reply under this agent's `aiPeer`. The `aiPeer` segment keeps two profiles that share a `workspace` and a session key from writing one sender's DMs into one session. A `bot:` sender is identified by its full id, `bot:<profile>` for a profile on this machine or `bot:<connection>/<profile>` for one relayed through a Desktop connection. Its peer is the `userPeerAliases` entry for that full id if one exists, else the id after `bot:` sanitized, with no `runtimePeerPrefix`. When sanitizing changed the id, or the result equals `peerName` or an alias target, a digest suffix is added the same way `runtimePeerPrefix` users get one, so a bot never lands on the operator's peer and two connections' `coder` stay apart. A platform bot resolves like any other runtime user: alias, then prefix. `pinUserPeer` never collapses a bot onto `peerName`. A bot whose peer would equal this agent's `aiPeer` is skipped, and so is every bot turn when `a2aSessions: false`. During a bot-authored turn `honcho_conclude` and `honcho_profile` refuse writes, because conclusions and cards describe the human. Recall still reads the human's session only.
+In bot mode another Moor profile can DM this agent. The relay marks that turn with author `bot:<profile>`. A gateway platform marks a bot sender with its platform user id and a bot flag. Either way the turn never reaches the human's session. With `a2aSessions: true` (default) the turn is written into `<session>:a2a:<this agent's aiPeer>:<sanitized sender id>-<8-char digest>`: the sender's message under the sender's peer, the reply under this agent's `aiPeer`. The `aiPeer` segment keeps two profiles that share a `workspace` and a session key from writing one sender's DMs into one session. A `bot:` sender is identified by its full id, `bot:<profile>` for a profile on this machine or `bot:<connection>/<profile>` for one relayed through a Desktop connection. Its peer is the `userPeerAliases` entry for that full id if one exists, else the id after `bot:` sanitized, with no `runtimePeerPrefix`. When sanitizing changed the id, or the result equals `peerName` or an alias target, a digest suffix is added the same way `runtimePeerPrefix` users get one, so a bot never lands on the operator's peer and two connections' `coder` stay apart. A platform bot resolves like any other runtime user: alias, then prefix. `pinUserPeer` never collapses a bot onto `peerName`. A bot whose peer would equal this agent's `aiPeer` is skipped, and so is every bot turn when `a2aSessions: false`. During a bot-authored turn `honcho_conclude` and `honcho_profile` refuse writes, because conclusions and cards describe the human. Recall still reads the human's session only.
 
 #### What each strategy produces
 
-- **`per-directory`** — basename of the logical session working directory. Opening Hermes in `~/code/myapp` and `~/code/other` gives two separate sessions. Same directory = same session across runs.
+- **`per-directory`** — basename of the logical session working directory. Opening Moor in `~/code/myapp` and `~/code/other` gives two separate sessions. Same directory = same session across runs.
 - **`per-repo`** — git root directory name. All subdirectories within a repo share one session. Falls back to `per-directory` if not inside a git repo.
 - **`per-session`** — Moor session ID (timestamp + hex). Every `moor` invocation starts a fresh Honcho session. Falls back to `per-directory` if no session ID is available.
 - **`global`** — workspace name. One session for everything. Memory accumulates across all directories and runs.

@@ -216,22 +216,22 @@ def test_404_get_charge_status_maps_to_generic_billing_error(monkeypatch):
 
 def test_billing_token_cache_is_scoped_per_profile_home(monkeypatch, tmp_path):
     """The 30s (token, base) memo must not hand profile A's Portal bearer to profile B under a
-    multiplex gateway, where the per-turn HERMES_HOME override selects the auth.json."""
-    import hermes_constants
-    import hermes_cli.auth as auth
+    multiplex gateway, where the per-turn MOOR_HOME override selects the auth.json."""
+    import moor_constants
+    import moor_cli.auth as auth
 
     monkeypatch.setattr(nb, "_token_cache", {}, raising=False)
     monkeypatch.setattr(auth, "get_provider_auth_state", lambda provider: {})
     monkeypatch.setattr(
-        auth, "resolve_nous_access_token",
-        lambda **kw: f"tok-{hermes_constants.get_hermes_home().name}")
+        auth, "resolve_moor_access_token",
+        lambda **kw: f"tok-{moor_constants.get_moor_home().name}")
     a, b = tmp_path / "a", tmp_path / "b"
     a.mkdir(); b.mkdir()
     seen = []
     for home in (a, b):
-        tok = hermes_constants.set_hermes_home_override(str(home))
+        tok = moor_constants.set_moor_home_override(str(home))
         try:
             seen.append(nb._resolve_token_and_base()[0])
         finally:
-            hermes_constants.reset_hermes_home_override(tok)
+            moor_constants.reset_moor_home_override(tok)
     assert seen == ["tok-a", "tok-b"]

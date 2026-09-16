@@ -103,8 +103,8 @@ def _dirty_split(path: str) -> tuple[bool, List[str]]:
 def _archive_untracked(tree: Path, untracked: List[str]) -> Optional[Path]:
     """Copy untracked files out of a doomed tree; None on any failure (caller must then keep)."""
     stamp = time.strftime("%Y%m%d-%H%M%S")
-    from hermes_constants import get_hermes_home
-    dest = get_hermes_home() / "archive" / "worktree-prune" / f"{tree.name}-{stamp}"
+    from moor_constants import get_moor_home
+    dest = get_moor_home() / "archive" / "worktree-prune" / f"{tree.name}-{stamp}"
     try:
         for rel in untracked:
             src = tree / rel
@@ -150,7 +150,7 @@ def _classify_tree(_ops, repo_root: str, entry: Path, merge_cache, remote_heads)
 def audit_external_trees(repo_root: str) -> List[ExternalTreeRecord]:
     """List linked worktrees registered OUTSIDE ``.worktrees/``.
 
-    ``hermes -w`` scratch trees all live under ``<repo>/.worktrees/``, but
+    ``moor -w`` scratch trees all live under ``<repo>/.worktrees/``, but
     ``git worktree list --porcelain`` also knows about trees the user (or
     another tool) registered elsewhere. Those are someone else's state, so
     the reclaim paths never touch them — but hiding them entirely makes the
@@ -176,7 +176,7 @@ def audit_external_trees(repo_root: str) -> List[ExternalTreeRecord]:
         if real == main_root:
             return  # the main checkout itself
         if real == managed_root or real.startswith(managed_root + os.sep):
-            return  # hermes-managed scratch tree — covered by audit_worktrees
+            return  # moor-managed scratch tree — covered by audit_worktrees
         branch = current.get("branch", "")
         if not branch and current.get("head"):
             branch = f"detached @{current['head'][:10]}"
@@ -230,7 +230,7 @@ def audit_worktrees(repo_root: str, *, with_sizes: bool = True,
     ``older_than_days`` only ever RESTRICTS: a reapable tree younger than the threshold is kept
     ("too recent"). It never widens eligibility — age alone can't doom a tree carrying unmerged work.
     """
-    from hermes_cli import worktree_ops as _ops
+    from moor_cli import worktree_ops as _ops
     worktrees_dir = Path(repo_root) / ".worktrees"
     if not worktrees_dir.exists():
         return []

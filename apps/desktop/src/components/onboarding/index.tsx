@@ -1,4 +1,4 @@
-import type { ModelOptionProvider } from '@hermes/shared'
+import type { ModelOptionProvider } from '@moor/shared'
 import { useStore } from '@nanostores/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
@@ -38,7 +38,7 @@ import {
   startProviderOAuth
 } from '@/store/onboarding'
 import { $onboardingSurfaces, onboardingSurfaceActive } from '@/store/onboarding-presence'
-import type { OAuthProvider } from '@/types/hermes'
+import type { OAuthProvider } from '@/types/moor'
 
 import { DocsLink, FlowPanel, Status } from './flow'
 import { FreeTierSetupNotice } from './free-tier-setup-notice'
@@ -376,7 +376,7 @@ export function DesktopOnboardingOverlay({
 
   // When the free tier itself failed to set up, its own notice explains the
   // picker; the runtime check's technical reason ("No usable credentials
-  // found for nous.") would only restate it in the wrong words.
+  // found for moor.") would only restate it in the wrong words.
   const reason =
     rawReason &&
     !setupFailure &&

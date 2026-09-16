@@ -153,7 +153,7 @@ def _receipt_owed_gateways() -> set[tuple[str, str]] | None:
     Empty when the receipt records no runtimes; ``None`` when any recorded runtime is one
     the gateway matrix cannot vouch for (serve/dashboard, unknown profile).
     """
-    from hermes_cli.update_receipt import read_latest_receipt
+    from moor_cli.update_receipt import read_latest_receipt
 
     receipt = read_latest_receipt() or {}
     plan = receipt.get("plan") or {}
@@ -180,7 +180,7 @@ def _live_fleet_covers_receipt(expected_sha: str | None) -> bool:
     """
     if not expected_sha:
         return False
-    from hermes_cli.update_receipt import collect_fleet_versions
+    from moor_cli.update_receipt import collect_fleet_versions
 
     try:
         owed = _receipt_owed_gateways()
@@ -239,7 +239,7 @@ def _marker_only_restart_obsolete() -> bool:
     if checkout_sha and checkout_sha != expected_sha:
         return False  # a newer pull moved HEAD; it owns a fresh obligation
     try:
-        from hermes_cli.update_receipt import collect_fleet_versions
+        from moor_cli.update_receipt import collect_fleet_versions
         fleet = collect_fleet_versions()
         owed = _receipt_owed_gateways()
     except Exception as exc:
@@ -267,7 +267,7 @@ def _marker_only_restart_obsolete() -> bool:
 
 def _pending_fleet_restart_needed() -> bool:
     """Reconcile old restart obligations against current, identity-matched gateways."""
-    from hermes_cli.update_cmd import _current_checkout_sha
+    from moor_cli.update_cmd import _current_checkout_sha
 
     # The marker has no runtime inventory and may belong to a newer, killed update
     # than latest.json. An older receipt cannot discharge that unknown obligation.
@@ -324,7 +324,7 @@ def _needs_sudo(scope: str) -> bool:
 
 
 def _restart_systemd_gateway_units_best_effort(failed: list, listings) -> None:
-    """Best-effort ``systemctl restart`` of every hermes-gateway/serve unit."""
+    """Best-effort ``systemctl restart`` of every moor-gateway/serve unit."""
     answered = set()
     for scope, scope_cmd, result in listings:
         answered.add(scope)
@@ -393,11 +393,11 @@ def _run_pending_fleet_restart() -> bool:
                 with _best_effort('Pending fleet restart: PID stop failed: %s'):
                     kill_gateway_processes(all_profiles=True)
                     _wait_for_gateway_exit(timeout=5.0, force_after=None)
-        # --- Systemd services (Linux) --- Discover all hermes-gateway* units (default + profiles) plus
-        # hermes-serve* units (the Desktop app's backend, #83438).
+        # --- Systemd services (Linux) --- Discover all moor-gateway* units (default + profiles) plus
+        # moor-serve* units (the Desktop app's backend, #83438).
         if systemd_listings is not None:
             _restart_systemd_gateway_units_best_effort(failed, systemd_listings)
-        # --- Launchd services (macOS) --- Restart EVERY ai.hermes.gateway* LaunchAgent, not only the
+        # --- Launchd services (macOS) --- Restart EVERY ai.moor.gateway* LaunchAgent, not only the
         # invoking profile's — parity with the systemd branch above (#41403). Per-label TimeoutExpired
         # isolation happens inside.
         if is_macos():
@@ -431,11 +431,11 @@ def _run_pending_fleet_restart() -> bool:
 def _defer_fleet_restart_after_update(*, update_complete: bool, resume_incomplete: bool = False) -> None:
     """Record a deliberately deferred fleet restart and return/exit on outcome.
 
-    ``hermes update --no-gateway-restart`` (cron running inside the gateway's
+    ``moor update --no-gateway-restart`` (cron running inside the gateway's
     own cgroup) updated code and dependencies but must not restart the fleet:
     the SIGUSR1 drain + systemd restart would kill the updater itself. The
     ``fleet_restart_pending`` marker written before the pull is KEPT so the
-    next normal update (or ``hermes gateway restart``) catches up.
+    next normal update (or ``moor gateway restart``) catches up.
 
     Outcome contract (same success/partial meaning as the normal path):
     a STALE fleet caused only by this deliberate deferral is expected and
@@ -451,21 +451,21 @@ def _defer_fleet_restart_after_update(*, update_complete: bool, resume_incomplet
     print()
     print("→ Gateway restart skipped (--no-gateway-restart).")
     print("  Code and dependencies are updated; gateways still serve pre-update code.")
-    print("  Restart them separately: `hermes gateway restart` or a daily-restart cron.")
+    print("  Restart them separately: `moor gateway restart` or a daily-restart cron.")
     print("  (fleet restart deferred — marker kept for catch-up)")
     with suppress(Exception):
-        from hermes_cli.update_receipt import record_skip
+        from moor_cli.update_receipt import record_skip
         record_skip("gateway_restart", "--no-gateway-restart: deferred, marker kept")
     partial = (not update_complete) or resume_incomplete
     with suppress(Exception):
-        from hermes_cli.update_receipt import finalize_update_receipt
+        from moor_cli.update_receipt import finalize_update_receipt
         finalize_update_receipt("partial" if partial else "success")
     if partial:
         sys.exit(1)
 
 
 def _apply_pending_fleet_restart_catchup(*, defer: bool = False) -> None:
-    """On an already-up-to-date ``hermes update``, finish a skipped restart.
+    """On an already-up-to-date ``moor update``, finish a skipped restart.
 
     No-op when nothing is pending; exits 1 on incomplete catch-up so automation
     does not treat the fleet as healthy. ``defer`` (``--no-gateway-restart``) keeps
@@ -479,7 +479,7 @@ def _apply_pending_fleet_restart_catchup(*, defer: bool = False) -> None:
         print()
         _warn_pending_fleet_restart()
         print("  (fleet restart deferred — --no-gateway-restart; marker kept)")
-        print("  Restart separately: `hermes gateway restart` or next non-cron update.")
+        print("  Restart separately: `moor gateway restart` or next non-cron update.")
         return
     print()
     _warn_pending_fleet_restart()
@@ -702,7 +702,7 @@ def _restart_macos_launchd_gateways(
     drain → kickstart). ``subprocess.TimeoutExpired`` is isolated per label so one wedged launchctl call
     cannot leave the rest of the fleet on old code (#68523).
     """
-    from hermes_cli.gateway import (
+    from moor_cli.gateway import (
         get_launchd_label, get_launchd_plist_path, launchd_gateway_labels_for_install, _graceful_restart_via_sigusr1, _launchd_kickstart,
         _locate_launchd_gateway_service, _wait_for_launchd_service_pid,
     )
@@ -730,7 +730,7 @@ def _restart_macos_launchd_gateways(
             graceful_ok = False
             if old_pid is not None and old_pid > 0:
                 print(f"  → {label}: draining (up to {int(drain_budget)}s)...")
-                from hermes_cli.update_cmd_drain_report import drain_progress_reporter
+                from moor_cli.update_cmd_drain_report import drain_progress_reporter
                 graceful_ok = _graceful_restart_via_sigusr1(
                     old_pid, drain_timeout=drain_budget,
                     on_progress=drain_progress_reporter(_gateway_home_for_pid(old_pid), budget_s=drain_budget))
@@ -884,16 +884,16 @@ def _drain_or_signal_gateway_for_update(pid: int, drain_budget: float, label: st
         _escalate_wedged_gateway(pid)
         return True
     print(f"  → {label}: draining (up to {int(drain_budget)}s)...")
-    from hermes_cli.update_cmd_drain_report import drain_progress_reporter
+    from moor_cli.update_cmd_drain_report import drain_progress_reporter
     return _graceful_restart_via_sigusr1(
         pid, drain_timeout=drain_budget,
         on_progress=drain_progress_reporter(_gateway_home_for_pid(pid), budget_s=drain_budget))
 
 
 def _gateway_home_for_pid(pid: int):
-    """HERMES_HOME of the gateway ``pid`` per the fleet inventory, else None (own profile's file)."""
+    """MOOR_HOME of the gateway ``pid`` per the fleet inventory, else None (own profile's file)."""
     with suppress(Exception):
-        from hermes_cli.update_receipt import _profile_homes
+        from moor_cli.update_receipt import _profile_homes
         from gateway.status import read_runtime_status
         for _profile, home in _profile_homes():
             record = read_runtime_status(home / "gateway_state.json") or {}
@@ -1012,7 +1012,7 @@ def _restart_one_systemd_gateway_unit(
         return
 
     # Blunt restart — only when the graceful path failed (no SIGUSR1 wiring, drain over
-    # budget, restart-policy mismatch). Mirrors `hermes gateway restart` (`systemd_restart()`).
+    # budget, restart-policy mismatch). Mirrors `moor gateway restart` (`systemd_restart()`).
     restart = _systemctl_reset_and_restart(_manage_cmd, svc_name, scope_cmd=scope_cmd)
     if restart.returncode != 0:
         failed_or_stale_units.append(svc_name)
@@ -1244,8 +1244,8 @@ def _recover_after_restart_phase_abort(
     e, _pre_update_plan, out: _GatewayRestartOutcome, *, gateway_mode, restarted_scoped_units
 ) -> None:
     """Phase-abort recovery: fresh-child restart + fail-closed verdict; updates ``out`` in place."""
-    from hermes_cli.update_abort_recovery import _owed_stale_serve_rows
-    from hermes_cli.update_cmd import (
+    from moor_cli.update_abort_recovery import _owed_stale_serve_rows
+    from moor_cli.update_cmd import (
         _abort_recovery_is_complete, _recover_gateway_restart_after_abort, _surviving_pre_update_serve_runtimes,
         _warn_stale_serve_runtimes, _write_gateway_update_exit_code,
     )
@@ -1583,7 +1583,7 @@ def _verify_fleet_after_update(restart, *, _pre_update_plan, _windows_gateway_re
     # Fleet is healthy on the new code: fold per-profile gateways into one multiplexer when nothing
     # blocks it (deterministic; never prompts), else print the blockers and the one-liner to run later.
     with _best_effort('Multiplex auto-migration after update failed: %s'):
-        from hermes_cli.gateway_migrate import maybe_auto_migrate_after_update
+        from moor_cli.gateway_migrate import maybe_auto_migrate_after_update
         maybe_auto_migrate_after_update()
 
 

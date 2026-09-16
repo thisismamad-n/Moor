@@ -815,7 +815,7 @@ class TestInstallReadabilityGate:
 
     @pytest.mark.skipif(os.name == "nt" or os.geteuid() == 0, reason="POSIX mode bits, non-root")
     def test_unreadable_file_is_repaired_before_install(self, tmp_path, monkeypatch):
-        from hermes_cli import plugins_cmd as pc
+        from moor_cli import plugins_cmd as pc
 
         plugins_dir = tmp_path / "plugins"
         plugins_dir.mkdir()
@@ -829,7 +829,7 @@ class TestInstallReadabilityGate:
 
     @pytest.mark.skipif(os.name == "nt" or os.geteuid() == 0, reason="POSIX mode bits, non-root")
     def test_unrepairable_tree_rolls_back_and_names_the_fix(self, tmp_path, monkeypatch):
-        from hermes_cli import plugins_cmd as pc
+        from moor_cli import plugins_cmd as pc
 
         plugins_dir = tmp_path / "plugins"
         plugins_dir.mkdir()

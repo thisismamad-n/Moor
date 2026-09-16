@@ -313,7 +313,7 @@ def _effective_file_timeout(
     approaches the flat cap.
 
     The flat ``file_timeout`` (default 300s) is sized for the typical file,
-    but a handful of large-collection files (e.g. ``tests/test_hermes_state.py``,
+    but a handful of large-collection files (e.g. ``tests/test_moor_state.py``,
     239 tests × subprocess-per-test overhead) legitimately run 200s+ on a
     quiet runner. Under CI load that dilates past the cap, the file is
     SIGKILL'd mid-run, and the automatic retry then passes — a manufactured
@@ -559,7 +559,7 @@ def _parse_pytest_summary(output: str) -> dict[str, int]:
 def _format_file(file: Path, repo_root: Path) -> str:
     """Render a test-file path for display: strip the repo-root prefix
     when possible so output reads ``tests/acp_adapter/test_auth.py`` instead of
-    ``/home/runner/work/hermes-agent/hermes-agent/tests/acp_adapter/test_auth.py``.
+    ``/home/runner/work/moor-agent/moor-agent/tests/acp_adapter/test_auth.py``.
 
     Falls back to the absolute path for anything outside the repo root.
     """

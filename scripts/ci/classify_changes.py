@@ -99,7 +99,7 @@ _PY_RELEVANT_CONTRACT_FILES = {
     # tests/tui_gateway/contracts/test_generated.py (rendered from tui_gateway/contracts)
     "apps/shared/src/gateway-contract.generated.ts",
     "apps/shared/src/gateway-contract.openrpc.json",
-    # tests/hermes_cli/test_desktop_slash_registry.py
+    # tests/moor_cli/test_desktop_slash_registry.py
     "apps/desktop/src/lib/desktop-slash-registry.json",
 }
 

@@ -690,13 +690,13 @@ class TestProtectedInstructionFiles:
         assert rendered["choices"] == ["once", "deny"]
 
 
-class TestProfileHomeExemptsHermesRoot:
-    """issue #60: under ``hermes -p <name>`` (``HERMES_HOME=<root>/profiles/<name>``)
+class TestProfileHomeExemptsMoorRoot:
+    """issue #60: under ``moor -p <name>`` (``MOOR_HOME=<root>/profiles/<name>``)
     the exemption used to cover ONLY the profile dir, so the ROOT's direct files
-    (LEDGER.md / MEMORY.md / SOUL.md ...) fell through to the ``.hermes`` component
-    rule, were read as project-local ``.hermes`` config, and — having no approval
+    (LEDGER.md / MEMORY.md / SOUL.md ...) fell through to the ``.moor`` component
+    rule, were read as project-local ``.moor`` config, and — having no approval
     channel headless — failed closed. That blocked #54 (LEDGER.md edit). The gate
-    must exempt the whole Hermes tree, exactly like the default profile does.
+    must exempt the whole Moor tree, exactly like the default profile does.
     """
 
     @pytest.fixture(autouse=True)
@@ -706,8 +706,8 @@ class TestProfileHomeExemptsHermesRoot:
             ft, "_protected_instruction_config", lambda: (True, [])
         )
         # The resolved-home slot is filled once per process; keep the fixture honest.
-        monkeypatch.setattr(ft, "_real_hermes_home_loaded", False)
-        monkeypatch.setattr(ft, "_real_hermes_home_cached", None)
+        monkeypatch.setattr(ft, "_real_moor_home_loaded", False)
+        monkeypatch.setattr(ft, "_real_moor_home_cached", None)
         yield
 
     @pytest.fixture
@@ -729,7 +729,7 @@ class TestProfileHomeExemptsHermesRoot:
         return json.loads(write_file_tool(str(path), content))
 
     def _profile_layout(self, tmp_path: Path):
-        """A real-shaped Hermes root: ``<tmp>/home/profiles/worker`` + root markers."""
+        """A real-shaped Moor root: ``<tmp>/home/profiles/worker`` + root markers."""
         root = tmp_path / "home"
         profile = root / "profiles" / "worker"
         (profile / "workspace").mkdir(parents=True)
@@ -738,58 +738,58 @@ class TestProfileHomeExemptsHermesRoot:
 
     def test_named_profile_scope_exempts_root_direct_files(self, tmp_path, monkeypatch, approvals):
         """Under a named profile bound by the per-turn scope (multiplex path), the ROOT's own store is
-        not project-local ``.hermes`` config: the write lands with no approval prompt."""
+        not project-local ``.moor`` config: the write lands with no approval prompt."""
         import tools.file_tools_write_guards as ft
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from moor_constants import reset_moor_home_override, set_moor_home_override
 
         root, profile = self._profile_layout(tmp_path)
-        monkeypatch.delenv("HERMES_HOME", raising=False)
-        token = set_hermes_home_override(str(profile))
+        monkeypatch.delenv("MOOR_HOME", raising=False)
+        token = set_moor_home_override(str(profile))
         try:
-            assert os.path.realpath(str(root)) in ft._hermes_exempt_homes()
+            assert os.path.realpath(str(root)) in ft._moor_exempt_homes()
             for name in ("LEDGER.md", "MEMORY.md", "SOUL.md", "AGENTS.md"):
                 assert ft._protected_instruction_reason(str(root / name)) is None, name
             res = self._write(root / "LEDGER.md", "caliber fixed")
         finally:
-            reset_hermes_home_override(token)
+            reset_moor_home_override(token)
         assert not res.get("error"), res
         assert (root / "LEDGER.md").read_text(encoding="utf-8") == "caliber fixed"
         assert approvals["calls"] == []
 
-    def test_only_a_real_hermes_root_is_exempt(self, tmp_path, monkeypatch, approvals):
-        """Negatives hold with a named profile active: a checkout's ``.hermes/config.yaml`` and
+    def test_only_a_real_moor_root_is_exempt(self, tmp_path, monkeypatch, approvals):
+        """Negatives hold with a named profile active: a checkout's ``.moor/config.yaml`` and
         protected basenames stay gated (fail-closed, unwritten), and a coincidental
-        ``.../profiles/<name>`` tree that is NOT a Hermes root never exempts its parent."""
+        ``.../profiles/<name>`` tree that is NOT a Moor root never exempts its parent."""
         import tools.file_tools_write_guards as ft
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from moor_constants import reset_moor_home_override, set_moor_home_override
 
         root, profile = self._profile_layout(tmp_path)
         repo = tmp_path / "repo"
-        (repo / ".hermes").mkdir(parents=True)
-        monkeypatch.delenv("HERMES_HOME", raising=False)
-        token = set_hermes_home_override(str(profile))
+        (repo / ".moor").mkdir(parents=True)
+        monkeypatch.delenv("MOOR_HOME", raising=False)
+        token = set_moor_home_override(str(profile))
         try:
-            assert ft._protected_instruction_reason(str(repo / ".hermes" / "config.yaml"))
+            assert ft._protected_instruction_reason(str(repo / ".moor" / "config.yaml"))
             assert ft._protected_instruction_reason(str(repo / "AGENTS.md")) == "AGENTS.md"
-            target = repo / ".hermes" / "config.yaml"
+            target = repo / ".moor" / "config.yaml"
             res = self._write(target, "gate: off\n")
         finally:
-            reset_hermes_home_override(token)
+            reset_moor_home_override(token)
         assert res.get("error") and "BLOCKED" in res["error"]
         assert not target.exists()
         assert len(approvals["calls"]) == 1
 
-        fake_profile = tmp_path / "not-a-hermes-root" / "profiles" / "worker"
+        fake_profile = tmp_path / "not-a-moor-root" / "profiles" / "worker"
         fake_profile.mkdir(parents=True)
-        token = set_hermes_home_override(str(fake_profile))
+        token = set_moor_home_override(str(fake_profile))
         try:
-            assert ft._hermes_exempt_homes() == (os.path.realpath(str(fake_profile)),)
+            assert ft._moor_exempt_homes() == (os.path.realpath(str(fake_profile)),)
         finally:
-            reset_hermes_home_override(token)
+            reset_moor_home_override(token)
 
 
 class TestMultiplexProfileWriteGuardsAreProfileScoped:
-    """#107327: a multiplexed gateway scopes ``HERMES_HOME`` per turn via a
+    """#107327: a multiplexed gateway scopes ``MOOR_HOME`` per turn via a
     contextvar. The home/config path getters must resolve per call, or whichever
     profile ran first in the process freezes both the protected-instruction gate
     and the ``config.yaml`` hard-block for every later profile — up to letting a
@@ -807,45 +807,45 @@ class TestMultiplexProfileWriteGuardsAreProfileScoped:
 
     def test_home_getter_tracks_active_profile_after_a_prior_scope(self, tmp_path):
         import tools.file_tools_write_guards as ft
-        from hermes_constants import (
-            reset_hermes_home_override,
-            set_hermes_home_override,
+        from moor_constants import (
+            reset_moor_home_override,
+            set_moor_home_override,
         )
 
         a, b = self._profiles(tmp_path)
         # A normal alpha turn resolves (and, on the buggy path, would freeze) home.
-        tok = set_hermes_home_override(str(a))
+        tok = set_moor_home_override(str(a))
         try:
-            assert ft._get_real_hermes_home() == os.path.realpath(str(a))
+            assert ft._get_real_moor_home() == os.path.realpath(str(a))
         finally:
-            reset_hermes_home_override(tok)
+            reset_moor_home_override(tok)
         # The next turn is beta — the getter must now return beta's home, not alpha's.
-        tok = set_hermes_home_override(str(b))
+        tok = set_moor_home_override(str(b))
         try:
-            assert ft._get_real_hermes_home() == os.path.realpath(str(b))
+            assert ft._get_real_moor_home() == os.path.realpath(str(b))
         finally:
-            reset_hermes_home_override(tok)
+            reset_moor_home_override(tok)
 
     def test_config_hard_block_refuses_beta_config_even_after_alpha_turn(self, tmp_path):
         """End-to-end: the ``config.yaml`` hard-block must fire for beta's own
         config under beta's scope, regardless of alpha having run first."""
         import tools.file_tools_write_guards as ft
-        from hermes_constants import (
-            reset_hermes_home_override,
-            set_hermes_home_override,
+        from moor_constants import (
+            reset_moor_home_override,
+            set_moor_home_override,
         )
 
         a, b = self._profiles(tmp_path)
-        tok = set_hermes_home_override(str(a))
+        tok = set_moor_home_override(str(a))
         try:
-            ft._get_hermes_config_resolved()  # warm the (formerly poisoning) alpha lookup
+            ft._get_moor_config_resolved()  # warm the (formerly poisoning) alpha lookup
         finally:
-            reset_hermes_home_override(tok)
+            reset_moor_home_override(tok)
 
-        tok = set_hermes_home_override(str(b))
+        tok = set_moor_home_override(str(b))
         try:
             err = ft._check_sensitive_path(str(b / "config.yaml"), "default")
         finally:
-            reset_hermes_home_override(tok)
+            reset_moor_home_override(tok)
         assert err is not None
-        assert "Refusing to write to Hermes config file" in err
+        assert "Refusing to write to Moor config file" in err

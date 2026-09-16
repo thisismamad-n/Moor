@@ -269,7 +269,7 @@ def test_scoped_wrapper_exit_without_user_bus_names_the_cause_and_invalidates_pr
     from tools.process_registry import GatewayChildDispatch
 
     job = {"id": "job-bus", "execution_id": "exec-1", "prompt": "work"}
-    monkeypatch.setattr(scheduler, "_get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr(scheduler, "_get_moor_home", lambda: tmp_path)
     monkeypatch.setattr(
         "tools.process_registry.restart_safe_gateway_child_argv",
         lambda command, **_: GatewayChildDispatch("scoped", ["systemd-run", "--", *command]),
@@ -301,7 +301,7 @@ def test_launch_external_worker_uses_restart_safe_scope_and_acknowledges(
     from tools.env_passthrough import clear_env_passthrough, register_env_passthrough
 
     job = {"id": "job-1", "execution_id": "exec-1", "prompt": "work"}
-    monkeypatch.setattr(scheduler, "_get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr(scheduler, "_get_moor_home", lambda: tmp_path)
     (tmp_path / ".env").write_text(
         "SERVICE_TOKEN=target-profile-token\n", encoding="utf-8"
     )
@@ -349,7 +349,7 @@ def test_launch_external_worker_honors_ack_within_adoption_grace(
     from tools.process_registry import GatewayChildDispatch
 
     job = {"id": "job-cold", "execution_id": "exec-cold", "prompt": "work"}
-    monkeypatch.setattr(scheduler, "_get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr(scheduler, "_get_moor_home", lambda: tmp_path)
     monkeypatch.setattr(
         "tools.process_registry.restart_safe_gateway_child_argv",
         lambda command, **_kw: GatewayChildDispatch("scoped", ["scope", "--", *command]),
@@ -490,7 +490,7 @@ def test_launch_external_worker_degrades_by_default_with_real_helper(
     import tools.process_registry as process_registry
 
     job = {"id": "job-1", "execution_id": "exec-1", "prompt": "work"}
-    monkeypatch.setattr(scheduler, "_get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr(scheduler, "_get_moor_home", lambda: tmp_path)
     monkeypatch.setattr(scheduler, "load_config_readonly", lambda: {})
     monkeypatch.setattr(process_registry, "_is_supervised_gateway_process", lambda: True)
     monkeypatch.setenv("INVOCATION_ID", "managed-service")

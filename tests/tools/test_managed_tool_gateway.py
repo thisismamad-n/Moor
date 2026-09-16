@@ -156,10 +156,10 @@ def test_managed_gateway_origin_honors_the_harness_override():
     with patch.dict(os.environ, {"TOOL_GATEWAY_URL": "http://127.0.0.1:3009/"}, clear=False):
         os.environ.pop("CONNECTOR_GATEWAY_URL", None)
         assert managed_gateway_auth.managed_gateway_origin() == "http://127.0.0.1:3009"
-        assert managed_gateway_auth.is_managed_nous_gateway_url(
+        assert managed_gateway_auth.is_managed_moor_gateway_url(
             "http://127.0.0.1:3009/api/vendorx/generations"
         )
-        assert not managed_gateway_auth.is_managed_nous_gateway_url(
+        assert not managed_gateway_auth.is_managed_moor_gateway_url(
             "https://tools.nousresearch.com/api/vendorx/generations"
         )
 
@@ -180,7 +180,7 @@ def test_connector_gateway_origin_honors_its_own_override():
         assert managed_gateway_auth.managed_gateway_origin() == (
             "https://tool-gateway.nousresearch.com"
         )
-        assert managed_gateway_auth.is_managed_nous_gateway_url(
+        assert managed_gateway_auth.is_managed_moor_gateway_url(
             "http://127.0.0.1:3009/v1/connectors/search"
         )
 
@@ -199,7 +199,7 @@ def test_default_bearer_gate_accepts_both_deployed_hosts_only():
             "https://connector-gateway.nousresearch.com/v1/connectors/execute",
             "https://tool-gateway.nousresearch.com/api/vendorx/generations",
         ):
-            assert managed_gateway_auth.is_managed_nous_gateway_url(trusted)
+            assert managed_gateway_auth.is_managed_moor_gateway_url(trusted)
         for untrusted in (
             "https://tools.nousresearch.com/v1/connectors/execute",
             "https://evil-connector-gateway.nousresearch.com.attacker.dev/v1/connectors",
@@ -207,33 +207,33 @@ def test_default_bearer_gate_accepts_both_deployed_hosts_only():
             "http://connector-gateway.nousresearch.com/v1/connectors",
             "http://tool-gateway.nousresearch.com/api/vendorx/generations",
         ):
-            assert not managed_gateway_auth.is_managed_nous_gateway_url(untrusted)
+            assert not managed_gateway_auth.is_managed_moor_gateway_url(untrusted)
 
 
-def test_read_nous_provider_state_falls_back_to_global_root_for_share_auth_profiles(tmp_path, monkeypatch):
+def test_read_moor_provider_state_falls_back_to_global_root_for_share_auth_profiles(tmp_path, monkeypatch):
     # A profile created with ``share_auth`` has no auth.json of its own; it signs in with the
     # root identity. The connector gate must see that identity, or manage_connections vanishes
     # from the profile's tool list while every other credential reader still works.
-    root = tmp_path / ".hermes"
-    profile = root / "profiles" / "hermes-setup"
+    root = tmp_path / ".moor"
+    profile = root / "profiles" / "moor-setup"
     profile.mkdir(parents=True)
     (root / "auth.json").write_text(json.dumps({
         "version": 1,
-        "providers": {"nous": {"auth_method": "anonymous", "access_token": "tok"}},
+        "providers": {"moor": {"auth_method": "anonymous", "access_token": "tok"}},
     }))
-    monkeypatch.setenv("HERMES_HOME", str(profile))
-    monkeypatch.setenv("HERMES_GUEST_ONBOARDING", "1")
+    monkeypatch.setenv("MOOR_HOME", str(profile))
+    monkeypatch.setenv("MOOR_GUEST_ONBOARDING", "1")
     monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
 
-    import hermes_constants
-    from hermes_cli import auth as auth_mod
+    import moor_constants
+    from moor_cli import auth as auth_mod
 
-    monkeypatch.setattr(hermes_constants, "get_default_hermes_root", lambda: root)
-    monkeypatch.setattr(auth_mod, "get_hermes_home", lambda: profile)
+    monkeypatch.setattr(moor_constants, "get_default_moor_root", lambda: root)
+    monkeypatch.setattr(auth_mod, "get_moor_home", lambda: profile)
     monkeypatch.setattr(auth_mod, "_global_auth_store_cache", None)
     monkeypatch.setattr(auth_mod, "_auth_file_path", lambda: profile / "auth.json")
 
-    state = managed_tool_gateway._read_nous_provider_state()
+    state = managed_tool_gateway._read_moor_provider_state()
 
     assert state is not None
     assert state["auth_method"] == "anonymous"

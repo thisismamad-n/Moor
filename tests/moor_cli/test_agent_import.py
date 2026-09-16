@@ -259,8 +259,8 @@ class TestClaudeCodeImport:
         return run_import("claude-code", claude_tree, moor_home, execute=True)
 
 
-    def test_allowlist_lands_in_config_yaml(self, report, hermes_home):
-        config = yaml.safe_load((hermes_home / "config.yaml").read_text(encoding="utf-8"))
+    def test_allowlist_lands_in_config_yaml(self, report, moor_home):
+        config = yaml.safe_load((moor_home / "config.yaml").read_text(encoding="utf-8"))
         allow = config["command_allowlist"]
         assert "npm run build" in allow
         assert "npm run test*" in allow
@@ -286,8 +286,8 @@ class TestCodexImport:
         return run_import("codex", codex_tree, moor_home, execute=True)
 
 
-    def test_mcp_servers_from_config_toml(self, report, hermes_home):
-        config = yaml.safe_load((hermes_home / "config.yaml").read_text(encoding="utf-8"))
+    def test_mcp_servers_from_config_toml(self, report, moor_home):
+        config = yaml.safe_load((moor_home / "config.yaml").read_text(encoding="utf-8"))
         docs = config["mcp_servers"]["docs"]
         assert docs["command"] == "uvx"
         assert docs["args"] == ["docs-mcp"]
@@ -328,9 +328,9 @@ class TestSecretsNeverImported:
         assert "mcp_servers.github.env.GITHUB_TOKEN" in stripped
         assert any("Authorization" in s for s in stripped)
 
-    def test_non_secret_header_kept(self, claude_tree, hermes_home):
-        run_import("claude-code", claude_tree, hermes_home, execute=True)
-        config = yaml.safe_load((hermes_home / "config.yaml").read_text(encoding="utf-8"))
+    def test_non_secret_header_kept(self, claude_tree, moor_home):
+        run_import("claude-code", claude_tree, moor_home, execute=True)
+        config = yaml.safe_load((moor_home / "config.yaml").read_text(encoding="utf-8"))
         assert config["mcp_servers"]["remote"]["headers"] == {"X-Region": "us-east"}
 
 
@@ -349,7 +349,7 @@ class TestMalformedInputs:
         assert any(i["kind"] == "settings" for i in errors)
         # CLAUDE.md still imported despite bad settings.json
         assert "still importable" in (
-            hermes_home / "memories" / "MEMORY.md").read_text(encoding="utf-8")
+            moor_home / "memories" / "MEMORY.md").read_text(encoding="utf-8")
 
 
     def test_empty_tree_all_skipped(self, profile_env, moor_home):
@@ -371,8 +371,8 @@ class TestMergeSemantics:
         (moor_home / "config.yaml").write_text(
             yaml.safe_dump({"mcp_servers": {"github": {"command": "mine"}}}),
             encoding="utf-8")
-        report = run_import("claude-code", claude_tree, hermes_home, execute=True)
-        config = yaml.safe_load((hermes_home / "config.yaml").read_text(encoding="utf-8"))
+        report = run_import("claude-code", claude_tree, moor_home, execute=True)
+        config = yaml.safe_load((moor_home / "config.yaml").read_text(encoding="utf-8"))
         assert config["mcp_servers"]["github"]["command"] == "mine"
         assert any(
             i["status"] == "conflict" and i["source"] == "github"
@@ -385,18 +385,18 @@ class TestMergeSemantics:
         dest = moor_home / "skills" / "claude-code-imports" / "deploy-helper"
         dest.mkdir(parents=True)
         (dest / "SKILL.md").write_text("mine\n", encoding="utf-8")
-        report = run_import("claude-code", claude_tree, hermes_home, execute=True)
+        report = run_import("claude-code", claude_tree, moor_home, execute=True)
         assert (dest / "SKILL.md").read_text(encoding="utf-8") == "mine\n"
         assert any(
             i["kind"] == "skill" and i["status"] == "conflict"
             for i in report["items"]
         )
 
-    def test_reimport_is_idempotent_for_memory(self, claude_tree, hermes_home):
-        run_import("claude-code", claude_tree, hermes_home, execute=True)
-        first = (hermes_home / "memories" / "MEMORY.md").read_text(encoding="utf-8")
-        report = run_import("claude-code", claude_tree, hermes_home, execute=True)
-        assert (hermes_home / "memories" / "MEMORY.md").read_text(encoding="utf-8") == first
+    def test_reimport_is_idempotent_for_memory(self, claude_tree, moor_home):
+        run_import("claude-code", claude_tree, moor_home, execute=True)
+        first = (moor_home / "memories" / "MEMORY.md").read_text(encoding="utf-8")
+        report = run_import("claude-code", claude_tree, moor_home, execute=True)
+        assert (moor_home / "memories" / "MEMORY.md").read_text(encoding="utf-8") == first
         memory_items = [i for i in report["items"] if i["kind"] == "claude-md"]
         assert memory_items[0]["status"] == "skipped"
 
@@ -736,38 +736,38 @@ class TestCliWiring:
 class TestSyncManifest:
     def _run_command(self, agent, source, dry_run=False, sync=False):
         import types
-        from hermes_cli.agent_import import import_agent_command
+        from moor_cli.agent_import import import_agent_command
 
         import_agent_command(types.SimpleNamespace(
             agent=agent, source=str(source) if source else None,
             dry_run=dry_run, overwrite=False, yes=True, sync=sync))
 
     def test_import_registers_source_and_unchanged_sync_is_noop(
-            self, claude_tree, hermes_home, capsys):
-        from hermes_cli.agent_import_sync import load_sync_manifest
+            self, claude_tree, moor_home, capsys):
+        from moor_cli.agent_import_sync import load_sync_manifest
 
         self._run_command("claude-code", claude_tree)
-        entry = load_sync_manifest(hermes_home)["agents"]["claude-code"]
+        entry = load_sync_manifest(moor_home)["agents"]["claude-code"]
         assert entry["source"] == str(claude_tree.resolve())
         assert "deploy-helper" in entry["imported_skills"]  # name → digest of the copy we wrote
         # A token refresh in the credential file is invisible to the digest.
         (claude_tree / ".credentials.json").write_text(
             json.dumps({"api_key": "rotated-token"}), encoding="utf-8")
-        before = snapshot_tree(hermes_home)
+        before = snapshot_tree(moor_home)
         capsys.readouterr()
         self._run_command(None, None, sync=True)
         assert "unchanged since last import" in capsys.readouterr().out
-        assert snapshot_tree(hermes_home) == before
+        assert snapshot_tree(moor_home) == before
 
     def test_sync_reimports_changed_source_but_never_clobbers_user_skill(
-            self, claude_tree, hermes_home):
+            self, claude_tree, moor_home):
         self._run_command("claude-code", claude_tree)
         (claude_tree / "CLAUDE.md").write_text(
             CLAUDE_MD + "\n- Freshly added sync rule\n", encoding="utf-8")
         (claude_tree / "skills" / "deploy-helper" / "SKILL.md").write_text(
             "---\nname: deploy-helper\n---\n\nDeploy v2.\n", encoding="utf-8")
         # A NEW source skill whose destination the user created themselves.
-        user_skill = hermes_home / "skills" / "claude-code-imports" / "hand-rolled"
+        user_skill = moor_home / "skills" / "claude-code-imports" / "hand-rolled"
         user_skill.mkdir(parents=True)
         (user_skill / "SKILL.md").write_text("user content", encoding="utf-8")
         (claude_tree / "skills" / "hand-rolled").mkdir()
@@ -776,13 +776,13 @@ class TestSyncManifest:
 
         self._run_command(None, None, sync=True)
 
-        imports = hermes_home / "skills" / "claude-code-imports"
+        imports = moor_home / "skills" / "claude-code-imports"
         assert "Freshly added sync rule" in (
-            hermes_home / "memories" / "MEMORY.md").read_text(encoding="utf-8")
+            moor_home / "memories" / "MEMORY.md").read_text(encoding="utf-8")
         assert "Deploy v2." in (imports / "deploy-helper" / "SKILL.md").read_text(encoding="utf-8")
         assert (user_skill / "SKILL.md").read_text(encoding="utf-8") == "user content"
 
-        # An imported skill the user then EDITED locally is no longer Hermes-owned: the next sync
+        # An imported skill the user then EDITED locally is no longer moor-owned: the next sync
         # records a conflict for it instead of overwriting the edit (the docs promise this).
         (imports / "deploy-helper" / "SKILL.md").write_text("my local tweaks", encoding="utf-8")
         (claude_tree / "skills" / "deploy-helper" / "SKILL.md").write_text(
@@ -790,16 +790,16 @@ class TestSyncManifest:
         self._run_command(None, None, sync=True)
         assert (imports / "deploy-helper" / "SKILL.md").read_text(encoding="utf-8") == "my local tweaks"
 
-    def test_sync_dry_run_previews_without_writing(self, claude_tree, hermes_home, capsys):
-        from hermes_cli.agent_import_sync import load_sync_manifest
+    def test_sync_dry_run_previews_without_writing(self, claude_tree, moor_home, capsys):
+        from moor_cli.agent_import_sync import load_sync_manifest
 
         self._run_command("claude-code", claude_tree)
-        old_digest = load_sync_manifest(hermes_home)["agents"]["claude-code"]["digest"]
+        old_digest = load_sync_manifest(moor_home)["agents"]["claude-code"]["digest"]
         (claude_tree / "CLAUDE.md").write_text(
             CLAUDE_MD + "\n- Dry sync entry\n", encoding="utf-8")
-        before = snapshot_tree(hermes_home)
+        before = snapshot_tree(moor_home)
         capsys.readouterr()
         self._run_command(None, None, sync=True, dry_run=True)
         assert "changes detected" in capsys.readouterr().out
-        assert snapshot_tree(hermes_home) == before
-        assert load_sync_manifest(hermes_home)["agents"]["claude-code"]["digest"] == old_digest
+        assert snapshot_tree(moor_home) == before
+        assert load_sync_manifest(moor_home)["agents"]["claude-code"]["digest"] == old_digest

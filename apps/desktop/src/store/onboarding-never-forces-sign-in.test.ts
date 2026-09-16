@@ -29,7 +29,7 @@ vi.mock('@/lib/storage', async importOriginal => ({
 
 async function load(phase: string) {
   storage.clear()
-  storage.set('hermes-onboarding-phase-v1', phase)
+  storage.set('moor-onboarding-phase-v1', phase)
   vi.resetModules()
 
   const gate = await import('./onboarding-gate')
@@ -52,7 +52,7 @@ it.each(['cinematic', 'guided', 'handoff'])(
     const { onboarding } = await load(phase)
 
     onboarding.requestDesktopOnboardingForCredentialWarning(
-      "No API key configured for provider 'nous'. First message will fail."
+      "No API key configured for provider 'moor'. First message will fail."
     )
 
     expect(onboarding.consumePendingCredentialWarning()).toBeNull()

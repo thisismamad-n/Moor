@@ -131,7 +131,7 @@ def _shared_credential_warnings(profiles) -> list:
     """One warning per named profile whose bot credential is byte-identical to the default's
     (typically an old ``--clone`` that copied .env): the collision that parks a multiplexed
     adapter or makes two standalone gateways fight over one bot."""
-    from hermes_cli.profile_channels import shared_channel_credentials, shared_credential_warning
+    from moor_cli.profile_channels import shared_channel_credentials, shared_credential_warning
     default = next((p for p in profiles if p.is_default), None)
     if default is None:
         return []
@@ -159,7 +159,7 @@ def _profile_use(args):
 
 
 def _source_profile_dir(source_label: str) -> Path:
-    from hermes_cli.profiles import get_profile_dir
+    from moor_cli.profiles import get_profile_dir
     source_dir = get_profile_dir(source_label)
     if not source_dir.is_dir():
         raise FileNotFoundError(source_dir)
@@ -167,11 +167,11 @@ def _source_profile_dir(source_label: str) -> Path:
 
 
 def _print_channel_clone_notice(name: str, source_label: str, clone_channels: bool, clone_flag: str) -> None:
-    from hermes_cli.profile_channels import (
+    from moor_cli.profile_channels import (
         channel_platforms_configured, format_stripped_notice, shared_channel_credentials,
         shared_credential_warning,
     )
-    from hermes_cli.profiles import get_profile_dir
+    from moor_cli.profiles import get_profile_dir
     try:
         source_dir = _source_profile_dir(source_label)
     except FileNotFoundError:
@@ -216,7 +216,7 @@ def _profile_create(args):
         else:
             print(f"Cloned config, .env, SOUL.md, and skills from {source_label}.")
         if sync_imports:
-            print(f"Import sources carried over — `hermes -p {name} import-agent --sync` "
+            print(f"Import sources carried over — `moor -p {name} import-agent --sync` "
                   "keeps pulling the same Claude Code / Codex trees.")
         _print_channel_clone_notice(name, source_label, clone_channels, "--clone-all" if clone_all else "--clone")
         # Auto-clone Honcho config for the new profile (only with clone operations)
@@ -262,14 +262,14 @@ def _profile_create(args):
     print("\nNext steps:")
     print(f"  {name} setup              Configure API keys and model")
     print(f"  {name} chat               Start chatting")
-    from hermes_cli.gateway_multiplex_served import live_default_gateway_pid, recorded_served_profiles
-    from hermes_cli.profiles import normalize_profile_name
+    from moor_cli.gateway_multiplex_served import live_default_gateway_pid, recorded_served_profiles
+    from moor_cli.profiles import normalize_profile_name
     served = recorded_served_profiles() if live_default_gateway_pid() is not None else None
     if served is not None and normalize_profile_name(name) in {normalize_profile_name(p) for p in served}:
         print("  (served now by the running multiplexed gateway — add its bot token and it connects)")
     elif served is not None:
         # The multiplexer did not pick the profile up (older gateway or the signal failed): a restart serves it.
-        print("  hermes gateway restart    Serve this profile from the running multiplexed gateway")
+        print("  moor gateway restart    Serve this profile from the running multiplexed gateway")
     else:
         print(f"  {name} gateway start      Start the messaging gateway")
     if clone or clone_all:
@@ -440,14 +440,14 @@ def _profile_migrate_identity(args):
     """Retry the identity migration of a rename that already completed. Exits non-zero when a
     live gateway would not migrate (it still owns the routing index in memory), or when a
     database rejected the rewrite (collision, lock, partial failure)."""
-    from hermes_cli.profile_identity import migrate_profile_identity
+    from moor_cli.profile_identity import migrate_profile_identity
     try:
         migrated = migrate_profile_identity(args.old_name, args.new_name)
     except (ValueError, FileNotFoundError) as e:
         _die(f"Error: {e}")
     if not migrated:
         _die(f"Error: session identity was not migrated. Restart or stop the gateway, then run:\n"
-             f"    hermes profile migrate-identity {args.old_name} {args.new_name}", err=True)
+             f"    moor profile migrate-identity {args.old_name} {args.new_name}", err=True)
     print(f"✓ Session/routing identity migrated: {args.old_name} → {args.new_name}")
 
 

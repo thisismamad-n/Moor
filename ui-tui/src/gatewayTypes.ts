@@ -1,12 +1,12 @@
-import type { UsageModelData } from '@hermes/shared/billing'
+import type { UsageModelData } from '@moor/shared/billing'
 import type {
   GatewayEvent,
   GatewayEventName,
   InflightTurn,
   TranscriptMessage,
   Usage
-} from '@hermes/shared/gateway-events'
-import type { HermesSkin } from '@hermes/shared/skin'
+} from '@moor/shared/gateway-events'
+import type { MoorSkin } from '@moor/shared/skin'
 
 import type { SessionInfo, SlashCategory } from './types.js'
 

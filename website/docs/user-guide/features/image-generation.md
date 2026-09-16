@@ -129,7 +129,7 @@ only for now; responses are saved to `$MOOR_HOME/cache/images/`.
 ## FAL: GPT Image 2.5
 
 Select **GPT Image 2.5 Flare** or **GPT Image 2.5 Sunburst** under
-`hermes tools` → Image Generation → FAL.ai. The model IDs are:
+`moor tools` → Image Generation → FAL.ai. The model IDs are:
 
 - `openai/gpt-image-2.5/flare/text-to-image`
 - `openai/gpt-image-2.5/sunburst/text-to-image`
@@ -137,13 +137,13 @@ Select **GPT Image 2.5 Flare** or **GPT Image 2.5 Sunburst** under
 For example:
 
 ```bash
-hermes config set image_gen.provider fal
-hermes config set image_gen.model openai/gpt-image-2.5/flare/text-to-image
+moor config set image_gen.provider fal
+moor config set image_gen.model openai/gpt-image-2.5/flare/text-to-image
 ```
 
 Providing `image_url` or reference images automatically selects the corresponding
 `openai/gpt-image-2.5/flare/edit` or `openai/gpt-image-2.5/sunburst/edit` endpoint.
-Both accept up to 16 source images. Hermes pins quality to `medium`, matching its
+Both accept up to 16 source images. Moor pins quality to `medium`, matching its
 existing FAL GPT Image policy rather than FAL's higher-cost `high` default.
 Landscape and portrait use 4:3 presets to satisfy the minimum pixel count;
 square uses `square_hd`. Upscaling remains off unless requested.
@@ -161,11 +161,11 @@ Existing provider and model defaults are unchanged.
 
 The **OpenAI** provider supports GPT Image 2.5 Flare (fast everyday creation)
 and Sunburst (precision generation and editing), using `OPENAI_API_KEY`.
-Select them through `hermes tools` → Image Generation → OpenAI, or set:
+Select them through `moor tools` → Image Generation → OpenAI, or set:
 
 ```bash
-hermes config set image_gen.provider openai
-hermes config set image_gen.openai.model gpt-image-2.5-flare
+moor config set image_gen.provider openai
+moor config set image_gen.openai.model gpt-image-2.5-flare
 ```
 
 `gpt-image-2.5-flare` and `gpt-image-2.5-sunburst` use automatic quality.
@@ -242,7 +242,7 @@ edit-capable model.
 
 :::note OpenAI (Codex auth): the backend decides quality and size
 
-Hermes posts straight to the Codex backend's native
+Moor posts straight to the Codex backend's native
 `images/generations` / `images/edits` endpoints (the same route the official
 Codex client uses), so no chat model is involved and the call does not depend
 on which chat models your ChatGPT plan currently has. The backend, however,

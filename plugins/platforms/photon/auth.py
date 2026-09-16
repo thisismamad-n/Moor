@@ -27,7 +27,7 @@ except ImportError:  # pragma: no cover - httpx is a moor dependency
     httpx = None  # type: ignore[assignment]
 
 from gateway.platforms._shared import get_scoped_secret as _get_scoped_secret
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 import contextlib
 
 logger = logging.getLogger(__name__)
@@ -52,8 +52,8 @@ E164_RE = re.compile(r"^\+[1-9]\d{6,14}$")
 # -- auth.json helpers (shares the file with the rest of moor-agent) ------------
 
 def _auth_json_path() -> Path:
-    """The active profile's ``auth.json`` (shared with the rest of hermes-agent)."""
-    return get_hermes_home() / "auth.json"
+    """The active profile's ``auth.json`` (shared with the rest of moor-agent)."""
+    return get_moor_home() / "auth.json"
 
 
 def _load_auth() -> Dict[str, Any]:

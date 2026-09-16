@@ -14,7 +14,7 @@ from typing import Any, Callable, Dict, Iterator, List, NamedTuple, Optional, Ty
 
 from agent.message_sanitization import deterministic_call_id
 from agent.prompt_builder import DEFAULT_AGENT_IDENTITY
-from hermes_cli.route_identity import normalize_route_base_url
+from moor_cli.route_identity import normalize_route_base_url
 
 logger = logging.getLogger(__name__)
 
@@ -365,7 +365,7 @@ def _replay_reasoning_items(
     ids, ``compaction`` checkpoints unless THIS request carries ``context_management`` (else a persisted
     checkpoint erases pre-checkpoint history on a model that cannot decrypt it), and items stamped by
     another issuer or model (HTTP 400). Items without a model stamp (legacy or unstamped) replay on a
-    matching issuer. ``id`` (store=False lookups 404) and the Hermes provenance fields are stripped."""
+    matching issuer. ``id`` (store=False lookups 404) and the Moor provenance fields are stripped."""
     global _CROSS_ISSUER_WARN_EMITTED
     replayed: List[Dict[str, Any]] = []
     for ri in _as_list(msg.get("codex_reasoning_items")):

@@ -84,8 +84,8 @@ def write_breadcrumb(session_id: str, cwd: Optional[str] = None) -> None:
         if not terminal_id:
             return
         directory = _breadcrumbs_dir()
-        from hermes_constants import mkdir_under_hermes_home
-        mkdir_under_hermes_home(directory)
+        from moor_constants import mkdir_under_moor_home
+        mkdir_under_moor_home(directory)
         now = time.time()
         payload = {"session_id": session_id, "cwd": cwd or os.getcwd(), "ts": now}
         atomic_json_write(directory / terminal_id, payload, indent=None)

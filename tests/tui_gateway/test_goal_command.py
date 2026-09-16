@@ -472,12 +472,12 @@ moa:
 def test_goal_draft_uses_session_profile_without_blocking_rpc_reader(
     server, session, monkeypatch, tmp_path, method,
 ):
-    from hermes_cli import goals
-    from hermes_constants import get_hermes_home
-    import hermes_state
+    from moor_cli import goals
+    from moor_constants import get_moor_home
+    import moor_state
 
     # Restore call-time profile resolution; conftest pins this constant to one DB.
-    monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", hermes_state._IMPORT_DEFAULT_DB_PATH)
+    monkeypatch.setattr(moor_state, "DEFAULT_DB_PATH", moor_state._IMPORT_DEFAULT_DB_PATH)
     sid, key, record = session
     secondary = tmp_path / "secondary"
     secondary.mkdir()
@@ -487,7 +487,7 @@ def test_goal_draft_uses_session_profile_without_blocking_rpc_reader(
     observed, frames = [], []
 
     def draft(objective):
-        observed.append(get_hermes_home())
+        observed.append(get_moor_home())
         started.set()
         assert release.wait(10)
         return goals.GoalContract(verification="tests pass")

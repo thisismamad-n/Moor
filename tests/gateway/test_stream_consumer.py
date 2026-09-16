@@ -9,7 +9,7 @@ import pytest
 from agent.think_scrubber import THINK_CLOSE_TAGS, THINK_OPEN_TAGS, THINK_TAG_NAMES
 from gateway.stream_consumer import GatewayStreamConsumer, StreamConsumerConfig
 from gateway.stream_consumer_think import StreamThinkFilterMixin
-from hermes_cli import cli_stream_mixin
+from moor_cli import cli_stream_mixin
 
 
 def test_stream_send_metadata_carries_original_reply_anchor():

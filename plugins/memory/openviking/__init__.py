@@ -38,8 +38,8 @@ from agent.message_content import flatten_message_text
 from agent.memory_provider import MemoryProvider, spawn_context_thread
 from agent.secret_scope import get_secret
 from agent.skill_commands import extract_user_instruction_from_skill_message
-from hermes_cli import __version__ as _HERMES_VERSION
-from hermes_constants import get_hermes_home
+from moor_cli import __version__ as _MOOR_VERSION
+from moor_constants import get_moor_home
 from tools.registry import tool_error
 from utils import atomic_json_write, env_var_enabled
 
@@ -199,7 +199,7 @@ def _preview(value: Any, limit: int = 160) -> str:
 
 # atexit safety net: commit pending sessions even if shutdown_memory_provider
 # never runs (gateway crash, exception in the session expiry watcher, ...).
-# One entry per Hermes home: a multiplexed gateway initializes a provider per profile and every
+# One entry per Moor home: a multiplexed gateway initializes a provider per profile and every
 # one of them holds pending sessions worth committing, not just the last to initialize.
 _active_providers_by_home: Dict[str, "OpenVikingMemoryProvider"] = {}
 
@@ -968,7 +968,7 @@ def _start_local_openviking_server(endpoint: str) -> tuple[str, str]:
     server_cmd = shutil.which("openviking-server")
     if not server_cmd:
         return _LOCAL_SERVER_FAILED, "openviking-server was not found on PATH. Start it manually, then retry."
-    log_path = get_hermes_home() / _OPENVIKING_SERVER_LOG_RELATIVE_PATH
+    log_path = get_moor_home() / _OPENVIKING_SERVER_LOG_RELATIVE_PATH
     try:
         log_path.parent.mkdir(parents=True, exist_ok=True)
         # Strip PYTHONPATH: the Desktop backend puts the Moor venv on it, which
@@ -1403,7 +1403,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
         self._env_refresh_enabled = True
         self._session_id = session_id
         self._turn_count = 0
-        self._hermes_home = str(kwargs.get("hermes_home") or "").strip() or str(get_hermes_home())
+        self._moor_home = str(kwargs.get("moor_home") or "").strip() or str(get_moor_home())
         self._acquire_run_lock()
         self._profile_prefetched_sessions.clear()
 
@@ -1428,7 +1428,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
             self._conn_snapshot = self._settings_tuple()
             self._recover_pending_sessions()
 
-        _active_providers_by_home[self._hermes_home] = self  # atexit safety net
+        _active_providers_by_home[self._moor_home] = self  # atexit safety net
 
     def _ensure_client(self) -> Optional["_VikingClient"]:
         """Active client, rebuilt if the resolved config changed.
@@ -2216,8 +2216,8 @@ class OpenVikingMemoryProvider(MemoryProvider):
             logger.debug("Could not safely mark OpenViking session %s pending without a run lock", sid)
             return
         try:
-            from hermes_constants import mkdir_under_hermes_home
-            mkdir_under_hermes_home(path.parent)
+            from moor_constants import mkdir_under_moor_home
+            mkdir_under_moor_home(path.parent)
             atomic_json_write(path, {"session_id": sid, "owner_run_id": self._run_id}, mode=0o600)
             self._pending_marked_sids.add(sid)
         except Exception as e:
@@ -2481,8 +2481,8 @@ class OpenVikingMemoryProvider(MemoryProvider):
             if t.is_alive():
                 t.join(timeout=5.0)
         # Clear so atexit doesn't double-commit.
-        if _active_providers_by_home.get(self._hermes_home) is self:
-            del _active_providers_by_home[self._hermes_home]
+        if _active_providers_by_home.get(self._moor_home) is self:
+            del _active_providers_by_home[self._moor_home]
         self._release_run_lock()
 
     @staticmethod

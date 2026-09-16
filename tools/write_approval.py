@@ -22,7 +22,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)

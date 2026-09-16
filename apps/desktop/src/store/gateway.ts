@@ -5,11 +5,11 @@ import {
   registryBackendScopeKey,
   resolveGatewayWsUrl,
   type ServerRequest
-} from '@hermes/shared'
+} from '@moor/shared'
 import { atom } from 'nanostores'
 
-import type { HermesConnection } from '@/global'
-import { HermesGateway, setApiRequestConnection } from '@/hermes'
+import type { MoorConnection } from '@/global'
+import { MoorGateway, setApiRequestConnection } from '@/moor'
 import { isTimeoutError, RECONNECT_ATTEMPT_TIMEOUT_MS, withTimeout } from '@/lib/with-timeout'
 import { markNativeNotifyBaseline } from '@/store/notify-baseline'
 import { setConnection, setGatewayState } from '@/store/session'
@@ -288,7 +288,7 @@ export function dispatchPrimaryServerRequest(request: ServerRequest, profile: st
   g.config?.onServerRequest?.({ ...request, ...(connectionId ? { connectionId } : {}), profile })
 }
 
-export function setPrimaryGateway(gateway: HermesGateway | null, profile = 'default'): void {
+export function setPrimaryGateway(gateway: MoorGateway | null, profile = 'default'): void {
   const next = normKey(profile)
 
   if (g.primaryGateway !== gateway) {

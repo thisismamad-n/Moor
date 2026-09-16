@@ -16,7 +16,7 @@ import {
   AccentSwatch,
   LayoutPreviewCard,
   LAYOUTS,
-  NOUS_ACCENT,
+  MOOR_ACCENT,
   orderConnectorPicks
 } from '@/components/onboarding-chat/options'
 import type { LayoutNode } from '@/components/pane-shell/tree/model'
@@ -112,7 +112,7 @@ export function ConnectorsCard({ locked }: CardProps) {
           here. Saying so is what keeps the Connect cards later from reading as
           a second ask for the same thing. */}
       <p className="text-xs text-muted-foreground">
-        <strong className="font-medium text-foreground">Nothing connects yet.</strong> Hermes will offer to link these
+        <strong className="font-medium text-foreground">Nothing connects yet.</strong> Moor will offer to link these
         when a task needs them, and asks before reading anything.
       </p>
     </CardFrame>
@@ -124,11 +124,11 @@ export function LookCard({ locked }: CardProps) {
   const { renderedMode } = useTheme()
   const { commit, done } = useCardCommit('look')
   const accents = accentsFor(renderedMode === 'dark')
-  const accent = answers.accent ?? NOUS_ACCENT
+  const accent = answers.accent ?? MOOR_ACCENT
   const picked = accents.find(swatch => swatch.hex === accent.toLowerCase())
 
   const pickAccent = (hex: string) => {
-    const seed = hex === NOUS_ACCENT ? null : hex
+    const seed = hex === MOOR_ACCENT ? null : hex
 
     setOnboardingAnswers({ accent: seed })
     setAccentOverride(seed)

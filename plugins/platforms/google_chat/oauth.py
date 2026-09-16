@@ -195,8 +195,8 @@ def _chmod_quiet(path: Path, mode: int) -> None:
 
 def _write_private_json(path: Path, data: Any) -> None:
     """Atomically write JSON with 0o600 permissions (0o700 parent) where supported."""
-    from hermes_constants import mkdir_under_hermes_home
-    mkdir_under_hermes_home(path.parent)
+    from moor_constants import mkdir_under_moor_home
+    mkdir_under_moor_home(path.parent)
     _chmod_quiet(path.parent, 0o700)
     # mkstemp's 0o600 temp + atomic rename never exposes the token at process umask.
     atomic_write_text(path, json.dumps(data, indent=2, ensure_ascii=False), create_mode=0o600)
@@ -240,7 +240,7 @@ def install_deps() -> bool:
     try:
         from tools.lazy_deps import FeatureUnavailable, ensure as _lazy_ensure
 
-        # lazy_deps honors HERMES_LAZY_INSTALL_TARGET on sealed hosted images;
+        # lazy_deps honors MOOR_LAZY_INSTALL_TARGET on sealed hosted images;
         # _pip_install always writes the venv and Permission-denied there.
         _lazy_ensure("platform.google_chat", prompt=False)
         remaining = _missing_required_packages()
@@ -250,7 +250,7 @@ def install_deps() -> bool:
         return True
     except FeatureUnavailable as exc:
         print(f"ERROR: Failed to install dependencies: {exc.reason}")
-        print("Run `hermes setup` to repair the managed installation, then retry.")
+        print("Run `moor setup` to repair the managed installation, then retry.")
         return False
     except Exception as exc:
         print(f"ERROR: Failed to install dependencies: {exc}")

@@ -266,10 +266,10 @@ class TestStreamingAccumulator:
         """Strict OpenAI-compatible endpoints (Azure AI Foundry MaaS) 422 on
         ``stream_options.include_usage``; the call is retried once without the field and
         the session remembers the rejection (#9705). The compatibility retry must not spend
-        the transient-retry budget: with HERMES_STREAM_RETRIES=0 it still happens."""
+        the transient-retry budget: with MOOR_STREAM_RETRIES=0 it still happens."""
         from openai import APIStatusError
         from run_agent import AIAgent
-        monkeypatch.setenv("HERMES_STREAM_RETRIES", "0")
+        monkeypatch.setenv("MOOR_STREAM_RETRIES", "0")
 
         body = {"detail": [{"type": "extra_forbidden", "loc": ["body", "stream_options", "include_usage"],
                             "msg": "Extra inputs are not permitted"}]}

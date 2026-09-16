@@ -8,13 +8,13 @@ import pytest
 
 from cron import bot_chat_delivery as queue
 from cron import scheduler_delivery as delivery
-from hermes_cli.active_sessions import try_acquire_active_session
-from hermes_state import SessionDB
+from moor_cli.active_sessions import try_acquire_active_session
+from moor_state import SessionDB
 
 
-@pytest.mark.parametrize("error", [None, subprocess.TimeoutExpired("hermes", 1)])
+@pytest.mark.parametrize("error", [None, subprocess.TimeoutExpired("moor", 1)])
 def test_cli_owner_deferral_and_attempt_fence(tmp_path, monkeypatch, error):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     db = SessionDB(db_path=tmp_path / "state.db")
     db.create_session(session_id="chat", source="cli")
     db.set_session_title("chat", "Bot Chat")
@@ -22,7 +22,7 @@ def test_cli_owner_deferral_and_attempt_fence(tmp_path, monkeypatch, error):
     assert refusal is None and lease is not None
     run = Mock(side_effect=error, return_value=subprocess.CompletedProcess([], 0, "", ""))
     monkeypatch.setattr(delivery.subprocess, "run", run)
-    monkeypatch.setattr(delivery.shutil, "which", lambda _: "/bin/hermes")
+    monkeypatch.setattr(delivery.shutil, "which", lambda _: "/bin/moor")
     job = {"id": "job", "execution_id": "execution"}
     try:
         assert "queued" in delivery._deliver_to_bot_chat(job, "output", "")
@@ -43,7 +43,7 @@ def test_cli_owner_deferral_and_attempt_fence(tmp_path, monkeypatch, error):
 
 
 def test_delivery_exception_retains_attempt_and_continues_siblings(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     blocked_parent = tmp_path / "blocked"
     blocked_home = blocked_parent / "recipient"
     blocked_home.mkdir(parents=True)
@@ -59,7 +59,7 @@ def test_delivery_exception_retains_attempt_and_continues_siblings(tmp_path, mon
     armed = False
 
     def resolve_cli(name, *args, **kwargs):
-        # Delivery resolves the CLI (the running install's ``hermes_cli``) right after discovery.
+        # Delivery resolves the CLI (the running install's ``moor_cli``) right after discovery.
         nonlocal armed
         armed = True
         return object()
@@ -70,7 +70,7 @@ def test_delivery_exception_retains_attempt_and_continues_siblings(tmp_path, mon
         return original_is_dir(self)
 
     def run(*args, **kwargs):
-        calls.append(kwargs["env"]["HERMES_HOME"])
+        calls.append(kwargs["env"]["MOOR_HOME"])
         return subprocess.CompletedProcess([], 0, "", "")
 
     monkeypatch.setattr(importlib.util, "find_spec", resolve_cli)
@@ -85,7 +85,7 @@ def test_delivery_exception_retains_attempt_and_continues_siblings(tmp_path, mon
 
 
 def test_pending_queue_uses_admission_order_and_keeps_claims(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     job = {"id": "job"}
     queue.defer("f" * 64, job, "older", "", tmp_path)
     queue.defer("a" * 64, job, "newer", "", tmp_path)

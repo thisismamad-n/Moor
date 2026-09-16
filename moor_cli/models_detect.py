@@ -1,10 +1,10 @@
 """Live-catalog and credential guards for ``detect_provider_for_model``.
 
-Split out of ``hermes_cli.models``. The detection ladder there consults static catalogs, then the
+Split out of ``moor_cli.models``. The detection ladder there consults static catalogs, then the
 OpenRouter catalog, and its answer used to be applied blindly. Two guards close the class of
 "put the user on a provider they never selected":
 
-* the CURRENT provider's live catalog outranks every static guess (Codex early-access ids, Nous
+* the CURRENT provider's live catalog outranks every static guess (Codex early-access ids, Moor
   Portal slugs, Ollama Cloud models absent from ``_PROVIDER_MODELS`` — #97487, the $100 Astra
   incident);
 * an auto-detected TARGET must be a provider the user has credentials for. Guessing a vendor the
@@ -25,10 +25,10 @@ def current_provider_catalog_match(model_name: str, current_provider: str) -> Op
     """Return the current provider's own spelling of *model_name* when its live (disk-cached)
     catalog serves it — exact id, or the bare part after ``vendor/`` — else ``None``.
 
-    Goes through :func:`hermes_cli.models.cached_provider_model_ids` (1h TTL, stale-while-
+    Goes through :func:`moor_cli.models.cached_provider_model_ids` (1h TTL, stale-while-
     revalidate) so a model switch does not block on a cold ``/v1/models`` round-trip in the
     common case; a fetch failure yields an empty catalog and the ladder continues unchanged."""
-    from hermes_cli.models import cached_provider_model_ids, normalize_provider
+    from moor_cli.models import cached_provider_model_ids, normalize_provider
 
     provider = (current_provider or "").strip().lower()
     if provider in _SKIP or provider.startswith("custom:") or normalize_provider(provider) in _SKIP:
@@ -53,8 +53,8 @@ def current_provider_owns_vendor(model_name: str, current_provider: str) -> bool
     the answer is "stay and let the vendor accept or reject it", never "a reseller lists it, so
     switch there". Aggregators, custom endpoints and multi-vendor resellers (nvidia, alibaba, ...)
     have no single native vendor and are skipped."""
-    from hermes_cli.model_normalize import detect_vendor
-    from hermes_cli.models import _AGGREGATOR_PROVIDERS, _PROVIDER_MODELS, normalize_provider
+    from moor_cli.model_normalize import detect_vendor
+    from moor_cli.models import _AGGREGATOR_PROVIDERS, _PROVIDER_MODELS, normalize_provider
 
     provider = (current_provider or "").strip().lower()
     if provider in _SKIP or provider.startswith("custom:"):
@@ -75,8 +75,8 @@ def provider_has_credentials(provider: str) -> bool:
     """Whether *provider* can be switched to without the user typing a key: env/.env key, auth
     store login, or a usable credential-pool entry. ``custom``/``custom:*`` targets only come out
     of the ladder when the user declared them in config, so they count as authenticated."""
-    from hermes_cli.auth import get_auth_status, has_usable_secret
-    from hermes_cli.config import get_env_value_prefer_dotenv
+    from moor_cli.auth import get_auth_status, has_usable_secret
+    from moor_cli.config import get_env_value_prefer_dotenv
 
     pid = (provider or "").strip().lower()
     if not pid:

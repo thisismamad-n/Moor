@@ -1,4 +1,4 @@
-"""Fixtures shared across hermes_cli tests."""
+"""Fixtures shared across moor_cli tests."""
 
 from __future__ import annotations
 
@@ -59,8 +59,8 @@ def _suppress_concurrent_moor_gate(request, monkeypatch):
 @pytest.fixture
 def isolated_update_runtime(monkeypatch, tmp_path, request):
     """Keep mocked updater flows off the host checkout and runtime fleet."""
-    from hermes_cli import gateway, main, update_cmd, update_cmd_fleet
-    from hermes_cli import update_inventory, update_receipt
+    from moor_cli import gateway, main, update_cmd, update_cmd_fleet
+    from moor_cli import update_inventory, update_receipt
 
     checkout = tmp_path / "isolated-update-checkout"
     (checkout / ".git").mkdir(parents=True)
@@ -70,7 +70,7 @@ def isolated_update_runtime(monkeypatch, tmp_path, request):
         monkeypatch.setattr(request.module, "PROJECT_ROOT", checkout)
 
     # A real purge would discard the module objects patched below.
-    monkeypatch.setattr(main, "_purge_stale_hermes_modules", lambda: None)
+    monkeypatch.setattr(main, "_purge_stale_moor_modules", lambda: None)
     monkeypatch.setattr(gateway, "find_gateway_pids", lambda *a, **k: [])
     monkeypatch.setattr(gateway, "find_profile_gateway_processes", lambda *a, **k: [])
     monkeypatch.setattr(gateway, "_get_service_pids", lambda *a, **k: set())

@@ -332,7 +332,7 @@ def extract_local_skills():
                 "commands": commands,
                 "docsPath": _docs_page_path(rel, source_label),
                 "installIdentifier": install_identifier,
-                "installCmd": f"hermes skills install {install_identifier}",
+                "installCmd": f"moor skills install {install_identifier}",
             })
 
     return skills
@@ -443,7 +443,7 @@ def extract_unified_index_skills():
             "docsPath": "",
             "identifier": identifier,
             "installCmd": install_cmd,
-            "installIdentifier": install_cmd.removeprefix("hermes skills install "),
+            "installIdentifier": install_cmd.removeprefix("moor skills install "),
             "sourceUrl": source_url,
         })
 

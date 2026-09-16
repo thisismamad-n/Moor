@@ -428,7 +428,7 @@ def _validate_child_output_schema(
     _retry_result = None
     try:
         # Same identity as the main child turn: this runs on the parent worker's thread, and an
-        # unmarked turn is misread as the dispatcher-owned worker by every HERMES_KANBAN_* gate.
+        # unmarked turn is misread as the dispatcher-owned worker by every MOOR_KANBAN_* gate.
         from agent.delegation_context import delegated_child_context
         with delegated_child_context(str(getattr(child, "session_id", "") or "")):
             _retry_result = child.run_conversation(
@@ -592,7 +592,7 @@ def _build_child_goal_message(goal: str, images: List[str], child) -> Any:
         from agent.image_routing import build_native_content_parts, decide_image_input_mode
         cfg = None
         with _quiet(None):
-            from hermes_cli.config import load_config_readonly
+            from moor_cli.config import load_config_readonly
             cfg = load_config_readonly()
         mode = decide_image_input_mode(
             str(getattr(child, "provider", "") or ""), str(getattr(child, "model", "") or ""), cfg,

@@ -67,7 +67,7 @@ MANAGE_CONNECTIONS_SCHEMA = {
         "your next turn. Off the desktop app the MCP targets come back 'unavailable' with the "
         "terminal commands to give the user. This tool can NOT disconnect, delete, or revoke an "
         "account — that is deliberately user-only. When asked, say so and direct the user to the "
-        "Nous Portal (their org's Connectors page) or the desktop app."
+        "Moor Portal (their org's Connectors page) or the desktop app."
     ),
     "parameters": {
         "type": "object",

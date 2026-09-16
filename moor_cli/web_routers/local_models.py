@@ -29,9 +29,9 @@ from pydantic import BaseModel
 
 from starlette.concurrency import run_in_threadpool
 
-from hermes_cli import config as config_mod, web_deps
-from hermes_cli.web_routers._common import _CONFIG_MUTATION_LOCK
-from hermes_cli.local_runtime import (
+from moor_cli import config as config_mod, web_deps
+from moor_cli.web_routers._common import _CONFIG_MUTATION_LOCK
+from moor_cli.local_runtime import (
     binaries, bootstrap, catalog, context_policy, estimator, growth, hardware, hf_browse,
     load_progress, presets, supervisor,
 )
@@ -778,11 +778,11 @@ async def local_models_quickstart(body: QuickstartBody):
 # ── server lifecycle: turn the engine on/off ─────────────────
 def _terminate_state_pid() -> None:
     """Explicit recovery, never raw-PID termination of another live owner."""
-    from hermes_cli.local_runtime.recovery import stop_recorded_orphan
+    from moor_cli.local_runtime.recovery import stop_recorded_orphan
 
     if not stop_recorded_orphan():
         raise HTTPException(status_code=409, detail=(
-            "Another Hermes process owns this server, or its ownership could not be verified"))
+            "Another Moor process owns this server, or its ownership could not be verified"))
 
 
 def _stop_server() -> None:

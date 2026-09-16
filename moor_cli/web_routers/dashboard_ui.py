@@ -176,9 +176,9 @@ async def get_plugins_catalog(request: Request):
     _require_token(request)
 
     def _run():
-        from hermes_cli.plugins_cmd import _discover_all_plugins, _get_disabled_set, _get_enabled_set
-        from hermes_cli.plugins_cmd_catalog import installed_catalog_state
-        from hermes_cli.web_server_dashboard import _plugin_runtime_status
+        from moor_cli.plugins_cmd import _discover_all_plugins, _get_disabled_set, _get_enabled_set
+        from moor_cli.plugins_cmd_catalog import installed_catalog_state
+        from moor_cli.web_server_dashboard import _plugin_runtime_status
         enabled, disabled = _get_enabled_set(), _get_disabled_set()
         installed = {}
         for name, _v, _d, _s, dir_str, key in _discover_all_plugins():

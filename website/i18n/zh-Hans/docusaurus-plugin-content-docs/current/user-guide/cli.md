@@ -412,7 +412,7 @@ Moor 立即确认任务并将提示符还给你：
 后台任务完成时，结果会以面板形式出现在终端中：
 
 ```
-╭─ ☤ Hermes (background #1) ──────────────────────────────────╮
+╭─ ☤ Moor (background #1) ──────────────────────────────────╮
 │ Found 3 errors in syslog from today:                         │
 │ 1. OOM killer invoked at 03:22 — killed process nginx        │
 │ 2. Disk I/O error on /dev/sda1 at 07:15                      │

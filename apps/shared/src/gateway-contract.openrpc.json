@@ -1,7 +1,7 @@
 {
   "openrpc": "1.3.2",
   "info": {
-    "title": "Hermes TUI/Desktop gateway",
+    "title": "Moor TUI/Desktop gateway",
     "version": "1",
     "description": "Generated from tui_gateway/contracts by scripts/gen_gateway_contracts.py."
   },
@@ -134,7 +134,7 @@
     },
     {
       "name": "billing.state",
-      "summary": "Read-only billing view (no scope); the Nous free tier is answered locally without a portal call.",
+      "summary": "Read-only billing view (no scope); the Moor free tier is answered locally without a portal call.",
       "params": [
         {
           "name": "params",
@@ -350,7 +350,7 @@
     },
     {
       "name": "cli.exec",
-      "summary": "Run ``hermes <argv>`` non-interactively and capture its output; ``blocked`` explains a refusal.",
+      "summary": "Run ``moor <argv>`` non-interactively and capture its output; ``blocked`` explains a refusal.",
       "params": [
         {
           "name": "params",
@@ -655,20 +655,20 @@
       }
     },
     {
-      "name": "diagnostics.share_nous",
-      "summary": "Upload a force-redacted debug bundle to Nous-internal diagnostics storage.",
+      "name": "diagnostics.share_moor",
+      "summary": "Upload a force-redacted debug bundle to Moor-internal diagnostics storage.",
       "params": [
         {
           "name": "params",
           "schema": {
-            "$ref": "#/components/schemas/DiagnosticsShareNousParams"
+            "$ref": "#/components/schemas/DiagnosticsShareMoorParams"
           }
         }
       ],
       "result": {
         "name": "result",
         "schema": {
-          "$ref": "#/components/schemas/DiagnosticsShareNousResult"
+          "$ref": "#/components/schemas/DiagnosticsShareMoorResult"
         }
       }
     },
@@ -2510,7 +2510,7 @@
     },
     {
       "name": "reload.env",
-      "summary": "Re-read ~/.hermes/.env (CLI /reload parity); built agents keep their pool until /new.",
+      "summary": "Re-read ~/.moor/.env (CLI /reload parity); built agents keep their pool until /new.",
       "params": [
         {
           "name": "params",
@@ -3014,7 +3014,7 @@
     },
     {
       "name": "session.save",
-      "summary": "Export the transcript to ~/.hermes/sessions/saved (classic /save).",
+      "summary": "Export the transcript to ~/.moor/sessions/saved (classic /save).",
       "params": [
         {
           "name": "params",
@@ -3122,7 +3122,7 @@
     },
     {
       "name": "session.usage",
-      "summary": "Token / context / cost counters for the session (+ Nous credit lines when available).",
+      "summary": "Token / context / cost counters for the session (+ Moor credit lines when available).",
       "params": [
         {
           "name": "params",
@@ -4918,8 +4918,8 @@
             ],
             "title": "Billing Url"
           },
-          "is_nous": {
-            "title": "Is Nous",
+          "is_moor": {
+            "title": "Is Moor",
             "type": "boolean"
           },
           "message": {
@@ -4944,7 +4944,7 @@
           "provider_label",
           "model",
           "billing_url",
-          "is_nous",
+          "is_moor",
           "message"
         ],
         "title": "BillingBlock",
@@ -7936,7 +7936,7 @@
       },
       "ConfigProviderRef": {
         "additionalProperties": true,
-        "description": "``hermes_cli/models.py::list_available_providers`` row.",
+        "description": "``moor_cli/models.py::list_available_providers`` row.",
         "properties": {
           "id": {
             "title": "Id",
@@ -10111,7 +10111,7 @@
         "title": "DelegationStatusResult",
         "type": "object"
       },
-      "DiagnosticsShareNousParams": {
+      "DiagnosticsShareMoorParams": {
         "additionalProperties": false,
         "properties": {
           "error_context": {
@@ -10154,10 +10154,10 @@
             "title": "Log Lines"
           }
         },
-        "title": "DiagnosticsShareNousParams",
+        "title": "DiagnosticsShareMoorParams",
         "type": "object"
       },
-      "DiagnosticsShareNousResult": {
+      "DiagnosticsShareMoorResult": {
         "additionalProperties": false,
         "description": "Structured envelope: ``ok=False`` + ``error`` renders inline instead of failing the RPC.",
         "properties": {
@@ -10217,7 +10217,7 @@
         "required": [
           "ok"
         ],
-        "title": "DiagnosticsShareNousResult",
+        "title": "DiagnosticsShareMoorResult",
         "type": "object"
       },
       "DiscoveredRepo": {
@@ -10445,7 +10445,7 @@
       },
       "ForeignSessionRow": {
         "additionalProperties": false,
-        "description": "``hermes_cli/foreign_sessions_browser.py::list_foreign_sessions`` \u2014 ``id`` is an opaque\nhandle, never a path.",
+        "description": "``moor_cli/foreign_sessions_browser.py::list_foreign_sessions`` \u2014 ``id`` is an opaque\nhandle, never a path.",
         "properties": {
           "id": {
             "title": "Id",
@@ -10663,7 +10663,7 @@
       },
       "GoalContractSnapshot": {
         "additionalProperties": false,
-        "description": "``hermes_cli/goals.py::GoalContract.to_dict``.",
+        "description": "``moor_cli/goals.py::GoalContract.to_dict``.",
         "properties": {
           "outcome": {
             "default": "",
@@ -14964,7 +14964,7 @@
       },
       "MessageReaction": {
         "additionalProperties": true,
-        "description": "One persisted reaction row (``hermes_state_messages.set_message_reaction``); ``seen`` is\nstamped once announced.",
+        "description": "One persisted reaction row (``moor_state_messages.set_message_reaction``); ``seen`` is\nstamped once announced.",
         "properties": {
           "emoji": {
             "title": "Emoji",
@@ -15168,7 +15168,7 @@
       },
       "ModelCapabilities": {
         "additionalProperties": false,
-        "description": "``hermes_cli/inventory.py::_apply_capabilities``.",
+        "description": "``moor_cli/inventory.py::_apply_capabilities``.",
         "properties": {
           "fast": {
             "title": "Fast",
@@ -15250,7 +15250,7 @@
       },
       "ModelOptionProvider": {
         "additionalProperties": true,
-        "description": "One ``hermes_cli/inventory.py::build_models_payload`` provider row (the union of every field\nthe builder sets; ``pricing_pending`` / ``free_tier_pending`` mark the cached-only path).",
+        "description": "One ``moor_cli/inventory.py::build_models_payload`` provider row (the union of every field\nthe builder sets; ``pricing_pending`` / ``free_tier_pending`` mark the cached-only path).",
         "properties": {
           "slug": {
             "title": "Slug",
@@ -15581,7 +15581,7 @@
       },
       "ModelPricing": {
         "additionalProperties": false,
-        "description": "``hermes_cli/inventory.py::_apply_pricing`` \u2014 formatted $/Mtok strings (``\"\"`` unknown,\n``\"free\"``); the sale fields are Nous Portal-only.",
+        "description": "``moor_cli/inventory.py::_apply_pricing`` \u2014 formatted $/Mtok strings (``\"\"`` unknown,\n``\"free\"``); the sale fields are Moor Portal-only.",
         "properties": {
           "input": {
             "title": "Input",
@@ -18080,7 +18080,7 @@
       },
       "PluginsManageResult": {
         "additionalProperties": false,
-        "description": "``list`` \u2192 ``plugins`` + counts; ``toggle`` \u2192 ``ok``/``unchanged``/``name``/``plugin``;\n``install`` \u2192 ``hermes_cli.plugins_cmd.dashboard_install_plugin``'s ok payload; ``update`` \u2192\n``ok``/``unchanged``/``sha``.",
+        "description": "``list`` \u2192 ``plugins`` + counts; ``toggle`` \u2192 ``ok``/``unchanged``/``name``/``plugin``;\n``install`` \u2192 ``moor_cli.plugins_cmd.dashboard_install_plugin``'s ok payload; ``update`` \u2192\n``ok``/``unchanged``/``sha``.",
         "properties": {
           "plugins": {
             "anyOf": [
@@ -20289,7 +20289,7 @@
       },
       "ProjectFolder": {
         "additionalProperties": false,
-        "description": "``hermes_cli/projects_db.py::ProjectFolder.to_dict``.",
+        "description": "``moor_cli/projects_db.py::ProjectFolder.to_dict``.",
         "properties": {
           "path": {
             "title": "Path",
@@ -20391,7 +20391,7 @@
       },
       "ProjectInfo": {
         "additionalProperties": false,
-        "description": "``hermes_cli/projects_db.py::Project.to_dict`` \u2014 one stored project with its folders.",
+        "description": "``moor_cli/projects_db.py::Project.to_dict`` \u2014 one stored project with its folders.",
         "properties": {
           "id": {
             "title": "Id",
@@ -27267,7 +27267,7 @@
       },
       "SetupReadyPayload": {
         "additionalProperties": true,
-        "description": "``hermes_cli/free_tier_bootstrap.py::SetupRecord.as_payload``.",
+        "description": "``moor_cli/free_tier_bootstrap.py::SetupRecord.as_payload``.",
         "properties": {
           "provider_configured": {
             "title": "Provider Configured",
@@ -27683,7 +27683,7 @@
       },
       "SkillBrowseItem": {
         "additionalProperties": true,
-        "description": "``hermes_cli.skills_hub.browse_skills`` row.",
+        "description": "``moor_cli.skills_hub.browse_skills`` row.",
         "properties": {
           "name": {
             "default": "",
@@ -27785,7 +27785,7 @@
       },
       "SkillInspectInfo": {
         "additionalProperties": true,
-        "description": "``hermes_cli.skills_hub.inspect_skill``; ``{}`` when the identifier resolves nowhere.",
+        "description": "``moor_cli.skills_hub.inspect_skill``; ``{}`` when the identifier resolves nowhere.",
         "properties": {
           "name": {
             "anyOf": [
@@ -28129,7 +28129,7 @@
       },
       "SkinPayload": {
         "additionalProperties": true,
-        "description": "``tui_gateway/change_watcher.py::resolve_skin`` \u2014 the resolved active skin (``HermesSkin``).\n``{}`` when the skin engine failed to load. Colour maps are token \u2192 colour string.",
+        "description": "``tui_gateway/change_watcher.py::resolve_skin`` \u2014 the resolved active skin (``MoorSkin``).\n``{}`` when the skin engine failed to load. Colour maps are token \u2192 colour string.",
         "properties": {
           "name": {
             "default": "",

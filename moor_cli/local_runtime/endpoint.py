@@ -32,7 +32,7 @@ def _pid_alive(pid: int) -> bool:
 
 
 def _state_endpoint() -> dict | None:
-    from hermes_cli.local_runtime.recovery import is_modern, read_state, recorded_process
+    from moor_cli.local_runtime.recovery import is_modern, read_state, recorded_process
 
     state = read_state()
     base_url = state.get("base_url", "")

@@ -144,7 +144,7 @@ class TestDetectProviderForModel:
         with patch(
             "moor_cli.models.fetch_openrouter_models",
             side_effect=AssertionError("network lookup should not run"),
-        ), patch("hermes_cli.models_detect.provider_has_credentials", return_value=True):
+        ), patch("moor_cli.models_detect.provider_has_credentials", return_value=True):
             result = detect_provider_for_model("sonnet", "auto")
         assert result is not None
         assert result[0] == "anthropic"
@@ -1543,7 +1543,7 @@ class TestOpenRouterCatalogDiskCache:
             return payload["data"], {m["id"]: m for m in payload["data"]}
 
         monkeypatch.setattr(_models_mod, "_fetch_live_catalog_index", fake_index)
-        monkeypatch.setattr("hermes_cli.model_catalog.get_curated_openrouter_models",
+        monkeypatch.setattr("moor_cli.model_catalog.get_curated_openrouter_models",
                             lambda: [("a/one", "")])
 
     def test_fresh_snapshot_serves_cold_process_without_network(self, monkeypatch, tmp_path):

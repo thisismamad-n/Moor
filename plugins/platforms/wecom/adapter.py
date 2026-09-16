@@ -674,7 +674,7 @@ def qr_scan_for_bot_info(*, timeout_seconds: int = _QR_POLL_TIMEOUT) -> Optional
         print(f"\n  Scan the QR code above, or open this URL directly:\n  {page_url}")
     except Exception:
         print(f"  Open this URL in WeCom on your phone:\n\n  {page_url}\n")
-        from hermes_cli.managed_uv import pip_install_hint
+        from moor_cli.managed_uv import pip_install_hint
         print(f"  Tip: {pip_install_hint('qrcode')}  to display a scannable QR code here next time")
     print("\n  Fetching configuration results...", end="", flush=True)
     deadline = time.monotonic() + timeout_seconds
@@ -756,10 +756,10 @@ _ACCESS_CHOICES = (
 
 
 def interactive_setup() -> None:
-    from hermes_cli.config import remove_env_value, save_env_value
-    from hermes_cli.setup import prompt_choice
-    from hermes_cli.cli_output import prompt, print_header, print_info, print_success, print_warning
-    from hermes_cli.setup_platforms import declines_reconfigure
+    from moor_cli.config import remove_env_value, save_env_value
+    from moor_cli.setup import prompt_choice
+    from moor_cli.cli_output import prompt, print_header, print_info, print_success, print_warning
+    from moor_cli.setup_platforms import declines_reconfigure
     print_header("WeCom (Enterprise WeChat)")
     if declines_reconfigure("WeCom", "Reconfigure WeCom?", "WECOM_BOT_ID"):
         return

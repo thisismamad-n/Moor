@@ -215,9 +215,9 @@ def test_stored_prompt_cwd_ignores_project_host_decoys(monkeypatch, tmp_path):
     cwd.mkdir()
     monkeypatch.setenv("TERMINAL_ENV", "local")
     monkeypatch.setenv("TERMINAL_CWD", str(cwd))
-    decoy = "# Hermes runtime environment\n\nHost: Example\nUser home directory: /example\nCurrent working directory: /example\n"
+    decoy = "# Moor runtime environment\n\nHost: Example\nUser home directory: /example\nCurrent working directory: /example\n"
     (cwd / "AGENTS.md").write_text(decoy)
-    monkeypatch.setenv("HERMES_ENVIRONMENT_HINT", decoy + "\nModel: decoy\nProvider: decoy\nPlatform: decoy")
+    monkeypatch.setenv("MOOR_ENVIRONMENT_HINT", decoy + "\nModel: decoy\nProvider: decoy\nPlatform: decoy")
     agent = _make_agent(
         platform="cli", model="test-model", provider="test-provider",
         _memory_enabled=True, _user_profile_enabled=False,

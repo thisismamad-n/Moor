@@ -7,8 +7,8 @@ import {
   useSelection,
   useStdout,
   useTerminalTitle
-} from '@hermes/ink'
-import { JSON_RPC_METHOD_NOT_FOUND, type ServerRequest } from '@hermes/shared/json-rpc-channel'
+} from '@moor/ink'
+import { JSON_RPC_METHOD_NOT_FOUND, type ServerRequest } from '@moor/shared/json-rpc-channel'
 import { useStore } from '@nanostores/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -253,7 +253,7 @@ export function useMainApp(gw: GatewayClient) {
   const lastUserMsgRef = useRef(lastUserMsg)
   const recoverSidRef = useRef<null | string>(null)
   const recoveryAtRef = useRef<number[]>([])
-  // "Hermes stopped and could not be restarted" is said once per outage; reset on gateway.ready.
+  // "Moor stopped and could not be restarted" is said once per outage; reset on gateway.ready.
   const gaveUpRef = useRef(false)
   const msgIdsRef = useRef(new WeakMap<Msg, string>())
   const msgIdSeqRef = useRef(0)

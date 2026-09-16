@@ -11,7 +11,7 @@ import json
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
-from hermes_cli.auth_constants import _decode_jwt_claims
+from moor_cli.auth_constants import _decode_jwt_claims
 from utils import file_signature
 
 # Log-record parity with the origin module (caplog tests pin "moor_cli.auth").
@@ -137,7 +137,7 @@ _oauth_heal_notices: List[str] = []
 _oauth_heal_clean_marks: Dict[str, Tuple[Any, ...]] = {}
 
 # Filename for the ON-DISK twin of ``_oauth_heal_clean_marks``. The in-memory mark only silences
-# the heal for the life of ONE process, so every fresh `hermes` invocation and every new worker
+# the heal for the life of ONE process, so every fresh `moor` invocation and every new worker
 # re-pays the heal's two nested EXCLUSIVE auth-store locks just to discover there is nothing to
 # consolidate. Behind a sibling holding those locks that costs a full AUTH_LOCK_TIMEOUT_SECONDS
 # per provider (measured: 30s for two providers on an otherwise-idle machine) before the process
@@ -154,7 +154,7 @@ def _json_shape(fingerprint: tuple) -> list:
 def _oauth_heal_clean_mark_path() -> Optional[Path]:
     """Where the persisted clean marks live, or None when unavailable."""
     try:
-        from hermes_cli.auth import _auth_file_path
+        from moor_cli.auth import _auth_file_path
 
         return _auth_file_path().parent / "cache" / _OAUTH_HEAL_CLEAN_MARK_FILENAME
     except Exception:
@@ -207,8 +207,8 @@ def _persist_oauth_heal_clean_mark(provider_id: str, fingerprint: tuple) -> None
         if marks.get(provider_id) == new_mark:
             return  # already recorded; skip the rewrite
         marks[provider_id] = new_mark
-        from hermes_constants import mkdir_under_hermes_home
-        mkdir_under_hermes_home(path.parent)
+        from moor_constants import mkdir_under_moor_home
+        mkdir_under_moor_home(path.parent)
         # 0o600 like the MCP schema cache: this names credential-store paths.
         atomic_json_write(path, marks, mode=0o600)
     except Exception:

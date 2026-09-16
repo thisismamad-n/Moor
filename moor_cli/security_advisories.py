@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Optional
 
-from hermes_constants import display_hermes_home
+from moor_constants import display_moor_home
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +29,8 @@ logger = logging.getLogger(__name__)
 class Advisory:
     """``id`` is lowercase-hyphen, stable and never reused (it is what acks key on). ``remediation``
     is ordered: uninstall command first, then credential audit/rotation guidance. Steps may use
-    ``{hermes_home}``; ``full_remediation_text`` fills it with ``display_hermes_home()`` at render
-    time so a profile / HERMES_HOME user is sent to their own .env.
+    ``{moor_home}``; ``full_remediation_text`` fills it with ``display_moor_home()`` at render
+    time so a profile / MOOR_HOME user is sent to their own .env.
     """
 
     id: str
@@ -63,8 +63,8 @@ ADVISORIES: tuple[Advisory, ...] = (
         compromised=(("mistralai", frozenset({"2.4.6"})),),
         remediation=(
             "Run: pip uninstall -y mistralai  (or: uv pip uninstall mistralai)",
-            "Rotate API keys in {hermes_home}/.env (OpenRouter, Anthropic, OpenAI, "
-            "Nous, GitHub, AWS, Google, Mistral, etc.).",
+            "Rotate API keys in {moor_home}/.env (OpenRouter, Anthropic, OpenAI, "
+            "Moor, GitHub, AWS, Google, Mistral, etc.).",
             "Audit ~/.npmrc, ~/.pypirc, ~/.aws/credentials, ~/.config/gh/hosts.yml, "
             "and any other credential files for tokens that may have been read.",
             "Check GitHub for unexpected new SSH keys, deploy keys, or webhook "
@@ -190,7 +190,7 @@ def full_remediation_text(hit: AdvisoryHit) -> list[str]:
         a.summary,
         "",
         "Remediation:",
-        *(f"  {i}. {step.format(hermes_home=display_hermes_home())}" for i, step in enumerate(a.remediation, 1)),
+        *(f"  {i}. {step.format(moor_home=display_moor_home())}" for i, step in enumerate(a.remediation, 1)),
     ]
 
 

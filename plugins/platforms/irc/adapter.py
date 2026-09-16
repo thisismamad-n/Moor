@@ -340,7 +340,7 @@ def interactive_setup() -> None:
     """`moor gateway setup` flow (lazy moor_cli imports keep the plugin importable outside the CLI)."""
     from moor_cli.setup import (
         prompt, prompt_yes_no, save_env_value, get_env_value, print_header, print_info, print_warning, print_success)
-    from hermes_cli.setup_platforms import declines_reconfigure
+    from moor_cli.setup_platforms import declines_reconfigure
 
     def info(*lines: str) -> None:
         for line in lines:
@@ -357,7 +357,7 @@ def interactive_setup() -> None:
     existing_server = get_env_value("IRC_SERVER")
     if declines_reconfigure("IRC", "Reconfigure IRC?", "IRC_SERVER"):
         return
-    info("Connect Hermes to an IRC network. Uses Python stdlib — no extra packages needed.",
+    info("Connect Moor to an IRC network. Uses Python stdlib — no extra packages needed.",
          "   Works with Libera.Chat, OFTC, your own ZNC/InspIRCd, etc.")
     print()
     if not _required("IRC server hostname (e.g. irc.libera.chat)", "IRC_SERVER", existing_server or "", "Server"):

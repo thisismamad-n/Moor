@@ -224,8 +224,8 @@ def _short_reason(text: Any, limit: int = 120) -> str:
 
 
 def _delivery_fix_hint(job: Dict[str, Any]) -> str:
-    return (f"Check the target with `hermes cron status` or change it with "
-            f"`hermes cron edit {job.get('id', '<id>')} --deliver <target>`.")
+    return (f"Check the target with `moor cron status` or change it with "
+            f"`moor cron edit {job.get('id', '<id>')} --deliver <target>`.")
 
 
 def _missed_fire_line(job: Dict[str, Any], fire_err: Dict[str, Any]) -> str:
@@ -234,7 +234,7 @@ def _missed_fire_line(job: Dict[str, Any], fire_err: Dict[str, Any]) -> str:
     The stored ``detail`` is operator text (loopback / api_server adapter); keep it as a dim
     second sentence and lead with the human cause (the gateway was unreachable)."""
     return (f"{color('⚠ A scheduled run was skipped', Colors.RED)} at {fire_err.get('at', '?')}: the messaging "
-            f"gateway was unreachable. Run `hermes gateway restart`, then `hermes cron run {job.get('id', '<id>')}` "
+            f"gateway was unreachable. Run `moor gateway restart`, then `moor cron run {job.get('id', '<id>')}` "
             f"to run it now. {color('Details: ' + _short_reason(fire_err.get('detail')), Colors.DIM)}")
 
 
@@ -408,7 +408,7 @@ def _print_ticker_health(pids: list) -> None:
 def cron_status():
     """Show cron execution status."""
     from cron.jobs import list_jobs
-    from hermes_cli.gateway import find_gateway_pids, named_profile_served_by_running_multiplexer
+    from moor_cli.gateway import find_gateway_pids, named_profile_served_by_running_multiplexer
     print()
 
     provider = _active_cron_provider_name()
@@ -424,7 +424,7 @@ def cron_status():
         # `_builtin_gateway_liveness`, which `cron list` uses -- the two must not disagree).
         print(color("✓ Gateway is running via the default-profile multiplexer — it ticks this profile's jobs.",
                     Colors.GREEN))
-        print(color("  Ticker health is reported by `hermes cron status` on the default profile.", Colors.DIM))
+        print(color("  Ticker health is reported by `moor cron status` on the default profile.", Colors.DIM))
     else:
         pids = find_gateway_pids()
         gateway_alive_via_lock = False
@@ -810,12 +810,12 @@ def cron_command(args):
     if handler is not None:
         return handler(args)
     print(f"Unknown cron command: {subcmd}\n"
-          "Usage: hermes cron [list|create|edit|pause|resume|run|remove|resnap|status|runs|doctor|tick]")
+          "Usage: moor cron [list|create|edit|pause|resume|run|remove|resnap|status|runs|doctor|tick]")
     sys.exit(1)
 
 
 def _cron_resnap(args) -> int:
-    """Handle `hermes cron resnap [job_id] [--all]`."""
+    """Handle `moor cron resnap [job_id] [--all]`."""
     if bool(getattr(args, "all", False)):
         result = _cron_api(action="resnap", all=True)
         if not result.get("success"):
@@ -832,7 +832,7 @@ def _cron_resnap(args) -> int:
     job_id = getattr(args, "job_id", None)
     if not job_id:
         print(color("resnap requires either a <job_id> or --all.", Colors.RED))
-        print("Usage: hermes cron resnap <job_id> | hermes cron resnap --all")
+        print("Usage: moor cron resnap <job_id> | moor cron resnap --all")
         return 1
     result = _cron_api(action="resnap", job_id=job_id)
     if not result.get("success"):

@@ -84,7 +84,7 @@ def test_turn_probe_counts_in_flight_cron_execution():
     """#107485: a cron job mid-run must keep the SSH-isolated backend alive; the run lives outside
     the dashboard session table, in the scheduler's running-job ledger."""
     import cron.scheduler as scheduler
-    from hermes_cli.web_server_idle_exit import turn_in_flight
+    from moor_cli.web_server_idle_exit import turn_in_flight
 
     assert turn_in_flight() is False
     with scheduler._running_lock:

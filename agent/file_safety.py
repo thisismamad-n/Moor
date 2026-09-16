@@ -106,7 +106,7 @@ def _home_and_resolved(path: str) -> tuple[str, str]:
 #   * ``\\\\?\\GLOBALROOT...`` — re-entry into the NT namespace.
 #
 # Plain drive-letter extended-length paths (``\\\\?\\C:\\...``) stay ALLOWED:
-# they are a routine local form (see hermes_cli/windows_ssh_runtime.py) and
+# they are a routine local form (see moor_cli/windows_ssh_runtime.py) and
 # carry no remote-auth trigger. Plain UNC shares (``\\\\server\\share``) are
 # also unchanged here — blocking ordinary UNC reads is a policy question,
 # not part of this namespace-bypass guard.
@@ -157,7 +157,7 @@ def build_write_denied_paths(home: str) -> set[str]:
         (".ssh", "authorized_keys"), (".ssh", "id_rsa"), (".ssh", "id_ed25519"),
         (".netrc",), (".pgpass",), (".npmrc",), (".pypirc",), (".git-credentials",),
     )
-    # Secret material under HERMES_HOME, on both the active profile and the global
+    # Secret material under MOOR_HOME, on both the active profile and the global
     # root: overwriting the root .env leaks credentials across every profile that
     # inherits it, and the root Anthropic PKCE store is still read by default /
     # non-profile sessions when a profile is active. google_oauth.json is an OAuth
@@ -167,7 +167,7 @@ def build_write_denied_paths(home: str) -> set[str]:
     # deliberately NOT here: #45947 freed those control files on purpose
     # ("true containment belongs in Docker/remote backends and OS permissions,
     # not an expanding hardcoded denylist"). They stay read-denied, not write-denied.
-    hermes_files = (
+    moor_files = (
         ".env", ".anthropic_oauth.json",
         os.path.join("auth", "google_oauth.json"),
         os.path.join("cache", "bws_cache.json"),
@@ -218,7 +218,7 @@ def build_write_approval_paths(home: str) -> set[str]:
 # browser-profile/ (copied cookies / Login Data) hold credential material.
 # Control files (auth.json, config.yaml, webhook_subscriptions.json) are
 # deliberately NOT here (#45947): read-denied, but the user may ask to edit them.
-_HERMES_PROTECTED_SUBPATHS = ("state.db", "sessions", "mcp-tokens", "pairing", "vault", "browser-profile")
+_MOOR_PROTECTED_SUBPATHS = ("state.db", "sessions", "mcp-tokens", "pairing", "vault", "browser-profile")
 
 
 def _classify_write_denial(path: str) -> Optional[str]:
@@ -304,12 +304,12 @@ _READ_DENIED_DIRS = (
      "is the Moor MCP token directory and cannot be read directly.",
      "is a Moor MCP token file and cannot be read directly."),
     ("browser-profile",
-     "is the Hermes real-profile browser snapshot directory (copied cookies/logins) and cannot be read directly.",
-     "is inside the Hermes real-profile browser snapshot (copied cookies/logins) and cannot be read directly."),
+     "is the Moor real-profile browser snapshot directory (copied cookies/logins) and cannot be read directly.",
+     "is inside the Moor real-profile browser snapshot (copied cookies/logins) and cannot be read directly."),
     # vault.key + vault.json.enc sit side by side; key + ciphertext = plaintext, so the whole dir is one credential.
     ("vault",
-     "is the Hermes credential vault directory and cannot be read directly (secrets are filled server-side by browser_vault_fill).",
-     "is inside the Hermes credential vault (encrypted secrets + local key) and cannot be read directly (browser_vault_fill resolves them server-side)."),
+     "is the Moor credential vault directory and cannot be read directly (secrets are filled server-side by browser_vault_fill).",
+     "is inside the Moor credential vault (encrypted secrets + local key) and cannot be read directly (browser_vault_fill resolves them server-side)."),
 )
 
 

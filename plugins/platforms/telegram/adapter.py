@@ -476,7 +476,7 @@ class TelegramAdapter(BasePlatformAdapter):
         self._text_batch_delay_seconds = self._env_float_clamped(
             "MOOR_TELEGRAM_TEXT_BATCH_DELAY_SECONDS", 0.3, min_value=0.08, max_value=2.0)
         self._text_batch_split_delay_seconds = self._env_float_clamped(
-            "HERMES_TELEGRAM_TEXT_BATCH_SPLIT_DELAY_SECONDS", 1.0, min_value=self._text_batch_delay_seconds, max_value=4.0)
+            "MOOR_TELEGRAM_TEXT_BATCH_SPLIT_DELAY_SECONDS", 1.0, min_value=self._text_batch_delay_seconds, max_value=4.0)
         self._drop_delayed_deliveries = False
         # Held across disconnect: PTB advances the offset before our drop-guard runs, so Telegram won't
         # redeliver — dropping is permanent loss (see _hold_inbound_event).
@@ -4576,8 +4576,8 @@ class TelegramAdapter(BasePlatformAdapter):
             await query.answer(text=f"Unknown verb: {verb}")
             return
         script_name, extra_args, success_label, is_state_verb = entry
-        from hermes_constants import get_hermes_home
-        script_path = get_hermes_home() / "scripts" / "gmail-triage" / script_name
+        from moor_constants import get_moor_home
+        script_path = get_moor_home() / "scripts" / "gmail-triage" / script_name
         if not script_path.exists():
             await query.answer(text=f"❌ {script_name} missing")
             logger.error("[%s] gmail-triage script missing: %s", self.name, script_path)
@@ -5927,7 +5927,7 @@ class TelegramAdapter(BasePlatformAdapter):
                 if chat_id in self._forum_command_registered:
                     return
                 from telegram import BotCommand, BotCommandScopeChat
-                from hermes_cli.commands_platforms import telegram_menu_commands, telegram_menu_max_commands
+                from moor_cli.commands_platforms import telegram_menu_commands, telegram_menu_max_commands
                 menu_commands, _ = await asyncio.to_thread(
                     telegram_menu_commands, max_commands=telegram_menu_max_commands())
                 bot_commands = [BotCommand(name, desc) for name, desc in menu_commands]

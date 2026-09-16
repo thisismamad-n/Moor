@@ -86,7 +86,7 @@ def build_catalog() -> dict:
                 "metadata": {
                     "display_name": "Moor Portal",
                     "note": (
-                        'The entry labeled "default": true is the model Hermes '
+                        'The entry labeled "default": true is the model Moor '
                         "silently lands on when the user never picked one."
                     ),
                 },

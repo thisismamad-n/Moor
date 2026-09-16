@@ -15,20 +15,20 @@ import * as sdk from './index'
 
 // Resolved LAZILY, never as a module-scope literal. This module sits in an
 // import cycle — `sdk/index` → `contrib/*` → `contrib/runtime-loader` →
-// `sdk/runtime` — so a module-scope `{ __HERMES_PLUGIN_SDK__: sdk, … }` is
+// `sdk/runtime` — so a module-scope `{ __MOOR_PLUGIN_SDK__: sdk, … }` is
 // evaluated BEFORE `sdk/index`'s own body runs. In the bundled app that read
 // yields `undefined` (the bundler emits the namespace as a hoisted `var`), so
-// `Object.keys(GLOBALS.__HERMES_PLUGIN_SDK__)` threw
+// `Object.keys(GLOBALS.__MOOR_PLUGIN_SDK__)` threw
 // "Cannot convert undefined or null to object" and EVERY runtime (disk)
 // plugin failed to load. Reading them at call time — installPluginSdk() and
 // the shim builder only ever run once the app is up — gets the live
 // namespaces.
 function pluginNamespaces() {
   return {
-    __HERMES_PLUGIN_SDK__: sdk,
-    __HERMES_REACT__: React,
-    __HERMES_REACT_JSX__: jsxRuntime,
-    __HERMES_REACT_JSX_DEV__: jsxDevRuntime
+    __MOOR_PLUGIN_SDK__: sdk,
+    __MOOR_REACT__: React,
+    __MOOR_REACT_JSX__: jsxRuntime,
+    __MOOR_REACT_JSX_DEV__: jsxDevRuntime
   }
 }
 

@@ -34,7 +34,7 @@ logs/
 data/
 # Bundled community plugin index seed (shipped as package data) — the bare
 # `data/` pattern above would otherwise swallow it.
-!hermes_cli/data/
+!moor_cli/data/
 .pytest_cache/
 test_durations.json
 .pytest-cache/
@@ -168,8 +168,8 @@ docs/superpowers/*
 # treat it as a local edit and autostash it on every run (#38529).
 .moor-bootstrap-complete
 
-# Flat-install runtime state (checkout root == $HERMES_HOME, e.g. installs made
-# with HERMES_INSTALL_DIR=$HERMES_HOME or by older installers): every root-level
+# Flat-install runtime state (checkout root == $MOOR_HOME, e.g. installs made
+# with MOOR_INSTALL_DIR=$MOOR_HOME or by older installers): every root-level
 # SQLite store (state.db, kanban.db, response_store.db, ...) with its
 # WAL/SHM/journal sidecars and retired-WAL capture dirs, the legacy transcripts,
 # the cron job store (jobs.json), its lock/heartbeat/output files and all three
@@ -177,12 +177,12 @@ docs/superpowers/*
 # ones), gateway lock/pid/state files and per-launch markers, cache/spill
 # directories, and the profile's own config/credential/
 # memory/profile/pairing roots, the pre-update backups (the very copies a
-# swept state.db is restored from) and the secret vault are Hermes-managed
+# swept state.db is restored from) and the secret vault are moor-managed
 # runtime state, never code changes. (`*-snapshots/` above already covers state-snapshots/.)
-# Ignore them so `hermes update`'s `git stash push --include-untracked` cannot
+# Ignore them so `moor update`'s `git stash push --include-untracked` cannot
 # sweep the live state.db/-wal into the stash and unlink it under the running
-# gateway (#110648). Nested installs keep all of this under $HERMES_HOME outside
-# the checkout, where the `.hermes/` rule above already applies.
+# gateway (#110648). Nested installs keep all of this under $MOOR_HOME outside
+# the checkout, where the `.moor/` rule above already applies.
 /*.db
 /*.db-wal
 /*.db-shm
@@ -209,7 +209,7 @@ docs/superpowers/*
 /.update_check
 /.clean_shutdown
 /active_profile
-/.hermes_history
+/.moor_history
 /slack_tokens.json
 /hook_outputs/
 /hooks/

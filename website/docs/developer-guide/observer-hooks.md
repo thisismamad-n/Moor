@@ -3,7 +3,7 @@ title: "Observer Hooks"
 description: "Read-only telemetry contract for plugins: event families, correlation IDs, payload safety"
 ---
 
-# Hermes Observer Hooks
+# Moor Observer Hooks
 
 Moor observer hooks are the read-only telemetry contract for plugins that
 need to reconstruct agent execution without changing runtime behavior. This

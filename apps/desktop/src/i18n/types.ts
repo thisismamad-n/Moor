@@ -237,7 +237,7 @@ export interface Translations {
       backgroundExited: string
       backgroundExitedDuringStartup: string
       backendStopped: string
-      restartHermes: string
+      restartMoor: string
       openLogs: string
       desktopBootFailed: string
       gatewayConnectionLost: string
@@ -331,10 +331,10 @@ export interface Translations {
       openaiRejectedApiKey: string
       openaiTtsNeedsKey: string
       codeSkewRestartRequired: string
-      restartHermesFailed: string
+      restartMoorFailed: string
     }
     actions: {
-      restartHermes: string
+      restartMoor: string
       openKeys: string
       openGateways: string
       openMaintenance: string
@@ -786,7 +786,7 @@ export interface Translations {
     uninstallSection: {
       dangerZone: string
       confirmUninstall: string
-      uninstallHermes: string
+      uninstallMoor: string
     }
     poolLimits: {
       warmBotBackendsAria: string
@@ -1816,7 +1816,7 @@ export interface Translations {
     sharedGatewayRestartDescription: (bots: string) => string
     sharedGatewayRestartConfirm: string
     sharedGatewayRestarted: (count: number) => string
-    updateHermes: string
+    updateMoor: string
     reloadWindow: string
     actionRunning: string
     actionDone: string
@@ -3012,7 +3012,7 @@ export interface Translations {
   }
 
   freeTier: {
-    /** Settings › Providers row title while the Nous identity is the free tier. */
+    /** Settings › Providers row title while the Moor identity is the free tier. */
     providerRowTitle: string
     /** The featured row's pitch while the identity is the free tier: what signing in adds. */
     providerRowPitch: string
@@ -3064,8 +3064,8 @@ export interface Translations {
     alreadySignedInHeading: string
     alreadySignedInBody: string
     // First-launch set-up failure notice: the free tier could not be created at boot.
-    // One sentence per backend code (`hermes_cli/anon_auth.py::ANON_*`); the copy never says
-    // the free MODEL is off — what is unavailable is using Hermes without signing in.
+    // One sentence per backend code (`moor_cli/anon_auth.py::ANON_*`); the copy never says
+    // the free MODEL is off — what is unavailable is using Moor without signing in.
     setupFailed: {
       gateClosed: string
       paused: string
@@ -3075,7 +3075,7 @@ export interface Translations {
       powRequired: string
       locked: string
       generic: string
-      /** The sign-in door, when the account service is reachable: the Nous row sits right below. */
+      /** The sign-in door, when the account service is reachable: the Moor row sits right below. */
       signInBelow: string
       tryAgain: string
       retrying: string
@@ -3546,8 +3546,8 @@ export interface Translations {
       errorChooseModel: string
       errorCompressConversation: string
       errorCompressFailed: string
-      errorOpenHermesFolder: string
-      errorOpenHermesFolderFailed: string
+      errorOpenMoorFolder: string
+      errorOpenMoorFolderFailed: string
       errorUpdateApiKey: string
       /** One-click recovery for an expired/revoked OAuth grant: re-runs that
        *  provider's sign-in flow (auth layer, authKind 'oauth'). */

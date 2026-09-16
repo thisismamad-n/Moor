@@ -37,7 +37,7 @@ import { RemoteDisplayBanner } from '@/components/remote-display-banner'
 import { SendDiagnosticsHost } from '@/components/send-diagnostics-dialog'
 import { TipHost } from '@/components/tips'
 import { emitGatewayEvent } from '@/contrib/events'
-import { getLatestSessionMessages } from '@/hermes'
+import { getLatestSessionMessages } from '@/moor'
 import { translateNow } from '@/i18n'
 import { type ChatMessage, chatMessageText, preserveLocalAssistantErrors, toChatMessages } from '@/lib/chat-messages'
 import { isMessagingSource } from '@/lib/session-source'
@@ -231,7 +231,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     navigate(routeRequest.path)
   }, [navigate, routeRequest])
 
-  // "Restart Hermes" from a toast: recycle the local backend the user is
+  // "Restart Moor" from a toast: recycle the local backend the user is
   // looking at (same IPC the Models page uses), then let the boot hook re-dial.
   // A remote/cloud connection has no local process to recycle — there the
   // only meaningful "restart" is re-dialing the connection.
@@ -245,13 +245,13 @@ export function ContribWiring({ children }: { children: ReactNode }) {
 
     if (backendRestartRequest > 0) {
       if ($connection.get()?.mode === 'remote') {
-        void reconnectGateway().catch(err => notifyError(err, translateNow('notifications.errors.restartHermesFailed')))
+        void reconnectGateway().catch(err => notifyError(err, translateNow('notifications.errors.restartMoorFailed')))
 
         return
       }
 
-      void window.hermesDesktop?.recycleBackend?.(normalizeProfileKey($activeGatewayProfile.get())).catch(err =>
-        notifyError(err, translateNow('notifications.errors.restartHermesFailed'))
+      void window.moorDesktop?.recycleBackend?.(normalizeProfileKey($activeGatewayProfile.get())).catch(err =>
+        notifyError(err, translateNow('notifications.errors.restartMoorFailed'))
       )
     }
   }, [backendRestartRequest])
@@ -374,7 +374,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   const { connectionRef, gateway, gatewayRef, requestGateway: ambientRequestGateway } = useGatewayRequest()
 
   // The guide remains selected while handoff creates on another profile.
-  // Without this pin, the owner ladder sends session.create to hermes-setup
+  // Without this pin, the owner ladder sends session.create to moor-setup
   // despite the gateway switch (#89206). Scope it to the create leg so
   // concurrent session traffic keeps its recorded owner.
   const handoffCreateProfileRef = useRef<null | string>(null)

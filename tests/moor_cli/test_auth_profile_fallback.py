@@ -151,7 +151,7 @@ def test_provider_auth_state_returns_none_when_neither_has_it(profile_env):
 
 def test_codex_runtime_uses_global_pool_when_profile_singleton_is_empty(profile_env):
     """Stale empty profile Codex state must not block the global credential pool."""
-    from hermes_cli.auth import resolve_codex_runtime_credentials
+    from moor_cli.auth import resolve_codex_runtime_credentials
 
     _write(profile_env["global"] / "auth.json", _make_auth_store(pool={
         "openai-codex": [{
@@ -190,7 +190,7 @@ def test_codex_runtime_uses_global_pool_when_profile_singleton_is_empty(profile_
 def test_codex_cooldown_clear_writes_to_the_store_that_owns_the_borrowed_pool(profile_env):
     """A restored quota must unfreeze the ROOT row a profile borrows; clearing the (empty)
     profile store would leave every later resolve stuck on the stale cooldown."""
-    from hermes_cli.auth_codex import clear_codex_pool_quota_cooldowns
+    from moor_cli.auth_codex import clear_codex_pool_quota_cooldowns
 
     _write(profile_env["global"] / "auth.json", _make_auth_store(pool={
         "openai-codex": [{"id": "glob", "auth_type": "oauth", "priority": 0,
@@ -208,7 +208,7 @@ def test_codex_cooldown_clear_writes_to_the_store_that_owns_the_borrowed_pool(pr
 def test_codex_cooldown_clear_never_touches_root_when_profile_owns_rows(profile_env):
     """A profile with its own Codex rows is the owner: the root's cooldown state is not ours to
     clear, even when none of the profile's rows are exhausted (0 cleared, root byte-identical)."""
-    from hermes_cli.auth_codex import clear_codex_pool_quota_cooldowns
+    from moor_cli.auth_codex import clear_codex_pool_quota_cooldowns
 
     root_file = profile_env["global"] / "auth.json"
     _write(root_file, _make_auth_store(pool={
@@ -231,7 +231,7 @@ def test_root_write_through_is_visible_to_the_next_fallback_read(profile_env):
     """``_save_auth_store(target_path=root)`` must invalidate the mtime memo: a same-tick
     read-after-write (coarse-mtime filesystems) would otherwise keep serving the stale root."""
     import os
-    from hermes_cli.auth import _save_auth_store, read_credential_pool
+    from moor_cli.auth import _save_auth_store, read_credential_pool
 
     root_file = profile_env["global"] / "auth.json"
     _write(root_file, _make_auth_store(pool={"openai-codex": [{"id": "glob", "access_token": "old"}]}))

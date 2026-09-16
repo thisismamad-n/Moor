@@ -22,8 +22,8 @@ export const CONNECTOR_LEAD_ORDER = [
   'todoist'
 ]
 
-// Connectors are the apps Hermes reads and acts on for the user. Chat channels
-// (Discord, Telegram, WhatsApp) are how a user talks to Hermes; those live on
+// Connectors are the apps Moor reads and acts on for the user. Chat channels
+// (Discord, Telegram, WhatsApp) are how a user talks to Moor; those live on
 // the Messaging page, and offering them here as if they were data sources
 // taught users the wrong thing about what "connect" does. The catalog
 // carries them for the agent's sake; the first-run picker leaves them out.
@@ -45,15 +45,15 @@ export function orderConnectorPicks<T extends { connector: string; enabled?: boo
 }
 
 // Each swatch sets the accent override, which `retintTheme` uses to repaint
-// the active skin as soon as the swatch is clicked. Nous blue is the default
+// the active skin as soon as the swatch is clicked. Moor blue is the default
 // and sets no override. Mono is black in light mode and white in dark mode.
-export const NOUS_ACCENT = '#0053fd'
+export const MOOR_ACCENT = '#0053fd'
 
 export const accentsFor = (dark: boolean): Array<{ hex: string; name: string }> => [
   { hex: dark ? '#ffffff' : '#000000', name: 'Mono' },
   { hex: '#2ea043', name: 'GitHub green' },
   { hex: '#00d5ff', name: 'Cyber cyan' },
-  { hex: NOUS_ACCENT, name: 'Nous blue' },
+  { hex: MOOR_ACCENT, name: 'Moor blue' },
   { hex: '#8a2be2', name: 'Ultraviolet' },
   { hex: '#e0218a', name: 'Barbie pink' },
   { hex: '#ff073a', name: 'Electric red' },

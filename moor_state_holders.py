@@ -134,13 +134,13 @@ def canonical_sqlite_path(path: str) -> str:
 def _argv_scoped_to_other_home(argv: Sequence[str], db_path: Path) -> bool:
     """Return whether argv proves the process belongs to a DIFFERENT instance.
 
-    ``state.db`` lives at the HERMES_HOME root, so an absolute-path token
-    containing a ``/.hermes`` segment (or naming a ``state.db``/WAL/SHM under
-    some other parent) identifies that token's own Hermes home.  When at least
+    ``state.db`` lives at the MOOR_HOME root, so an absolute-path token
+    containing a ``/.moor`` segment (or naming a ``state.db``/WAL/SHM under
+    some other parent) identifies that token's own Moor home.  When at least
     one such token exists AND no token references this instance's state.db,
     its sidecars, or its home directory, the process provably works on a
     different generation and must not be counted as an uninspectable holder
-    of ours (issue #92401: a second gateway under /home/demo/.hermes deferred
+    of ours (issue #92401: a second gateway under /home/demo/.moor deferred
     this instance's stale-FTS rebuild forever despite lsof proving zero open
     handles).  Ambiguous argv without absolute-path tokens returns False and
     keeps the fail-closed suspicion.
@@ -173,7 +173,7 @@ def _argv_scoped_to_other_home(argv: Sequence[str], db_path: Path) -> bool:
             normalized = os.path.normcase(os.path.normpath(path_token))
             if normalized in ours or normalized.startswith(this_home + os.sep):
                 return False
-            if "/.hermes" in normalized or normalized.endswith("/.hermes"):
+            if "/.moor" in normalized or normalized.endswith("/.moor"):
                 other_home_seen = True
             elif os.path.basename(normalized) in (
                 "state.db",
@@ -195,7 +195,7 @@ def foreign_state_db_holders(db_path: Path) -> List[Tuple[int, str]]:
         return []
 
     # realpath, not abspath: psutil/libproc report the kernel-resolved pathname, so a symlinked
-    # HERMES_HOME would otherwise make every holder invisible and let maintenance proceed.
+    # MOOR_HOME would otherwise make every holder invisible and let maintenance proceed.
     db_path_str = os.path.realpath(os.fspath(db_path))
     watched = {
         canonical_sqlite_path(db_path_str),
@@ -234,7 +234,7 @@ def foreign_state_db_holders(db_path: Path) -> List[Tuple[int, str]]:
                     argv = _read_proc_argv(pid)
                     if (
                         argv is not None
-                        and _looks_like_hermes(argv)
+                        and _looks_like_moor(argv)
                         and not _argv_scoped_to_other_home(argv, db_path)
                     ):
                         cmdline = " ".join(argv)
@@ -250,7 +250,7 @@ def foreign_state_db_holders(db_path: Path) -> List[Tuple[int, str]]:
                         argv = _read_proc_argv(pid)
                         if (
                             argv is not None
-                            and _looks_like_hermes(argv)
+                            and _looks_like_moor(argv)
                             and not _argv_scoped_to_other_home(argv, db_path)
                         ):
                             holders.append(
@@ -274,7 +274,7 @@ def foreign_state_db_holders(db_path: Path) -> List[Tuple[int, str]]:
                             argv = _read_proc_argv(pid)
                             if (
                                 argv is not None
-                                and _looks_like_hermes(argv)
+                                and _looks_like_moor(argv)
                                 and not _argv_scoped_to_other_home(argv, db_path)
                             ):
                                 holders.append(

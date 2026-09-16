@@ -154,7 +154,7 @@ export function UninstallSection() {
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            <p className="text-sm font-medium">{t.settings.uninstallSection.uninstallHermes}</p>
+            <p className="text-sm font-medium">{t.settings.uninstallSection.uninstallMoor}</p>
             <p className="text-xs text-muted-foreground">
               Choose how much to remove. The app closes to finish the job; reopen the installer any time to come back.
             </p>

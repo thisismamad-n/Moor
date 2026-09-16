@@ -6,7 +6,7 @@ import logging
 import os
 from typing import Any, Dict, List, Optional
 from utils import base_url_hostname, is_truthy_value
-from hermes_cli.fallback_config import get_fallback_chain
+from moor_cli.fallback_config import get_fallback_chain
 
 logger = logging.getLogger("tools.delegate_tool")  # log-record parity with the origin module
 

@@ -495,7 +495,7 @@ def redeem_codex_reset_credit(
     try:
         token, resolved_base_url, account_id = _resolve_codex_usage_credentials(base_url, api_key)
     except Exception:
-        return _unavailable("No Codex credentials available. Run `hermes auth` to sign in with your ChatGPT account.")
+        return _unavailable("No Codex credentials available. Run `moor auth` to sign in with your ChatGPT account.")
     redeem_request_id = str(uuid.uuid4())
     try:
         for attempt in range(2):

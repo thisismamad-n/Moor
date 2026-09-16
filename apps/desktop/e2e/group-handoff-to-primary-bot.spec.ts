@@ -4,12 +4,12 @@ import { join } from 'node:path'
 import { type MockBackendFixture, setupMockBackend, waitForAppReady } from './fixtures'
 import { expect, test } from './test'
 
-// #100406: in a Bot Mode group room a teammate's `@hermes` handoff must give
+// #100406: in a Bot Mode group room a teammate's `@moor` handoff must give
 // the primary profile (internal name `default`) its turn, exactly like
-// `@hermes → @code-farmer` already does. The live roster stamps the primary
+// `@moor → @code-farmer` already does. The live roster stamps the primary
 // row's handle as the bare profile id ("default"), and the mention parser let
-// that stamped handle shadow the `@hermes` alias — so the room settled with
-// Hermes never driven. The mock inference server scripts each member's line
+// that stamped handle shadow the `@moor` alias — so the room settled with
+// Moor never driven. The mock inference server scripts each member's line
 // from the user's send (`E2E_SAY(<handle>)[…]`), so the assertion is on the
 // persisted room log: an entry authored by `default` saying "B".
 
@@ -44,10 +44,10 @@ async function createAgent(page: Page, name: string, title: string): Promise<voi
   await expect(page.getByRole('button', { name: new RegExp(`^${title}\\b`) }).first()).toBeVisible({ timeout: 30_000 })
 }
 
-/** The plugin's persisted room log (`hermes.plugin.hermes-bots.group-chats`). */
+/** The plugin's persisted room log (`moor.plugin.moor-bots.group-chats`). */
 async function roomLog(page: Page, group: string): Promise<RoomLogEntry[]> {
   return page.evaluate(name => {
-    const raw = window.localStorage.getItem('hermes.plugin.hermes-bots.group-chats')
+    const raw = window.localStorage.getItem('moor.plugin.moor-bots.group-chats')
     const rooms = raw ? (JSON.parse(raw) as Record<string, { log?: RoomLogEntry[] }>) : {}
 
     return rooms[name]?.log ?? []
@@ -67,7 +67,7 @@ test.afterEach(async ({}, info) => {
   }
 
   await info.attach('room-log', {
-    body: JSON.stringify(await roomLog(fixture.page, 'Hermes, Code Farmer'), null, 2),
+    body: JSON.stringify(await roomLog(fixture.page, 'Moor, Code Farmer'), null, 2),
     contentType: 'application/json'
   })
   await info.attach('native-window', { body: await fixture.page.screenshot(), contentType: 'image/png' })
@@ -76,8 +76,8 @@ test.afterEach(async ({}, info) => {
       await fixture.app.evaluate(() => ({
         cwd: process.cwd(),
         argv: process.argv,
-        root: process.env.HERMES_DESKTOP_HERMES_ROOT,
-        home: process.env.HERMES_HOME
+        root: process.env.MOOR_DESKTOP_MOOR_ROOT,
+        home: process.env.MOOR_HOME
       })),
       null,
       2
@@ -85,7 +85,7 @@ test.afterEach(async ({}, info) => {
     contentType: 'application/json'
   })
   await info.attach('desktop-log', {
-    body: readFileSync(join(fixture.sandbox.hermesHome, 'logs/desktop.log')),
+    body: readFileSync(join(fixture.sandbox.moorHome, 'logs/desktop.log')),
     contentType: 'text/plain'
   })
 })
@@ -95,10 +95,10 @@ test.afterAll(async () => {
   fixture = null
 })
 
-test('a teammate handing off with @hermes drives the primary profile', async () => {
+test('a teammate handing off with @moor drives the primary profile', async () => {
   test.setTimeout(420_000)
   const page = fixture!.page
-  const group = 'Hermes, Code Farmer'
+  const group = 'Moor, Code Farmer'
 
   await openBots(page)
   await createAgent(page, 'code-farmer', 'Code Farmer')
@@ -108,7 +108,7 @@ test('a teammate handing off with @hermes drives the primary profile', async () 
 
   const dialog = page.getByRole('dialog', { name: 'New Group Chat' })
 
-  for (const title of ['Hermes', 'Code Farmer']) {
+  for (const title of ['Moor', 'Code Farmer']) {
     await dialog.getByText(title, { exact: true }).locator('xpath=ancestor::label').getByRole('checkbox').click()
   }
 
@@ -119,20 +119,20 @@ test('a teammate handing off with @hermes drives the primary profile', async () 
   await expect(composer).toBeVisible({ timeout: 20_000 })
 
   // Only Code Farmer is addressed by the user. Its scripted reply hands off
-  // to @hermes; Hermes' scripted reply is "B". Neither script token carries
-  // a literal `@`, so the user send itself never mentions Hermes.
+  // to @moor; Moor' scripted reply is "B". Neither script token carries
+  // a literal `@`, so the user send itself never mentions Moor.
   await composer.fill(
     '@code-farmer Please reply with one line only. ' +
-      'E2E_SAY(code-farmer)[{at}hermes Please reply with the letter B.] E2E_SAY(hermes)[B]'
+      'E2E_SAY(code-farmer)[{at}moor Please reply with the letter B.] E2E_SAY(moor)[B]'
   )
   await composer.press('Enter')
 
   // Code Farmer's handoff line lands first (the reverse direction is not in
-  // question); then the room must NOT settle without Hermes' turn.
+  // question); then the room must NOT settle without Moor' turn.
   await expect
     .poll(
       async () =>
-        (await roomLog(page, group)).some(e => e.from?.name === 'code-farmer' && /@hermes/.test(e.text || '')),
+        (await roomLog(page, group)).some(e => e.from?.name === 'code-farmer' && /@moor/.test(e.text || '')),
       {
         timeout: 180_000
       }
@@ -144,7 +144,7 @@ test('a teammate handing off with @hermes drives the primary profile', async () 
       async () => (await roomLog(page, group)).some(e => e.from?.name === 'default' && (e.text || '').trim() === 'B'),
       {
         timeout: 180_000,
-        message: 'the primary profile (default / @hermes) never took its turn after being @mentioned by a teammate'
+        message: 'the primary profile (default / @moor) never took its turn after being @mentioned by a teammate'
       }
     )
     .toBe(true)
@@ -153,7 +153,7 @@ test('a teammate handing off with @hermes drives the primary profile', async () 
   await expect(page.getByText('B', { exact: true }).filter({ visible: true }).first()).toBeVisible()
 
   await composer.fill(
-    '@hermes Begin the reverse handoff. E2E_SAY(hermes)[{at}code-farmer Reply with D.] E2E_SAY(code-farmer)[D]'
+    '@moor Begin the reverse handoff. E2E_SAY(moor)[{at}code-farmer Reply with D.] E2E_SAY(code-farmer)[D]'
   )
   await composer.press('Enter')
   await expect

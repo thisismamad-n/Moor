@@ -697,7 +697,7 @@ export function DesktopInstallOverlay({ enabled = true }: DesktopInstallOverlayP
               </span>
               <div className="flex gap-2">
                 <Button
-                  onClick={() => void window.hermesDesktop?.revealLogs?.().catch(() => undefined)}
+                  onClick={() => void window.moorDesktop?.revealLogs?.().catch(() => undefined)}
                   size="sm"
                   variant="ghost"
                 >

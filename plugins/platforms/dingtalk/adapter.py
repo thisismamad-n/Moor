@@ -651,10 +651,10 @@ async def _standalone_send(pconfig, chat_id, message, *, thread_id=None, media_f
 
 def interactive_setup() -> None:
     """Configure DingTalk — QR scan (recommended) or manual credential entry."""
-    from hermes_cli.config import save_env_value
-    from hermes_cli.setup import prompt_choice
-    from hermes_cli.cli_output import prompt, print_header, print_success, print_warning
-    from hermes_cli.setup_platforms import declines_reconfigure
+    from moor_cli.config import save_env_value
+    from moor_cli.setup import prompt_choice
+    from moor_cli.cli_output import prompt, print_header, print_success, print_warning
+    from moor_cli.setup_platforms import declines_reconfigure
     print_header("DingTalk")
     if declines_reconfigure("DingTalk", "Reconfigure DingTalk?", "DINGTALK_CLIENT_ID"):
         return

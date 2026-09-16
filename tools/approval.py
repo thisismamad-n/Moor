@@ -305,14 +305,14 @@ def _yolo_active() -> bool:
 def _permanent_set() -> set:
     """The permanent allowlist that governs the ACTIVE profile. Unscoped (single-profile process,
     or the multiplexer's own launch profile) → the module-level set tests and the CLI seed. A routed
-    profile (HERMES_HOME override) → its own set, lazily loaded from ITS ``command_allowlist``: the
+    profile (MOOR_HOME override) → its own set, lazily loaded from ITS ``command_allowlist``: the
     launch profile's "always" approvals must not pre-approve commands for a secondary, nor may a
     secondary's "always" choice be written back into the launch profile's config. Callers hold ``_lock``.
     """
-    from hermes_constants import get_hermes_home_override, hermes_home_key
-    if get_hermes_home_override() is None:
+    from moor_constants import get_moor_home_override, moor_home_key
+    if get_moor_home_override() is None:
         return _permanent_approved
-    home_key = hermes_home_key()
+    home_key = moor_home_key()
     approved = _permanent_approved_by_home.get(home_key)
     if approved is None:
         try:
@@ -373,7 +373,7 @@ def _persist_choice(session_key: str, choice: str, warnings: list[tuple]) -> Non
 
 def _read_permanent_allowlist() -> set:
     """``command_allowlist`` of the active profile's config as a set (empty on malformed input)."""
-    from hermes_cli.config import load_config_readonly
+    from moor_cli.config import load_config_readonly
     config = load_config_readonly()
     raw = config.get("command_allowlist")
     legacy = isinstance(raw, str)
@@ -404,8 +404,8 @@ _permanent_baseline_by_home: dict[str, set] = {}
 
 
 def _baseline_key() -> str:
-    from hermes_constants import get_hermes_home_override, hermes_home_key
-    return "" if get_hermes_home_override() is None else hermes_home_key()
+    from moor_constants import get_moor_home_override, moor_home_key
+    return "" if get_moor_home_override() is None else moor_home_key()
 
 
 def load_permanent_allowlist() -> set:
@@ -911,15 +911,15 @@ def _human_decision(spec: _GateSpec, *, command: str, description: str,
 def _presence(approval_callback=None) -> tuple:
     """``(approval_callback, is_cli, is_gateway, is_ask)`` for the current context.
 
-    Single-query ``-q`` and cron clear the presence trio: ``hermes chat -q`` exports
-    HERMES_INTERACTIVE=1 for sudo prompts, and a gateway sets HERMES_EXEC_ASK=1 at startup and
+    Single-query ``-q`` and cron clear the presence trio: ``moor chat -q`` exports
+    MOOR_INTERACTIVE=1 for sudo prompts, and a gateway sets MOOR_EXEC_ASK=1 at startup and
     passes its environ to every external cron worker (#110932) — in neither can a human answer
     the card, so the gate must resolve from ``approvals.<ctx>_mode`` instead of parking on a
     pending approval. Unattended *platforms* keep ``is_ask``: api_server relies on it for the
     ``/v1/runs`` approval bridge (``approval.request`` → ``POST /v1/runs/{id}/approval``)."""
     approval_callback = _resolve_cli_approval_callback(approval_callback)
     is_cli, is_gateway = _is_interactive_cli(), _is_gateway_approval_context()
-    is_ask = env_var_enabled("HERMES_EXEC_ASK")
+    is_ask = env_var_enabled("MOOR_EXEC_ASK")
     if _is_single_query_approval_context() or _is_cron_approval_context():
         is_cli = is_gateway = is_ask = False
     return approval_callback, is_cli, is_gateway, is_ask

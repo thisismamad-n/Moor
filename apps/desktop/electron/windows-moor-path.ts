@@ -171,7 +171,7 @@ export interface ResolveVenvMoorCommandDeps {
   isCommandScript: (command: string) => boolean
   fileExists: (filePath: string) => boolean
   directoryExists: (filePath: string) => boolean
-  canImportHermesCli: (python: string, opts?: { env?: Record<string, string> }) => Promise<boolean>
+  canImportMoorCli: (python: string, opts?: { env?: Record<string, string> }) => Promise<boolean>
   getVenvPython: (venvRoot: string) => string
   getVenvSitePackagesEntries: (venvRoot: string) => string[]
   buildDesktopBackendEnv: (opts: {
@@ -205,10 +205,10 @@ export interface ResolveVenvMoorCommandDeps {
  * python doesn't exist, or the import probe fails. Otherwise returns the
  * resolved backend descriptor.
  */
-export async function resolveVenvHermesCommand(
+export async function resolveVenvMoorCommand(
   command: string,
   backendArgs: string[],
-  deps: ResolveVenvHermesCommandDeps
+  deps: ResolveVenvMoorCommandDeps
 ): Promise<{
   label: string
   command: string
@@ -261,7 +261,7 @@ export async function resolveVenvHermesCommand(
   const root = dirname(venvRoot)
 
   if (
-    !(await canImportHermesCli(python, {
+    !(await canImportMoorCli(python, {
       env: {
         PYTHONPATH: [...(directoryExists(root) ? [root] : []), process.env.PYTHONPATH]
           .filter((entry): entry is string => Boolean(entry))

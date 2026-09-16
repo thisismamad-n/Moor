@@ -218,9 +218,9 @@ export async function loadRuntimePlugin(
 }
 
 // ---------------------------------------------------------------------------
-// The on-disk plugin door — ONE app-level root, `<hermes home>/desktop-plugins/`:
+// The on-disk plugin door — ONE app-level root, `<moor home>/desktop-plugins/`:
 //  - `<id>/plugin.js` — a standalone desktop plugin (agent- or user-written);
-//  - `<package>/plugin.js` + `.hermes-package.json` — the desktop HALF of a
+//  - `<package>/plugin.js` + `.moor-package.json` — the desktop HALF of a
 //    unified agent+desktop package, COPIED here by Electron from the package's
 //    `plugins/<package>/desktop/` folder (electron/desktop-plugins-root.ts).
 //    The agent half stays in its profile; the desktop half lives with the app,
@@ -245,10 +245,10 @@ interface DiskRoot {
 }
 
 /** The app-level root, resolved fresh each pass (Electron-local, never the
- *  backend's hermes_home — #66899). Resolving it also runs Electron's
+ *  backend's moor_home — #66899). Resolving it also runs Electron's
  *  reconcile, so unified packages' desktop halves are current before we scan. */
 async function diskRoots(): Promise<DiskRoot[]> {
-  const root = await window.hermesDesktop?.desktopPluginsRoot?.()
+  const root = await window.moorDesktop?.desktopPluginsRoot?.()
 
   return root ? [{ dir: root, entrySegments: ['plugin.js'] }] : []
 }
@@ -258,14 +258,14 @@ async function diskRoots(): Promise<DiskRoot[]> {
  *  until allowlisted — GHSA-mcfc-hp25-cjv7 — so the desktop half matches), and
  *  the record carries the package name so the Plugins page pairs it with the
  *  agent row. */
-const PACKAGE_MARKER = '.hermes-package.json'
+const PACKAGE_MARKER = '.moor-package.json'
 
 interface PackageMarker {
   origin?: { catalogName?: string; repo?: string; sha?: string }
   package: string
 }
 
-async function readPackageMarker(desktop: Window['hermesDesktop'], folder: string): Promise<null | PackageMarker> {
+async function readPackageMarker(desktop: Window['moorDesktop'], folder: string): Promise<null | PackageMarker> {
   try {
     const { entries } = await desktop.readDir(folder)
     const marker = entries.find(entry => entry.name === PACKAGE_MARKER && !entry.isDirectory)

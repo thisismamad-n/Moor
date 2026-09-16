@@ -18,6 +18,13 @@ contextBridge.exposeInMainWorld('moorDesktop', {
   // Launch-flag fact: the app was started with --local, so the renderer may
   // show the local-models surfaces. Static for the window's lifetime.
   localModelsEnabled: launchFlags?.localModels === true,
+  // Launch-flag fact: the Moor free tier is on for this launch
+  // (MOOR_GUEST_ONBOARDING=1 or --guest-onboarding). Read-only; the same
+  // decision is stamped onto every backend the app spawns.
+  guestOnboardingEnabled: launchFlags?.guestOnboarding === true,
+  // Launch-flag fact: skip the first-run film (MOOR_SKIP_INTRO=1 or
+  // --skip-intro). Rehearsal aid for the guided chat behind it.
+  skipIntro: launchFlags?.skipIntro === true,
   getConnection: (profile, opts) => ipcRenderer.invoke('moor:connection', profile, opts),
   // Registry-scoped backend resolution: { connectionId, profile } → descriptor.
   getConnectionFor: payload => ipcRenderer.invoke('moor:connection:for', payload),
@@ -51,6 +58,30 @@ contextBridge.exposeInMainWorld('moorDesktop', {
       ipcRenderer.on('moor:wake-indicator:state', listener)
 
       return () => ipcRenderer.removeListener('moor:wake-indicator:state', listener)
+    }
+  },
+  chatOnboarding: {
+    grow: request => ipcRenderer.send('moor:chat-onboarding:grow', request),
+    soloBoot: () => ipcRenderer.send('moor:chat-onboarding:solo-boot')
+  },
+  introReveal: {
+    open: (payload?: { hideMain?: boolean }) => ipcRenderer.invoke('moor:intro-reveal:open', payload),
+    close: (payload?: { showMain?: boolean }) => ipcRenderer.invoke('moor:intro-reveal:close', payload),
+    skip: () => ipcRenderer.send('moor:intro-reveal:skip'),
+    ready: () => ipcRenderer.send('moor:intro-reveal:ready'),
+    onSkip: callback => {
+      const listener = () => callback()
+
+      ipcRenderer.on('moor:intro-reveal:skip', listener)
+
+      return () => ipcRenderer.removeListener('moor:intro-reveal:skip', listener)
+    },
+    onClosed: callback => {
+      const listener = () => callback()
+
+      ipcRenderer.on('moor:intro-reveal:closed', listener)
+
+      return () => ipcRenderer.removeListener('moor:intro-reveal:closed', listener)
     }
   },
   petOverlay: {
@@ -257,6 +288,7 @@ contextBridge.exposeInMainWorld('moorDesktop', {
   },
   saveImageBuffer: (data, ext, name) => ipcRenderer.invoke('moor:saveImageBuffer', { data, ext, name }),
   capturePreview: payload => ipcRenderer.invoke('moor:capturePreview', payload),
+  savePastedText: text => ipcRenderer.invoke('moor:savePastedText', { text }),
   saveClipboardImage: () => ipcRenderer.invoke('moor:saveClipboardImage'),
   getPathForFile: file => {
     try {
@@ -322,8 +354,8 @@ contextBridge.exposeInMainWorld('moorDesktop', {
   revealPath: targetPath => ipcRenderer.invoke('moor:fs:reveal', targetPath),
   openDir: dirPath => ipcRenderer.invoke('moor:fs:openDir', dirPath),
   desktopPluginsRoot: () => ipcRenderer.invoke('moor:fs:desktopPluginsRoot'),
+  reconcileDesktopPlugins: () => ipcRenderer.invoke('moor:fs:reconcileDesktopPlugins'),
   logsRoot: () => ipcRenderer.invoke('moor:fs:logsRoot'),
-  agentPluginsRoot: () => ipcRenderer.invoke('moor:fs:agentPluginsRoot'),
   renamePath: (targetPath, newName) => ipcRenderer.invoke('moor:fs:rename', targetPath, newName),
   writeTextFile: (filePath, content) => ipcRenderer.invoke('moor:fs:writeText', filePath, content),
   trashPath: targetPath => ipcRenderer.invoke('moor:fs:trash', targetPath),
@@ -494,13 +526,14 @@ contextBridge.exposeInMainWorld('moorDesktop', {
   },
   getVersion: () => ipcRenderer.invoke('moor:version'),
   relaunchApp: () => ipcRenderer.invoke('moor:app:relaunch'),
+  getMachineProfile: () => ipcRenderer.invoke('moor:machine:profile'),
   getRemoteDisplayReason: () => ipcRenderer.invoke('moor:get-remote-display-reason'),
   uninstall: {
     summary: () => ipcRenderer.invoke('moor:uninstall:summary'),
     run: mode => ipcRenderer.invoke('moor:uninstall:run', { mode })
   },
   updates: {
-    check: () => ipcRenderer.invoke('moor:updates:check'),
+    check: opts => ipcRenderer.invoke('moor:updates:check', opts),
     apply: opts => ipcRenderer.invoke('moor:updates:apply', opts),
     getBranch: () => ipcRenderer.invoke('moor:updates:branch:get'),
     setBranch: name => ipcRenderer.invoke('moor:updates:branch:set', name),

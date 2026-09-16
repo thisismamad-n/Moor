@@ -19,7 +19,7 @@ class TestFindMigrationScript:
     """Test script discovery in known locations."""
 
     def test_finds_project_root_script(self, tmp_path):
-        script = tmp_path / "openclaw_to_hermes.py"
+        script = tmp_path / "openclaw_to_moor.py"
         script.write_text("# placeholder", encoding="utf-8")
         with patch.object(claw_mod, "_OPENCLAW_SCRIPT", script):
             assert claw_mod._find_migration_script() == script

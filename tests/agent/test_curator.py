@@ -971,15 +971,15 @@ def test_review_fork_seeds_shared_read_marks(curator_env, monkeypatch):
     from tools.skill_manager_guards import _background_review_read_paths
 
     monkeypatch.setattr(
-        "hermes_cli.config.load_config",
+        "moor_cli.config.load_config",
         lambda: {"model": {"provider": "custom:gateway", "default": "gateway"}},
     )
     monkeypatch.setattr(
-        "hermes_cli.config.load_config_readonly",
+        "moor_cli.config.load_config_readonly",
         lambda: {"model": {"provider": "custom:gateway", "default": "gateway"}},
     )
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "moor_cli.runtime_provider.resolve_runtime_provider",
         lambda **_kwargs: {
             "provider": "custom",
             "model": "m",

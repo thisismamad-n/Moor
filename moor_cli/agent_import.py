@@ -499,7 +499,7 @@ class AgentImporter:
             self.record("skills", source_root, destination_root, "skipped",
                         "No skills with SKILL.md found")
             return
-        from hermes_cli.agent_import_sync import skill_tree_digest
+        from moor_cli.agent_import_sync import skill_tree_digest
         for skill_dir in skill_dirs:
             destination = destination_root / skill_dir.name
             if destination.exists() and not self.overwrite:
@@ -529,7 +529,7 @@ def import_agent_command(args) -> None:
                                   print_error, prompt_yes_no)
 
     if getattr(args, "sync", False):
-        from hermes_cli.agent_import_sync import sync_imported_agents
+        from moor_cli.agent_import_sync import sync_imported_agents
         sync_imported_agents(args)
         return
 
@@ -552,7 +552,7 @@ def import_agent_command(args) -> None:
 
     print()
     print(color("┌─────────────────────────────────────────────────────────┐", Colors.MAGENTA))
-    print(color("│          ☤ Hermes — Import From Another Agent          │", Colors.MAGENTA))
+    print(color("│          ☤ Moor — Import From Another Agent          │", Colors.MAGENTA))
     print(color("└─────────────────────────────────────────────────────────┘", Colors.MAGENTA))
     if not source_dir.is_dir():
         print()
@@ -613,10 +613,10 @@ def import_agent_command(args) -> None:
     if report is None:
         return
     print_import_report(report, dry_run=False)
-    from hermes_cli.agent_import_sync import update_sync_manifest
+    from moor_cli.agent_import_sync import update_sync_manifest
     try:
-        update_sync_manifest(agent, source_dir.resolve(), hermes_home.resolve(), overwrite, report)
-        print_info("Source registered for sync — re-run 'hermes import-agent --sync' "
+        update_sync_manifest(agent, source_dir.resolve(), moor_home.resolve(), overwrite, report)
+        print_info("Source registered for sync — re-run 'moor import-agent --sync' "
                    "any time to pull in changes.")
     except OSError as exc:
         logger.warning("Could not update import sync manifest: %s", exc)

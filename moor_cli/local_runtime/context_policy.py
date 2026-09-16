@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
 
-from hermes_cli.local_runtime.estimator import (
+from moor_cli.local_runtime.estimator import (
     HardwareBudget, ModelProfile, PhysicsRefusal, ctx_bytes, footprint_bytes, physics_check)
 
 FLOOR = 64 * 1024                     # = target; one internal constant

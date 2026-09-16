@@ -52,12 +52,12 @@ tests/agent/test_iron_proxy.py              Hermetic tests (~70).  Binary instal
                                        deny CIDR defaults, bind policy, CA
                                        TOCTOU, ensure_audit_log behaviour, etc.
 
-tests/hermes_cli/test_iron_proxy_cli.py          CLI handler unit tests (~20).  Argparse
+tests/moor_cli/test_iron_proxy_cli.py          CLI handler unit tests (~20).  Argparse
                                        wiring, fail-loud paths, BWS refresh
                                        wire-up, dest='egress_command'
                                        regression guard.
 
-tests/agent/test_iron_proxy_e2e.py          Live E2E (gated on HERMES_RUN_E2E=1).
+tests/agent/test_iron_proxy_e2e.py          Live E2E (gated on MOOR_RUN_E2E=1).
                                        Real iron-proxy binary, real curl,
                                        end-to-end token swap verified.
 ```
@@ -298,10 +298,10 @@ iron-proxy writes line-delimited JSON to `~/.moor/proxy/iron-proxy.log` on the c
 
 ```bash
 # Hermetic suite (no network, no real binary)
-scripts/run_tests.sh tests/agent/test_iron_proxy.py tests/hermes_cli/test_iron_proxy_cli.py
+scripts/run_tests.sh tests/agent/test_iron_proxy.py tests/moor_cli/test_iron_proxy_cli.py
 
 # Live E2E (real binary, real curl, real CONNECT tunnel)
-HERMES_RUN_E2E=1 scripts/run_tests.sh tests/agent/test_iron_proxy_e2e.py
+MOOR_RUN_E2E=1 scripts/run_tests.sh tests/agent/test_iron_proxy_e2e.py
 
 # Live PTY smoke against `moor egress`
 MOOR_HOME=/tmp/moor-egress-test python3 -m moor_cli.main egress --help

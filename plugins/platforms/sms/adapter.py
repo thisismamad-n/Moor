@@ -83,7 +83,7 @@ def check_sms_requirements() -> bool:
 
 
 class SmsAdapter(BasePlatformAdapter):
-    """Twilio SMS <-> Hermes: one session per inbound number; replies always from TWILIO_PHONE_NUMBER."""
+    """Twilio SMS <-> Moor: one session per inbound number; replies always from TWILIO_PHONE_NUMBER."""
     # Answers /p/<profile>/... on the default listener for a served secondary (shared_ingress).
     serves_profile_prefix: bool = True
 

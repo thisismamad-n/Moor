@@ -17,7 +17,7 @@ from moor_cli import models as M
 
 
 def test_anthropic_native_list_keeps_aggregator_flagships():
-    """Native Anthropic must list the same current flagships OpenRouter/Nous already ship.
+    """Native Anthropic must list the same current flagships OpenRouter/Moor already ship.
 
     Aggregator catalogs get the new aliases first; the native curated list is what
     `/model` falls back to when live `/v1/models` lags or 401s. Newest-first order

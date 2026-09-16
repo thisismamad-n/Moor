@@ -32,7 +32,7 @@ def test_session_store_default_db_uses_runtime_moor_home(tmp_path, monkeypatch):
     default SessionDB() at the developer's real ~/.moor/state.db.
     """
     config = GatewayConfig()
-    fake_home = tmp_path / "alt_hermes_home"
+    fake_home = tmp_path / "alt_moor_home"
     fake_home.mkdir()
     monkeypatch.setenv("MOOR_HOME", str(fake_home))
 
@@ -257,4 +257,4 @@ class TestReadmeSentinel:
         assert next(iter(raw)) == "_README"
         # The note points users at the real store and command.
         assert "state.db" in raw["_README"]
-        assert "hermes sessions list" in raw["_README"]
+        assert "moor sessions list" in raw["_README"]

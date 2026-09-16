@@ -82,7 +82,7 @@ class TestTranscribeCallSitesReadDotenv:
         fake_openai_module.APIConnectionError = Exception
         fake_openai_module.APITimeoutError = Exception
 
-        with patch("hermes_cli.config.get_env_value", return_value="groq-dotenv-key"), \
+        with patch("moor_cli.config.get_env_value", return_value="groq-dotenv-key"), \
              patch.object(tt, "_HAS_OPENAI", True), \
              patch.dict("sys.modules", {"openai": fake_openai_module}), \
              patch("builtins.open", MagicMock()):
@@ -113,7 +113,7 @@ class TestTranscribeCallSitesReadDotenv:
                 return "xai-dotenv-key"
             return None
 
-        with patch("hermes_cli.config.get_env_value", side_effect=fake_get_env_value), \
+        with patch("moor_cli.config.get_env_value", side_effect=fake_get_env_value), \
              patch.object(xai_http, "resolve_xai_http_credentials", return_value={
                  "provider": "xai-oauth",
                  "api_key": "subscription-oauth-token",
@@ -144,7 +144,7 @@ class TestTranscribeCallSitesReadDotenv:
                 return "elevenlabs-dotenv-key"
             return None
 
-        with patch("hermes_cli.config.get_env_value", side_effect=fake_get_env_value), \
+        with patch("moor_cli.config.get_env_value", side_effect=fake_get_env_value), \
              patch.object(tt, "_load_stt_config", return_value={}), \
              patch("requests.post", side_effect=fake_post), \
              patch("builtins.open", MagicMock()):

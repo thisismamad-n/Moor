@@ -18,8 +18,8 @@ from unittest.mock import patch, MagicMock
 import pytest
 import yaml
 
-from hermes_cli import profiles
-from hermes_cli.profiles import (
+from moor_cli import profiles
+from moor_cli.profiles import (
     _clone_all_copytree_ignore,
     normalize_profile_name,
     validate_profile_name,
@@ -205,9 +205,9 @@ class TestCreateProfile:
     def test_clone_sync_imports_carries_manifest_but_never_links_profiles(self, profile_env):
         """--sync-imports copies import-sync.json (a pointer at EXTERNAL agent trees) and nothing
         else changes: the clone still gets its own config/skills copies, never a live link."""
-        from hermes_cli.agent_import_sync import SYNC_MANIFEST_NAME, load_sync_manifest
+        from moor_cli.agent_import_sync import SYNC_MANIFEST_NAME, load_sync_manifest
 
-        default_home = profile_env / ".hermes"
+        default_home = profile_env / ".moor"
         (default_home / "config.yaml").write_text("model: test")
         manifest = {"version": 1, "agents": {"claude-code": {
             "source": str(profile_env / ".claude"), "digest": "d", "overwrite": False,
@@ -230,7 +230,7 @@ class TestCreateProfile:
     def test_clone_all_does_not_copy_cron_jobs(self, profile_env):
         # Cron jobs are scheduled work bound to the source profile + origin channel; a clone
         # that inherits jobs.json fires every job twice (two gateways, same job ids).
-        default_home = profile_env / ".hermes"
+        default_home = profile_env / ".moor"
         (default_home / "config.yaml").write_text("model: test")
         (default_home / "cron").mkdir()
         (default_home / "cron" / "jobs.json").write_text(json.dumps({"jobs": [{"id": "abc123def456"}]}))
@@ -246,7 +246,7 @@ class TestCreateProfile:
     def test_clone_all_skips_special_files(self, profile_env):
         # A live source profile holds special files copytree cannot copy (e.g. a suffixless
         # agent-browser control socket); one of them must not abort the whole clone.
-        default_home = profile_env / ".hermes"
+        default_home = profile_env / ".moor"
         (default_home / "config.yaml").write_text("model: test")
         browser_dir = default_home / "home" / ".agent-browser"
         browser_dir.mkdir(parents=True)
@@ -825,11 +825,11 @@ class TestRenameProfile:
         """Under a live multiplexer the old name is tombstoned + unrouted BEFORE the directory
         moves and the new name is hot-served after, so a stale runtime mkdir of the old home is
         refused instead of resurrecting a ghost served profile (#109267)."""
-        from hermes_constants import mkdir_under_hermes_home
+        from moor_constants import mkdir_under_moor_home
         tmp_path = profile_env
         create_profile("oldname", no_alias=True)
-        old_dir = tmp_path / ".hermes" / "profiles" / "oldname"
-        new_dir = tmp_path / ".hermes" / "profiles" / "newname"
+        old_dir = tmp_path / ".moor" / "profiles" / "oldname"
+        new_dir = tmp_path / ".moor" / "profiles" / "newname"
 
         calls = []
 
@@ -839,11 +839,11 @@ class TestRenameProfile:
             if name == "oldname" and old_dir.exists():
                 # A still-live component of the multiplexer writing into the old home mid-teardown.
                 with pytest.raises(FileNotFoundError):
-                    mkdir_under_hermes_home(old_dir / "logs")
+                    mkdir_under_moor_home(old_dir / "logs")
 
-        with patch("hermes_cli.profiles.check_alias_collision", return_value="skip"), \
-             patch("hermes_cli.profiles._live_default_multiplexer", return_value=True), \
-             patch("hermes_cli.profiles._notify_multiplexer", side_effect=_record_notify):
+        with patch("moor_cli.profiles.check_alias_collision", return_value="skip"), \
+             patch("moor_cli.profiles._live_default_multiplexer", return_value=True), \
+             patch("moor_cli.profiles._notify_multiplexer", side_effect=_record_notify):
             rename_profile("oldname", "newname")
 
         # (name, old_exists, new_exists, old_tombstoned): unroute first, hot-serve last.
@@ -856,53 +856,53 @@ class TestRenameProfile:
         """No live multiplexer → rename must neither tombstone nor ping (single-profile installs)."""
         tmp_path = profile_env
         create_profile("oldname", no_alias=True)
-        old_dir = tmp_path / ".hermes" / "profiles" / "oldname"
+        old_dir = tmp_path / ".moor" / "profiles" / "oldname"
 
-        with patch("hermes_cli.profiles.check_alias_collision", return_value="skip"), \
-             patch("hermes_cli.profiles._live_default_multiplexer", return_value=False), \
-             patch("hermes_cli.profiles._notify_multiplexer") as notify:
+        with patch("moor_cli.profiles.check_alias_collision", return_value="skip"), \
+             patch("moor_cli.profiles._live_default_multiplexer", return_value=False), \
+             patch("moor_cli.profiles._notify_multiplexer") as notify:
             new_dir = rename_profile("oldname", "newname")
 
         notify.assert_not_called()
-        assert not (tmp_path / ".hermes" / "profiles" / ".deleted").exists()
+        assert not (tmp_path / ".moor" / "profiles" / ".deleted").exists()
         assert not old_dir.exists() and new_dir.is_dir()
 
     def test_rename_migrates_session_identity_without_live_gateway(self, profile_env):
         """No live gateway → the CLI performs the durable rekey itself so a renamed profile's session
         keys / profile_name / routing rows follow the new name (else inbound events on the old name's
         chats resolve to a nonexistent profile and flood errors.log)."""
-        from hermes_state import SessionDB
+        from moor_state import SessionDB
         tmp_path = profile_env
         create_profile("oldname", no_alias=True)
-        old_dir = tmp_path / ".hermes" / "profiles" / "oldname"
+        old_dir = tmp_path / ".moor" / "profiles" / "oldname"
         # Seed a session owned by the old profile in the profile's own store + the root routing index.
         pdb = SessionDB(old_dir / "state.db")
         pdb.create_session(
             "sess1", "feishu", session_key="agent:oldname:feishu:dm:chatA",
             profile_name="oldname", chat_id="chatA", chat_type="dm")
         pdb.close()
-        root_db = SessionDB(tmp_path / ".hermes" / "state.db")
+        root_db = SessionDB(tmp_path / ".moor" / "state.db")
         root_db.save_gateway_routing_entry(
             "agent:oldname:feishu:dm:chatA",
             json.dumps({"session_key": "agent:oldname:feishu:dm:chatA", "session_id": "sess1",
                         "origin": {"platform": "feishu", "chat_id": "chatA", "profile": "oldname"}}),
-            scope=str(tmp_path / ".hermes" / "sessions"))
+            scope=str(tmp_path / ".moor" / "sessions"))
         root_db.close()
 
-        with patch("hermes_cli.profiles.check_alias_collision", return_value="skip"), \
-             patch("hermes_cli.profiles._live_default_multiplexer", return_value=False):
+        with patch("moor_cli.profiles.check_alias_collision", return_value="skip"), \
+             patch("moor_cli.profiles._live_default_multiplexer", return_value=False):
             rename_profile("oldname", "newname")
 
-        new_dir = tmp_path / ".hermes" / "profiles" / "newname"
+        new_dir = tmp_path / ".moor" / "profiles" / "newname"
         moved_db = SessionDB(new_dir / "state.db")
         row = moved_db._read_one(
             "SELECT session_key, profile_name FROM sessions WHERE id = ?", ("sess1",))
         assert row["session_key"] == "agent:newname:feishu:dm:chatA"
         assert row["profile_name"] == "newname"
         moved_db.close()
-        root_db2 = SessionDB(tmp_path / ".hermes" / "state.db")
+        root_db2 = SessionDB(tmp_path / ".moor" / "state.db")
         routing = root_db2.load_gateway_routing_entries(
-            scope=str(tmp_path / ".hermes" / "sessions"))
+            scope=str(tmp_path / ".moor" / "sessions"))
         assert "agent:oldname:feishu:dm:chatA" not in routing
         assert "agent:newname:feishu:dm:chatA" in routing
         root_db2.close()
@@ -913,12 +913,12 @@ class TestRenameProfile:
         tmp_path = profile_env
         create_profile("oldname", no_alias=True)
 
-        with patch("hermes_cli.profiles.check_alias_collision", return_value="skip"), \
-             patch("hermes_cli.profiles._live_default_multiplexer", return_value=True), \
-             patch("hermes_cli.profiles._notify_multiplexer"), \
+        with patch("moor_cli.profiles.check_alias_collision", return_value="skip"), \
+             patch("moor_cli.profiles._live_default_multiplexer", return_value=True), \
+             patch("moor_cli.profiles._notify_multiplexer"), \
              patch("gateway.control_socket.migrate_gateway_profile_identity",
                    return_value={"ok": True, "rekeyed": 1, "db": {}}) as verb, \
-             patch("hermes_state_registry.acquire") as acquire:
+             patch("moor_state_registry.acquire") as acquire:
             rename_profile("oldname", "newname")
 
         # Delegated to the gateway; the CLI's own durable-rewrite branch never ran.
@@ -929,49 +929,49 @@ class TestRenameProfile:
 
     def test_live_gateway_failure_does_not_rewrite_db_directly(self, profile_env, capsys):
         create_profile("oldname", no_alias=True)
-        with patch("hermes_cli.profiles.check_alias_collision", return_value="skip"), \
-             patch("hermes_cli.profiles._live_default_multiplexer", return_value=True), \
-             patch("hermes_cli.profiles._notify_multiplexer"), \
+        with patch("moor_cli.profiles.check_alias_collision", return_value="skip"), \
+             patch("moor_cli.profiles._live_default_multiplexer", return_value=True), \
+             patch("moor_cli.profiles._notify_multiplexer"), \
              patch("gateway.control_socket.migrate_gateway_profile_identity", return_value=None), \
-             patch("hermes_state_registry.acquire") as acquire:
+             patch("moor_state_registry.acquire") as acquire:
             rename_profile("oldname", "newname")
         acquire.assert_not_called()
         assert "Restart the gateway" in capsys.readouterr().err
 
     def test_migrate_identity_command_repairs_a_failed_live_migration(self, profile_env, capsys):
-        """The failed-live-migration end state must be recoverable: `hermes profile
+        """The failed-live-migration end state must be recoverable: `moor profile
         migrate-identity <old> <new>` rekeys the durable rows once no gateway holds the store, and
         is idempotent (a second run has nothing left to rekey but still succeeds)."""
-        from hermes_cli.profile_cmd import cmd_profile
-        from hermes_state import SessionDB
+        from moor_cli.profile_cmd import cmd_profile
+        from moor_state import SessionDB
         from argparse import Namespace
         tmp_path = profile_env
         create_profile("oldname", no_alias=True)
-        old_dir = tmp_path / ".hermes" / "profiles" / "oldname"
+        old_dir = tmp_path / ".moor" / "profiles" / "oldname"
         pdb = SessionDB(old_dir / "state.db")
         pdb.create_session(
             "sess1", "feishu", session_key="agent:oldname:feishu:dm:chatA",
             profile_name="oldname", chat_id="chatA", chat_type="dm")
         pdb.close()
-        root_db = SessionDB(tmp_path / ".hermes" / "state.db")
+        root_db = SessionDB(tmp_path / ".moor" / "state.db")
         root_db.save_gateway_routing_entry(
             "agent:oldname:feishu:dm:chatA",
             json.dumps({"session_key": "agent:oldname:feishu:dm:chatA", "session_id": "sess1",
                         "origin": {"platform": "feishu", "chat_id": "chatA", "profile": "oldname"}}),
-            scope=str(tmp_path / ".hermes" / "sessions"))
+            scope=str(tmp_path / ".moor" / "sessions"))
         root_db.close()
 
         # Rename under a live multiplexer whose control verb answers nothing: the CLI warns and
         # leaves the (in-memory-owned) store alone, so the rows still name the old profile.
-        with patch("hermes_cli.profiles.check_alias_collision", return_value="skip"), \
-             patch("hermes_cli.profiles._live_default_multiplexer", return_value=True), \
-             patch("hermes_cli.profiles._notify_multiplexer"), \
+        with patch("moor_cli.profiles.check_alias_collision", return_value="skip"), \
+             patch("moor_cli.profiles._live_default_multiplexer", return_value=True), \
+             patch("moor_cli.profiles._notify_multiplexer"), \
              patch("gateway.control_socket.migrate_gateway_profile_identity", return_value=None):
             rename_profile("oldname", "newname")
-        assert "hermes profile migrate-identity oldname newname" in capsys.readouterr().err
+        assert "moor profile migrate-identity oldname newname" in capsys.readouterr().err
 
         # Gateway restarted/stopped → the retry command repairs both stores.
-        with patch("hermes_cli.profiles._live_default_multiplexer", return_value=False):
+        with patch("moor_cli.profiles._live_default_multiplexer", return_value=False):
             cmd_profile(Namespace(profile_action="migrate-identity",
                                   old_name="oldname", new_name="newname"))
             assert "✓ Session/routing identity migrated" in capsys.readouterr().out
@@ -979,16 +979,16 @@ class TestRenameProfile:
             cmd_profile(Namespace(profile_action="migrate-identity",
                                   old_name="oldname", new_name="newname"))
 
-        moved_db = SessionDB(tmp_path / ".hermes" / "profiles" / "newname" / "state.db")
+        moved_db = SessionDB(tmp_path / ".moor" / "profiles" / "newname" / "state.db")
         row = moved_db._read_one(
             "SELECT session_key, profile_name FROM sessions WHERE id = ?", ("sess1",))
         assert row is not None
         assert row["session_key"] == "agent:newname:feishu:dm:chatA"
         assert row["profile_name"] == "newname"
         moved_db.close()
-        root_db2 = SessionDB(tmp_path / ".hermes" / "state.db")
+        root_db2 = SessionDB(tmp_path / ".moor" / "state.db")
         routing = root_db2.load_gateway_routing_entries(
-            scope=str(tmp_path / ".hermes" / "sessions"))
+            scope=str(tmp_path / ".moor" / "sessions"))
         assert "agent:oldname:feishu:dm:chatA" not in routing
         assert "agent:newname:feishu:dm:chatA" in routing
         root_db2.close()
@@ -1010,10 +1010,10 @@ class TestExportImport:
 
     def test_export_default_includes_profile_data(self, profile_env, tmp_path):
         """Profile data files end up in the archive (credentials excluded)."""
-        # Write through HERMES_HOME, not get_profile_dir("default"): the latter resolves to the
+        # Write through MOOR_HOME, not get_profile_dir("default"): the latter resolves to the
         # OPERATOR's real install whenever basetest sits inside it, so this test used to
         # overwrite the live config.yaml / .env / MEMORY.md with its fixtures.
-        default_dir = profile_env / ".hermes"
+        default_dir = profile_env / ".moor"
         (default_dir / "config.yaml").write_text("model: test")
         (default_dir / ".env").write_text("KEY=val")
         (default_dir / "SOUL.md").write_text("Be nice.")
@@ -1043,7 +1043,7 @@ class TestExportImport:
         symlinks; the link and its target are both retained.
         """
         # Same reason as above: never resolve the operator's real default home from a test.
-        default_dir = profile_env / ".hermes"
+        default_dir = profile_env / ".moor"
         (default_dir / "config.yaml").write_text("ok")
         # Place broken symlink *inside* the allowed ``skills/`` tree so the
         # root-level allow-list passes the directory through; the
@@ -1392,7 +1392,7 @@ class TestResolveProfileEnvSpelling:
 
 class TestCloneAllExcludesRuntimeTrees:
     """``--clone-all`` from the default profile must not copy the machine-scoped
-    runtime trees the local-models flow puts under ``~/.hermes``: ``models/``
+    runtime trees the local-models flow puts under ``~/.moor``: ``models/``
     (GGUF weights, tens of GB), ``runtimes/`` (llama.cpp binaries) and ``node/``
     (managed Node). ``backup.py`` already excludes exactly these; the clone-all
     ignore list had not followed.
@@ -1411,7 +1411,7 @@ class TestCloneAllExcludesRuntimeTrees:
         (home / "config.yaml").write_text("model: test\n")
 
     def test_ignore_drops_runtime_trees_only_at_the_default_root(self, profile_env):
-        default_home = profile_env / ".hermes"
+        default_home = profile_env / ".moor"
         self._seed(default_home)
         # a skill that happens to carry a nested models/ dir is user data
         (default_home / "skills" / "greet" / "models").mkdir()
@@ -1433,14 +1433,14 @@ class TestCloneAllExcludesRuntimeTrees:
     def test_runtime_trio_is_one_constant_shared_with_backup(self):
         """backup's exclusion list and the clone-all root gate must be built from the same
         constant; two literals drifting apart is how the models/ copy of #111718 crept in."""
-        from hermes_cli import backup, profiles
-        from hermes_constants import LOCAL_RUNTIME_ROOT_DIRS
+        from moor_cli import backup, profiles
+        from moor_constants import LOCAL_RUNTIME_ROOT_DIRS
         assert LOCAL_RUNTIME_ROOT_DIRS == frozenset(self.RUNTIME_TREES)
         assert backup._EXCLUDED_ROOT_DIRS is LOCAL_RUNTIME_ROOT_DIRS
         assert LOCAL_RUNTIME_ROOT_DIRS <= profiles._CLONE_ALL_DEFAULT_EXCLUDE_ROOT
 
     def test_clone_all_from_default_skips_runtime_trees_but_keeps_the_rest(self, profile_env):
-        default_home = profile_env / ".hermes"
+        default_home = profile_env / ".moor"
         self._seed(default_home)
 
         clone = create_profile("clone", clone_all=True, no_alias=True)

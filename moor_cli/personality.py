@@ -133,9 +133,9 @@ def persist_personality(value: Any) -> bool:
         from moor_constants import get_moor_home
         from utils import atomic_roundtrip_yaml_update
 
-        config_path = get_hermes_home() / "config.yaml"
-        from hermes_constants import mkdir_under_hermes_home
-        mkdir_under_hermes_home(config_path.parent)
+        config_path = get_moor_home() / "config.yaml"
+        from moor_constants import mkdir_under_moor_home
+        mkdir_under_moor_home(config_path.parent)
         atomic_roundtrip_yaml_update(config_path, "display.personality", name)
         try:
             os.chmod(config_path, 0o600)

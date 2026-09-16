@@ -52,9 +52,9 @@ def _get_platform_default_moor_home() -> Path:
 
 
 def sudo_invoker_default_home() -> Path | None:
-    """The invoking user's native ``~/.hermes`` when this process is root under ``sudo``, else None.
+    """The invoking user's native ``~/.moor`` when this process is root under ``sudo``, else None.
 
-    sudo strips HERMES_HOME and sets HOME=/root, so the process's own default is root's; the profile
+    sudo strips MOOR_HOME and sets HOME=/root, so the process's own default is root's; the profile
     store and the system service being operated on belong to SUDO_USER.
     """
     if not hasattr(os, "geteuid") or os.geteuid() != 0:
@@ -65,7 +65,7 @@ def sudo_invoker_default_home() -> Path | None:
     import pwd
 
     try:
-        return Path(pwd.getpwnam(sudo_user).pw_dir) / ".hermes"
+        return Path(pwd.getpwnam(sudo_user).pw_dir) / ".moor"
     except KeyError:  # SUDO_USER not in passwd (chroot/container)
         return None
 
@@ -157,15 +157,15 @@ def get_process_moor_home() -> Path:
     return Path(val) if val else _get_platform_default_moor_home()
 
 
-# Hermes-managed runtime downloads at the root of a home (GGUF models, llama.cpp runtimes,
+# moor-managed runtime downloads at the root of a home (GGUF models, llama.cpp runtimes,
 # managed Node): re-downloadable on demand and routinely tens to hundreds of GB. Shared by
-# ``hermes backup`` (excludes them) and ``profile create --clone-all`` (skips them from the
+# ``moor backup`` (excludes them) and ``profile create --clone-all`` (skips them from the
 # default profile) so the two lists cannot drift apart.
 LOCAL_RUNTIME_ROOT_DIRS: frozenset[str] = frozenset({"models", "runtimes", "node"})
 
-# get_default_hermes_root() memo keyed on (native home, HERMES_HOME) so it stays
-# fresh when a test or plugin mutates HERMES_HOME; saves ~80us/call at 31+ sites.
-_default_hermes_root_memo: "tuple[str, str, Path] | None" = None
+# get_default_moor_root() memo keyed on (native home, MOOR_HOME) so it stays
+# fresh when a test or plugin mutates MOOR_HOME; saves ~80us/call at 31+ sites.
+_default_moor_root_memo: "tuple[str, str, Path] | None" = None
 
 
 def get_default_moor_root() -> Path:
@@ -234,14 +234,14 @@ def named_profile_home(path: str | Path) -> Path | None:
 def profile_name_for_home(path: str | Path | None) -> str | None:
     """Return the canonical profile id owning *path*, or ``None`` when it is not a profile home.
 
-    The default home is the Hermes root itself, so its basename is an installation detail (``.hermes``
-    on POSIX and commonly ``hermes`` on Windows), not the profile id ``default``.
+    The default home is the Moor root itself, so its basename is an installation detail (``.moor``
+    on POSIX and commonly ``moor`` on Windows), not the profile id ``default``.
     """
     if path is None or not str(path).strip():
         return None
     current = Path(path).expanduser()
     try:
-        default_root = get_default_hermes_root()
+        default_root = get_default_moor_root()
         for candidate in (current, current.resolve(strict=False)):
             if candidate == default_root or candidate == default_root.resolve(strict=False):
                 return "default"
@@ -797,11 +797,11 @@ def display_moor_home() -> str:
 
 
 def profile_cli_selector() -> str:
-    """``-p <name> `` (trailing space) pinning copy-pasteable ``hermes ...`` guidance to the
-    active NAMED profile, else ``""``: a bare ``hermes`` follows the sticky ``active_profile``
+    """``-p <name> `` (trailing space) pinning copy-pasteable ``moor ...`` guidance to the
+    active NAMED profile, else ``""``: a bare ``moor`` follows the sticky ``active_profile``
     file, which can name a different database than the one that failed (#105887). A custom
-    home outside the profile tree has no selector (only HERMES_HOME names it)."""
-    name = profile_name_for_home(get_hermes_home())
+    home outside the profile tree has no selector (only MOOR_HOME names it)."""
+    name = profile_name_for_home(get_moor_home())
     return f"-p {name} " if name and name != "default" else ""
 
 
@@ -1203,7 +1203,7 @@ def openrouter_variant_base(model_id: str) -> str | None:
     OpenRouter routing-variant suffix (e.g. ``x-ai/grok-4:nitro`` →
     ``x-ai/grok-4``), else ``None``.
 
-    Lives here rather than in ``hermes_cli.models`` so the metadata layer
+    Lives here rather than in ``moor_cli.models`` so the metadata layer
     (``agent.model_metadata``) can share one definition without importing the
     CLI — this module is dependency-free by contract.
 

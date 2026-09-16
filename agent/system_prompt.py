@@ -19,7 +19,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from agent.prompt_builder import (
     DEFAULT_AGENT_IDENTITY, EXECUTION_GUIDANCE_MODELS, GOOGLE_MODEL_OPERATIONAL_GUIDANCE,
-    HERMES_AGENT_HELP_GUIDANCE, HERMES_AGENT_HELP_GUIDANCE_NO_SKILLS, KANBAN_GUIDANCE,
+    MOOR_AGENT_HELP_GUIDANCE, MOOR_AGENT_HELP_GUIDANCE_NO_SKILLS, KANBAN_GUIDANCE,
     PARALLEL_TOOL_CALL_GUIDANCE, PLATFORM_HINTS, SESSION_SEARCH_GUIDANCE,
     SKILLS_GUIDANCE, STEER_CHANNEL_NOTE, TASK_COMPLETION_GUIDANCE, TELEGRAM_RICH_MESSAGES_HINT,
     TOOL_USE_ENFORCEMENT_GUIDANCE, TOOL_USE_ENFORCEMENT_MODELS, drain_truncation_warnings,
@@ -314,7 +314,7 @@ def _skills_prompt(agent: Any) -> str:
 
 def _auto_load_parts(agent: Any) -> List[str]:
     """``skills.auto_load`` blocks, resolved once per agent lifecycle (config, skill files and
-    HERMES_IGNORE_RULES are read on the first build only) so the prompt stays byte-stable
+    MOOR_IGNORE_RULES are read on the first build only) so the prompt stays byte-stable
     across model switches, compression and static-prefix restoration.
 
     Same gate as ``_skills_prompt``: nothing without the skills toolset, and nothing for agents that skip
@@ -326,7 +326,7 @@ def _auto_load_parts(agent: Any) -> List[str]:
     if not getattr(agent, "_auto_load_skills_resolved", False):
         result: Tuple[str, List[str], List[str]] = ("", [], [])
         try:
-            if not is_truthy_value(os.environ.get("HERMES_IGNORE_RULES")):
+            if not is_truthy_value(os.environ.get("MOOR_IGNORE_RULES")):
                 from agent.skill_commands import build_auto_load_prompt
                 result = build_auto_load_prompt(task_id=getattr(agent, "session_id", None), home_override=_agent_home(agent))
             if result[2]:

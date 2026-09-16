@@ -87,7 +87,7 @@ def terminal_env(name: str, default: str = "") -> str:
 
 
 def build_profile_terminal_scope(
-    hermes_home: "Any", *, env_overlay: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+    moor_home: "Any", *, env_overlay: Optional[Dict[str, str]] = None) -> Dict[str, str]:
     """Build the COMPLETE effective ``TERMINAL_*`` policy for a profile home.
 
     Projection: ``DEFAULT_CONFIG['terminal']`` <- profile ``.env`` TERMINAL_* <- *env_overlay*
@@ -161,7 +161,7 @@ def _resolve_scope_cwd_placeholder(scope: Dict[str, str]) -> None:
     """Give a scope with no explicit ``terminal.cwd`` the same resolved ``TERMINAL_CWD`` a standalone
     gateway computes at import (``gateway/run.py``: local backend → ``$HOME``; docker with the
     workspace mount → the host cwd signal; other backends → unset). Without it a routed turn's
-    ``resolve_agent_cwd()`` falls back to the multiplexer PROCESS cwd (wherever ``hermes gateway``
+    ``resolve_agent_cwd()`` falls back to the multiplexer PROCESS cwd (wherever ``moor gateway``
     was launched), so the system prompt, context-file discovery and the local terminal all run in
     a directory the profile's standalone gateway would never have used."""
     if scope.get("TERMINAL_CWD"):
@@ -180,10 +180,10 @@ def _resolve_scope_cwd_placeholder(scope: Dict[str, str]) -> None:
 
 
 def install_profile_terminal_scope(
-    hermes_home: "Any", *, env_overlay: Optional[Dict[str, str]] = None) -> Token:
+    moor_home: "Any", *, env_overlay: Optional[Dict[str, str]] = None) -> Token:
     """Build AND install a profile's policy; on failure install the refusal scope. Never raises."""
     try:
-        return set_terminal_scope(build_profile_terminal_scope(hermes_home, env_overlay=env_overlay))
+        return set_terminal_scope(build_profile_terminal_scope(moor_home, env_overlay=env_overlay))
     except TerminalPolicyUnavailable as exc:
         logger.warning("terminal policy unavailable: %s", exc)
         return _terminal_scope_var.set(TerminalPolicyRefusal(str(exc)))

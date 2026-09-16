@@ -153,12 +153,12 @@ def test_skill_config_home_vars_use_subprocess_home(tmp_path, monkeypatch):
     from agent import skill_utils
 
     # A backslash in the home path must not be read as a regex-replacement escape.
-    hermes_home = tmp_path / "da\\ta"
-    subprocess_home = hermes_home / "home"
+    moor_home = tmp_path / "da\\ta"
+    subprocess_home = moor_home / "home"
     subprocess_home.mkdir(parents=True)
-    (hermes_home / "config.yaml").write_text("", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    monkeypatch.setenv("HOME", str(hermes_home))
+    (moor_home / "config.yaml").write_text("", encoding="utf-8")
+    monkeypatch.setenv("MOOR_HOME", str(moor_home))
+    monkeypatch.setenv("HOME", str(moor_home))
     monkeypatch.setenv("TERMINAL_HOME_MODE", "profile")
     monkeypatch.setenv("PROJECT_ROOT", "/proj")
     monkeypatch.setenv("LEAF", "leaf")

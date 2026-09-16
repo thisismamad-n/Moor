@@ -371,7 +371,7 @@ def _cmd_create(args: argparse.Namespace) -> int:
             goal_max_turns=getattr(args, "goal_max_turns", None),
             completion_contract=getattr(args, "completion_contract", None),
             initial_status=getattr(args, "initial_status", "running"),
-            creator_task_id=(os.environ.get("HERMES_KANBAN_TASK")
+            creator_task_id=(os.environ.get("MOOR_KANBAN_TASK")
                              if is_dispatcher_owned_worker_context() else None),
         )
         task = kb.get_task(conn, task_id)
@@ -702,7 +702,7 @@ def _cmd_link(args: argparse.Namespace) -> int:
             f"Note: {args.child_id} was ready and is now todo — parent "
             f"{args.parent_id} is not done yet. The ready -> running claim "
             f"re-checks parents, so the child only runs after the parent "
-            f"completes; use `hermes kanban unlink {args.parent_id} {args.child_id}` "
+            f"completes; use `moor kanban unlink {args.parent_id} {args.child_id}` "
             f"to run it now."
         )
     return 0
@@ -796,11 +796,11 @@ def _cmd_attach_rm(args: argparse.Namespace) -> int:
 
 
 def _worker_run_id_for(task_id: str) -> Optional[int]:
-    env_tid = os.environ.get("HERMES_KANBAN_TASK")
+    env_tid = os.environ.get("MOOR_KANBAN_TASK")
     if env_tid and env_tid != task_id:
         raise ValueError(f"worker is scoped to task {env_tid}; refusing to mutate {task_id}")
-    raw = os.environ.get("HERMES_KANBAN_RUN_ID")
-    if os.environ.get("HERMES_KANBAN_TASK") != task_id or not raw:
+    raw = os.environ.get("MOOR_KANBAN_RUN_ID")
+    if os.environ.get("MOOR_KANBAN_TASK") != task_id or not raw:
         return None
     try:
         return int(raw)
@@ -891,7 +891,7 @@ def _cmd_complete(args: argparse.Namespace) -> int:
                                         force=bool(getattr(args, "force", False)))
             except kb.LiveClaimError:
                 fail_msg[tid] = (f"cannot complete {tid}: a live worker is running it. Wait for the "
-                                 f"worker, `hermes kanban reclaim {tid}` to release it, or re-run with "
+                                 f"worker, `moor kanban reclaim {tid}` to release it, or re-run with "
                                  f"--force to close its run and complete anyway.")
                 return False
 
@@ -953,7 +953,7 @@ def _cmd_schedule(args: argparse.Namespace) -> int:
 
 
 def _cmd_unblock(args: argparse.Namespace) -> int:
-    if os.environ.get("HERMES_KANBAN_TASK"):
+    if os.environ.get("MOOR_KANBAN_TASK"):
         return _err("kanban unblock is orchestrator-only; workers must hand off their assigned task")
     ids, rc = _require_ids(args)
     if rc:

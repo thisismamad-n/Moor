@@ -316,7 +316,7 @@ def noninteractive_git_env(base: "Mapping[str, str] | None" = None) -> dict[str,
     prompting), ``GCM_INTERACTIVE=Never`` (no Git Credential Manager dialog), and isolated git
     config: inherited ``GIT_CONFIG_*`` injection, global/system config, pagers, editors, fsmonitor,
     external diff and hooks are all disabled so a user's repo/global config cannot hang or mutate
-    Hermes's plumbing calls. ``core.sshCommand`` is pinned to ``ssh -o BatchMode=yes`` so the ssh
+    Moor's plumbing calls. ``core.sshCommand`` is pinned to ``ssh -o BatchMode=yes`` so the ssh
     child of a fetch/ls-remote fails instead of prompting — ssh bypasses ``stdin=DEVNULL`` and
     opens ``/dev/tty`` directly (#104591); an agent-authenticated ssh still succeeds, and an
     explicit user ``GIT_SSH_COMMAND`` env var still takes precedence over this config-layer pin.

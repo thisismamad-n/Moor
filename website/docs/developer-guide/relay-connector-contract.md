@@ -1,6 +1,6 @@
 ---
 title: "Relay ↔ Connector Contract"
-description: "Wire contract between the Hermes gateway relay adapter and external connectors (experimental)"
+description: "Wire contract between the Moor gateway relay adapter and external connectors (experimental)"
 ---
 
 # Relay ↔ Connector Contract (v1, EXPERIMENTAL)

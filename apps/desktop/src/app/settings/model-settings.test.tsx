@@ -290,7 +290,7 @@ describe('ModelSettings', () => {
     // The cached record is a default-expanded snapshot; a CLI pin made after it
     // loaded is not in it. Echoing the whole record back would reset that
     // auxiliary slot to auto/'' (#95460) — only the edited key may be sent.
-    getHermesConfigRecord.mockResolvedValue({
+    getMoorConfigRecord.mockResolvedValue({
       agent: { reasoning_effort: 'medium', service_tier: 'normal' },
       auxiliary: { curator: { provider: 'auto', model: '', reasoning_effort: 'high' } }
     })
@@ -300,7 +300,7 @@ describe('ModelSettings', () => {
     const fastSwitch = await screen.findByRole('switch')
     fireEvent.click(fastSwitch)
 
-    await waitFor(() => expect(saveHermesConfig).toHaveBeenCalledWith({ agent: { service_tier: 'fast' } }))
+    await waitFor(() => expect(saveMoorConfig).toHaveBeenCalledWith({ agent: { service_tier: 'fast' } }))
   })
 
   it('hides the reasoning/speed defaults when the main model reports no capabilities', async () => {
@@ -335,8 +335,8 @@ describe('ModelSettings', () => {
 
   it('edits auxiliary reasoning effort below the selected model and applies it with the assignment', async () => {
     getAuxiliaryModels.mockResolvedValueOnce({
-      main: { provider: 'nous', model: 'hermes-4' },
-      tasks: [{ task: 'vision', provider: 'nous', model: 'hermes-4', base_url: '', reasoning_effort: null }]
+      main: { provider: 'moor', model: 'hermes-4' },
+      tasks: [{ task: 'vision', provider: 'moor', model: 'hermes-4', base_url: '', reasoning_effort: null }]
     })
 
     await renderModelSettings()
@@ -359,7 +359,7 @@ describe('ModelSettings', () => {
     await waitFor(() =>
       expect(setModelAssignment).toHaveBeenCalledWith({
         model: 'hermes-4',
-        provider: 'nous',
+        provider: 'moor',
         scope: 'auxiliary',
         task: 'vision',
         reasoning_effort: 'high'
@@ -453,7 +453,7 @@ describe('ModelSettings', () => {
 
   it('does not warn when an aux slot uses the main alias', async () => {
     getAuxiliaryModels.mockResolvedValueOnce({
-      main: { provider: 'nous', model: 'hermes-4' },
+      main: { provider: 'moor', model: 'hermes-4' },
       tasks: [{ task: 'vision', provider: 'main', model: 'kimi-k3', base_url: '' }]
     })
 

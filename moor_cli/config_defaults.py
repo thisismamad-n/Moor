@@ -630,7 +630,7 @@ DEFAULT_CONFIG = {
         "in_place": True,
         # Per-model threshold overrides: keys substring-match the model name (longest wins), values
         # replace the global `threshold`, e.g. {"glm-5.2": 0.40}. Prefix a key with "<provider>:" to
-        # scope it to one route ({"openai-codex:astra": 0.85} leaves Astra on OpenRouter/Nous at the
+        # scope it to one route ({"openai-codex:astra": 0.85} leaves Astra on OpenRouter/Moor at the
         # global value). The <512K floor (0.75) still applies raise-only on top.
         "model_thresholds": {},
         # Opt-in idle compaction (0 = off): a session resuming after this many idle seconds compacts
@@ -1127,9 +1127,9 @@ DEFAULT_CONFIG = {
 
     "voice": {
         # How the Desktop voice conversation is wired:
-        #   chained  — STT → Hermes turn → TTS (the stt.* / tts.* providers below)
+        #   chained  — STT → Moor turn → TTS (the stt.* / tts.* providers below)
         #   gpt-live — one full-duplex voice model (OpenAI GPT-Live) owns the mic and speaker and
-        #              DELEGATES every real request to Hermes (any model / provider you have
+        #              DELEGATES every real request to Moor (any model / provider you have
         #              selected); needs an OpenAI API key. $0.05/min voice layer billing.
         "voice_chat_mode": "chained",
         "gpt_live": {
@@ -1359,9 +1359,9 @@ DEFAULT_CONFIG = {
         "trusted_project_dirs": [],
         # Skill names pinned as fully loaded in every new session (CLI, TUI, gateway, cron, API).
         # Resolved once when the agent's prompt is first built; missing/disabled names warn and
-        # skip; HERMES_IGNORE_RULES suppresses the list like the other auto-injected context.
+        # skip; MOOR_IGNORE_RULES suppresses the list like the other auto-injected context.
         "auto_load": [],
-        # Substitute ${HERMES_SKILL_DIR} / ${HERMES_SESSION_ID} in SKILL.md content.
+        # Substitute ${MOOR_SKILL_DIR} / ${MOOR_SESSION_ID} in SKILL.md content.
         "template_vars": True,
         # Pre-execute !`cmd` snippets in SKILL.md, inlining stdout (dates, git state...). Off:
         # skill-author content would run on the host unapproved — trusted sources only.
@@ -1510,7 +1510,7 @@ DEFAULT_CONFIG = {
     },
 
     "whatsapp": {
-        # reply_prefix: None = built-in "☤ *Hermes Agent*" header; "" disables; \n allowed.
+        # reply_prefix: None = built-in "☤ *Moor Agent*" header; "" disables; \n allowed.
     },
 
     "telegram": {
@@ -1780,13 +1780,13 @@ DEFAULT_CONFIG = {
         # fan-out workflows that would otherwise saturate one profile's local model / API quota / browser
         # pool while leaving other profiles idle. See #21582.
         "max_in_progress_per_profile": None,
-        # Per-home claim allowlist for boards shared across Hermes homes (#110995): profile names
+        # Per-home claim allowlist for boards shared across Moor homes (#110995): profile names
         # this home's dispatcher may claim (list or comma-separated string). None = any existing
         # profile is claimable. Set = fail-closed (an empty list claims nothing). Every home has a
         # root profile named "default", so on a shared kanban.db every home can otherwise claim
         # default-assigned cards.
         "dispatch_profiles": None,
-        # Auto-run the decomposer on Triage tasks every tick. False = manual via `hermes kanban
+        # Auto-run the decomposer on Triage tasks every tick. False = manual via `moor kanban
         # decompose <id>` or the dashboard's Decompose button.
         "auto_decompose": True,
         # Max triage tasks decomposed per tick, bounding the aux-LLM burst from a bulk load. Excess
@@ -1862,7 +1862,7 @@ DEFAULT_CONFIG = {
             # Range 200..60000.
             "listing_max_tokens": 4000,
         },
-        # Remote connector discovery/lifecycle through the Nous tool gateway.
+        # Remote connector discovery/lifecycle through the Moor tool gateway.
         # The flag is the user's off switch; availability additionally requires
         # the portal sign-in every managed tool gates on.
         "connectors": {"enabled": True},
@@ -1979,19 +1979,19 @@ DEFAULT_CONFIG = {
         "write_sessions_json": True,
         # One gateway for every profile on this host: the DEFAULT profile's gateway also connects
         # each named profile's bots (their own .env / config.yaml, per-profile secret scope) and
-        # stamps the profile into session keys. Flip with `hermes gateway migrate --multiplex`
-        # (records a rollback manifest; `--standalone` undoes it) or `hermes config set
-        # gateway.multiplex_profiles true` + `hermes gateway restart`. GATEWAY_MULTIPLEX_PROFILES
+        # stamps the profile into session keys. Flip with `moor gateway migrate --multiplex`
+        # (records a rollback manifest; `--standalone` undoes it) or `moor config set
+        # gateway.multiplex_profiles true` + `moor gateway restart`. GATEWAY_MULTIPLEX_PROFILES
         # in the environment overrides. Two profiles configuring the same bot token cannot be
-        # served together — the duplicate adapter is parked; `hermes profile create --clone`
+        # served together — the duplicate adapter is parked; `moor profile create --clone`
         # therefore leaves messaging channels behind unless --clone-channels is passed.
         "multiplex_profiles": False,
-        # May `hermes update` fold this install onto a multiplexed default gateway by itself?
+        # May `moor update` fold this install onto a multiplexed default gateway by itself?
         # True (the default) keeps today's behaviour: a multi-profile install whose secondaries run
         # their own gateways is migrated automatically after an update when nothing blocks it.
         # Set to False to stay on per-profile gateways — a durable opt-out that survives updates, so
         # the decision is not re-litigated on every release. Only the AUTOMATIC path reads this:
-        # `hermes gateway migrate --multiplex` is an explicit request and always proceeds.
+        # `moor gateway migrate --multiplex` is an explicit request and always proceeds.
         "auto_multiplex_migration": True,
         # Route inbound chats of the default profile's bots to another profile
         # (gateway/profile_routing.py): [{profile, platform, chat_id|user_id|guild_id|...}].
@@ -2138,7 +2138,7 @@ DEFAULT_CONFIG = {
         "profile_build": "ask",
     },
     # Privacy-safe aggregate metrics in this profile's local telemetry dir. Collection (`enabled`)
-    # and transmission to Nous (`send`) are SEPARATE opt-ins; see
+    # and transmission to Moor (`send`) are SEPARATE opt-ins; see
     # website/docs/developer-guide/relay-shared-metrics.md Appendix A for consent/retention.
     "telemetry": {
         "shared_metrics": {
@@ -2158,7 +2158,7 @@ DEFAULT_CONFIG = {
     },
 
     "updates": {
-        # Passive version/banner checks only; explicit `hermes update --check` remains enabled.
+        # Passive version/banner checks only; explicit `moor update --check` remains enabled.
         "check": True,
         # Pre-update backup. quick = snapshot small critical state (pairing JSONs, cron jobs,
         # config.yaml, .env, auth.json, profile DBs) into <MOOR_HOME>/state-snapshots/, skipping
@@ -2226,9 +2226,9 @@ DEFAULT_CONFIG = {
         "retries": 2,
     },
     # External secret sources — pull credentials from secret managers at startup instead of storing
-    # them in ~/.hermes/.env.
+    # them in ~/.moor/.env.
     # Browser credential vault: which login sources browser_vault_list/fill may draw from. The local
-    # encrypted vault (`hermes vault add`, Desktop → Settings → Credential Vault) is always on.
+    # encrypted vault (`moor vault add`, Desktop → Settings → Credential Vault) is always on.
     # External password managers are unlocked per session with a masked master-password prompt;
     # headless sessions (cron, webhook, API) never prompt and see them as locked.
     "vault": {
@@ -2350,7 +2350,7 @@ DEFAULT_CONFIG = {
         # (`*.foo.com`) supported.
         "extra_allowed_hosts": [],
     },
-    "desktop": {  # Hermes Desktop (Electron) launch options; only affect `hermes desktop`.
+    "desktop": {  # Moor Desktop (Electron) launch options; only affect `moor desktop`.
         # CSS font-family for the app's chat and UI text (e.g. "OpenDyslexic"). Layered in front
         # of the active theme's own sans stack so missing glyphs still fall through. Empty = the
         # theme's face. The terminal pane is terminal.font_family.
@@ -2408,9 +2408,9 @@ DEFAULT_CONFIG = {
         # 14-20% of consecutive calls in concurrent tool loops (measured 2026-09-06;
         # NousResearch/api#227), so chat is the default until that is fixed.
         "anthropic_wire": "chat",
-        # Nous free tier: with no other provider configured, Hermes sets up a free Nous identity on
-        # first use (inference on nous/welcome + connectors) and offers `/login` (terminal:
-        # `hermes auth upgrade`) to sign in. false turns the free tier off entirely: nothing is set
+        # Moor free tier: with no other provider configured, Moor sets up a free Moor identity on
+        # first use (inference on moor/welcome + connectors) and offers `/login` (terminal:
+        # `moor auth upgrade`) to sign in. false turns the free tier off entirely: nothing is set
         # up and nothing is used.
         "guest": True,
     },
@@ -2429,7 +2429,7 @@ DEFAULT_CONFIG = {
     "local_runtime": {
         # Off = detection-only (Moor still finds an external llama-server you run).
         "enabled": False,
-        # Pinned llama.cpp release tag; bumped by Hermes releases after validation.
+        # Pinned llama.cpp release tag; bumped by Moor releases after validation.
         "tag": "b10964",
         # auto = CUDA on NVIDIA, Metal on macOS, Vulkan on other GPUs, else CPU. Explicit:
         # cuda|metal|vulkan|hip|cpu.
@@ -2488,11 +2488,11 @@ def _base_url(name, prompt_name=None):
 # tools=[...] lists the model tools the key unlocks.
 OPTIONAL_ENV_VARS = {
     # ── Provider (handled in provider selection, not shown in checklists) ──
-    "NOUS_BASE_URL": _base_url("Nous Portal"),
-    "HERMES_ANON_API_SECRET": _env(
-        "Shared secret for the Nous free-tier sign-up endpoints while they are in their gated "
+    "MOOR_BASE_URL": _base_url("Moor Portal"),
+    "MOOR_ANON_API_SECRET": _env(
+        "Shared secret for the Moor free-tier sign-up endpoints while they are in their gated "
         "integration phase (not needed once the gate is removed)",
-        "Nous free-tier shared secret (leave empty unless given one)", password=True,
+        "Moor free-tier shared secret (leave empty unless given one)", password=True,
         category="provider", advanced=True),
     "OPENROUTER_API_KEY": _env("OpenRouter API key (for vision, web scraping helpers, and MoA)",
         "OpenRouter API key", url="https://openrouter.ai/keys", password=True, tools=["vision_analyze"],

@@ -1,4 +1,4 @@
-"""OpenRouter OAuth PKCE login (``hermes auth add openrouter --type oauth``).
+"""OpenRouter OAuth PKCE login (``moor auth add openrouter --type oauth``).
 
 Contract: https://openrouter.ai/docs/guides/overview/auth/oauth. The browser is sent to
 ``/auth?callback_url=...&code_challenge=...&code_challenge_method=S256``; the redirect carries
@@ -15,9 +15,9 @@ import webbrowser
 from typing import Any, Dict
 from urllib.parse import urlencode
 
-from hermes_cli.auth_constants import (
+from moor_cli.auth_constants import (
     OPENROUTER_AUTH_KEYS_URL, OPENROUTER_AUTH_URL, OPENROUTER_OAUTH_DOCS_URL, _openrouter_err, httpx)
-from hermes_cli.auth_device_flow import (
+from moor_cli.auth_device_flow import (
     _bind_loopback_callback_server, _can_open_graphical_browser, _is_remote_session,
     _make_loopback_callback_handler, _pkce_code_challenge, _pkce_code_verifier, _serve_loopback_callback)
 
@@ -57,7 +57,7 @@ def _openrouter_exchange_code(code: str, code_verifier: str, *, timeout_seconds:
 
 def _openrouter_headless_code(auth_url: str) -> str:
     """Remote/SSH: OpenRouter shows the code on screen when ``callback_url`` is omitted; the user pastes it."""
-    from hermes_cli.secret_prompt import masked_secret_prompt
+    from moor_cli.secret_prompt import masked_secret_prompt
     print(
         "Remote session detected — using OpenRouter's headless flow.\n"
         f"Open this URL in a browser on any machine, authorize, then paste the code shown:\n  {auth_url}\n")
@@ -76,7 +76,7 @@ def _openrouter_loopback_code(auth_url_params: Dict[str, str], *, open_browser: 
     redirect_uri = f"http://127.0.0.1:{server.server_address[1]}{path}"
     auth_url = f"{OPENROUTER_AUTH_URL}?{urlencode({'callback_url': redirect_uri, **auth_url_params})}"
 
-    print(f"Open this URL to authorize Hermes with OpenRouter:\n  {auth_url}\n\nDocs: {OPENROUTER_OAUTH_DOCS_URL}")
+    print(f"Open this URL to authorize Moor with OpenRouter:\n  {auth_url}\n\nDocs: {OPENROUTER_OAUTH_DOCS_URL}")
     if open_browser and _can_open_graphical_browser():
         try:
             opened = webbrowser.open(auth_url)
@@ -103,7 +103,7 @@ def _openrouter_pkce_login(*, open_browser: bool = True, timeout_seconds: float 
     code_verifier = _pkce_code_verifier()
     params = {"code_challenge": _pkce_code_challenge(code_verifier), "code_challenge_method": "S256"}
     if _is_remote_session():
-        code = _openrouter_headless_code(f"{OPENROUTER_AUTH_URL}?{urlencode({**params, 'key_label': 'hermes-agent'})}")
+        code = _openrouter_headless_code(f"{OPENROUTER_AUTH_URL}?{urlencode({**params, 'key_label': 'moor-agent'})}")
     else:
         code = _openrouter_loopback_code(params, open_browser=open_browser, timeout_seconds=timeout_seconds)
     print("Exchanging the authorization code for an OpenRouter API key...")

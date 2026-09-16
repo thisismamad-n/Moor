@@ -97,7 +97,7 @@ class TestGenericProviderLiveCuratedMerge:
         with (
             patch("providers.get_provider_profile", return_value=self._make_profile(live)),
             patch(
-                "hermes_cli.auth.resolve_api_key_provider_credentials",
+                "moor_cli.auth.resolve_api_key_provider_credentials",
                 return_value={"api_key": "k", "base_url": ""},
             ),
         ):

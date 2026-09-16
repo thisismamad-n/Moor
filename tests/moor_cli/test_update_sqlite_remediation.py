@@ -63,7 +63,7 @@ def test_summary_withholds_success_when_sqlite_remediation_failed(capsys, monkey
     assert "WAL" not in out
     assert "venv" not in out
     assert "install.sh | bash" in out
-    assert "hermes doctor" in out
+    assert "moor doctor" in out
 
 
 def test_sqlite_partial_message_is_shared_and_names_windows_installer(capsys, monkeypatch):
@@ -85,7 +85,7 @@ def test_sqlite_partial_message_is_shared_and_names_windows_installer(capsys, mo
         assert "known corruption bug" in out
         assert "install.ps1" in out
         assert "install.sh" not in out
-        assert "hermes doctor" in out
+        assert "moor doctor" in out
     fix_line = next(line for line in verified_out.splitlines() if "install.ps1" in line)
     assert fix_line in summary_out.splitlines()
 
@@ -108,7 +108,7 @@ def test_current_checkout_completion_is_verified_before_success(capsys, monkeypa
     assert complete is False
     assert "Already up to date" not in out
     assert "SQLite (3.46.1)" in out
-    assert "hermes doctor" in out
+    assert "moor doctor" in out
 
 
 def test_current_checkout_repair_returns_verified_completion_result(monkeypatch):

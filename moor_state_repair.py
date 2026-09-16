@@ -20,10 +20,10 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from hermes_constants import get_hermes_home
-from hermes_startup_watchdog import report_startup_progress
-from hermes_state_holders import read_only_db_uri
-from hermes_state_common import (
+from moor_constants import get_moor_home
+from moor_startup_watchdog import report_startup_progress
+from moor_state_holders import read_only_db_uri
+from moor_state_common import (
     _acquire_db_flock, _clear_lock_holder_record, _describe_lock_holder, _read_lock_holder_record,
     is_advisory_lock_contention,
 )
@@ -392,14 +392,14 @@ def _persistent_repair_attempts_exhausted(db_path: Path) -> bool:
 
 
 def _persistent_repair_exhausted_error(db_path: Path) -> str:
-    """The stable operator-facing diagnostic for an exhausted repair budget. The ``hermes`` commands
-    carry the profile selector: a bare ``hermes`` follows ``active_profile`` (#105887)."""
-    from hermes_constants import profile_cli_selector
+    """The stable operator-facing diagnostic for an exhausted repair budget. The ``moor`` commands
+    carry the profile selector: a bare ``moor`` follows ``active_profile`` (#105887)."""
+    from moor_constants import profile_cli_selector
     profile_arg = profile_cli_selector()
     return (f"automatic repair has already failed {_MAX_PERSISTENT_REPAIR_ATTEMPTS} times on this exact file — the "
             f"corruption is beyond the schema/FTS repair strategies (likely b-tree page damage). Manual recovery "
-            f"required: restore a backup, or salvage with `hermes {profile_arg}sessions recover --source {db_path} "
-            f"--inspect-only`, then (if it reports recoverable) `hermes {profile_arg}sessions recover --source {db_path} "
+            f"required: restore a backup, or salvage with `moor {profile_arg}sessions recover --source {db_path} "
+            f"--inspect-only`, then (if it reports recoverable) `moor {profile_arg}sessions recover --source {db_path} "
             f"--output recovered-state.db` (recovery snapshots the damaged file first, then runs the page-level "
             f"`.recover` lane on the copy; do NOT point a raw `sqlite3` shell at the live database). "
             f"Delete {_repair_ledger_path(db_path).name} to force another automatic attempt.")
@@ -689,7 +689,7 @@ def _schema_not_built(exc: BaseException) -> bool:
     return any(m in str(exc).lower() for m in ("no such table", "no such column"))
 
 
-# Hermes-owned FTS5 objects: the virtual tables and their shadow b-trees. Full-matched, so a
+# moor-owned FTS5 objects: the virtual tables and their shadow b-trees. Full-matched, so a
 # user-created lookalike (``archive_fts_data``) is not swept into the rebuildable set.
 _FTS_OBJECT_RE = re.compile(
     r"messages_fts(_trigram|_cjk)?(_data|_idx|_content|_docsize|_config|_segdir|_segments)?"
@@ -794,7 +794,7 @@ def _db_opens_cleanly(db_path: Path) -> Optional[str]:
             # would, so a stale ``_idx`` row at the next segid (IntegrityError "constraint failed", the #100227
             # class: integrity_check and MATCH both clean, every real append fails) is hit here rather than
             # by the user's next message.
-            probe_session_id = f"_hermes_fts_health_probe_{time.time_ns()}"
+            probe_session_id = f"_moor_fts_health_probe_{time.time_ns()}"
             try:
                 conn.execute("BEGIN IMMEDIATE")
                 conn.execute("INSERT INTO sessions (id, source, started_at) VALUES (?, ?, ?)",
@@ -827,11 +827,11 @@ def _db_opens_cleanly(db_path: Path) -> Optional[str]:
 def _live_writer_holds_db(db_path: Path) -> bool:
     """True when another process (or a connection outside this call) still holds ``db_path``.
 
-    The foreign-holder scan (``hermes_state_holders``) is the authority: any other process with the DB or a
+    The foreign-holder scan (``moor_state_holders``) is the authority: any other process with the DB or a
     WAL sidecar open, a deleted WAL generation, or an unknown/uninspectable holder fails CLOSED. The SQLite
     probe (``locking_mode=EXCLUSIVE`` + ``BEGIN IMMEDIATE``) is only an additional positive signal — it cannot
     see a ``journal_mode=DELETE`` reader and cannot run on a malformed file, which is why the scan comes first."""
-    import hermes_state_holders as _state_holders
+    import moor_state_holders as _state_holders
     return _state_holders.live_writer_holds_db(db_path, connect_repair_durable=_connect_repair_durable)
 
 

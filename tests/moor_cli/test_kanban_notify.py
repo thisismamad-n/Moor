@@ -3,10 +3,10 @@ import pytest
 
 from pathlib import Path
 from types import SimpleNamespace
-from hermes_cli import kanban as kc
-from hermes_cli import kanban_db as kb
-from hermes_cli import kanban_db_connect as kbc
-from hermes_cli import kanban_db_notify as kbn
+from moor_cli import kanban as kc
+from moor_cli import kanban_db as kb
+from moor_cli import kanban_db_connect as kbc
+from moor_cli import kanban_db_notify as kbn
 from unittest.mock import AsyncMock, MagicMock, patch
 
 
@@ -933,14 +933,14 @@ async def test_notifier_artifact_delivery_skips_missing_files(kanban_home, tmp_p
 async def test_notifier_uploads_review_handoff_artifacts(kanban_home, tmp_path, monkeypatch):
     """A review handoff's files are uploaded from the durable staged copy —
     not the scratch original the reviewer's completion is about to delete."""
-    import hermes_cli.kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
-    from hermes_cli import kanban_db_notify as kbn
-    from hermes_cli import kanban_db_workspace as kbw
+    import moor_cli.kanban_db as kb
+    from moor_cli import kanban_db_connect as kbc
+    from moor_cli import kanban_db_notify as kbn
+    from moor_cli import kanban_db_workspace as kbw
     from gateway.run import GatewayRunner
     from gateway.config import Platform
 
-    monkeypatch.setenv("HERMES_MEDIA_ALLOW_DIRS", str(tmp_path))
+    monkeypatch.setenv("MOOR_MEDIA_ALLOW_DIRS", str(tmp_path))
 
     conn = kbc.connect()
     try:

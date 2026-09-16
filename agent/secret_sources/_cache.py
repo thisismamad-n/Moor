@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Dict, Generic, Optional, TypeVar
 
-from hermes_constants import secure_parent_dir
+from moor_constants import secure_parent_dir
 from utils import atomic_json_write
 
 __all__ = [
@@ -73,9 +73,9 @@ def atomic_write_json(path: Path, payload: dict) -> None:
     """Secret cache entry at 0600 from creation; the containing dir is tightened to 0700
     (``secure_parent_dir`` refuses ``/``, top-level dirs and the install tree). Raises ``OSError``
     on failure; callers decide whether that is best-effort."""
-    from hermes_constants import mkdir_under_hermes_home
+    from moor_constants import mkdir_under_moor_home
 
-    mkdir_under_hermes_home(path.parent)
+    mkdir_under_moor_home(path.parent)
     secure_parent_dir(path)
     atomic_json_write(path, payload, indent=None, mode=0o600)
 

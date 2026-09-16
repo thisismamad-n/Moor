@@ -1,4 +1,4 @@
-import type { ModelOptionProvider } from '@hermes/shared'
+import type { ModelOptionProvider } from '@moor/shared'
 import { atom } from 'nanostores'
 
 import {
@@ -19,7 +19,7 @@ import { setMainModelAssignment } from '@/store/cron-model-impact'
 import { ackFreeTierNotice, freeTierReadyPending, refreshFreeTierStatus, setFreeTierRoute } from '@/store/free-tier'
 import { notify, notifyError } from '@/store/notifications'
 import { guidedOnboardingActive } from '@/store/onboarding-gate'
-import type { OAuthProvider, OAuthStartResponse } from '@/types/hermes'
+import type { OAuthProvider, OAuthStartResponse } from '@/types/moor'
 
 type PkceStart = Extract<OAuthStartResponse, { flow: 'pkce' }>
 type DeviceStart = Extract<OAuthStartResponse, { flow: 'device_code' }>
@@ -80,7 +80,7 @@ export interface DesktopOnboardingState {
   localEndpoint: boolean
   /** True when the backend still owes this user the one-time free-tier
    *  introduction AND the free tier is what carries inference. It makes the
-   *  overlay show its "Hermes is ready" screen once even though the app is
+   *  overlay show its "Moor is ready" screen once even though the app is
    *  configured. The backend's `notice_pending` flag is the only source of
    *  truth — there is no renderer latch — so an ack clears it everywhere. */
   freeTierReady: boolean
@@ -408,7 +408,7 @@ async function completeWithModelConfirm(
         return
       }
 
-      onFail(error instanceof Error ? error.message : 'Hermes could not save the selected model.')
+      onFail(error instanceof Error ? error.message : 'Moor could not save the selected model.')
 
       return
     }

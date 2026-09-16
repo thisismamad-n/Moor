@@ -4,7 +4,7 @@ Pins the bug CLASS behind #91839 (FTS rebuild corrupting a shared state.db),
 #90806 (WAL sidecars replaced under live holders), #90613 (_safe_copy_db
 copying a corrupt DB while reporting success) and #88235 (repair ran surgery
 under a live writer — repair-specific guard tests already exist in
-tests/hermes_state/test_state_db_repair_live_writer_guard.py and are NOT
+tests/moor_state/test_state_db_repair_live_writer_guard.py and are NOT
 duplicated here).
 
 Contract, in two sentences:
@@ -18,7 +18,7 @@ Contract, in two sentences:
    success + unusable copy is the #90613 bug.
 
 All databases are real SQLite files under tmp_path (the production-DB
-isolation guard in hermes_state hard-fails on production-shaped paths — never
+isolation guard in moor_state hard-fails on production-shaped paths — never
 point these tests at a real profile).  Corruption is real byte damage, not
 mocks.
 """
@@ -33,9 +33,9 @@ from pathlib import Path
 
 import pytest
 
-import hermes_state_repair
-from hermes_state import SessionDB
-from hermes_cli.backup import (
+import moor_state_repair
+from moor_state import SessionDB
+from moor_cli.backup import (
     _safe_copy_db,
     create_quick_snapshot,
     verify_sqlite_integrity,
@@ -192,13 +192,13 @@ def test_live_writer_probe_detects_real_holder(tmp_path):
     """The shared guard primitive must see a real holder (#88235, #90806)."""
     db = _make_state_db(tmp_path)
     _require_wal(db)
-    assert hermes_state_repair._live_writer_holds_db(db) is False
+    assert moor_state_repair._live_writer_holds_db(db) is False
     with _LiveWriter(db):
-        assert hermes_state_repair._live_writer_holds_db(db) is True, (
+        assert moor_state_repair._live_writer_holds_db(db) is True, (
             "guard failed to detect a live write transaction — every "
             "registered op relying on it is now unguarded"
         )
-    assert hermes_state_repair._live_writer_holds_db(db) is False
+    assert moor_state_repair._live_writer_holds_db(db) is False
 
 
 # ---------------------------------------------------------------------------
@@ -227,19 +227,19 @@ def test_copy_honesty_truncated_db(tmp_path):
 def test_quick_snapshot_flags_corrupt_state_db(tmp_path):
     """The quick-snapshot path must flag — never silently absorb — a bad DB.
 
-    A fake HERMES_HOME carries a truncated state.db plus a config.yaml. The
+    A fake MOOR_HOME carries a truncated state.db plus a config.yaml. The
     snapshot must either return None or record state.db in the manifest's
     failed_dbs; a manifest listing state.db as captured is the #90613 class
     surfacing through the snapshot path.
     """
-    home = tmp_path / "hermes_home"
+    home = tmp_path / "moor_home"
     home.mkdir()
     (home / "config.yaml").write_text("test: true\n")
     good = _make_state_db(tmp_path)
     raw = good.read_bytes()
     (home / "state.db").write_bytes(raw[: len(raw) - 4096 - 100])
 
-    snap_id = create_quick_snapshot(label="conformance", hermes_home=home)
+    snap_id = create_quick_snapshot(label="conformance", moor_home=home)
     if snap_id is None:
         return  # refused outright: honest
     snap_dir = home / "state-snapshots" / snap_id

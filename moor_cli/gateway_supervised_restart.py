@@ -1,4 +1,4 @@
-"""``hermes gateway restart`` for a gateway whose supervisor Hermes did not install.
+"""``moor gateway restart`` for a gateway whose supervisor Moor did not install.
 
 A custom launchd agent / systemd unit / any KeepAlive-style manager running ``gateway run
 --external-supervisor`` owns the respawn. The manual fallback in ``_cmd_restart`` (SIGTERM, then a
@@ -33,10 +33,10 @@ def gateway_declares_external_supervisor(pid: int, home: Path | None = None) -> 
     if not pid or pid <= 1:
         return False
     from gateway.control_socket import identify_gateway
-    from gateway.status import _get_process_hermes_home, read_runtime_status
-    from hermes_cli.gateway import _capture_gateway_argv
+    from gateway.status import _get_process_moor_home, read_runtime_status
+    from moor_cli.gateway import _capture_gateway_argv
 
-    home = home or _get_process_hermes_home()
+    home = home or _get_process_moor_home()
     identity = identify_gateway(home) or {}
     if identity.get("pid") == pid and identity.get("supervisor") not in (None, "", "manual"):
         return True
@@ -80,7 +80,7 @@ def restart_externally_supervised_gateway(supervised_pid: int) -> None:
     wedge (#110637). A broken/unloaded supervisor surfaces as exit 1, not a success printed over
     a dead gateway (the contract ``launchd_restart`` enforces via ``_wait_for_launchd_service_pid``).
     """
-    from hermes_cli.gateway import _get_restart_exit_wait_budget, _graceful_restart_via_sigusr1, _print_lines
+    from moor_cli.gateway import _get_restart_exit_wait_budget, _graceful_restart_via_sigusr1, _print_lines
 
     wait_budget = _get_restart_exit_wait_budget()
     print(f"→ Restarting externally-supervised gateway (PID {supervised_pid}) — "
@@ -98,6 +98,6 @@ def restart_externally_supervised_gateway(supervised_pid: int) -> None:
         "",
         "✗ Not stopping or foreground-running a supervisor-owned gateway.",
         "  Check the supervisor (it may be unloaded, wedged, or stopped retrying),",
-        "  then rerun once it is healthy: hermes gateway restart",
+        "  then rerun once it is healthy: moor gateway restart",
     )
     sys.exit(1)

@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import pytest
 
-from hermes_cli.observability import shared_metrics_contract as contract
+from moor_cli.observability import shared_metrics_contract as contract
 
 
 def test_acp_editor_sessions_get_their_own_surface():

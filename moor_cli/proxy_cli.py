@@ -15,7 +15,7 @@ from rich.table import Table
 
 from agent.proxy_sources import iron_proxy as ip
 from agent.redact import mask_secret
-from hermes_cli.config import load_config, load_env, save_config
+from moor_cli.config import load_config, load_env, save_config
 
 
 def register_cli(parent_parser: argparse.ArgumentParser) -> None:

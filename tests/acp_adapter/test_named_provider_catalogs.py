@@ -242,12 +242,12 @@ class TestModelStateIncludesNamedProviders:
     @pytest.mark.asyncio
     async def test_configured_provider_inventory_row_uses_custom_choice_id(self):
         """A ``providers:`` row must not expose its raw config key to ACP."""
-        from hermes_cli.models import parse_model_input
+        from moor_cli.models import parse_model_input
 
         manager = SessionManager(
             agent_factory=lambda: SimpleNamespace(model="model-a", provider="relay")
         )
-        acp_agent = HermesACPAgent(session_manager=manager)
+        acp_agent = MoorACPAgent(session_manager=manager)
         cfg = {
             "providers": {
                 "relay": {
@@ -260,8 +260,8 @@ class TestModelStateIncludesNamedProviders:
             "providers": [{"slug": "relay", "name": "Relay", "is_user_defined": True, "models": ["model-a"]}]
         }
 
-        with patch("hermes_cli.config.load_config", return_value=cfg), patch(
-            "hermes_cli.inventory.build_models_payload", return_value=inventory
+        with patch("moor_cli.config.load_config", return_value=cfg), patch(
+            "moor_cli.inventory.build_models_payload", return_value=inventory
         ), patch(
             "acp_adapter.model_catalog._named_custom_provider_catalogs",
             return_value=[("custom:relay", "Relay", [("model-a", "")])],
@@ -320,14 +320,14 @@ class TestModelStateIncludesNamedProviders:
             agent_factory=lambda: SimpleNamespace(
                 model="model-c", provider="openrouter", base_url="https://openrouter.ai/api/v1")
         )
-        acp_agent = HermesACPAgent(session_manager=manager)
+        acp_agent = MoorACPAgent(session_manager=manager)
         inventory = {"providers": [
             {"slug": "openrouter", "name": "OpenRouter", "is_user_defined": False, "models": ["model-c"]},
             {"slug": "custom:openrouter", "name": "openrouter", "is_user_defined": True,
              "api_url": "https://or.example/api/v1", "models": ["model-a"]},
         ]}
 
-        with patch("hermes_cli.inventory.build_models_payload", return_value=inventory), patch(
+        with patch("moor_cli.inventory.build_models_payload", return_value=inventory), patch(
             "acp_adapter.model_catalog._named_custom_provider_catalogs",
             return_value=[("custom:openrouter", "openrouter", [("model-a", "")])],
         ):

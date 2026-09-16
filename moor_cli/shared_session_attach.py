@@ -12,8 +12,8 @@ from urllib.parse import urlencode, urlsplit
 
 import httpx
 
-from hermes_constants import get_hermes_home
-from hermes_cli.active_sessions import active_session_registry_snapshot, session_already_owned_message
+from moor_constants import get_moor_home
+from moor_cli.active_sessions import active_session_registry_snapshot, session_already_owned_message
 
 
 def _local_origin(url: str, scheme: str) -> tuple[str, int]:
@@ -36,7 +36,7 @@ def discover_attach_url(session_id: str, *, registry_home: str | Path | None = N
     must advertise ``metadata.shared_runtime_url`` and implement the local
     ``/api/session-attach`` handshake. Unsupported owners keep their lease.
     """
-    home = Path(registry_home if registry_home is not None else get_hermes_home()).resolve()
+    home = Path(registry_home if registry_home is not None else get_moor_home()).resolve()
     owners = [entry for entry in active_session_registry_snapshot(home, strict=True)
               if entry.get("session_id") == session_id]
     if not owners:
@@ -84,8 +84,8 @@ def discover_attach_url(session_id: str, *, registry_home: str | Path | None = N
 def configure_tui_attachment(env: dict[str, str], session_id: str | None, *,
                              registry_home: str | Path | None = None) -> None:
     """Retain an explicit transport, otherwise attach a resumed owner's runtime."""
-    if not session_id or env.get("HERMES_TUI_GATEWAY_URL", "").strip():
+    if not session_id or env.get("MOOR_TUI_GATEWAY_URL", "").strip():
         return
     url = discover_attach_url(session_id, registry_home=registry_home)
     if url is not None:
-        env["HERMES_TUI_GATEWAY_URL"] = url
+        env["MOOR_TUI_GATEWAY_URL"] = url

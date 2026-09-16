@@ -28,7 +28,7 @@ from tools import terminal_tool_sudo as tts
 def _clean_sudo_state(monkeypatch):
     """Isolate sudo-related process/thread state per test."""
     monkeypatch.delenv("SUDO_PASSWORD", raising=False)
-    monkeypatch.delenv("HERMES_GATEWAY_SESSION", raising=False)
+    monkeypatch.delenv("MOOR_GATEWAY_SESSION", raising=False)
     tts._reset_cached_sudo_passwords()
     tt.set_sudo_password_callback(None)
     yield

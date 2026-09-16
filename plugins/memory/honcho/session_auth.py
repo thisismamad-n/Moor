@@ -49,7 +49,7 @@ _REAUTH_REQUIRED_MESSAGE = (
 
 def _auth_error_message(exc: BaseException) -> str:
     return (f"Honcho rejected our credentials and a forced token refresh did not recover: {_redact_sensitive_text(str(exc), force=True)}. "
-            "Re-authenticate with 'hermes honcho setup'.")
+            "Re-authenticate with 'moor honcho setup'.")
 
 
 class SessionAuthMixin:

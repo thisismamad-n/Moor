@@ -210,9 +210,9 @@ class TestCronjobRequirements:
     def test_accepts_external_cron_worker_with_presence_vars_stripped(self, monkeypatch):
         """``_launch_external_cron_worker`` strips the presence trio from the worker env; the
         cron session marker alone must keep ``cron.allow_agent_scheduling: true`` effective."""
-        for v in ("HERMES_INTERACTIVE", "HERMES_GATEWAY_SESSION", "HERMES_EXEC_ASK"):
+        for v in ("MOOR_INTERACTIVE", "MOOR_GATEWAY_SESSION", "MOOR_EXEC_ASK"):
             monkeypatch.delenv(v, raising=False)
-        monkeypatch.setenv("HERMES_CRON_SESSION", "1")
+        monkeypatch.setenv("MOOR_CRON_SESSION", "1")
 
         assert check_cronjob_requirements() is True
 
@@ -664,9 +664,9 @@ class TestLocalDeliveryNotice:
         from unittest.mock import patch as _patch
         # Deterministic global resolution for the snapshot recompute.
         (tmp_path / "config.yaml").write_text("model:\n  default: new-model\n")
-        monkeypatch.setattr("cron.jobs.get_hermes_home", lambda: tmp_path, raising=True)
+        monkeypatch.setattr("cron.jobs.get_moor_home", lambda: tmp_path, raising=True)
         with _patch(
-            "hermes_cli.runtime_provider.resolve_runtime_provider",
+            "moor_cli.runtime_provider.resolve_runtime_provider",
             return_value={"provider": "openrouter"},
         ):
             created = json.loads(
@@ -681,9 +681,9 @@ class TestLocalDeliveryNotice:
     def test_resnap_all(self, monkeypatch, tmp_path):
         from unittest.mock import patch as _patch
         (tmp_path / "config.yaml").write_text("model:\n  default: new-model\n")
-        monkeypatch.setattr("cron.jobs.get_hermes_home", lambda: tmp_path, raising=True)
+        monkeypatch.setattr("cron.jobs.get_moor_home", lambda: tmp_path, raising=True)
         with _patch(
-            "hermes_cli.runtime_provider.resolve_runtime_provider",
+            "moor_cli.runtime_provider.resolve_runtime_provider",
             return_value={"provider": "openrouter"},
         ):
             cronjob(action="create", prompt="One", schedule="every 1h")

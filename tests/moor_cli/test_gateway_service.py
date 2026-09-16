@@ -7,7 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-import hermes_constants
+import moor_constants
 
 pwd = pytest.importorskip("pwd")
 grp = pytest.importorskip("grp")
@@ -179,8 +179,8 @@ class TestRequireServiceInstalled:
 
 
 class TestServiceIdentityForForeignHome:
-    """A HERMES_HOME that is neither ``~/.hermes`` nor ``~/.hermes/profiles/<name>`` must never resolve to
-    the default profile's ``hermes-gateway`` unit (a temp-home harness uninstalled the production gateway)."""
+    """A MOOR_HOME that is neither ``~/.moor`` nor ``~/.moor/profiles/<name>`` must never resolve to
+    the default profile's ``moor-gateway`` unit (a temp-home harness uninstalled the production gateway)."""
 
     @pytest.fixture
     def machine_home(self, tmp_path, monkeypatch):
@@ -192,47 +192,47 @@ class TestServiceIdentityForForeignHome:
     def test_foreign_home_gets_its_own_unit(self, machine_home, tmp_path, monkeypatch):
         foreign = tmp_path / "elsewhere"
         foreign.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(foreign))
+        monkeypatch.setenv("MOOR_HOME", str(foreign))
 
-        default_unit = machine_home / ".config" / "systemd" / "user" / "hermes-gateway.service"
-        assert gateway_cli.get_service_name() != "hermes-gateway"
+        default_unit = machine_home / ".config" / "systemd" / "user" / "moor-gateway.service"
+        assert gateway_cli.get_service_name() != "moor-gateway"
         assert gateway_cli.get_systemd_unit_path() != default_unit
         assert gateway_cli.get_systemd_unit_path().parent == default_unit.parent
 
     def test_default_and_named_profile_homes_keep_their_names(self, machine_home, monkeypatch):
-        default_home = machine_home / ".hermes"
+        default_home = machine_home / ".moor"
         (default_home / "profiles" / "alpha").mkdir(parents=True)
 
-        monkeypatch.setenv("HERMES_HOME", str(default_home))
-        assert gateway_cli.get_service_name() == "hermes-gateway"
+        monkeypatch.setenv("MOOR_HOME", str(default_home))
+        assert gateway_cli.get_service_name() == "moor-gateway"
 
-        monkeypatch.setenv("HERMES_HOME", str(default_home / "profiles" / "alpha"))
-        assert gateway_cli.get_service_name() == "hermes-gateway-alpha"
+        monkeypatch.setenv("MOOR_HOME", str(default_home / "profiles" / "alpha"))
+        assert gateway_cli.get_service_name() == "moor-gateway-alpha"
 
     def test_sudo_user_default_home_keeps_bare_service_name(self, machine_home, tmp_path, monkeypatch):
         sudo_home = tmp_path / "alice"
-        sudo_default = sudo_home / ".hermes"
+        sudo_default = sudo_home / ".moor"
         sudo_default.mkdir(parents=True)
         monkeypatch.setattr(os, "geteuid", lambda: 0)
         monkeypatch.setenv("SUDO_USER", "alice")
         monkeypatch.setattr(pwd, "getpwnam", lambda user: SimpleNamespace(pw_dir=str(sudo_home)))
 
         # Before unit sync, sudo resolves the root process's native home.
-        monkeypatch.delenv("HERMES_HOME", raising=False)
-        assert gateway_cli.get_service_name() == "hermes-gateway"
+        monkeypatch.delenv("MOOR_HOME", raising=False)
+        assert gateway_cli.get_service_name() == "moor-gateway"
 
-        # After unit sync, HERMES_HOME points at the invoking user's native home.
-        monkeypatch.setenv("HERMES_HOME", str(sudo_default))
-        assert gateway_cli.get_service_name() == "hermes-gateway"
+        # After unit sync, MOOR_HOME points at the invoking user's native home.
+        monkeypatch.setenv("MOOR_HOME", str(sudo_default))
+        assert gateway_cli.get_service_name() == "moor-gateway"
 
 
 class TestUninstallRefusesForeignUnit:
-    """systemd_uninstall must not stop/disable/unlink a unit pinned to another HERMES_HOME."""
+    """systemd_uninstall must not stop/disable/unlink a unit pinned to another MOOR_HOME."""
 
     def test_unit_for_other_home_is_left_alone(self, tmp_path, monkeypatch, capsys):
-        unit_path = tmp_path / "hermes-gateway.service"
-        unit_path.write_text('[Service]\nEnvironment="HERMES_HOME=/somewhere/else"\n', encoding="utf-8")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "mine"))
+        unit_path = tmp_path / "moor-gateway.service"
+        unit_path.write_text('[Service]\nEnvironment="MOOR_HOME=/somewhere/else"\n', encoding="utf-8")
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / "mine"))
         monkeypatch.setattr(gateway_cli, "get_systemd_unit_path", lambda system=False: unit_path)
         monkeypatch.setattr(gateway_cli, "_systemd_scope_preamble", lambda *a, **k: False)
         calls = []
@@ -321,8 +321,8 @@ class TestGeneratedSystemdUnits:
         """#104251: a planned restart (gateway/restart.py's exit 75) is force-restarted
         via RestartForceExitStatus, but without SuccessExitStatus=75 too, systemd still
         classifies the exit as a failure -- the unit flips to ``failed``/``Result=exit-code``
-        and any OnFailure= alert unit fires on every routine restart (hermes update,
-        hermes gateway restart, the in-app restart). SuccessExitStatus=75 keeps the same
+        and any OnFailure= alert unit fires on every routine restart (moor update,
+        moor gateway restart, the in-app restart). SuccessExitStatus=75 keeps the same
         force-restart behavior while letting the unit land back in ``active``/``success``,
         so OnFailure= stays reserved for actual failures."""
         unit = gateway_cli.generate_systemd_unit(system=False)
@@ -1338,7 +1338,7 @@ class TestSystemUnitMoorHome:
     def test_system_unit_orders_after_target_user_manager(self, monkeypatch, tmp_path):
         """#104893: restart-safe workers need user@<uid>.service; the system unit must not race it at boot."""
         monkeypatch.setattr(Path, "home", staticmethod(lambda: tmp_path))
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
         monkeypatch.setattr(
             gateway_cli, "_system_service_identity",
             lambda run_as_user=None: ("alice", "alice", str(tmp_path), 1001),
@@ -1825,10 +1825,10 @@ class TestDockerAwareGateway:
 
         monkeypatch.setattr(gateway_cli.subprocess, "run", fake_run)
 
-        from hermes_cli.gateway_command_errors import SystemctlUnavailableError
+        from moor_cli.gateway_command_errors import SystemctlUnavailableError
 
         with pytest.raises(SystemctlUnavailableError):
-            gateway_cli._run_systemctl(["start", "hermes-gateway"])
+            gateway_cli._run_systemctl(["start", "moor-gateway"])
 
     def test_run_systemctl_passes_through_on_success(self, monkeypatch):
         """_run_systemctl delegates to subprocess.run when systemctl exists."""
@@ -1950,8 +1950,8 @@ class TestLegacyMoorUnitDetection:
         assert "moor gateway migrate-legacy" in out
 
 
-class TestRemoveLegacyHermesUnits:
-    """Tests for remove_legacy_hermes_units (the migration action)."""
+class TestRemoveLegacyMoorUnits:
+    """Tests for remove_legacy_moor_units (the migration action)."""
 
     _OUR_UNIT_TEXT = (
         "[Unit]\nDescription=Moor Gateway\n[Service]\n"
@@ -2358,8 +2358,8 @@ class TestServiceWorkingDirIsStable:
     deleted checkout can't crash-loop the unit on CHDIR (status=200).
     """
 
-    def test_user_unit_workingdirectory_is_hermes_home_not_checkout(self, tmp_path, monkeypatch):
-        home = tmp_path / ".hermes"
+    def test_user_unit_workingdirectory_is_moor_home_not_checkout(self, tmp_path, monkeypatch):
+        home = tmp_path / ".moor"
         home.mkdir()
         monkeypatch.setattr(gateway_cli, "get_moor_home", lambda: home)
         unit = gateway_cli.generate_systemd_unit(system=False)
@@ -2500,9 +2500,9 @@ class TestLaunchdUnloadedJobStderrStaysOffTerminal:
         log = tmp_path / "calls.log"
         monkeypatch.setenv("PATH", f"{bin_dir}{os.pathsep}{os.environ['PATH']}")
         monkeypatch.setenv("FAKE_LAUNCHCTL_LOG", str(log))
-        monkeypatch.setattr(gateway_cli, "get_launchd_label", lambda: "ai.hermes.gateway")
+        monkeypatch.setattr(gateway_cli, "get_launchd_label", lambda: "ai.moor.gateway")
         monkeypatch.setattr(gateway_cli, "_launchd_domain", lambda: "gui/501")
-        monkeypatch.setattr(gateway_cli, "get_launchd_plist_path", lambda: tmp_path / "ai.hermes.gateway.plist")
+        monkeypatch.setattr(gateway_cli, "get_launchd_plist_path", lambda: tmp_path / "ai.moor.gateway.plist")
         monkeypatch.setattr(gateway_cli, "_clear_launchd_unsupported_marker", lambda: None)
         monkeypatch.setattr(gateway_cli, "_mark_planned_stop", lambda *a, **k: None)
         monkeypatch.setattr(gateway_cli, "_wait_for_gateway_exit", lambda *a, **k: True)
@@ -2697,8 +2697,8 @@ class TestTimeoutStopSecCoversCronFloor:
 
 
 class TestUnitAnchoredServiceIdentity:
-    """The installed ``hermes-gateway.service`` owns the bare name: under ``sudo`` the naming basis moves
-    mid-command when ``_sync_hermes_home_from_systemd_unit()`` adopts the unit's HERMES_HOME (#108674).
+    """The installed ``moor-gateway.service`` owns the bare name: under ``sudo`` the naming basis moves
+    mid-command when ``_sync_moor_home_from_systemd_unit()`` adopts the unit's MOOR_HOME (#108674).
 
     ``linux_only`` because ``_bare_unit_pinned_home()`` is Linux- and root-gated on purpose: a systemd unit
     is not an identity authority for launchd labels, Windows tasks, or s6 slots, which share the same
@@ -2707,20 +2707,20 @@ class TestUnitAnchoredServiceIdentity:
 
     @pytest.mark.linux_only
     def test_home_not_pinned_by_unit_keeps_its_suffix(self, tmp_path, monkeypatch):
-        alice_home = tmp_path / "alice" / ".hermes"
+        alice_home = tmp_path / "alice" / ".moor"
         alice_home.mkdir(parents=True)
-        bob_home = tmp_path / "bob" / ".hermes"
+        bob_home = tmp_path / "bob" / ".moor"
         bob_home.mkdir(parents=True)
-        root_home = tmp_path / "root" / ".hermes"
+        root_home = tmp_path / "root" / ".moor"
         root_home.mkdir(parents=True)
         unit_dir = tmp_path / "systemd"
         unit_dir.mkdir()
         (unit_dir / f"{gateway_cli._SERVICE_BASE}.service").write_text(
-            f'[Service]\nEnvironment="HERMES_HOME={alice_home}"\n', encoding="utf-8"
+            f'[Service]\nEnvironment="MOOR_HOME={alice_home}"\n', encoding="utf-8"
         )
         monkeypatch.setattr(gateway_cli, "_SYSTEM_UNIT_DIR", unit_dir)
-        monkeypatch.setattr(hermes_constants, "_get_platform_default_hermes_home", lambda: root_home)
-        monkeypatch.setenv("HERMES_HOME", str(bob_home))
+        monkeypatch.setattr(moor_constants, "_get_platform_default_moor_home", lambda: root_home)
+        monkeypatch.setenv("MOOR_HOME", str(bob_home))
         name = gateway_cli.get_service_name()
         assert name != gateway_cli._SERVICE_BASE
         assert name.startswith(gateway_cli._SERVICE_BASE + "-")
@@ -2729,18 +2729,18 @@ class TestUnitAnchoredServiceIdentity:
     def test_unprivileged_profile_command_ignores_the_system_unit(self, tmp_path, monkeypatch):
         """A bare system unit pinning ``profiles/<name>`` must not alias that profile onto the user's
         default unit when an unprivileged user-scope command resolves the name."""
-        profile_home = tmp_path / "alice" / ".hermes" / "profiles" / "kimi"
+        profile_home = tmp_path / "alice" / ".moor" / "profiles" / "kimi"
         profile_home.mkdir(parents=True)
         unit_dir = tmp_path / "systemd"
         unit_dir.mkdir()
         (unit_dir / f"{gateway_cli._SERVICE_BASE}.service").write_text(
-            f'[Service]\nEnvironment="HERMES_HOME={profile_home}"\n', encoding="utf-8"
+            f'[Service]\nEnvironment="MOOR_HOME={profile_home}"\n', encoding="utf-8"
         )
         monkeypatch.setattr(gateway_cli, "_SYSTEM_UNIT_DIR", unit_dir)
         monkeypatch.setattr(Path, "home", lambda: tmp_path / "alice")
         monkeypatch.setattr(os, "geteuid", lambda: 1000)
-        monkeypatch.setenv("HERMES_HOME", str(profile_home))
-        assert gateway_cli.get_service_name() == "hermes-gateway-kimi"
+        monkeypatch.setenv("MOOR_HOME", str(profile_home))
+        assert gateway_cli.get_service_name() == "moor-gateway-kimi"
 
     @pytest.mark.linux_only
     def test_bare_unit_pinning_a_named_profile_home_keeps_the_bare_name(self, tmp_path, monkeypatch):
@@ -2748,18 +2748,18 @@ class TestUnitAnchoredServiceIdentity:
         remapped home, so the BARE unit legitimately carries a ``profiles/<name>`` home. The unit-pinned
         check therefore has to win over the profile branch, which would answer ``-kimi`` for a unit that
         was installed bare."""
-        profile_home = tmp_path / "alice" / ".hermes" / "profiles" / "kimi"
+        profile_home = tmp_path / "alice" / ".moor" / "profiles" / "kimi"
         profile_home.mkdir(parents=True)
-        root_home = tmp_path / "root" / ".hermes"
+        root_home = tmp_path / "root" / ".moor"
         root_home.mkdir(parents=True)
         unit_dir = tmp_path / "systemd"
         unit_dir.mkdir()
         unit_path = unit_dir / f"{gateway_cli._SERVICE_BASE}.service"
-        unit_path.write_text(f'[Service]\nEnvironment="HERMES_HOME={profile_home}"\n', encoding="utf-8")
+        unit_path.write_text(f'[Service]\nEnvironment="MOOR_HOME={profile_home}"\n', encoding="utf-8")
         monkeypatch.setattr(gateway_cli, "_SYSTEM_UNIT_DIR", unit_dir)
         monkeypatch.setattr(os, "geteuid", lambda: 0)
-        monkeypatch.setattr(hermes_constants, "_get_platform_default_hermes_home", lambda: root_home)
-        monkeypatch.setenv("HERMES_HOME", str(profile_home))
+        monkeypatch.setattr(moor_constants, "_get_platform_default_moor_home", lambda: root_home)
+        monkeypatch.setenv("MOOR_HOME", str(profile_home))
         assert gateway_cli.get_service_name() == gateway_cli._SERVICE_BASE
         # The profile branch, consulted against the home that owns the profile, would have answered
         # with the readable suffix -- which is why the unit-pinned check has to be evaluated first.
@@ -2768,23 +2768,23 @@ class TestUnitAnchoredServiceIdentity:
     @pytest.mark.linux_only
     def test_real_unit_sync_keeps_the_name_it_validated(self, tmp_path, monkeypatch):
         """Drive the production sync instead of simulating the adoption with setenv: the name resolved
-        before ``_sync_hermes_home_from_systemd_unit()`` must survive the mutation it performs."""
-        alice_home = tmp_path / "alice" / ".hermes"
+        before ``_sync_moor_home_from_systemd_unit()`` must survive the mutation it performs."""
+        alice_home = tmp_path / "alice" / ".moor"
         alice_home.mkdir(parents=True)
-        root_home = tmp_path / "root" / ".hermes"
+        root_home = tmp_path / "root" / ".moor"
         root_home.mkdir(parents=True)
         unit_dir = tmp_path / "systemd"
         unit_dir.mkdir()
         (unit_dir / f"{gateway_cli._SERVICE_BASE}.service").write_text(
-            f'[Service]\nEnvironment="HERMES_HOME={alice_home}"\n', encoding="utf-8"
+            f'[Service]\nEnvironment="MOOR_HOME={alice_home}"\n', encoding="utf-8"
         )
         monkeypatch.setattr(gateway_cli, "_SYSTEM_UNIT_DIR", unit_dir)
         monkeypatch.setattr(os, "geteuid", lambda: 0)
-        monkeypatch.setattr(hermes_constants, "_get_platform_default_hermes_home", lambda: root_home)
-        monkeypatch.delenv("HERMES_HOME", raising=False)
+        monkeypatch.setattr(moor_constants, "_get_platform_default_moor_home", lambda: root_home)
+        monkeypatch.delenv("MOOR_HOME", raising=False)
 
         pre_sync_name = gateway_cli.get_service_name()
-        gateway_cli._sync_hermes_home_from_systemd_unit(system=True)
+        gateway_cli._sync_moor_home_from_systemd_unit(system=True)
 
-        assert os.environ["HERMES_HOME"] == str(alice_home)  # the sync really ran
+        assert os.environ["MOOR_HOME"] == str(alice_home)  # the sync really ran
         assert gateway_cli.get_service_name() == pre_sync_name

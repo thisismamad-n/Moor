@@ -12,7 +12,7 @@ so a test's ``monkeypatch.setattr(<owning module>, "_helper", ...)`` keeps worki
 import contextlib
 import copy
 import functools
-from hermes_cli.web_read_coalescing import coalesced_read
+from moor_cli.web_read_coalescing import coalesced_read
 import inspect
 import json
 import logging
@@ -27,14 +27,14 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from fastapi import APIRouter, HTTPException, Query
 
-from hermes_cli.web_deps import late
-from hermes_cli.config import get_process_hermes_home
-from hermes_cli.web_server_config import (
+from moor_cli.web_deps import late
+from moor_cli.config import get_process_moor_home
+from moor_cli.web_server_config import (
     _apply_main_model_assignment, _normalize_main_model_assignment, _validated_main_model_selection,
 )
-from hermes_cli.web_server_gateway import _strip_session_list_rows
-from hermes_cli.web_routers._common import _CONFIG_MUTATION_LOCK
-from hermes_cli.web_server_profiles import (
+from moor_cli.web_server_gateway import _strip_session_list_rows
+from moor_cli.web_routers._common import _CONFIG_MUTATION_LOCK
+from moor_cli.web_server_profiles import (
     _fallback_profile_dicts, _hub_action_name, _write_profile_mcp_servers,
 )
 from moor_cli.web_server_sessions import _open_session_db_at_path
@@ -100,18 +100,18 @@ def _profile_setup_command(name: str) -> str:
 
 
 def _write_profile_model(profile_dir: Path, provider: str, model: str, validate_in: Optional[Path] = None) -> None:
-    """Write the main model assignment into ``profile_dir``'s config.yaml (HERMES_HOME-scoped)
+    """Write the main model assignment into ``profile_dir``'s config.yaml (MOOR_HOME-scoped)
     through the same validated /model shape as ``POST /api/model/set``.
 
     ``validate_in`` is the home whose ``providers:``/``.env``/catalog vouch for the pick (default:
     ``profile_dir`` itself). Profile-create passes the dashboard's own home: the picker that offered
     the model read THAT catalog, and a just-created profile has no credentials yet, so validating
     in the empty profile rejected every non-env provider (anthropic, ollama, custom)."""
-    from hermes_cli.config import load_config, save_config
-    with _hermes_home_scope(validate_in or profile_dir):
+    from moor_cli.config import load_config, save_config
+    with _moor_home_scope(validate_in or profile_dir):
         provider, model = _normalize_main_model_assignment(provider, model)
         result = _validated_main_model_selection(load_config(), provider, model)
-    with _hermes_home_scope(profile_dir), _CONFIG_MUTATION_LOCK:  # RMW span
+    with _moor_home_scope(profile_dir), _CONFIG_MUTATION_LOCK:  # RMW span
         cfg = load_config()
         cfg["model"] = _apply_main_model_assignment(cfg.get("model", {}), result)
         save_config(cfg)
@@ -125,7 +125,7 @@ def _disable_unselected_skills(profile_dir: Path, keep: List[str]) -> int:
     from moor_cli.config import load_config
     from moor_cli.skills_config import get_disabled_skills, save_disabled_skills
     keep_set = {s.strip() for s in keep if s and s.strip()}
-    with _hermes_home_scope(profile_dir), _CONFIG_MUTATION_LOCK:  # RMW span
+    with _moor_home_scope(profile_dir), _CONFIG_MUTATION_LOCK:  # RMW span
         skills_root = profile_dir / "skills"
         installed = ([md.parent.name for md in skills_root.rglob("SKILL.md")]
                      if skills_root.is_dir() else [])
@@ -646,7 +646,7 @@ def post_profiles_sessions_pull_requests(body: SessionPrScanBody):
 
 @functools.partial(coalesced_read, thread_runner=lambda func: run_in_threadpool(func))
 def _read_profiles():
-    from hermes_cli import profiles as profiles_mod
+    from moor_cli import profiles as profiles_mod
     try:
         profiles = profiles_mod.list_profiles()
         return {"profiles": [_profile_to_dict(p) for p in profiles]}
@@ -700,7 +700,7 @@ async def create_profile_endpoint(body: ProfileCreate):
     def _set_model() -> bool:
         nonlocal model_error
         try:
-            _write_profile_model(path, provider, model, validate_in=get_process_hermes_home())
+            _write_profile_model(path, provider, model, validate_in=get_process_moor_home())
         except HTTPException as exc:
             model_error = str(exc.detail)
             return False

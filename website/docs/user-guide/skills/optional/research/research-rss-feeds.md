@@ -14,7 +14,7 @@ Read RSS, Atom, JSON feeds; discover feeds behind a page.
 
 | | |
 |---|---|
-| Source | Optional — install with `hermes skills install official/research/rss-feeds` |
+| Source | Optional — install with `moor skills install official/research/rss-feeds` |
 | Path | `optional-skills/research/rss-feeds` |
 | Version | `1.0.0` |
 | Author | Teknium (teknium1), Moor Agent |

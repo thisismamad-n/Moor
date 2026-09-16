@@ -1,11 +1,11 @@
-"""``hermes gui`` under WSLg selects the installed Mesa D3D12 driver before Electron spawns
+"""``moor gui`` under WSLg selects the installed Mesa D3D12 driver before Electron spawns
 its GPU process (#106117) — and never overrides an explicit Mesa choice or fires off-WSL."""
 
 import argparse
 from pathlib import Path
 
-import hermes_constants
-from hermes_cli import main_desktop
+import moor_constants
+from moor_cli import main_desktop
 
 
 def _launch_env(monkeypatch, tmp_path, *, wsl: bool, dxg: bool, driver: bool) -> dict:
@@ -18,7 +18,7 @@ def _launch_env(monkeypatch, tmp_path, *, wsl: bool, dxg: bool, driver: bool) ->
         dxg_path.touch()
     if driver:
         driver_path.write_bytes(b"\x7fELF")
-    monkeypatch.setattr(hermes_constants, "_wsl_detected", wsl)
+    monkeypatch.setattr(moor_constants, "_wsl_detected", wsl)
     monkeypatch.setattr(main_desktop, "_WSL_DXG_DEVICE", dxg_path)
     monkeypatch.setattr(main_desktop, "_WSL_D3D12_DRIVERS", (tmp_path / "missing_dri.so", driver_path))
     monkeypatch.setattr(main_desktop, "_desktop_launch_options", lambda: ([], "auto", "auto", "auto"))
@@ -34,7 +34,7 @@ def test_wslg_with_dxg_and_installed_d3d12_driver_selects_gpu_mesa_backend(monke
     env = _launch_env(monkeypatch, tmp_path, wsl=True, dxg=True, driver=True)
 
     assert env["GALLIUM_DRIVER"] == "d3d12"
-    assert Path(env["HERMES_DESKTOP_CWD"]) == tmp_path.resolve()  # the rest of the env still builds
+    assert Path(env["MOOR_DESKTOP_CWD"]) == tmp_path.resolve()  # the rest of the env still builds
 
 
 def test_explicit_mesa_choice_and_non_wsl_hosts_are_left_alone(monkeypatch, tmp_path):

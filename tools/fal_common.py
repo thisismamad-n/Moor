@@ -47,7 +47,7 @@ def _extract_http_status(exc: BaseException) -> Optional[int]:
 
 
 def _managed_fal_billing_error(exc: BaseException, what: str) -> Optional[str]:
-    """Human-readable tail for a Nous managed-gateway ``BILLING_ERROR`` response, else None.
+    """Human-readable tail for a Moor managed-gateway ``BILLING_ERROR`` response, else None.
 
     ``what`` names the rejected thing ("model", "endpoint"); the wording is shared by the image
     and video callers so the two surfaces never drift.
@@ -65,11 +65,11 @@ def _managed_fal_billing_error(exc: BaseException, what: str) -> Optional[str]:
     details = error.get("details") if isinstance(error.get("details"), dict) else {}
     upstream = details.get("upstreamPayload") if isinstance(details.get("upstreamPayload"), dict) else {}
     code = upstream.get("code") or details.get("chargeIntentErrorCode") or "billing_error"
-    detail = upstream.get("error") or "Nous Portal rejected the charge authorization"
+    detail = upstream.get("error") or "Moor Portal rejected the charge authorization"
     return (
         f"{error.get('message') or 'Charge authorization failed'} (BILLING_ERROR; {code}: {detail}). "
-        "This is a Nous Portal billing configuration issue, not a missing local API key. "
-        f"The managed route cannot run this {what} until Nous enables its billing meter; "
+        "This is a Moor Portal billing configuration issue, not a missing local API key. "
+        f"The managed route cannot run this {what} until Moor enables its billing meter; "
         "a direct FAL_KEY is an optional bypass."
     )
 
@@ -126,7 +126,7 @@ class _ManagedFalSyncClient:
             "timeout": getattr(self._sync_client, "default_timeout", 120.0),
             "headers": request_headers,
         }
-        # The Nous gateway currently records a keyed submission before billing
+        # The Moor gateway currently records a keyed submission before billing
         # authorization finishes, but cannot replay the resulting error. The
         # SDK's automatic 409 retry therefore replaces the real billing error
         # with an idempotency conflict. Make one attempt when the caller supplied

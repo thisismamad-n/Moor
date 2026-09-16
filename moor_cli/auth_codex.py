@@ -157,7 +157,7 @@ def _save_codex_tokens(
     Only a token REFRESH passes ``write_through=True``: a fresh login or import under a profile
     is the profile's own grant and must not overwrite the root account it was borrowing.
     """
-    from hermes_cli.auth import (
+    from moor_cli.auth import (
         _auth_file_path, _load_auth_store, _provider_state_transaction, _same_path,
         _save_auth_store, _store_provider_state, _utc_now_z)
     if last_refresh is None:
@@ -382,7 +382,7 @@ def _refresh_codex_auth_tokens(tokens: Dict[str, str], timeout_seconds: float) -
     finds root already rotated by its peer adopts the stored pair instead of replaying the
     consumed token. Both locks wait out a full endpoint timeout so the waiter adopts, not times out.
     """
-    from hermes_cli.auth import _provider_state_transaction, _save_codex_tokens, refresh_codex_oauth_pure
+    from moor_cli.auth import _provider_state_transaction, _save_codex_tokens, refresh_codex_oauth_pure
     lock_timeout = max(float(AUTH_LOCK_TIMEOUT_SECONDS), float(timeout_seconds) + 5.0)
     with _provider_state_transaction("openai-codex", lock_timeout) as (_store, state, _source):
         stored = (state or {}).get("tokens")
@@ -397,7 +397,7 @@ def _refresh_codex_auth_tokens(tokens: Dict[str, str], timeout_seconds: float) -
                 timeout_seconds=timeout_seconds)
         except AuthError as exc:
             # Self-heal cross-store rotation: refresh_tokens are single-use, so when the Codex CLI
-            # (or another Hermes process) rotates the shared token this frozen copy fails with a
+            # (or another Moor process) rotates the shared token this frozen copy fails with a
             # relogin-required error (invalid_grant / refresh_token_reused / 401). Adopt the
             # canonical fresh token from ~/.codex/auth.json before surfacing a hard 401. Transient
             # failures (429 quota) keep relogin_required=False — the stored token is still valid —
@@ -619,7 +619,7 @@ def clear_codex_pool_quota_cooldowns(access_token: Optional[str] = None) -> int:
     entry just re-freezes with fresh metadata on its next 429).
     """
     from agent.credential_pool import _borrowed_single_use_pool_root, _profile_owns_pool_provider
-    from hermes_cli.auth import _auth_store_lock, _load_auth_store, _save_auth_store
+    from moor_cli.auth import _auth_store_lock, _load_auth_store, _save_auth_store
     cleared = 0
     try:
         # Same owner rule as ``persist_pool_entries``: a profile with no Codex rows of its own
@@ -651,7 +651,7 @@ def _codex_pool_rate_limit_status() -> Optional[Dict[str, Any]]:
 
     Reads through ``read_credential_pool`` so a named profile with no Codex rows of its own sees
     the global-root pool (the per-provider fallback every other pool read uses)."""
-    from hermes_cli.auth import _nonempty_str, read_credential_pool
+    from moor_cli.auth import _nonempty_str, read_credential_pool
     from agent.credential_pool import _parse_absolute_timestamp
     try:
         now = time.time()
@@ -684,7 +684,7 @@ def _pool_codex_access_token() -> str:
     Fallback for ``resolve_codex_runtime_credentials`` when the singleton has no creds; reads
     through ``read_credential_pool`` so a profile inherits the global-root pool (#34143).
     """
-    from hermes_cli.auth import _nonempty_str, read_credential_pool
+    from moor_cli.auth import _nonempty_str, read_credential_pool
     try:
         for entry in _codex_pool_dicts(read_credential_pool("openai-codex")):
             token, reset_at = entry.get("access_token"), entry.get("last_error_reset_at")

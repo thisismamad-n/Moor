@@ -90,7 +90,7 @@ describe('RealProfileConsentDialog', () => {
     expect(mocks.save).toHaveBeenCalledWith({ browser: { use_real_profile: true } }, undefined)
     expect(mocks.cache).toHaveBeenCalledWith({
       browser: { allow_private_urls: false, use_real_profile: true },
-      model: { provider: 'nous' }
+      model: { provider: 'moor' }
     })
     expect(mocks.notify).toHaveBeenCalled()
   })

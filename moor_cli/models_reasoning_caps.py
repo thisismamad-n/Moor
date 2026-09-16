@@ -180,14 +180,14 @@ class _CapsSource:
     def get(self, slot: str):
         if not self.per_profile:
             return getattr(_origin(), getattr(self, slot))
-        from hermes_cli.models_profile_cache import profile_slot_get
+        from moor_cli.models_profile_cache import profile_slot_get
         return profile_slot_get(_origin(), getattr(self, slot), False if slot in ("disk_checked", "warm_started") else None)
 
     def set(self, slot: str, value) -> None:
         if not self.per_profile:
             setattr(_origin(), getattr(self, slot), value)
             return
-        from hermes_cli.models_profile_cache import profile_slot_set
+        from moor_cli.models_profile_cache import profile_slot_set
         profile_slot_set(_origin(), getattr(self, slot), value)
 
 
@@ -260,10 +260,10 @@ _OPENROUTER_CAPS = _CapsSource(
 )
 # Moor Portal serves OpenRouter's catalog schema, so the same parser and contract apply. Its own
 # cache because the two catalogs list different models (and different capabilities for shared ids).
-_NOUS_CAPS = _CapsSource(
-    "_nous_reasoning_caps_cache", "_nous_reasoning_caps_failed_at",
-    "_nous_caps_disk_checked", "_nous_caps_warm_started",
-    lambda: nous_catalog_url(), per_profile=True,
+_MOOR_CAPS = _CapsSource(
+    "_moor_reasoning_caps_cache", "_moor_reasoning_caps_failed_at",
+    "_moor_caps_disk_checked", "_moor_caps_warm_started",
+    lambda: moor_catalog_url(), per_profile=True,
 )
 
 

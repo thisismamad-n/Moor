@@ -1418,11 +1418,11 @@ def test_notify_sub_starts_caught_up_on_active_task(kanban_home):
 
 _WORKER_LOG_TAIL = (
     "Query: work kanban task\n"
-    "╭─ ☤ Hermes ───────────────────╮\n"
+    "╭─ ☤ Moor ───────────────────╮\n"
     "│ the board protocol requires reassigning this card to orchestrator, but the │\n"
     "│ native kanban_* tools available here have no reassignment operation.       │\n"
     "╰──────────────────────────────╯\n"
-    "\nResume this session with:\n  hermes --resume 20260915_000000_abc\n\n"
+    "\nResume this session with:\n  moor --resume 20260915_000000_abc\n\n"
     "Session:        20260915_000000_abc\nMessages:       3 (1 user, 2 tool calls)\n"
 )
 
@@ -1432,8 +1432,8 @@ def test_dead_worker_reap_surfaces_the_workers_own_last_output(kanban_home, driv
     """Regression for #88603 / #46593: a worker that explained why it could not comply
     (or printed a provider error) and then exited must have that text on the board and
     on the reap event — with the CLI exit summary trimmed — instead of only the canned label."""
-    import hermes_cli.kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
+    import moor_cli.kanban_db as kb
+    from moor_cli import kanban_db_connect as kbc
     conn = kbc.connect()
     try:
         tid = kb.create_task(conn, title="handoff", assignee="worker")
@@ -1459,9 +1459,9 @@ def test_dead_worker_reap_reads_the_log_of_the_dispatching_board(kanban_home):
     """The reap must read the worker log under the board the tick runs for, not the
     ambient "current" board — otherwise every non-default board silently gets the canned
     message (the #88603 review finding)."""
-    import hermes_cli.kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
-    from hermes_cli import kanban_db_dispatch as kbd
+    import moor_cli.kanban_db as kb
+    from moor_cli import kanban_db_connect as kbc
+    from moor_cli import kanban_db_dispatch as kbd
     assert kb.get_current_board() == "default"
     board = "other-board"
     conn = kbc.connect(board=board)

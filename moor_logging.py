@@ -216,10 +216,10 @@ def setup_logging(
     ``gateway.log`` and ``mode="gui"`` adds ``gui.log``.
     """
     global _logging_initialized
-    home = hermes_home or get_hermes_home()
-    log_dir = mkdir_under_hermes_home(home / "logs")
-    # A second Hermes home in a process that already logs for another one — a dashboard or
-    # ``hermes serve`` backend building agents for several profiles, a multiplexed gateway —
+    home = moor_home or get_moor_home()
+    log_dir = mkdir_under_moor_home(home / "logs")
+    # A second Moor home in a process that already logs for another one — a dashboard or
+    # ``moor serve`` backend building agents for several profiles, a multiplexed gateway —
     # gets routed by record home. Stacking another file handler here would hand it EVERY
     # profile's records (the handlers carry no home filter), and a duplicate writer on top of
     # an existing router.
@@ -386,7 +386,7 @@ class _ManagedRotatingFileHandler(RotatingFileHandler):
             if not self._unavailable_reported:
                 self._unavailable_reported = True
                 _quietly(lambda: print(
-                    f"hermes_logging: {self.baseFilename} unavailable ({exc}); "
+                    f"moor_logging: {self.baseFilename} unavailable ({exc}); "
                     "file logging paused until it recovers", file=_safe_stderr()))
             if self.stream is not None:
                 _quietly(self.stream.close)
@@ -655,7 +655,7 @@ def _add_rotating_handler(
     for existing in _queued_file_handlers:
         # Already attached directly, or already covered by the profile router — for its default
         # home or any profile home it routes (a bare handler beside it would take every record).
-        if getattr(existing, "_hermes_routed_log_path", None) == resolved or (
+        if getattr(existing, "_moor_routed_log_path", None) == resolved or (
             isinstance(existing, RotatingFileHandler)
             and Path(getattr(existing, "baseFilename", "")).resolve() == resolved
         ):
@@ -688,10 +688,10 @@ def _read_logging_config():
     """Best-effort read of ``logging.*`` from config.yaml."""
     try:
         # Prefer the shared effective-config cache (managed overlay included, so an administrator
-        # can pin logging.*) so this reuses hermes_cli.main's early parse (one config.yaml parse
-        # per process); fall back to a direct parse for bare hermes_logging consumers.
+        # can pin logging.*) so this reuses moor_cli.main's early parse (one config.yaml parse
+        # per process); fall back to a direct parse for bare moor_logging consumers.
         try:
-            from hermes_cli.config_effective import load_user_config_effective
+            from moor_cli.config_effective import load_user_config_effective
             cfg = load_user_config_effective(get_config_path())
         except Exception:
             from utils import fast_safe_load

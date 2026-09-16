@@ -1,5 +1,5 @@
 import type { ThreadMessage } from '@assistant-ui/react'
-import type { ModelOptionsResult } from '@hermes/shared'
+import type { ModelOptionsResult } from '@moor/shared'
 
 import type { QuickModelOption } from '@/app/chat/composer/types'
 import type { ClientSessionState } from '@/app/types'
@@ -7,7 +7,7 @@ import { formatRefValue } from '@/components/assistant-ui/directive-text'
 import { type ChatMessage, type ChatMessagePart, chatMessageText, textPart } from '@/lib/chat-messages'
 import { normalize } from '@/lib/text'
 import type { ComposerAttachment } from '@/store/composer'
-import type { SessionInfo } from '@/types/hermes'
+import type { SessionInfo } from '@/types/moor'
 
 export { BUILTIN_PERSONALITIES } from '@/lib/personalities'
 

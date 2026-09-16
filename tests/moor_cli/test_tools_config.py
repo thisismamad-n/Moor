@@ -856,7 +856,7 @@ def test_kanban_checklist_reports_and_persists_explicit_removal():
     universe = _checklist_toolset_keys("telegram")
     new_enabled = current - {"kanban"}
     assert ((current - new_enabled) & universe) == {"kanban"}
-    with patch("hermes_cli.tools_config.save_config"):
+    with patch("moor_cli.tools_config.save_config"):
         _save_platform_tools(config, "telegram", new_enabled)
     assert "kanban" not in _get_platform_tools(config, "telegram", include_default_mcp_servers=False)
     assert {"web", "terminal"} <= set(config["platform_toolsets"]["telegram"])

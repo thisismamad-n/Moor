@@ -495,7 +495,7 @@ class TestRequestedIdIsNeverRewritten:
 
     def test_static_catalog_near_miss_keeps_requested_id(self):
         codex_models = ["gpt-5.4-mini", "gpt-5.4", "gpt-5.3-codex"]
-        with patch("hermes_cli.models.provider_model_ids", return_value=codex_models):
+        with patch("moor_cli.models.provider_model_ids", return_value=codex_models):
             result = validate_requested_model("gpt5.3-codex", "openai-codex")
         assert "corrected_model" not in result
         assert result["recognized"] is False
@@ -810,7 +810,7 @@ class TestValidateCustomUnreachableFallback:
     def _validate(self, model, provider, models, **kw):
         probe = {"models": models, "probed_url": "http://localhost:8000/v1/models",
                  "resolved_base_url": "http://localhost:8000/v1", "suggested_base_url": None, "used_fallback": False}
-        with patch("hermes_cli.models.probe_api_models", return_value=probe):
+        with patch("moor_cli.models.probe_api_models", return_value=probe):
             return validate_requested_model(model, provider, api_key="k", base_url="http://localhost:8000/v1", **kw)
 
     @pytest.mark.parametrize("provider", ["custom", "custom:myproxy"])

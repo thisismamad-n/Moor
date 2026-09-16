@@ -16,8 +16,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from agent.skill_utils import is_excluded_skill_path
-from hermes_cli.archive_safe import archive_root_dirs, make_targz, normalize_archive_parts, safe_extract_targz
-from hermes_constants import (
+from moor_cli.archive_safe import archive_root_dirs, make_targz, normalize_archive_parts, safe_extract_targz
+from moor_constants import (
     LOCAL_RUNTIME_ROOT_DIRS, clear_named_profile_deleted, mark_named_profile_deleted, named_profile_is_deleted,
 )
 
@@ -41,16 +41,16 @@ _CLONE_SUBDIR_FILES = ["memories/MEMORY.md", "memories/USER.md"]
 _CLONE_ALL_STRIP: list[str] = ["gateway.pid", "gateway_state.json", "processes.json"]
 
 # Infrastructure excluded from --clone-all ONLY when the source is the default profile
-# (``~/.hermes``): git checkout (+ ~3 GB venv), worktrees, sibling profiles, shared bins,
+# (``~/.moor``): git checkout (+ ~3 GB venv), worktrees, sibling profiles, shared bins,
 # npm packages, and the managed local-models trees — GGUF weights (tens of GB), the
 # llama.cpp runtime binaries and the managed Node install, all re-downloadable on demand
 # and resolved from the default root only. Named profiles never hold these at root, so the
 # gate avoids silently dropping user data from a named-profile source. Export uses a root
 # allow-list instead (``_DEFAULT_EXPORT_INCLUDE_ROOT``): an archive is a portable snapshot,
 # a clone must run. The runtime trio is ``LOCAL_RUNTIME_ROOT_DIRS``, shared with
-# ``hermes_cli.backup._EXCLUDED_ROOT_DIRS`` so the two lists cannot drift.
+# ``moor_cli.backup._EXCLUDED_ROOT_DIRS`` so the two lists cannot drift.
 _CLONE_ALL_DEFAULT_EXCLUDE_ROOT: frozenset[str] = frozenset({
-    "hermes-agent", ".worktrees", "profiles", "bin", "node_modules",
+    "moor-agent", ".worktrees", "profiles", "bin", "node_modules",
 }) | LOCAL_RUNTIME_ROOT_DIRS
 
 # Per-profile history excluded from --clone-all for ANY source: SQLite session store
@@ -194,13 +194,13 @@ def _missing_profile_error(canon: str) -> FileNotFoundError:
 
 def _unknown_profile_error(canon: str) -> FileNotFoundError:
     """For delete/rename/export of a name that matches no profile (likely a typo)."""
-    return FileNotFoundError(f"No profile named '{canon}'. See your profiles with: hermes profile list")
+    return FileNotFoundError(f"No profile named '{canon}'. See your profiles with: moor profile list")
 
 
 def _profile_exists_error(canon: str) -> FileExistsError:
     return FileExistsError(
-        f"A profile named '{canon}' already exists. Switch to it with `hermes profile use {canon}`, "
-        "see all profiles with `hermes profile list`, or choose a different name."
+        f"A profile named '{canon}' already exists. Switch to it with `moor profile use {canon}`, "
+        "see all profiles with `moor profile list`, or choose a different name."
     )
 
 
@@ -220,7 +220,7 @@ def _invalid_profile_name_error(name: str) -> ValueError:
     suggestion = _suggest_profile_name(name)
     return ValueError(
         f"{name!r} is not a valid profile name. {_PROFILE_NAME_RULE} (for example: {suggestion}). "
-        f"Then run `hermes profile create {suggestion}`."
+        f"Then run `moor profile create {suggestion}`."
     )
 
 
@@ -290,12 +290,12 @@ def get_profile_dir(name: str) -> Path:
     """Resolve a profile name to its MOOR_HOME directory."""
     canon = normalize_profile_name(name)
     if canon == "default":
-        return _get_default_hermes_home()
+        return _get_default_moor_home()
     # The name becomes a path component under profiles/; refuse anything that
     # is not a valid profile id so every caller (WS params, /p/<profile>/
     # prefixes, tool args) fails closed instead of escaping the root. The
     # regex only, not _RESERVED_NAMES: a pre-reserved-list dir like
-    # profiles/hermes may still exist and must keep resolving.
+    # profiles/moor may still exist and must keep resolving.
     if not _PROFILE_ID_RE.match(canon):
         raise _invalid_profile_name_error(canon)
     return _get_profiles_root() / canon
@@ -765,7 +765,7 @@ def list_profiles() -> List[ProfileInfo]:
 
 
 def profiles_to_serve(multiplex: bool) -> List[Tuple[str, Path]]:
-    """``(profile_name, hermes_home)`` pairs a gateway should serve — the single chokepoint
+    """``(profile_name, moor_home)`` pairs a gateway should serve — the single chokepoint
     for "which profiles does the inbound gateway handle".
 
     ``multiplex=False``: exactly one entry for the *active* profile (byte-for-byte the
@@ -775,7 +775,7 @@ def profiles_to_serve(multiplex: bool) -> List[Tuple[str, Path]]:
     active = get_active_profile_name() or "default"
     if not multiplex:
         return [(active, get_profile_dir(active))]
-    serve: List[Tuple[str, Path]] = [("default", _get_default_hermes_home())]
+    serve: List[Tuple[str, Path]] = [("default", _get_default_moor_home())]
     serve.extend((entry.name, entry) for entry in _iter_named_profile_dirs())
     return serve
 
@@ -871,9 +871,9 @@ def _bootstrap_profile_dir(profile_dir: Path, source_dir: Optional[Path],
     config files, installed skills (the dashboard's "clone from default" must keep bundled
     AND user-installed skills), and memory/identity files from *source_dir*.
 
-    ``sync_imports`` also copies the source's ``import-sync.json`` (the ``hermes import-agent``
+    ``sync_imports`` also copies the source's ``import-sync.json`` (the ``moor import-agent``
     manifest) so the clone stays registered against the same external Claude Code / Codex trees
-    and ``hermes -p <clone> import-agent --sync`` keeps pulling from them. The link is to the
+    and ``moor -p <clone> import-agent --sync`` keeps pulling from them. The link is to the
     external tree, never to the source profile: both profiles stay independent islands."""
     profile_dir.mkdir(parents=True, exist_ok=True)
     for subdir in _PROFILE_DIRS:
@@ -892,7 +892,7 @@ def _bootstrap_profile_dir(profile_dir: Path, source_dir: Optional[Path],
     for relpath in _CLONE_SUBDIR_FILES:
         _clone_file(source_dir, profile_dir, relpath)
     if sync_imports:
-        from hermes_cli.agent_import_sync import SYNC_MANIFEST_NAME  # lazy: keeps yaml/utils off the hot startup path
+        from moor_cli.agent_import_sync import SYNC_MANIFEST_NAME  # lazy: keeps yaml/utils off the hot startup path
         _clone_file(source_dir, profile_dir, SYNC_MANIFEST_NAME)
 
 
@@ -907,9 +907,9 @@ def create_profile(
     ``clone_config`` copies config.yaml/.env/SOUL.md, installed skills, and identity files.
     Either clone strips the source's messaging channels — bot tokens, allowlists, platform
     sections, pairing/session state — unless ``clone_channels`` opts in: a copied bot credential
-    makes two gateways fight over one bot (``hermes_cli.profile_channels``; callers list what
+    makes two gateways fight over one bot (``moor_cli.profile_channels``; callers list what
     was left behind with ``channel_platforms_configured(source_dir)``).
-    ``no_skills`` creates an empty profile and writes a marker so ``hermes update`` skips
+    ``no_skills`` creates an empty profile and writes a marker so ``moor update`` skips
     re-seeding its skills; it is mutually exclusive with the clone options, which copy skills.
     ``sync_imports`` (``--clone`` only; ``--clone-all`` copies the file anyway) also copies the
     ``import-agent`` sync manifest so the clone can keep pulling the same external agent trees."""
@@ -938,7 +938,7 @@ def create_profile(
         raise _profile_exists_error(canon)
     source_dir = _resolve_clone_source(clone_from) if cloning else None
     if source_dir is not None and clone_channels:
-        from hermes_cli.profile_channels import clone_channels_refusal
+        from moor_cli.profile_channels import clone_channels_refusal
         refusal = clone_channels_refusal(source_dir, clone_from or get_active_profile_name() or "default")
         if refusal:
             raise ValueError(refusal)
@@ -954,7 +954,7 @@ def create_profile(
         else:
             _bootstrap_profile_dir(staging, source_dir, sync_imports=sync_imports)
         if source_dir is not None and not clone_channels:
-            from hermes_cli.profile_channels import strip_channel_settings
+            from moor_cli.profile_channels import strip_channel_settings
             stripped = strip_channel_settings(staging, include_state=clone_all, source_dir=source_dir)
             if stripped:
                 logger.info("profile %s: cloned without messaging channels %s", canon, stripped)
@@ -965,7 +965,7 @@ def create_profile(
         raise
 
     # Inside a container under s6, register the gateway as a runtime s6 service so
-    # `hermes -p <profile> gateway start` supervises via `s6-svc -u` instead of a bare
+    # `moor -p <profile> gateway start` supervises via `s6-svc -u` instead of a bare
     # process. No-op on host (systemd/launchd/windows unit generation handles lifecycle).
     _maybe_register_gateway_service(canon)
     # A running multiplexer enumerates profiles/ at boot: ask it to serve this one now (it also
@@ -1022,7 +1022,7 @@ def _finish_profile_layout(profile_dir: Path, *, no_skills: bool, clone_all: boo
 
 
 def _notify_multiplexer(canon: str) -> None:
-    from hermes_cli.gateway_multiplex_served import notify_multiplexer_profiles_changed
+    from moor_cli.gateway_multiplex_served import notify_multiplexer_profiles_changed
     notify_multiplexer_profiles_changed(canon)
 
 
@@ -1030,7 +1030,7 @@ def _live_default_multiplexer() -> bool:
     """True when a live default gateway has recorded a served-profile set: every dir under
     profiles/ is then served by it, so a profile-identity change must be unrouted first."""
     try:
-        from hermes_cli.gateway_multiplex_served import recorded_served_profiles
+        from moor_cli.gateway_multiplex_served import recorded_served_profiles
         return recorded_served_profiles() is not None
     except Exception:
         return False
@@ -1324,9 +1324,9 @@ def delete_profile(name: str, yes: bool = False) -> Path:
 
     # The main serve process survives this deletion. Stop only this profile's MCP
     # transports and release cached stderr handles, including completed probes.
-    from hermes_constants import hermes_home_key
+    from moor_constants import moor_home_key
     from tools.mcp_tool_lifecycle import shutdown_mcp_servers
-    shutdown_mcp_servers(scope=hermes_home_key(profile_dir))
+    shutdown_mcp_servers(scope=moor_home_key(profile_dir))
 
     # Release this process's holographic memory-store connections into the profile. The
     # Desktop's main serve process opens memory_store.db for every profile and is
@@ -1339,7 +1339,7 @@ def delete_profile(name: str, yes: bool = False) -> Path:
         if _released:
             print(f"✓ Released {_released} memory-store connection(s) held by this process")
     with contextlib.suppress(Exception):
-        from hermes_state_registry import close_all_under as _close_session_dbs_under
+        from moor_state_registry import close_all_under as _close_session_dbs_under
         _closed = _close_session_dbs_under(profile_dir)
         if _closed:
             print(f"✓ Released {_closed} session database connection(s) held by this process")
@@ -1605,8 +1605,8 @@ def _default_export_ignore(root_dir: Path):
 
     * **Root-level allow-list** — only entries whose name appears in ``_DEFAULT_EXPORT_INCLUDE_ROOT``
     survive. Everything else (such as an unrelated ``x11-dev/`` directory in a Docker deployment where
-    HERMES_HOME equals the cwd) is excluded. Blacklisting was tried first and proved unable to anticipate
-    every non-Hermes file the user may have lying alongside HERMES_HOME (#58394). * **Universal exclusions
+    MOOR_HOME equals the cwd) is excluded. Blacklisting was tried first and proved unable to anticipate
+    every non-Moor file the user may have lying alongside MOOR_HOME (#58394). * **Universal exclusions
     at any depth** — ``__pycache__``, sockets and other special files, temp files
     (:func:`_non_exportable_entries`); plus npm lockfiles, which may appear at the root.
     """
@@ -1820,7 +1820,7 @@ def rename_profile(old_name: str, new_name: str) -> Path:
     # delete_profile). A multiplexed secondary has no gateway.pid of its own, so the check above
     # reports it stopped while the default gateway still holds its adapters, cron ticker, logging
     # and SQLite handles; those re-``mkdir`` the old home the moment it moves (no tombstone →
-    # ``mkdir_under_hermes_home`` does not refuse it) and the periodic reconcile re-adopts the
+    # ``mkdir_under_moor_home`` does not refuse it) and the periodic reconcile re-adopts the
     # resurrected dir as a ghost served profile (#109267).
     live_mux = _live_default_multiplexer()
     if live_mux:
@@ -1830,9 +1830,9 @@ def rename_profile(old_name: str, new_name: str) -> Path:
     # 1c. Release this process's cached MCP stderr handle into the old home (same as
     # delete_profile): Windows refuses to rename a directory holding an open file, and the
     # handle would otherwise stay cached under the old key after the move.
-    from hermes_constants import hermes_home_key
+    from moor_constants import moor_home_key
     from tools.mcp_tool_lifecycle import shutdown_mcp_servers
-    shutdown_mcp_servers(scope=hermes_home_key(old_dir))
+    shutdown_mcp_servers(scope=moor_home_key(old_dir))
 
     # 2. Rename directory. If the move fails (cross-device EXDEV, permissions, a racing writer),
     # undo the unroute so the profile is never stranded tombstoned-but-present.
@@ -1867,7 +1867,7 @@ def rename_profile(old_name: str, new_name: str) -> Path:
     # 6. Migrate profile-name-keyed session/routing state (session keys, profile_name, heartbeats,
     # delivery + routing index) from the old name to the new one. A stale ``agent:<old>:*`` routing
     # key otherwise resolves to a profile that no longer exists on every inbound event.
-    from hermes_cli.profile_identity import _migrate_profile_identity
+    from moor_cli.profile_identity import _migrate_profile_identity
     _migrate_profile_identity(old_canon, new_canon, live_mux)
 
     # 7. Hot-serve the renamed profile now (mirrors create; a missed signal only delays it).

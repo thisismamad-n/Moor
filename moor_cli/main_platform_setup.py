@@ -126,8 +126,8 @@ def cmd_whatsapp(args):
     """Set up WhatsApp: choose mode, configure, install bridge, pair via QR."""
     from moor_cli.main import _require_tty, get_moor_home
     _require_tty("whatsapp")
-    from hermes_cli.config import get_env_value, save_env_value
-    from hermes_constants import find_node_executable, with_hermes_node_path
+    from moor_cli.config import get_env_value, save_env_value
+    from moor_constants import find_node_executable, with_moor_node_path
     _say("", "☤ WhatsApp Setup", "=" * 50)
 
     wa_mode = _whatsapp_choose_mode(get_env_value, save_env_value)
@@ -192,12 +192,12 @@ def cmd_whatsapp(args):
         _say("  Next steps:", "    1. Start the gateway:  moor gateway",
              "    2. Send a message to the bot's WhatsApp number",
              "    3. The agent will reply automatically", "",
-             "  Tip: Agent responses are prefixed with '☤ Hermes Agent'")
+             "  Tip: Agent responses are prefixed with '☤ Moor Agent'")
     else:
         _say("  Next steps:", "    1. Start the gateway:  moor gateway",
              "    2. Open WhatsApp → Message Yourself",
              "    3. Type a message — the agent will reply", "",
-             "  Tip: Agent responses are prefixed with '☤ Hermes Agent'",
+             "  Tip: Agent responses are prefixed with '☤ Moor Agent'",
              "  so you can tell them apart from your own messages.")
     _say("", "  Or install as a service: moor gateway install")
 

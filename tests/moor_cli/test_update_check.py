@@ -1,4 +1,4 @@
-"""Tests for the update check mechanism in hermes_cli.banner.
+"""Tests for the update check mechanism in moor_cli.banner.
 
 Passive checks go through the GitHub REST API — never ``git fetch``. Every CLI, TUI and desktop
 start used to fetch; across the install base that was tens of millions of fetch requests a day
@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import hermes_cli.banner as banner
+import moor_cli.banner as banner
 
 SHA_A = "a" * 40
 SHA_B = "b" * 40
@@ -22,14 +22,14 @@ SHA_B = "b" * 40
 @pytest.fixture
 def git_repo(tmp_path, monkeypatch):
     """A fake checkout the update check resolves to, with git calls stubbed out."""
-    repo_dir = tmp_path / "hermes-agent"
+    repo_dir = tmp_path / "moor-agent"
     repo_dir.mkdir()
     (repo_dir / ".git").mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.delenv("HERMES_REVISION", raising=False)
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
+    monkeypatch.delenv("MOOR_REVISION", raising=False)
     monkeypatch.setattr(banner, "_resolve_repo_dir", lambda: repo_dir)
-    monkeypatch.setattr("hermes_cli.config.detect_install_method", lambda root: "git")
-    monkeypatch.setattr("hermes_cli.config.get_project_root", lambda: repo_dir)
+    monkeypatch.setattr("moor_cli.config.detect_install_method", lambda root: "git")
+    monkeypatch.setattr("moor_cli.config.get_project_root", lambda: repo_dir)
     return repo_dir
 
 
@@ -67,9 +67,9 @@ def test_passive_check_uses_the_api_and_never_fetches(git_repo, monkeypatch):
 
 
 def test_cache_is_daily_but_invalidated_when_head_moves(git_repo, monkeypatch):
-    """A fresh cache answers without any network; ``hermes update`` moving HEAD busts it at once;
+    """A fresh cache answers without any network; ``moor update`` moving HEAD busts it at once;
     an inconclusive (None) result is retried after the shorter failure window, not never."""
-    from hermes_cli import __version__
+    from moor_cli import __version__
 
     cache_file = git_repo.parent / ".update_check"
     _stub_git(monkeypatch, head=SHA_A)

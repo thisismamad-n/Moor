@@ -359,13 +359,13 @@ export interface ObserveUpdaterHandoffDeps {
 
 /**
  * User-facing copy for a hand-off that did not take (spawn error or early exit).
- * The lead sentence is plain: nothing changed and Hermes keeps running. The raw
+ * The lead sentence is plain: nothing changed and Moor keeps running. The raw
  * outcome message (exit code / signal / spawn error) stays on a trailing
  * "Details:" line for logs and support.
  */
 export function describeUpdaterHandoffFailure(outcome: Pick<UpdaterHandoffOutcome, 'message'>): string {
   const lead =
-    "The updater couldn't start, so nothing was changed and Hermes keeps running as before. " +
+    "The updater couldn't start, so nothing was changed and Moor keeps running as before. " +
     'Try again; if it keeps failing, open the logs and send them to support.'
 
   return outcome.message ? `${lead}\n\nDetails: ${outcome.message}` : lead

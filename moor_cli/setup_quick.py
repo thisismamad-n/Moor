@@ -55,18 +55,18 @@ def _run_moor_flow(config: dict, *, context: str, cancel_exc: tuple, cancel_line
 
 
 def _run_portal_one_shot(config: dict) -> None:
-    """One-shot Nous Portal setup (``hermes setup --portal`` / ``hermes portal``)."""
-    from hermes_cli.setup import _info, _print_banner, print_error, print_info, print_success
-    _print_banner("│     ☤ Hermes Setup — Nous Portal (one-shot)             │")
+    """One-shot Moor Portal setup (``moor setup --portal`` / ``moor portal``)."""
+    from moor_cli.setup import _info, _print_banner, print_error, print_info, print_success
+    _print_banner("│     ☤ Moor Setup — Moor Portal (one-shot)             │")
     _info(None, "  One subscription, 300+ models, plus the Tool Gateway:",
           "    web search, image generation, TTS, browser automation",
           "    — all routed through your Moor Portal sub.", None,
           "  Sign up: https://portal.nousresearch.com/manage-subscription", None)
 
     def _on_error(exc: Exception) -> None:
-        from hermes_cli.auth_error_copy import provider_setup_failure_lines
+        from moor_cli.auth_error_copy import provider_setup_failure_lines
         print()
-        lead, *rest = provider_setup_failure_lines(exc, retry_command="hermes portal")
+        lead, *rest = provider_setup_failure_lines(exc, retry_command="moor portal")
         print_error(f"  {lead}")
         for line in rest:
             print_info(f"  {line}")
@@ -98,8 +98,8 @@ def _run_first_time_quick_setup(config: dict, moor_home, is_existing: bool):
           "Sign up: https://portal.nousresearch.com/manage-subscription", None)
 
     def _on_error(exc: Exception) -> None:
-        from hermes_cli.auth_error_copy import provider_setup_failure_lines
-        lead, *rest = provider_setup_failure_lines(exc, retry_command="hermes model")
+        from moor_cli.auth_error_copy import provider_setup_failure_lines
+        lead, *rest = provider_setup_failure_lines(exc, retry_command="moor model")
         print_warning(lead)
         for line in rest:
             print_info(line)

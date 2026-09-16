@@ -1,6 +1,6 @@
 import { INTRO_BEATS } from '../timeline'
 
-import { BLUE, BLUE_FAINT, EASE, NOUS_SHADOW } from './style'
+import { BLUE, BLUE_FAINT, EASE, MOOR_SHADOW } from './style'
 import { decoded } from './text'
 
 const EVERYWHERE_T = INTRO_BEATS.find(b => b.id === 'everywhere')!.t
@@ -18,7 +18,7 @@ export function SideAgents({ active, side, tick }: SideAgentsProps) {
       style={{
         background: 'rgba(12, 13, 16, 0.82)',
         border: '1px solid rgba(255,255,255,0.09)',
-        boxShadow: NOUS_SHADOW,
+        boxShadow: MOOR_SHADOW,
         opacity: active ? 1 : 0,
         transform: active
           ? `translateZ(-90px) rotateY(${tilt}deg) translateY(0) scale(1)`

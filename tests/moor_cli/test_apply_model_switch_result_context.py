@@ -168,7 +168,7 @@ def test_global_switch_clears_context_pin_owned_by_previous_route(monkeypatch):
             "agent.model_metadata.get_model_context_length",
             return_value=256_000,
         ),
-        patch("hermes_cli.config.read_user_config_raw", return_value=configured),
+        patch("moor_cli.config.read_user_config_raw", return_value=configured),
     ):
         cli_mod.MoorCLI._apply_model_switch_result(cli, result, True)
 

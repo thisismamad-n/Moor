@@ -11,7 +11,7 @@ approval:
   prompt_smart_deny: "      選択 [o/D]: "
   smart_deny_once_inputs: "o,once"
   smart_deny_deny_inputs: "d,deny"
-  timeout:         "      ⏱ {waited} 以内に応答がなかったため、コマンドは実行されませんでした。もう一度依頼して再試行するか、制限を引き上げてください: hermes config set approvals.timeout {suggested}"
+  timeout:         "      ⏱ {waited} 以内に応答がなかったため、コマンドは実行されませんでした。もう一度依頼して再試行するか、制限を引き上げてください: moor config set approvals.timeout {suggested}"
   allowed_once:    "      ✓ 今回のみ許可"
   allowed_session: "      ✓ このセッション中は許可"
   allowed_always:  "      ✓ 永続的な許可リストに追加"
@@ -341,7 +341,7 @@ Future messages in this room will use that transcript until `/reset` or another 
     last_activity:         "**最終アクティビティ:** {timestamp}"
     model:                 "**Model:** `{model}`"
     model_provider:        "**Model:** `{model}` ({provider})"
-    free_tier:             "Nous · 無料プラン · nous/welcome · /login でログイン"
+    free_tier:             "Moor · 無料プラン · moor/welcome · /login でログイン"
     context:               "**Context:** {used} / {total} ({pct}%)"
     context_used:          "**Context:** ~{used} tokens"
     tokens:                "**Lifetime tokens billed:** {tokens} _(not your current context size; use `/context`)_"
@@ -387,7 +387,7 @@ Future messages in this room will use that transcript until `/reset` or another 
     not_git_repo:            "✗ Git リポジトリではありません — 更新できません。"
     moor_cmd_not_found:    "✗ `moor` コマンドが見つかりません。Moor は実行中ですが、更新コマンドは PATH 上にも現在の Python インタープリタ経由でも実行可能ファイルを見つけられませんでした。ターミナルで `moor update` を手動で実行してみてください。"
     start_failed:            "✗ 更新の開始に失敗しました: {error}"
-    starting:                "☤ Hermes の更新を開始しています… 進捗をここにストリーミングします。"
+    starting:                "☤ Moor の更新を開始しています… 進捗をここにストリーミングします。"
 
   usage:
     rate_limits:              "⏱️ **レート制限:** {state}"

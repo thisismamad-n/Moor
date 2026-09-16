@@ -1257,7 +1257,7 @@ describe('createGatewayEventHandler', () => {
 
     const onEvent = createGatewayEventHandler(ctx)
 
-    onEvent({ payload: { line: 'INFO hermes.mcp: 3 servers discovered' }, type: 'gateway.stderr' } as any)
+    onEvent({ payload: { line: 'INFO moor.mcp: 3 servers discovered' }, type: 'gateway.stderr' } as any)
     onEvent({ payload: { preview: 'bad framing' }, type: 'gateway.protocol_error' } as any)
     serverRequest('approval', { command: 'rm -rf /tmp/nope', description: 'dangerous command' })
     onEvent({ payload: {}, type: 'gateway.ready' } as any)

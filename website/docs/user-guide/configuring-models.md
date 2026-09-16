@@ -55,7 +55,7 @@ When you switch models **inside an active session** (Herm TUI model picker, `moo
 Prompt caches are keyed to the model serving the request, so any mid-conversation model change — an explicit `/model` switch, an [automatic fallback](./features/fallback-providers.md), or a [credential-pool](./features/credential-pools.md) rotation onto a different account — means the next message re-reads the entire conversation at full input-token price instead of the cached (~75–90% discounted) rate. On a long session this one-time re-read can dwarf the per-token difference between the two models. Switch when you need to, but prefer doing it early in a conversation or right after starting a fresh session.
 :::
 
-Because of that one-time re-read cost, Hermes asks for **explicit confirmation** before applying a mid-session switch when the live session already holds a large context (default: **100,000 tokens**, measured from the latest provider-billed prompt size). The confirmation renders through the same selection-guard prompt as the expensive-model and data-training warnings wherever a live session is switching: the CLI and TUI `/model` command and picker, and a typed gateway `/model` in a chat with an active agent. Tune or disable it in `config.yaml`:
+Because of that one-time re-read cost, Moor asks for **explicit confirmation** before applying a mid-session switch when the live session already holds a large context (default: **100,000 tokens**, measured from the latest provider-billed prompt size). The confirmation renders through the same selection-guard prompt as the expensive-model and data-training warnings wherever a live session is switching: the CLI and TUI `/model` command and picker, and a typed gateway `/model` in a chat with an active agent. Tune or disable it in `config.yaml`:
 
 ```yaml
 model:
@@ -84,7 +84,7 @@ Click **Show auxiliary** to reveal the 11 task slots:
 
 ![Auxiliary panel expanded](/img/docs/dashboard-models/auxiliary-expanded.png)
 
-Every auxiliary task defaults to `auto` — meaning Hermes tries your main model for that job too. If that route is unavailable or hits a capacity-style failure, `auto` follows any task-specific `auxiliary.<task>.fallback_chain`, then the main `fallback_providers` / `fallback_model` chain. It never guesses a provider you did not configure: with a main provider selected and no fallback declared, the side task is skipped with a warning rather than billed to another account you happen to be logged into. (Hermes' built-in discovery chain only runs when no main provider is selected at all.) Override a specific task when you want a cheaper or faster model for a side-job.
+Every auxiliary task defaults to `auto` — meaning Moor tries your main model for that job too. If that route is unavailable or hits a capacity-style failure, `auto` follows any task-specific `auxiliary.<task>.fallback_chain`, then the main `fallback_providers` / `fallback_model` chain. It never guesses a provider you did not configure: with a main provider selected and no fallback declared, the side task is skipped with a warning rather than billed to another account you happen to be logged into. (Moor' built-in discovery chain only runs when no main provider is selected at all.) Override a specific task when you want a cheaper or faster model for a side-job.
 
 ### Common override patterns
 
@@ -174,7 +174,7 @@ auxiliary:
         model: inclusionai/ring-2.6-1t:free
 ```
 
-When `fallback_chain` is absent, `auto` uses the top-level `fallback_providers` chain. If that is also absent and the main provider cannot serve the call, the task is skipped with a warning — Hermes does not fall through to other logged-in providers.
+When `fallback_chain` is absent, `auto` uses the top-level `fallback_providers` chain. If that is also absent and the main provider cannot serve the call, the task is skipped with a warning — Moor does not fall through to other logged-in providers.
 
 ## Per-provider request options
 
@@ -369,7 +369,7 @@ Then `/model fav` or `/model grok` in chat. User aliases shadow built-in short n
 moor model            # Interactive provider + model picker (the canonical way to switch defaults)
 ```
 
-`hermes model` walks you through picking a provider, authenticating (OAuth flows open a browser; API-key providers prompt for the key), and then choosing a specific model from that provider's curated catalog. The choice is written to `model.provider` and `model.default` in `~/.hermes/config.yaml`. After a new model is saved, a reasoning-effort step follows (`minimal` … `ultra`, **Disable reasoning**, or **Skip** to keep the current value) and writes `agent.reasoning_effort`; the step is skipped for models the catalog marks as having no reasoning control. The provider list also has a **Reasoning effort for the current model...** row to change only the effort.
+`moor model` walks you through picking a provider, authenticating (OAuth flows open a browser; API-key providers prompt for the key), and then choosing a specific model from that provider's curated catalog. The choice is written to `model.provider` and `model.default` in `~/.moor/config.yaml`. After a new model is saved, a reasoning-effort step follows (`minimal` … `ultra`, **Disable reasoning**, or **Skip** to keep the current value) and writes `agent.reasoning_effort`; the step is skipped for models the catalog marks as having no reasoning control. The provider list also has a **Reasoning effort for the current model...** row to change only the effort.
 
 **Configure auxiliary models...** opens the per-task side-model picker (vision, compression, approval, delegation, …). Each task's provider → model pick ends with the same effort step, stored as `auxiliary.<task>.reasoning_effort` (or `delegation.reasoning_effort`), with an extra **Provider default** row that leaves the level up to the provider. Tasks whose block has no `reasoning_effort` key by design (MoA slots, memory query rewrite) skip the step.
 

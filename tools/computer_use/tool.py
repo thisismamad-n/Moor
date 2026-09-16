@@ -195,20 +195,20 @@ def _stop_backend(backend: ComputerUseBackend, call_lock: Optional[threading.RLo
         on_error(e)
 
 def _scoped_sid(session_id: str) -> str:
-    """Cache key for one Hermes session's backend. Outside a served-profile scope it is the bare id
+    """Cache key for one Moor session's backend. Outside a served-profile scope it is the bare id
     (legacy keys byte-identical); under a multiplexed turn the routed profile's home key is appended
     so two profiles that share a session id (or a DISPLAY) never share one cua-driver (#110032).
     Every cache path — lookup, install, release — goes through this, so release finds what lookup made."""
-    from hermes_constants import get_hermes_home_override, hermes_home_key
+    from moor_constants import get_moor_home_override, moor_home_key
     sid = str(session_id or "")
-    return sid if get_hermes_home_override() is None else f"{sid}@{hermes_home_key()}"
+    return sid if get_moor_home_override() is None else f"{sid}@{moor_home_key()}"
 
 def _get_backend(session_id: str = "") -> ComputerUseBackend:
     bare_sid, sid = str(session_id or ""), _scoped_sid(session_id)
     while True:
         with _backend_lock:
             # Mode resolved under the cache lock; YOLO mutation never holds the approval lock while releasing it.
-            permission_mode = _cua_permission_mode(bare_sid)  # approval state is keyed by the Hermes session id
+            permission_mode = _cua_permission_mode(bare_sid)  # approval state is keyed by the Moor session id
             if sid == "" and _backend is not None and sid not in _backends:
                 _install_backend(sid, _backend, permission_mode)  # fold the injection hook into the cache
             if (cached := _backends.get(sid)) is None:
@@ -731,12 +731,12 @@ def _should_route_through_aux_vision() -> bool:
     stage = "import"
     try:
         from agent.auxiliary_client import _read_main_model, _read_main_provider
-        from hermes_cli.config import load_config
-        from hermes_constants import hermes_home_key
+        from moor_cli.config import load_config
+        from moor_constants import moor_home_key
         from tools.computer_use.vision_routing import should_route_capture_to_aux_vision
         stage = "config read"
         provider, model = _read_main_provider() or "", _read_main_model() or ""
-        if (cached := _AUX_VISION_ROUTE_CACHE.get(key := (hermes_home_key(), str(provider), str(model)))) is not None:
+        if (cached := _AUX_VISION_ROUTE_CACHE.get(key := (moor_home_key(), str(provider), str(model)))) is not None:
             return cached
         stage = "decision"
         _AUX_VISION_ROUTE_CACHE[key] = decision = bool(should_route_capture_to_aux_vision(provider, model, load_config()))

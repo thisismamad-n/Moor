@@ -635,8 +635,8 @@ def test_fd_soft_limit_fails_open_for_importable_resource_stub(monkeypatch):
 
     monkeypatch.setitem(sys.modules, "resource", types.ModuleType("resource"))
 
-    assert hermes_state_readpool._fd_soft_limit() is None
-    assert hermes_state_readpool._fd_headroom_ok() is True
+    assert moor_state_readpool._fd_soft_limit() is None
+    assert moor_state_readpool._fd_headroom_ok() is True
 
 
 @pytest.mark.requires_wal
@@ -671,12 +671,12 @@ def test_read_only_handles_do_not_count_toward_the_duplicate_writer_warning(db, 
     and CLI lookups, so any number of them must stay silent (#100896)."""
     import logging
 
-    from hermes_state import SessionDB
-    from hermes_state_readpool import _HANDLES_PER_PATH_WARN
+    from moor_state import SessionDB
+    from moor_state_readpool import _HANDLES_PER_PATH_WARN
 
     extra = []
     try:
-        with caplog.at_level(logging.WARNING, logger="hermes_state"):
+        with caplog.at_level(logging.WARNING, logger="moor_state"):
             for _ in range(_HANDLES_PER_PATH_WARN + 2):
                 extra.append(SessionDB(db_path=db.db_path, read_only=True))
         assert not any(

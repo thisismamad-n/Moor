@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import copy
 
-from hermes_constants import display_hermes_home
+from moor_constants import display_moor_home
 
 logger = logging.getLogger(__name__)
 
@@ -994,7 +994,7 @@ def _cronjob_schema_overrides() -> dict:
     static schema is built once per process, but the multiplexed gateway serves every profile from
     that process, so a path baked in at import would name the launch profile's home (#95685)."""
     params = copy.deepcopy(CRONJOB_SCHEMA["parameters"])
-    params["properties"]["script"]["description"] = _script_description(display_hermes_home())
+    params["properties"]["script"]["description"] = _script_description(display_moor_home())
     return {"parameters": params}
 
 
@@ -1054,7 +1054,7 @@ Jobs run in a fresh session with no current-chat context, so prompts must be sel
             },
             "script": {
                 "type": "string",
-                "description": _script_description("the profile HERMES_HOME")
+                "description": _script_description("the profile MOOR_HOME")
             },
             "monitor": {
                 "type": "string",
@@ -1101,10 +1101,10 @@ def check_cronjob_requirements() -> bool:
     from gateway.session_context import get_session_env
     from utils import env_var_enabled, is_truthy_value
     return (
-        env_var_enabled("HERMES_INTERACTIVE")
-        or env_var_enabled("HERMES_GATEWAY_SESSION")
-        or env_var_enabled("HERMES_EXEC_ASK")
-        or is_truthy_value(get_session_env("HERMES_CRON_SESSION", ""))
+        env_var_enabled("MOOR_INTERACTIVE")
+        or env_var_enabled("MOOR_GATEWAY_SESSION")
+        or env_var_enabled("MOOR_EXEC_ASK")
+        or is_truthy_value(get_session_env("MOOR_CRON_SESSION", ""))
     )
 
 

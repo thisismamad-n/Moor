@@ -1,7 +1,7 @@
 """Live DeepSeek V4 thinking-mode tool-call replay smoke test.
 
 Opt-in only:
-    HERMES_LIVE_TESTS=1 pytest tests/agent/test_deepseek_v4_thinking_live.py -q
+    MOOR_LIVE_TESTS=1 pytest tests/agent/test_deepseek_v4_thinking_live.py -q
 
 Requires DEEPSEEK_API_KEY in the process environment. The key is captured at
 module import time because tests/conftest.py intentionally removes credential

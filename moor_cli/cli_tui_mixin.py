@@ -637,7 +637,7 @@ class CLITuiMixin:
                 f"Current: {state.get('current_model', 'unknown')} "
                 f"on {state.get('current_provider', 'unknown')}")
         elif state.get("stage") == "reasoning":
-            from hermes_cli.cli_model_switch_mixin import _picker_reasoning_rows
+            from moor_cli.cli_model_switch_mixin import _picker_reasoning_rows
             result = state.get("switch_result")
             picked = getattr(result, "new_model", "") or "model"
             title = f"⚙ Model Picker — Reasoning effort for {picked}"
@@ -706,7 +706,7 @@ class CLITuiMixin:
             return self._render_sudo_style_panel(
                 f'🔐 Verification code for {code["site"]}',
                 [f'{code["site"]} is asking for a one-time code (text message, email or authenticator app).',
-                 'Type the code and press Enter; Hermes enters it into the page for you.',
+                 'Type the code and press Enter; Moor enters it into the page for you.',
                  'Enter on an empty line skips. The model never sees the code.'])
         if save := self._sudo_state.get("vault_save"):
             if save["step"] == "identifier":
@@ -1179,7 +1179,7 @@ class CLITuiMixin:
         if state.get("stage") == "provider":
             max_idx = len(state.get("providers") or [])
         elif state.get("stage") == "reasoning":
-            from hermes_cli.cli_model_switch_mixin import _picker_reasoning_rows
+            from moor_cli.cli_model_switch_mixin import _picker_reasoning_rows
             max_idx = len(_picker_reasoning_rows()) + 1  # + Back + Cancel
         else:
             # +1 for "← Back" and Cancel over the filtered visible rows.
@@ -1817,7 +1817,7 @@ class CLITuiMixin:
         get_plugin_manager()._cli_ref = self
 
         # Config file watcher — detect mcp_servers changes and auto-reload.
-        from hermes_cli.config import get_config_path as _get_config_path
+        from moor_cli.config import get_config_path as _get_config_path
         from utils import file_signature
         _cfg_path = _get_config_path()
         self._config_sig: tuple | None = file_signature(_cfg_path.stat()) if _cfg_path.exists() else None
@@ -1921,7 +1921,7 @@ class CLITuiMixin:
         kb.add(Keys.BracketedPaste, eager=True)(self._tui_handle_paste)
         kb.add('c-v')(self._tui_handle_ctrl_v)
         kb.add('escape', 'v')(self._tui_handle_alt_v)
-        from hermes_cli.cli_subagent_monitor import modal_prompt_active, open_monitor, toggle_dock
+        from moor_cli.cli_subagent_monitor import modal_prompt_active, open_monitor, toggle_dock
         for key in ('c-t', 'f6'):
             kb.add(key, filter=Condition(lambda: not modal_prompt_active(self)))(
                 lambda event: open_monitor(self))
@@ -2074,7 +2074,7 @@ class CLITuiMixin:
     def _tui_build_layout(self, kb):
         """Build the TUI widgets, Layout and Style; registers wrapper keybindings on ``kb``."""
         cli_ref = self
-        from hermes_cli.cli_subagent_monitor import install_dock
+        from moor_cli.cli_subagent_monitor import install_dock
         install_dock(self)
         input_area = self._tui_build_input_area()
         spinner_widget = Window(

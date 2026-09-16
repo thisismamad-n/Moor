@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-import hermes_cli.gateway as gw
+import moor_cli.gateway as gw
 
 
 class _BootReached(Exception):

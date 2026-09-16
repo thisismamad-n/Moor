@@ -652,7 +652,7 @@ def test_active_same_thread_followup_waits_for_current_task(tmp_path: Path):
         )
     )
     assert service.stop(timeout=5.0)
-    assert "User (user): @hermes follow up" in service.rpc.prompts[1][1]
+    assert "User (user): @moor follow up" in service.rpc.prompts[1][1]
 
 
 def test_thread_transcript_prunes_committed_message_and_settlement_together(
@@ -2078,9 +2078,9 @@ def test_peer_recovery_replays_the_same_execution_generation(tmp_path: Path):
 
 
 def test_local_profiles_skips_delete_tombstones_and_dot_dirs(tmp_path: Path):
-    """`hermes profile delete` leaves ``profiles/.deleted/<name>``; neither the tombstone dir nor a
+    """`moor profile delete` leaves ``profiles/.deleted/<name>``; neither the tombstone dir nor a
     tombstoned profile is a roster member (#106847: ``.deleted`` failed validate_roster every cycle)."""
-    from hermes_constants import mark_named_profile_deleted
+    from moor_constants import mark_named_profile_deleted
 
     profiles = tmp_path / "profiles"
     (profiles / "ops").mkdir(parents=True)

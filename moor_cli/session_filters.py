@@ -7,7 +7,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
-from hermes_cli.timefmt import coerce_epoch
+from moor_cli.timefmt import coerce_epoch
 
 _DURATION_RE = re.compile(
     r"^(\d+(?:\.\d+)?)\s*"

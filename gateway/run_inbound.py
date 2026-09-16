@@ -124,10 +124,10 @@ class GatewayInboundMixin:
     async def _hm_report_ignored_dm(self, source: SessionSource) -> None:
         """Unauthorized DM under behaviour ``ignore``: nothing goes to the sender. The owner gets the
         sender's ID and the allowlist fix in the WARNING log and, once per sender, in the home channel."""
-        from hermes_constants import display_hermes_home
+        from moor_constants import display_moor_home
         platform_name = source.platform.value if source.platform else "unknown"
         hint = unauthorized_owner_hint(
-            platform_name, source.user_id, source.user_name or "", hermes_home=display_hermes_home(),
+            platform_name, source.user_id, source.user_name or "", moor_home=display_moor_home(),
         )
         logger.warning("Unauthorized user (ignored): %s", hint)
         notifier = getattr(self, "_unauthorized_owner_notifier", None)
@@ -1092,7 +1092,7 @@ class GatewayInboundMixin:
     def _hm_unknown_slash_reply(command: str, source: SessionSource) -> Optional[str]:
         """Reply for a /command that is not built-in/plugin/skill; None when it is known."""
         from gateway.run import _check_unavailable_skill
-        from hermes_cli.commands import GATEWAY_KNOWN_COMMANDS
+        from moor_cli.commands import GATEWAY_KNOWN_COMMANDS
         # Known commands never need an unavailable-skill hint (which can require a cold scan).
         if command.replace("_", "-") in GATEWAY_KNOWN_COMMANDS:
             return None

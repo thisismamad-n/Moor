@@ -30,21 +30,21 @@ logger = logging.getLogger(__name__)
 
 os.environ["MOOR_QUIET"] = "1"  # suppress our modules' startup chatter
 
-from hermes_cli.fallback_config import get_fallback_chain
-from hermes_cli.cli_agent_setup_mixin import CLIAgentSetupMixin
-from hermes_cli.cli_commands_mixin import CLICommandsMixin
-from hermes_cli.cli_billing_mixin import CLIBillingMixin
-from hermes_cli.cli_loops_mixin import CLILoopsMixin
-from hermes_cli.cli_info_mixin import CLIInfoMixin
-from hermes_cli.cli_terminal_mixin import CLITerminalMixin
-from hermes_cli.cli_modal_mixin import CLIModalMixin
-from hermes_cli.cli_stream_mixin import CLIStreamMixin
-from hermes_cli.cli_session_mixin import CLISessionMixin
-from hermes_cli.cli_model_switch_mixin import CLIModelSwitchMixin
-from hermes_cli.cli_voice_mixin import CLIVoiceMixin
-from hermes_cli.cli_status_bar_mixin import CLIStatusBarMixin
-from hermes_cli.cli_tui_mixin import CLITuiMixin
-from hermes_cli.cli_process_notifications import CLIProcessNotificationsMixin
+from moor_cli.fallback_config import get_fallback_chain
+from moor_cli.cli_agent_setup_mixin import CLIAgentSetupMixin
+from moor_cli.cli_commands_mixin import CLICommandsMixin
+from moor_cli.cli_billing_mixin import CLIBillingMixin
+from moor_cli.cli_loops_mixin import CLILoopsMixin
+from moor_cli.cli_info_mixin import CLIInfoMixin
+from moor_cli.cli_terminal_mixin import CLITerminalMixin
+from moor_cli.cli_modal_mixin import CLIModalMixin
+from moor_cli.cli_stream_mixin import CLIStreamMixin
+from moor_cli.cli_session_mixin import CLISessionMixin
+from moor_cli.cli_model_switch_mixin import CLIModelSwitchMixin
+from moor_cli.cli_voice_mixin import CLIVoiceMixin
+from moor_cli.cli_status_bar_mixin import CLIStatusBarMixin
+from moor_cli.cli_tui_mixin import CLITuiMixin
+from moor_cli.cli_process_notifications import CLIProcessNotificationsMixin
 from agent.interrupt_compat import request_hard_interrupt
 from agent.pet import render as pet_render
 
@@ -167,10 +167,10 @@ from moor_cli.banner import format_banner_version_label
 _COMMAND_SPINNER_FRAMES = ("⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏")
 
 
-# ~/.hermes/.env first, project .env as dev fallback; user env files override stale shell exports.
-from hermes_constants import get_hermes_home
-from hermes_state_ids import new_session_id
-from hermes_cli.env_loader import load_hermes_dotenv
+# ~/.moor/.env first, project .env as dev fallback; user env files override stale shell exports.
+from moor_constants import get_moor_home
+from moor_state_ids import new_session_id
+from moor_cli.env_loader import load_moor_dotenv
 from utils import base_url_host_matches, base_url_hostname, fast_safe_load, is_truthy_value
 
 _moor_home = get_moor_home()
@@ -2141,7 +2141,7 @@ def _terminal_may_leak_cpr() -> bool:
 
     Delayed CPR replies (``ESC[<row>;<col>R`` / visible ``^[[<row>;<col>R``) leak into the status line and
     can freeze input when the reply is slow (#13870 on SSH/slow PTYs). The same race hits local POSIX TTYs
-    under heavy subagent / status-line load — see ``tests/hermes_cli/test_cpr_local_leak.py``.
+    under heavy subagent / status-line load — see ``tests/moor_cli/test_cpr_local_leak.py``.
     """
     return os.environ.get("PROMPT_TOOLKIT_NO_CPR", "") == "1" or sys.platform != "win32"
 
@@ -2295,7 +2295,7 @@ def _build_compact_banner() -> str:
     dim_color = _color("banner_dim", "#B8860B")
 
     if (getattr(_skin, "name", "default") if _skin else "default") == "default":
-        tiny_line = "☤ NOUS HERMES"
+        tiny_line = "☤ MOOR MOOR"
     else:
         tiny_line = _skin.get_branding("agent_name", "Moor Agent") if _skin else "Moor Agent"
     line1 = f"{tiny_line} - AI Agent Framework"
@@ -2399,16 +2399,16 @@ def save_config_value(key_path: str, value: any) -> bool:
     config_path = get_moor_home() / 'config.yaml'
 
     try:
-        from hermes_constants import mkdir_under_hermes_home
-        mkdir_under_hermes_home(config_path.parent)
+        from moor_constants import mkdir_under_moor_home
+        mkdir_under_moor_home(config_path.parent)
         from utils import atomic_roundtrip_yaml_update
         atomic_roundtrip_yaml_update(config_path, key_path, value)
         try:  # owner-only: config files contain API keys
             os.chmod(config_path, 0o600)
         except (OSError, NotImplementedError):
             pass
-        # Same unpinned-cron notice as `hermes config set` for every model switch.
-        from hermes_cli.config import warn_unpinned_cron_jobs_after_model_config_change
+        # Same unpinned-cron notice as `moor config set` for every model switch.
+        from moor_cli.config import warn_unpinned_cron_jobs_after_model_config_change
 
         warn_unpinned_cron_jobs_after_model_config_change(key_path, value)
         return True
@@ -2526,8 +2526,8 @@ from moor_cli.cli_chat_turn_mixin import CLIChatTurnMixin
 _PASTE_REF_RE = re.compile(r'\[Pasted text #\d+: \d+ lines \u2192 (.+?)\]')
 
 
-class HermesCLI(CLIProcessNotificationsMixin, CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin, CLITuiMixin, CLIStatusBarMixin, CLIVoiceMixin, CLIModelSwitchMixin, CLISessionMixin, CLIStreamMixin, CLIModalMixin, CLITerminalMixin, CLIInfoMixin, CLILoopsMixin, CLIChatTurnMixin):
-    """Interactive REPL for the Hermes Agent."""
+class MoorCLI(CLIProcessNotificationsMixin, CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin, CLITuiMixin, CLIStatusBarMixin, CLIVoiceMixin, CLIModelSwitchMixin, CLISessionMixin, CLIStreamMixin, CLIModalMixin, CLITerminalMixin, CLIInfoMixin, CLILoopsMixin, CLIChatTurnMixin):
+    """Interactive REPL for the Moor Agent."""
 
     # Seeded -q first message (see _should_seed_interactive); run() re-creates
     # _pending_input, so it is enqueued only after the fresh queue exists.
@@ -2758,7 +2758,7 @@ class HermesCLI(CLIProcessNotificationsMixin, CLIAgentSetupMixin, CLICommandsMix
         self.checkpoint_max_file_size_mb = cp_cfg.get("max_file_size_mb", 10)
         self.pass_session_id = pass_session_id
         # --ignore-rules: AIAgent skips context files (AGENTS.md/SOUL.md/...) and memory.
-        self.ignore_rules = ignore_rules or is_truthy_value(os.environ.get("HERMES_IGNORE_RULES"))
+        self.ignore_rules = ignore_rules or is_truthy_value(os.environ.get("MOOR_IGNORE_RULES"))
 
     def _init_prompt_and_reasoning(self, reasoning):
         """Ephemeral system prompt/prefill, reasoning + service tier, OpenRouter routing knobs, fallback chain."""
@@ -2825,7 +2825,7 @@ class HermesCLI(CLIProcessNotificationsMixin, CLIAgentSetupMixin, CLICommandsMix
         self.session_id = resume or new_session_id(self.session_start)
         getattr(self, "_write_terminal_breadcrumb", lambda: None)()
 
-        self._history_file = _hermes_home / ".hermes_history"
+        self._history_file = _moor_home / ".moor_history"
         self._last_invalidate: float | None = None  # throttles UI repaints (None = never; monotonic epoch is arbitrary)
         self._init_ui_state()
 
@@ -2838,7 +2838,7 @@ class HermesCLI(CLIProcessNotificationsMixin, CLIAgentSetupMixin, CLICommandsMix
             # path a moment later from the REPL thread, and a second writer repeats the full
             # open (the /proc-wide deleted-WAL scan, ~4k readlinks) while the render thread
             # holds the GIL — that repeat was the post-banner freeze before the first prompt.
-            from hermes_state_registry import acquire
+            from moor_state_registry import acquire
             self._session_db = acquire()
         except Exception as e:
             # Without a store the transcript is NOT persisted while the chat looks healthy,
@@ -2849,7 +2849,7 @@ class HermesCLI(CLIProcessNotificationsMixin, CLIAgentSetupMixin, CLICommandsMix
             # the store before relying on resume.
             self._session_db_unavailable = True
             logger.warning("Failed to initialize SessionDB — session will NOT be indexed for search: %s", e)
-            from hermes_state_user_copy import describe_storage_failure, storage_failure_details
+            from moor_state_user_copy import describe_storage_failure, storage_failure_details
             failure = describe_storage_failure(e)
             try:
                 Console(stderr=True).print(
@@ -2970,7 +2970,7 @@ class HermesCLI(CLIProcessNotificationsMixin, CLIAgentSetupMixin, CLICommandsMix
         if self._active_session_lease is not None:
             return True
         try:
-            from hermes_cli.active_sessions import format_refusal_stderr, try_acquire_active_session
+            from moor_cli.active_sessions import format_refusal_stderr, try_acquire_active_session
 
             lease, message = try_acquire_active_session(
                 session_id=self.session_id,
@@ -3108,7 +3108,7 @@ class HermesCLI(CLIProcessNotificationsMixin, CLIAgentSetupMixin, CLICommandsMix
             # registry walk already loaded plus the pure notices module (a heavy import here races
             # importlib's module locks against the main thread).
             from model_tools import check_tool_availability
-            from hermes_cli.tool_availability_notices import (
+            from moor_cli.tool_availability_notices import (
                 current_terminal_backend, filter_to_enabled_toolsets, tool_availability_warning_lines,
             )
             from tools.terminal_tool import terminal_backend_unavailable_reason
@@ -3116,7 +3116,7 @@ class HermesCLI(CLIProcessNotificationsMixin, CLIAgentSetupMixin, CLICommandsMix
 
             _, unavailable = check_tool_availability()
             # Only toolsets this CLI session actually has. The selection is usually a composite bundle
-            # (``hermes-cli``), so expand it to tool names before matching — a raw name comparison
+            # (``moor-cli``), so expand it to tool names before matching — a raw name comparison
             # matched nothing on a default install and silently dropped the terminal notice.
             unavailable = filter_to_enabled_toolsets(unavailable, self.enabled_toolsets or [], resolve_toolset)
             lines = tool_availability_warning_lines(
@@ -3401,7 +3401,7 @@ class HermesCLI(CLIProcessNotificationsMixin, CLIAgentSetupMixin, CLICommandsMix
             _cprint(f"{_DIM}Did you mean: {', '.join(sorted(matches))}?{_RST}")
         else:
             # Exact token with no handler (never re-dispatch the same token: recursion), or no match.
-            from hermes_cli.cli_unknown_command import unknown_command_lines
+            from moor_cli.cli_unknown_command import unknown_command_lines
             lead, pointer = unknown_command_lines(cmd_lower, all_known)
             _cprint(f"\033[1;31m{lead}{_RST}")
             _cprint(f"{_DIM}{_ACCENT}{pointer}{_RST}")
@@ -4103,7 +4103,7 @@ def _single_query_exit_code(result) -> int:
 
     0 only when the turn completed; 130 when it was interrupted; 1 when it failed, stopped
     partway (`partial`, `completed: False`) or never ran at all (credentials / agent init
-    failed, so ``result`` is not a dict). A Kanban worker (``HERMES_KANBAN_TASK`` set) that
+    failed, so ``result`` is not a dict). A Kanban worker (``MOOR_KANBAN_TASK`` set) that
     failed purely on a provider rate-limit / billing wall exits ``KANBAN_RATE_LIMIT_EXIT_CODE``
     (EX_TEMPFAIL): the dispatcher books that run ``rate_limited`` and requeues the task
     WITHOUT counting a failure, so a quota window or a provider outage cannot trip the breaker.
@@ -4114,8 +4114,8 @@ def _single_query_exit_code(result) -> int:
         return 130
     if not (result.get("failed") or result.get("partial") or result.get("completed") is False):
         return 0
-    if os.environ.get("HERMES_KANBAN_TASK") and result.get("failure_reason") in _TRANSIENT_PROVIDER_REASONS:
-        from hermes_cli.kanban_db import KANBAN_RATE_LIMIT_EXIT_CODE
+    if os.environ.get("MOOR_KANBAN_TASK") and result.get("failure_reason") in _TRANSIENT_PROVIDER_REASONS:
+        from moor_cli.kanban_db import KANBAN_RATE_LIMIT_EXIT_CODE
         return KANBAN_RATE_LIMIT_EXIT_CODE
     return 1
 
@@ -4123,13 +4123,13 @@ def _single_query_exit_code(result) -> int:
 def _run_quiet_single_query(cli, effective_query, emitter=None):
     """Quiet (-Q) one-shot turn: run, print the response (stderr for errors/session_id), then sys.exit with the automation exit code.
     With a ``StreamJsonEmitter`` the final answer and the exit line become the terminal ``result`` JSONL record instead.
-    HERMES_TURN_AUTHOR (set only by a bot-to-bot dispatcher) is consumed here so tool subprocesses do not inherit it.
+    MOOR_TURN_AUTHOR (set only by a bot-to-bot dispatcher) is consumed here so tool subprocesses do not inherit it.
     Nested Bot Mode notifies bind this session's key (not the dispatcher's) and resume in-process
     before stdout is printed, so a teammate reply is the quiet run's final answer rather than a
     stranded receipt."""
     from agent.interrupt_compat import _accepts_keyword
     from agent.turn_author import take_turn_author_from_env
-    from hermes_cli.quiet_single_query import (
+    from moor_cli.quiet_single_query import (
         bind_quiet_session_key, continue_quiet_notify_completions, quiet_notify_linger_seconds,
     )
 
@@ -4379,7 +4379,7 @@ def _build_cli_from_args(model, toolsets, provider, reasoning, api_key, base_url
 
     # skills.auto_load rides the same background preload as -s; --ignore-rules skips it with
     # the rest of the auto-injected context. Resolved here (not lazily in the agent) so the
-    # session id is real for ${HERMES_SESSION_ID} and -s can dedupe against it.
+    # session id is real for ${MOOR_SESSION_ID} and -s can dedupe against it.
     from agent.skill_commands import build_auto_load_prompt, resolve_auto_load_skills
     auto_load_names = [] if getattr(cli, "ignore_rules", ignore_rules) else resolve_auto_load_skills(CLI_CONFIG)
     if not auto_load_names:
@@ -4519,7 +4519,7 @@ def _run_single_query_mode(cli, query, image, quiet, oneshot, stream_json: bool 
             if stream_json:
                 # Built BEFORE credentials/agent init so a failed start still closes the protocol
                 # (init + result) instead of exiting 1 with an empty stdout.
-                from hermes_cli.stream_json import StreamJsonEmitter
+                from moor_cli.stream_json import StreamJsonEmitter
                 emitter = StreamJsonEmitter(model=getattr(cli, "model", "") or "", session_id=cli.session_id or "")
             if cli._ensure_runtime_credentials():
                 effective_query: Any = _route_single_query_images(
@@ -4640,7 +4640,7 @@ def main(
 
     _join_worktree = _start_worktree_setup(list_tools, list_toolsets, worktree, w)
     query = query or q
-    # ``hermes chat`` already validated this; the direct Fire entry point gets the same contract.
+    # ``moor chat`` already validated this; the direct Fire entry point gets the same contract.
     if output_format == "stream-json":
         if not query:
             raise ValueError("--format stream-json requires -q/--query")

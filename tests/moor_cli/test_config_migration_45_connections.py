@@ -1,8 +1,8 @@
 """Migration 44→45: saved ``platform_toolsets`` lists gain the ``connections`` toolset.
 
-``hermes tools`` persists an explicit per-platform toolset list, and absence from
+``moor tools`` persists an explicit per-platform toolset list, and absence from
 that list reads as "unchecked" — so a toolset that ships after the list was saved
-stays off for picker users while composite (``[hermes-cli]``) users inherit it.
+stays off for picker users while composite (``[moor-cli]``) users inherit it.
 The 44→45 step turns ``connections`` on for stale lists, preserves an explicit
 decline, and leaves composites/empty lists alone.
 """
@@ -19,10 +19,10 @@ class TestConnectionsToolsetMigration:
 
     @staticmethod
     def _run_ladder(tmp_path, current_ver=44):
-        from hermes_cli.config_migrations import run_migrations
+        from moor_cli.config_migrations import run_migrations
 
         results = {"env_added": [], "config_added": [], "warnings": []}
-        with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}):
+        with patch.dict(os.environ, {"MOOR_HOME": str(tmp_path)}):
             run_migrations(current_ver, results, quiet=True)
         return results
 
@@ -72,7 +72,7 @@ class TestConnectionsToolsetMigration:
                 id="declined",
             ),
             pytest.param(  # (b) composite list already inherits every core tool
-                {"cli": ["hermes-cli"]},
+                {"cli": ["moor-cli"]},
                 {},
                 id="composite",
             ),
@@ -103,7 +103,7 @@ class TestConnectionsToolsetMigration:
 
     @pytest.mark.parametrize("disabled", [["browser", "connections", "web"], '["connections"]'], ids=["list", "json-string"])
     def test_global_disable_is_not_overridden_or_claimed(self, tmp_path, disabled):
-        """Blank Slate and `hermes tools --disable` write agent.disabled_toolsets, which the resolver
+        """Blank Slate and `moor tools --disable` write agent.disabled_toolsets, which the resolver
         subtracts last; appending to the platform list would print an enable that never takes effect."""
         platform_toolsets = {"cli": ["file", "skills", "terminal", "vision"]}
         self._write_config(
@@ -145,14 +145,14 @@ class TestConnectionsToolsetMigration:
 
     def test_full_migration_stamps_the_current_version(self, tmp_path):
         """A pre-45 config that takes this step ends at DEFAULT_CONFIG's version, never one short."""
-        from hermes_cli.config import migrate_config
-        from hermes_cli.config_defaults import DEFAULT_CONFIG
+        from moor_cli.config import migrate_config
+        from moor_cli.config_defaults import DEFAULT_CONFIG
 
         self._write_config(
             tmp_path,
             {"_config_version": 42, "platform_toolsets": {"cli": ["file", "terminal"]}},
         )
-        with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}):
+        with patch.dict(os.environ, {"MOOR_HOME": str(tmp_path)}):
             migrate_config(interactive=False, quiet=True)
         raw = self._read_config(tmp_path)
 

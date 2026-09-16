@@ -175,7 +175,7 @@ def test_tui_tick_leaves_gateway_routed_loop_for_gateway(server, session):
     """A /loop set from a messaging chat (route pinned by the gateway) must not be consumed by a TUI/Desktop
     viewer of the same session: the gateway's wakeup scanner owns delivery back to that chat (#111841)."""
     sid, session_key, s = session
-    from hermes_cli.loops import LoopManager, save_loop
+    from moor_cli.loops import LoopManager, save_loop
 
     mgr = LoopManager(session_key)
     mgr.set("poll", interval_seconds=60, route={"platform": "telegram", "chat_id": "42"})

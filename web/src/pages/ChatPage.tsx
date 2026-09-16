@@ -233,8 +233,8 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
   // so a missing token there is expected, not an error.
   const tokenMissing =
     typeof window !== "undefined" &&
-    !window.__HERMES_SESSION_TOKEN__ &&
-    !window.__HERMES_AUTH_REQUIRED__;
+    !window.__MOOR_SESSION_TOKEN__ &&
+    !window.__MOOR_AUTH_REQUIRED__;
   const [banner, setBanner] = useState<string | null>(() =>
     tokenMissing ? PTY_TOKEN_MISSING_BANNER.text : null,
   );

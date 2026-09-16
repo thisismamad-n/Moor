@@ -17,7 +17,7 @@ Bots need both a model provider and tool providers (TTS, web). A [Moor Portal](/
 ## Messaging status in Desktop and the dashboard
 
 Messaging status belongs to the selected profile on the selected machine. Credentials
-saved by `hermes gateway setup` can enable a credential-based platform without a
+saved by `moor gateway setup` can enable a credential-based platform without a
 `platforms` entry in `config.yaml`; an explicit `platforms.<name>.enabled: false`
 still disables it. A different profile never inherits the server process's credentials.
 Platforms without required credential fields are not enabled merely because that list
@@ -180,7 +180,7 @@ moor gateway status --system         # Linux only: inspect the system service ex
 ### Stack dump on demand (`SIGUSR2`)
 
 On Linux and macOS, `kill -USR2 <gateway pid>` appends a dump of every thread's
-stack to `~/.hermes/logs/gateway_faulthandler.log` and the gateway keeps
+stack to `~/.moor/logs/gateway_faulthandler.log` and the gateway keeps
 running — use it to see what a stalled or misbehaving gateway is doing without
 restarting it.
 
@@ -292,7 +292,7 @@ continuation, not the history loaded when you send a message.
 
 ## Per-Channel Model & System Prompt Overrides
 
-Different channels can run different models and personas from a **single gateway** — e.g. a cheap fast model in `#daily` and a frontier model with a specialist prompt in `#dev`. Configure `channel_overrides` under the platform in `~/.hermes/config.yaml`:
+Different channels can run different models and personas from a **single gateway** — e.g. a cheap fast model in `#daily` and a frontier model with a specialist prompt in `#dev`. Configure `channel_overrides` under the platform in `~/.moor/config.yaml`:
 
 ```yaml
 platforms:

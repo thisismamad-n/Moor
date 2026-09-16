@@ -93,9 +93,9 @@ def _fetch_live_models(creds: Optional[Dict[str, Any]] = None) -> Dict[str, Dict
 def _live_models() -> Dict[str, Dict[str, Any]]:
     """Cached live catalog (``{}`` when unreachable)."""
     global _LIVE_CACHE
-    from hermes_constants import get_hermes_home_override
+    from moor_constants import get_moor_home_override
 
-    if get_hermes_home_override() is None:
+    if get_moor_home_override() is None:
         if _LIVE_CACHE is not None and time.monotonic() - _LIVE_CACHE[1] < _LIVE_CACHE_TTL:
             return _LIVE_CACHE[0]
         _LIVE_CACHE = (_fetch_live_models_or_empty(None), time.monotonic())

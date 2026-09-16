@@ -1,6 +1,6 @@
 """Single-flight + short replay cache for rotating refresh tokens (both refresh paths).
 
-Rotating refresh tokens with reuse detection (Nous Portal, Authelia, most OIDC IdPs) make a
+Rotating refresh tokens with reuse detection (Moor Portal, Authelia, most OIDC IdPs) make a
 replay of an already-rotated RT fatal: the provider revokes the whole session. The desktop and
 the browser both fire bursts of parallel requests on wake or after the access token lapses,
 each still carrying the same old RT, so the gateway must let exactly ONE of them reach the
@@ -19,8 +19,8 @@ import time
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-from hermes_cli.dashboard_auth.base import DashboardAuthProvider, RefreshExpiredError, Session
-from hermes_cli.dashboard_auth.request_utils import scan_session_providers
+from moor_cli.dashboard_auth.base import DashboardAuthProvider, RefreshExpiredError, Session
+from moor_cli.dashboard_auth.request_utils import scan_session_providers
 
 # The success TTL covers the window between the winning response and the siblings' arrival
 # (a laptop waking from sleep can deliver its burst over many seconds); the failure TTL only

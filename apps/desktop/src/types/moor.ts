@@ -1,4 +1,4 @@
-import type { ConnectionRequestPayload } from '@hermes/shared'
+import type { ConnectionRequestPayload } from '@moor/shared'
 
 export interface ConfigFieldSchema {
   category?: string
@@ -58,12 +58,12 @@ export interface ElevenLabsVoicesResponse {
 }
 
 export interface OAuthProviderStatus {
-  /** Nous only: the tier name the token resolves to, when the backend knows
+  /** Moor only: the tier name the token resolves to, when the backend knows
    *  one. Null for a free-tier identity and for older backends. */
   account_tier?: null | string
   error?: string
   expires_at?: null | string
-  /** Nous only: true when the stored token belongs to a free-tier identity
+  /** Moor only: true when the stored token belongs to a free-tier identity
    *  rather than a signed-in account. `logged_in` stays true either way — a
    *  token exists — so this is the only way to tell the two apart. */
   free_tier?: boolean
@@ -149,14 +149,14 @@ export interface FreeTierStatus {
   available: boolean
   enabled: boolean
   has_guest: boolean
-  /** Display name for the route, e.g. "Nous · free tier". */
+  /** Display name for the route, e.g. "Moor · free tier". */
   label: string
   model: string
   /** True until the one-time introduction has been acknowledged. */
   notice_pending: boolean
   /** Present only while `enabled` and no identity exists: why the last attempt
    *  to create one failed. `error_code` is one of the backend's `anon_*` codes
-   *  (`hermes_cli/anon_auth.py`), `error` its sentence, `retryable` whether a
+   *  (`moor_cli/anon_auth.py`), `error` its sentence, `retryable` whether a
    *  later attempt can succeed, `retry_after` the seconds still to wait. */
   error?: string
   error_code?: string
@@ -335,7 +335,7 @@ export interface MessagingPlatformTestResponse {
 }
 
 // -- Telegram QR onboarding ---------------------------------------------------
-// The Nous pairing service mints a bot on the user's behalf: the desktop shows
+// The Moor pairing service mints a bot on the user's behalf: the desktop shows
 // a QR/deep link, Telegram confirms, the backend receives the token and writes
 // it (plus the allowlist) into the target profile's .env, then restarts the
 // gateway best-effort.
@@ -415,7 +415,7 @@ export interface WebhookEnableResponse {
   restart_started?: boolean
 }
 
-export interface HermesConfig {
+export interface MoorConfig {
   agent?: {
     reasoning_effort?: string
     personalities?: Record<string, unknown>

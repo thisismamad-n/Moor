@@ -807,9 +807,9 @@ async def test_session_hygiene_turn_hold_budget_abandons_streaming_wait(
     # Behavior witness 1: turn-hold expiry must NOT stamp the idle-timeout
     # provenance or send the "no output" user message.
     sent_contents = [m["content"] for m in adapter.sent]
-    # The idle-timeout copy is the only one that adds the `hermes doctor` pointer.
+    # The idle-timeout copy is the only one that adds the `moor doctor` pointer.
     assert not any(
-        "took too long" in c.lower() and "hermes doctor" in c.lower()
+        "took too long" in c.lower() and "moor doctor" in c.lower()
         for c in sent_contents
     ), f"turn-hold must not send idle-timeout message, got: {sent_contents}"
     assert any(
@@ -975,12 +975,12 @@ async def test_session_hygiene_idle_timeout_still_takes_failure_path(
     assert worker_started.is_set()
     assert runner._run_agent.await_count == 1
 
-    # Behavior witness: idle timeout MUST send the idle-timeout message (with the `hermes doctor` pointer).
+    # Behavior witness: idle timeout MUST send the idle-timeout message (with the `moor doctor` pointer).
     sent_contents = [m["content"] for m in adapter.sent]
     assert any(
-        "took too long" in c.lower() and "hermes doctor" in c.lower()
+        "took too long" in c.lower() and "moor doctor" in c.lower()
         for c in sent_contents
-    ), f"idle timeout must send the took-too-long + hermes doctor message, got: {sent_contents}"
+    ), f"idle timeout must send the took-too-long + moor doctor message, got: {sent_contents}"
 
     # Behavior witness: idle timeout MUST advance the failure cooldown.
     # The gateway calls _hygiene_cooldown_for_failure + _record_hygiene_cooldown.
@@ -1855,7 +1855,7 @@ def _turn_payload(runner):
 
 def _make_bound_runner(monkeypatch, tmp_path, agent_cls, cfg_text, transcript):
     """``_make_cooldown_runner`` with a >hard-limit transcript and a lowered hard limit."""
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     db.create_session("sess-bound", "telegram")

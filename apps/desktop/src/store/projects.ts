@@ -331,7 +331,7 @@ async function activeProjectsContext(profile = projectProfile()): Promise<Active
   }
 
   if (!gateway || gateway !== activeGateway() || profile !== normalizeProfileKey($activeGatewayProfile.get())) {
-    throw new Error('Active Hermes profile changed while connecting')
+    throw new Error('Active Moor profile changed while connecting')
   }
 
   return { gateway, profile }
@@ -484,7 +484,7 @@ async function refreshProjectTreeAcrossProfiles(): Promise<void> {
   $projectTreeLoading.set(true)
 
   try {
-    const res = await hermesApi<ProjectTreePayload>({
+    const res = await moorApi<ProjectTreePayload>({
       path: `/api/profiles/projects/tree?preview_limit=${projectTreePreviewLimit()}`,
       timeoutMs: PROJECT_TREE_REQUEST_TIMEOUT_MS
     })

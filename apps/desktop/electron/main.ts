@@ -19,7 +19,6 @@ import {
   ipcMain,
   Menu,
   nativeTheme,
-  Notification,
   powerMonitor,
   powerSaveBlocker,
   protocol,
@@ -31,9 +30,21 @@ import {
 } from 'electron'
 
 import { classifyActiveRuntime } from './active-runtime-state'
-import { destroyKeepaliveAgents, downloadAgentFor, jsonAgentFor, withRetry } from './api-transport'
+import {
+  destroyKeepaliveAgents,
+  downloadAgentFor,
+  htmlResponseError,
+  httpStatusError,
+  jsonAgentFor,
+  readStatusCode,
+  withRetry
+} from './api-transport'
 import { appIconCandidates, resolveAppIcon } from './app-icon'
-import { stopBackendChild as stopBackendChildImpl, stopBackendTreesForUpdate } from './backend-child'
+import {
+  stopBackendChild as stopBackendChildImpl,
+  stopBackendTreesForUpdate,
+  waitForBackendExit as waitForBackendExitImpl
+} from './backend-child'
 import {
   type BackendOutputTail,
   claimDecision,
@@ -45,34 +56,26 @@ import {
   processStartMarker,
   REAP_PROBE_TIMEOUT_MS
 } from './backend-claim'
-import { dashboardFallbackArgs, sourceDeclaresServe } from './backend-command'
+import { dashboardFallbackArgs } from './backend-command'
 import { createBackendConnectionState } from './backend-connection-state'
 import { BackendDialClaims } from './backend-dial-claim'
 import { buildDesktopBackendEnv, moorManagedNodePathEntries, normalizeMoorHomeRoot } from './backend-env'
-import {
-  isReauthRequiredError,
-  makeMoorCloudBackendDownError,
-  makeUnsignedOauthError,
-  waitForMoorReady
-} from './backend-health'
+import { isReauthRequiredError, waitForMoorReady } from './backend-health'
 import { backendCommandMatches, createBackendOwnership, createBackendShutdownCoordinator } from './backend-ownership'
-import {
-  canImportMoorCli,
-  execProbeSync,
-  PROBE_TIMEOUT_MS,
-  shouldTrustMoorOverride,
-  verifyMoorCli
-} from './backend-probes'
+import { canImportMoorCli, PROBE_TIMEOUT_MS, shouldTrustMoorOverride, verifyMoorCli } from './backend-probes'
 import { waitForDashboardPortAnnouncement } from './backend-ready'
 import { recycleOwnedBackend } from './backend-recycle'
 import { isPidAliveWindows, waitForBackendRelease } from './backend-release-gate'
+import { createBackendServeSupportResolver } from './backend-serve-support'
 import {
   isHostKeyChangedBootFailure,
   isRetryableRemoteBootFailure,
+  shouldHoldBootProgressForReauth,
   shouldLatchBackendStartFailure,
   shouldLatchHostKeyChangedFailure,
   shouldLatchRemoteReauthFailure
 } from './backend-start-failure'
+import { describeBootstrapFailure, missingInstallPartMessage } from './bootstrap-failure-copy'
 import {
   detectRemoteDisplay,
   isWindowsBinaryPathInWsl,
@@ -90,7 +93,9 @@ import {
 } from './browser-windows'
 import { detectBundleSkew } from './bundle-skew'
 import { detectBundleSwap } from './bundle-swap'
-import { applyConnectionChange, sshQuitShouldBlock, teardownSshState } from './connection-apply'
+import { registerChatOnboardingWindow } from './chat-onboarding-window'
+import { writeComposerPaste } from './composer-paste'
+import { applyConnectionChange, teardownSshState } from './connection-apply'
 import {
   apiRequestRegistryConnectionId,
   authModeFromStatus,
@@ -101,9 +106,9 @@ import {
   cookiesHavePrivyAccessToken,
   cookiesHavePrivySession,
   cookiesHaveSession,
-  gatewayTicketFailure,
   gatewayWsUrlIpcResult,
   hostLabelFromBaseUrl,
+  isGatewayAuthRejection,
   localProfileEntry,
   modeIsRemoteLike,
   normalizeRemoteBaseUrl,
@@ -170,7 +175,7 @@ import {
 } from './desktop-uninstall'
 import { describeDevCdpDecision, resolveDevCdpPort } from './dev-cdp'
 import { installEmbedReferer } from './embed-referer'
-import { createEventDeduper } from './event-dedupe'
+import { createAmbientClaimArbiter } from './event-dedupe'
 import {
   buildTerminalScript,
   resolveTerminalLaunch,
@@ -202,7 +207,7 @@ import {
 import { startGatewaysAfterUpdateAbort, stopGatewayBeforeUpdate } from './gateway-stop-before-update'
 import { probeGatewayWebSocket } from './gateway-ws-probe'
 import { registerGitIpc } from './git-ipc'
-import { clearStaleGitLocks } from './gitlock'
+import { desktopBackendSpawnEnv, guestOnboardingEnabled, skipIntroEnabled } from './guest-onboarding'
 import { readAndConsumeHandoffResult } from './handoff-result'
 import {
   ATTACHMENT_UPLOAD_DEFAULT_MAX_BYTES,
@@ -222,6 +227,7 @@ import {
   tightenSecretFileMode,
   writeSecretFileAtomic
 } from './hardening'
+import { requestHudClose } from './hud-close'
 import { cursorPointInWindow } from './hud-cursor'
 import { startHudGameOverlayWatch } from './hud-game-overlay'
 import { applyHudResetBounds, defaultHudBounds } from './hud-geometry'
@@ -231,7 +237,10 @@ import { snapHudBounds } from './hud-snap'
 import { createHudSnapShortcut } from './hud-snap-shortcut'
 import { buildHudWindowUrl } from './hud-url'
 import { resolveHudWindowing } from './hud-windowing'
+import { createIntroRevealWindowController } from './intro-reveal-window'
 import { createLinkTitleWindow, guardLinkTitleSession, readLinkTitleWindowTitle } from './link-title-window'
+import { notifyLauncherWindowRevealed } from './linux-launcher-ready'
+import { createLocalBackendLifecycle, waitForTeardown } from './local-backend-lifecycle'
 import { ensureMainWindow } from './main-window-lifecycle'
 import {
   assertManagedUpdatePreflightClear,
@@ -252,15 +261,9 @@ import {
 } from './managed-ssh-update'
 import { registerMcpOauthCallbackIpc } from './mcp-oauth-callback-ipc'
 import { createMediaProtocolHandler, MEDIA_PROTOCOL } from './media-protocol'
-import {
-  oauthGuardMayHardFail,
-  oauthSessionIsLive,
-  oauthTicketFailureAuthMessage,
-  resolveGatedDownloadAuth,
-  resolveJsonBody,
-  resolveOauthRestAuth,
-  resolveReadinessProbeAuth
-} from './native-auth-decisions'
+import { fetchLocalMedia } from './media-range'
+import { createNativeAccessTokenCoordinator, NativeAuthChangedError } from './native-access-token'
+import { oauthSessionIsLive, resolveJsonBody, resolveReadinessProbeAuth } from './native-auth-decisions'
 import {
   nativeRefreshUrl,
   type NativeTokenSet,
@@ -270,8 +273,11 @@ import {
 } from './native-oauth'
 import { runNativeLogin } from './native-oauth-login'
 import { loadNativeTokenSet, type NativeTokenStoreIo, persistNativeTokenSet } from './native-token-store'
+import { registerNativeNotifications } from './notification-ipc'
 import { serializeJsonBody, setJsonRequestHeaders } from './oauth-net-request'
 import { LEGACY_OAUTH_PARTITION, resolveOauthPartition } from './oauth-partition'
+import { mintGatewayWsTicket as mintOauthGatewayWsTicket, requestWithOauthFallback } from './oauth-rest-request'
+import { wireOauthSessionResponse } from './oauth-session-response'
 import { createParentStartMarkerResolver, parentWatchdogEnv } from './parent-process-identity'
 import { registerPetOverlayIpc } from './pet-overlay-ipc'
 import {
@@ -284,9 +290,12 @@ import {
   localRouteFallbackProfiles,
   undialedSshRouteSeeds
 } from './plugin-profile-routes'
-import { selectPoolEvictions } from './pool-eviction'
+import { evictPoolEntries } from './pool-eviction'
 import { clampPoolLimits, parsePoolLimits, POOL_LIMITS_DEFAULTS } from './pool-limits'
 import {
+  BackgroundSlotRetryBackoff,
+  BackgroundSlotRetryDeferredError,
+  isBackgroundSlotRetryDeferred,
   isBackgroundSlotWaitTimeout,
   LocalBackendSpawnCoordinator,
   type LocalBackendSpawnPriority,
@@ -304,6 +313,7 @@ import {
   runPrimaryBackendStartup
 } from './primary-backend-startup'
 import { rehomePrimaryConnection } from './primary-connection-rehome'
+import { PrimaryProfilePin } from './primary-profile-pin'
 import {
   assertLocalProfileCanStart,
   decideProfileDeleteAction,
@@ -328,6 +338,7 @@ import {
 } from './profile-session-routing'
 import { createQuickEntryShortcut, quickEntryWindowBounds, sanitizeQuickEntrySettings } from './quick-entry'
 import { type ActiveWork, mergeActiveWork, normalizeActiveWork, quitPromptFor } from './quit-guard'
+import { backendQuitNeedsWait, createQuitTeardownCoordinator } from './quit-teardown'
 import * as remoteLifecycle from './remote-lifecycle'
 import {
   attachPowerResumeRemoteRevalidation,
@@ -338,6 +349,7 @@ import {
   revalidateRemoteConnection,
   revalidateSuspectPooledRemoteBackends
 } from './remote-liveness'
+import { resolveRemoteOauthTicket, rosterSourceEnumerationTimeoutMs } from './remote-oauth-ticket'
 import {
   applyRemoteRequestHeaders,
   createRegistryGatewayWsUrlHandler,
@@ -346,6 +358,7 @@ import {
 import { missingRendererAssets } from './renderer-bundle'
 import { loadRendererLoadErrorPage } from './renderer-load-error-page'
 import { attachRendererConsoleCapture, formatRendererBoundaryReport } from './renderer-log'
+import { fetchRosterSourceData } from './roster-source-fetch'
 import {
   classifyStoredSecret,
   readSecretStoragePolicy,
@@ -366,6 +379,8 @@ import { ensureLoginShellPath } from './shell-path'
 import { createBootstrapCoordinator, sshConfigFingerprint } from './ssh-bootstrap-coordinator'
 import { collectSshConfigHosts, parseSshGOutput } from './ssh-config'
 import { createSshProbeConnection, pickLocalPort, redactSecrets, SshConnection } from './ssh-connection'
+import { createSshIsolatedKeepaliveRegistry } from './ssh-isolated-keepalive'
+import { createSshTeardownTracker } from './ssh-teardown'
 import { createStreamThrottle } from './stream-throttle'
 import { registerTerminalIpc } from './terminal-ipc'
 import { nativeOverlayWidth as computeNativeOverlayWidth, macTitleBarOverlayHeight } from './titlebar-overlay-width'
@@ -382,18 +397,13 @@ import {
   windowOpacityFor,
   windowOpacityOptions
 } from './translucency'
-import {
-  compareApiUrl,
-  parseCompareBehindCount,
-  resolveBehindCount,
-  resolveCommitLogSelection,
-  shouldCountCommits
-} from './update-count'
+import { branchTipApiUrl, cacheIsFresh, compareApiUrl, githubRepoSlug, parseCompare } from './update-api-check'
 import { waitForUpdateClearance } from './update-gate'
 import { readLiveUpdateMarker, updateHandoffConflict, writeUpdateMarker } from './update-marker'
 import { isOfficialSshRemote, OFFICIAL_REPO_HTTPS_URL, resolveGitAuthArgs, resolveUpdateAuthHeaders } from './update-remote'
 import {
   collectRelaunchArgs,
+  describeUpdaterHandoffFailure,
   observeUpdaterHandoff,
   resolvePosixScriptHandoff,
   resolveStagedUpdaterBinary,
@@ -401,6 +411,7 @@ import {
   sandboxFallbackFromEnv,
   spawnUpdaterProcess,
   stagedUpdaterSupportsPrewrittenMarker,
+  windowsUpdatePrerequisiteError,
   wrapHandoffForDetachedConsole
 } from './updater-process'
 import {
@@ -488,23 +499,23 @@ const TRANSLUCENCY_SUPPORTED = translucencySupportedOn(process.platform)
 const APP_ROOT = app.getAppPath()
 
 // Device-local preference: block F12 from opening DevTools.
-// Set dynamically via IPC from the renderer Settings → Advanced.
+// Set dynamically via IPC from the renderer Settings â†’ Advanced.
 let f12Blocked = false
 
-// Preload must be plain JS — Electron's sandbox can't run .ts, and tsx's
+// Preload must be plain JS â€” Electron's sandbox can't run .ts, and tsx's
 // ESM loader is broken on Electron 40's Node (ERR_INVALID_RETURN_PROPERTY_VALUE).
 // Dev (`npm run dev`) and prod both load the esbuild output from dist/.
 const PRELOAD_PATH = path.join(APP_ROOT, 'dist', 'electron-preload.js')
 
 // Remote displays (SSH X11 forwarding, VNC, RDP) make Chromium's GPU
-// compositor flicker — accelerated layers can't be presented cleanly over the
+// compositor flicker â€” accelerated layers can't be presented cleanly over the
 // wire, so the window flashes during scroll/streaming/animation. Local
 // Windows/macOS (and WSLg, which renders locally via vGPU) composite on the
 // GPU and never see it. Fall back to software rendering when a remote display
 // is detected; it's rock-steady over the wire and the CPU cost is negligible
-// next to the connection's latency. Must run before app `ready` — these
+// next to the connection's latency. Must run before app `ready` â€” these
 // switches only apply pre-launch. Override with MOOR_DESKTOP_DISABLE_GPU
-// (1/true → always disable, 0/false → keep GPU on).
+// (1/true â†’ always disable, 0/false â†’ keep GPU on).
 const REMOTE_DISPLAY_REASON = detectRemoteDisplay()
 
 if (REMOTE_DISPLAY_REASON) {
@@ -518,7 +529,7 @@ if (REMOTE_DISPLAY_REASON) {
 }
 
 // Renderer debugging port. On for dev-server runs (`hgui` / `npm run dev`) so
-// the CDP tooling in scripts/ can attach; never for a packaged build — see
+// the CDP tooling in scripts/ can attach; never for a packaged build â€” see
 // electron/dev-cdp.ts. Must run before app `ready` like the switches above;
 // Chromium binds it at launch.
 const DEV_CDP = resolveDevCdpPort({ env: process.env, isPackaged: IS_PACKAGED, devServer: DEV_SERVER })
@@ -529,7 +540,7 @@ if (DEV_CDP.port) {
   // so a future edit can't widen it by omission.
   app.commandLine.appendSwitch('remote-debugging-address', '127.0.0.1')
   console.log(
-    `[moor] renderer debugging on http://127.0.0.1:${DEV_CDP.port} — anything that can reach it ` +
+    `[moor] renderer debugging on http://127.0.0.1:${DEV_CDP.port} â€” anything that can reach it ` +
       'can run code in the renderer. MOOR_DESKTOP_CDP_PORT=off to disable.'
   )
 } else {
@@ -540,7 +551,7 @@ if (DEV_CDP.port) {
   }
 }
 
-// WSLg: Chromium blocklists the Mesa vGPU → software compositing → typing lag.
+// WSLg: Chromium blocklists the Mesa vGPU â†’ software compositing â†’ typing lag.
 // /dev/dxg means a real GPU is available; un-blocklist it. Skipped when a remote
 // display already forced software (SSH'd-into-WSL).
 if (IS_WSL && !REMOTE_DISPLAY_REASON && fs.existsSync('/dev/dxg')) {
@@ -554,7 +565,7 @@ if (IS_WSL && !REMOTE_DISPLAY_REASON && fs.existsSync('/dev/dxg')) {
 // encrypt remote gateway tokens (hardening.ts refuses to persist them without
 // it). The value arrives via MOOR_DESKTOP_PASSWORD_STORE, bridged by the
 // `moor desktop` launcher from detection or `desktop.password_store` in
-// config.yaml. Must run before app `ready` — the switch only applies pre-launch.
+// config.yaml. Must run before app `ready` â€” the switch only applies pre-launch.
 const PASSWORD_STORE = resolveLinuxPasswordStore()
 
 if (PASSWORD_STORE.warning) {
@@ -577,7 +588,7 @@ if (PASSWORD_STORE.store) {
 // re-probes the sandbox instead of degrading forever.
 //
 // `windowsSandboxFallbackActive` = this process runs without the Chromium
-// sandbox (any cause, including a manual --no-sandbox flag) — guards the
+// sandbox (any cause, including a manual --no-sandbox flag) â€” guards the
 // relaunch handlers. `windowsSandboxFallbackSticky` = the fallback machinery
 // engaged and the marker must stay `fallback` after a successful boot; a
 // manual flag alone is honored but never made sticky.
@@ -591,7 +602,7 @@ if (IS_WINDOWS) {
   const priorMarker = readSandboxMarker(windowsUserData)
 
   // Best-effort ACL repair, only when the last boot aborted or the fallback is
-  // engaged — icacls /T recurses the whole install tree, so healthy launches
+  // engaged â€” icacls /T recurses the whole install tree, so healthy launches
   // skip it (the installer already granted the ACE at install time). Repair
   // targets the install dir only: granting AppContainer read on userData would
   // expose Moor sessions/config to every packaged app on the machine.
@@ -669,7 +680,7 @@ if (IS_WINDOWS) {
 
 ipcMain.handle('moor:get-remote-display-reason', () => REMOTE_DISPLAY_REASON)
 
-// Keep the renderer's PROCESS priority normal while its windows are hidden —
+// Keep the renderer's PROCESS priority normal while its windows are hidden â€”
 // a deprioritized renderer streams a live answer visibly slower once the
 // window is minimized. This switch only affects scheduling priority; it does
 // not exempt timers from throttling and costs nothing at idle.
@@ -678,11 +689,11 @@ ipcMain.handle('moor:get-remote-display-reason', () => REMOTE_DISPLAY_REASON)
 // The old process-wide `disable-background-timer-throttling` /
 // `disable-backgrounding-occluded-windows` switches (plus a static
 // `backgroundThrottling: false` on every chat window) pinned every renderer's
-// `document.visibilityState` to 'visible' forever — which silently turned all
+// `document.visibilityState` to 'visible' forever â€” which silently turned all
 // the renderer's visibility-gated backstop polls and clock ticks into
 // always-on timers. A completely idle, minimized Moor burned ~20% CPU
 // around the clock. Throttling is now a runtime dial scoped to streaming:
-// see createStreamThrottle() — chat windows are unthrottled while any turn is
+// see createStreamThrottle() â€” chat windows are unthrottled while any turn is
 // in flight (so a live answer keeps painting while blurred, occluded, or
 // minimized, exactly as before) and return to Chromium's default throttling
 // once the work settles.
@@ -762,7 +773,7 @@ if (INSTALL_STAMP) {
   )
 }
 
-// MOOR_HOME — the user-facing root for everything moor-related. Mirrors
+// MOOR_HOME â€” the user-facing root for everything moor-related. Mirrors
 // scripts/install.ps1's $MoorHome and scripts/install.sh's $MOOR_HOME.
 //
 // Defaults:
@@ -824,13 +835,13 @@ function pathWithMoorManagedNode(...entries) {
   return [...managed, ...entries, process.env.PATH].filter(Boolean).join(path.delimiter)
 }
 
-// ACTIVE_MOOR_ROOT — the canonical mutable Moor install. Same path
+// ACTIVE_MOOR_ROOT â€” the canonical mutable Moor install. Same path
 // install.ps1 / install.sh use, so a desktop-only user and a CLI-only user end
 // up with identical layouts and can share one install.
 const ACTIVE_MOOR_ROOT = path.join(MOOR_HOME, 'moor-agent')
-// VENV_ROOT — venv lives inside the repo, exactly like install.ps1 does it.
+// VENV_ROOT â€” venv lives inside the repo, exactly like install.ps1 does it.
 const VENV_ROOT = path.join(ACTIVE_MOOR_ROOT, 'venv')
-// BOOTSTRAP_COMPLETE_MARKER — written by the first-launch bootstrap runner
+// BOOTSTRAP_COMPLETE_MARKER â€” written by the first-launch bootstrap runner
 // (Phase 1D) after install.ps1 has completed all stages and the user has
 // finished initial configuration. Presence of this marker means the install
 // is in a known-good state and we can skip the bootstrap flow on subsequent
@@ -846,18 +857,19 @@ const BOOTSTRAP_MARKER_SCHEMA_VERSION = 1
 
 const DESKTOP_CONNECTION_CONFIG_PATH = path.join(app.getPath('userData'), 'connection.json')
 // v2 multi-connection registry (named agent sources). Lives BESIDE
-// connection.json — v1 stays on disk untouched so older builds sharing the
+// connection.json â€” v1 stays on disk untouched so older builds sharing the
 // profile keep working; the registry imports from it once and then owns its
 // own file. Same secret posture as connection.json (encrypted tokens, 0600).
 const DESKTOP_CONNECTIONS_REGISTRY_PATH = path.join(app.getPath('userData'), 'connections.json')
 const DESKTOP_INSTALLATION_PATH = path.join(app.getPath('userData'), 'desktop-installation.json')
 const DESKTOP_UPDATE_CONFIG_PATH = path.join(app.getPath('userData'), 'updates.json')
+const DESKTOP_UPDATE_CHECK_CACHE_PATH = path.join(app.getPath('userData'), 'update-check-cache.json')
 const DESKTOP_WINDOW_STATE_PATH = path.join(app.getPath('userData'), 'window-state.json')
 const DESKTOP_BACKEND_OWNERSHIP_PATH = path.join(app.getPath('userData'), 'backend-ownership.json')
 const DESKTOP_MANAGED_SSH_RECOVERY_PATH = path.join(app.getPath('userData'), 'managed-ssh-update-recovery.json')
 // active-profile.json records which Moor profile the desktop launches its
 // local backend as. When set, startMoor() passes `moor --profile <name>
-// dashboard …`, which deterministically pins MOOR_HOME (see
+// dashboard â€¦`, which deterministically pins MOOR_HOME (see
 // _apply_profile_override in moor_cli/main.py) and bypasses the sticky
 // ~/.moor/active_profile file. Unset (null) preserves the legacy behavior:
 // no --profile flag, so the backend honors active_profile / default.
@@ -870,7 +882,7 @@ const PROFILE_NAME_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/
 // moorDesktop.updates.setBranch().
 const DEFAULT_UPDATE_BRANCH = 'main'
 // desktop.log lives under MOOR_HOME/logs/ so it sits next to agent.log,
-// errors.log, gateway.log produced by moor_logging.setup_logging — one log
+// errors.log, gateway.log produced by moor_logging.setup_logging â€” one log
 // directory per user, regardless of which UI surface produced the line.
 const DESKTOP_LOG_PATH = path.join(MOOR_HOME, 'logs', 'desktop.log')
 const DESKTOP_LOG_FLUSH_MS = 120
@@ -878,7 +890,7 @@ const DESKTOP_LOG_BUFFER_MAX_CHARS = 64 * 1024
 // Bound desktop.log on disk. It is an append-only forensic log, so a boot loop
 // (version-skew crash -> backend exits instantly -> renderer keeps hitting
 // Retry) appends the full bootstrap transcript every attempt and grows without
-// bound — we have seen it reach ~326 GB and exhaust the disk, which then breaks
+// bound â€” we have seen it reach ~326 GB and exhaust the disk, which then breaks
 // update/install (no room for git/venv/npm temp files).
 //
 // Mirror the Python logs (moor_logging.py RotatingFileHandler, maxBytes x
@@ -888,7 +900,7 @@ const DESKTOP_LOG_BUFFER_MAX_CHARS = 64 * 1024
 // Bounding alone never RECLAIMS an already-huge file: a plain rotation just
 // renames the monster to .1 and strands it for a cycle a healthy app may never
 // reach. A multi-GB boot-loop transcript has no diagnostic value, so anything
-// past the discard ceiling is deleted outright — the updated app self-heals a
+// past the discard ceiling is deleted outright â€” the updated app self-heals a
 // disk a stale build filled, on the next launch.
 const DESKTOP_LOG_MAX_BYTES = 10 * 1024 * 1024
 const DESKTOP_LOG_BACKUP_COUNT = 3
@@ -900,6 +912,10 @@ const BOOT_FAKE_ERROR = process.env.MOOR_DESKTOP_BOOT_FAKE_ERROR || ''
 // nobody to answer a modal, so the active-work confirmation would hang the
 // caller instead of letting the process exit. Force quits set this.
 const SKIP_QUIT_CONFIRM = process.env.MOOR_DESKTOP_SKIP_QUIT_CONFIRM === '1'
+// Moor free tier gate, decided ONCE here and stamped onto every backend spawn
+// (desktopBackendSpawnEnv) and the renderer (moor:launch-flags).
+const GUEST_ONBOARDING = guestOnboardingEnabled()
+const SKIP_INTRO = skipIntroEnabled()
 
 const BOOT_FAKE_STEP_MS = (() => {
   const raw = Number.parseInt(String(process.env.MOOR_DESKTOP_BOOT_FAKE_STEP_MS || ''), 10)
@@ -923,7 +939,7 @@ const WINDOW_BUTTON_POSITION = {
 
 // Right-edge window-control reservation lives in titlebar-overlay-width.ts
 // (pure + unit-testable); computeNativeOverlayWidth() applies it per platform.
-// It's only the pre-layout fallback — the renderer measures the exact overlay
+// It's only the pre-layout fallback â€” the renderer measures the exact overlay
 // width live via the Window Controls Overlay API.
 // The apple-touch PNG bakes in the macOS-style ~10% margin, which is correct
 // for the dock but renders visibly smaller than neighboring taskbar icons on
@@ -945,7 +961,7 @@ let rendererTitleBarTheme = null
 // Force the NATIVE window appearance (vibrancy material, titlebar, the
 // pre-first-paint window background) to follow the APP theme instead of the
 // OS appearance. With `vibrancy` set, macOS paints an NSVisualEffectView that
-// tracks the window's effective appearance and ignores `backgroundColor` —
+// tracks the window's effective appearance and ignores `backgroundColor` â€”
 // so a dark-themed app on a light-mode Mac flashes a white material on every
 // new window until the renderer covers it. The renderer reports its mode via
 // 'moor:native-theme' ('dark' | 'light' | 'system'); we pin
@@ -962,7 +978,7 @@ function readPersistedThemeSource() {
       return parsed.themeSource
     }
   } catch {
-    // Missing / malformed → follow the OS like a fresh install.
+    // Missing / malformed â†’ follow the OS like a fresh install.
   }
 
   return 'system'
@@ -979,12 +995,12 @@ function writePersistedThemeSource(mode) {
 
 nativeTheme.themeSource = readPersistedThemeSource()
 
-// Window translucency (see-through window). One lever, 0–100; 0 = off (the
+// Window translucency (see-through window). One lever, 0â€“100; 0 = off (the
 // default). Two modes share the lever (see electron/translucency.ts and
 // store/translucency): 'clear' maps it to the native window opacity so the
 // desktop shows through the whole window; 'glass' keeps the window opaque
 // and lets the renderer thin its surfaces over a platform material instead
-// — a matte blur with full-contrast text. macOS uses vibrancy; Windows 11
+// â€” a matte blur with full-contrast text. macOS uses vibrancy; Windows 11
 // uses DWM acrylic/mica/tabbed. Persisted so a cold launch applies it at
 // window creation, before the renderer reports its value.
 // macOS + Windows only; `setOpacity` is a no-op on Linux.
@@ -994,7 +1010,7 @@ function readPersistedTranslucency() {
   try {
     return normalizeTranslucency(JSON.parse(fs.readFileSync(TRANSLUCENCY_CONFIG_PATH, 'utf8')), GLASS_SUPPORTED)
   } catch {
-    // Nothing persisted yet — a first launch. Glass ships on, so the FIRST
+    // Nothing persisted yet â€” a first launch. Glass ships on, so the FIRST
     // window has to be created with the glass backing already: a window born
     // opaque cannot reliably be swapped to glass afterwards (see
     // windowBackingOptions). nativeTheme is the only appearance signal main
@@ -1016,12 +1032,12 @@ let translucencyState = readPersistedTranslucency()
 
 // Chat windows whose webContents backing follows translucency (primary,
 // instance peers, session windows). The HUD / pet overlay / quick entry /
-// wake indicator are `transparent: true` windows that own their backgrounds —
+// wake indicator are `transparent: true` windows that own their backgrounds â€”
 // painting a themed backing onto them would turn them into opaque rectangles.
 const translucencyBackedWindows = new WeakSet()
 
 // Set a live window's native opacity, but only when the state asks it to fade
-// — or when the window is already faded and is on its way back to opaque. The
+// â€” or when the window is already faded and is on its way back to opaque. The
 // window's own opacity is the record of whether that door was ever opened; see
 // opacityNeedsSetting for why it matters that it stays shut.
 function applyWindowOpacity(win) {
@@ -1042,7 +1058,7 @@ function applyWindowOpacity(win) {
 //
 // `changed` says which native properties actually need touching. Dragging the
 // intensity slider emits ~100 updates, and in glass mode NONE of them change
-// anything native — the tint is painted by the renderer and windowOpacityFor
+// anything native â€” the tint is painted by the renderer and windowOpacityFor
 // answers off `fade`, not `intensity`, there. Re-issuing setVibrancy on every
 // tick restarts its 150ms animation before macOS can settle the material,
 // which reads as jank and flattens the frost levels into each other. Windows
@@ -1052,7 +1068,7 @@ function applyWindowOpacity(win) {
 //
 // CAUTION (measured, macOS 26 / Electron 40): a runtime
 // setBackgroundColor('#00000000') is silently LOST on a window whose
-// compositor hasn't been up for a few seconds — including calls from
+// compositor hasn't been up for a few seconds â€” including calls from
 // 'ready-to-show' and 'did-finish-load'. Cold launches therefore must not
 // rely on this path: windows are BORN with the right backing
 // (windowBackingOptions at each creation site). This path only has to cover
@@ -1072,7 +1088,7 @@ function applyWindowTranslucency(win, changed = { backing: true, material: true,
 
       if (changed.material) {
         // Glass frost level = the platform material. Animate the macOS hop so
-        // a deliberate frost switch feels continuous — which only works if we
+        // a deliberate frost switch feels continuous â€” which only works if we
         // don't re-issue it on unrelated updates. Windows has no equivalent
         // animation option; setBackgroundMaterial is instantaneous.
         if (IS_MAC && typeof win.setVibrancy === 'function') {
@@ -1095,10 +1111,10 @@ function applyWindowTranslucency(win, changed = { backing: true, material: true,
 
 // Constructor options every chat window shares for its translucency surface:
 // the platform material, the webContents backing, and a native opacity only if
-// the state actually fades — all under the CURRENT state. Glass omits
+// the state actually fades â€” all under the CURRENT state. Glass omits
 // backgroundColor so the material shows from the first frame (Electron hands a
 // translucent window a transparent default backing, and runtime swaps are lost
-// early in a window's life — see applyWindowTranslucency); otherwise the opaque
+// early in a window's life â€” see applyWindowTranslucency); otherwise the opaque
 // themed anti-flash backing.
 //
 // Call sites also register the window in translucencyBackedWindows so a live
@@ -1113,20 +1129,20 @@ function chatWindowSurfaceOptions() {
     // (measured on macOS 26: sidebar, popover and under-window composited
     // pixel-identically once unfocused), which would quietly erase the
     // user's frost choice whenever they click elsewhere. Only observable
-    // under glass — everywhere else the page buries the material.
+    // under glass â€” everywhere else the page buries the material.
     visualEffectState: IS_MAC ? ('active' as const) : undefined,
     // NOT `transparent: true` on Windows. The backdrop material already makes
     // the window translucent on its own: `IsTranslucent` answers yes off
     // `background_material_` alone, which is what gives the page its transparent
     // default backing, and `SetBackgroundMaterial` flips widget translucency
-    // live, so a Clear→Glass toggle needs no recreate either way. Its one gate
+    // live, so a Clearâ†’Glass toggle needs no recreate either way. Its one gate
     // is a frameless window, and `titleBarStyle: 'hidden'` already makes
     // `has_frame()` false here.
     //
     // What `transparent` adds on top is permanent and unwanted: it pins the
     // widget to kTranslucent for the window's whole life, so even glass-OFF
     // windows pay a DirectComposition redraw per frame (electron#39895), and it
-    // opts into the documented transparent-window limits — including that a
+    // opts into the documented transparent-window limits â€” including that a
     // RESIZABLE transparent window is unsupported and breaks (electron#48421).
     // Every chat window is resizable.
     backgroundMaterial: IS_WINDOWS && GLASS_SUPPORTED ? backgroundMaterialFor(translucencyState) : undefined,
@@ -1150,7 +1166,7 @@ function getWindowBackgroundColor() {
   return nativeTheme.shouldUseDarkColors ? '#111111' : '#f7f7f7'
 }
 
-// Transparent WCO — renderer chrome shows through. rgba(0,0,0,0) can fall back
+// Transparent WCO â€” renderer chrome shows through. rgba(0,0,0,0) can fall back
 // to GetFrameColor() on some Electron builds; rgba(1,0,0,0) is the escape hatch.
 const TITLEBAR_OVERLAY_COLOR = 'rgba(1, 0, 0, 0)'
 
@@ -1164,7 +1180,7 @@ function getTitleBarOverlayOptions() {
 
   // WSLg paints WCO via the RDP host's own min/max/close, so requesting
   // an Electron overlay there just leaves a dead gap. Plain Linux (KDE,
-  // GNOME) can use the native overlay — let it through.
+  // GNOME) can use the native overlay â€” let it through.
   if (!IS_WINDOWS && IS_WSL) {
     return false
   }
@@ -1195,7 +1211,7 @@ function applyTitleBarOverlay(win) {
   try {
     win?.setTitleBarOverlay?.(options)
   } catch {
-    // Overlay not supported on this platform/build — leave the frameless
+    // Overlay not supported on this platform/build â€” leave the frameless
     // titlebar as-is.
   }
 }
@@ -1319,7 +1335,7 @@ app.setName(APP_NAME)
 // Windows toast notifications silently no-op unless an AppUserModelID is set:
 // `new Notification().show()` returns without error and nothing appears. The
 // AUMID must match the installed Start Menu shortcut's AUMID, which
-// electron-builder derives from the build `appId` (com.moorinc.moor) —
+// electron-builder derives from the build `appId` (com.moorinc.moor) â€”
 // keep this string in sync with package.json `build.appId`. macOS/Linux don't
 // need this, so gate it on Windows. (Fixes: desktop approval/turn notifications
 // never firing on Windows.)
@@ -1334,7 +1350,7 @@ if (IS_WINDOWS) {
 app.setAboutPanelOptions({
   applicationName: APP_NAME,
   applicationVersion: resolveMoorVersion(),
-  copyright: 'Copyright © 2026 Moor inc.'
+  copyright: 'Copyright Â© 2026 Moor inc.'
 })
 
 // Custom scheme for streaming audio/video into the renderer. Local paths read
@@ -1355,14 +1371,11 @@ protocol.registerSchemesAsPrivileged([
 
 function registerMediaProtocol() {
   const handler = createMediaProtocolHandler({
-    ensureRemoteBearer: baseUrl => ensureNativeAccessToken(baseUrl).catch(() => null),
-    fetchLocal: (resolvedPath, headers, method) =>
-      electronNet.fetch(pathToFileURL(resolvedPath).toString(), {
-        bypassCustomProtocolHandlers: true,
-        credentials: 'omit',
-        headers,
-        method
-      }),
+    ensureRemoteBearer: baseUrl => ensureNativeAccessToken(baseUrl),
+    // Answer local files ourselves: Electron's file:// loader ignores Range and
+    // returns the whole body as 200 without Accept-Ranges, which makes <video>
+    // unseekable (seekable=[0,0]).
+    fetchLocal: fetchLocalMedia,
     fetchRemote: (url, headers, method) =>
       electronNet.fetch(url, {
         bypassCustomProtocolHandlers: true,
@@ -1403,6 +1416,32 @@ function registerMediaProtocol() {
 
 let mainWindow = null
 const backendConnectionState = createBackendConnectionState<ReturnType<typeof spawn>, any>()
+
+const localBackendLifecycle = createLocalBackendLifecycle<ReturnType<typeof spawn>>({
+  stopChild: child => {
+    if (child.exitCode === null && child.signalCode === null) {
+      stopBackendChildImpl(child, { forceKillProcessTree, isWindows: IS_WINDOWS })
+    }
+  },
+  waitForExit: child => waitForBackendExit(child),
+  cancelSetup: () => {
+    firstRunSetupGate?.resetForRetry()
+    bootstrapAbortController?.abort()
+  }
+})
+
+function spawnOwnedBackend(...args: Parameters<typeof spawn>) {
+  const child = localBackendLifecycle.spawn(() => spawn(...args))
+  child.once('exit', () => localBackendLifecycle.release(child))
+  child.once('error', () => {
+    if (!child.pid) {
+      localBackendLifecycle.release(child)
+    }
+  })
+
+  return child
+}
+
 const remoteLiveness = new RemoteLivenessTracker()
 const remoteRevalidation = new RemoteRevalidationCoordinator()
 const registryDispatchRevalidation = new RemoteRevalidationCoordinator()
@@ -1410,9 +1449,9 @@ const registryDispatchRevalidation = new RemoteRevalidationCoordinator()
 // lock is per-renderer, so two windows racing one wake can both invoke the
 // backend ensure IPC and double-dial a pooled SSH backend. Main owns backend
 // lifecycles, so concurrent dials for one (connectionId, profile) scope
-// coalesce here — the second caller awaits the first spawn's result.
+// coalesce here â€” the second caller awaits the first spawn's result.
 const backendDialClaims = new BackendDialClaims()
-// True while connection-config:apply soft-rehomes the primary — suppresses the
+// True while connection-config:apply soft-rehomes the primary â€” suppresses the
 // backend-exit toast so an intentional kill doesn't look like a crash.
 let softRehomeInProgress = false
 // Additional per-profile backends, keyed by profile name. The PRIMARY backend
@@ -1426,7 +1465,7 @@ const profileDeletionGate = new ProfileDeletionGate()
 // Keep the pool light: cap concurrent profile backends (LRU eviction) and reap
 // idle ones. A user idles at exactly the primary backend; pool backends only
 // exist while a non-primary profile is actively being chatted through.
-// Pool sizing is a device preference (Settings → Advanced → pool rows), not a
+// Pool sizing is a device preference (Settings â†’ Advanced â†’ pool rows), not a
 // launch constant: mutable at runtime, persisted in userData, applied live.
 // The legacy MOOR_DESKTOP_POOL_* env vars remain the initial-value fallback
 // for scripted/headless setups; after launch the stored preference wins.
@@ -1441,7 +1480,7 @@ function readPersistedPoolLimits() {
 
     return limits
   } catch {
-    // No persisted file yet — fall back to the legacy env vars so scripted
+    // No persisted file yet â€” fall back to the legacy env vars so scripted
     // setups keep working. Log which source won: a silently-ignored env var
     // here costs a scripted-setup user a debugging session.
     const fromEnv = clampPoolLimits({
@@ -1486,9 +1525,10 @@ let desktopLogFlushPromise = Promise.resolve()
 
 let poolLimits = readPersistedPoolLimits()
 // Hard cap on local backends that are starting OR running (the LRU eviction
-// above is soft — it spares keepalive-fresh entries). Follows the live
+// above is soft â€” it spares keepalive-fresh entries). Follows the live
 // preference: setPoolLimits() pushes a new max into the coordinator.
 const localBackendSpawnCoordinator = new LocalBackendSpawnCoordinator(poolLimits.maxBackends)
+const backgroundSlotRetryBackoff = new BackgroundSlotRetryBackoff()
 // How long a spawn may wait for a free local slot. Must stay under the
 // renderer's BACKEND_BOOT_WAIT_TIMEOUT_MS (45s, src/lib/with-timeout.ts) so
 // the queued ticket fails before the renderer does and the user sees why.
@@ -1525,12 +1565,27 @@ function promotePoolEntry(entry: any): void {
   entry.localBackendSpawnRequest?.promote?.('foreground')
 }
 
-// Land a spawn failure in desktop.log. A background slot-wait timeout is
-// routine under a saturated pool (the next hydration pass retries), so it is
-// logged as such instead of as a backend-start failure.
+// A passive read (background tile reconcile, #103375) may only be served by a
+// backend that already exists: it never cold-starts a pooled child, never
+// takes a slot, and never refreshes lastActiveAt, so an open-but-unviewed tile
+// cannot keep the pool saturated. Callers treat the rejection as "nothing to
+// refresh yet"; primary-routed profiles are always warm and never reach here.
+function assertNotPassiveSpawn(passive: boolean, poolKey: string): void {
+  if (passive) {
+    throw new Error(`Passive read: no warm backend for "${poolKey}"`)
+  }
+}
+
+// Land a spawn failure in desktop.log. Background slot waits back off per
+// profile under a saturated pool, so a roster refresh cannot create a retry
+// storm while a user-triggered foreground open still gets its reserved slot.
 function logPoolSpawnFailure(label: string, error: unknown): void {
+  if (isBackgroundSlotRetryDeferred(error)) {
+    return
+  }
+
   if (isBackgroundSlotWaitTimeout(error)) {
-    rememberLog(`Profile backend ${label} slot wait timed out (background); will retry on the next hydration`)
+    rememberLog(`Profile backend ${label} slot wait timed out (background); retry is backing off`)
   } else {
     rememberLog(
       `Moor backend for profile ${label} failed to start: ${error instanceof Error ? error.message : String(error)}`
@@ -1567,7 +1622,7 @@ function poolIdleMs() {
 }
 
 /**
- * Apply new limits live: persist, then converge the running pool — evict
+ * Apply new limits live: persist, then converge the running pool â€” evict
  * LRU backends down to the new max, and let the (already running) idle
  * reaper handle a shortened idle window on its next tick. Returns the
  * limits actually in force (post-clamp).
@@ -1576,14 +1631,14 @@ function setPoolLimits(raw) {
   poolLimits = clampPoolLimits(raw)
   persistPoolLimits(poolLimits)
   localBackendSpawnCoordinator.setLimit(poolLimits.maxBackends)
-  evictLruPoolBackends(poolMaxBackends())
+  void evictLruPoolBackends(poolMaxBackends())
   startPoolIdleReaper()
 
   return { ...poolLimits }
 }
 
 // A backend touched within this window has a live renderer socket (the keepalive
-// pings every 60s for every open profile). LRU eviction must spare these — a
+// pings every 60s for every open profile). LRU eviction must spare these â€” a
 // concurrent multi-profile session keeps several backends "fresh" at once, and
 // killing one to honor the soft cap would abort a running agent.
 //
@@ -1593,14 +1648,14 @@ function setPoolLimits(raw) {
 //                       through 9p; a single brief 9p hiccup can stretch a
 //                       ping to ~30s of observed silence (#95189: gateways
 //                       exited every ~2 min on WSL2 because the previous
-//                       90s window left no headroom — one delayed ping
+//                       90s window left no headroom â€” one delayed ping
 //                       pushed a live backend past the threshold and the
 //                       cap-driven eviction killed the active profile's
 //                       backend mid-session, re-minting runtime ids and
-//                       re-allocating pooled gateway secondaries ~700×/day).
-//   * 3× ping + 60s headroom = ~4 min, comfortable margin for two missed
+//                       re-allocating pooled gateway secondaries ~700Ã—/day).
+//   * 3Ã— ping + 60s headroom = ~4 min, comfortable margin for two missed
 //     pings + WSL2 IPC stall. The hard ceiling for the cap-eligible set is
-//     pool idle window above (default 10 min) — this constant only governs the
+//     pool idle window above (default 10 min) â€” this constant only governs the
 //     "is this backend plausibly still alive" question for LRU eviction,
 //     not when the idle reaper definitively tears a backend down.
 const POOL_KEEPALIVE_FRESH_MS = Math.max(
@@ -1613,7 +1668,7 @@ let backendOrphanReapPromise = null
 // Auto-reload budget for renderer crashes, shared by EVERY window (primary,
 // secondary session, instance) so a crash loop anywhere is suppressed after
 // the same budget instead of reloading per-window forever. A deterministic
-// startup crash would otherwise loop forever (reload → crash → reload),
+// startup crash would otherwise loop forever (reload â†’ crash â†’ reload),
 // pinning CPU and spamming logs. Allow a few reloads per rolling window, then
 // stop and leave the dead window so the user can read the error / quit.
 const RENDERER_RELOAD_WINDOW_MS = 60_000
@@ -1625,12 +1680,12 @@ const rendererReloadTimesRef: { current: number[] } = { current: [] }
 // instead of re-running install.ps1 in a hot loop. Cleared explicitly by
 // the renderer's "Reload and retry" path or by quitting the app.
 let bootstrapFailure = null
-// Latched non-bootstrap backend spawn failure — stops getConnection() from
+// Latched non-bootstrap backend spawn failure â€” stops getConnection() from
 // respawning moor serve backend children in a tight loop while boot is broken.
 let backendStartFailure = null
 // Latched CONFIRMED remote reauth failure. Remote failures deliberately do not
 // latch via backendStartFailure (they're usually transient and must stay
-// retryable), but a rejected session cannot self-heal — and the non-latching
+// retryable), but a rejected session cannot self-heal â€” and the non-latching
 // path actively breaks recovery: each retry re-emits running:true and hides
 // the boot-failure overlay, so the "Sign in" button flickers away before it
 // can be clicked. Cleared on every recovery path and on a confirmed sign-in.
@@ -1708,7 +1763,7 @@ function rotateDesktopLogIfNeededSync() {
   try {
     size = fs.statSync(DESKTOP_LOG_PATH).size
   } catch {
-    return // No live file yet — the append (re)creates it.
+    return // No live file yet â€” the append (re)creates it.
   }
 
   for (const [op, src, dst] of planDesktopLogRotation(size)) {
@@ -1719,7 +1774,7 @@ function rotateDesktopLogIfNeededSync() {
         fs.renameSync(src, dst)
       }
     } catch {
-      // Best-effort — logging must never block startup/shutdown.
+      // Best-effort â€” logging must never block startup/shutdown.
     }
   }
 }
@@ -1730,7 +1785,7 @@ async function rotateDesktopLogIfNeededAsync() {
   try {
     size = (await fs.promises.stat(DESKTOP_LOG_PATH)).size
   } catch {
-    return // No live file yet — the append (re)creates it.
+    return // No live file yet â€” the append (re)creates it.
   }
 
   for (const [op, src, dst] of planDesktopLogRotation(size)) {
@@ -1741,7 +1796,7 @@ async function rotateDesktopLogIfNeededAsync() {
         await fs.promises.rename(src, dst)
       }
     } catch {
-      // Best-effort — logging must never crash the shell.
+      // Best-effort â€” logging must never crash the shell.
     }
   }
 }
@@ -1892,7 +1947,7 @@ function openExternalUrl(rawUrl) {
   const url = parsed.toString()
 
   if (IS_WSL) {
-    rememberLog(`[link] opening via WSL→Windows: ${url}`)
+    rememberLog(`[link] opening via WSLâ†’Windows: ${url}`)
 
     const proc = spawn('cmd.exe', ['/c', 'start', '""', url], {
       detached: true,
@@ -2226,6 +2281,12 @@ function abandonFirstRunSetupChoiceForRemoteApply() {
 }
 
 function updateBootProgress(update, options: { allowDecrease?: boolean } = {}) {
+  // A latched reauth rejection owns the boot surface until a recovery path
+  // clears it; see shouldHoldBootProgressForReauth (#95701).
+  if (shouldHoldBootProgressForReauth(remoteReauthFailure ? remoteReauthFailure.message : null, update)) {
+    return
+  }
+
   const nextProgressRaw =
     typeof update.progress === 'number' ? clampBootProgress(update.progress) : bootProgressState.progress
 
@@ -2286,13 +2347,13 @@ function directoryExists(filePath) {
 // --- in-app update mutual exclusion (#50238) -------------------------------
 // The Tauri updater writes MOOR_HOME/.moor-update-in-progress for the whole
 // duration of an `--update` run (see update.rs UpdateMarkerGuard). If the user
-// relaunches the desktop mid-update — because the window vanished with no
-// progress and looks crashed — a fresh instance must NOT spawn its own local
+// relaunches the desktop mid-update â€” because the window vanished with no
+// progress and looks crashed â€” a fresh instance must NOT spawn its own local
 // backend: that backend re-locks the venv shim, the updater's straggler cleanup
 // (`force_kill_other_moor`, taskkill /IM moor.exe) kills it, the launch
 // fails with the 45s "backend didn't come up" error, and the relaunch/kill
 // cycle loops. Instead the fresh instance parks until the update finishes, then
-// brings the backend up itself (it is the surviving instance — the updater's
+// brings the backend up itself (it is the surviving instance â€” the updater's
 // own relaunch hits our single-instance lock and quits). Marker parsing +
 // staleness self-heal live in update-marker.ts (unit-tested).
 
@@ -2304,7 +2365,7 @@ const UPDATE_WAIT_POLL_MS = 1000
 // How long the desktop lingers on the "updating, don't reopen" overlay after
 // spawning the detached updater, before it quits to release the venv shim. The
 // old 600ms was long enough to register the child process but far too short for
-// the user to READ the overlay — the window just vanished, looked like a crash,
+// the user to READ the overlay â€” the window just vanished, looked like a crash,
 // and the user relaunched mid-update (the #50238 restart-loop trigger). A
 // couple of seconds lets the message land and bridges the gap until the
 // updater's own progress window appears. (#50419)
@@ -2315,7 +2376,7 @@ const UPDATE_HANDOFF_DWELL_MS = 2500
 // updateInFlight flag is load-bearing (#73822): applyUpdates kills its own
 // backend BEFORE the Windows venv-blocker scan but only writes the marker
 // AFTER it, so a marker-only gate lets the renderer's ~1s reconnect respawn
-// a backend inside the update's own critical section — which the scan then
+// a backend inside the update's own critical section â€” which the scan then
 // reports as a blocker, aborting every update attempt.
 function updateGateDeps() {
   return {
@@ -2335,15 +2396,15 @@ const BUNDLE_SWAP_RELAUNCH_FLAG = '--moor-bundle-swap-relaunched'
 const BUNDLE_SWAP_RELAUNCH_FAILSAFE_MS = 15_000
 
 // The detached updater swaps the packaged bundle on disk AFTER `moor update`
-// exits (posix.sh mac_swap / windows.ps1). An instance reopened mid-update —
-// the #50238 gesture the gate above exists for — was launched from the
+// exits (posix.sh mac_swap / windows.ps1). An instance reopened mid-update â€”
+// the #50238 gesture the gate above exists for â€” was launched from the
 // PRE-swap bundle, and the updater's `open` leg then merely focuses us (single
 // instance), so no process ever loads the new build. Letting boot proceed here
 // runs the new runtime under the old renderer: exactly the skew
 // detectRendererSkew() warns about, except the Updates card already says
 // "latest", so the warning's own remedy has nothing to run.
 //
-// This is the earliest point where the swap is PROVABLE — it happens while we
+// This is the earliest point where the swap is PROVABLE â€” it happens while we
 // are parked on the gate, so checking any sooner (at `ready`, before the gate)
 // only ever compares a stamp with itself. Relaunching here also keeps the
 // boot-progress window up for the whole wait instead of leaving the user with
@@ -2378,12 +2439,13 @@ function relaunchIntoSwappedBundle() {
 }
 
 // Block until no live update is in progress (or we hit the wait timeout).
-// Emits a boot-progress phase so the renderer shows "Update in progress…"
+// Emits a boot-progress phase so the renderer shows "Update in progressâ€¦"
 // rather than a frozen splash. Returns true if it parked at all.
 async function waitForUpdateToFinish() {
   let announced = false
 
   const outcome = await waitForUpdateClearance(updateGateDeps(), {
+    signal: localBackendLifecycle.signal,
     onWaitTick: async reason => {
       if (!announced) {
         announced = true
@@ -2392,7 +2454,7 @@ async function waitForUpdateToFinish() {
 
       await advanceBootProgress(
         'backend.update-wait',
-        'An update is finishing — Moor will start automatically when it completes…',
+        'An update is finishing â€” Moor will start automatically when it completesâ€¦',
         12
       )
     },
@@ -2403,7 +2465,7 @@ async function waitForUpdateToFinish() {
   // The detached hand-off script (scripts/desktop-update/windows.ps1) runs hidden;
   // its result file is the ONLY way the user learns a detached update
   // failed. Consume it exactly once, here, right where boot passes the
-  // update gate — success gets a log line, failure gets a real dialog
+  // update gate â€” success gets a log line, failure gets a real dialog
   // (previously a failed detached update was indistinguishable from
   // "nothing happened").
   try {
@@ -2412,7 +2474,7 @@ async function waitForUpdateToFinish() {
     if (result && result.ok && result.manual) {
       // Update landed but the user must act (reopen/reinstall/sandbox). On
       // machines with no shim browser and no notifier this dialog is the
-      // FIRST time the message is visible — it must not be a log line.
+      // FIRST time the message is visible â€” it must not be a log line.
       rememberLog(`[updates] detached update finished with manual action (branch ${result.branch}): ${result.message}`)
       dialog.showMessageBox({
         type: 'warning',
@@ -2424,13 +2486,38 @@ async function waitForUpdateToFinish() {
       rememberLog(`[updates] detached update finished OK (branch ${result.branch})`)
     } else if (result) {
       rememberLog(`[updates] detached update FAILED (exit ${result.exitCode}): ${result.message}`)
-      dialog.showErrorBox(
-        'Moor update did not finish',
-        `${result.message}\n\nDetails: ${path.join(MOOR_HOME, 'logs', 'desktop-update-handoff.log')}`
-      )
+      const handoffLogPath = path.join(MOOR_HOME, 'logs', 'desktop-update-handoff.log')
+
+      // Async so boot is not blocked behind the dialog; the response handlers
+      // reuse the menu's open-updates path (queued until the renderer is ready)
+      // and the same reveal primitive as 'moor:logs:reveal'.
+      void dialog
+        .showMessageBox({
+          type: 'error',
+          title: 'Moor update',
+          message: "Moor couldn't finish updating",
+          detail:
+            "You're still on the previous version and can keep using it. Try the update again, or open the update log to report the problem.\n\n" +
+            `Details: ${result.message}`,
+          buttons: ['Try again', 'Open log', 'Close'],
+          defaultId: 0,
+          cancelId: 2,
+          noLink: true
+        })
+        .then(({ response }) => {
+          if (response === 0) {
+            sendOpenUpdatesRequested()
+          } else if (response === 1) {
+            shell.showItemInFolder(handoffLogPath)
+          }
+        })
     }
   } catch (err) {
     rememberLog(`[updates] could not read hand-off result: ${err.message}`)
+  }
+
+  if (outcome === 'cancelled') {
+    localBackendLifecycle.assertCanStart()
   }
 
   if (outcome === 'clear') {
@@ -2440,7 +2527,7 @@ async function waitForUpdateToFinish() {
   if (outcome === 'timeout') {
     rememberLog('[updates] update still in progress after wait timeout; starting backend anyway')
   } else if (relaunchIntoSwappedBundle()) {
-    await advanceBootProgress('backend.update-restart', 'Restarting Moor to load the updated app…', 14)
+    await advanceBootProgress('backend.update-restart', 'Restarting Moor to load the updated appâ€¦', 14)
     // Park while the scheduled exit lands so this stale build never starts a
     // backend; the failsafe below only runs if the exit somehow does not.
     await new Promise(resolve => setTimeout(resolve, BUNDLE_SWAP_RELAUNCH_FAILSAFE_MS))
@@ -2481,8 +2568,8 @@ function findOnPath(command) {
 
   // On Windows, try PATHEXT extensions BEFORE the bare (empty-extension) name.
   // A real command must resolve via its .exe/.cmd (Windows command-resolution
-  // semantics consult PATHEXT); an extensionless file — e.g. a Git-Bash
-  // shell-script shim named `moor` — must not shadow `moor.cmd`/`moor.exe`.
+  // semantics consult PATHEXT); an extensionless file â€” e.g. a Git-Bash
+  // shell-script shim named `moor` â€” must not shadow `moor.cmd`/`moor.exe`.
   // The empty entry is kept LAST so callers that already include the extension
   // (py.exe, pwsh.exe, powershell.exe) still resolve.
   const extensions = buildPathExtCandidates(process.env.PATHEXT, IS_WINDOWS)
@@ -2504,7 +2591,7 @@ function isCommandScript(command) {
   return IS_WINDOWS && /\.(cmd|bat)$/i.test(command || '')
 }
 
-function unwrapWindowsVenvMoorCommand(command, backendArgs) {
+async function unwrapWindowsVenvMoorCommand(command, backendArgs) {
   return resolveVenvMoorCommand(command, backendArgs, {
     isWindows: IS_WINDOWS,
     isCommandScript,
@@ -2526,76 +2613,15 @@ function unwrapWindowsVenvMoorCommand(command, backendArgs) {
 // spawns `moor serve`; runtimes older than serve only have `dashboard`. We
 // detect support so getBackendArgsForRuntime() can route old runtimes through
 // the legacy `dashboard --no-open` form instead of crashing on an unknown
-// subcommand (would brick every user mid-upgrade — #54568 follow-up).
-//
-// Fast path: read the runtime's own dashboard.py (instant, covers managed
-// installs, dev checkouts, and the Windows venv). Fallback: probe the CLI once
-// (covers a bare `moor` resolved from PATH with no known source root). Result
-// is cached per resolved runtime so we probe at most once per backend.
-const _serveSupportCache = new Map()
-
-function backendSupportsServe(backend) {
-  if (!backend || !backend.command) {
-    return true
-  }
-
-  const key = `${backend.command}::${backend.root || ''}`
-
-  if (_serveSupportCache.has(key)) {
-    return _serveSupportCache.get(key)
-  }
-
-  let supported = null
-
-  if (backend.root) {
-    try {
-      const src = fs.readFileSync(path.join(backend.root, 'moor_cli', 'subcommands', 'dashboard.py'), 'utf8')
-      supported = sourceDeclaresServe(src)
-    } catch {
-      supported = null // source unreadable — fall through to the probe
-    }
-  }
-
-  if (supported === null) {
-    try {
-      const prefix = backend.args && backend.args[0] === '-m' ? backend.args.slice(0, 2) : []
-      // Same cold-Windows Python-startup class as the runtime probes
-      // (#61764/#72632/#72707): `serve --help` imports at least as much as
-      // `moor --version` (~10.5s measured cold), and a false negative here
-      // is cached for the process lifetime, silently routing a modern
-      // runtime through the legacy `dashboard` form. Share the probe budget
-      // and its timeout-only retry instead of a thinner local bound.
-      execProbeSync(backend.command, [...prefix, 'serve', '--help'], {
-        cwd: backend.root || undefined,
-        env: { ...process.env, MOOR_HOME, ...(backend.env || {}) },
-        timeout: PROBE_TIMEOUT_MS,
-        stdio: 'ignore',
-        // `.cmd`/`.bat` shim backends carry shell: true in their descriptor
-        // (see resolveMoorBackend step 4); execFileSync of a .cmd without
-        // shell throws EINVAL on modern Node, which the catch below would
-        // mis-cache as "serve unsupported" for the process lifetime.
-        shell: Boolean(backend.shell),
-        windowsHide: true
-      })
-      supported = true
-    } catch {
-      supported = false
-    }
-  }
-
-  _serveSupportCache.set(key, supported)
-  rememberLog(
-    `[backend] \`serve\` ${supported ? 'supported' : 'unsupported → routing via legacy `dashboard`'} for ${backend.label || key}`
-  )
-
-  return supported
-}
+// subcommand (would brick every user mid-upgrade â€” #54568 follow-up).
+// Fast-path / probe / cache strategy: see backend-serve-support.ts header.
+const backendSupportsServe = createBackendServeSupportResolver(MOOR_HOME, rememberLog)
 
 // Given a resolved backend whose args target `serve`, return the args the
 // runtime actually understands: unchanged when `serve` is supported, or
 // rewritten to `dashboard --no-open` for older runtimes.
-function getBackendArgsForRuntime(backend) {
-  return backendSupportsServe(backend) ? backend.args : dashboardFallbackArgs(backend.args)
+async function getBackendArgsForRuntime(backend) {
+  return (await backendSupportsServe(backend)) ? backend.args : dashboardFallbackArgs(backend.args)
 }
 
 function normalizeExecutablePathForCompare(commandPath) {
@@ -2645,7 +2671,7 @@ function isMoorSourceRoot(root) {
   return directoryExists(root) && fileExists(path.join(root, 'moor_cli', 'main.py'))
 }
 
-function findPythonForRoot(root) {
+async function findPythonForRoot(root) {
   const override = process.env.MOOR_DESKTOP_PYTHON
 
   if (override && fileExists(override)) {
@@ -2667,7 +2693,7 @@ function findPythonForRoot(root) {
   return findSystemPython()
 }
 
-function findSystemPython() {
+async function findSystemPython() {
   if (!IS_WINDOWS) {
     // POSIX systems: PATH lookup is safe.
     for (const command of ['python3', 'python']) {
@@ -2687,13 +2713,13 @@ function findSystemPython() {
   //      %LOCALAPPDATA%\Microsoft\WindowsApps\python.exe and is on PATH
   //      by default on modern Windows. It's a redirector that opens the
   //      Store window if no Store Python is installed. Running it for
-  //      `-m venv` would either succeed (real Store install — fine) or
+  //      `-m venv` would either succeed (real Store install â€” fine) or
   //      pop the Store dialog (bad UX during boot).
   //  (2) `py.exe` (Python launcher) is missing from per-user installs
   //      that didn't check the launcher option, so PATH-only checks
   //      miss real Python 3.13 installs (user-reported case).
   //
-  // We also restrict ourselves to Python 3.11–3.13. 3.14 is the latest
+  // We also restrict ourselves to Python 3.11â€“3.13. 3.14 is the latest
   // CPython but several Moor deps (notably pywinpty's Rust-built
   // windows_x86_64_msvc crate) don't yet publish 3.14 wheels, and
   // `pip install -e .` falls back to source-build, which fails without
@@ -2706,7 +2732,7 @@ function findSystemPython() {
   // least-precise, and ONLY use PATH lookup as a last resort after
   // confirming the candidate isn't the WindowsApps redirector.
   //
-  //  Pass 1: PEP 514 registry — every standards-compliant Python
+  //  Pass 1: PEP 514 registry â€” every standards-compliant Python
   //          installer registers itself at SOFTWARE\Python\PythonCore.
   //          The MS Store stub does NOT register here, so a hit means
   //          a real Python install. Versions are explicit so we
@@ -2715,7 +2741,7 @@ function findSystemPython() {
   //          (Program Files, LocalAppData\Programs\Python). Same
   //          version filtering by directory name.
   //  Pass 3: PATH lookup of `py.exe` (the launcher itself never
-  //          triggers the Store) — but call it with a version flag so
+  //          triggers the Store) â€” but call it with a version flag so
   //          we resolve to a SPECIFIC supported version, not whatever
   //          py.exe's default is (which on a 3.14-only box would be
   //          3.14).
@@ -2728,13 +2754,10 @@ function findSystemPython() {
   for (const hive of ['HKLM', 'HKCU']) {
     for (const version of SUPPORTED_VERSIONS) {
       try {
-        const out = execFileSync(
+        const out = await execText(
           'reg',
           ['query', `${hive}\\SOFTWARE\\Python\\PythonCore\\${version}\\InstallPath`, '/ve', '/reg:64'],
-          // Registry reads are near-instant; the bound only exists so a
-          // pathologically wedged reg.exe can't hang the synchronous boot
-          // resolver forever (this ran unbounded before).
-          hiddenWindowsChildOptions({ encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 5_000 })
+          { timeout: 5_000 }
         )
 
         // Output format: "    (Default)    REG_SZ    C:\Path\To\Python\"
@@ -2749,7 +2772,7 @@ function findSystemPython() {
           }
         }
       } catch {
-        // Key not present — try next.
+        // Key not present â€” try next.
       }
     }
   }
@@ -2784,19 +2807,9 @@ function findSystemPython() {
   if (pyExe) {
     for (const version of SUPPORTED_VERSIONS) {
       try {
-        const out = execFileSync(
-          pyExe,
-          [`-${version}`, '-c', 'import sys; print(sys.executable)'],
-          hiddenWindowsChildOptions({
-            encoding: 'utf8',
-            stdio: ['ignore', 'pipe', 'ignore'],
-            // Bare interpreter startup — much lighter than the moor-import
-            // probes, but still python.exe under cold cache / AV scan, so
-            // share the probe budget rather than running unbounded (this
-            // synchronous exec previously had no timeout at all).
-            timeout: PROBE_TIMEOUT_MS
-          })
-        )
+        const out = await execText(pyExe, [`-${version}`, '-c', 'import sys; print(sys.executable)'], {
+          timeout: PROBE_TIMEOUT_MS
+        })
 
         const candidate = out.trim()
 
@@ -2804,7 +2817,7 @@ function findSystemPython() {
           return candidate
         }
       } catch {
-        // py couldn't find that version — try next.
+        // py couldn't find that version â€” try next.
       }
     }
   }
@@ -2818,7 +2831,7 @@ function findSystemPython() {
   return null
 }
 
-// findGitBash — locate bash.exe on Windows. Resolves MOOR_GIT_BASH_PATH
+// findGitBash â€” locate bash.exe on Windows. Resolves MOOR_GIT_BASH_PATH
 // first (mirrors tools/environments/local.py:_find_bash), then PortableGit,
 // standard install locations, and finally PATH.
 function findGitBash() {
@@ -2836,14 +2849,14 @@ function getVenvPython(venvRoot) {
 
 // Map a selected interpreter back to the venv that OWNS it (the directory
 // above bin/ or Scripts/), but only when that venv lives inside `root`.
-// Returns null for system pythons — they own no site-packages we should mount.
+// Returns null for system pythons â€” they own no site-packages we should mount.
 //
 // This exists because findPythonForRoot() probes `.venv` before `venv`, and a
 // checkout can legitimately have BOTH (dev tooling venv + the CLI install
 // venv, possibly on different Python versions). The interpreter and the
 // site-packages placed on PYTHONPATH must come from the SAME venv: pairing a
 // .venv 3.12 python with venv/lib/python3.11/site-packages makes the backend
-// die on its first native import (pydantic_core) before the gateway binds —
+// die on its first native import (pydantic_core) before the gateway binds â€”
 // the renderer then reports "Gateway offline" on every profile.
 function venvRootForPython(python: string, root: string) {
   const parent = path.dirname(python)
@@ -2865,16 +2878,16 @@ function venvRootForPython(python: string, root: string) {
 
 // Windows console-window flashes are governed by the *parent's* console, not by
 // each child spawn. A GUI-subsystem parent (pythonw.exe) has no console, so every
-// console-subsystem child it spawns (git, gh, cmd, ...) must allocate its own —
+// console-subsystem child it spawns (git, gh, cmd, ...) must allocate its own â€”
 // which flashes a window. A console-subsystem parent (python.exe) instead owns a
 // single console that all of its children inherit, so none of them flash.
 //
 // Note this change adds no new creationflag: the backend spawn is ALREADY wrapped
 // in hiddenWindowsChildOptions() (windowsHide: true), but that setting is INERT
-// against pythonw.exe — a GUI-subsystem process has no console for it to act on.
+// against pythonw.exe â€” a GUI-subsystem process has no console for it to act on.
 // Switching the backend to the venv's console python.exe is what makes the
 // existing wrapper load-bearing: with windowsHide the process comes up owning a
-// *windowless* console (verified at runtime — it has an attachable console whose
+// *windowless* console (verified at runtime â€” it has an attachable console whose
 // window handle is NULL), and its children inherit that one windowless console
 // instead of each allocating a visible one.
 //
@@ -2891,7 +2904,7 @@ function makeDashboardReadyFile() {
   return path.join(dir, `dashboard-${process.pid}-${Date.now()}-${crypto.randomBytes(6).toString('hex')}.json`)
 }
 
-// resolveGitBinary — locate git.exe on Windows. A fresh installer-driven
+// resolveGitBinary â€” locate git.exe on Windows. A fresh installer-driven
 // install only has PortableGit under %LOCALAPPDATA%\moor\git (never on
 // PATH), so a bare spawn('git') ENOENTs and self-update checks fail with
 // "Couldn't check for updates". Mirror findGitBash: PortableGit first, then
@@ -2929,7 +2942,7 @@ function resolveGitBinary() {
   return _gitBinaryCache
 }
 
-// resolveGhBinary — locate the GitHub CLI. GUI-launched apps get a minimal PATH
+// resolveGhBinary â€” locate the GitHub CLI. GUI-launched apps get a minimal PATH
 // that omits Homebrew (/opt/homebrew/bin, /usr/local/bin) where `gh` usually
 // lives, so a bare spawn('gh') ENOENTs even though `gh` works in the user's
 // terminal. Check the common install locations first, then PATH. Cached.
@@ -2962,27 +2975,18 @@ function recentMoorLog() {
   return moorLog.slice(-20).join('\n')
 }
 
-// ─── Self-update (git-pull against the running backend's moor root) ──────
+// â”€â”€â”€ Self-update (git-pull against the running backend's moor root) â”€â”€â”€â”€â”€â”€
 
 function readDesktopUpdateConfig(): { branch: string; pat?: string; repo?: string } {
   try {
     const parsed = JSON.parse(fs.readFileSync(DESKTOP_UPDATE_CONFIG_PATH, 'utf8'))
     const branch = typeof parsed?.branch === 'string' ? parsed.branch.trim() : ''
-    const envPat = (process.env.GITHUB_TOKEN || process.env.GH_TOKEN || '').trim()
-    const pat = typeof parsed?.pat === 'string' ? parsed.pat.trim() : envPat
-    const repo = typeof parsed?.repo === 'string' ? parsed.repo.trim() : ''
+    const pat = typeof parsed?.pat === 'string' ? parsed.pat.trim() : undefined
+    const repo = typeof parsed?.repo === 'string' ? parsed.repo.trim() : undefined
 
-    return {
-      branch: branch || DEFAULT_UPDATE_BRANCH,
-      pat: pat || undefined,
-      repo: repo || undefined
-    }
+    return { branch: branch || DEFAULT_UPDATE_BRANCH, pat, repo }
   } catch {
-    const envPat = (process.env.GITHUB_TOKEN || process.env.GH_TOKEN || '').trim()
-    return {
-      branch: DEFAULT_UPDATE_BRANCH,
-      pat: envPat || undefined
-    }
+    return { branch: DEFAULT_UPDATE_BRANCH }
   }
 }
 
@@ -2994,12 +2998,12 @@ function writeFileAtomic(targetPath, data, encoding?: BufferEncoding) {
   fs.renameSync(tmp, targetPath)
 }
 
-function writeDesktopUpdateConfig(config: { branch?: string; pat?: string; repo?: string }) {
+function writeDesktopUpdateConfig(config) {
   fs.mkdirSync(path.dirname(DESKTOP_UPDATE_CONFIG_PATH), { recursive: true })
   writeFileAtomic(DESKTOP_UPDATE_CONFIG_PATH, JSON.stringify(config, null, 2))
 }
 
-// ─── Main-window geometry persistence (window-state.json) ──────────────────
+// â”€â”€â”€ Main-window geometry persistence (window-state.json) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function readWindowState() {
   try {
@@ -3034,7 +3038,7 @@ const schedulePersistWindowState = debounce(persistWindowState, 250)
 
 // Zoom's primary store is a main-process JSON file. The renderer localStorage
 // mirror lives under Electron's cache/storage folders, which crash recovery
-// can move or recreate — wiping the zoom setting exactly when the user just
+// can move or recreate â€” wiping the zoom setting exactly when the user just
 // recovered from a crash (#56726). JSON survives; localStorage is kept as a
 // secondary mirror so pre-JSON installs migrate transparently on first read.
 const DESKTOP_ZOOM_STATE_PATH = path.join(app.getPath('userData'), 'zoom-state.json')
@@ -3060,7 +3064,7 @@ function writeZoomState(zoomLevel) {
 }
 
 // Match the backend's source resolution but bias toward a real git checkout.
-// Dev → SOURCE_REPO_ROOT. Packaged/CLI install → ACTIVE_MOOR_ROOT.
+// Dev â†’ SOURCE_REPO_ROOT. Packaged/CLI install â†’ ACTIVE_MOOR_ROOT.
 // MOOR_DESKTOP_MOOR_ROOT always wins so devs can pin a worktree.
 function resolveUpdateRoot() {
   const candidates = [
@@ -3097,7 +3101,10 @@ function runGit(args, options: any = {}): Promise<{ code: number; stdout: string
       options.onLine?.('stderr', text)
     })
     child.once('error', reject)
-    child.once('exit', code => resolve({ code, stdout, stderr }))
+    // 'close', not 'exit': exit can fire before the stdio pipes drain, and a
+    // resolved-early `remote get-url` came back as "" often enough to route
+    // passive checks down the wrong remote path.
+    child.once('close', code => resolve({ code, stdout, stderr }))
   })
 }
 
@@ -3120,7 +3127,7 @@ function emitUpdateProgress(payload) {
 
 // Self-heal the tracked update branch: if origin no longer publishes it (e.g.
 // bb/gui was merged into main and deleted), fall back to main and persist so
-// every later check/apply follows main — no manual flip, even for already-
+// every later check/apply follows main â€” no manual flip, even for already-
 // installed clients. Read-only ls-remote probe; only flips on a definitive
 // "ref absent" (exit 2), never on a transient network error, so a flaky
 // connection can't strand a user on the wrong branch.
@@ -3147,344 +3154,244 @@ async function resolveHealedBranch(updateRoot, branch) {
   return 'main'
 }
 
-async function checkUpdates() {
+// Passive checks never touch git's network side. Every client used to `git
+// fetch` twice per half hour; across the install base that was tens of
+// millions of pack negotiations a day against one repo (GitHub flagged it).
+// The REST API answers the same question in one 40-byte response, so the
+// check is API-first with a 24h on-disk cache keyed on local HEAD (applying an
+// update changes HEAD, which busts the cache immediately). `git fetch` runs only
+// inside applyUpdates. `force` (menu item, Settings "Check now") skips the
+// cache; the renderer's background poller never passes it.
+async function checkUpdates({ force = false }: { force?: boolean } = {}) {
   const updateRoot = resolveUpdateRoot()
-  const config = readDesktopUpdateConfig()
-  const { pat, repo } = config
-  let branch = config.branch
+  let { branch } = readDesktopUpdateConfig()
   const gitDir = path.join(updateRoot, '.git')
 
   if (!directoryExists(gitDir)) {
     return {
       supported: false,
       reason: 'not-a-git-checkout',
-      message: `${updateRoot} isn't a git checkout — desktop self-update only runs against a source install.`,
+      message:
+        "This copy of Moor can't update itself from inside the app. Download the latest version from the Moor website, " +
+        `or reinstall Moor to enable in-app updates. Details: ${updateRoot} has no version-control metadata.`,
       moorRoot: updateRoot,
       branch
     }
   }
 
-  branch = await resolveHealedBranch(updateRoot, branch)
-  const originUrl = await getOriginUrl(updateRoot)
-  const authArgs = resolveGitAuthArgs(pat)
-  const authEnv = pat ? { GITHUB_TOKEN: pat, GH_TOKEN: pat } : {}
-  const targetRemoteUrl = repo
-    ? (repo.startsWith('http') || repo.startsWith('git@') ? repo : `https://github.com/${repo}.git`)
-    : (isOfficialSshRemote(originUrl) ? OFFICIAL_REPO_HTTPS_URL : originUrl)
+  const git = args => runGit(args, { cwd: updateRoot }).then(r => r.stdout.trim())
 
-  const isOfficial = isOfficialSshRemote(originUrl) || Boolean(repo)
-
-  if (isOfficial) {
-    const git = args => runGit(args, { cwd: updateRoot, env: authEnv }).then(r => r.stdout.trim())
-
-    const [currentSha, target, dirtyStr, currentBranch] = await Promise.all([
-      git(['rev-parse', 'HEAD']),
-      runGit([...authArgs, 'ls-remote', targetRemoteUrl, `refs/heads/${branch}`], { cwd: updateRoot, env: authEnv }),
-      git(['status', '--porcelain']),
-      git(['rev-parse', '--abbrev-ref', 'HEAD'])
-    ])
-
-    const targetSha = firstLine(target.stdout).split(/\s+/)[0] || ''
-
-    if (target.code !== 0 || !targetSha) {
-      const errText = (target.stderr || '').toLowerCase()
-      const isAuthError =
-        errText.includes('401') ||
-        errText.includes('403') ||
-        errText.includes('authentication') ||
-        errText.includes('permission denied') ||
-        errText.includes('could not read username')
-
-      return {
-        supported: true,
-        branch,
-        error: isAuthError ? 'auth-required' : 'fetch-failed',
-        message: firstLine(target.stderr) || (isAuthError ? 'Private repository access requires a Personal Access Token (PAT).' : 'git ls-remote failed.'),
-        moorRoot: updateRoot,
-        fetchedAt: Date.now()
-      }
-    }
-
-    // Passive SSH-official checks only know tip SHAs (ls-remote) — never
-    // fabricate a "1 commit behind". Recover the exact count via the GitHub
-    // compare API when possible; otherwise behind stays null ("update
-    // available, count unknown") and updateAvailable carries the signal.
-    // ahead_by === 0 with differing tips means the remote tip is reachable
-    // from our HEAD — a local carried commit sitting AHEAD, not behind:
-    // flagging that as an update nudges the user into wiping their work.
-    const tipsEqual = Boolean(currentSha && currentSha === targetSha)
-
-    const sshBehind = tipsEqual
-      ? 0
-      : await fetchCompareBehindCount({ currentSha, originUrl: targetRemoteUrl, targetSha, pat })
-
-    const upToDate = tipsEqual || sshBehind === 0
-
-    return {
-      supported: true,
-      branch,
-      currentBranch,
-      behind: upToDate ? 0 : sshBehind,
-      updateAvailable: !upToDate,
-      currentSha,
-      targetSha,
-      commits: [],
-      dirty: dirtyStr.length > 0,
-      moorRoot: updateRoot,
-      fetchedAt: Date.now()
-    }
-  }
-
-  // Self-heal abandoned git lock files before fetching. A stale
-  // .git/shallow.lock from a crashed/interrupted fetch otherwise fails every
-  // later fetch ("Unable to create '.git/shallow.lock': File exists") and this
-  // check reports 'fetch-failed' forever — git never removes these itself.
-  await clearStaleGitLocks(updateRoot)
-
-  const fetched = await runGit([...authArgs, 'fetch', '--quiet', 'origin', branch], { cwd: updateRoot, env: authEnv })
-
-  if (fetched.code !== 0) {
-    const errText = (fetched.stderr || '').toLowerCase()
-    const isAuthError =
-      errText.includes('401') ||
-      errText.includes('403') ||
-      errText.includes('authentication') ||
-      errText.includes('permission denied') ||
-      errText.includes('could not read username')
-
-    return {
-      supported: true,
-      branch,
-      error: isAuthError ? 'auth-required' : 'fetch-failed',
-      message: firstLine(fetched.stderr) || (isAuthError ? 'Private repository access requires a Personal Access Token (PAT).' : 'git fetch failed.'),
-      moorRoot: updateRoot,
-      fetchedAt: Date.now()
-    }
-  }
-
-  const git = args => runGit(args, { cwd: updateRoot, env: authEnv }).then(r => r.stdout.trim())
-
-  const [currentSha, targetSha, dirtyStr, currentBranch, shallowStr] = await Promise.all([
+  const [currentSha, dirtyStr, currentBranch, originUrl] = await Promise.all([
     git(['rev-parse', 'HEAD']),
-    git(['rev-parse', `origin/${branch}`]),
     git(['status', '--porcelain']),
     git(['rev-parse', '--abbrev-ref', 'HEAD']),
-    git(['rev-parse', '--is-shallow-repository'])
+    getOriginUrl(updateRoot)
   ])
 
-  const isShallow = shallowStr === 'true'
+  const cached = readUpdateCheckCache()
+  const now = Date.now()
 
-  // A shallow graph cannot provide a trustworthy exact count, even when it has
-  // a visible merge-base. Skip the ancestry walk and use the SHA fallback.
-  const countStr = shouldCountCommits({ isShallow }) ? await git(['rev-list', `HEAD..origin/${branch}`, '--count']) : ''
-
-  // A positive directional ancestry result remains trustworthy in a shallow
-  // graph and prevents a local commit on top of origin from looking outdated.
-  const targetIsAncestorOfHead =
-    isShallow &&
-    currentSha !== targetSha &&
-    (await runGit(['merge-base', '--is-ancestor', `origin/${branch}`, 'HEAD'], { cwd: updateRoot })).code === 0
-
-  let behind = resolveBehindCount({
-    countStr,
-    currentSha,
-    targetSha,
-    isShallow,
-    targetIsAncestorOfHead
-  })
-
-  // Recover the exact count a shallow clone can't compute: the GitHub compare
-  // API knows the full graph regardless of local clone depth. Best-effort —
-  // offline, rate-limited, or non-GitHub origins keep the honest null
-  // ("update available", no fabricated number).
-  if (behind === null) {
-    behind = await fetchCompareBehindCount({ currentSha, originUrl, targetSha, pat })
+  if (!force && cacheIsFresh(cached, { branch, currentSha, now })) {
+    return { ...cached.status, dirty: dirtyStr.length > 0, currentBranch }
   }
 
-  // behind === null means "update available, exact count unknown" (shallow
-  // clone): still list what origin offers — resolveCommitLogSelection keeps
-  // the shallow log to the fetched tip so the range walk can't enumerate the
-  // contaminated ancestry — so "See what's new" stays useful and honest.
-  const commits = behind !== 0 ? await readCommitLog(updateRoot, branch, isShallow) : []
+  branch = await resolveHealedBranch(updateRoot, branch)
+  const slug = githubRepoSlug(originUrl)
 
-  return {
+  const status = slug
+    ? await checkUpdatesViaApi({ slug, branch, currentSha })
+    : await checkUpdatesViaLsRemote({ updateRoot, branch, currentSha })
+
+  const result = {
     supported: true,
     branch,
     currentBranch,
-    behind,
-    updateAvailable: behind === null || behind > 0,
     currentSha,
-    targetSha,
-    commits,
     dirty: dirtyStr.length > 0,
     moorRoot: updateRoot,
-    fetchedAt: Date.now()
+    fetchedAt: now,
+    ...status
   }
+
+  writeUpdateCheckCache({ fetchedAt: now, currentSha, branch, status: result })
+
+  return result
 }
 
-// Best-effort exact behind-count for graphs the local clone can't measure.
-// Delegates URL building + response parsing to update-count.ts (pure, unit
-// tested); this wrapper only does the bounded network call. Any failure —
-// offline, 4xx/5xx, rate limit, shape surprise — returns null so callers keep
-// the honest "update available, count unknown" state.
-async function fetchCompareBehindCount({
-  currentSha,
-  originUrl,
-  targetSha,
-  pat
-}: {
-  currentSha: string
-  originUrl: string
-  targetSha: string
-  pat?: string
-}) {
-  const url = compareApiUrl({ currentSha, originUrl, targetSha })
-
-  if (!url) {
-    return null
-  }
-
-  const authHeaders = resolveUpdateAuthHeaders(pat)
-
+function readUpdateCheckCache() {
   try {
-    const payload = await new Promise((resolve, reject) => {
-      const req = https.get(
-        url,
-        {
-          headers: {
-            Accept: 'application/vnd.github+json',
-            // GitHub requires a UA on api.github.com; requests without one 403.
-            'User-Agent': 'moor-desktop-update-check',
-            ...authHeaders
-          },
-          timeout: 10_000
-        },
-        res => {
-          const chunks = []
-          res.on('error', reject)
-          res.on('data', chunk => chunks.push(chunk))
-          res.on('end', () => {
-            if ((res.statusCode || 500) >= 400) {
-              reject(new Error(`compare API ${res.statusCode}`))
+    const parsed = JSON.parse(fs.readFileSync(DESKTOP_UPDATE_CHECK_CACHE_PATH, 'utf8'))
 
-              return
-            }
-
-            try {
-              resolve(JSON.parse(Buffer.concat(chunks).toString('utf8')))
-            } catch (error) {
-              reject(error)
-            }
-          })
-        }
-      )
-
-      req.on('timeout', () => req.destroy(new Error('compare API timeout')))
-      req.on('error', reject)
-    })
-
-    return parseCompareBehindCount(payload)
+    return parsed && typeof parsed === 'object' && parsed.status ? parsed : null
   } catch {
     return null
   }
 }
 
-async function verifyGitHubToken(
-  token: string,
-  repo?: string
-): Promise<{ ok: boolean; message?: string; login?: string; repoAccess?: boolean }> {
-  return new Promise(resolve => {
-    const headers: Record<string, string> = {
-      Accept: 'application/vnd.github+json',
-      'User-Agent': 'moor-desktop-update-check',
-      Authorization: `Bearer ${token}`
-    }
-
-    const req = https.get('https://api.github.com/user', { headers, timeout: 8000 }, res => {
-      const chunks: Buffer[] = []
-      res.on('data', chunk => chunks.push(chunk))
-      res.on('end', () => {
-        if (res.statusCode === 200) {
-          try {
-            const data = JSON.parse(Buffer.concat(chunks).toString('utf8'))
-            const login = (data.login as string) || 'authenticated-user'
-
-            if (repo && repo.includes('/')) {
-              const cleanRepo = repo.replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '')
-              const repoReq = https.get(`https://api.github.com/repos/${cleanRepo}`, { headers, timeout: 8000 }, rRes => {
-                if (rRes.statusCode === 200) {
-                  resolve({
-                    ok: true,
-                    login,
-                    repoAccess: true,
-                    message: `Connected as @${login} with access to ${cleanRepo}`
-                  })
-                } else if (rRes.statusCode === 404) {
-                  resolve({
-                    ok: false,
-                    login,
-                    repoAccess: false,
-                    message: `Connected as @${login}, but "${cleanRepo}" was not found or lacks token permissions.`
-                  })
-                } else {
-                  resolve({
-                    ok: false,
-                    login,
-                    repoAccess: false,
-                    message: `Token verified for @${login}, but repo check returned HTTP ${rRes.statusCode}.`
-                  })
-                }
-              })
-              repoReq.on('error', () => resolve({ ok: true, login, message: `Connected as @${login}` }))
-              repoReq.on('timeout', () => {
-                repoReq.destroy()
-                resolve({ ok: true, login, message: `Connected as @${login}` })
-              })
-            } else {
-              resolve({ ok: true, login, message: `Successfully connected to GitHub as @${login}` })
-            }
-          } catch {
-            resolve({ ok: true, message: 'Valid token accepted by GitHub.' })
-          }
-        } else if (res.statusCode === 401) {
-          resolve({ ok: false, message: 'Invalid or expired GitHub Personal Access Token (401 Unauthorized).' })
-        } else if (res.statusCode === 403) {
-          resolve({ ok: false, message: 'GitHub API rate limit exceeded or access forbidden (403 Forbidden).' })
-        } else {
-          resolve({ ok: false, message: `GitHub API returned HTTP ${res.statusCode}` })
-        }
-      })
-    })
-
-    req.on('timeout', () => {
-      req.destroy()
-      resolve({ ok: false, message: 'Connection to GitHub API timed out.' })
-    })
-    req.on('error', err => {
-      resolve({ ok: false, message: `Network error: ${err.message}` })
-    })
-  })
+function writeUpdateCheckCache(entry) {
+  try {
+    fs.mkdirSync(path.dirname(DESKTOP_UPDATE_CHECK_CACHE_PATH), { recursive: true })
+    writeFileAtomic(DESKTOP_UPDATE_CHECK_CACHE_PATH, JSON.stringify(entry))
+  } catch (error) {
+    rememberLog(`[updates] could not persist check cache: ${error?.message || error}`)
+  }
 }
 
-async function readCommitLog(cwd, branch, isShallow) {
-  const SEP = '\x1f'
-  const REC = '\x1e'
-  const { limit, revision } = resolveCommitLogSelection({ branch, isShallow })
+// GitHub origins (official repo AND forks): tip SHA via the commits endpoint,
+// then the compare endpoint only when the tips differ â€” it yields the exact
+// behind count plus the commit list the overlay renders, replacing both
+// `rev-list --count` and `git log HEAD..origin/<branch>`.
+async function checkUpdatesViaApi({ slug, branch, currentSha }) {
+  let targetSha
 
-  const { stdout } = await runGit(
-    ['log', revision, `--pretty=format:%H${SEP}%s${SEP}%an${SEP}%at${REC}`, '-n', String(limit)],
-    { cwd }
-  )
+  try {
+    targetSha = String(await fetchGitHubApi(branchTipApiUrl(slug, branch), 'application/vnd.github.sha')).trim()
+  } catch (error) {
+    return { error: 'fetch-failed', message: describeUpdateCheckFailure(error) }
+  }
 
-  return stdout
-    .split(REC)
-    .map(line => line.trim())
-    .filter(Boolean)
-    .map(line => {
-      const [sha, summary, author, at] = line.split(SEP)
+  if (!/^[0-9a-f]{40}$/i.test(targetSha)) {
+    return { error: 'fetch-failed', message: 'GitHub API returned no tip SHA.' }
+  }
 
-      return { sha, summary, author, at: Number.parseInt(at, 10) * 1000 }
-    })
+  if (targetSha === currentSha) {
+    return { behind: 0, updateAvailable: false, targetSha, commits: [] }
+  }
+
+  // Compare failure (rate-limited, local-only HEAD 404) keeps the honest
+  // "update available, count unknown" â€” never a fabricated number.
+  const compared = await fetchGitHubApi(compareApiUrl(slug, currentSha, targetSha))
+    .then(parseCompare)
+    .catch(() => null)
+
+  // ahead_by === 0 with differing tips: the remote tip is reachable from our
+  // HEAD â€” a local commit sitting AHEAD, not behind. Flagging that as an update
+  // nudges the user into wiping their work.
+  if (compared?.behind === 0) {
+    return { behind: 0, updateAvailable: false, targetSha, commits: [] }
+  }
+
+  return {
+    behind: compared ? compared.behind : null,
+    updateAvailable: true,
+    targetSha,
+    commits: compared?.commits ?? []
+  }
+}
+
+// Non-GitHub origins: one ls-remote for the tip SHA (still no pack transfer),
+// counting via the local graph only when the tip is already known locally.
+async function checkUpdatesViaLsRemote({ updateRoot, branch, currentSha }) {
+  const cfg = readDesktopUpdateConfig()
+  const authArgs = resolveGitAuthArgs(cfg.pat || process.env.MOOR_GITHUB_TOKEN || process.env.GITHUB_TOKEN || process.env.GH_TOKEN)
+  const target = await runGit([...authArgs, 'ls-remote', 'origin', `refs/heads/${branch}`], { cwd: updateRoot })
+  const targetSha = firstLine(target.stdout).split(/\s+/)[0] || ''
+
+  if (target.code !== 0 || !targetSha) {
+    return { error: 'fetch-failed', message: firstLine(target.stderr) || 'git ls-remote failed.' }
+  }
+
+  if (targetSha === currentSha) {
+    return { behind: 0, updateAvailable: false, targetSha, commits: [] }
+  }
+
+  const known = (await runGit(['cat-file', '-e', `${targetSha}^{commit}`], { cwd: updateRoot })).code === 0
+
+  const isAncestor =
+    known && (await runGit(['merge-base', '--is-ancestor', targetSha, 'HEAD'], { cwd: updateRoot })).code === 0
+
+  if (isAncestor) {
+    return { behind: 0, updateAvailable: false, targetSha, commits: [] }
+  }
+
+  return { behind: null, updateAvailable: true, targetSha, commits: [] }
+}
+
+// One line a user can act on (or paste into a bug report) instead of the
+// generic "couldn't reach the update server": which host, which failure.
+// #105855 was a run of GitHub outages that read as a Moor bug because the
+// UI hid the cause.
+function describeUpdateCheckFailure(error) {
+  const status = error?.statusCode
+  const code = error?.code
+
+  if (status === 403 || status === 429) {
+    return `GitHub API rate limit reached (HTTP ${status}) â€” try again in an hour.`
+  }
+
+  if (typeof status === 'number' && status >= 500) {
+    return `GitHub is having trouble (HTTP ${status} from api.github.com) â€” check githubstatus.com and try again later.`
+  }
+
+  if (typeof status === 'number') {
+    return `api.github.com answered HTTP ${status}.`
+  }
+
+  if (code === 'ENOTFOUND' || code === 'EAI_AGAIN') {
+    return 'DNS lookup for api.github.com failed â€” check your connection or proxy.'
+  }
+
+  if (code === 'ETIMEDOUT' || error?.message === 'timeout') {
+    return 'api.github.com did not answer within 10 seconds.'
+  }
+
+  if (code === 'ECONNREFUSED' || code === 'ECONNRESET' || code === 'EHOSTUNREACH' || code === 'ENETUNREACH') {
+    return `Connection to api.github.com failed (${code}) â€” a firewall or proxy may be blocking it.`
+  }
+
+  if (typeof code === 'string' && /CERT|SSL|TLS/i.test(code)) {
+    return `TLS handshake with api.github.com failed (${code}) â€” a proxy may be intercepting HTTPS.`
+  }
+
+  return `api.github.com: ${error?.message || String(error)}`
+}
+
+function fetchGitHubApi(url, accept = 'application/vnd.github+json') {
+  const cfg = readDesktopUpdateConfig()
+  const effectiveToken = cfg.pat || process.env.MOOR_GITHUB_TOKEN || process.env.GITHUB_TOKEN || process.env.GH_TOKEN
+  const headers: Record<string, string> = {
+    Accept: accept,
+    'User-Agent': 'moor-desktop-update-check',
+    ...(effectiveToken ? { Authorization: `Bearer ${effectiveToken.trim()}` } : {})
+  }
+  return new Promise((resolve, reject) => {
+    const req = https.get(
+      url,
+      {
+        headers,
+        timeout: 10_000
+      },
+      res => {
+        const chunks = []
+        res.on('error', reject)
+        res.on('data', chunk => chunks.push(chunk))
+        res.on('end', () => {
+          const body = Buffer.concat(chunks).toString('utf8')
+
+          if ((res.statusCode || 500) >= 400) {
+            reject(Object.assign(new Error(`HTTP ${res.statusCode}`), { statusCode: res.statusCode }))
+
+            return
+          }
+
+          if (accept === 'application/vnd.github.sha') {
+            resolve(body)
+
+            return
+          }
+
+          try {
+            resolve(JSON.parse(body))
+          } catch (error) {
+            reject(error)
+          }
+        })
+      }
+    )
+
+    req.on('timeout', () => req.destroy(new Error('timeout')))
+    req.on('error', reject)
+  })
 }
 
 let updateInFlight = false
@@ -3492,7 +3399,7 @@ let updateInFlight = false
 // Set to true when the desktop is about to quit so a detached swap/install/
 // uninstall script can take over. On macOS, app.quit() closes windows but
 // window-all-closed deliberately keeps the process alive (standard Electron
-// macOS convention). Without this flag the process never exits — the detached
+// macOS convention). Without this flag the process never exits â€” the detached
 // hand-off script spins its PID-wait for the full timeout, and the user sees a
 // blank app with no window (and an uninstall that appears to do nothing). When
 // set, window-all-closed calls app.quit() on every platform so the process
@@ -3506,8 +3413,8 @@ let quitPromptOpen = false
 let quitConfirmedWithActiveWork = false
 
 // Resolve the staged updater binary the desktop may hand an update to. On
-// Windows that binary owns ALL repo mutation — running `moor update` +
-// rebuilding the desktop — so the desktop never touches its own bits while
+// Windows that binary owns ALL repo mutation â€” running `moor update` +
+// rebuilding the desktop â€” so the desktop never touches its own bits while
 // running. macOS/Linux stage the same binary but deliberately do not use it;
 // see resolveStagedUpdaterBinary for the policy and for #74836. Returns null
 // whenever no hand-off applies; callers degrade gracefully.
@@ -3555,7 +3462,7 @@ function venvMoorShimPath(updateRoot) {
 // Best-effort lock probe mirroring the Rust updater's is_locked(): a running
 // .exe on Windows refuses an O_RDWR open with a sharing violation. On POSIX
 // this practically always succeeds (no mandatory locking), so it returns false
-// — correct, since the shim-contention brick is Windows-only.
+// â€” correct, since the shim-contention brick is Windows-only.
 function isShimLocked(shimPath) {
   if (!IS_WINDOWS) {
     return false
@@ -3568,7 +3475,7 @@ function isShimLocked(shimPath) {
 
     return false
   } catch (err) {
-    // ENOENT ⇒ not there ⇒ nothing locking it. Anything else (EBUSY/EPERM/
+    // ENOENT â‡’ not there â‡’ nothing locking it. Anything else (EBUSY/EPERM/
     // EACCES) on Windows means a live handle holds it.
     return err && err.code !== 'ENOENT'
   } finally {
@@ -3586,7 +3493,7 @@ function isShimLocked(shimPath) {
 // exe under venv\Scripts AND cmdline referencing hindsight_api.main). The
 // daemon is spawned DETACHED, so it outlives the backend tree-kill and keeps
 // venv files mapped. External holders (a user terminal running `moor`,
-// unrelated scripts) are NOT killed — scanVenvBlockers reports them and the
+// unrelated scripts) are NOT killed â€” scanVenvBlockers reports them and the
 // hand-off aborts, per existing design. Selection lives in the pure
 // venv-holder-select module (ordinal path-prefix, no PowerShell -like
 // wildcard hazards) so it's testable without Electron.
@@ -3636,7 +3543,7 @@ function killMoorOwnedVenvDaemons(updateRoot) {
 // gateway) would survive and keep the venv shim locked. taskkill /T /F reaps
 // the whole tree synchronously. Windows-only: this is called solely from the
 // Windows shim-unlock path, and the backend is NOT spawned detached (so it's
-// not a process-group leader — a POSIX negative-pgid kill would be meaningless
+// not a process-group leader â€” a POSIX negative-pgid kill would be meaningless
 // here anyway). POSIX teardown stays with the existing before-quit SIGTERM.
 function forceKillProcessTree(pid) {
   if (!IS_WINDOWS) {
@@ -3650,7 +3557,7 @@ function forceKillProcessTree(pid) {
   try {
     execFileSync('taskkill', ['/PID', String(pid), '/T', '/F'], hiddenWindowsChildOptions({ stdio: 'ignore' }))
   } catch {
-    // Already gone, or no permission — best effort; the unlock wait below is
+    // Already gone, or no permission â€” best effort; the unlock wait below is
     // the real gate.
   }
 }
@@ -3672,8 +3579,8 @@ function writeBackendOwnership(contents) {
 }
 
 // execText and processStartMarker moved to backend-claim.ts (#93608) so the
-// claim/probe policy is testable — including on Windows CI with real
-// PowerShell — without booting Electron. main.ts calls through the module.
+// claim/probe policy is testable â€” including on Windows CI with real
+// PowerShell â€” without booting Electron. main.ts calls through the module.
 
 async function backendCommandForPid(pid) {
   try {
@@ -3816,7 +3723,7 @@ const backendOwnership = createBackendOwnership({
     },
     write: writeBackendOwnership,
     // A corrupt ownership file is moved aside instead of being rewritten
-    // away by the reap sweep — its records are the only pointer to any
+    // away by the reap sweep â€” its records are the only pointer to any
     // still-running backends it described (#89298).
     quarantine: () => {
       const parked = `${DESKTOP_BACKEND_OWNERSHIP_PATH}.corrupt`
@@ -3825,7 +3732,7 @@ const backendOwnership = createBackendOwnership({
         fs.renameSync(DESKTOP_BACKEND_OWNERSHIP_PATH, parked)
         rememberLog(`Backend ownership file was unreadable; moved to ${parked}`)
       } catch {
-        // Nothing to move (or no permission) — the sweep already skipped.
+        // Nothing to move (or no permission) â€” the sweep already skipped.
       }
     }
   }
@@ -3844,8 +3751,8 @@ const desktopParentStartMarker = createParentStartMarkerResolver({
 
 async function claimBackendChild(child, command, profile, nonce, outputTail: BackendOutputTail | null = null) {
   // Probe/claim policy lives in backend-claim.ts (#93608): a marker probe
-  // that fails against a LIVE child degrades to PID-only identity — matching
-  // createParentStartMarkerResolver — instead of killing a healthy backend
+  // that fails against a LIVE child degrades to PID-only identity â€” matching
+  // createParentStartMarkerResolver â€” instead of killing a healthy backend
   // over a flaky Get-Process (PS 5.1 cold starts, #87169). Only a child that
   // actually died keeps the fail-closed throw, now carrying its stderr tail.
   const probe = await probeStartMarker(child.pid)
@@ -3879,7 +3786,7 @@ async function claimBackendChild(child, command, profile, nonce, outputTail: Bac
       profile,
       startMarker,
       // Record the spawning Electron so reapOrphans can tell an orphaned
-      // backend (parent gone) from one owned by a live instance — a live
+      // backend (parent gone) from one owned by a live instance â€” a live
       // parent's backend is never reaped (#87295).
       parentPid: process.pid,
       parentStartMarker: await desktopParentStartMarker()
@@ -3935,7 +3842,7 @@ function reapOrphanedBackendsOnce() {
 // Windows doesn't reap the backend's grandchildren, and quit didn't wait for
 // teardown, so the updater raced a still-locked `moor.exe`, the quarantine
 // rename failed, uv's `pip install` hit "Access is denied", and the git path
-// bailed into a full ZIP re-download that ALSO couldn't write the locked shim —
+// bailed into a full ZIP re-download that ALSO couldn't write the locked shim â€”
 // a half-applied install (ryanc's update.log). Here we tree-kill the primary +
 // pool backends and poll the shim until it's writable (or a bounded timeout),
 // so by the time we spawn the updater the lock is genuinely gone.
@@ -3950,15 +3857,15 @@ async function releaseBackendLockForUpdate(updateRoot) {
 }
 
 // Shared backend teardown + venv-shim unlock wait. Used by BOTH the self-update
-// hand-off and the desktop uninstaller — they have the identical Windows
-// problem: the desktop's backend (and the grandchildren IT spawned — a moor
+// hand-off and the desktop uninstaller â€” they have the identical Windows
+// problem: the desktop's backend (and the grandchildren IT spawned â€” a moor
 // REPL, a pty terminal, the gateway) keep `moor.exe` and other files in the
 // venv mandatory-locked, so any in-place replace/delete of the install tree
 // races a live handle and half-fails (#37532). We tree-kill every backend PID
 // the desktop owns, then poll the shim until it's genuinely writable.
 //
 // `tag` only flavors the log lines. No-op off Windows (POSIX has no mandatory
-// locks — the before-quit SIGTERM + the cleanup script's own PID-wait suffice).
+// locks â€” the before-quit SIGTERM + the cleanup script's own PID-wait suffice).
 async function releaseBackendLock(updateRoot, tag) {
   if (!IS_WINDOWS) {
     return { unlocked: true }
@@ -3969,7 +3876,7 @@ async function releaseBackendLock(updateRoot, tag) {
   // Seed the release gate with every PID we are about to signal: the
   // supervised primary backend and all pool backends. The gate waits for
   // these to actually LEAVE the process table, not just for the shim to
-  // unlock — the shim probe only covers venv\Scripts\moor.exe, but the
+  // unlock â€” the shim probe only covers venv\Scripts\moor.exe, but the
   // backend is `python.exe -m moor_cli.main serve`, which need not hold
   // the shim at all (#74805 first-attempt race).
   const initialPids = []
@@ -3992,12 +3899,12 @@ async function releaseBackendLock(updateRoot, tag) {
   // Stop separately-running messaging gateways (all profiles) BEFORE the
   // release gate. The gateway is launched by the gateway-launcher desktop
   // plugin via /api/gateway/start and is NOT in backendConnectionState or
-  // backendPool, so the tree-kills above never see it — on Windows its
+  // backendPool, so the tree-kills above never see it â€” on Windows its
   // launcher (venv\Scripts\python.exe) keeps the venv mandatory-locked and
   // the 15s gate aborts the hand-off before the venv-blocker scan's
   // pausable-gateway exemption ever gets a chance (#70337). Delegate to
   // `moor gateway stop --all`: the CLI discovers every profile's gateway
-  // (launcher + worker — gateway.pid records only the uv WORKER, and
+  // (launcher + worker â€” gateway.pid records only the uv WORKER, and
   // taskkill /T from the worker never reaches its parent), drains in-flight
   // agents, and force-kills survivors. Best-effort; abort paths restore via
   // startGatewaysAfterUpdateAbort. No-op off Windows.
@@ -4007,7 +3914,7 @@ async function releaseBackendLock(updateRoot, tag) {
   // memory plugin's hindsight daemon is spawned DETACHED (it outlives the
   // backend) yet runs off venv\Scripts\pythonw.exe, keeping venv files
   // mapped past the backend teardown (#75477/#75478). Narrowly scoped
-  // (venv-holder-select) — external holders are never killed here.
+  // (venv-holder-select) â€” external holders are never killed here.
   killMoorOwnedVenvDaemons(updateRoot)
 
   const shim = venvMoorShimPath(updateRoot)
@@ -4048,7 +3955,7 @@ async function releaseBackendLock(updateRoot, tag) {
 
   // Do NOT proceed past a held lock: handing off to the updater while another
   // process (a second desktop window, a user terminal, an unkillable child)
-  // still maps the venv's files guarantees a half-updated venv — the updater's
+  // still maps the venv's files guarantees a half-updated venv â€” the updater's
   // dependency sync dies on access-denied partway through uninstalls, leaving
   // imports broken (the July 2026 brotlicffi/_sodium.pyd incidents). Failing
   // the update loudly and keeping the app running is strictly better than a
@@ -4060,7 +3967,7 @@ async function releaseBackendLock(updateRoot, tag) {
   return { unlocked: false }
 }
 
-// applyUpdates — hand off to the installer's --update flow, then exit.
+// applyUpdates â€” hand off to the installer's --update flow, then exit.
 //
 // The desktop is a pure consumer: it does NOT git pull / pip install / rebuild
 // itself (the old open-coded git dance lived here and drifted from
@@ -4081,12 +3988,12 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
     const updater = resolveUpdaterBinary()
 
     if (!updater && !IS_WINDOWS) {
-      // macOS/Linux: hand off to the repo-owned posix script — same shape as
-      // Windows (quit → detached orchestrator → `moor update` → relaunch),
+      // macOS/Linux: hand off to the repo-owned posix script â€” same shape as
+      // Windows (quit â†’ detached orchestrator â†’ `moor update` â†’ relaunch),
       // minus the venv-lock gauntlet POSIX doesn't need. The old in-app
       // updater (applyUpdatesPosixInApp) is gone with everything it dragged
       // in: the MOOR_DESKTOP_CHILD_PID reaper-exclusion dance (#37532),
-      // the in-window rebuild retry, and the relaunch-outcome matrix — the
+      // the in-window rebuild retry, and the relaunch-outcome matrix â€” the
       // script owns swap/relaunch, and the app is DEAD during the update so
       // there is nothing to reap around. Checkouts that predate the script
       // get the manual `moor update` card once; their next update pulls it.
@@ -4094,11 +4001,11 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
     }
 
     if (!updater) {
-      // No staged updater binary — this is a CLI-installed user (they ran
+      // No staged updater binary â€” this is a CLI-installed user (they ran
       // `moor desktop`, never the Tauri installer that self-copies
       // moor-setup.exe into MOOR_HOME). On Windows the repo hand-off
-      // script serves them just as well as installer users — it only needs
-      // PowerShell and the checkout — so fall through to the normal hand-off
+      // script serves them just as well as installer users â€” it only needs
+      // PowerShell and the checkout â€” so fall through to the normal hand-off
       // when the script exists. Only when the checkout predates the script do
       // we surface the manual one-liner.
       const updateRoot = resolveUpdateRoot()
@@ -4106,7 +4013,7 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
       if (!resolveUpdateScriptHandoff(updateRoot)) {
         // They DO have a working `moor` on PATH / in the venv, so the
         // correct path is the one-liner in their native medium. We show the
-        // EXACT command, branch-pinned to the checkout they're on — bare
+        // EXACT command, branch-pinned to the checkout they're on â€” bare
         // `moor update` defaults to main and would silently switch a
         // bb/gui (or any non-main) install off-branch. Mirror the GUI
         // button's contract: append --branch <current> for non-main
@@ -4140,7 +4047,7 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
     const handoffConflict = updateHandoffConflict(MOOR_HOME)
 
     if (handoffConflict) {
-      // A different updater already owns the marker — most often a previous
+      // A different updater already owns the marker â€” most often a previous
       // "Update" click whose updater is still alive and parked mid-run.
       // Spawning another here would overwrite its claim and let two updaters
       // mutate the checkout at once (#75778); refuse instead.
@@ -4153,7 +4060,7 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
     emitUpdateProgress({
       stage: 'restart',
       message:
-        'Updating Moor — this window will close and the updater will open. Don’t reopen Moor yourself; it restarts automatically when the update finishes.',
+        'Updating Moor â€” this window will close and the updater will open. Donâ€™t reopen Moor yourself; it restarts automatically when the update finishes.',
       percent: 100
     })
     repairMacUpdaterHelper(updater)
@@ -4170,10 +4077,20 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
 
     const venvBin = path.join(updateRoot, 'venv', IS_WINDOWS ? 'Scripts' : 'bin')
 
-    // ── Pre-flight state.db integrity guard (#68474) ─────────────────
+    // â”€â”€ Pre-flight state.db integrity guard (#68474) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Emergency backup and header verification before the update touches
     // anything.  Runs while the backend is still alive.
     preflightStateDb(MOOR_HOME, rememberLog)
+
+    if (IS_WINDOWS && resolveUpdateScriptHandoff(updateRoot)) {
+      const message = windowsUpdatePrerequisiteError(updateRoot)
+
+      if (message) {
+        emitUpdateProgress({ stage: 'error', message, percent: null })
+
+        return { ok: false, error: message }
+      }
+    }
 
     // Stop our own backend(s) and wait for the venv shim to unlock BEFORE we
     // spawn the updater. Without this the updater races a still-locked
@@ -4184,7 +4101,7 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
     if (!lock.unlocked) {
       // Something OUTSIDE this app holds the venv (a second window, a user
       // terminal running moor, an unkillable child). Handing off anyway
-      // guarantees a half-updated venv — abort loudly instead and let the
+      // guarantees a half-updated venv â€” abort loudly instead and let the
       // user close the holder and retry. Restart our own backend so the app
       // keeps working after the failed attempt.
       const message =
@@ -4196,7 +4113,7 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
 
       if (IS_WINDOWS) {
         // The pre-gate `gateway stop --all` (#70337) took every profile's
-        // gateway down for an update that never happened — bring them back.
+        // gateway down for an update that never happened â€” bring them back.
         startGatewaysAfterUpdateAbort(venvMoorShimPath(updateRoot))
       }
 
@@ -4210,7 +4127,7 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
     // silently fails.  This preflight detects holders early and gives the
     // user an actionable error.  Windows-only; the .pyd lock hazard is a
     // Windows phenomenon.  ALL failures (blocked, missing python, timeout,
-    // malformed output, missing psutil) abort the handoff — never proceed
+    // malformed output, missing psutil) abort the handoff â€” never proceed
     // to the detached updater when the venv state is unknown.
     if (IS_WINDOWS) {
       let scanOutcome = await scanVenvBlockers(updateRoot)
@@ -4221,7 +4138,7 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
           `[updates] user-approved blocker cleanup: stopped=${stopResult.stopped.join(',') || 'none'} failed=${stopResult.failed.join(',') || 'none'}`
         )
         // Let verified process-tree termination finish unwinding wrapper shells,
-        // then make the scanner — not the stale renderer payload — authoritative.
+        // then make the scanner â€” not the stale renderer payload â€” authoritative.
         await new Promise(resolve => setTimeout(resolve, 300))
         scanOutcome = await scanVenvBlockers(updateRoot)
       }
@@ -4234,7 +4151,7 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
       // seconds (spawns a venv python + psutil sweep), so two retries with a
       // short dwell give the table time to settle without meaningfully
       // delaying the abort path when a REAL holder (a user terminal, second
-      // window) is present — that holder is still there on the third scan.
+      // window) is present â€” that holder is still there on the third scan.
       for (let attempt = 0; scanOutcome.kind === 'blocked' && attempt < 2; attempt++) {
         rememberLog(
           `[updates] venv-blocker scan reported ${scanOutcome.result.processes.length} holder(s); re-scanning after settle (attempt ${attempt + 2}/3)`
@@ -4269,13 +4186,13 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
       }
     }
 
-    // Detached so the updater outlives this process — it needs us GONE before
+    // Detached so the updater outlives this process â€” it needs us GONE before
     // `moor update` will run (the venv shim is locked while we live).
     //
     // Prefer the repo-owned hand-off script over the staged Tauri binary.
     // The staged binary is frozen (no self-update path) and historically runs
-    // months-stale updater logic — pre-#67369 cache resolver, pre-#74782
-    // marker adoption — producing failures that were fixed on main long ago
+    // months-stale updater logic â€” pre-#67369 cache resolver, pre-#74782
+    // marker adoption â€” producing failures that were fixed on main long ago
     // (2026-08-09 incident). scripts/desktop-update/windows.ps1 ships WITH the
     // checkout, so each `moor update` refreshes the code that drives the
     // next one. Checkouts that predate the script fall back to the binary
@@ -4287,11 +4204,11 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
       const updateStartedAt = Math.floor(Date.now() / 1000)
 
       // A bare detached+hidden powershell spawn silently dies before -File
-      // processing (console-subsystem init failure — see
+      // processing (console-subsystem init failure â€” see
       // wrapHandoffForDetachedConsole). Route through `cmd start` so the
       // script gets its own minimized console and survives our exit. The
       // wrapper cmd.exe exits immediately, so child.pid is NOT the script's
-      // pid — the script claims the update marker itself with its own $PID
+      // pid â€” the script claims the update marker itself with its own $PID
       // as its first action, and a relaunched Desktop parks on that.
       const wrapped = wrapHandoffForDetachedConsole(scriptHandoff, [
         '-InstallRoot',
@@ -4318,7 +4235,7 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
 
       // Bridge marker: child.pid is the short-lived cmd.exe WRAPPER, not the
       // script (see wrapHandoffForDetachedConsole). Write it anyway to cover
-      // the first moments of the hand-off — the script's step 0 overwrites it
+      // the first moments of the hand-off â€” the script's step 0 overwrites it
       // with its own live $PID, and if the script never starts the wrapper's
       // dead pid makes the marker read as stale and self-delete (no wedge).
       // The `moor update` child adopts the SCRIPT's claim via
@@ -4342,7 +4259,7 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
         stdio: 'ignore'
       })
 
-      // Write the update-in-progress marker IMMEDIATELY — before the 2.5s
+      // Write the update-in-progress marker IMMEDIATELY â€” before the 2.5s
       // quit dwell. The Tauri updater won't write its own marker for several
       // seconds (window init + manifest), and during that gap our renderer
       // can reconnect and spawn a fresh backend that re-locks .pyd files in
@@ -4352,7 +4269,7 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
       //
       // SKIPPED for pre-#74782 staged updaters: those have no self-PID
       // exclusion, so they read this very marker as a foreign live owner and
-      // abort with "Another Moor update is already running (PID <itself>)" —
+      // abort with "Another Moor update is already running (PID <itself>)" â€”
       // an unbreakable loop, because the update that would replace the stale
       // binary is the one being refused. Losing the anti-respawn hardening is
       // strictly better than never updating again, and the updater still writes
@@ -4370,15 +4287,15 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
       )
     }
 
-    // Linger on the "updating — don't reopen" overlay long enough for the user
+    // Linger on the "updating â€” don't reopen" overlay long enough for the user
     // to actually read it (and to bridge the gap until the updater's own window
     // appears), THEN quit to release the venv shim. The updater rebuilds and
-    // relaunches us when it's done. (#50419 — a 600ms quit looked like a crash
+    // relaunches us when it's done. (#50419 â€” a 600ms quit looked like a crash
     // and lured users into the #50238 relaunch loop.)
     //
     // The dwell doubles as the hand-off settle window (#66753): watch the
     // detached child for an async spawn `error` (ENOENT/EACCES) or an early
-    // non-zero/signal exit. On failure, DON'T quit — the user would be left
+    // non-zero/signal exit. On failure, DON'T quit â€” the user would be left
     // with no app, no updater, and no evidence. Restart our backend and
     // surface the error instead. The pre-written marker names the dead child
     // pid, so readLiveUpdateMarker self-heals it; no cleanup needed.
@@ -4386,7 +4303,7 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
     const handoffOutcome = await observeUpdaterHandoff(child, UPDATE_HANDOFF_DWELL_MS)
 
     if (!handoffOutcome.ok) {
-      const message = `Update failed to start: ${handoffOutcome.message}. Moor will keep running — try again, or run \`moor update\` from a terminal.`
+      const message = describeUpdaterHandoffFailure(handoffOutcome)
 
       rememberLog(`[updates] hand-off not viable, aborting quit: ${handoffOutcome.message}`)
       emitUpdateProgress({ stage: 'error', message, percent: null })
@@ -4471,6 +4388,9 @@ async function handOffWindowsBootstrapRecovery(reason) {
 
   await releaseBackendLockForUpdate(updateRoot)
 
+  // The recovery resolver may have awaited while quit sealed local startup.
+  localBackendLifecycle.assertCanStart()
+
   const child = spawnUpdaterProcess(updater, updaterArgs, {
     cwd: MOOR_HOME,
     env: {
@@ -4482,7 +4402,7 @@ async function handOffWindowsBootstrapRecovery(reason) {
     stdio: 'ignore'
   })
 
-  // Same marker pre-write as applyUpdates — see comment there. The recovery
+  // Same marker pre-write as applyUpdates â€” see comment there. The recovery
   // hand-off has the same window where the renderer can respawn a backend
   // before the updater writes its own marker, and the same stale-updater
   // exclusion: a pre-#74782 binary would refuse its own pre-written claim and
@@ -4540,11 +4460,11 @@ function runningAppBundle() {
   return dir.endsWith('.app') ? dir : null
 }
 
-// ── Pre-flight state.db integrity guard (#68474) ─────────────────────
+// â”€â”€ Pre-flight state.db integrity guard (#68474) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Take an emergency snapshot of state.db and verify the live copy is
 // intact before any update process mutates the install.  Runs in the
 // desktop Electron process itself, before the backend is killed and
-// before the updater is spawned — a separate safety net from the
+// before the updater is spawned â€” a separate safety net from the
 // Python-level pre-update snapshot inside `moor update`.
 function preflightStateDb(moorHome, rememberLog) {
   const stateDbPath = path.join(moorHome, 'state.db')
@@ -4575,7 +4495,7 @@ function preflightStateDb(moorHome, rememberLog) {
 
       if (!headerOk) {
         rememberLog(
-          '[updates] state.db header is INVALID before update — ' +
+          '[updates] state.db header is INVALID before update â€” ' +
             'this indicates pre-existing corruption or a concurrent write issue'
         )
       }
@@ -4630,7 +4550,7 @@ function preflightStateDb(moorHome, rememberLog) {
 // (scripts/desktop-update/posix.sh) detached and QUIT. The script waits us
 // out, runs `moor update`, swaps/relaunches the app bundle, and writes
 // .moor-update-result.json for the relaunched Desktop to surface. It shows
-// its own tiny shim window (or nothing, headless) — this process only needs
+// its own tiny shim window (or nothing, headless) â€” this process only needs
 // to leave. Checkouts that predate the script get the manual card once.
 async function applyUpdatesPosixHandoff(opts: any) {
   const updateRoot = resolveUpdateRoot()
@@ -4646,14 +4566,14 @@ async function applyUpdatesPosixHandoff(opts: any) {
 
   if (handoffConflict) {
     // Same hazard as the Windows path (#75778): a live foreign updater
-    // already owns the marker — refuse rather than double-mutate the tree.
+    // already owns the marker â€” refuse rather than double-mutate the tree.
     rememberLog(`[updates] refusing posix hand-off: ${handoffConflict.message}`)
     emitUpdateProgress({ stage: 'error', message: handoffConflict.message, percent: null })
 
     return { ok: false, error: 'update-already-running', message: handoffConflict.message }
   }
 
-  // ── Pre-flight state.db integrity guard (#68474) ──
+  // â”€â”€ Pre-flight state.db integrity guard (#68474) â”€â”€
   preflightStateDb(MOOR_HOME, rememberLog)
 
   // Branch-pin so a non-main checkout doesn't get switched to main (and
@@ -4677,7 +4597,7 @@ async function applyUpdatesPosixHandoff(opts: any) {
   // Relaunch target: the running .app bundle on mac (script swaps the
   // rebuilt bundle over it), the running binary elsewhere. The script's gate
   // (an exact port of update-relaunch.ts's decideRelaunchOutcome) relaunches
-  // only a binary the rebuild replaced with a launchable sandbox helper —
+  // only a binary the rebuild replaced with a launchable sandbox helper â€”
   // replaying the original launch context (filtered args, cwd, sandbox
   // opt-out) so a deep-link or --no-sandbox launch survives the update.
   const targetApp = IS_MAC ? runningAppBundle() : process.execPath
@@ -4723,12 +4643,12 @@ async function applyUpdatesPosixHandoff(opts: any) {
   emitUpdateProgress({
     stage: 'restart',
     message:
-      'Updating Moor — this window will close. Don’t reopen Moor yourself; it restarts automatically when the update finishes.',
+      'Updating Moor â€” this window will close. Donâ€™t reopen Moor yourself; it restarts automatically when the update finishes.',
     percent: 100
   })
 
   // Settle window (#66753): the reported macOS failure mode is exactly this
-  // path — the app quits, bash/posix.sh dies early (or was never spawnable),
+  // path â€” the app quits, bash/posix.sh dies early (or was never spawnable),
   // and the user is left with no app, no updater, and no relaunch. Watch the
   // child through the dwell; on spawn error or early death, stay alive and
   // surface the failure instead of quitting into nothing.
@@ -4736,7 +4656,7 @@ async function applyUpdatesPosixHandoff(opts: any) {
   const handoffOutcome = await observeUpdaterHandoff(child, UPDATE_HANDOFF_DWELL_MS)
 
   if (!handoffOutcome.ok) {
-    const message = `Update failed to start: ${handoffOutcome.message}. Moor will keep running — try again, or run \`moor update\` from a terminal.`
+    const message = describeUpdaterHandoffFailure(handoffOutcome)
 
     rememberLog(`[updates] posix hand-off not viable, aborting quit: ${handoffOutcome.message}`)
     emitUpdateProgress({ stage: 'error', message, percent: null })
@@ -4786,27 +4706,30 @@ function readBootstrapMarker() {
 // or a DMG launch over a prior CLI install satisfies this WITHOUT the desktop
 // ever having written the bootstrap marker -- so we must be able to recognise
 // "already installed" off the filesystem alone, not just the marker.
-function isActiveRuntimeUsable() {
+async function isActiveRuntimeUsable() {
   const venvPython = getVenvPython(VENV_ROOT)
 
   return (
     isMoorSourceRoot(ACTIVE_MOOR_ROOT) &&
     fileExists(venvPython) &&
-    canImportMoorCli(venvPython, {
+    // Explicit await: a bare promise as the last `&&` operand only works via
+    // async-return flattening; any operand appended after it would make the
+    // expression truthy regardless of the probe result.
+    (await canImportMoorCli(venvPython, {
       env: {
         PYTHONPATH: [ACTIVE_MOOR_ROOT, process.env.PYTHONPATH].filter(Boolean).join(path.delimiter)
       }
-    })
+    }))
   )
 }
 
-function activeRuntimeState() {
+async function activeRuntimeState() {
   // We DELIBERATELY do NOT verify that the checkout is currently at the
   // pinned commit -- users update via the in-app update path or `moor
   // update`, which moves HEAD legitimately. The marker only attests "a
   // desktop-managed bootstrap ran here at least once"; runtime usability is
   // what decides whether we can actually launch.
-  return classifyActiveRuntime(readBootstrapMarker(), BOOTSTRAP_MARKER_SCHEMA_VERSION, isActiveRuntimeUsable())
+  return classifyActiveRuntime(readBootstrapMarker(), BOOTSTRAP_MARKER_SCHEMA_VERSION, await isActiveRuntimeUsable())
 }
 
 function writeBootstrapMarker(payload) {
@@ -4839,7 +4762,7 @@ function resolveWebDist() {
   }
 
   // Final fallback: APP_ROOT/dist. When packaged with asar:true this lives
-  // INSIDE app.asar — not a servable filesystem directory — so the embedded
+  // INSIDE app.asar â€” not a servable filesystem directory â€” so the embedded
   // dashboard backend 404s on static routes (see #41327, #39472). The durable
   // fix is unpacking dist/ (PR #41411 adds dist/** to asarUnpack so the tier-2
   // unpackedDist above resolves). If we still land here while packaged, log it
@@ -4857,12 +4780,20 @@ function resolveWebDist() {
   return fallback
 }
 
-function resolveRendererIndex() {
+// Same resolution as resolveRendererIndex, but also hands back the missing
+// asset list already computed for the copy it chose. The primary-window path
+// needs BOTH, and re-deriving the list means walking the whole renderer
+// generation a second time: missingRendererAssets follows index.html's
+// modulepreload refs and then every chunk's inline __vite__mapDeps table, so
+// on a release build it reads ~28 MiB across ~160 files synchronously on the
+// main thread â€” measured ~49 ms per walk, twice before loadWindowUrl().
+// Callers that only need the path keep using resolveRendererIndex below.
+function resolveRendererIndexWithMissing(): { index: string; missing: string[] } {
   const asarIndex = path.join(APP_ROOT, 'dist', 'index.html')
   const webDistIndex = path.join(resolveWebDist(), 'index.html')
 
-  // A packaged build ships dist/ twice: inside app.asar AND — because
-  // asarUnpack lists dist/** — beside it in app.asar.unpacked. Prefer the
+  // A packaged build ships dist/ twice: inside app.asar AND â€” because
+  // asarUnpack lists dist/** â€” beside it in app.asar.unpacked. Prefer the
   // unpacked tree, matching the resolveWebDist()/unpackedPathFor precedent:
   // it is the copy the embedded dashboard serves and the copy a repair
   // rewrites, while pointing the window at the asar-internal index.html is
@@ -4880,23 +4811,32 @@ function resolveRendererIndex() {
   // first lazy import with "Failed to fetch dynamically imported module" and
   // every restart reloads the same torn copy. Prefer a copy whose modules are
   // all present, so the intact generation heals the boot by itself.
+  // Remember the FIRST candidate's list: if every copy turns out to be torn we
+  // load present[0], and its list is already in hand â€” recomputing it there
+  // would reintroduce the very second walk this function exists to avoid.
+  let firstMissing: string[] | null = null
+
   for (const candidate of present) {
     const missing = missingRendererAssets(candidate)
 
     if (missing.length === 0) {
-      return candidate
+      return { index: candidate, missing: [] }
+    }
+
+    if (firstMissing === null) {
+      firstMissing = missing
     }
 
     rememberLog(
       `[renderer] skipping torn renderer bundle at ${candidate}: ` +
         `${missing.length} module file(s) named by index.html are missing ` +
-        `(${missing.slice(0, 3).join(', ')}${missing.length > 3 ? ', …' : ''})`
+        `(${missing.slice(0, 3).join(', ')}${missing.length > 3 ? ', â€¦' : ''})`
     )
   }
 
   if (present.length > 0) {
-    // Every copy is torn. Load the first one anyway — the boundary's error is
-    // still better than a blank window — but say what is wrong and how to fix
+    // Every copy is torn. Load the first one anyway â€” the boundary's error is
+    // still better than a blank window â€” but say what is wrong and how to fix
     // it, because no amount of restarting repairs a torn bundle.
     rememberLog(
       `[renderer] every renderer bundle is incomplete (${present.join(', ')}). ` +
@@ -4904,25 +4844,33 @@ function resolveRendererIndex() {
         `Repair with: moor desktop --force-build`
     )
 
-    return present[0]
+    // present[0]'s own list, captured on the first loop iteration â€” never the
+    // last candidate's, which would describe a bundle we are not loading.
+    return { index: present[0], missing: firstMissing ?? [] }
   }
 
   // Nothing on disk. A packaged build with no renderer bundle blank-pages with
   // a bare ERR_FILE_NOT_FOUND and no clue why (see #39484). Surface the cause
   // and the fix before Electron loads the missing file.
   rememberLog(
-    `[renderer] index.html not found — the desktop app was packaged without a ` +
+    `[renderer] index.html not found â€” the desktop app was packaged without a ` +
       `renderer bundle. Tried: ${candidates.join(', ')}. ` +
       `Rebuild with: moor desktop --force-build`
   )
 
-  return candidates[0]
+  return { index: candidates[0], missing: [] }
+}
+
+// Path-only accessor: unchanged behaviour for the window loaders that do not
+// need the torn-asset list.
+function resolveRendererIndex() {
+  return resolveRendererIndexWithMissing().index
 }
 
 // True when `dir` lives inside the packaged app bundle / install tree.
 // Packaged Electron's process.cwd() (and npm's INIT_CWD when dev tooling
-// leaked into a release build) often resolve here — e.g. win-unpacked on
-// Windows — which is exactly where PR #37536 item 16 said we must NOT run.
+// leaked into a release build) often resolve here â€” e.g. win-unpacked on
+// Windows â€” which is exactly where PR #37536 item 16 said we must NOT run.
 function isPackagedInstallPath(dir) {
   return isPackagedInstallPathUnderRoots(dir, {
     isPackaged: IS_PACKAGED,
@@ -4936,7 +4884,7 @@ function isPackagedInstallPath(dir) {
 
 function resolveMoorCwd() {
   // In a packaged build, `process.cwd()` resolves to the install root (e.g.
-  // `…/win-unpacked` on Windows or `/Applications/Moor.app/Contents/...`
+  // `â€¦/win-unpacked` on Windows or `/Applications/Moor.app/Contents/...`
   // on macOS). Sessions spawned there leave files inside the app bundle
   // and bewilder users when "where did my files go?" is the install dir.
   // The user-configurable default project directory wins over everything,
@@ -4990,7 +4938,7 @@ function sanitizeWorkspaceCwd(cwd) {
   return { cwd: resolveMoorCwd(), sanitized: Boolean(trimmed) }
 }
 
-// Persisted "Default project directory" — surfaced as a setting in the
+// Persisted "Default project directory" â€” surfaced as a setting in the
 // renderer (see app/settings/sessions-settings.tsx). Stored as JSON in
 // userData so it survives self-updates without bleeding into the new
 // install. `null` means "no preference, fall back to the usual chain".
@@ -5013,7 +4961,7 @@ function readDefaultProjectDir() {
       }
     }
   } catch {
-    // Missing / unreadable / malformed → fall through to the rest of the
+    // Missing / unreadable / malformed â†’ fall through to the rest of the
     // candidate chain.
   }
 
@@ -5032,15 +4980,15 @@ function writeDefaultProjectDir(dir) {
   }
 }
 
-function createPythonBackend(root, label, backendArgs, options: any = {}) {
-  const python = findPythonForRoot(root)
+async function createPythonBackend(root, label, backendArgs, options: any = {}) {
+  const python = await findPythonForRoot(root)
 
   if (!python) {
     return null
   }
 
   // The venv whose interpreter we selected is the venv whose site-packages
-  // belong on PYTHONPATH — findPythonForRoot may have picked `.venv` over
+  // belong on PYTHONPATH â€” findPythonForRoot may have picked `.venv` over
   // `venv`, and mixing the two crashes the backend on its first native
   // import (see venvRootForPython). Fall back to root/venv only for a
   // system python, where the historical layout is the best guess.
@@ -5064,13 +5012,13 @@ function createPythonBackend(root, label, backendArgs, options: any = {}) {
   }
 }
 
-// createActiveBackend — build a backend pointing at ACTIVE_MOOR_ROOT, the
+// createActiveBackend â€” build a backend pointing at ACTIVE_MOOR_ROOT, the
 // canonical install location shared with the CLI installer. The venv at
 // VENV_ROOT may not exist yet on first run; bootstrap=true tells
 // ensureRuntime() to create / refresh it before launch.
-function createActiveBackend(backendArgs) {
+async function createActiveBackend(backendArgs) {
   const venvPython = getVenvPython(VENV_ROOT)
-  const command = fileExists(venvPython) ? venvPython : findSystemPython()
+  const command = fileExists(venvPython) ? venvPython : await findSystemPython()
 
   return {
     kind: 'python',
@@ -5088,13 +5036,13 @@ function createActiveBackend(backendArgs) {
   }
 }
 
-function resolveMoorBackend(backendArgs) {
+async function resolveMoorBackend(backendArgs) {
   // 1. Explicit override -- MOOR_DESKTOP_MOOR_ROOT points at a developer
   //    checkout. Honour it as-is (no bootstrap; the user is driving).
   const overrideRoot = process.env.MOOR_DESKTOP_MOOR_ROOT && path.resolve(process.env.MOOR_DESKTOP_MOOR_ROOT)
 
   if (overrideRoot && isMoorSourceRoot(overrideRoot)) {
-    const backend = createPythonBackend(overrideRoot, `Moor source at ${overrideRoot}`, backendArgs)
+    const backend = await createPythonBackend(overrideRoot, `Moor source at ${overrideRoot}`, backendArgs)
 
     if (backend) {
       return backend
@@ -5106,14 +5054,14 @@ function resolveMoorBackend(backendArgs) {
   //    installed `moor` on PATH so local Python edits are actually exercised.
   //    (In dev with no checkout, SOURCE_REPO_ROOT won't pass isMoorSourceRoot.)
   if (!IS_PACKAGED && isMoorSourceRoot(SOURCE_REPO_ROOT)) {
-    const backend = createPythonBackend(SOURCE_REPO_ROOT, `Moor source at ${SOURCE_REPO_ROOT}`, backendArgs)
+    const backend = await createPythonBackend(SOURCE_REPO_ROOT, `Moor source at ${SOURCE_REPO_ROOT}`, backendArgs)
 
     if (backend) {
       return backend
     }
   }
 
-  // 3. ACTIVE_MOOR_ROOT — the canonical install at
+  // 3. ACTIVE_MOOR_ROOT â€” the canonical install at
   //    %LOCALAPPDATA%\\moor\\moor-agent (Windows) or ~/.moor/moor-agent.
   //    A valid bootstrap marker proves Desktop finished the first-run install
   //    flow, but marker provenance is NOT the same thing as runtime usability:
@@ -5121,7 +5069,7 @@ function resolveMoorBackend(backendArgs) {
   //    builds could leave a healthy install behind without the marker. If the
   //    active runtime is usable, launch it directly; only fall through to
   //    bootstrap when the runtime itself is unusable.
-  const activeRuntime = activeRuntimeState()
+  const activeRuntime = await activeRuntimeState()
 
   if (activeRuntime.shouldUseActiveRuntime && !bootstrapRepairRequested) {
     if (!activeRuntime.hasValidMarker) {
@@ -5168,7 +5116,7 @@ function resolveMoorBackend(backendArgs) {
     }
 
     if (moorCommand) {
-      const unwrapped = unwrapWindowsVenvMoorCommand(moorCommand, backendArgs)
+      const unwrapped = await unwrapWindowsVenvMoorCommand(moorCommand, backendArgs)
 
       if (unwrapped) {
         return unwrapped
@@ -5187,8 +5135,11 @@ function resolveMoorBackend(backendArgs) {
       // the Nix wrapper), not a discovered PATH candidate. It must not fall
       // through to the install-script bootstrap if the optional probe times
       // out under load; the pinned backend is the only valid runtime there.
-      if (shouldTrustMoorOverride(moorOverride) || verifyMoorCli(moorCommand, { shell: shellForProbe })) {
-        // `unwrapped` above already answered "is this a Windows venv shim?" —
+      if (
+        shouldTrustMoorOverride(moorOverride) ||
+        (await verifyMoorCli(moorCommand, { shell: shellForProbe }))
+      ) {
+        // `unwrapped` above already answered "is this a Windows venv shim?" â€”
         // it was null (not a shim, or its import probe failed). Do NOT re-run
         // unwrapWindowsVenvMoorCommand here: the second call repeats the
         // same un-memoized import probe, costing up to another full probe
@@ -5213,7 +5164,7 @@ function resolveMoorBackend(backendArgs) {
   // 5. Last-ditch: pip-installed moor_cli module via system Python.
   //    Same rationale as #4 -- the user installed this; we use it but don't
   //    take ownership.
-  const python = findSystemPython()
+  const python = await findSystemPython()
 
   if (python) {
     // Same smoke-test rationale as step 4: a system Python in the
@@ -5224,7 +5175,7 @@ function resolveMoorBackend(backendArgs) {
     // Verify the import works before trusting the candidate; on
     // failure, fall through to step 6 so the bootstrap runner pulls
     // a uv-managed 3.11 into %LOCALAPPDATA%\moor\moor-agent\venv.
-    if (canImportMoorCli(python)) {
+    if (await canImportMoorCli(python)) {
       return {
         kind: 'python',
         label: `installed moor_cli module via ${python}`,
@@ -5265,7 +5216,14 @@ function resolveMoorBackend(backendArgs) {
   }
 }
 
-async function ensureRuntime(backend) {
+function ensureRuntime(backend: any, assertStillOwned: () => void): Promise<any> {
+  return localBackendLifecycle.start(() => runEnsureRuntime(backend, assertStillOwned))
+}
+
+async function runEnsureRuntime(backend: any, assertStillOwned: () => void): Promise<any> {
+  localBackendLifecycle.assertCanStart()
+  assertStillOwned()
+
   if (!backend.bootstrap) {
     await advanceBootProgress('runtime.external', `Using ${backend.label}`, 32)
 
@@ -5311,6 +5269,7 @@ async function ensureRuntime(backend) {
       void 0
     }
 
+    localBackendLifecycle.assertCanStart()
     bootstrapAbortController = new AbortController()
 
     // The repair request has been honoured by reaching the installer; clear it
@@ -5356,10 +5315,10 @@ async function ensureRuntime(backend) {
     }
 
     if (!bootstrapResult.ok) {
+      // Plain lead sentence + trailing "Details:" line; the install overlay
+      // shows this verbatim and offers Reload and retry / Open logs itself.
       const bootstrapError = new Error(
-        `Moor bootstrap failed${bootstrapResult.failedStage ? ` at stage '${bootstrapResult.failedStage}'` : ''}: ` +
-          `${bootstrapResult.error || 'unknown error'}. ` +
-          `Check ${path.join(MOOR_HOME, 'logs', 'desktop.log')} for the full transcript.`
+        describeBootstrapFailure(bootstrapResult.failedStage, bootstrapResult.error)
       ) as any
 
       bootstrapError.isBootstrapFailure = true
@@ -5375,7 +5334,7 @@ async function ensureRuntime(backend) {
 
     // Re-resolve now that the install exists. The new resolution lands in
     // step 3 (bootstrap-complete marker) and we recurse to wire venvPython.
-    return ensureRuntime(resolveMoorBackend(backend.args))
+    return ensureRuntime(await resolveMoorBackend(backend.args), assertStillOwned)
   }
 
   // bootstrap=true with a real backend (createActiveBackend path) means we
@@ -5385,10 +5344,7 @@ async function ensureRuntime(backend) {
   // (install.ps1 owns those concerns now and the bootstrap-complete marker
   // attests they ran successfully).
   if (!isMoorSourceRoot(ACTIVE_MOOR_ROOT)) {
-    throw new Error(
-      `Moor install at ${ACTIVE_MOOR_ROOT} is missing or incomplete. ` +
-        'Reinstall via the desktop installer or scripts/install.ps1.'
-    )
+    throw new Error(missingInstallPartMessage(`Moor source files are missing or incomplete at ${ACTIVE_MOOR_ROOT}`))
   }
 
   // On Windows, preflight Git Bash. Moor' terminal tool calls bash.exe
@@ -5399,10 +5355,8 @@ async function ensureRuntime(backend) {
   // here via an external `moor` on PATH, this check still helps.
   if (IS_WINDOWS && !findGitBash()) {
     throw new Error(
-      'Git for Windows is required for Moor on Windows (provides Git Bash, ' +
-        "which the agent's terminal tool uses). Install it from " +
-        'https://git-scm.com/download/win or run `winget install -e --id Git.Git`, ' +
-        'then relaunch Moor.'
+      "Moor needs a helper called Git for Windows, which isn't installed. " +
+        'Choose Repair install to add it automatically, or install it yourself from git-scm.com and reopen Moor.'
     )
   }
 
@@ -5416,9 +5370,7 @@ async function ensureRuntime(backend) {
     // plus an importable moor_cli before it hands back the active runtime.
     // If we hit this, the user (or a deleted venv) broke the invariant; tell
     // them to re-run the install.
-    throw new Error(
-      `Moor venv missing at ${VENV_ROOT}. Re-run the desktop installer or ` + '`scripts/install.ps1` to rebuild it.'
-    )
+    throw new Error(missingInstallPartMessage(`Python environment missing at ${VENV_ROOT}`))
   }
 
   backend.command = getVenvPython(VENV_ROOT)
@@ -5436,7 +5388,7 @@ async function ensureRuntime(backend) {
 
 // Assemble a single-file multipart/form-data body (FastAPI `UploadFile`
 // endpoints, e.g. kanban attachments). Hand-rolled because node's http has no
-// FormData and the payload is one file — a dependency would be overkill.
+// FormData and the payload is one file â€” a dependency would be overkill.
 function multipartBody(upload) {
   const boundary = `----moor-${crypto.randomBytes(12).toString('hex')}`
   const filename = String(upload.filename || 'file').replace(/["\r\n]/g, '_')
@@ -5457,7 +5409,7 @@ function multipartBody(upload) {
 function fetchJson(url, token, options: any = {}) {
   // Retry policy lives in api-transport.ts: idempotent verbs retry on any
   // transient transport error; POST/PUT/DELETE only when the request provably
-  // never reached the server (see shouldRetryRequest) — never double-submit.
+  // never reached the server (see shouldRetryRequest) â€” never double-submit.
   return withRetry(
     (requestState: any) =>
       new Promise((resolve, reject) => {
@@ -5506,7 +5458,16 @@ function fetchJson(url, token, options: any = {}) {
               const text = Buffer.concat(chunks).toString('utf8')
 
               if ((res.statusCode || 500) >= 400) {
-                reject(new Error(`${res.statusCode}: ${text || res.statusMessage}`))
+                reject(httpStatusError(res.statusCode, text, res.statusMessage))
+
+                return
+              }
+
+              // http.request never follows redirects, so any 3xx -- with an HTML
+              // login page, an empty body, whatever -- is the request bouncing
+              // off a proxy or a scheme/slash mismatch, never JSON.
+              if (res.statusCode >= 300) {
+                reject(htmlResponseError(url, res.statusCode, res.headers.location))
 
                 return
               }
@@ -5525,12 +5486,7 @@ function fetchJson(url, token, options: any = {}) {
               const contentType = String(res.headers['content-type'] || '')
 
               if (looksHtml || contentType.includes('text/html')) {
-                reject(
-                  new Error(
-                    `Expected JSON from ${url} but got HTML (status ${res.statusCode}). ` +
-                      'The endpoint is likely missing on the Moor backend.'
-                  )
-                )
+                reject(htmlResponseError(url, res.statusCode))
 
                 return
               }
@@ -5599,7 +5555,7 @@ function downloadViaTokenToFile(url, token, ctx, options: any = {}) {
         headers: options.bearer ? { Authorization: `Bearer ${options.bearer}` } : { 'X-moor-session-Token': token }
       },
       res => {
-        // Headers arrived — the connection phase is done. Drop the idle timeout
+        // Headers arrived â€” the connection phase is done. Drop the idle timeout
         // so it can't abort mid-stream or while the save dialog is open.
         req.setTimeout(0)
         finalizeGatewayDownload(res, res.statusCode || 500, res.headers || {}, {
@@ -5626,7 +5582,7 @@ function downloadViaTokenToFile(url, token, ctx, options: any = {}) {
 function fetchPublicJson(url, options: any = {}) {
   // Credential-free JSON GET/POST for public gateway endpoints
   // (``/api/status``, ``/api/auth/providers``). Unlike ``fetchJson`` it sends
-  // NO ``X-moor-session-Token`` header — used by the auth-mode probe before
+  // NO ``X-moor-session-Token`` header â€” used by the auth-mode probe before
   // any credentials exist, and any time we must not leak a token to an
   // endpoint that doesn't need one.
   return withRetry(
@@ -5672,7 +5628,13 @@ function fetchPublicJson(url, options: any = {}) {
               const text = Buffer.concat(chunks).toString('utf8')
 
               if ((res.statusCode || 500) >= 400) {
-                reject(new Error(`${res.statusCode}: ${text || res.statusMessage}`))
+                reject(httpStatusError(res.statusCode, text, res.statusMessage))
+
+                return
+              }
+
+              if (res.statusCode >= 300) {
+                reject(htmlResponseError(url, res.statusCode, res.headers.location))
 
                 return
               }
@@ -5687,12 +5649,7 @@ function fetchPublicJson(url, options: any = {}) {
               const contentType = String(res.headers['content-type'] || '')
 
               if (looksHtml || contentType.includes('text/html')) {
-                reject(
-                  new Error(
-                    `Expected JSON from ${url} but got HTML (status ${res.statusCode}). ` +
-                      'The endpoint is likely missing on the Moor backend.'
-                  )
-                )
+                reject(htmlResponseError(url, res.statusCode))
 
                 return
               }
@@ -5711,7 +5668,7 @@ function fetchPublicJson(url, options: any = {}) {
           req.destroy(new Error(`Timed out connecting to Moor backend after ${timeoutMs}ms`))
         })
 
-        // Past this point the request is on the wire — see fetchJson.
+        // Past this point the request is on the wire â€” see fetchJson.
         requestState.bodySent = true
 
         if (body) {
@@ -5774,7 +5731,7 @@ function filenameFromUrl(rawUrl, fallback = 'image') {
   }
 }
 
-// Link title resolution — curl (tier 1) → hidden BrowserWindow (tier 2).
+// Link title resolution â€” curl (tier 1) â†’ hidden BrowserWindow (tier 2).
 const titleCache = new Map()
 const titleInflight = new Map()
 const TITLE_CACHE_LIMIT = 500
@@ -5782,7 +5739,7 @@ const TITLE_BYTE_BUDGET = 96 * 1024
 const TITLE_TIMEOUT_MS = 5000
 const TITLE_MAX_REDIRECTS = 3
 
-// Browser-shaped UA — many bot-walled sites (GetYourGuide, Cloudflare-protected
+// Browser-shaped UA â€” many bot-walled sites (GetYourGuide, Cloudflare-protected
 // pages) refuse anything that doesn't look like a real Chrome.
 const TITLE_USER_AGENT =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36'
@@ -5793,12 +5750,12 @@ const TITLE_ERROR_RE =
 const HTML_ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', '#39': "'" }
 
 // Tier-2 renderer fallback config. Only invoked when curl came back empty or
-// matched TITLE_ERROR_RE — keeps cold/CDN-cached pages on the cheap path.
+// matched TITLE_ERROR_RE â€” keeps cold/CDN-cached pages on the cheap path.
 const RENDER_TITLE_MAX_CONCURRENT = 2
 const RENDER_TITLE_TIMEOUT_MS = 8000
 const RENDER_TITLE_GRACE_MS = 700
 
-// Resource types we cancel before the network even fires — keeps the hidden
+// Resource types we cancel before the network even fires â€” keeps the hidden
 // renderer fast and cuts third-party tracking noise.
 const RENDER_TITLE_BLOCKED_RESOURCES = new Set([
   'cspReport',
@@ -6025,7 +5982,7 @@ function fetchHtmlTitleWithRenderer(rawUrl: string): Promise<string> {
   })
 }
 
-// Strips known error/captcha titles (e.g. "GetYourGuide – Error", "Just a
+// Strips known error/captcha titles (e.g. "GetYourGuide â€“ Error", "Just a
 // moment...") so they don't get cached as the resolved title.
 function usableTitle(value: string): string {
   return value && !TITLE_ERROR_RE.test(value) ? value : ''
@@ -6065,7 +6022,7 @@ function fetchLinkTitle(rawUrl) {
   return pending
 }
 
-// ─── Favicon resolution ──────────────────────────────────────────────────────
+// â”€â”€â”€ Favicon resolution â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // The ladder itself is electron/favicon.ts; this is its I/O, its cache, and
 // the one rule that belongs to the app rather than the algorithm: one icon
 // per host. A connector's mark doesn't vary by path, and hosting the cache on
@@ -6113,7 +6070,7 @@ function loadFaviconCache(): Map<string, { at: number; icon: string }> {
       }
     }
   } catch {
-    // No cache yet, or it's unreadable — resolving again is the whole cost.
+    // No cache yet, or it's unreadable â€” resolving again is the whole cost.
   }
 
   return faviconCache
@@ -6275,7 +6232,7 @@ async function saveImageFromUrl(rawUrl) {
   const { buffer, mimeType } = (await resourceBufferFromUrl(rawUrl)) as any
   const extension = extensionForMimeType(mimeType) || '.png'
   // Generated-image URLs (fal.media etc.) usually end in an extensionless
-  // content hash. Keep the name but always guarantee an extension — without
+  // content hash. Keep the name but always guarantee an extension â€” without
   // one Windows saves an unopenable "All Files" blob (#image18 report).
   const baseName = filenameFromUrl(rawUrl, `image${extension}`)
   const fallbackName = path.extname(baseName) ? baseName : `${baseName}${extension}`
@@ -6530,7 +6487,7 @@ function requestOptionsWithHeaders(options: any = {}, headers = {}) {
   }
 }
 
-/** Watch a DIRECTORY for entry churn (folders appearing/vanishing) — the
+/** Watch a DIRECTORY for entry churn (folders appearing/vanishing) â€” the
  *  disk-plugin door's "new plugin folder" signal, replacing the renderer's 5s
  *  readdir poll. Same registry + change channel as the preview file watchers
  *  (the renderer reconciles on any tick; per-file edits stay on their own
@@ -6573,7 +6530,7 @@ function watchDirectory(rawDir) {
 // URL for the life of the process. Used by the oauth pre-flight guard to tell
 // a password-provider gateway (which cannot satisfy the bearer/cookie checks
 // by design) from a real OAuth one. Any failure returns [] so callers keep the
-// strict guard — backends predating /api/auth/providers are unaffected.
+// strict guard â€” backends predating /api/auth/providers are unaffected.
 const gatewayAuthProvidersCache = new Map<string, any[]>()
 
 async function gatewayAuthProviders(baseUrl, headers = {}) {
@@ -6600,7 +6557,7 @@ async function gatewayAuthProviders(baseUrl, headers = {}) {
 
     gatewayAuthProvidersCache.set(baseUrl, providers)
   } catch {
-    // Optional metadata — an unreadable list keeps the strict guard.
+    // Optional metadata â€” an unreadable list keeps the strict guard.
   }
 
   return providers
@@ -6611,27 +6568,21 @@ async function gatewayAuthProviders(baseUrl, headers = {}) {
 // an anonymous probe 401s forever against a live session, and it can never
 // see the 404 that identifies a backend predating /api/health (the auth gate
 // answers before the SPA catch-all). `probeIsCredentialed` tells
-// waitForMoorReady how to read a 401 — rejected session vs gated route.
+// waitForMoorReady how to read a 401 â€” rejected session vs gated route.
 async function buildReadinessHealthProbe(baseUrl, authMode, token) {
-  const nativeAt = authMode === 'oauth' ? await ensureNativeAccessToken(baseUrl).catch(() => null) : null
-  const probeAuth = resolveReadinessProbeAuth(authMode, nativeAt, token)
-
-  if (probeAuth.kind === 'bearer') {
+  if (authMode === 'oauth') {
     return {
-      // fetchJson takes the bearer via `options.bearer` — a raw `headers`
-      // option is ignored, so passing one here would silently probe
-      // uncredentialed and reintroduce the 401 loop.
-      probeHealth: (url, options: any = {}) => fetchJson(url, null, { ...options, bearer: probeAuth.token }),
+      probeHealth: (url: string, options: any = {}) =>
+        requestWithOauthFallback(baseUrl, {
+          ensureNativeAccessToken,
+          requestWithBearer: bearer => fetchJson(url, null, { ...options, bearer }),
+          requestWithCookie: () => fetchJsonViaOauthSession(url, options)
+        }),
       probeIsCredentialed: true
     }
   }
 
-  if (probeAuth.kind === 'cookie') {
-    return {
-      probeHealth: (url, options: any = {}) => fetchJsonViaOauthSession(url, options),
-      probeIsCredentialed: true
-    }
-  }
+  const probeAuth = resolveReadinessProbeAuth(authMode, null, token)
 
   if (probeAuth.kind === 'token' && probeAuth.token) {
     return {
@@ -6663,7 +6614,7 @@ function getWindowButtonPosition(win = mainWindow) {
     return null
   }
 
-  // Fullscreen hides the traffic lights — treat as no left-side controls so the
+  // Fullscreen hides the traffic lights â€” treat as no left-side controls so the
   // renderer drops the traffic-light dodge inset and Y nudge.
   if (win?.isFullScreen?.()) {
     return null
@@ -6688,7 +6639,7 @@ function getWindowState(win = mainWindow) {
 }
 
 function sendBackendExit(payload) {
-  // Intentional soft re-home (gateway mode apply) kills the child on purpose —
+  // Intentional soft re-home (gateway mode apply) kills the child on purpose â€”
   // don't surface the "backend stopped" error toast / boot-failure path.
   if (softRehomeInProgress) {
     return
@@ -6726,8 +6677,8 @@ function sendClosePreviewRequested() {
  *
  * A `<webview>` guest is its own out-of-process webContents: pointer and focus
  * events inside the page never reach the host document, so NOTHING in the
- * renderer — not `document.activeElement`, not the layout tree's hover/focus
- * ladder — can see that the user is in there. Main can: Electron tracks the
+ * renderer â€” not `document.activeElement`, not the layout tree's hover/focus
+ * ladder â€” can see that the user is in there. Main can: Electron tracks the
  * focused webContents across processes, which is the definition of a runtime
  * fact it owns.
  *
@@ -6768,7 +6719,7 @@ function commandFocusedGuest(command: 'back' | 'forward' | 'reload'): boolean {
  * `forward` mean nothing outside the browser, so the renderer just ignores them.
  */
 function sendPreviewNavCommand(command: 'back' | 'forward' | 'reload') {
-  // The user is inside the page itself — main is the only party that can see
+  // The user is inside the page itself â€” main is the only party that can see
   // that, so act here and never round-trip.
   if (commandFocusedGuest(command)) {
     return
@@ -6799,7 +6750,7 @@ function sendPreviewNavCommand(command: 'back' | 'forward' | 'reload') {
 function installBrowserNavGestures(window) {
   window.on('swipe', (_event, direction) => {
     if (direction === 'left' || direction === 'right') {
-      // Swipe LEFT moves the page left, revealing what's behind it — that's
+      // Swipe LEFT moves the page left, revealing what's behind it â€” that's
       // back. Matches Safari, Chrome, and Finder.
       sendPreviewNavCommand(direction === 'left' ? 'back' : 'forward')
     }
@@ -6908,7 +6859,7 @@ function registerPowerResumeListeners() {
 function getAppIconPath() {
   // Fail-soft: skip candidates that exist but don't decode (truncated PNG in a
   // packaged app.asar previously crashed createWindow mid-session). Missing
-  // every candidate is fine — the window then uses the platform default icon.
+  // every candidate is fine â€” the window then uses the platform default icon.
   try {
     return resolveAppIcon(APP_ICON_PATHS)
   } catch {
@@ -6949,15 +6900,23 @@ async function showPluginCompatNoticeOnce() {
   rememberLog(`[plugins] compat notice shown (${notice.key})`)
 
   try {
-    await dialog.showMessageBox(mainWindow, {
+    // 'OK' is the default and cancel so a stray Enter/Escape never navigates;
+    // 'Open Plugins' rides the existing deep-link channel (moor://open/â€¦),
+    // which the renderer already maps to its hash router.
+    const { response } = await dialog.showMessageBox(mainWindow, {
       type: 'warning',
       title: notice.title,
       message: notice.message,
       detail: notice.detail,
-      buttons: ['OK'],
-      defaultId: 0,
+      buttons: ['Open Plugins', 'OK'],
+      defaultId: 1,
+      cancelId: 1,
       noLink: true
     })
+
+    if (response === 0) {
+      handleDeepLink(`${MOOR_PROTOCOL}://open/skills?tab=plugins`)
+    }
   } finally {
     try {
       recordPluginCompatDismissed(app.getPath('userData'), notice.key)
@@ -6968,7 +6927,12 @@ async function showPluginCompatNoticeOnce() {
 }
 
 function sendOpenUpdatesRequested() {
-  if (!mainWindow || mainWindow.isDestroyed()) {
+  // The renderer mounts its open-updates listener in the same effect pass that
+  // signals deep-link readiness. Before that (e.g. a boot-time dialog answered
+  // before the window is up) queue the request; 'moor:deep-link-ready' flushes it.
+  if (!_rendererReadyForDeepLink || !mainWindow || mainWindow.isDestroyed()) {
+    _pendingOpenUpdates = true
+
     return
   }
 
@@ -7014,7 +6978,7 @@ function buildApplicationMenu() {
   const template = []
 
   const checkForUpdatesItem = {
-    label: 'Check for Updates…',
+    label: 'Check for Updatesâ€¦',
     click: () => sendOpenUpdatesRequested()
   }
 
@@ -7039,21 +7003,21 @@ function buildApplicationMenu() {
   template.push({
     label: 'File',
     submenu: [
-      // No accelerator: ⌘⇧N is a rebindable renderer keybind (session.newWindow);
+      // No accelerator: âŒ˜â‡§N is a rebindable renderer keybind (session.newWindow);
       // a menu accelerator would fight the rebind panel and (on macOS) be
       // swallowed before the renderer sees it. Here purely for discoverability.
       { click: () => createInstanceWindow(), label: 'New Window' },
-      // Same no-accelerator rationale: ⌘O is the rebindable renderer keybind
+      // Same no-accelerator rationale: âŒ˜O is the rebindable renderer keybind
       // (workspace.openFolder). Clicking runs the same open-folder-as-project
       // flow through the renderer.
-      { click: () => sendOpenFolderRequested(), label: 'Open Folder…' },
+      { click: () => sendOpenFolderRequested(), label: 'Open Folderâ€¦' },
       { type: 'separator' },
       IS_MAC
         ? {
-            // NO accelerator: on macOS a registered ⌘W is consumed by the OS
+            // NO accelerator: on macOS a registered âŒ˜W is consumed by the OS
             // menu before the web contents ever sees it (and registerAccelerator
-            // false is a no-op on mac — electron#18295). Leaving it off lets the
-            // `before-input-event` handler below intercept ⌘W and route it to the
+            // false is a no-op on mac â€” electron#18295). Leaving it off lets the
+            // `before-input-event` handler below intercept âŒ˜W and route it to the
             // renderer's close-active-tab. Clicking the item still closes the tab
             // (or window) via the same request.
             click: () => sendClosePreviewRequested(),
@@ -7071,10 +7035,10 @@ function buildApplicationMenu() {
       { role: 'cut' },
       { role: 'copy' },
       { role: 'paste' },
-      // ⌘⇧V is only wired up by this item existing: an accelerator with no menu
+      // âŒ˜â‡§V is only wired up by this item existing: an accelerator with no menu
       // entry is never translated into an editor command, so the chord was a
       // no-op in every input in the app. The composer inserts plain text on
-      // every paste anyway, so this is the same result as ⌘V there — it's the
+      // every paste anyway, so this is the same result as âŒ˜V there â€” it's the
       // terminal, preview, and other editable surfaces that need the strip.
       { role: 'pasteAndMatchStyle' },
       { role: 'delete' },
@@ -7085,11 +7049,11 @@ function buildApplicationMenu() {
     label: 'View',
     submenu: [
       // Not `role: 'reload'`: that hard-reloads the RENDERER (every pane, the
-      // whole shell) and a focused in-app browser needs ⌘R to mean "reload
-      // this page", the way it does in every other browser. ⇧⌘R
+      // whole shell) and a focused in-app browser needs âŒ˜R to mean "reload
+      // this page", the way it does in every other browser. â‡§âŒ˜R
       // (`forceReload`) below stays the unconditional escape hatch.
       //
-      // No accelerator: ⌘R is claimed in `installPreviewShortcut`, which works
+      // No accelerator: âŒ˜R is claimed in `installPreviewShortcut`, which works
       // on every platform (this menu exists only on macOS). Declaring it here
       // too would fire the item and the input hook for one keypress.
       { click: () => sendPreviewNavCommand('reload'), label: 'Reload' },
@@ -7171,7 +7135,7 @@ function installDevToolsShortcut(window) {
 
         return
       }
-      // Not blocked — fall through to open DevTools.
+      // Not blocked â€” fall through to open DevTools.
     }
 
     const isInspectShortcut =
@@ -7194,20 +7158,31 @@ function installPreviewShortcut(window) {
     const accel = (IS_MAC ? input.meta : input.control) && !input.alt
     const isCloseTabShortcut = key === 'w' && accel && !input.shift
 
-    // Always claim ⌘W here (the File>Close item deliberately has no
+    // Always claim âŒ˜W here (the File>Close item deliberately has no
     // accelerator, so nothing else does). The renderer decides tab-vs-window
-    // — no `previewShortcutActive` gate, so it works for every closeable tab.
+    // â€” no `previewShortcutActive` gate, so it works for every closeable tab.
     if (isCloseTabShortcut) {
       event.preventDefault()
+
+      // âŒ˜W in the HUD is "leave HUD mode", not "close a tab in the app
+      // window". Routing it to the main renderer closed the app's tab out
+      // from under the user while the HUD stayed put; routing it through the
+      // HUD's own close path hands the session back like the exit button.
+      if (hudWindow && !hudWindow.isDestroyed() && window === hudWindow) {
+        closeHudWindow()
+
+        return
+      }
+
       sendClosePreviewRequested()
 
       return
     }
 
-    // ⌘R rides here rather than on the View menu item for the same reason:
+    // âŒ˜R rides here rather than on the View menu item for the same reason:
     // the application menu only exists on macOS (it is set to null elsewhere,
     // see #77845), so a menu accelerator would leave Windows and Linux with no
-    // way to reload a page at all. ⇧⌘R is left alone — that is `forceReload`,
+    // way to reload a page at all. â‡§âŒ˜R is left alone â€” that is `forceReload`,
     // the unconditional whole-window escape hatch.
     if (key === 'r' && accel && !input.shift) {
       event.preventDefault()
@@ -7241,7 +7216,7 @@ function setAndPersistZoomLevel(window, zoomLevel) {
   // changes made via the keyboard shortcuts or the View menu.
   const next = applyZoomLevel(window.webContents, zoomLevel)
 
-  // Primary store: main-process JSON (survives crash recovery — #56726).
+  // Primary store: main-process JSON (survives crash recovery â€” #56726).
   writeZoomState(next)
   // Secondary mirror: renderer localStorage (legacy store; kept in sync so a
   // downgrade or JSON read failure still finds a sane value).
@@ -7259,7 +7234,7 @@ function restorePersistedZoomLevel(window) {
     return
   }
 
-  // Prefer the JSON file — it survives crash recovery wiping Electron's
+  // Prefer the JSON file â€” it survives crash recovery wiping Electron's
   // cache/storage folders (#56726). applyZoomLevel notifies the renderer so
   // the Appearance UI Scale control stays in sync.
   const saved = readZoomState()
@@ -7268,7 +7243,7 @@ function restorePersistedZoomLevel(window) {
     // Drift-guard: skip when this window already shows the persisted level.
     // Blindly re-applying on every resize/move would race the compositor's
     // surface reconfigure during a Wayland resize storm (Cosmic tiled mode
-    // fires one whenever a new session window opens — #84818) and keep the
+    // fires one whenever a new session window opens â€” #84818) and keep the
     // renderer notification stream churning for no gain. The settle-verify
     // chain in installZoomReassertOnWindowEvents re-applies only when the
     // window actually drifted from the persisted level.
@@ -7321,7 +7296,7 @@ function installZoomShortcuts(window) {
 
     if (key === '0') {
       if (input.shift) {
-        return // Ctrl/Cmd+Shift+0 is not a zoom chord — leave it alone
+        return // Ctrl/Cmd+Shift+0 is not a zoom chord â€” leave it alone
       }
 
       event.preventDefault()
@@ -7343,7 +7318,7 @@ function installZoomShortcuts(window) {
     }
   })
 
-  // Ctrl/Cmd + mouse wheel — the standard desktop/browser zoom gesture
+  // Ctrl/Cmd + mouse wheel â€” the standard desktop/browser zoom gesture
   // (#40295). Chromium surfaces it as the main-process 'zoom-changed' event
   // (wheel events are DOM-side, so before-input-event never sees them).
   // Route through the same persist+notify funnel as the keyboard shortcuts
@@ -7362,9 +7337,9 @@ function installZoomShortcuts(window) {
  * The app popups no native menus: the renderer owns the menu UI so labels
  * are translated with the rest of the app. Main keeps only what Chromium
  * reports here and the renderer cannot see:
- *  - spell-check facts (misspelled word + suggestions) — forwarded so the
+ *  - spell-check facts (misspelled word + suggestions) â€” forwarded so the
  *    renderer appends them to its already-open menu,
- *  - the gesture coordinates — kept for copyImageAt, which needs them.
+ *  - the gesture coordinates â€” kept for copyImageAt, which needs them.
  */
 const lastContextMenuPoint = new Map<number, { x: number; y: number }>()
 
@@ -7398,6 +7373,13 @@ function installContextMenuBridge(window: BrowserWindow) {
 // usage strings), so the user keeps a real allow/deny and can revoke it in
 // System Settings afterwards.
 function isMediaCapturePermission(permission, details) {
+  // HTML5 video/audio fullscreen asks the request handler for 'fullscreen'
+  // and the check handler for 'automatic-fullscreen'. Both must be allowed
+  // or the native fullscreen button on <video controls> does nothing.
+  if (permission === 'fullscreen' || permission === 'automatic-fullscreen') {
+    return true
+  }
+
   if (permission === 'audioCapture' || permission === 'videoCapture') {
     return true
   }
@@ -7442,7 +7424,7 @@ function installDownloadHandling() {
             : undefined
       })
     } catch {
-      // No Downloads directory to offer — keep Chromium's default prompt.
+      // No Downloads directory to offer â€” keep Chromium's default prompt.
     }
   })
 }
@@ -7460,6 +7442,7 @@ function installMediaPermissions() {
   session.defaultSession.setPermissionCheckHandler((_webContents, permission) => {
     return (
       permission === 'media' ||
+      (permission as string) === 'automatic-fullscreen' ||
       permission === ('audioCapture' as any) /* todo: is this needed? */ ||
       permission === ('videoCapture' as any)
     )
@@ -7474,9 +7457,9 @@ function installMediaPermissions() {
 // fundamentally different from the token path:
 //
 //   * REST is authed by HttpOnly session cookies (``moor_session_at``),
-//     established by a browser redirect round-trip (/login → IDP →
+//     established by a browser redirect round-trip (/login â†’ IDP â†’
 //     /auth/callback sets cookies). We cannot read the HttpOnly cookie value
-//     in JS — instead we let an Electron BrowserWindow complete the round
+//     in JS â€” instead we let an Electron BrowserWindow complete the round
 //     trip into a PERSISTENT session partition, and thereafter route our REST
 //     through Electron's ``net`` bound to that same partition so the cookie
 //     jar attaches the cookie automatically.
@@ -7488,7 +7471,7 @@ function installMediaPermissions() {
 //     Both are set as HttpOnly cookies (``moor_session_at`` ~15 min,
 //     ``moor_session_rt`` 24h). When the AT cookie lapses but the RT cookie
 //     is still alive, the gateway middleware transparently rotates a fresh AT
-//     on the next authenticated request — so connectivity must NOT be gated on
+//     on the next authenticated request â€” so connectivity must NOT be gated on
 //     the AT cookie alone. We probe liveness by actually minting a ws-ticket
 //     (which triggers that server-side refresh) and treat a real 401 as
 //     "needs re-login"; the AT-or-RT cookie presence check is only a cheap
@@ -7509,7 +7492,7 @@ function getOauthSession() {
 
 // Per-connection cookie jars (#92183). A NON-primary v2 registry remote with
 // cookie auth rides its own partition so two registered gateways can never
-// evict — or be handed — each other's session cookies (Chromium jars ignore
+// evict â€” or be handed â€” each other's session cookies (Chromium jars ignore
 // the port, so two dashboards on one VPN host used to collide in the shared
 // jar above). The primary / v1 remote / cloud / portal flows keep the legacy
 // shared partition; see oauth-partition.ts for the full rules.
@@ -7551,15 +7534,15 @@ function getOauthSessionForUrl(url) {
 // Cold-start cookie-jar warm-up. A `persist:` partition materialized via
 // session.fromPartition() loads its on-disk cookie store LAZILY: the very first
 // cookies.get() on a fresh cold start can resolve BEFORE the jar has finished
-// hydrating from disk and return an empty array — even though the user is
+// hydrating from disk and return an empty array â€” even though the user is
 // signed in. That false-negative used to make hasLiveOauthSession() report
-// "not signed in", which on the initial boot path (startMoor → the renderer's
+// "not signed in", which on the initial boot path (startMoor â†’ the renderer's
 // single-shot boot() with no retry) surfaced as the "Moor couldn't start"
 // OAuth overlay that vanishes the instant the user clicks Retry.
 //
 // We force the store to hydrate once, up front: flushStorageData() then a
 // throwaway cookies.get(). The promise is memoized so every caller awaits the
-// same single warm-up. Best-effort — any error resolves so we fall back to the
+// same single warm-up. Best-effort â€” any error resolves so we fall back to the
 // live read (which then does its own bounded re-check).
 // Memoized per PARTITION: per-connection jars (#92183) hydrate independently.
 const oauthCookieWarmups = new Map()
@@ -7576,7 +7559,7 @@ function warmOauthCookieStore(url?) {
     const sess = getOauthSessionForUrl(url)
 
     if (!sess) {
-      // App not ready yet — don't memoize a no-op; let a later call retry.
+      // App not ready yet â€” don't memoize a no-op; let a later call retry.
       oauthCookieWarmups.delete(partition)
 
       return
@@ -7667,11 +7650,11 @@ async function hasLiveOauthSession(baseUrl) {
 
   // Cold-start false-negative guard. A `persist:` partition's cookie store
   // loads lazily, so the FIRST read on a fresh boot can come back empty even
-  // for a signed-in user — the exact race that produced the transient "Moor
+  // for a signed-in user â€” the exact race that produced the transient "Moor
   // couldn't start / not signed in" overlay that Retry always cleared. Before
   // trusting a negative, force the store to hydrate and re-read a couple of
   // times with a short backoff. A genuinely signed-out user still resolves
-  // false quickly (≤ ~180ms); a signed-in user racing the load now wins.
+  // false quickly (â‰¤ ~180ms); a signed-in user racing the load now wins.
   await warmOauthCookieStore(baseUrl)
 
   for (const delayMs of [30, 60, 90]) {
@@ -7703,7 +7686,7 @@ async function clearOauthSession(baseUrl) {
       })
     )
   } catch {
-    // Best effort — a stale cookie self-expires anyway.
+    // Best effort â€” a stale cookie self-expires anyway.
   }
 }
 
@@ -7714,16 +7697,16 @@ async function clearOauthSession(baseUrl) {
 // cookie jar rather than try to read the HttpOnly value.
 //
 // `silent` selects the URL the window loads, which decides interactive-vs-silent:
-//   - silent=false (default): load ``/login`` — the public interstitial that
+//   - silent=false (default): load ``/login`` â€” the public interstitial that
 //     renders the "Log in with X" provider chooser. This is the interactive
 //     remote-gateway login the settings UI drives.
 //   - silent=true: load the PROTECTED root ``/`` instead. ``/login`` is a public
 //     route, so loading it NEVER triggers the gate's auto-SSO and always shows
 //     the chooser. Loading a protected page with no session cookie makes the
 //     gate run ``_auto_sso_response``: single registered provider + a live
-//     portal session in this partition → a silent 302 through
-//     ``/auth/login`` → portal ``/oauth/authorize`` (auto-approves org members)
-//     → ``/auth/callback``, which sets the gateway cookie with NO interactive
+//     portal session in this partition â†’ a silent 302 through
+//     ``/auth/login`` â†’ portal ``/oauth/authorize`` (auto-approves org members)
+//     â†’ ``/auth/callback``, which sets the gateway cookie with NO interactive
 //     prompt. This is the per-agent cloud cascade (decisions.md Q5).
 function openOauthLoginWindow(baseUrl, { silent = false } = {}) {
   return new Promise((resolve, reject) => {
@@ -7790,13 +7773,13 @@ function openOauthLoginWindow(baseUrl, { silent = false } = {}) {
       win = new BrowserWindow({
         width: 520,
         height: 720,
-        title: silent ? 'Connecting to Moor Cloud agent…' : 'Sign in to Moor gateway',
+        title: silent ? 'Connecting to Moor Cloud agentâ€¦' : 'Sign in to Moor gateway',
         autoHideMenuBar: true,
         // Silent cascade: start HIDDEN. The auto-SSO 302 chain completes in
         // well under a second, so the window normally never needs to show. We
         // only reveal it as a fallback if the cascade DOESN'T complete quickly
         // (e.g. the portal session lapsed and the gate fell through to the
-        // interactive chooser) — see the reveal timer below.
+        // interactive chooser) â€” see the reveal timer below.
         show: !silent,
         webPreferences: {
           contextIsolation: true,
@@ -7922,45 +7905,12 @@ function fetchJsonViaOauthSession(url, options: any = {}) {
     }, timeoutMs)
 
     request.on('response', res => {
-      const chunks = []
-      res.on('data', chunk => chunks.push(Buffer.from(chunk)))
-      res.on('end', () => {
-        if (timedOut) {
-          return
-        }
-
-        clearTimeout(timer)
-        const text = Buffer.concat(chunks).toString('utf8')
-        const statusCode = res.statusCode || 500
-
-        if (statusCode >= 400) {
-          const err = new Error(`${statusCode}: ${text || ''}`) as any
-          err.statusCode = statusCode
-          reject(err)
-
-          return
-        }
-
-        if (!text) {
-          resolve(null)
-
-          return
-        }
-
-        const looksHtml = /^\s*<(?:!doctype|html)/i.test(text)
-        const contentType = String(res.headers['content-type'] || res.headers['Content-Type'] || '')
-
-        if (looksHtml || contentType.includes('text/html')) {
-          reject(new Error(`Expected JSON from ${url} but got HTML (status ${statusCode}).`))
-
-          return
-        }
-
-        try {
-          resolve(JSON.parse(text))
-        } catch {
-          reject(new Error(`Invalid JSON from ${url} (status ${statusCode}): ${text.slice(0, 200)}`))
-        }
+      wireOauthSessionResponse(res, {
+        url,
+        isTimedOut: () => timedOut,
+        clearTimer: () => clearTimeout(timer),
+        resolve,
+        reject
       })
     })
     request.on('error', error => {
@@ -7999,7 +7949,7 @@ const _nativeTokens = new Map<string, NativeTokenSet>()
 
 function _nativeTokenStorePath() {
   // Co-located with the connection config under userData; one JSON file mapping
-  // baseUrl → { encoding, value } safeStorage payloads.
+  // baseUrl â†’ { encoding, value } safeStorage payloads.
   return path.join(app.getPath('userData'), 'native-oauth-tokens.json')
 }
 
@@ -8024,6 +7974,7 @@ function _persistNativeTokens(baseUrl: string, tokens: NativeTokenSet | null) {
 }
 
 function _loadNativeTokens(baseUrl: string): NativeTokenSet | null {
+  baseUrl = normalizeRemoteBaseUrl(baseUrl)
   const cached = _nativeTokens.get(baseUrl)
 
   if (cached) {
@@ -8040,8 +7991,8 @@ function _loadNativeTokens(baseUrl: string): NativeTokenSet | null {
 }
 
 function _storeNativeTokens(baseUrl: string, tokens: NativeTokenSet) {
-  _nativeTokens.set(baseUrl, tokens)
   _persistNativeTokens(baseUrl, tokens)
+  _nativeTokens.set(baseUrl, tokens)
 }
 
 function _clearNativeTokens(baseUrl: string) {
@@ -8055,11 +8006,11 @@ function hasNativeSession(baseUrl: string): boolean {
   return _loadNativeTokens(baseUrl) !== null
 }
 
-// POST JSON WITHOUT the OAuth cookie partition — used for the native token +
+// POST JSON WITHOUT the OAuth cookie partition â€” used for the native token +
 // refresh exchanges, which are cookieless by design. Thin wrapper over
 // fetchJson (no token) so it shares timeout/JSON handling.
 function postJsonNoAuth(url: string, body: unknown, opts: any = {}) {
-  // resolveJsonBody passes the object through UNCHANGED — fetchJson owns
+  // resolveJsonBody passes the object through UNCHANGED â€” fetchJson owns
   // JSON.stringify. Pre-stringifying here double-encodes the body (a JSON
   // string inside a JSON string), which the gateway's Pydantic model rejects
   // with a 422 "Input should be a valid dictionary" (the native
@@ -8067,50 +8018,26 @@ function postJsonNoAuth(url: string, body: unknown, opts: any = {}) {
   return fetchJson(url, null, { method: 'POST', body: resolveJsonBody(body), ...opts })
 }
 
-// Return a valid native access token for baseUrl, refreshing via
-// /auth/native/refresh if the stored one is at/near expiry. Returns null when
-// there are no tokens or the refresh is terminally rejected (caller re-logins).
-async function ensureNativeAccessToken(baseUrl: string): Promise<string | null> {
-  const tokens = _loadNativeTokens(baseUrl)
+// All explicit mutations go through the coordinator; only its refresh/store
+// dependencies may call the raw persistence helpers above.
+const nativeAccessTokenCoordinator = createNativeAccessTokenCoordinator({
+  clearTokens: _clearNativeTokens,
+  isRefreshAuthRejection: error => readStatusCode(error) === 401,
+  loadTokens: _loadNativeTokens,
+  normalizeBaseUrl: normalizeRemoteBaseUrl,
+  refreshTokens: async (baseUrl, tokens) =>
+    parseTokenResponse(
+      await postJsonNoAuth(
+        nativeRefreshUrl(baseUrl),
+        { refresh_token: tokens.refreshToken, provider: tokens.provider },
+        { timeoutMs: 10_000 }
+      )
+    ),
+  storeTokens: _storeNativeTokens,
+  tokenNeedsRefresh
+})
 
-  if (!tokens) {
-    return null
-  }
-
-  if (!tokenNeedsRefresh(tokens, Math.floor(Date.now() / 1000))) {
-    return tokens.accessToken
-  }
-
-  if (!tokens.refreshToken) {
-    // Access token expired and no RT to rotate — force re-login.
-    _clearNativeTokens(baseUrl)
-
-    return null
-  }
-
-  try {
-    const body = await postJsonNoAuth(
-      nativeRefreshUrl(baseUrl),
-      { refresh_token: tokens.refreshToken, provider: tokens.provider },
-      { timeoutMs: 10_000 }
-    )
-
-    const rotated = parseTokenResponse(body)
-    _storeNativeTokens(baseUrl, rotated)
-
-    return rotated.accessToken
-  } catch (error: any) {
-    // A 401 means the RT is dead (session_expired) — drop tokens so the UI
-    // prompts a fresh native login. A 503/transient keeps them for a retry.
-    if (error && error.statusCode === 401) {
-      _clearNativeTokens(baseUrl)
-
-      return null
-    }
-
-    throw error
-  }
-}
+const ensureNativeAccessToken = nativeAccessTokenCoordinator.ensure
 
 // OAuth-session download that streams the response body straight to a
 // user-selected destination (via finalizeGatewayDownload). The connect timeout
@@ -8174,7 +8101,7 @@ function downloadViaOauthSessionToFile(url, ctx, options: any = {}) {
         return
       }
 
-      // Response headers arrived — cancel the connect timeout so it can't abort
+      // Response headers arrived â€” cancel the connect timeout so it can't abort
       // the stream while the save dialog is open or bytes are still flowing.
       settled = true
       clearTimeout(timer)
@@ -8208,10 +8135,7 @@ function downloadViaOauthSessionToFile(url, ctx, options: any = {}) {
 // can trigger the 404-only compatibility fallback.
 async function finalizeGatewayDownload(res, statusCode, headers, ctx: any = {}) {
   if (statusCode >= 400) {
-    const message = await readGatewayErrorText(res)
-    const error: any = new Error(`${statusCode}: ${message}`)
-    error.statusCode = statusCode
-    throw error
+    throw httpStatusError(statusCode, await readGatewayErrorText(res))
   }
 
   const disposition = headers['content-disposition'] || headers['Content-Disposition']
@@ -8273,17 +8197,11 @@ interface GatewayFileSaveContext {
 }
 
 interface GatewayFileSavePayload {
+  sessionId?: string
   connectionId?: unknown
   path?: unknown
   profile?: unknown
   suggestedName?: unknown
-}
-
-async function gatedFileAuth(connection: GatewayFileConnection) {
-  const nativeAt =
-    connection.authMode === 'oauth' ? await ensureNativeAccessToken(connection.baseUrl).catch(() => null) : null
-
-  return resolveGatedDownloadAuth(connection.authMode, nativeAt, connection.token)
 }
 
 function gatewayFileRequestPath(
@@ -8313,24 +8231,24 @@ async function saveGatewayFile(payload: GatewayFileSavePayload = {}) {
   const fallbackName = path.basename(filePath) || suggested || 'download'
   const ctx = { suggested, fallbackName }
 
-  const requestPaths = gatewayFileRequestPaths(filePath, requestPath =>
-    gatewayFileRequestPath(connection, connectionId, profile, requestPath)
+  const requestPaths = gatewayFileRequestPaths(
+    filePath,
+    requestPath => gatewayFileRequestPath(connection, connectionId, profile, requestPath),
+    payload.sessionId
   )
 
   const url = `${connection.baseUrl}${requestPaths.download}`
 
   try {
-    const auth = await gatedFileAuth(connection)
-
-    if (auth.kind === 'bearer') {
-      return await downloadViaTokenToFile(url, auth.token, ctx, { bearer: auth.token })
+    if (connection.authMode === 'oauth') {
+      return await requestWithOauthFallback(connection.baseUrl, {
+        ensureNativeAccessToken,
+        requestWithBearer: bearer => downloadViaTokenToFile(url, null, ctx, { bearer }),
+        requestWithCookie: () => downloadViaOauthSessionToFile(url, ctx)
+      })
     }
 
-    if (auth.kind === 'cookie') {
-      return await downloadViaOauthSessionToFile(url, ctx)
-    }
-
-    return await downloadViaTokenToFile(url, auth.token, ctx)
+    return await downloadViaTokenToFile(url, connection.token, ctx)
   } catch (error) {
     // Desktop and the remote gateway update independently. A gateway predating
     // /api/fs/download 404s here; fall back (ONLY on 404) to the older capped
@@ -8345,24 +8263,14 @@ async function saveGatewayFile(payload: GatewayFileSavePayload = {}) {
 
 // Compatibility fallback: fetch the file through the capped
 // `/api/fs/read-data-url` route, decode it, and save. Bounded by the gateway's
-// data-URL cap, so it only serves smaller files — enough to keep older gateways
+// data-URL cap, so it only serves smaller files â€” enough to keep older gateways
 // working until they gain the streaming route.
 async function saveGatewayFileViaDataUrl(
   connection: GatewayFileConnection,
   requestPath: string,
   ctx: GatewayFileSaveContext
 ) {
-  const url = `${connection.baseUrl}${requestPath}`
-  const auth = await gatedFileAuth(connection)
-  let json: unknown
-
-  if (auth.kind === 'bearer') {
-    json = await fetchJson(url, null, { bearer: auth.token })
-  } else if (auth.kind === 'cookie') {
-    json = await fetchJsonViaOauthSession(url)
-  } else {
-    json = await fetchJson(url, auth.token)
-  }
+  const json = await fetchJsonForBackend(connection, requestPath)
 
   const dataUrl =
     json && typeof json === 'object' && 'dataUrl' in json && typeof json.dataUrl === 'string' ? json.dataUrl : ''
@@ -8390,50 +8298,24 @@ async function saveGatewayFileViaDataUrl(
   return { path: result.filePath, saved: true }
 }
 
-// Mint a single-use WS ticket for a gated gateway. Returns the ticket string.
-// Prefers a native bearer token (cookieless RFC 8252 flow) when present,
-// falling back to the OAuth cookie partition otherwise.
-// Throws (with statusCode 401) if the session cookie is missing/expired —
-// callers treat that as "needs re-login".
-// Transient transport blips (brief host unreachable, 5xx, timeouts) are retried
-// a few times before failing — those 1-3s flaps were promoting into the
-// full-screen "couldn't start" lockout on reconnect.
+// Mint a single-use WS ticket for a gated gateway.
+// Ticket POSTs are replay-safe; arbitrary REST mutations never use this retry loop.
 async function mintGatewayWsTicket(baseUrl, headers = {}) {
-  return withTransientRetries(async () => {
-    // Native flow: mint the ticket with the bearer token, no cookie involved.
-    const nativeAt = await ensureNativeAccessToken(baseUrl).catch(() => null)
-
-    if (nativeAt) {
-      const body = (await fetchJson(`${baseUrl}/api/auth/ws-ticket`, null, {
-        method: 'POST',
-        timeoutMs: 8_000,
-        bearer: nativeAt,
+  return withTransientRetries(
+    () =>
+      mintOauthGatewayWsTicket(
+        baseUrl,
+        {
+          ensureNativeAccessToken,
+          fetchJson,
+          fetchJsonViaOauthSession
+        },
         headers
-      })) as any
-
-      const ticket = body?.ticket
-
-      if (!ticket || typeof ticket !== 'string') {
-        throw new Error('Gateway did not return a WS ticket.')
-      }
-
-      return ticket
+      ),
+    {
+      isRetryable: (error: unknown) => !(error instanceof NativeAuthChangedError) && !isGatewayAuthRejection(error)
     }
-
-    const body = (await fetchJsonViaOauthSession(`${baseUrl}/api/auth/ws-ticket`, {
-      method: 'POST',
-      timeoutMs: 8_000,
-      headers
-    })) as any
-
-    const ticket = body?.ticket
-
-    if (!ticket || typeof ticket !== 'string') {
-      throw new Error('Gateway did not return a WS ticket.')
-    }
-
-    return ticket
-  })
+  )
 }
 
 // Build a fresh WS URL for the *current* connection. Critical for reconnects:
@@ -8473,11 +8355,11 @@ async function freshGatewayWsUrl(profile) {
 // the OAuth session partition, then (a) discover their hosted agents and (b)
 // connect to any of them with no second interactive sign-in. Both ride the one
 // portal session cookie living in `persist:moor-remote-oauth`:
-//   - discovery  → GET {portal}/api/agents over the partition-bound net; the
+//   - discovery  â†’ GET {portal}/api/agents over the partition-bound net; the
 //     portal session cookie authenticates it (NAS Phase 2.5 accepts the cookie).
-//   - cascade    → opening an agent's own /login in the same partition hits the
+//   - cascade    â†’ opening an agent's own /login in the same partition hits the
 //     portal's silent auto-approve (org member, existing session) and 302s back
-//     with that agent's session cookie — no prompt. Each agent still completes
+//     with that agent's session cookie â€” no prompt. Each agent still completes
 //     its own PKCE exchange; SSO removes the human click, not a security check.
 
 // Canonical Moor portal base URL, overridable for staging/dev. Mirrors the CLI
@@ -8491,7 +8373,7 @@ function resolvePortalBaseUrl() {
   return String(raw).trim().replace(/\/+$/, '')
 }
 
-// Whether the OAuth partition currently holds a live Moor portal session — the
+// Whether the OAuth partition currently holds a live Moor portal session â€” the
 // credential that powers both discovery and the silent cascade. The portal
 // authenticates via PRIVY, not the Moor gateway session cookies, so this
 // checks for the `privy-token` cookie on the portal host (NOT
@@ -8548,7 +8430,7 @@ async function hasLivePortalSession() {
   return readPortal()
 }
 
-// Whether the jar holds the short-lived Privy ACCESS token — the exact cookie
+// Whether the jar holds the short-lived Privy ACCESS token â€” the exact cookie
 // `/api/agents` validates. hasLivePortalSession() answers "signed in at all?"
 // (renewal material counts); this answers "can discovery succeed right now?".
 async function hasPortalAccessToken() {
@@ -8581,13 +8463,13 @@ async function hasPortalAccessToken() {
 // After a Desktop restart the long-lived `privy-session` / `privy-refresh-token`
 // cookies routinely survive while the ~1h `privy-token` access cookie has
 // expired. Discovery then 401s and the only offered recovery used to be a full
-// interactive re-login — even though the persisted refresh material can mint a
+// interactive re-login â€” even though the persisted refresh material can mint a
 // fresh access token with no user action: loading any portal page runs the
 // Privy client, which rotates a new `privy-token` from the refresh session.
 //
 // This drives exactly that, headlessly: a hidden window on the portal root in
 // the OAuth partition, polled until the access cookie lands, torn down on a
-// bounded timeout. Never shown — if renewal can't complete silently the caller
+// bounded timeout. Never shown â€” if renewal can't complete silently the caller
 // falls back to the interactive needsCloudLogin path. The in-flight promise is
 // shared so concurrent discovery + cascade calls ride one renewal.
 let portalAccessRenewal: Promise<boolean> | null = null
@@ -8608,7 +8490,7 @@ function renewPortalAccessSilently() {
       return false
     }
 
-    // No renewal material at all → nothing to renew; interactive login is
+    // No renewal material at all â†’ nothing to renew; interactive login is
     // genuinely required.
     if (!(await hasLivePortalSession())) {
       return false
@@ -8668,7 +8550,7 @@ function renewPortalAccessSilently() {
           width: 520,
           height: 720,
           show: false,
-          title: 'Renewing Moor Cloud session…',
+          title: 'Renewing Moor Cloud sessionâ€¦',
           autoHideMenuBar: true,
           webPreferences: {
             contextIsolation: true,
@@ -8707,7 +8589,7 @@ function renewPortalAccessSilently() {
 
 // Drive a one-time interactive portal sign-in in the OAuth partition. Unlike
 // openOauthLoginWindow (which targets a gateway's /login), this lands on the
-// portal itself so the resulting session cookie is portal-scoped — the cookie
+// portal itself so the resulting session cookie is portal-scoped â€” the cookie
 // that authenticates discovery AND is reused for every silent per-agent
 // cascade. Resolves once the portal session cookie appears.
 function openPortalLoginWindow() {
@@ -8815,7 +8697,7 @@ function openPortalLoginWindow() {
 
 // Discover the hosted (Moor Cloud) agents the signed-in user can see. Calls
 // the NAS trimmed-summary endpoint over the partition-bound net, so the portal
-// session cookie is attached automatically (no bearer needed — NAS accepts the
+// session cookie is attached automatically (no bearer needed â€” NAS accepts the
 // cookie). Returns { agents } on success, or { needsOrgSelection: true, orgs }
 // when the user belongs to multiple orgs and hasn't picked one yet (NAS 409
 // org_selection_required). Pass `org` (a slug/id from a prior org list) to
@@ -8826,7 +8708,7 @@ async function discoverCloudAgents(org?: string) {
 
   if (!(await hasLivePortalSession())) {
     const err = new Error(
-      'You are not signed in to Moor Cloud. Open Settings → Gateway, choose Moor Cloud, and sign in.'
+      'You are not signed in to Moor Cloud. Open Settings â†’ Gateway, choose Moor Cloud, and sign in.'
     ) as any
 
     err.needsCloudLogin = true
@@ -8834,7 +8716,7 @@ async function discoverCloudAgents(org?: string) {
   }
 
   // Renewable session present but the short-lived access token `/api/agents`
-  // validates is gone (typical after a restart — `privy-token` is ~1h,
+  // validates is gone (typical after a restart â€” `privy-token` is ~1h,
   // `privy-session`/`privy-refresh-token` last ~30 days). Renew silently up
   // front instead of letting the request 401 into a re-login demand (#73495).
   if (!(await hasPortalAccessToken())) {
@@ -8870,10 +8752,10 @@ async function discoverCloudAgents(org?: string) {
 
     if (body === undefined) {
       // A 401 means the portal session lapsed (and silent renewal could not
-      // recover it) — surface it as a re-login, not a generic failure.
+      // recover it) â€” surface it as a re-login, not a generic failure.
       if (error && error.statusCode === 401) {
         const err = new Error(
-          'Your Moor Cloud session has expired. Open Settings → Gateway and sign in again.'
+          'Your Moor Cloud session has expired. Open Settings â†’ Gateway and sign in again.'
         ) as any
 
         err.needsCloudLogin = true
@@ -8969,7 +8851,7 @@ function trimCloudAgents(body) {
 // SAME OAuth partition. Because the user already holds a live portal session
 // there, the agent's /oauth/authorize auto-approves (org member) and 302s back,
 // setting that agent's gateway session cookie WITHOUT a second interactive
-// prompt. Reuses openOauthLoginWindow — the window self-closes the instant the
+// prompt. Reuses openOauthLoginWindow â€” the window self-closes the instant the
 // agent's session cookie lands (a silent flow finishes in well under a second;
 // if the portal session were absent it would fall through to an interactive
 // login, which the discovery gate already prevents). Returns once the agent's
@@ -9002,7 +8884,7 @@ async function cloudAgentSilentSignIn(dashboardUrl) {
 // ---------------------------------------------------------------------------
 // Opt-in keychain encryption (secret-storage-policy.ts owns the decision).
 // Default OFF: no safeStorage call is ever made, so a broken/locked macOS
-// login keychain can never throw its password dialog on launch. Settings →
+// login keychain can never throw its password dialog on launch. Settings â†’
 // Gateway exposes the toggle; flipping it re-encrypts (or decrypts) the
 // stored secrets in place.
 // ---------------------------------------------------------------------------
@@ -9030,7 +8912,7 @@ function setSecretStoragePolicy(next: SecretStoragePolicy) {
 
 /**
  * Keychain availability as the renderer should see it. With encryption
- * opted out this must NOT probe safeStorage — isEncryptionAvailable() is
+ * opted out this must NOT probe safeStorage â€” isEncryptionAvailable() is
  * itself a keychain touch that raises the macOS dialog this feature exists
  * to avoid. We report `true` so no plain-text warning banners fire: storing
  * plaintext is the user's chosen (default) mode, not a degraded state.
@@ -9094,7 +8976,7 @@ function rewriteAllStoredSecrets(shouldRewrite: (secret: any) => boolean, reenco
     writeDesktopConnectionsRegistry({ ...registry, connections: registry.connections.map(rewriteBlock) })
   }
 
-  // Native OAuth token store: baseUrl → blob.
+  // Native OAuth token store: baseUrl â†’ blob.
   const io = _nativeTokenStoreIo()
 
   try {
@@ -9119,10 +9001,10 @@ function rewriteAllStoredSecrets(shouldRewrite: (secret: any) => boolean, reenco
  * One-shot legacy migration: builds before the opt-in policy wrote every
  * secret as a safeStorage blob. With encryption now defaulting OFF, decrypt
  * each stored blob once and rewrite it as plain so no future launch touches
- * the keychain. Marked `migrated` whether or not every blob decrypts — a
+ * the keychain. Marked `migrated` whether or not every blob decrypts â€” a
  * broken keychain costs at most ONE prompt (this pass), never one per
  * launch; blobs that would not decrypt are left in place and simply read as
- * absent from then on (classifyStoredSecret → 'drop'), so opting encryption
+ * absent from then on (classifyStoredSecret â†’ 'drop'), so opting encryption
  * back ON later can still recover them on a healthy keychain.
  *
  * Runs before createWindow() so every later read sees the final encodings.
@@ -9166,9 +9048,9 @@ function migrateLegacyEncryptedSecretsOnce() {
 }
 
 /**
- * Settings → Gateway toggle: flip keychain-backed encryption and re-encode
+ * Settings â†’ Gateway toggle: flip keychain-backed encryption and re-encode
  * every stored secret to match. Turning ON encrypts plain blobs through
- * strict safeStorage (throws loudly when the keychain is unusable — the
+ * strict safeStorage (throws loudly when the keychain is unusable â€” the
  * toggle stays off and the renderer shows the error). Turning OFF decrypts
  * back to plain; this is user-initiated, so a keychain prompt here is
  * expected and acceptable.
@@ -9206,7 +9088,7 @@ function applySecretStorageEncryption(on: boolean) {
       )
     } catch (error) {
       // Encryption failed midway: revert the policy so reads keep working
-      // against whatever encodings are on disk (mixed stores read fine —
+      // against whatever encodings are on disk (mixed stores read fine â€”
       // decryptDesktopSecret handles both encodings under either policy).
       setSecretStoragePolicy({ on: false, migrated: true })
       throw error
@@ -9257,7 +9139,7 @@ function decryptDesktopSecret(secret) {
 
   if (secret.encoding === SAFE_STORAGE_ENCODING) {
     // Legacy blob under an opted-out policy: once the one-shot migration pass
-    // has run, never touch safeStorage again — a dead keychain would otherwise
+    // has run, never touch safeStorage again â€” a dead keychain would otherwise
     // prompt on every read. Before that pass, decryption is allowed so the
     // migration itself (and this launch's reads) can recover the value.
     if (classifyStoredSecret(secret, secretStoragePolicy()) === 'drop') {
@@ -9273,7 +9155,7 @@ function decryptDesktopSecret(secret) {
 
   // Any other encoding (a hand-edited config, or one written by a pre-release
   // build) is returned verbatim on purpose: this fallback is what lets such a
-  // config connect at all. Not a plaintext-writing path — nothing in this file
+  // config connect at all. Not a plaintext-writing path â€” nothing in this file
   // persists a token this way.
   return value
 }
@@ -9297,10 +9179,10 @@ function decryptRemoteHeaders(headers) {
  * Turn an editor payload of remote gateway headers into stored secret
  * envelopes. The payload map is authoritative (a name missing from it is
  * cleared); per-name values are:
- *   - non-empty string  → new plaintext value, encrypted like a token
- *   - null              → keep the currently stored envelope for that name
+ *   - non-empty string  â†’ new plaintext value, encrypted like a token
+ *   - null              â†’ keep the currently stored envelope for that name
  *                         (the editor shows a set-but-hidden secret)
- *   - envelope object   → stored verbatim (hand-edited import path)
+ *   - envelope object   â†’ stored verbatim (hand-edited import path)
  * Name filtering (forbidden/managed headers) happens in
  * normalizeRemoteHeaders at the registry/config layer.
  */
@@ -9416,6 +9298,7 @@ function sanitizeConnectionProfiles(raw: Record<string, any>) {
       token?: object
       headers?: object
       org?: string
+      name?: string
       savedSsh?: object
     } = {
       mode: modeIsRemoteLike(entry.mode) ? entry.mode : 'local'
@@ -9450,6 +9333,12 @@ function sanitizeConnectionProfiles(raw: Record<string, any>) {
     // Preserve the Moor Cloud org tag on cloud-mode entries so Settings can
     // reopen into the same org for a per-profile cloud connection.
     if (cleaned.mode === 'cloud') {
+      const cloudName = String(entry.name || '').trim()
+
+      if (cloudName) {
+        cleaned.name = cloudName
+      }
+
       const org = String(entry.org || '').trim()
 
       if (org) {
@@ -9494,7 +9383,7 @@ function readDesktopConnectionConfig() {
     // connection.json still contains the token bytes, and parse throws into the
     // catch below, which swallows the error and falls back to local mode. With
     // the tighten after the parse, exactly the file that is both corrupt AND
-    // world-readable would be the one file never tightened — and nothing would
+    // world-readable would be the one file never tightened â€” and nothing would
     // ever retry it, because the fallback config is not written back. The chmod
     // needs only the path, so it has no reason to wait for valid JSON.
     tightenSecretFileMode(DESKTOP_CONNECTION_CONFIG_PATH)
@@ -9502,7 +9391,7 @@ function readDesktopConnectionConfig() {
     const parsed = JSON.parse(raw)
 
     // NOT done here: migrating a legacy non-safeStorage token payload to
-    // ciphertext at rest. Deferred deliberately — it has to honor the opt-in
+    // ciphertext at rest. Deferred deliberately â€” it has to honor the opt-in
     // plaintext choice PR #62319 adds (re-encrypting it converts a portable
     // credential into a keychain-bound one and can lose the token), write
     // through sanitizeConnectionProfiles below rather than persisting raw
@@ -9540,15 +9429,15 @@ function writeDesktopConnectionConfig(config) {
   // connection.json write (the IPC save/apply handlers and
   // persistSshConnectionToken all land here), and the file carries the
   // safeStorage-encrypted gateway token plus its URL and SSH host/user/keyPath.
-  // safeStorage keeps the token opaque; 0600 keeps the whole record — and the
-  // fields that are NOT encrypted — off other local accounts, matching
+  // safeStorage keeps the token opaque; 0600 keeps the whole record â€” and the
+  // fields that are NOT encrypted â€” off other local accounts, matching
   // native-oauth-tokens.json and desktop-installation.json.
   writeSecretFileAtomic(DESKTOP_CONNECTION_CONFIG_PATH, JSON.stringify(config, null, 2))
   connectionConfigCache = config
   connectionConfigCacheMtime = fs.statSync(DESKTOP_CONNECTION_CONFIG_PATH).mtimeMs
 }
 
-// ── v2 connection registry (multi-source) ──────────────────────────────────
+// â”€â”€ v2 connection registry (multi-source) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
  * Read the v2 registry, importing from v1 connection.json exactly once (when
@@ -9557,7 +9446,7 @@ function writeDesktopConnectionConfig(config) {
  * local-only via normalizeRegistry rather than throwing at boot.
  *
  * An EXISTING registry is additionally reconciled against v1 when the two have
- * drifted — see reconcileRegistryDrift. The one-shot migration cannot cover a
+ * drifted â€” see reconcileRegistryDrift. The one-shot migration cannot cover a
  * user who registered nothing and then pointed Settings -> Gateway at a remote,
  * and until that heals, every launch re-homes them onto a local backend.
  */
@@ -9578,7 +9467,7 @@ function readDesktopConnectionsRegistry() {
 
   if (mtime === null) {
     // First run on this build: import the v1 single-connection config. The v1
-    // file is NOT modified or deleted — older builds keep reading it. The
+    // file is NOT modified or deleted â€” older builds keep reading it. The
     // migration is deterministic over the v1 input, so even if two processes
     // race the first run (updater relaunch, second window), both derive the
     // same registry and the later atomic write is a no-op content-wise.
@@ -9605,7 +9494,7 @@ function readDesktopConnectionsRegistry() {
   } catch {
     // Whole-file corruption (truncated write, mangled hand-edit). The
     // degraded local-only registry keeps boot working, but the file BYTES are
-    // the user's connection data — preserve them in a sidecar BEFORE any
+    // the user's connection data â€” preserve them in a sidecar BEFORE any
     // later write (drift reconcile, connection save) overwrites the file
     // (#94246: recovery must never be data loss).
     preserveCorruptRegistrySidecar()
@@ -9667,7 +9556,7 @@ function preserveCorruptRegistrySidecar() {
       `[connections] connections.json could not be parsed; preserved the original file at ${sidecar} and continuing with a local-only registry. No connection data was deleted.`
     )
   } catch {
-    // The read itself failed (missing file, permissions) — nothing to save.
+    // The read itself failed (missing file, permissions) â€” nothing to save.
   }
 }
 
@@ -9682,7 +9571,7 @@ function writeDesktopConnectionsRegistry(registry) {
 
 /**
  * Renderer-facing view of a registry entry: token bytes never cross the IPC
- * boundary — the renderer gets a preview + set flag, mirroring
+ * boundary â€” the renderer gets a preview + set flag, mirroring
  * sanitizeDesktopConnectionConfig.
  */
 function sanitizeRegistryConnection(entry) {
@@ -9699,7 +9588,7 @@ function sanitizeRegistryConnection(entry) {
     tokenPreview: tokenPreview(decrypted),
     ...(knownInstallId ? { installId: knownInstallId } : {}),
     // Header VALUES are secrets (Cloudflare Access client secrets etc.) and
-    // never cross the IPC boundary — the renderer only needs the names to
+    // never cross the IPC boundary â€” the renderer only needs the names to
     // render the edit form.
     headerNames: headers && typeof headers === 'object' ? Object.keys(headers) : []
   }
@@ -9718,7 +9607,7 @@ function sanitizeConnectionsRegistry(registry = readDesktopConnectionsRegistry()
     lastUsed: registry.lastUsed,
     secureTokenStorage,
     connections: registry.connections.map(sanitizeRegistryConnection),
-    // Surface quarantined-entry NOTICES only (reason + best-effort label) —
+    // Surface quarantined-entry NOTICES only (reason + best-effort label) â€”
     // the raw entries can carry token envelopes and stay in the file (#94246).
     quarantined: (registry.quarantined || []).map(q => ({
       reason: String(q?.reason || 'unknown'),
@@ -9733,10 +9622,10 @@ function sanitizeConnectionsRegistry(registry = readDesktopConnectionsRegistry()
 /**
  * Save (create or edit) a registry connection from a renderer payload.
  * Edits merge over the stored entry (mergeConnectionInput) so fields the
- * editor doesn't carry — cloud `org`, ssh `remoteMoorPath`/`remoteProfile` —
+ * editor doesn't carry â€” cloud `org`, ssh `remoteMoorPath`/`remoteProfile` â€”
  * survive a rename. Token handling mirrors coerceDesktopConnectionConfig: an
  * incoming plaintext token is encrypted (honoring the same allowPlainTextToken
- * opt-in seam as Settings → Gateway); an absent token field inherits the
+ * opt-in seam as Settings â†’ Gateway); an absent token field inherits the
  * stored envelope on edit; switching auth away from 'token' clears it
  * (normalizeConnectionInput drops tokens on non-token entries).
  */
@@ -9779,7 +9668,7 @@ async function saveRegistryConnection(input: any = {}) {
 
   writeDesktopConnectionsRegistry(upsertConnection(registry, entry))
 
-  // A dial-material edit (endpoint/auth/ssh routing — NOT a label rename)
+  // A dial-material edit (endpoint/auth/ssh routing â€” NOT a label rename)
   // leaves pooled backends under `conn:<id>::*` and renderer sockets pointing
   // at the OLD target while the UI shows the new one. Recycle them: stop this
   // connection's pooled backends/tunnels and tell renderers to dispose+redial
@@ -9790,7 +9679,7 @@ async function saveRegistryConnection(input: any = {}) {
   } else {
     // Every OTHER successful save (a brand-new connection, a label rename)
     // must still republish the registry snapshot, or windows that didn't
-    // perform the save — and the switcher menu fed by $connectionsRegistry —
+    // perform the save â€” and the switcher menu fed by $connectionsRegistry â€”
     // keep painting the stale list until reload (#95393). 'saved' is a pure
     // registry-refresh signal: no sockets moved, so listeners must not
     // dispose or redial anything for it.
@@ -9813,7 +9702,7 @@ function readActiveDesktopProfile() {
       return name
     }
   } catch {
-    // Missing or malformed → no preference.
+    // Missing or malformed â†’ no preference.
   }
 
   return null
@@ -9848,7 +9737,7 @@ function isMoorProcess(pid) {
 
     return cmdline.includes('moor')
   } catch {
-    // /proc not available (macOS) — fall back to ps. Use -o args= to inspect
+    // /proc not available (macOS) â€” fall back to ps. Use -o args= to inspect
     // the full command line, not just the process name.  -o comm= would return
     // "python3" for any Python process, creating false positives.
     try {
@@ -9866,7 +9755,7 @@ function isMoorProcess(pid) {
 // not yet exist.  Runs exactly once (no-op once the file exists).  Priority:
 //   1. Legacy ~/.moor/active_profile (explicit CLI choice via moor profile use)
 //   2. Running gateway (gateway.pid with verified liveness + moor identity)
-//   3. state.db heuristics (hybrid recency×size score picks the primary workspace)
+//   3. state.db heuristics (hybrid recencyÃ—size score picks the primary workspace)
 // The stored JSON includes _migrated:true so the renderer can optionally surface
 // a one-time notification that the profile was auto-detected.
 //
@@ -9915,9 +9804,9 @@ async function sanitizeDesktopConnectionConfig(config = readDesktopConnectionCon
   const mode = envOverride ? 'remote' : savedMode === 'ssh' ? 'ssh' : modeIsRemoteLike(savedMode) ? savedMode : 'local'
 
   // Whether the OS keyring (safeStorage) can encrypt the saved token. When
-  // false the renderer knows to offer the plain-text opt-in in Settings →
+  // false the renderer knows to offer the plain-text opt-in in Settings â†’
   // Gateway. With keychain encryption opted out (the default) this reports
-  // true WITHOUT touching safeStorage — probing is itself a keychain touch
+  // true WITHOUT touching safeStorage â€” probing is itself a keychain touch
   // that raises the macOS password dialog (see probeSecureTokenStorage).
   const secureTokenStorage = probeSecureTokenStorage()
 
@@ -9931,9 +9820,9 @@ async function sanitizeDesktopConnectionConfig(config = readDesktopConnectionCon
   if (authMode === 'oauth' && remoteUrl) {
     try {
       // Display signal: treat a live RT cookie as "connected" even if the AT
-      // cookie has lapsed — the gateway refreshes the AT on the next request,
+      // cookie has lapsed â€” the gateway refreshes the AT on the next request,
       // so the session is still usable. A stored native bearer token (cookieless
-      // RFC 8252 flow) counts as connected too — otherwise a completed native
+      // RFC 8252 flow) counts as connected too â€” otherwise a completed native
       // sign-in shows "not connected" in Settings. The authoritative liveness
       // check is the ws-ticket mint in resolveRemoteBackend at actual connect time.
       remoteOauthConnected = oauthSessionIsLive(hasNativeSession(remoteUrl), await hasLiveOauthSession(remoteUrl))
@@ -9950,12 +9839,12 @@ async function sanitizeDesktopConnectionConfig(config = readDesktopConnectionCon
     remoteOauthConnected,
     remoteUrl,
     // The persisted Moor Cloud org (slug/id) for a cloud connection, or '' for
-    // remote/local. Lets Settings → Gateway reopen into the same org.
+    // remote/local. Lets Settings â†’ Gateway reopen into the same org.
     cloudOrg: mode === 'cloud' ? String(block.org || '') : '',
     remoteTokenPreview: tokenPreview(remoteToken),
     remoteTokenSet: Boolean(remoteToken),
     // Whether the OS keyring can encrypt a token; drives the plain-text opt-in
-    // affordance in Settings → Gateway on keyring-less Linux.
+    // affordance in Settings â†’ Gateway on keyring-less Linux.
     secureTokenStorage,
     // Whether the saved token is currently persisted in plain text.
     remoteTokenPlainText,
@@ -9975,14 +9864,14 @@ async function sanitizeDesktopConnectionConfig(config = readDesktopConnectionCon
 // authenticate via the login-window session cookie (verified at connect time in
 // resolveRemoteBackend), so only token-auth remotes require a saved token.
 // `org` (optional) is the Moor Cloud org slug/id the instance was discovered
-// under — persisted so Settings can reopen into the same org; omitted from the
+// under â€” persisted so Settings can reopen into the same org; omitted from the
 // block when empty so plain remote connections stay unchanged.
-function buildRemoteBlock(remoteUrl, authMode, token, org?: string, headers?: object) {
+function buildRemoteBlock(remoteUrl, authMode, token, org?: string, headers?: object, name?: string) {
   if (authMode !== 'oauth' && !decryptDesktopSecret(token)) {
     throw new Error('Remote gateway session token is required.')
   }
 
-  const block: { url: string; authMode: string; token: object; headers?: object; org?: string } = {
+  const block: { url: string; authMode: string; token: object; headers?: object; org?: string; name?: string } = {
     url: normalizeRemoteBaseUrl(remoteUrl),
     authMode,
     token
@@ -9992,6 +9881,12 @@ function buildRemoteBlock(remoteUrl, authMode, token, org?: string, headers?: ob
 
   if (Object.keys(remoteHeaders).length > 0) {
     block.headers = remoteHeaders
+  }
+
+  const nameValue = typeof name === 'string' ? name.trim() : ''
+
+  if (nameValue) {
+    block.name = nameValue
   }
 
   const orgValue = typeof org === 'string' ? org.trim() : ''
@@ -10019,7 +9914,7 @@ function coerceDesktopConnectionConfig(input: any = {}, existing = readDesktopCo
   // so switching to local or remote must NOT inherit them (otherwise the stale
   // cloud URL lingers and re-selecting Cloud looks "already connected"). When the
   // saved block was cloud and the new mode is not cloud, start from an empty
-  // block. (remote↔local toggles still preserve a real remote URL as before.)
+  // block. (remoteâ†”local toggles still preserve a real remote URL as before.)
   const existingMode = key ? existing.profiles?.[key]?.mode : existing.mode
   const leavingCloud = existingMode === 'cloud' && mode !== 'cloud'
   const leavingSsh = rawExistingBlock.mode === 'ssh' && mode !== 'ssh' && mode !== 'local'
@@ -10029,16 +9924,29 @@ function coerceDesktopConnectionConfig(input: any = {}, existing = readDesktopCo
   const authMode = resolveAuthMode(input.remoteAuthMode, existingBlock.authMode)
   // Cloud org: only meaningful for 'cloud' mode. Explicit input wins; otherwise
   // inherit the saved org. A plain 'remote' connection never carries an org
-  // (switching cloud→remote drops it), so it stays unset unless mode is cloud.
+  // (switching cloudâ†’remote drops it), so it stays unset unless mode is cloud.
   const cloudOrg = mode === 'cloud' ? String(input.cloudOrg ?? existingBlock.org ?? '').trim() : ''
+
+  // A saved name belongs to this exact gateway, not another instance in the same org.
+  const cloudName =
+    mode === 'cloud'
+      ? String(
+          input.cloudName ??
+            (existingBlock.url && normalizeRemoteBaseUrl(remoteUrl) === normalizeRemoteBaseUrl(existingBlock.url)
+              ? existingBlock.name
+              : '') ??
+            ''
+        ).trim()
+      : ''
+
   const incomingToken = typeof input.remoteToken === 'string' ? input.remoteToken.trim() : ''
 
   const remoteHeaders =
     input.remoteHeaders && typeof input.remoteHeaders === 'object' ? input.remoteHeaders : existingBlock.headers
 
   // Persist decision lives in hardening.resolvePersistedRemoteToken so the
-  // IPC-propagation seam (allowPlainTextToken → encryptDesktopSecret opt-in) is
-  // covered by a focused regression test. Pass allowPlainText through RAW — the
+  // IPC-propagation seam (allowPlainTextToken â†’ encryptDesktopSecret opt-in) is
+  // covered by a focused regression test. Pass allowPlainText through RAW â€” the
   // helper coerces with `=== true`, so a truthy-non-true value never enables
   // plain-text storage, and that strictness is asserted in exactly one place.
   const nextToken = resolvePersistedRemoteToken({
@@ -10074,7 +9982,7 @@ function coerceDesktopConnectionConfig(input: any = {}, existing = readDesktopCo
     if (remoteLike) {
       profiles[key] = {
         mode,
-        ...buildRemoteBlock(remoteUrl, authMode, nextToken, cloudOrg, remoteHeaders)
+        ...buildRemoteBlock(remoteUrl, authMode, nextToken, cloudOrg, remoteHeaders, cloudName)
       }
     } else {
       const localEntry = localProfileEntry(rawExistingBlock)
@@ -10094,7 +10002,7 @@ function coerceDesktopConnectionConfig(input: any = {}, existing = readDesktopCo
   }
 
   const nextRemote = remoteLike
-    ? buildRemoteBlock(remoteUrl, authMode, nextToken, cloudOrg, remoteHeaders)
+    ? buildRemoteBlock(remoteUrl, authMode, nextToken, cloudOrg, remoteHeaders, cloudName)
     : existingMode === 'ssh'
       ? rawExistingBlock
       : { url: remoteUrl ? normalizeRemoteBaseUrl(remoteUrl) : remoteUrl, authMode, token: nextToken }
@@ -10156,52 +10064,10 @@ async function buildRemoteConnection(
   const host = remoteHost || hostLabelFromBaseUrl(baseUrl)
 
   if (authMode === 'oauth') {
-    // OAuth gateway: auth comes from EITHER a native bearer token (cookieless
-    // RFC 8252 flow) OR the session cookies in the OAuth partition. Liveness is
-    // NOT "is the access-token cookie present?" — Portal issues a 24h rotating
-    // refresh token (moor #37247), and the gateway middleware transparently
-    // rotates a fresh ~15-min access token from it on the next authenticated
-    // request. So a session with an expired AT cookie but a live RT cookie is
-    // still perfectly connectable. We early-out only when NEITHER a native
-    // token NOR any cookie is present, then mint a ws-ticket (which itself
-    // prefers the native bearer) as the authoritative liveness check.
-    //
-    // The native-token check is essential: the native login stores bearer
-    // tokens (no cookie is ever set), so gating solely on hasLiveOauthSession
-    // here would reject a freshly-completed native sign-in and loop the UI back
-    // into "not signed in" even though mintGatewayWsTicket would succeed with
-    // the stored bearer.
-    if (
-      !oauthSessionIsLive(hasNativeSession(baseUrl), await hasLiveOauthSession(baseUrl)) &&
-      oauthGuardMayHardFail(await gatewayAuthProviders(baseUrl, remoteHeaders))
-    ) {
-      throw makeUnsignedOauthError()
-    }
-
-    let ticket
-
-    try {
-      ticket = await mintGatewayWsTicket(baseUrl, remoteHeaders)
-    } catch (error) {
-      // For a Moor-managed Cloud agent, a 502/503/504 from the WS-ticket mint
-      // means the backend server itself is down — the actionable Cloud-down
-      // error. This boundary runs BEFORE the readiness loop, so without this
-      // the ticket wrapper below would swallow the server-fault classification
-      // and the renderer would never see isCloudBackendDown. Preserve the
-      // existing 401/403 reauth and generic transport behavior for everything
-      // else (#85335).
-      const cloudError = makeMoorCloudBackendDownError(baseUrl, error)
-
-      if (cloudError !== null) {
-        throw cloudError
-      }
-
-      throw gatewayTicketFailure(
-        error,
-        oauthTicketFailureAuthMessage(hasNativeSession(baseUrl)),
-        'Could not reach the remote Moor gateway while refreshing its WebSocket ticket. Try reconnecting.'
-      )
-    }
+    const ticket = await resolveRemoteOauthTicket(baseUrl, remoteHeaders, {
+      hasNativeSession,
+      mintGatewayWsTicket
+    })
 
     const wsUrl = buildGatewayWsUrlWithTicket(baseUrl, ticket)
 
@@ -10225,7 +10091,7 @@ async function buildRemoteConnection(
   if (!token) {
     throw new Error(
       'Remote Moor gateway is selected, but no session token is saved. ' +
-        'Open Settings → Gateway and save a token, or switch back to Local.'
+        'Open Settings â†’ Gateway and save a token, or switch back to Local.'
     )
   }
 
@@ -10248,6 +10114,9 @@ async function buildRemoteConnection(
 }
 
 const sshConnections = new Map<string, any>()
+const sshIsolatedKeepalives = createSshIsolatedKeepaliveRegistry({
+  log: chunk => sshRememberLog(chunk)
+})
 const desktopInstallationId = loadOrCreateInstallationId(DESKTOP_INSTALLATION_PATH)
 
 // Managed SSH update lifecycle (#93042): while an update owns a registered
@@ -10428,10 +10297,7 @@ function clearManagedSshRecovery(connectionId, correlationId) {
 }
 
 const sshBootstrapCoordinator = createBootstrapCoordinator()
-
-let sshQuitTeardownDone = false
-let sshQuitTeardownPromise: Promise<void> | null = null
-let backendQuitTeardownDone = false
+const sshTeardowns = createSshTeardownTracker()
 
 function sshScopeKey(profile) {
   return connectionScopeKey(profile) || ''
@@ -10461,6 +10327,7 @@ async function sshProbeReuseProof(baseUrl, token, spawnNonce) {
 
 async function teardownSshConnection(profile) {
   const scope = sshScopeKey(profile)
+  sshIsolatedKeepalives.stop(scope)
   const state = sshConnections.get(scope)
 
   if (!state) {
@@ -10476,28 +10343,30 @@ async function teardownSshConnection(profile) {
   // alone leaves the backend at pid 1 holding state.db (#91668).
   // Windows remotes use a different lifecycle (connectWindowsRemote) and
   // are left to a follow-up; POSIX is the leak that OOM'd gateways.
-  await teardownSshState(
-    {
-      ...state,
-      ownershipId: state.ownershipId || sshOwnershipKey(profile)
-    },
-    {
-      cleanupRemote:
-        state.remotePlatform === 'Windows'
-          ? async () => {
-              // connectWindowsRemote does not share POSIX lock/kill. Stay
-              // silent on the kill path, but leave a log so quit is not a
-              // mysterious no-op on Windows remotes.
-              sshRememberLog('[ssh] skip remote serve teardown on Windows remotes; POSIX disconnect does not apply')
-            }
-          : remoteLifecycle.disconnect
-    }
+  await sshTeardowns.track(state.ssh, () =>
+    teardownSshState(
+      {
+        ...state,
+        ownershipId: state.ownershipId || sshOwnershipKey(profile)
+      },
+      {
+        cleanupRemote:
+          state.remotePlatform === 'Windows'
+            ? async () => {
+                // connectWindowsRemote does not share POSIX lock/kill. Stay
+                // silent on the kill path, but leave a log so quit is not a
+                // mysterious no-op on Windows remotes.
+                sshRememberLog('[ssh] skip remote serve teardown on Windows remotes; POSIX disconnect does not apply')
+              }
+            : remoteLifecycle.disconnect
+      }
+    )
   )
 }
 
 // CRITICAL: this must mirror resolveRemoteBackend's precedence, not just return
 // any cached SSH state. A per-profile token/OAuth override wins over a global
-// SSH connection — so if the active profile resolves to a NON-SSH backend, the
+// SSH connection â€” so if the active profile resolves to a NON-SSH backend, the
 // terminal must NOT fall through to a global SSH host.
 function activeSshTerminalTarget(webContentsId?: number) {
   const windowRoute = typeof webContentsId === 'number' ? windowConnectionRoutes.get(webContentsId) : null
@@ -10593,7 +10462,7 @@ async function resetPreviewReach(webContentsId?: number) {
 /**
  * Rewrite a gateway-loopback URL into one this machine can actually load.
  *
- * Returns the URL unchanged when no rewrite is needed or possible — a local
+ * Returns the URL unchanged when no rewrite is needed or possible â€” a local
  * backend (the address is already true), a non-loopback host, or a url/cloud
  * remote with no tunnel to borrow. Callers must not treat an unchanged URL as
  * failure; the pane explains an unreachable one on its own.
@@ -10732,6 +10601,7 @@ async function rollbackSshBootstrapResult(ssh, result, profile, sshConfig, bound
   }
 
   if (sshConnections.get(scope)?.ssh === ssh) {
+    sshIsolatedKeepalives.stop(scope)
     sshConnections.delete(scope)
   }
 
@@ -10766,6 +10636,7 @@ async function bootstrapSshConnectionInner(profile, sshConfig, reuseToken, sourc
     }
 
     ssh = null
+    sshIsolatedKeepalives.stop(scope)
     sshConnections.delete(scope)
   }
 
@@ -10798,6 +10669,7 @@ async function bootstrapSshConnectionInner(profile, sshConfig, reuseToken, sourc
     const lifecycle = platform.os === 'Windows' ? connectWindowsRemote : remoteLifecycle.connect
     result = await lifecycle({
       ssh,
+      platform,
       profile: resolveRemoteSshDashboardProfile(sshConfig.remoteProfile, profile),
       remoteMoorPath: sshConfig.remoteMoorPath || '',
       ownershipId: sshOwnershipKey(profile),
@@ -10809,6 +10681,9 @@ async function bootstrapSshConnectionInner(profile, sshConfig, reuseToken, sourc
       probeReuseProof: sshProbeReuseProof,
       adoptServedToken: adoptServedDashboardToken,
       rememberLog: sshRememberLog,
+      // Same launch-time free-tier decision the local spawns get; the POSIX
+      // spawn command adds MOOR_GUEST_ONBOARDING=1 only when this is on.
+      guestOnboarding: GUEST_ONBOARDING,
       signal: lease.signal
     })
   } catch (error: any) {
@@ -10824,7 +10699,7 @@ async function bootstrapSshConnectionInner(profile, sshConfig, reuseToken, sourc
       // stale entry means every subsequent boot re-attempts through the same
       // wedged master/tunnel and fails identically until the user re-enters
       // the connection details (whose changed fingerprint forces a teardown).
-      // Tear it down now so the next attempt — automatic retry included —
+      // Tear it down now so the next attempt â€” automatic retry included â€”
       // bootstraps a fresh master, which is exactly what manual re-entry
       // did (#82679).
       try {
@@ -10887,6 +10762,7 @@ async function bootstrapSshConnectionInner(profile, sshConfig, reuseToken, sourc
         // site may label a registry-qualified SSH scope as the primary backend.
         primaryRegistryScope: metadata.primaryRegistryScope === true
       })
+      sshIsolatedKeepalives.start(scope, { baseUrl: result.baseUrl, token: result.token })
     },
     rollback: error => rollbackSshBootstrapResult(ssh, result, profile, sshConfig, error)
   })
@@ -10964,7 +10840,7 @@ function persistSshConnectionToken(profile, source, token, registryConnectionId 
 // Resolve the remote backend for a given profile, or null when that profile
 // should run a LOCAL backend. Precedence:
 //   1. explicit per-profile remote override (connection.json `profiles[name]`)
-//   2. env override (MOOR_DESKTOP_REMOTE_URL/_TOKEN) — applies app-wide
+//   2. env override (MOOR_DESKTOP_REMOTE_URL/_TOKEN) â€” applies app-wide
 //   3. global remote (connection.json `mode: 'remote'`)
 // A null/empty profile resolves the env/global remote, so legacy callers and
 // the connection test (which pass no profile) are unchanged.
@@ -11075,7 +10951,7 @@ async function resolveRemoteBackend(profile, options: { poolKey?: string; primar
 }
 
 // A remote profile's sessions live on its remote host's state.db, not on a local
-// file the primary can open — so reads for it must route to the remote backend,
+// file the primary can open â€” so reads for it must route to the remote backend,
 // not the local-disk fast path. These three helpers drive that (see
 // interceptSessionReadForRemote).
 function profileHasRemoteOverride(profile) {
@@ -11088,10 +10964,10 @@ function configuredRemoteProfileNames() {
   return Object.keys(config.profiles || {}).filter(name => profileHasRemoteConnection(config, name))
 }
 
-// True when the app is in app-global remote mode (Settings → "All profiles" →
+// True when the app is in app-global remote mode (Settings â†’ "All profiles" â†’
 // Remote/Cloud, or the env override): a SINGLE remote backend serves every
-// profile via ?profile=. Cloud counts — it resolves to a remote backend (Q6).
-// Distinct from per-profile overrides — here there's one host for all.
+// profile via ?profile=. Cloud counts â€” it resolves to a remote backend (Q6).
+// Distinct from per-profile overrides â€” here there's one host for all.
 function globalRemoteActive() {
   if (process.env.MOOR_DESKTOP_REMOTE_URL) {
     return true
@@ -11108,7 +10984,7 @@ function globalRemoteActive() {
   // backend remote even while the v1 config.mode still says 'local'. Every
   // consumer of this flag ("one remote host serves every profile") must see
   // that, or the local-entry routes delegate into a primary that now dials
-  // remote — respawning the exact loopback children the resolver rung in
+  // remote â€” respawning the exact loopback children the resolver rung in
   // desktop-remote-route.ts eliminates.
   return registryPrimaryIsRemote()
 }
@@ -11126,11 +11002,11 @@ function registryPrimaryIsRemote() {
   }
 }
 
-// True when the PRIMARY profile's backend resolves to a remote/cloud host —
+// True when the PRIMARY profile's backend resolves to a remote/cloud host â€”
 // i.e. resolveRemoteBackend(primaryProfileKey()) would return a descriptor
-// rather than null. Mirrors that function's precedence (per-profile override →
-// env → global) so a startMoor() failure can be classified as remote (never
-// latch — transient, must stay retryable) vs local (latch to break install
+// rather than null. Mirrors that function's precedence (per-profile override â†’
+// env â†’ global) so a startMoor() failure can be classified as remote (never
+// latch â€” transient, must stay retryable) vs local (latch to break install
 // loops) BEFORE the throwing resolve/mint runs.
 function primaryBackendIsRemote() {
   return Boolean(profileHasRemoteOverride(primaryProfileKey())) || globalRemoteActive()
@@ -11144,30 +11020,16 @@ async function fetchJsonForProfile(profile, path) {
 // Issue an arbitrary method against a profile's resolved backend, parsed JSON.
 async function requestJsonForProfile(profile: string, path: string, method: string, body?: string) {
   const conn = await ensureBackend(profile)
-  const url = `${conn.baseUrl}${path}`
-  const opts = { method, body, timeoutMs: DEFAULT_FETCH_TIMEOUT_MS }
 
-  if (conn.authMode === 'oauth') {
-    // Native RFC 8252 flow: authenticate with the bearer token (cookieless)
-    // when we hold one for this gateway; otherwise use the cookie partition.
-    const nativeAt = await ensureNativeAccessToken(conn.baseUrl).catch(() => null)
-
-    if (nativeAt) {
-      return fetchJson(url, null, { ...opts, bearer: nativeAt, headers: conn.headers })
-    }
-
-    return fetchJsonViaOauthSession(url, { ...opts, headers: conn.headers })
-  }
-
-  return fetchJson(url, conn.token, { ...opts, headers: conn.headers })
+  return fetchJsonForBackend(conn, path, { method, body, timeoutMs: DEFAULT_FETCH_TIMEOUT_MS })
 }
 
 async function probeRemoteAuthMode(rawUrl) {
   // Determine how a remote gateway expects callers to authenticate, WITHOUT
   // sending any credentials. ``/api/status`` is public on every Moor
   // gateway (it backs the portal liveness probe) and reports:
-  //   auth_required: true  → OAuth gate is engaged (cookie + ws-ticket auth)
-  //   auth_required: false → loopback/--insecure: legacy session-token auth
+  //   auth_required: true  â†’ OAuth gate is engaged (cookie + ws-ticket auth)
+  //   auth_required: false â†’ loopback/--insecure: legacy session-token auth
   // ``/api/auth/providers`` (also public, only meaningful when gated) gives
   // the human-facing provider name(s) for the login button label.
   //
@@ -11252,7 +11114,7 @@ async function testDesktopConnectionConfig(input: any = {}) {
     try {
       // One bounded retry on TIMEOUT only: a cold Windows backend's first
       // PowerShell exec can exceed the budget (observed live), and a timeout is
-      // indeterminate — unlike auth/host-key/unreachable, which are verdicts.
+      // indeterminate â€” unlike auth/host-key/unreachable, which are verdicts.
       let attempt = 0
 
       for (;;) {
@@ -11353,7 +11215,7 @@ async function testDesktopConnectionConfig(input: any = {}) {
 
   // The HTTP status check above proves the backend is reachable, but the chat
   // surface only works once the renderer's live WebSocket to ``/api/ws``
-  // connects — a separate transport with separate server-side guards (Host/
+  // connects â€” a separate transport with separate server-side guards (Host/
   // Origin, ws-ticket/token auth). Validating only the HTTP side produced a
   // false-positive "reachable" while the real boot still failed with "Could not
   // connect to Moor gateway". Mirror the renderer's connect here so the test
@@ -11384,25 +11246,9 @@ async function testDesktopConnectionConfig(input: any = {}) {
 }
 
 async function fetchConnectionStatus(baseUrl, authMode, token, headers = {}) {
-  const url = `${baseUrl}/api/status`
-
-  if (authMode === 'oauth') {
-    // Native PKCE bearer first, OAuth session cookies second — the same two
-    // credentials real traffic uses, in the same order. A refresh failure is
-    // NOT a silent downgrade to an anonymous probe: the cookie path is still
-    // an authenticated request, and if neither credential works the probe
-    // fails, which is the correct answer for a gateway we cannot reach with
-    // the credentials we hold.
-    const nativeAt = await ensureNativeAccessToken(baseUrl).catch(() => null)
-
-    if (nativeAt) {
-      return fetchJson(url, null, { timeoutMs: 8_000, bearer: nativeAt, headers })
-    }
-
-    return fetchJsonViaOauthSession(url, { timeoutMs: 8_000, headers })
-  }
-
-  return fetchJson(url, token, { timeoutMs: 8_000, headers })
+  // /api/status is public on newer gateways; the subsequent ticket/WS probe
+  // remains authoritative. Older gated status routes retain cookie fallback.
+  return fetchJsonForBackend({ baseUrl, authMode, token, headers }, '/api/status', { timeoutMs: 8_000 })
 }
 
 function resetBootProgressForReconnect() {
@@ -11419,7 +11265,7 @@ function resetBootProgressForReconnect() {
 }
 
 function stopBackendChild(child) {
-  stopBackendChildImpl(child, { forceKillProcessTree, isWindows: IS_WINDOWS })
+  void localBackendLifecycle.stop(child).catch(error => rememberLog(`Backend teardown failed: ${error.message}`))
 }
 
 // Soft gateway-mode apply: tear down the primary without resetting boot UI or
@@ -11430,6 +11276,8 @@ function resetMoorConnection({ soft = false } = {}) {
   backendStartFailure = null
   remoteReauthFailure = null
   remoteLiveness.clear()
+  // The next startMoor() re-reads active-profile.json for its launch profile.
+  primaryProfilePin.clear()
   const moorProcess = backendConnectionState.invalidate()
   stopBackendChild(moorProcess)
 
@@ -11490,60 +11338,32 @@ function broadcastConnectionsChanged(payload: { connectionId: string; reason: 'r
   }
 }
 
-async function waitForBackendExit(child, timeoutMs = 5000) {
-  if (!child || child.exitCode !== null || child.signalCode !== null) {
-    return
+const backendExitWaits = new Map<any, Promise<void>>()
+
+function waitForBackendExit(child, timeoutMs = 5000) {
+  const existing = backendExitWaits.get(child)
+
+  if (existing) {
+    return existing
   }
 
-  const exited = () => child.exitCode !== null || child.signalCode !== null
+  const waiting = waitForBackendExitImpl(child, { forceKillProcessTree, isWindows: IS_WINDOWS }, timeoutMs)
+  backendExitWaits.set(child, waiting)
+  void waiting.then(
+    () => backendExitWaits.delete(child),
+    () => backendExitWaits.delete(child)
+  )
 
-  const wait = delay =>
-    new Promise<void>(resolve => {
-      if (exited()) {
-        resolve()
-
-        return
-      }
-
-      const timer = setTimeout(resolve, delay)
-      child.once('exit', () => {
-        clearTimeout(timer)
-        resolve()
-      })
-    })
-
-  await wait(timeoutMs)
-
-  if (exited()) {
-    return
-  }
-
-  try {
-    if (IS_WINDOWS && Number.isInteger(child.pid)) {
-      forceKillProcessTree(child.pid)
-    } else if (Number.isInteger(child.pid)) {
-      try {
-        process.kill(-child.pid, 'SIGKILL')
-      } catch {
-        child.kill('SIGKILL')
-      }
-    } else {
-      child.kill('SIGKILL')
-    }
-  } catch {
-    return
-  }
-
-  // Await the escalation as well; do not let shutdown or failed adoption race
-  // a still-running backend.
-  await wait(1000)
+  return waiting
 }
 
-// The profile the primary (window) backend runs as. readActiveDesktopProfile()
-// returns the desktop's stored preference, or null when unset (legacy launch
-// that defers to active_profile / default).
+// The profile the primary (window) backend was actually LAUNCHED as. Pinned by
+// startMoor() and cleared when the primary is torn down; while a primary is
+// live this must NOT follow active-profile.json (see primary-profile-pin.ts).
+const primaryProfilePin = new PrimaryProfilePin()
+
 function primaryProfileKey() {
-  return readActiveDesktopProfile() || 'default'
+  return primaryProfilePin.resolve(readActiveDesktopProfile)
 }
 
 // Options describing the current connection setup for `resolveProfileBackendRoute`.
@@ -11554,7 +11374,7 @@ function profileRouteOptions(profile, request?) {
 
   return {
     // A desktop profile can be only a client-side routing alias. Keep backend
-    // endpoint filters in the SSH target's namespace (e.g. mara → default).
+    // endpoint filters in the SSH target's namespace (e.g. mara â†’ default).
     backendProfile: sshOverride?.remoteProfile,
     globalRemote: globalRemoteActive(),
     primaryProfile: primaryProfileKey(),
@@ -11563,7 +11383,7 @@ function profileRouteOptions(profile, request?) {
     // per-profile override, env, or global). Unknown sub-profiles on that
     // gateway must route THROUGH it, not spawn local backends (#88296).
     primaryRemoteActive: primaryBackendIsRemote(),
-    // A stored per-profile entry (local or remote) — pins this profile to
+    // A stored per-profile entry (local or remote) â€” pins this profile to
     // its own backend; absent entries inherit the primary's remote.
     ownEntry: Boolean((config.profiles || {})[key]),
     requestMethod: request?.method,
@@ -11574,9 +11394,11 @@ function profileRouteOptions(profile, request?) {
 // Resolve a backend connection for the given profile, per the routing table in
 // resolveProfileBackendRoute(). An empty / unknown profile resolves to the
 // primary, so legacy callers are unchanged.
-async function ensureBackend(profile, opts: { spawnPriority?: LocalBackendSpawnPriority } = {}) {
+async function ensureBackend(profile, opts: { passive?: boolean; spawnPriority?: LocalBackendSpawnPriority } = {}) {
+  localBackendLifecycle.assertCanStart()
   const key = profile && String(profile).trim() ? String(profile).trim() : primaryProfileKey()
   const spawnPriority = spawnPriorityFrom(opts.spawnPriority)
+  const passive = Boolean(opts.passive)
 
   profileDeletionGate.assertCanStart(key)
 
@@ -11589,10 +11411,13 @@ async function ensureBackend(profile, opts: { spawnPriority?: LocalBackendSpawnP
     // A shared backend still owes the caller its profile scope, so renderer-side
     // WebSocket, filesystem, and cache routing target the selected profile.
     // `sharedPrimary` marks this as the shared-primary route: pooled backends
-    // also carry `profile`, so only this descriptor gets the flag.
+    // also carry `profile`, so only this descriptor gets the flag. The
+    // unshared primary carries its own key too: a profile-less descriptor
+    // reads as "default" downstream, which breaks per-source profile memory
+    // (the primary IS "default" only when it actually booted as default).
     return route.descriptorProfile
       ? { ...connection, profile: route.descriptorProfile, sharedPrimary: true }
-      : connection
+      : { ...connection, profile: key }
   }
 
   // A backend for this key may still be dying (idle reap, LRU eviction, a
@@ -11607,7 +11432,9 @@ async function ensureBackend(profile, opts: { spawnPriority?: LocalBackendSpawnP
   const existing = backendPool.get(key)
 
   if (existing) {
-    existing.lastActiveAt = Date.now()
+    if (!passive) {
+      existing.lastActiveAt = Date.now()
+    }
 
     if (spawnPriority === 'foreground') {
       promotePoolEntry(existing)
@@ -11619,7 +11446,11 @@ async function ensureBackend(profile, opts: { spawnPriority?: LocalBackendSpawnP
     return connection
   }
 
-  evictLruPoolBackends(poolMaxBackends() - 1)
+  assertNotPassiveSpawn(passive, key)
+  // The hard slot is released only after the evicted child exits. Wait for
+  // that teardown before entering the spawn queue; otherwise a successful
+  // LRU choice still leaves this wake racing the old child for 30 seconds.
+  await evictLruPoolBackends(poolMaxBackends() - 1)
 
   const entry = {
     process: null,
@@ -11652,7 +11483,7 @@ async function ensureBackend(profile, opts: { spawnPriority?: LocalBackendSpawnP
   return connection
 }
 
-// ── Registry-scoped backends (multi-connection, PR 2 of the campaign) ──────
+// â”€â”€ Registry-scoped backends (multi-connection, PR 2 of the campaign) â”€â”€â”€â”€â”€â”€
 // Resolve a backend for (connectionId, profile) against the v2 registry.
 // The LOCAL connection routes through ensureBackend() when the v1 route is
 // itself local (so every single-source path stays byte-identical), and forces
@@ -11663,9 +11494,10 @@ async function ensureRegistryBackend(
   connectionId,
   profile,
   managedUpdateCorrelation = '',
-  opts: { spawnPriority?: LocalBackendSpawnPriority } = {}
+  opts: { passive?: boolean; spawnPriority?: LocalBackendSpawnPriority } = {}
 ) {
   const spawnPriority = spawnPriorityFrom(opts.spawnPriority)
+  const passive = Boolean(opts.passive)
   const registry = readDesktopConnectionsRegistry()
   const id = String(connectionId || '').trim() || registry.primary
   const source = registry.connections.find(c => c.id === id)
@@ -11722,7 +11554,7 @@ async function ensureRegistryBackend(
   const primary = await reuseMatchingPrimarySshBackend({
     connectionId: id,
     effectiveFingerprint: resolveRegistryEffectiveFingerprint,
-    ensurePrimary: () => ensureBackend(profile, { spawnPriority }),
+    ensurePrimary: () => ensureBackend(profile, { passive, spawnPriority }),
     profile,
     registry,
     source
@@ -11743,7 +11575,7 @@ async function ensureRegistryBackend(
   // Desktop window starts two isolated servers whose transient runtime ids
   // are not interchangeable.
   if (id === registry.primary && source.kind !== 'local' && source.kind !== 'ssh') {
-    const primaryDescriptor = await ensureBackend(profile)
+    const primaryDescriptor = await ensureBackend(profile, { passive })
 
     if (registrySourceOwnsPrimaryBackend(registry, id, primaryDescriptor)) {
       return {
@@ -11756,7 +11588,7 @@ async function ensureRegistryBackend(
   }
 
   if (source.kind === 'local') {
-    // The registry's 'local' entry means THIS machine's runtime — always.
+    // The registry's 'local' entry means THIS machine's runtime â€” always.
     // ensureBackend() follows the v1 routing table, which resolves to a
     // REMOTE descriptor when the v1 global mode is remote (or the profile
     // has its own remote override). A migrated remote-mode user would then
@@ -11773,7 +11605,7 @@ async function ensureRegistryBackend(
     })
 
     if (localRoute.delegate) {
-      return ensureBackend(profile, { spawnPriority })
+      return ensureBackend(profile, { passive, spawnPriority })
     }
 
     const stoppingLocal = poolStopper.inFlight(localRoute.poolKey)
@@ -11785,7 +11617,9 @@ async function ensureRegistryBackend(
     const existingLocal = backendPool.get(localRoute.poolKey)
 
     if (existingLocal) {
-      existingLocal.lastActiveAt = Date.now()
+      if (!passive) {
+        existingLocal.lastActiveAt = Date.now()
+      }
 
       if (spawnPriority === 'foreground') {
         promotePoolEntry(existingLocal)
@@ -11794,7 +11628,8 @@ async function ensureRegistryBackend(
       return existingLocal.connectionPromise
     }
 
-    evictLruPoolBackends(poolMaxBackends() - 1)
+    assertNotPassiveSpawn(passive, localRoute.poolKey)
+    await evictLruPoolBackends(poolMaxBackends() - 1)
 
     const localEntry = {
       process: null,
@@ -11830,7 +11665,10 @@ async function ensureRegistryBackend(
   const existing = backendPool.get(key)
 
   if (existing) {
-    existing.lastActiveAt = Date.now()
+    if (!passive) {
+      existing.lastActiveAt = Date.now()
+    }
+
     const connectionPromise = existing.connectionPromise
 
     // A remote process can die while its local SSH forward stays LISTENing.
@@ -11842,7 +11680,7 @@ async function ensureRegistryBackend(
         connectionPromise,
         currentConnectionPromise: () => backendPool.get(key)?.connectionPromise || null,
         probe: (connection, requestPath, options) => fetchJsonForBackend(connection, requestPath, options),
-        reconnect: () => ensureRegistryBackend(id, profile),
+        reconnect: () => ensureRegistryBackend(id, profile, '', { passive }),
         retire: async (error: any) => {
           // A late failure from an old descriptor must never tear down a newer
           // entry that another caller has already installed.
@@ -11864,7 +11702,8 @@ async function ensureRegistryBackend(
     )
   }
 
-  evictLruPoolBackends(poolMaxBackends() - 1)
+  assertNotPassiveSpawn(passive, key)
+  await evictLruPoolBackends(poolMaxBackends() - 1)
 
   const entry = {
     process: null,
@@ -11897,7 +11736,7 @@ async function ensureRegistryBackend(
 }
 
 // Dial a non-local registry connection for one profile. Never spawns a local
-// child (entry.process stays null — stopPoolBackend/evict already tolerate
+// child (entry.process stays null â€” stopPoolBackend/evict already tolerate
 // that shape from remote per-profile overrides).
 async function connectRegistryBackend(
   source,
@@ -11914,7 +11753,7 @@ async function connectRegistryBackend(
   if (source.kind === 'ssh') {
     // The composite key doubles as the ssh scope so each (connection, profile)
     // pair owns its own tunnel + remote dashboard; the profile that re-homes
-    // the REMOTE process is the entry's remoteProfile or the requested one —
+    // the REMOTE process is the entry's remoteProfile or the requested one â€”
     // never the composite string.
     const sshConfig = resolvedSshConfig
 
@@ -11952,7 +11791,7 @@ async function connectRegistryBackend(
   }
 
   // remote / cloud: one gateway host serves every profile of that source,
-  // scoped per request — the descriptor carries the profile + connectionId so
+  // scoped per request â€” the descriptor carries the profile + connectionId so
   // renderer-side WS minting and REST scoping target the right agent.
   const token = source.authMode === 'oauth' ? null : decryptDesktopSecret(source.token)
 
@@ -12168,7 +12007,7 @@ async function captureManagedSshScopes(source) {
       const descriptor: any = await scope.entry.connectionPromise
 
       // Every independently spawned profile has its own random served token.
-      // Keep it on the scope—not one mutable connection snapshot—so restore
+      // Keep it on the scopeâ€”not one mutable connection snapshotâ€”so restore
       // can authenticate/reuse the exact process it captured.
       scope.reuseToken = String(descriptor?.token || '')
     } catch (error: any) {
@@ -12325,6 +12164,7 @@ async function drainManagedSshScope(scope) {
       }
 
       if (state && sshConnections.get(scope.key) === state) {
+        sshIsolatedKeepalives.stop(scope.key)
         sshConnections.delete(scope.key)
       }
     }
@@ -12466,7 +12306,7 @@ async function resumeManagedSshRecoveries() {
   await Promise.allSettled(readManagedSshRecoveryRecords().map(record => recoverManagedSshUpdate(record)))
 }
 
-// Stop every pooled backend and ssh scope owned by a registry connection —
+// Stop every pooled backend and ssh scope owned by a registry connection â€”
 // called when the connection is removed from the registry.
 async function stopRegistryConnectionBackends(connectionId) {
   const prefix = backendScopePrefix(connectionId)
@@ -12492,7 +12332,7 @@ async function stopRegistryConnectionBackends(connectionId) {
 
 // Mark a pool profile as recently used so the idle reaper spares it. The
 // renderer calls this when it opens a profile's chat WS and periodically while
-// streaming, since the main process can't see the direct renderer↔backend WS.
+// streaming, since the main process can't see the direct rendererâ†”backend WS.
 function touchPoolBackend(profile) {
   for (const key of poolTouchKeys(profile)) {
     const entry = backendPool.get(key)
@@ -12505,23 +12345,27 @@ function touchPoolBackend(profile) {
   }
 }
 
-// Evict least-recently-used SPAWNED pool backends until at most `keep` remain —
+// Evict least-recently-used SPAWNED pool backends until at most `keep` remain â€”
 // but only ever evict backends without a live renderer socket (stale beyond the
 // keepalive window). When every backend is actively kept alive we let the pool
 // exceed the soft cap rather than kill a running session. Process-less
 // descriptor entries (remote/cloud registry sources, per-profile remote
-// overrides — `entry.process === null`) are excluded from the cap entirely:
+// overrides â€” `entry.process === null`) are excluded from the cap entirely:
 // they hold no local process, so counting them used to let a roster refresh
 // across N registered remote connections LRU-evict a REAL local backend that
 // was merely idle past the keepalive window. Descriptors are still reclaimed
 // by the idle reaper.
-function evictLruPoolBackends(keep) {
-  const evictions = selectPoolEvictions(backendPool.entries(), Math.max(0, keep), Date.now(), POOL_KEEPALIVE_FRESH_MS)
-
-  for (const profile of evictions) {
-    rememberLog(`Evicting idle profile backend "${profile}" (LRU cap ${poolMaxBackends()})`)
-    stopPoolBackend(profile)
-  }
+async function evictLruPoolBackends(keep) {
+  return evictPoolEntries(
+    backendPool.entries(),
+    Math.max(0, keep),
+    Date.now(),
+    POOL_KEEPALIVE_FRESH_MS,
+    async profile => {
+      rememberLog(`Evicting idle profile backend "${profile}" (LRU cap ${poolMaxBackends()})`)
+      await stopPoolBackend(profile)
+    }
+  )
 }
 
 function startPoolIdleReaper() {
@@ -12568,10 +12412,18 @@ function releaseLocalBackendSlot(entry: any) {
   }
 }
 
-function assertPoolEntryStillOwned(poolKey: string, entry: any) {
-  if (backendPool.get(poolKey) !== entry) {
-    releaseLocalBackendSlot(entry)
-    throw new Error(`Profile backend start for "${poolKey}" was cancelled before spawn.`)
+// `releaseSlot` must be false once `entry.process` exists: the lease has to
+// stay held until the child has actually exited (pool-spawn-coordinator
+// invariant), and teardownFailedLocalBackend releases it after that exit. A
+// pre-spawn release here would turn that post-exit release into a no-op and
+// let a successor spawn while the superseded child is still alive.
+function assertPoolEntryStillOwned(poolKey: string, entry: any, { releaseSlot = true } = {}) {
+  if (localBackendLifecycle.signal.aborted || backendPool.get(poolKey) !== entry) {
+    if (releaseSlot) {
+      releaseLocalBackendSlot(entry)
+    }
+
+    throw new Error(`Profile backend start for "${poolKey}" was cancelled before it became ready.`)
   }
 }
 
@@ -12618,7 +12470,11 @@ function teardownFailedLocalBackend(poolKey: string, entry: any): Promise<void> 
 // entry means THIS machine regardless of the v1 routing table); `opts.poolKey`
 // is the backendPool key when it differs from the profile name (composite
 // registry scopes) so the exit/error cleanup evicts the right entry.
-async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; poolKey?: string } = {}) {
+function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; poolKey?: string } = {}) {
+  return localBackendLifecycle.start(() => runPoolBackendStart(profile, entry, opts))
+}
+
+async function runPoolBackendStart(profile, entry, opts: { forceLocal?: boolean; poolKey?: string } = {}) {
   const poolKey = opts.poolKey || profile
 
   await reapOrphanedBackendsOnce()
@@ -12626,7 +12482,7 @@ async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; po
 
   // A profile may point at its OWN remote backend (connection.json
   // `profiles[name]`), or inherit the app-wide remote (env / global settings).
-  // In either case there is no local child to spawn — we just verify the
+  // In either case there is no local child to spawn â€” we just verify the
   // remote is reachable and hand back its connection descriptor. The pool
   // entry keeps `entry.process === null`, which stopPoolBackend/evict already
   // tolerate.
@@ -12661,6 +12517,12 @@ async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; po
 
   const spawnPriority: LocalBackendSpawnPriority = spawnPriorityFrom(entry.spawnPriority)
 
+  assertPoolEntryStillOwned(poolKey, entry)
+
+  if (spawnPriority === 'background' && !backgroundSlotRetryBackoff.canAttempt(poolKey)) {
+    throw new BackgroundSlotRetryDeferredError(profile)
+  }
+
   const spawnRequest = localBackendSpawnCoordinator.request(poolKey, {
     timeoutMs: POOL_SLOT_WAIT_MS,
     priority: spawnPriority
@@ -12675,7 +12537,21 @@ async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; po
     )
   }
 
-  entry.releaseLocalBackendSlot = await spawnRequest.acquired
+  const cancelRequest = () => spawnRequest.cancel()
+  localBackendLifecycle.signal.addEventListener('abort', cancelRequest, { once: true })
+
+  try {
+    entry.releaseLocalBackendSlot = await spawnRequest.acquired
+    backgroundSlotRetryBackoff.clear(poolKey)
+  } catch (error) {
+    if (isBackgroundSlotWaitTimeout(error)) {
+      backgroundSlotRetryBackoff.recordFailure(poolKey)
+    }
+
+    throw error
+  } finally {
+    localBackendLifecycle.signal.removeEventListener('abort', cancelRequest)
+  }
 
   if (entry.localBackendSpawnRequest === spawnRequest) {
     entry.localBackendSpawnRequest = null
@@ -12688,12 +12564,14 @@ async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; po
   // Same update mutual exclusion as the primary window's waitForLocalStart
   // (#73822): pool backends spawn from the same venv, so an ungated respawn
   // during applyUpdates' critical section re-locks the venv and trips the
-  // venv-blocker preflight. No boot-progress UI here — pool backends boot
-  // silently for background profiles — so we only log while parked.
+  // venv-blocker preflight. No boot-progress UI here â€” pool backends boot
+  // silently for background profiles â€” so we only log while parked.
   {
     let poolAnnounced = false
 
-    await waitForUpdateClearance(updateGateDeps(), {
+    const clearance = await waitForUpdateClearance(updateGateDeps(), {
+      signal: localBackendLifecycle.signal,
+      isCancelled: () => backendPool.get(poolKey) !== entry,
       onWaitTick: reason => {
         if (!poolAnnounced) {
           poolAnnounced = true
@@ -12703,17 +12581,27 @@ async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; po
       pollMs: UPDATE_WAIT_POLL_MS,
       timeoutMs: UPDATE_WAIT_TIMEOUT_MS
     })
+
+    if (clearance === 'cancelled') {
+      assertPoolEntryStillOwned(poolKey, entry)
+    }
   }
 
   profileDeletionGate.assertCanStart(profile)
+  assertPoolEntryStillOwned(poolKey, entry)
 
   // --profile wins over the inherited MOOR_HOME env (see _apply_profile_override
   // step 3 in moor_cli/main.py), so the child re-homes to this profile.
   // --port 0: the OS assigns an ephemeral port; the child announces it on stdout.
   const backendArgs = ['--profile', profile, 'serve', '--host', '127.0.0.1', '--port', '0']
-  const backend = await ensureRuntime(resolveMoorBackend(backendArgs))
+
+  const backend = await ensureRuntime(await resolveMoorBackend(backendArgs), () =>
+    assertPoolEntryStillOwned(poolKey, entry)
+  )
+
   // Route old runtimes (no `serve`) through the legacy `dashboard --no-open`.
-  backend.args = getBackendArgsForRuntime(backend)
+  backend.args = await getBackendArgsForRuntime(backend)
+  assertPoolEntryStillOwned(poolKey, entry)
   const moorCwd = resolveMoorCwd()
   const webDist = resolveWebDist()
   const readyFile = backend.readyFile ? makeDashboardReadyFile() : null
@@ -12721,7 +12609,7 @@ async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; po
   // Guard BEFORE the "Starting" line: a profile that only exists on a remote
   // backend (remote-primary desktop asked for a forced-local child) rejects
   // here, and logging "Starting" first left an orphaned line with no READY
-  // and no exit — the exact undiagnosable burst signature in remote-gateway
+  // and no exit â€” the exact undiagnosable burst signature in remote-gateway
   // user bundles (Aug 2026, Dash's report).
   assertLocalProfileCanStart(profile, profileDeletionGate, key =>
     directoryExists(path.join(MOOR_HOME, 'profiles', key))
@@ -12733,30 +12621,33 @@ async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; po
   const parentIdentityEnv = parentWatchdogEnv(process.pid, parentStartMarker, backendNonce)
   assertPoolEntryStillOwned(poolKey, entry)
 
-  const child = spawn(
+  const child = spawnOwnedBackend(
     backend.command,
     backend.args,
     hiddenWindowsChildOptions({
       cwd: moorCwd,
-      env: {
-        ...process.env,
-        MOOR_HOME,
-        ...backend.env,
-        // Pin the gateway's tool/terminal cwd to the same directory we chose for
-        // the child process. Inherited TERMINAL_CWD (or a stale config bridge)
-        // can still point at the install dir even when spawn cwd is home.
-        TERMINAL_CWD: moorCwd,
-        MOOR_DASHBOARD_SESSION_TOKEN: token,
-        // Marks this dashboard backend as desktop-spawned so it runs the cron
-        // scheduler tick loop (the gateway isn't running under the app).
-        MOOR_DESKTOP: '1',
-        // Exact parent identity lets the backend self-exit after an unclean
-        // Desktop death without mistaking a reused PID for its owner. If the
-        // optional marker probe fails, retain legacy PID-only tracking.
-        ...parentIdentityEnv,
-        MOOR_WEB_DIST: webDist,
-        ...(readyFile ? { MOOR_DESKTOP_READY_FILE: readyFile } : {})
-      },
+      env: desktopBackendSpawnEnv(
+        {
+          ...process.env,
+          MOOR_HOME,
+          ...backend.env,
+          // Pin the gateway's tool/terminal cwd to the same directory we chose for
+          // the child process. Inherited TERMINAL_CWD (or a stale config bridge)
+          // can still point at the install dir even when spawn cwd is home.
+          TERMINAL_CWD: moorCwd,
+          MOOR_DASHBOARD_SESSION_TOKEN: token,
+          // Marks this dashboard backend as desktop-spawned so it runs the cron
+          // scheduler tick loop (the gateway isn't running under the app).
+          MOOR_DESKTOP: '1',
+          // Exact parent identity lets the backend self-exit after an unclean
+          // Desktop death without mistaking a reused PID for its owner. If the
+          // optional marker probe fails, retain legacy PID-only tracking.
+          ...parentIdentityEnv,
+          MOOR_WEB_DIST: webDist,
+          ...(readyFile ? { MOOR_DESKTOP_READY_FILE: readyFile } : {})
+        },
+        GUEST_ONBOARDING
+      ),
       shell: backend.shell,
       stdio: ['ignore', 'pipe', 'pipe']
     })
@@ -12773,7 +12664,7 @@ async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; po
 
   // Start watching for the READY announcement BEFORE any await (#60323):
   // stdout is already flowing into the tail, and Node streams never replay
-  // consumed chunks to late listeners — a sentinel printed while
+  // consumed chunks to late listeners â€” a sentinel printed while
   // claimBackendChild runs would otherwise be lost forever, timing out a
   // healthy backend. The tail-buffer accessor covers any residual gap.
   const portAnnouncement = waitForDashboardPortAnnouncement(child, {
@@ -12786,7 +12677,7 @@ async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; po
   // surface as an unhandled rejection before the Promise.race below attaches.
   portAnnouncement.catch(() => {})
   await claimBackendChild(child, `${backend.command} ${backend.args.join(' ')}`, profile, backendNonce, outputTail)
-  assertPoolEntryStillOwned(poolKey, entry)
+  assertPoolEntryStillOwned(poolKey, entry, { releaseSlot: false })
 
   child.stdout.on('data', rememberLog)
   child.stderr.on('data', rememberLog)
@@ -12827,6 +12718,7 @@ async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; po
 
   // Discover the ephemeral port the child bound to
   const port = await Promise.race([portAnnouncement, startFailed])
+  assertPoolEntryStillOwned(poolKey, entry, { releaseSlot: false })
 
   if (readyFile) {
     fs.unlink(readyFile, () => {})
@@ -12836,6 +12728,7 @@ async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; po
 
   const baseUrl = `http://127.0.0.1:${port}`
   await Promise.race([waitForMoor(baseUrl, token), startFailed])
+  assertPoolEntryStillOwned(poolKey, entry, { releaseSlot: false })
   ready = true
 
   const authToken = await adoptServedDashboardToken(baseUrl, token, {
@@ -12844,12 +12737,15 @@ async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; po
     rememberLog
   })
 
+  assertPoolEntryStillOwned(poolKey, entry, { releaseSlot: false })
+
   entry.token = authToken
 
   // Verify the WebSocket session token before declaring backend ready.
   // HTTP /api/status can pass while WS auth fails (separate transport, separate guards).
   const wsUrl = `ws://127.0.0.1:${port}/api/ws?token=${encodeURIComponent(authToken)}`
   const wsProbe = await probeGatewayWebSocket(wsUrl, { WebSocketImpl: globalThis.WebSocket })
+  assertPoolEntryStillOwned(poolKey, entry, { releaseSlot: false })
 
   if (!wsProbe.ok) {
     throw new Error(
@@ -12870,8 +12766,8 @@ async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; po
   }
 }
 
-// Bounded, deduplicated pool teardown (see pool-stop.ts): every stop path —
-// idle reaper, LRU eviction, profile delete/rename, quit — shares one
+// Bounded, deduplicated pool teardown (see pool-stop.ts): every stop path â€”
+// idle reaper, LRU eviction, profile delete/rename, quit â€” shares one
 // in-flight stop per key and retains the process handle until the bounded
 // SIGTERM -> SIGKILL escalation in waitForBackendExit() resolves. Previously
 // SIGTERM + immediate entry delete dropped the handle and a slow child
@@ -12879,7 +12775,19 @@ async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; po
 const poolStopper = createPoolStopper({
   pool: backendPool,
   stopChild: child => stopBackendChild(child),
-  waitForExit: child => waitForBackendExit(child)
+  waitForExit: child => waitForBackendExit(child),
+  // Remote / SSH-isolated pool entries keep `process: null`. Child exit is
+  // immediate; hold the same in-flight fence through bootstrap drain + SSH
+  // teardown so a reconnect cannot publish into a dying scope (#106935).
+  afterStop: async key => {
+    try {
+      await sshBootstrapCoordinator.cancelAndWait(key, () => teardownSshConnection(key))
+    } catch (err) {
+      // The idle reaper calls stopPoolBackend un-awaited; a failed SSH teardown
+      // must not surface as an unhandled rejection or block the pool fence.
+      sshRememberLog(`[ssh-teardown] ${key}: ${String(err)}`)
+    }
+  }
 })
 
 async function stopPoolBackend(profile: string) {
@@ -12899,6 +12807,7 @@ async function stopAllPoolBackends() {
 }
 
 const backendShutdown = createBackendShutdownCoordinator(async () => {
+  const localShutdown = localBackendLifecycle.shutdown()
   const primary = backendConnectionState.invalidate()
 
   stopBackendChild(primary)
@@ -12909,8 +12818,20 @@ const backendShutdown = createBackendShutdownCoordinator(async () => {
     poolIdleReaper = null
   }
 
-  await Promise.all([waitForBackendExit(primary), pooledStops])
+  await waitForTeardown([localShutdown, waitForBackendExit(primary), pooledStops], 7_000)
 })
+
+const quitTeardown = createQuitTeardownCoordinator(() => app.quit())
+
+async function teardownSshForQuit() {
+  const scopes = [...sshConnections.keys()]
+
+  for (const scope of scopes) {
+    void teardownSshConnection(scope || null).catch(error => rememberLog(`SSH teardown failed: ${error.message}`))
+  }
+
+  await sshTeardowns.finish(sshBootstrapCoordinator.promises(), () => sshBootstrapCoordinator.forceCleanupAll())
+}
 
 async function exitAfterBackendShutdown(code) {
   await backendShutdown.run()
@@ -12919,7 +12840,7 @@ async function exitAfterBackendShutdown(code) {
 
 // Returns the profile name whose backend was torn down, or null when the
 // request is not a profile-delete.  The caller uses this to skip ensureBackend
-// for the just-torn-down profile — otherwise ensureBackend respawns a pool
+// for the just-torn-down profile â€” otherwise ensureBackend respawns a pool
 // backend whose ensure_moor_home() recreates the deleted profile directory.
 //
 // The routing *decision* (which branch fires, what profile name gets
@@ -12969,7 +12890,11 @@ async function prepareProfileRenameRequest(request) {
   })
 }
 
-async function startMoor() {
+function startMoor() {
+  return localBackendLifecycle.start(runMoorStart)
+}
+
+async function runMoorStart() {
   // Only the single-instance lock holder may reap/spawn/claim the desktop
   // backend. A lock-losing instance must stay inert even if some path reaches
   // here (e.g. the deferred-quit window before `ready`): its reapOrphans()
@@ -12980,6 +12905,9 @@ async function startMoor() {
   }
 
   await reapOrphanedBackendsOnce()
+
+  // Shutdown may have started while the orphan sweep was awaiting probes.
+  localBackendLifecycle.assertCanStart()
 
   // Latched-failure short-circuit: once bootstrap has failed in this
   // process, every subsequent startMoor() call re-throws the same error
@@ -13029,13 +12957,16 @@ async function startMoor() {
 
   const connectionAttempt = backendConnectionState.startAttempt()
   const primaryProfile = primaryProfileKey()
+  // Pin the routing table to the profile this primary actually boots as; a
+  // later moor:profile:remember must not retarget requests mid-life.
+  primaryProfilePin.pin(primaryProfile)
 
   // Legacy path callers without an explicit profile belong to the primary
   // window backend. Profile-scoped callers still pass their key directly.
   setActiveGatewayProfile(primaryProfile)
 
   // Classify this boot BEFORE the throwing resolve/mint runs: a remote failure
-  // must NOT latch (it's transient — see shouldLatchBackendStartFailure), while
+  // must NOT latch (it's transient â€” see shouldLatchBackendStartFailure), while
   // a local failure latches to break install-restart loops.
   let attemptedRemote = managedPrimaryRestoreOwners.size > 0 || primaryBackendIsRemote()
 
@@ -13044,18 +12975,14 @@ async function startMoor() {
       // resolveRemote() may take arbitrarily long (settings resolve / ws-ticket
       // mint). If a newer attempt started meanwhile (e.g. the user switched
       // remotes and Apply invalidated this attempt), bail before probing.
-      if (!backendConnectionState.isCurrentAttempt(connectionAttempt)) {
-        throw new Error('Moor backend start was superseded by a newer connection attempt.')
-      }
+      backendConnectionState.assertCurrentAttempt(connectionAttempt)
 
       await advanceBootProgress('backend.remote', `Connecting to remote Moor backend at ${remote.baseUrl}`, 24)
       await waitForMoor(remote.baseUrl, remote.token, undefined, remote.authMode, remote.headers)
 
       // Second async boundary: the health probe itself can outlive the
       // attempt. A late success here must not publish a stale descriptor.
-      if (!backendConnectionState.isCurrentAttempt(connectionAttempt)) {
-        throw new Error('Moor backend start was superseded by a newer connection attempt.')
-      }
+      backendConnectionState.assertCurrentAttempt(connectionAttempt)
 
       updateBootProgress({
         phase: 'backend.ready',
@@ -13078,7 +13005,7 @@ async function startMoor() {
     // both the Electron-side resolvers and the whole backend subtree (tool
     // availability checks, stdio MCP servers) can find Homebrew-, nvm-, and
     // ~/.local/bin-installed CLIs. Single-flight with the whenReady warmup;
-    // failure-hardened — a broken shell profile never blocks boot.
+    // failure-hardened â€” a broken shell profile never blocks boot.
     const loginShellPath = await ensureLoginShellPath()
 
     if (loginShellPath.applied) {
@@ -13102,8 +13029,11 @@ async function startMoor() {
     }
 
     const setup = await runPrimaryBackendStartup({
+      signal: localBackendLifecycle.signal,
+      assertCurrentAttempt: () => backendConnectionState.assertCurrentAttempt(connectionAttempt),
       connectRemote,
-      ensureLocalRuntime: ensureRuntime,
+      ensureLocalRuntime: backend =>
+        ensureRuntime(backend, () => backendConnectionState.assertCurrentAttempt(connectionAttempt)),
       prepareLocalBackend: async () => {
         await advanceBootProgress('backend.runtime', 'Resolving Moor runtime', 28)
 
@@ -13122,9 +13052,11 @@ async function startMoor() {
       waitForLocalStart: waitForUpdateToFinish
     })
 
+    backendConnectionState.assertCurrentAttempt(connectionAttempt)
+
     if (setup.kind === 'remote') {
       // Paths from the remote backend belong to a host the Windows desktop
-      // cannot open via wsl.exe — disable WSL path bridging so native dialogs
+      // cannot open via wsl.exe â€” disable WSL path bridging so native dialogs
       // and file panels don't spawn wsl.exe (or the interactive install prompt
       // on WSL-less machines) for unresolvable paths. (#66433)
       setWslBridgeProfileState(primaryProfile, false)
@@ -13132,12 +13064,13 @@ async function startMoor() {
       return setup.connection
     }
 
-    // Local WSL backend — paths are bridgeable.
+    // Local WSL backend â€” paths are bridgeable.
     setWslBridgeProfileState(primaryProfile, true)
 
     const backend = setup.backend
     // Route old runtimes (no `serve`) through the legacy `dashboard --no-open`.
-    backend.args = getBackendArgsForRuntime(backend)
+    backend.args = await getBackendArgsForRuntime(backend)
+    backendConnectionState.assertCurrentAttempt(connectionAttempt)
     const moorCwd = resolveMoorCwd()
     const webDist = resolveWebDist()
     const readyFile = backend.readyFile ? makeDashboardReadyFile() : null
@@ -13150,35 +13083,40 @@ async function startMoor() {
     const backendNonce = crypto.randomBytes(16).toString('hex')
     const parentIdentityEnv = parentWatchdogEnv(process.pid, parentStartMarker, backendNonce)
 
-    const moorProcess = spawn(
+    backendConnectionState.assertCurrentAttempt(connectionAttempt)
+
+    const moorProcess = spawnOwnedBackend(
       backend.command,
       backend.args,
       hiddenWindowsChildOptions({
         cwd: moorCwd,
-        env: {
-          ...process.env,
-          // Explicitly pin MOOR_HOME for the child so Python's get_moor_home()
-          // resolves to the SAME location our resolveMoorHome() picked. Without
-          // this pin, Python falls back to ~/.moor on every platform — fine on
-          // mac/linux (where our default matches), but on Windows our default is
-          // %LOCALAPPDATA%\moor, which differs from C:\Users\<u>\.moor.
-          // Mismatch would split config / sessions / .env / logs across two
-          // directories. install.ps1 sets MOOR_HOME via setx; the desktop
-          // can't reliably do that, so we set it inline for every spawn.
-          MOOR_HOME,
-          ...backend.env,
-          TERMINAL_CWD: moorCwd,
-          MOOR_DASHBOARD_SESSION_TOKEN: token,
-          // Marks this dashboard backend as desktop-spawned so it runs the cron
-          // scheduler tick loop (the gateway isn't running under the app).
-          MOOR_DESKTOP: '1',
-          // Exact parent identity lets the backend self-exit after an unclean
-          // Desktop death without mistaking a reused PID for its owner. If the
-          // optional marker probe fails, retain legacy PID-only tracking.
-          ...parentIdentityEnv,
-          MOOR_WEB_DIST: webDist,
-          ...(readyFile ? { MOOR_DESKTOP_READY_FILE: readyFile } : {})
-        },
+        env: desktopBackendSpawnEnv(
+          {
+            ...process.env,
+            // Explicitly pin MOOR_HOME for the child so Python's get_moor_home()
+            // resolves to the SAME location our resolveMoorHome() picked. Without
+            // this pin, Python falls back to ~/.moor on every platform â€” fine on
+            // mac/linux (where our default matches), but on Windows our default is
+            // %LOCALAPPDATA%\moor, which differs from C:\Users\<u>\.moor.
+            // Mismatch would split config / sessions / .env / logs across two
+            // directories. install.ps1 sets MOOR_HOME via setx; the desktop
+            // can't reliably do that, so we set it inline for every spawn.
+            MOOR_HOME,
+            ...backend.env,
+            TERMINAL_CWD: moorCwd,
+            MOOR_DASHBOARD_SESSION_TOKEN: token,
+            // Marks this dashboard backend as desktop-spawned so it runs the cron
+            // scheduler tick loop (the gateway isn't running under the app).
+            MOOR_DESKTOP: '1',
+            // Exact parent identity lets the backend self-exit after an unclean
+            // Desktop death without mistaking a reused PID for its owner. If the
+            // optional marker probe fails, retain legacy PID-only tracking.
+            ...parentIdentityEnv,
+            MOOR_WEB_DIST: webDist,
+            ...(readyFile ? { MOOR_DESKTOP_READY_FILE: readyFile } : {})
+          },
+          GUEST_ONBOARDING
+        ),
         shell: backend.shell,
         stdio: ['ignore', 'pipe', 'pipe']
       })
@@ -13196,7 +13134,7 @@ async function startMoor() {
     // start alone runs 2-8s) and advanceBootProgress awaits renderer IPC.
     // stdout is already flowing into the tail, and Node streams never replay
     // consumed chunks to late listeners, so a sentinel printed during that
-    // window was lost forever — the wait then hit its 90s timeout and a
+    // window was lost forever â€” the wait then hit its 90s timeout and a
     // healthy backend was killed (deterministic on Windows, racy on
     // macOS/Linux). The tail-buffer accessor covers any residual gap.
     const portAnnouncement = waitForDashboardPortAnnouncement(moorProcess, {
@@ -13292,9 +13230,11 @@ async function startMoor() {
     })
 
     await advanceBootProgress('backend.port', 'Waiting for Moor backend to launch', 86)
+    backendConnectionState.assertCurrentAttempt(connectionAttempt)
 
     // Discover the ephemeral port the child bound to
     const port = await Promise.race([portAnnouncement, backendStartFailed])
+    backendConnectionState.assertCurrentAttempt(connectionAttempt)
 
     if (readyFile) {
       fs.unlink(readyFile, () => {})
@@ -13302,7 +13242,9 @@ async function startMoor() {
 
     const baseUrl = `http://127.0.0.1:${port}`
     await advanceBootProgress('backend.wait', 'Waiting for Moor backend to become ready', 90)
+    backendConnectionState.assertCurrentAttempt(connectionAttempt)
     await Promise.race([waitForMoor(baseUrl, token), backendStartFailed])
+    backendConnectionState.assertCurrentAttempt(connectionAttempt)
     backendReady = true
     backendStartFailure = null
 
@@ -13311,9 +13253,12 @@ async function startMoor() {
       rememberLog
     })
 
+    backendConnectionState.assertCurrentAttempt(connectionAttempt)
+
     // Verify the WebSocket session token before declaring backend ready.
     const wsUrl = `ws://127.0.0.1:${port}/api/ws?token=${encodeURIComponent(authToken)}`
     const wsProbe = await probeGatewayWebSocket(wsUrl, { WebSocketImpl: globalThis.WebSocket })
+    backendConnectionState.assertCurrentAttempt(connectionAttempt)
 
     if (!wsProbe.ok) {
       throw new Error(
@@ -13331,7 +13276,7 @@ async function startMoor() {
 
     // A successful boot (including a soft restart that the repair-guard
     // chose over a hard reinstall, see #74874) means any in-flight repair
-    // attempt counter has been honoured — reset it so the next genuine
+    // attempt counter has been honoured â€” reset it so the next genuine
     // failure starts fresh from attempt 1 instead of inheriting the
     // accumulated count of the resolved episode.
     bootstrapRepairAttempt = 0
@@ -13346,6 +13291,7 @@ async function startMoor() {
       source: 'local',
       authMode: 'token',
       token: authToken,
+      profile,
       wsUrl,
       logs: moorLog.slice(-80),
       ...getWindowState()
@@ -13357,14 +13303,15 @@ async function startMoor() {
 
     const failedProcess = backendConnectionState.invalidate()
     stopBackendChild(failedProcess)
-    await waitForBackendExit(failedProcess)
 
     if (error instanceof FirstRunSetupResetError) {
+      await waitForBackendExit(failedProcess)
       throw error
     }
 
     const message = error instanceof Error ? error.message : String(error)
     const hostKeyChanged = isHostKeyChangedBootFailure(error)
+    const isReauth = isReauthRequiredError(error)
 
     // Carry structured Cloud-down metadata through the boot-progress / IPC
     // boundary when present, so the renderer overlay can key on it rather than
@@ -13372,15 +13319,11 @@ async function startMoor() {
     // only consumes the structured result (#85335).
     const isCloudBackendDown = Boolean(error && typeof error === 'object' && (error as any).isCloudBackendDown === true)
 
-    const statusCode = Number(
-      error && typeof error === 'object' && Number.isInteger((error as any).statusCode)
-        ? (error as any).statusCode
-        : NaN
-    )
+    const statusCode = readStatusCode(error)
 
     // Only latch LOCAL boot failures. A remote failure (lapsed session / mint
     // timeout / host briefly unreachable across sleep) is transient and has no
-    // child 'exit' handler to clear the cache — latching it would wedge the app
+    // child 'exit' handler to clear the cache â€” latching it would wedge the app
     // on "session expired" until a full restart, defeating reconnect, the
     // "Sign out & sign in" reload, and the wake-recovery revalidate path.
     if (shouldLatchBackendStartFailure({ attemptedRemote })) {
@@ -13391,7 +13334,7 @@ async function startMoor() {
     // fails closed until the user verifies the change and clears the stale
     // known_hosts entry, so retrying re-drives the identical doomed boot (one
     // bundle showed 157 consecutive failures over 2.5h). Latch it like a local
-    // failure — reset/repair/apply-config clear the latch after the user fixes
+    // failure â€” reset/repair/apply-config clear the latch after the user fixes
     // known_hosts.
     if (shouldLatchHostKeyChangedFailure({ attemptedRemote, isReauth: false, isHostKeyChanged: hostKeyChanged })) {
       backendStartFailure = error instanceof Error ? error : new Error(message)
@@ -13399,9 +13342,19 @@ async function startMoor() {
 
     // A confirmed reauth rejection latches separately: it can't self-heal, and
     // leaving it unlatched hides the overlay's "Sign in" button on every retry.
-    if (shouldLatchRemoteReauthFailure({ attemptedRemote, isReauth: isReauthRequiredError(error) })) {
+    if (shouldLatchRemoteReauthFailure({ attemptedRemote, isReauth })) {
       remoteReauthFailure = error instanceof Error ? error : new Error(message)
+      rememberLog('[boot] remote reauth latched: holding boot-progress until a recovery path clears it')
     }
+
+    // Every latch above is set BEFORE this first yield back to the event loop.
+    // invalidate() already dropped the shared attempt promise, so a concurrent
+    // getConnection()/startMoor() caller arriving during the exit wait would
+    // otherwise start a brand-new attempt, re-emit running:true over the
+    // failure and re-drive the identical rejection. With the latch in place it
+    // short-circuits on the cached failure instead: the first confirmed
+    // rejection owns the transition into recovery (#95701).
+    await waitForBackendExit(failedProcess)
 
     updateBootProgress(
       {
@@ -13411,13 +13364,13 @@ async function startMoor() {
         phase: 'backend.error',
         // Renderer contract for the self-heal loop (#82679): a transient
         // REMOTE failure (dropped SSH/HTTP registered connection, mint
-        // timeout) is retryable — the renderer re-attempts the boot with
+        // timeout) is retryable â€” the renderer re-attempts the boot with
         // bounded backoff. Local failures, confirmed reauth rejections, and
         // host-key changes are not: those end in the recovery overlay /
         // sign-in affordance.
         retryable: isRetryableRemoteBootFailure({
           attemptedRemote,
-          isReauth: isReauthRequiredError(error),
+          isReauth,
           isHostKeyChanged: hostKeyChanged
         }),
         running: false,
@@ -13449,7 +13402,7 @@ function wireCommonWindowHandlers(win, { zoom = true }: { zoom?: boolean } = {})
   installDevToolsShortcut(win)
   installBrowserNavGestures(win)
 
-  // Claim Ctrl/Cmd+F in the main process — on Pop!_OS / GNOME-based Linux
+  // Claim Ctrl/Cmd+F in the main process â€” on Pop!_OS / GNOME-based Linux
   // distros the Ctrl+F keydown does not reach the renderer's `view.findInPage`
   // binding (#81727). Routing it through `before-input-event` forwards the
   // intent at the earliest observable point. macOS / Windows keep the
@@ -13463,8 +13416,8 @@ function wireCommonWindowHandlers(win, { zoom = true }: { zoom?: boolean } = {})
     installZoomShortcuts(win)
     // Re-apply persisted zoom on show/restore/resize/cross-display move
     // (Chromium can drop webContents zoom after these window transitions), on
-    // EVERY full load — not once, since crash recovery reloads and would
-    // outlive a spent `once` listener (#46429) — and after in-page navigation,
+    // EVERY full load â€” not once, since crash recovery reloads and would
+    // outlive a spent `once` listener (#46429) â€” and after in-page navigation,
     // where Chromium applies the target hash route's own per-URL zoom record
     // (see installZoomReassertOnNavigation; #48658, #38854, #79863).
     const reassertZoom = () => restorePersistedZoomLevel(win)
@@ -13514,7 +13467,7 @@ function wireWindowReveal(win, { show, onRevealed }: { show?: () => void; onReve
   return controller
 }
 
-// Secondary "session windows" — one extra OS window per chat so a user can
+// Secondary "session windows" â€” one extra OS window per chat so a user can
 // work with multiple chats side by side. The registry guarantees one window
 // per sessionId (re-opening focuses the existing window) and self-cleans on
 // close. The primary mainWindow is never tracked here. Pure logic + the URL
@@ -13699,9 +13652,9 @@ function createBrowserWindow(tabId) {
   return browserWindows.openOrFocus(tabId, () => spawnBrowserWindow(tabId))
 }
 
-// Additional full "instance" windows — peers of the primary that render the
+// Additional full "instance" windows â€” peers of the primary that render the
 // COMPLETE app (sidebar, routing, its own draft) against the shared backend, so
-// a user can run multiple GUI windows at once (⌘⇧N / the "New Window" palette
+// a user can run multiple GUI windows at once (âŒ˜â‡§N / the "New Window" palette
 // command). Unlike the compact session windows they carry no `?win` flag; a
 // separate `peer=1` marker prevents them from replaying app-launch source
 // restoration after joining that shared backend. The primary mainWindow stays
@@ -13809,11 +13762,32 @@ const wakeIndicatorController = createWakeIndicatorWindowController({
   wireWindow: window => wireCommonWindowHandlers(window, zoomWiringForWindowKind('wakeIndicator'))
 })
 
+const introRevealController = createIntroRevealWindowController({
+  devServer: DEV_SERVER,
+  enabled: GUEST_ONBOARDING,
+  isMac: IS_MAC,
+  loadWindowUrl,
+  log: rememberLog,
+  mainWindow: () => mainWindow,
+  preloadPath: PRELOAD_PATH,
+  rendererIndex: resolveRendererIndex,
+  showMain: () => {
+    mainWindow.show()
+    mainWindow.focus()
+  },
+  wireWindow: window => wireCommonWindowHandlers(window, zoomWiringForWindowKind('petOverlay'))
+})
+
+registerChatOnboardingWindow({
+  enabled: GUEST_ONBOARDING,
+  mainWindow: () => mainWindow
+})
+
 // The pet overlay: a single transparent, frameless, always-on-top window that
 // hosts ONLY the floating mascot. Shift-clicking the in-window pet "pops it out"
 // here so it can leave the app's bounds and stay visible while Moor is
 // minimized (Codex-style task-completion glance). It carries no gateway
-// connection of its own — the main renderer is the single source of truth and
+// connection of its own â€” the main renderer is the single source of truth and
 // pushes pet state over IPC (moor:pet-overlay:state); the overlay just renders
 // it. Control flows back (pop-in, composer submit) via moor:pet-overlay:control.
 let petOverlayWindow = null
@@ -13853,12 +13827,12 @@ function spawnPetOverlayWindow(bounds) {
     hiddenInMissionControl: IS_MAC,
     // Non-activating: the overlay must never become the app's key/main window,
     // or it (a frameless, taskbar-skipping panel) becomes the app's switcher
-    // anchor and the Moor icon drops out of cmd/alt-tab — especially when the
+    // anchor and the Moor icon drops out of cmd/alt-tab â€” especially when the
     // main window is minimized. We flip this on only while the composer needs
     // the keyboard (see moor:pet-overlay:set-focusable).
     focusable: false,
     show: false,
-    // Fully transparent — the renderer paints only the sprite + bubble.
+    // Fully transparent â€” the renderer paints only the sprite + bubble.
     backgroundColor: '#00000000',
     webPreferences: {
       preload: PRELOAD_PATH,
@@ -13867,7 +13841,7 @@ function spawnPetOverlayWindow(bounds) {
       nodeIntegration: false,
       devTools: true,
       // Keep the sprite animating + bubble updating while the main window is
-      // minimized/blurred — the whole point of the overlay.
+      // minimized/blurred â€” the whole point of the overlay.
       backgroundThrottling: false
     }
   })
@@ -13890,7 +13864,7 @@ function spawnPetOverlayWindow(bounds) {
       IS_MAC ? { visibleOnFullScreen: true, skipTransformProcessType: true } : undefined
     )
   } catch {
-    // Not supported everywhere — best effort.
+    // Not supported everywhere â€” best effort.
   }
 
   // Pet overlay opts out of global UI zoom (see zoomWiringForWindowKind): it
@@ -13908,7 +13882,7 @@ function spawnPetOverlayWindow(bounds) {
       petOverlayWindow = null
     }
 
-    // If the overlay went away on its own (e.g. ⌘W), tell the main renderer to
+    // If the overlay went away on its own (e.g. âŒ˜W), tell the main renderer to
     // pop the pet back in so it doesn't stay hidden. Harmless echo when we're
     // the ones who closed it (popInPet already cleared the active flag).
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -13951,23 +13925,25 @@ function closePetOverlay() {
   petOverlayWindow = null
 }
 
-// ── HUD mode ────────────────────────────────────────────────────────────────
+// â”€â”€ HUD mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //
 // The chrome-free floating chat: a transparent, frameless, always-on-top
 // window showing only the composer and its scrollback, so Moor can be driven
 // while the user works in another app.
 //
 // Unlike the pet overlay / quick entry, this is a FULL app renderer with its
-// own gateway — the same thing createInstanceWindow() spawns, reshaped. That
+// own gateway â€” the same thing createInstanceWindow() spawns, reshaped. That
 // is deliberate: the HUD renders the real chat surface, so its composer is the
 // app's composer (slash commands, attachments, queue, voice) instead of a
 // lookalike that drifts. Entering HUD mode hides the main window; leaving
 // restores it.
-let hudWindow = null
+let hudWindow: BrowserWindow | null = null
 
-// Whether the main window was visible when HUD mode was entered, so exiting
-// puts the desktop back as it was rather than raising a window the user had
-// already minimized.
+// Whether closing the HUD should bring the main window back. Armed whenever a
+// live main window exists at HUD-open time, visible or not: the HUD hides the
+// app window itself, so a main window minimized or behind another app when
+// the HUD opened still needs a surface back â€” arming only on `isVisible()`
+// left the user with NO Moor window after the second toggle (#88513).
 let hudRestoreMainWindow = false
 
 // The session the HUD is currently on, reported by its renderer whenever the
@@ -13975,7 +13951,7 @@ let hudRestoreMainWindow = false
 // the gateway binds a session's event stream to exactly one socket, so the
 // turn the HUD started is streaming to the HUD's socket and the app window
 // hears nothing. The app has to re-resume that session to take the stream
-// back, and it can only do that if it knows which session to ask for — the
+// back, and it can only do that if it knows which session to ask for â€” the
 // HUD may have switched sessions, or started a new one the app has never
 // seen. Main is the only party that outlives the HUD's renderer, so it holds
 // the id and hands it over in the close broadcast.
@@ -13983,11 +13959,11 @@ let hudSessionId = null
 
 // The profile the live HUD renderer booted against (rides hudUrl's query
 // string). A renderer adopts its backend once at boot, so a retarget onto a
-// session from a DIFFERENT profile cannot be a same-window `goto` — the HUD
+// session from a DIFFERENT profile cannot be a same-window `goto` â€” the HUD
 // must be respawned against the new profile's backend (see openHudWindow).
 let hudProfile = null
 
-// A wide, short bar parked near the bottom of the active display — the shape
+// A wide, short bar parked near the bottom of the active display â€” the shape
 // of a game chat frame, and where one belongs. Defaults only: once the user
 // moves or resizes the HUD, hud-state.json wins (same pattern as the main
 // window's window-state.json).
@@ -14005,7 +13981,7 @@ function readHudState() {
       return raw
     }
   } catch {
-    // First run / unreadable — fall through to defaults.
+    // First run / unreadable â€” fall through to defaults.
   }
 
   return null
@@ -14049,11 +14025,11 @@ const schedulePersistHudState = debounce(persistHudState, 250)
 
 // How often Linux gets told where the cursor is. Fast enough that the bar is
 // solid before a click lands after the pointer arrives, cheap enough to leave
-// running for as long as the HUD is open — it is one `getCursorScreenPoint()`
+// running for as long as the HUD is open â€” it is one `getCursorScreenPoint()`
 // and, when the answer has not changed, nothing else.
 const HUD_CURSOR_POLL_MS = 60
 
-// Snap-to-pointer — global ⌘⇧G while the HUD is open (tap, not hold).
+// Snap-to-pointer â€” global âŒ˜â‡§G while the HUD is open (tap, not hold).
 const HUD_SNAP_ANCHOR_Y = 48
 
 function hudWindowing() {
@@ -14079,7 +14055,7 @@ function applyHudSnapToPointer() {
     workArea
   )
 
-  // setBounds — NOT setPosition alone: on Windows, a transparent frameless
+  // setBounds â€” NOT setPosition alone: on Windows, a transparent frameless
   // window silently grows ~1px per setPosition call (see move-by handler).
   // On native Wayland the compositor ignores the position half; the snap
   // shortcut is therefore a documented no-op there.
@@ -14095,7 +14071,7 @@ const hudSnapShortcut = createHudSnapShortcut(globalShortcut, applyHudSnapToPoin
 
 function registerHudSnapShortcut() {
   if (!hudSnapShortcut.register()) {
-    rememberLog('[hud] snap shortcut unavailable — CommandOrControl+Shift+G may be owned by another app')
+    rememberLog('[hud] snap shortcut unavailable â€” CommandOrControl+Shift+G may be owned by another app')
   }
 }
 
@@ -14106,7 +14082,7 @@ function registerHudSnapShortcut() {
  * while the window ignores the mouse because we pass `{ forward: true }`. That
  * option is macOS/Windows only. Without it a Linux HUD stops hearing the
  * pointer the moment it turns click-through, so it can never notice the pointer
- * coming back and stays transparent — the bar is there, and clicking it hits
+ * coming back and stays transparent â€” the bar is there, and clicking it hits
  * whatever is behind. Main can still see the cursor, so it says so.
  *
  * Deliberately the same decision, just a different source for one input: the
@@ -14139,7 +14115,7 @@ function startHudCursorFeed(win: BrowserWindow) {
     const point = cursorPointInWindow(screen.getCursorScreenPoint(), win.getBounds(), win.webContents.getZoomFactor())
 
     // Off-window is a real answer (it is what hands the mouse back), so it is
-    // sent — once. Only an unchanged answer is dropped, to keep an idle cursor
+    // sent â€” once. Only an unchanged answer is dropped, to keep an idle cursor
     // from waking the renderer 16 times a second.
     const key = point ? `${Math.round(point.x)},${Math.round(point.y)}` : 'out'
 
@@ -14173,8 +14149,8 @@ function startHudGameOverlayFeed(win: BrowserWindow) {
   }
 
   // Replay the latest state to every load of this window. The watch pushes only
-  // on CHANGE and its first tick fires the moment the window is created — well
-  // before the renderer has mounted its listener — so a HUD opened over a game
+  // on CHANGE and its first tick fires the moment the window is created â€” well
+  // before the renderer has mounted its listener â€” so a HUD opened over a game
   // that is already fullscreen would hear the one and only message before it
   // could receive it, then sit at "no game" forever while main was certain it
   // had reported one. (Same reason quick entry caches its last state push.)
@@ -14182,8 +14158,8 @@ function startHudGameOverlayFeed(win: BrowserWindow) {
   win.webContents.on('did-finish-load', () => push(last))
 
   // The watch gives up after two failed enumerations and never says so, which
-  // is how a HUD that cannot see the screen at all — no game cue, and
-  // read_window_below failing beside it — leaves nothing in the log to explain
+  // is how a HUD that cannot see the screen at all â€” no game cue, and
+  // read_window_below failing beside it â€” leaves nothing in the log to explain
   // itself. Report the reason once; the null keeps the watch's contract.
   let reported = false
 
@@ -14216,7 +14192,7 @@ function startHudGameOverlayFeed(win: BrowserWindow) {
 }
 
 function hudBounds() {
-  // Remembered spot first — validated against the LIVE displays so a HUD
+  // Remembered spot first â€” validated against the LIVE displays so a HUD
   // parked on an unplugged monitor comes back on-screen instead of lost.
   const saved = readHudState()
 
@@ -14246,7 +14222,7 @@ function hudBounds() {
 function hudUrl(sessionId, profile) {
   // The profile rides the query string next to `win=hud` (BEFORE the '#', so
   // HashRouter never sees it). The HUD renderer's gateway boot reads it and
-  // adopts that backend instead of the primary — without it, a HUD opened on a
+  // adopts that backend instead of the primary â€” without it, a HUD opened on a
   // non-primary profile's conversation resolves the session id against the
   // wrong backend and falls back to the default profile's last session.
   return buildHudWindowUrl(sessionId, {
@@ -14257,7 +14233,7 @@ function hudUrl(sessionId, profile) {
 }
 
 // Tell every window whether the HUD is up, so a toggle in any of them reads
-// the truth even when the HUD is closed from its own side (⌘W / its exit row).
+// the truth even when the HUD is closed from its own side (âŒ˜W / its exit row).
 // Carries the HUD's session so the app window can re-home onto it on the way
 // out (see hudSessionId).
 function broadcastHudState(open) {
@@ -14279,12 +14255,12 @@ function spawnHudWindow(sessionId, profile) {
     frame: false,
     transparent: true,
     // NOT resizable. A transparent frameless window on Windows keeps a
-    // system-level edge resize hot-zone while `resizable` is on — the OS
+    // system-level edge resize hot-zone while `resizable` is on â€” the OS
     // interprets pointer capture near the edge as a resize gesture, so the
     // window grows a few px every drag (worse at >100% DPI scaling). The
     // composer drag calls setPosition, which must move the window, not resize
     // it. Resizing is done by the renderer's edge/corner handles through
-    // `moor:hud:set-bounds`, which flips resizable on for the call — the
+    // `moor:hud:set-bounds`, which flips resizable on for the call â€” the
     // same pattern the pet overlay uses for its wheel-scale.
     resizable: false,
     // macOS AppKit's constrainFrameRect clamps setBounds to the current
@@ -14296,15 +14272,14 @@ function spawnHudWindow(sessionId, profile) {
     minimizable: false,
     maximizable: false,
     fullscreenable: false,
-    // Same rationale as the pet overlay: on Windows/Linux keep the helper out
-    // of the taskbar/alt-tab list; on macOS use an NSPanel so the frameless
-    // window never becomes the app's cmd-tab anchor.
+    // Keep the interactive macOS HUD as an ordinary NSWindow. NSPanel defaults
+    // hidesOnDeactivate to true, which removes the HUD while the user works in
+    // another app; the floating/all-spaces setup below supplies overlay behavior.
     skipTaskbar: !IS_MAC,
     hasShadow: false,
     alwaysOnTop: true,
-    type: IS_MAC ? 'panel' : undefined,
     // Clips the vibrancy layer to the HUD's silhouette rather than a hard
-    // rectangle — the frost stops where the window's corners do.
+    // rectangle â€” the frost stops where the window's corners do.
     roundedCorners: true,
     // Vibrancy must keep rendering while the window is BLURRED: streaming under
     // another app is the whole feature, and the default 'followWindow' kills
@@ -14313,7 +14288,7 @@ function spawnHudWindow(sessionId, profile) {
     hiddenInMissionControl: IS_MAC,
     show: false,
     backgroundColor: '#00000000',
-    // The full chat webPreferences — this window streams a real transcript, so
+    // The full chat webPreferences â€” this window streams a real transcript, so
     // it needs everything a chat window needs (preload bridge, autoplay for
     // voice, the shared throttling contract).
     webPreferences: chatWindowWebPreferences(PRELOAD_PATH)
@@ -14332,7 +14307,7 @@ function spawnHudWindow(sessionId, profile) {
   streamThrottle.register(win)
   wireCommonWindowHandlers(win, zoomWiringForWindowKind('chat'))
 
-  // Remember where the user parks and sizes it (debounced — these fire many
+  // Remember where the user parks and sizes it (debounced â€” these fire many
   // times mid-drag).
   bindGeometryPersistence(win, schedulePersistHudState)
 
@@ -14359,16 +14334,17 @@ function spawnHudWindow(sessionId, profile) {
   win.on('closed', () => {
     if (hudWindow === win) {
       hudWindow = null
+    } else if (hudWindow && !hudWindow.isDestroyed()) {
+      // Superseded by a profile respawn: the replacement owns the shortcut,
+      // the main-window restore and the toggles. Nothing to hand back.
+      return
     }
 
-    // Closed from its own side (⌘W) — closeHudWindow()'s dispose() never ran,
-    // so the global snap shortcut would otherwise stay registered (and stuck
-    // taken) with no HUD left to apply it to. dispose() is idempotent, so
-    // this is safe even if closeHudWindow() already released it.
+    // Whether the close came from closeHudWindow() or from the window's own
+    // side (a crashed renderer, a native close), this is the one teardown:
+    // release the global snap shortcut, put the app back so the user is never
+    // left with no surface, and correct every window's toggle.
     hudSnapShortcut.dispose()
-
-    // Put the app back so the user is never left with no surface, and
-    // correct every window's toggle.
     restoreMainWindowFromHud()
     broadcastHudState(false)
   })
@@ -14382,17 +14358,31 @@ function spawnHudWindow(sessionId, profile) {
   return win
 }
 
-// Put the app window back the way HUD mode found it.
+// Put the app window back, and give it the keyboard. `focusWindow`, not a bare
+// `show()`: show() alone leaves a minimized window minimized, and on macOS a
+// shown-but-not-key window means the user is looking at the app with the
+// caret still belonging to whatever the HUD was floating over.
 function restoreMainWindowFromHud() {
   if (!hudRestoreMainWindow) {
     return
   }
 
   hudRestoreMainWindow = false
+  focusWindow(mainWindow)
+}
 
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.show()
+// Take the HUD window down. The 'closed' handler stays attached so ONE path
+// owns the teardown (snap shortcut, main-window restore, close broadcast)
+// whether the window went via the exit button, âŒ˜W, a profile respawn, or the
+// grace deadline â€” detaching it before close() was how a renderer that never
+// answered the close left an always-on-top HUD nobody could dismiss and no
+// broadcast to correct the toggles.
+function destroyHudWindow(win: BrowserWindow) {
+  if (hudWindow === win) {
+    hudWindow = null
   }
+
+  requestHudClose(win)
 }
 
 function openHudWindow(sessionId, profile) {
@@ -14401,24 +14391,24 @@ function openHudWindow(sessionId, profile) {
   if (hudWindow && !hudWindow.isDestroyed()) {
     // Pointed at another PROFILE: the live renderer is bound to the old
     // profile's backend, and a renderer adopts its backend exactly once at
-    // boot — an in-place goto would resolve the id against the wrong backend
-    // (the #82285 fallback). Respawn against the right one.
+    // boot â€” an in-place goto would resolve the id against the wrong backend
+    // (the #82285 fallback). Respawn against the right one. The old window's
+    // 'closed' handler sees `hudWindow` already pointing at the replacement,
+    // so it neither restores main nor broadcasts a false "closed".
     if (profileKey && hudProfile !== profileKey) {
-      const win = hudWindow
-      hudWindow = null
-      win.removeAllListeners('closed')
-      win.destroy()
+      const previous = hudWindow
 
       hudSessionId = sessionId || null
       hudProfile = profileKey
       hudWindow = spawnHudWindow(sessionId, profileKey)
+      previous.destroy()
       broadcastHudState(true)
       registerHudSnapShortcut()
 
       return hudWindow
     }
 
-    // Already up, but pointed somewhere else — switch it rather than just
+    // Already up, but pointed somewhere else â€” switch it rather than just
     // raising it. Asking for HUD mode from another tab means "put THIS
     // conversation in the HUD", and a plain focus leaves the wrong one there.
     if (sessionId && sessionId !== hudSessionId) {
@@ -14434,7 +14424,7 @@ function openHudWindow(sessionId, profile) {
     return hudWindow
   }
 
-  hudRestoreMainWindow = Boolean(mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible())
+  hudRestoreMainWindow = Boolean(mainWindow && !mainWindow.isDestroyed())
   hudSessionId = sessionId || null
   hudProfile = profileKey
   hudWindow = spawnHudWindow(sessionId, profileKey)
@@ -14445,26 +14435,23 @@ function openHudWindow(sessionId, profile) {
 }
 
 function closeHudWindow() {
-  hudSnapShortcut.dispose()
-
   const win = hudWindow
-  hudWindow = null
 
   if (win && !win.isDestroyed()) {
-    // Null'd first so the 'closed' handler doesn't broadcast a second time.
-    win.removeAllListeners('closed')
-    win.close()
+    destroyHudWindow(win)
+
+    return
   }
 
+  // No live HUD (a renderer that died, a toggle racing the close): still
+  // release what an open HUD holds, so the toggles read right.
+  hudWindow = null
+  hudSnapShortcut.dispose()
   restoreMainWindowFromHud()
   broadcastHudState(false)
-
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    focusWindow(mainWindow)
-  }
 }
 
-// ── Quick Entry ─────────────────────────────────────────────────────────────
+// â”€â”€ Quick Entry â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //
 // A global shortcut summons a small frameless always-on-top composer from
 // anywhere, so a prompt can be fired without raising the whole app. The window
@@ -14488,7 +14475,7 @@ function readQuickEntrySettings() {
   try {
     return sanitizeQuickEntrySettings(JSON.parse(fs.readFileSync(QUICK_ENTRY_CONFIG_PATH, 'utf8')))
   } catch {
-    // Missing / unreadable / malformed → shipped defaults (enabled, default chord).
+    // Missing / unreadable / malformed â†’ shipped defaults (enabled, default chord).
     return sanitizeQuickEntrySettings(undefined)
   }
 }
@@ -14552,7 +14539,7 @@ function spawnQuickEntryWindow() {
       IS_MAC ? { visibleOnFullScreen: true, skipTransformProcessType: true } : undefined
     )
   } catch {
-    // Not supported everywhere — best effort.
+    // Not supported everywhere â€” best effort.
   }
 
   // Opts out of global UI zoom for the same reason as the pet overlay: it sizes
@@ -14563,7 +14550,7 @@ function spawnQuickEntryWindow() {
   // resurrect itself over the app, but its loss belongs in desktop.log.
   installWindowRendererLifecycle(win, { kind: 'quick', callbacks: { log: rememberLog } })
 
-  // Hide on blur. The window must never hold the user's focus captive — losing
+  // Hide on blur. The window must never hold the user's focus captive â€” losing
   // focus is the cheapest, least surprising dismiss (matches Spotlight).
   win.on('blur', () => {
     if (!win.isDestroyed()) {
@@ -14577,7 +14564,7 @@ function spawnQuickEntryWindow() {
     }
   })
 
-  // Replay the last known gateway state as soon as the page can hear it — a
+  // Replay the last known gateway state as soon as the page can hear it â€” a
   // freshly spawned quick window must not sit "disconnected" when the primary
   // renderer already reported a live gateway.
   win.webContents.on('did-finish-load', () => {
@@ -14688,7 +14675,7 @@ function createWindow() {
     title: 'Moor',
     // Frameless title bar on every platform so the renderer can paint the
     // "hide sidebar" button (and other left-side titlebar tools) flush with
-    // the top edge — matching the macOS layout where the traffic lights sit
+    // the top edge â€” matching the macOS layout where the traffic lights sit
     // inside the same band. On Windows/Linux, titleBarOverlay tells Electron
     // to paint native min/max/close in the top-right of the renderer; on
     // macOS it just reserves a content inset alongside the traffic lights.
@@ -14743,6 +14730,10 @@ function createWindow() {
       // first clean resize/move/close still captures the restored bounds (#56726).
       schedulePersistWindowState()
 
+      // #111906: the Linux launcher holds back its .desktop entry write until the
+      // window is on screen (a STARTING gnome-shell app must not see its entry change).
+      notifyLauncherWindowRevealed()
+
       // #38216: clear the mid-boot marker only after a window is actually usable.
       // Keep sticky `fallback` when we launched with --no-sandbox so the next
       // Start Menu click does not re-enter the GPU FATAL crash loop. The marker
@@ -14791,6 +14782,7 @@ function createWindow() {
   mainWindow.on('closed', () => {
     closePetOverlay()
     wakeIndicatorController.close()
+    introRevealController.destroy()
 
     if (mainWindow === createdMainWindow) {
       mainWindow = null
@@ -14803,7 +14795,7 @@ function createWindow() {
   wireCommonWindowHandlers(mainWindow, zoomWiringForWindowKind('chat'))
 
   // Per-window renderer lifecycle diagnostics + recovery (#81290). The reload
-  // policy (crashed/oom → bounded reload via the shared rolling budget, then
+  // policy (crashed/oom â†’ bounded reload via the shared rolling budget, then
   // the #38216 Windows sandbox relaunch check on suppression) is the same
   // policy this window used before it moved into the shared helper, so a
   // crashed peer renderer now logs and recovers exactly like the primary one.
@@ -14884,13 +14876,14 @@ function createWindow() {
   attachRendererConsoleCapture(mainWindow, 'main', rememberLog)
 
   // #95575: a torn renderer bundle (update replaced the app while its files
-  // were locked) loads fine and then dies on the first lazy import — a white
+  // were locked) loads fine and then dies on the first lazy import â€” a white
   // screen with no error surface. resolveRendererIndex already logs the torn
   // copies; here we refuse to load one into the PRIMARY window and put the
   // visible repair page in it instead. The Reload button re-attempts the
   // bundle in case the file lock cleared since boot.
-  const rendererIndex = DEV_SERVER ? null : resolveRendererIndex()
-  const tornAssets = rendererIndex ? missingRendererAssets(rendererIndex) : []
+  const resolvedRenderer = DEV_SERVER ? null : resolveRendererIndexWithMissing()
+  const rendererIndex = resolvedRenderer?.index ?? null
+  const tornAssets = resolvedRenderer?.missing ?? []
 
   if (!DEV_SERVER && rendererIndex && tornAssets.length > 0) {
     rememberLog(
@@ -14912,8 +14905,8 @@ function createWindow() {
     )
   }
 
-  // Start the Python backend NOW, in parallel with the renderer load — not on
-  // did-finish-load. The backend cold boot (spawn → port announce → /api/status)
+  // Start the Python backend NOW, in parallel with the renderer load â€” not on
+  // did-finish-load. The backend cold boot (spawn â†’ port announce â†’ /api/status)
   // is the dominant startup cost, and serializing it behind Chromium's load
   // added the whole renderer load time to first-usable-composer. The promise is
   // shared (backendConnectionState), so the renderer's getConnection() joins
@@ -15009,9 +15002,9 @@ ipcMain.on('moor:connection:active-route', (event, route) => {
 })
 // Reconnect-after-wake recovery. A REMOTE primary backend has no child process,
 // so the 'exit'/'error' handlers that would clear a dead connection promise never
-// fire — once the remote becomes unreachable across a sleep/wake the renderer
+// fire â€” once the remote becomes unreachable across a sleep/wake the renderer
 // re-dials the same dead descriptor forever and the composer stays stuck on
-// "Starting Moor…". Before the renderer's backoff loop reconnects, it asks us
+// "Starting Moorâ€¦". Before the renderer's backoff loop reconnects, it asks us
 // to confirm the cached PRIMARY backend is still reachable; if a remote one is
 // not, we drop the cache so the next getConnection() rebuilds it. Local backends
 // self-heal via their child 'exit' handler, so we never touch them here.
@@ -15091,7 +15084,7 @@ const suspectPoolSweepScope = {}
 // descriptors (Bots pane, secondary connections) kept serving dead SSH
 // tunnels after macOS resume: no child 'exit' fires for a remote, and the
 // background failure-streak policy takes several rounds to drop one. On
-// resume every pooled remote is suspect — probe each once (bounded), tear
+// resume every pooled remote is suspect â€” probe each once (bounded), tear
 // down the dead ones (pool entry + SSH bootstrap + tunnel/master) and rebuild
 // them through the claim-guarded dial path.
 function revalidateSuspectPoolAfterResume() {
@@ -15119,7 +15112,7 @@ ipcMain.handle('moor:backend:touch', async (_event, profile) => {
 
   return { ok: true }
 })
-// Pool sizing (Settings → Advanced): device-local, live-applied. Main is
+// Pool sizing (Settings â†’ Advanced): device-local, live-applied. Main is
 // authoritative (it owns the pool and the persisted copy); the returned
 // limits are what actually took effect post-clamp.
 ipcMain.handle('moor:pool-limits:get', async () => ({ ...poolLimits }))
@@ -15168,7 +15161,7 @@ ipcMain.handle('moor:window:openBrowser', async (_event, tabId) => {
 // The desktop's runtime is usually a venv Python invoked as
 // `python -m moor_cli.main`, so we resolve the SAME backend the app itself
 // launches and carry its argv + PYTHONPATH into a launcher script rather than
-// hoping a `moor` exists on the user's interactive PATH. Resolution only —
+// hoping a `moor` exists on the user's interactive PATH. Resolution only â€”
 // never ensureRuntime(), which would kick off a first-run install from a menu
 // click; an unresolved runtime is reported instead.
 ipcMain.handle('moor:window:openInTerminal', async (_event, sessionId, opts) => {
@@ -15178,7 +15171,7 @@ ipcMain.handle('moor:window:openInTerminal', async (_event, sessionId, opts) => 
 
   try {
     const profile = typeof opts?.profile === 'string' ? opts.profile.trim() : ''
-    const backend = resolveMoorBackend(tuiResumeArgs(sessionId.trim(), profile || undefined))
+    const backend = await resolveMoorBackend(tuiResumeArgs(sessionId.trim(), profile || undefined))
 
     if (!backend.command) {
       return { ok: false, error: 'Moor is not installed yet' }
@@ -15249,7 +15242,7 @@ ipcMain.on('moor:zoom:set-percent', (event, percent) => {
   setAndPersistZoomLevel(window, percentToZoomLevel(Number(percent)))
 })
 
-// --- Pet overlay (pop-out mascot) — see pet-overlay-ipc.ts. ---------------
+// --- Pet overlay (pop-out mascot) â€” see pet-overlay-ipc.ts. ---------------
 registerPetOverlayIpc({
   getMainWindow: () => mainWindow,
   getPetOverlayWindow: () => petOverlayWindow,
@@ -15257,7 +15250,7 @@ registerPetOverlayIpc({
   closePetOverlay
 })
 
-// --- HUD mode (chrome-free floating chat) — see hud-ipc.ts. ---------------
+// --- HUD mode (chrome-free floating chat) â€” see hud-ipc.ts. ---------------
 const hudIpc = registerHudIpc({
   isMac: IS_MAC,
   getTranslucencyState: () => translucencyState,
@@ -15312,7 +15305,7 @@ ipcMain.handle('moor:bootstrap:repair', async () => {
 
   // Probe the live backend process so the guard can distinguish "venv is
   // genuinely broken" (force reinstall) from "backend is just transiently
-  // stalled under GIL pressure" (#74874 — `event loop stalled` followed by
+  // stalled under GIL pressure" (#74874 â€” `event loop stalled` followed by
   // `ws ready frame send failed`, then renderer keeps reporting dead).
   const primaryProc = backendConnectionState.getProcess()
 
@@ -15340,7 +15333,7 @@ ipcMain.handle('moor:bootstrap:repair', async () => {
   // the existing flag: if the guard said "soft restart", we skip the
   // "bypass active runtime" path inside startMoor() and fall through
   // to the normal restart branch, which just kills the current child
-  // and respawns it against the same venv. See #74874 — this is what
+  // and respawns it against the same venv. See #74874 â€” this is what
   // breaks the infinite reinstall loop the user hit.
   bootstrapRepairRequested = repairDecision.hardReinstall
   bootstrapFailure = null
@@ -15492,13 +15485,13 @@ ipcMain.handle('moor:ssh-config:resolve', async (_event, host) => {
 })
 ipcMain.handle('moor:connection-config:test', async (_event, payload) => testDesktopConnectionConfig(payload))
 
-// ── Opt-in keychain encryption for stored secrets ───────────────────────────
+// â”€â”€ Opt-in keychain encryption for stored secrets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // get returns the current policy without touching safeStorage; set flips it
 // and re-encodes every stored secret (see applySecretStorageEncryption).
 ipcMain.handle('moor:secret-storage:get', async () => ({ on: secretStoragePolicy().on }))
 ipcMain.handle('moor:secret-storage:set', async (_event: any, on: any) => applySecretStorageEncryption(on === true))
 
-// ── v2 connection registry IPC (multi-source) ───────────────────────────────
+// â”€â”€ v2 connection registry IPC (multi-source) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Storage-level CRUD for named agent sources. Routing/pooling consumption of
 // the registry lands separately; these handlers only manage the persisted
 // list, so they are safe to ship ahead of the switchover.
@@ -15629,13 +15622,13 @@ ipcMain.handle('moor:connections:test', async (_event, id) => {
   return { ok: true, baseUrl, version: status?.version || null }
 })
 
-// ── Union agent roster + registry ws-url + fan-out updates (phase 3-5) ─────
+// â”€â”€ Union agent roster + registry ws-url + fan-out updates (phase 3-5) â”€â”€â”€â”€â”€
 
 // Enumerate every registered connection's profiles concurrently and flatten
 // into the union roster. Eager REST enumeration, lazy sockets: local + already
 // -dialed sources answer instantly; unreachable ones return an error entry
 // instead of failing the whole roster. ssh sources that have never been dialed
-// are SKIPPED (connect-on-demand — dialing every ssh box just to list agents
+// are SKIPPED (connect-on-demand â€” dialing every ssh box just to list agents
 // would spawn tunnels the user never asked for); once dialed, their pooled
 // descriptor serves the enumeration like any remote. Last-known SSH profile
 // lists are reused so switching the window back to local does not empty Bot Mode.
@@ -15648,7 +15641,7 @@ const SSH_INVENTORY_RETRY_MS = 60_000
 // runs on the ~5s Bot Mode roster poll and only hits /api/profiles, so the
 // status probe is cached per connection with a TTL to avoid doubling roster
 // traffic; the Test button refreshes it eagerly. A missing id simply bypasses
-// the same-backend roster collapse — fully backward compatible.
+// the same-backend roster collapse â€” fully backward compatible.
 const connectionInstallIds = new Map<string, { id?: string; ts: number }>()
 const INSTALL_ID_TTL_MS = 5 * 60_000
 const INSTALL_ID_NEGATIVE_TTL_MS = 60_000
@@ -15739,13 +15732,11 @@ async function probeSshProfileInventory(connection) {
 async function enumerateRegistryAgentSources(registry = readDesktopConnectionsRegistry()) {
   // One dead source must not wedge the whole roster: ensureRegistryBackend on
   // an unreachable remote can block up to the 45s readiness timeout, and the
-  // Bot Mode poll runs every 5s — each poll queued behind the dead dial, so
+  // Bot Mode poll runs every 5s â€” each poll queued behind the dead dial, so
   // the renderer painted stale rows for the entire outage (and the roster IPC
   // hung >30s in live repro). Bound each source's enumeration; a timeout is
   // reported like any other unreachable source and retried on the next poll.
-  const perSourceTimeoutMs = 10_000
-
-  const withEnumerationDeadline = async <T>(work: Promise<T>): Promise<T> => {
+  const withEnumerationDeadline = async <T>(work: Promise<T>, perSourceTimeoutMs: number): Promise<T> => {
     let timer: ReturnType<typeof setTimeout> | null = null
 
     try {
@@ -15783,7 +15774,7 @@ async function enumerateRegistryAgentSources(registry = readDesktopConnectionsRe
         } else {
           // Same connect-on-demand courtesy for the forced-local path: when
           // the primary route is remote, enumerating "This device" would
-          // SPAWN a local backend this user has never asked for — a phantom
+          // SPAWN a local backend this user has never asked for â€” a phantom
           // `default` agent that also forces -device handle disambiguation
           // onto the real one (remote-gateway-only desktops showed their main
           // agent twice, Aug 17 2026). Enumerate the local source only when
@@ -15809,14 +15800,17 @@ async function enumerateRegistryAgentSources(registry = readDesktopConnectionsRe
               backendDialClaims.run(backendScopeKey(connection.id, null), () =>
                 ensureRegistryBackend(connection.id, null)
               )
-            )
+            ),
+            rosterSourceEnumerationTimeoutMs(connection)
           )
 
-          const body: any = await getJsonForBackend(descriptor, '/api/profiles', { timeoutMs: 8_000 })
+          const { body, installId } = await fetchRosterSourceData(
+            () => getJsonForBackend(descriptor, '/api/profiles', { timeoutMs: 8_000 }),
+            () => probeConnectionInstallId(connection.id, descriptor)
+          )
 
-          // Cached with a TTL, so the 5s roster poll usually pays zero extra
-          // requests for the backend-identity probe.
-          const installId = await probeConnectionInstallId(connection.id, descriptor)
+          // The install-id probe is TTL-cached, so the 5s roster poll usually
+          // pays zero extra requests; on a miss it runs beside /api/profiles.
 
           const profiles = Array.isArray(body?.profiles)
             ? body.profiles.map(p => String(p?.name || '').trim()).filter(Boolean)
@@ -15895,7 +15889,7 @@ ipcMain.handle('moor:agents:roster', async () => {
 
   return {
     agents: buildAgentRoster(enumerations, { primaryConnectionId: registry.primary }),
-    // The active gateway owns the renderer's profiles.list — union agents
+    // The active gateway owns the renderer's profiles.list â€” union agents
     // that report THIS connection are the same identities, not extra rows.
     // Expose the primary id so the plugin merger can annotate them in place
     // instead of appending duplicates (remote-only desktops doubled every
@@ -16006,7 +16000,7 @@ ipcMain.handle('moor:connections:update-all', async (_event, payload) => {
         try {
           if (connection.kind === 'local') {
             // The app-managed runtime updates through the same pipeline as the
-            // Settings → Updates button (marker + venv gate + relaunch flow).
+            // Settings â†’ Updates button (marker + venv gate + relaunch flow).
             const result: any = await applyUpdates({})
 
             return { ...base, ok: result?.ok !== false, detail: result?.message || 'update started' }
@@ -16033,7 +16027,7 @@ ipcMain.handle('moor:connections:update-all', async (_event, payload) => {
           const body: any = await postJsonForBackend(descriptor, '/api/moor/update', {}, { timeoutMs: 15_000 })
 
           if (body?.ok === false) {
-            // The backend refused (docker/nix/externally-managed installs) —
+            // The backend refused (docker/nix/externally-managed installs) â€”
             // surface ITS message, per-row, instead of failing the batch.
             return {
               ...base,
@@ -16066,7 +16060,7 @@ async function getJsonForBackend(descriptor, path, opts: any = {}) {
   return fetchJsonForBackend(descriptor, path, opts)
 }
 
-// Any-method REST call against a resolved backend descriptor — the descriptor
+// Any-method REST call against a resolved backend descriptor â€” the descriptor
 // analogue of the moor:api handler's own auth split: OAuth backends prefer a
 // native bearer (cookieless RFC 8252 flow) and fall back to the OAuth cookie
 // partition; token/local descriptors use the static session-token header.
@@ -16084,23 +16078,17 @@ async function fetchJsonForBackend(
       throw new Error('File uploads are not supported against OAuth-gated remote backends yet.')
     }
 
-    const nativeAt = await ensureNativeAccessToken(descriptor.baseUrl).catch(() => null)
-
-    if (nativeAt) {
-      return fetchJson(url, null, {
-        method: opts.method,
-        body: opts.body,
-        timeoutMs: opts.timeoutMs,
-        bearer: nativeAt,
-        headers: descriptor.headers
-      })
-    }
-
-    return fetchJsonViaOauthSession(url, {
+    const options = {
       method: opts.method,
       body: opts.body,
       timeoutMs: opts.timeoutMs,
       headers: descriptor.headers
+    }
+
+    return requestWithOauthFallback(descriptor.baseUrl, {
+      ensureNativeAccessToken,
+      requestWithBearer: bearer => fetchJson(url, null, { ...options, bearer }),
+      requestWithCookie: () => fetchJsonViaOauthSession(url, options)
     })
   }
 
@@ -16117,23 +16105,25 @@ ipcMain.handle('moor:connection-config:probe', async (_event, rawUrl) => probeRe
 ipcMain.handle('moor:connection-config:oauth-login', async (_event, rawUrl) => {
   // Capability-gated login (RFC 8252). Probe the gateway's public /api/status
   // for supported auth_flows and /api/auth/providers for provider capabilities:
-  //   - all providers support password → always use the embedded login window
+  //   - all providers support password â†’ always use the embedded login window
   //     (password providers require the dashboard login form; native PKCE
   //     can never complete for that provider shape)
-  //   - advertises "native_pkce" AND at least one non-password provider →
+  //   - advertises "native_pkce" AND at least one non-password provider â†’
   //     run the system-browser + loopback + PKCE flow
-  //   - older gateway with no provider metadata → fall back to the auth_flows
+  //   - older gateway with no provider metadata â†’ fall back to the auth_flows
   //     check (existing compatibility)
   //   - a failed native login reports the error rather than auto-falling back
-  //     to the embedded flow — one sign-in action opens at most one window.
+  //     to the embedded flow â€” one sign-in action opens at most one window.
   const baseUrl = normalizeRemoteBaseUrl(rawUrl)
+  // Order login attempts without interrupting rotation of the existing session.
+  const authIsCurrent = nativeAccessTokenCoordinator.beginLogin(baseUrl)
 
   let statusBody: any = null
 
   try {
     statusBody = await fetchPublicJson(`${baseUrl}/api/status`, { timeoutMs: 8_000 })
   } catch {
-    // Can't read status — fall through to the embedded flow, which has its
+    // Can't read status â€” fall through to the embedded flow, which has its
     // own error handling and works against any gated gateway.
   }
 
@@ -16141,6 +16131,10 @@ ipcMain.handle('moor:connection-config:oauth-login', async (_event, rawUrl) => {
   const providers = authRequired ? await gatewayAuthProviders(baseUrl) : []
 
   const strategy = resolveLoginStrategy(statusBody, { providers })
+
+  if (!authIsCurrent()) {
+    throw new NativeAuthChangedError()
+  }
 
   if (strategy === 'native') {
     try {
@@ -16150,8 +16144,12 @@ ipcMain.handle('moor:connection-config:oauth-login', async (_event, rawUrl) => {
         rememberLog
       })
 
-      _storeNativeTokens(baseUrl, tokens)
-      // Confirmed sign-in — release the reauth latch so the next
+      if (!authIsCurrent()) {
+        throw new NativeAuthChangedError()
+      }
+
+      nativeAccessTokenCoordinator.storeTokens(baseUrl, tokens)
+      // Confirmed sign-in â€” release the reauth latch so the next
       // startMoor() re-dials instead of replaying the stale rejection.
       remoteReauthFailure = null
 
@@ -16171,7 +16169,13 @@ ipcMain.handle('moor:connection-config:oauth-login', async (_event, rawUrl) => {
   // Only a CONFIRMED sign-in releases the latch. A cancelled/closed login
   // window must leave it set, or the overlay's "Sign in" button starts
   // flickering again on the next retry.
+  if (!authIsCurrent()) {
+    throw new NativeAuthChangedError()
+  }
+
   if (connected) {
+    // A confirmed cookie login supersedes any older native identity.
+    nativeAccessTokenCoordinator.clearTokens(baseUrl)
     remoteReauthFailure = null
   }
 
@@ -16179,11 +16183,13 @@ ipcMain.handle('moor:connection-config:oauth-login', async (_event, rawUrl) => {
 })
 ipcMain.handle('moor:connection-config:oauth-logout', async (_event, rawUrl) => {
   const baseUrl = normalizeRemoteBaseUrl(rawUrl)
-  await clearOauthSession(baseUrl)
 
   // Also drop any native (RFC 8252) bearer tokens for this gateway so a
   // logout clears BOTH auth shapes.
-  _clearNativeTokens(baseUrl)
+  // Clear before awaiting cookie I/O: a pending login/refresh cannot restore
+  // logout, and a later login must not be erased when cookie clearing settles.
+  nativeAccessTokenCoordinator.clearTokens(baseUrl)
+  await clearOauthSession(baseUrl)
 
   // Report against the SAME liveness notion the Settings indicator uses
   // (AT-or-RT cookie, or a native token) so a logout that left any session
@@ -16279,7 +16285,7 @@ ipcMain.handle('moor:connection-config:apply', async (_event, payload) => {
 ipcMain.handle('moor:profile:get', async () => ({ profile: readActiveDesktopProfile() }))
 // Persistence-only sibling of moor:profile:set: records the profile the
 // Desktop should boot into next launch WITHOUT tearing down the backend or
-// reloading the window — the rail's live workspace switch already re-homed
+// reloading the window â€” the rail's live workspace switch already re-homed
 // the gateway (#79886).
 ipcMain.handle('moor:profile:remember', async (_event, name) => ({
   profile: writeActiveDesktopProfile(name)
@@ -16310,7 +16316,7 @@ ipcMain.handle('moor:requestMicrophoneAccess', async () => {
 })
 
 // read_window_below tool: which OS window is directly underneath this one.
-// Metadata only (app, title, bounds) — never pixels. On macOS, other apps'
+// Metadata only (app, title, bounds) â€” never pixels. On macOS, other apps'
 // window titles are gated behind the Screen Recording permission; pass titles
 // through only when it is ALREADY granted, and never prompt for it here.
 ipcMain.handle('moor:window:readBelow', async event => {
@@ -16333,10 +16339,10 @@ ipcMain.handle('moor:window:readBelow', async event => {
 // the response. Reads tag the profile as ?profile=<name>; mutations carry it in
 // request.profile. Either way, a remote profile's session lives only on its
 // remote host, so the request must go there (where it serves its own state.db).
-//   GET    /api/profiles/sessions        → splice each remote profile's rows in
-//   GET    /api/sessions/{id}[/messages] → read from remote
-//   DELETE /api/sessions/{id}            → delete on remote
-//   PATCH  /api/sessions/{id}            → rename/archive on remote
+//   GET    /api/profiles/sessions        â†’ splice each remote profile's rows in
+//   GET    /api/sessions/{id}[/messages] â†’ read from remote
+//   DELETE /api/sessions/{id}            â†’ delete on remote
+//   PATCH  /api/sessions/{id}            â†’ rename/archive on remote
 async function interceptSessionRequestForRemote(request) {
   if (typeof request?.path !== 'string') {
     return undefined
@@ -16359,7 +16365,7 @@ async function interceptSessionRequestForRemote(request) {
     const registrySources = await pooledRegistrySessionSources()
 
     if (remoteProfiles.length === 0 && registrySources.length === 0) {
-      return undefined // no remote profiles and no connected registry gateways → local fast path
+      return undefined // no remote profiles and no connected registry gateways â†’ local fast path
     }
 
     const requested = (searchParams.get('profile') || 'all').trim() || 'all'
@@ -16372,7 +16378,7 @@ async function interceptSessionRequestForRemote(request) {
   }
 
   // Batched sidebar slices. With no remote profiles the local batched endpoint
-  // (one DB open per profile) serves it directly — take the fast path. When
+  // (one DB open per profile) serves it directly â€” take the fast path. When
   // remotes exist, fan the three slices back out to the per-slice
   // /api/profiles/sessions path (which already merges remote rows correctly) and
   // reassemble; local profiles fall back to three primary reads there, but
@@ -16382,7 +16388,7 @@ async function interceptSessionRequestForRemote(request) {
     const registrySources = await pooledRegistrySessionSources()
 
     if (remoteProfiles.length === 0 && registrySources.length === 0) {
-      return undefined // local fast path → batched endpoint's single DB open
+      return undefined // local fast path â†’ batched endpoint's single DB open
     }
 
     const { recents: recentsSp, cron: cronSp, messaging: messagingSp } = buildSidebarSessionSliceParams(searchParams)
@@ -16432,7 +16438,7 @@ async function interceptSessionRequestForRemote(request) {
       }
     }
 
-    // Preserve every non-profile query param (limit/offset/order pagination —
+    // Preserve every non-profile query param (limit/offset/order pagination â€”
     // stripping them made getAllSessionMessages loop the same default page
     // against paginating remote backends).
     const passthroughParams = new URLSearchParams(searchParams)
@@ -16521,7 +16527,7 @@ async function remoteOwnerProfileForSession(sessionId: string) {
   return owner
 }
 
-// Resolve one /api/profiles/sessions slice with remote profiles spliced in —
+// Resolve one /api/profiles/sessions slice with remote profiles spliced in â€”
 // the same branch logic as the GET /api/profiles/sessions intercept, but always
 // returns data (never `undefined`) so a batched caller can compose slices. A
 // specific local profile reads from the local primary; a remote-override profile
@@ -16544,7 +16550,7 @@ async function fetchProfilesSessionSlice(searchParams, remoteProfiles) {
 // rows/totals swapped for the remote's real ones, re-sorted by recency and
 // re-windowed to the requested page. A dead remote contributes nothing rather
 // than breaking the sidebar. Connected registry gateways' sessions are spliced
-// in too (#88880) — the unified Sessions list shows EVERY connected gateway's
+// in too (#88880) â€” the unified Sessions list shows EVERY connected gateway's
 // chats, tagged with connection_id + profile so opens route correctly.
 async function mergeRemoteProfileSessions(searchParams, remoteProfiles) {
   const limit = Math.max(1, Number(searchParams.get('limit')) || 20)
@@ -16554,7 +16560,7 @@ async function mergeRemoteProfileSessions(searchParams, remoteProfiles) {
   const base = (await fetchPrimaryProfileSessions(searchParams, fetchJsonForProfile)) as any
 
   // Over-fetch each remote from offset 0 (limit+offset rows) so the merged window
-  // is correct for this page — mirrors the primary's per-profile over-fetch.
+  // is correct for this page â€” mirrors the primary's per-profile over-fetch.
   const remoteParams = new URLSearchParams(searchParams)
   remoteParams.set('limit', String(limit + offset))
   remoteParams.set('offset', '0')
@@ -16570,7 +16576,7 @@ async function mergeRemoteProfileSessions(searchParams, remoteProfiles) {
       const list = await remoteSessionList(name, remoteParams).catch(() => null)
 
       if (!list) {
-        delete profileTotals[name] // dead remote → drop its stale local total too
+        delete profileTotals[name] // dead remote â†’ drop its stale local total too
 
         return
       }
@@ -16583,7 +16589,7 @@ async function mergeRemoteProfileSessions(searchParams, remoteProfiles) {
   )
 
   // Registry gateways (v2 connections): splice every CONNECTED gateway's rows
-  // into the unified list. Only already-pooled backends are read — a sidebar
+  // into the unified list. Only already-pooled backends are read â€” a sidebar
   // refresh must never dial or spawn a backend (the Bot Mode roster-respawn
   // trap). Reads omit include_hidden, so Bot Mode's hidden canonical chats
   // stay out of the global list, same as local sessions.
@@ -16613,7 +16619,7 @@ async function mergeRemoteProfileSessions(searchParams, remoteProfiles) {
 // straight from the backend pool, never dialing. SSH sources contribute one
 // backend per pooled (connection, profile) scope; remote/cloud sources are one
 // shared host (any pooled scope's descriptor serves the cross-profile read).
-// The primary local connection is excluded — the primary aggregate already
+// The primary local connection is excluded â€” the primary aggregate already
 // carries local rows.
 async function pooledRegistrySessionSources(): Promise<RegistrySessionSource[]> {
   const registry = readDesktopConnectionsRegistry()
@@ -16650,7 +16656,7 @@ async function pooledRegistrySessionSources(): Promise<RegistrySessionSource[]> 
           profileLabel: connection.kind === 'ssh' ? key.slice(prefix.length) || 'default' : null
         })
       } catch {
-        // Dead or still-connecting backend — contributes nothing this refresh.
+        // Dead or still-connecting backend â€” contributes nothing this refresh.
       }
     }
 
@@ -16671,10 +16677,15 @@ async function dispatchRegistryApiRequest(
   // Claim-guarded (#90812): every registry-scoped REST call funnels through
   // here, so it can race a renderer's own WS reconnect dial for the same
   // (connectionId, profile) scope; coalescing avoids bootstrapping a second
-  // SSH tunnel / remote dashboard.
-  const connection: any = await backendDialClaims.run(backendScopeKey(registryConnectionId, routeProfile), () =>
-    ensureRegistryBackend(registryConnectionId, routeProfile)
-  )
+  // SSH tunnel / remote dashboard. A passive read never dials, so it stays
+  // OUT of the claim: an interactive open coalescing onto an in-flight
+  // passive read would otherwise inherit its "no warm backend" rejection.
+  const spawnPriority = spawnPriorityFrom(request?.priority)
+  const connection: any = request?.passive
+    ? await ensureRegistryBackend(registryConnectionId, routeProfile, '', { passive: true })
+    : await backendDialClaims.run(backendScopeKey(registryConnectionId, routeProfile), () =>
+        ensureRegistryBackend(registryConnectionId, routeProfile, '', { spawnPriority })
+      )
 
   const requestPath = pathForRegistryBackendRequest(request.path, requestProfile, connection)
 
@@ -16711,8 +16722,8 @@ async function teardownConnectionScopedProfileBackend(connectionId, profile) {
 
 async function handleMoorApiRequest(request) {
   // Registry-pinned request (request.connectionId): the renderer is working
-  // against a REGISTERED gateway connection, so the data — cron jobs and their
-  // run sessions included — lives in THAT host's state.db, not any local
+  // against a REGISTERED gateway connection, so the data â€” cron jobs and their
+  // run sessions included â€” lives in THAT host's state.db, not any local
   // profile's. Resolve the backend through the registry (same pool the job
   // list and WS traffic use) instead of the legacy profile route; a shared
   // remote/cloud host serves every profile via ?profile=, so scope the path.
@@ -16725,7 +16736,7 @@ async function handleMoorApiRequest(request) {
   }
 
   // Remote-profile session requests would otherwise hit the local primary off
-  // each profile's on-disk state.db — fine for local profiles, but a remote
+  // each profile's on-disk state.db â€” fine for local profiles, but a remote
   // profile's sessions live on its remote host, so the UI's IDs 404 (or mutations
   // no-op) the moment they run there. Route reads + mutations to the remote.
   const rerouted = await interceptSessionRequestForRemote(request)
@@ -16738,6 +16749,7 @@ async function handleMoorApiRequest(request) {
   const tornDownProfile = await prepareProfileDeleteRequest(request)
 
   const profile = request?.profile
+  const spawnPriority = spawnPriorityFrom(request?.priority)
   // After tearing down a backend for profile deletion, route to the primary
   // backend instead of spawning a fresh pool backend.  A freshly spawned
   // backend calls ensure_moor_home() which recreates the profile directory,
@@ -16759,54 +16771,15 @@ async function handleMoorApiRequest(request) {
   let response
 
   try {
-    const connection = await ensureBackend(routeProfile)
+    const connection = await ensureBackend(routeProfile, { passive: request?.passive, spawnPriority })
     const timeoutMs = resolveTimeoutMs(request?.timeoutMs, DEFAULT_FETCH_TIMEOUT_MS)
 
-    const url = `${connection.baseUrl}${apiRoute.requestPath}`
-
-    // OAuth gateways authenticate REST via EITHER a native bearer token
-    // (cookieless RFC 8252 flow) OR the HttpOnly session cookie held in the OAuth
-    // partition. Prefer the native bearer when present (mirroring
-    // mintGatewayWsTicket): the native flow never sets a cookie, so routing an
-    // oauth-mode REST call through the cookie-only path returns 401 no_cookie even
-    // though a valid bearer is held. Cookie mode rides Electron's net stack bound
-    // to the OAuth partition so the cookie attaches automatically. Token/local
-    // modes keep using the static session-token header.
-    if (connection.authMode === 'oauth') {
-      // The OAuth path rides electron.net with JSON headers; multipart isn't
-      // wired there. Fail loudly rather than corrupting the upload.
-      if (request?.upload) {
-        throw new Error('File uploads are not supported against OAuth-gated remote backends yet.')
-      }
-
-      // Native bearer first (cookieless). ensureNativeAccessToken transparently
-      // refreshes a near-expiry AT via /auth/native/refresh; a null return means
-      // no native session (resolveOauthRestAuth then selects the cookie path).
-      const nativeAt = await ensureNativeAccessToken(connection.baseUrl).catch(() => null)
-      const restAuth = resolveOauthRestAuth(nativeAt)
-
-      if (restAuth.kind === 'bearer') {
-        response = await fetchJson(url, null, {
-          method: request?.method,
-          body: request?.body,
-          timeoutMs,
-          bearer: restAuth.token
-        })
-      } else {
-        response = await fetchJsonViaOauthSession(url, {
-          method: request?.method,
-          body: request?.body,
-          timeoutMs
-        })
-      }
-    } else {
-      response = await fetchJson(url, connection.token, {
-        method: request?.method,
-        body: request?.body,
-        upload: request?.upload,
-        timeoutMs
-      })
-    }
+    response = await fetchJsonForBackend(connection, apiRoute.requestPath, {
+      method: request?.method,
+      body: request?.body,
+      upload: request?.upload,
+      timeoutMs
+    })
   } catch (error) {
     // A failed rename PATCH must not strand the app on the temporary primary:
     // restore the original active profile and restart its backend.
@@ -16856,95 +16829,15 @@ ipcMain.handle('moor:api', async (_event, request) => {
   return handleMoorApiRequest(request).finally(releaseProfileDeletion)
 })
 
-// One deduper per cross-window cue — the choke point every window shares. Main
-// handles IPC serially, so the first window to claim a key wins with no race.
-const isDuplicateNotification = createEventDeduper()
-const claimedAmbientCue = createEventDeduper()
+// Main serializes cross-window ambient claims (see event-dedupe.ts for why a
+// spoken reply holds its claim far longer than a beep).
+const ownsAmbientCue = createAmbientClaimArbiter()
+ipcMain.handle('moor:ambient:claim', (_event, key) => ownsAmbientCue(String(key ?? '')))
 
-// A window asks "do I own this ambient cue (turn-end sound / spoken reply)?".
-// The first caller within the window gets true; peers get false and stay quiet.
-ipcMain.handle('moor:ambient:claim', (_event, key) => !claimedAmbientCue(String(key ?? '')))
-
-ipcMain.handle('moor:notify', (_event, payload) => {
-  if (!Notification.isSupported()) {
-    return false
-  }
-
-  // Multiple full windows each run their own renderer throttle, so the same
-  // kind+session can arrive here twice. Collapse it at this single choke point.
-  // Return true (not false): a notification for the event IS being shown by the
-  // first caller, so the settings "send test" success probe stays honest.
-  if (isDuplicateNotification(`${payload?.kind ?? ''}:${payload?.sessionId ?? payload?.tag ?? ''}`)) {
-    return true
-  }
-
-  // Action buttons render only on signed macOS builds; elsewhere they're dropped
-  // and the body click still works.
-  const actions = Array.isArray(payload?.actions) ? payload.actions : []
-  const icon = typeof payload?.icon === 'string' && payload.icon.trim() ? payload.icon.trim() : undefined
-
-  const notification = new Notification({
-    title: payload?.title || 'Moor',
-    body: payload?.body || '',
-    silent: Boolean(payload?.silent),
-    ...(icon ? { icon } : {}),
-    actions: actions.map(action => ({ type: 'button', text: String(action?.text || '') }))
-  })
-
-  notification.on('click', () => {
-    if (!mainWindow || mainWindow.isDestroyed()) {
-      return
-    }
-
-    focusWindow(mainWindow)
-
-    if (payload?.sessionId) {
-      mainWindow.webContents.send('moor:focus-session', payload.sessionId)
-    }
-
-    // Plugin / session-less activation — serializable path (+ optional notifyId
-    // for renderer callbacks). Same vocabulary as moor://index-network/….
-    if (payload?.activate || payload?.notifyId) {
-      mainWindow.webContents.send('moor:notification-activate', {
-        activate: payload?.activate,
-        notifyId: payload?.notifyId,
-        tag: payload?.tag
-      })
-    }
-  })
-  notification.on('action', (_actionEvent, index) => {
-    if (!mainWindow || mainWindow.isDestroyed()) {
-      return
-    }
-
-    const action = actions[index]
-
-    if (!action?.id) {
-      return
-    }
-
-    // Approvals keep the existing session-scoped channel.
-    if (payload?.sessionId && !payload?.notifyId && !payload?.activate) {
-      mainWindow.webContents.send('moor:notification-action', { sessionId: payload.sessionId, actionId: action.id })
-
-      return
-    }
-
-    focusWindow(mainWindow)
-    mainWindow.webContents.send('moor:notification-activate', {
-      actionId: action.id,
-      activate: action.activate || payload?.activate,
-      notifyId: payload?.notifyId,
-      tag: payload?.tag
-    })
-  })
-  notification.show()
-
-  return true
-})
+registerNativeNotifications({ getMainWindow: () => mainWindow, focusWindow })
 
 // Data-URL file load cap (composer attach + local previews). Main owns the
-// persisted MB value so every IPC read honours Settings → Chat without the
+// persisted MB value so every IPC read honours Settings â†’ Chat without the
 // renderer having to pass maxBytes on each call. Default is 16 MB; clamp
 // lives in hardening.ts.
 const DATA_URL_READ_MAX_CONFIG_PATH = path.join(app.getPath('userData'), 'data-url-read-max.json')
@@ -17040,7 +16933,7 @@ ipcMain.handle('moor:readFileText', async (_event, filePath) => {
 
 // Runtime desktop plugins load their FULL source through this door.
 // `moor:readFileText` is the *preview* read and silently truncates at
-// TEXT_PREVIEW_MAX_BYTES (512 KiB) — for a plugin that means evaluating half a
+// TEXT_PREVIEW_MAX_BYTES (512 KiB) â€” for a plugin that means evaluating half a
 // file. Dedicated generous cap, full read, and a hard EFBIG (via maxBytes)
 // instead of truncation when the source exceeds it.
 const PLUGIN_SOURCE_MAX_BYTES = 16 * 1024 * 1024
@@ -17102,7 +16995,7 @@ ipcMain.handle('moor:writeClipboard', (_event, text) => {
   return true
 })
 
-// Native save-location picker (profile export etc.) — the write itself happens
+// Native save-location picker (profile export etc.) â€” the write itself happens
 // elsewhere (the backend, for profile archives); this only picks the path.
 ipcMain.handle('moor:selectSavePath', async (_event, options: any = {}) => {
   const result = await dialog.showSaveDialog(mainWindow, {
@@ -17198,6 +17091,16 @@ ipcMain.handle('moor:saveImageBuffer', async (_event, payload) => {
   return writeComposerImage(buffer, payload?.ext || '.png', payload?.name)
 })
 
+ipcMain.handle('moor:savePastedText', async (_event, payload) => {
+  const text = typeof payload?.text === 'string' ? payload.text : ''
+
+  if (!text) {
+    throw new Error('savePastedText: missing text')
+  }
+
+  return writeComposerPaste(app.getPath('userData'), text)
+})
+
 ipcMain.handle('moor:saveClipboardImage', async () => {
   const image = clipboard.readImage()
 
@@ -17267,7 +17170,7 @@ ipcMain.on('moor:titlebar-theme', (_event, payload) => {
   }
 
   // Repaint the native (Windows/Linux) titlebar overlay on every open chat
-  // window, not just the primary — instance peers and session windows share the
+  // window, not just the primary â€” instance peers and session windows share the
   // one app theme. applyTitleBarOverlay no-ops on the frameless pet overlay.
   for (const win of BrowserWindow.getAllWindows()) {
     applyTitleBarOverlay(win)
@@ -17322,11 +17225,12 @@ app.on('before-quit', () => {
 // Close the pooled keep-alive sockets on quit so lingering connections can't
 // hold the event loop open or leak FDs past app teardown.
 app.on('will-quit', () => {
+  sshIsolatedKeepalives.stopAll()
   destroyKeepaliveAgents()
 })
 
 // Answered synchronously so preload can publish the verdict before the
-// renderer's first script — see the note there on why it cannot decide this
+// renderer's first script â€” see the note there on why it cannot decide this
 // itself. Registered at module scope, which runs long before any window.
 ipcMain.on('moor:translucency:support', event => {
   event.returnValue = { glass: GLASS_SUPPORTED, translucency: TRANSLUCENCY_SUPPORTED }
@@ -17339,7 +17243,9 @@ ipcMain.on('moor:translucency:support', event => {
 // only strips internal flags.
 ipcMain.on('moor:launch-flags', event => {
   event.returnValue = {
-    localModels: process.argv.includes('--local') || process.platform === 'win32' || process.platform === 'darwin'
+    localModels: process.argv.includes('--local') || process.platform === 'win32' || process.platform === 'darwin',
+    guestOnboarding: GUEST_ONBOARDING,
+    skipIntro: SKIP_INTRO
   }
 })
 
@@ -17371,7 +17277,7 @@ ipcMain.on('moor:translucency', (_event, payload) => {
   scheduleTranslucencyWrite()
 
   // The HUD's frost reads the same setting but answers on its own terms (see
-  // hudFrostFor) — and it is a transparent window, so it is deliberately not
+  // hudFrostFor) â€” and it is a transparent window, so it is deliberately not
   // in the chat fan-out below. It self-diffs, so an unrelated change costs
   // nothing native.
   hudIpc.applyHudFrost()
@@ -17385,8 +17291,8 @@ ipcMain.on('moor:translucency', (_event, payload) => {
 
 // Keep-awake: hold the machine awake for long/overnight runs. Main owns the one
 // blocker and its persisted state so a cold launch restores it (applied on
-// ready — powerSaveBlocker needs the app ready). The renderer toggles it from
-// Settings → Advanced over IPC. See store/keep-awake.
+// ready â€” powerSaveBlocker needs the app ready). The renderer toggles it from
+// Settings â†’ Advanced over IPC. See store/keep-awake.
 const KEEP_AWAKE_CONFIG_PATH = path.join(app.getPath('userData'), 'keep-awake.json')
 const keepAwake = createKeepAwake(powerSaveBlocker)
 
@@ -17411,8 +17317,8 @@ ipcMain.on('moor:keep-awake', (_event, on) => {
 })
 
 // Quick Entry: the renderer reads the live registration state on settings mount
-// and writes the preference back. Main is authoritative — it owns the OS
-// accelerator — so both handlers return the state that ACTUALLY resulted,
+// and writes the preference back. Main is authoritative â€” it owns the OS
+// accelerator â€” so both handlers return the state that ACTUALLY resulted,
 // including `registered: false` + `error: 'taken'` when another app owns the
 // chord. See electron/quick-entry.ts + store/quick-entry.
 ipcMain.handle('moor:quick-entry:settings:get', async () => {
@@ -17442,9 +17348,9 @@ ipcMain.handle('moor:quick-entry:settings:set', async (_event, patch) => {
   return applyQuickEntrySettings(next)
 })
 
-// Quick window → main → PRIMARY renderer. We never submit here: the renderer
+// Quick window â†’ main â†’ PRIMARY renderer. We never submit here: the renderer
 // owns the one prompt-submit path, and forwarding keeps it that way. The
-// payload is `{ target, text }` — target routing (current chat / a picked
+// payload is `{ target, text }` â€” target routing (current chat / a picked
 // session / new) is the renderer's job too.
 ipcMain.on('moor:quick-entry:submit', (_event, payload) => {
   hideQuickEntryWindow()
@@ -17461,7 +17367,7 @@ ipcMain.on('moor:quick-entry:submit', (_event, payload) => {
     return
   }
 
-  // Deliberately does NOT raise/focus the main window — the user asked to fire
+  // Deliberately does NOT raise/focus the main window â€” the user asked to fire
   // a prompt from wherever they were, not to be yanked into the app.
   mainWindow.webContents.send('moor:quick-entry:submit', {
     target: typeof payload?.target === 'string' && payload.target ? payload.target : 'current',
@@ -17469,7 +17375,7 @@ ipcMain.on('moor:quick-entry:submit', (_event, payload) => {
   })
 })
 
-// Primary renderer → main → quick window: gateway connection state + the
+// Primary renderer â†’ main â†’ quick window: gateway connection state + the
 // recent-session list for the target picker. Cached so a quick window spawned
 // AFTER the last push still boots from truth instead of "disconnected".
 ipcMain.on('moor:quick-entry:state', (_event, payload) => {
@@ -17484,7 +17390,7 @@ ipcMain.on('moor:quick-entry:dismiss', () => hideQuickEntryWindow())
 
 // Disable F12 DevTools: maintained in the main process so a cold launch
 // restores it before any window is shown (applied on ready). The renderer
-// toggles it from Settings → Advanced over IPC. See store/disable-f12.
+// toggles it from Settings â†’ Advanced over IPC. See store/disable-f12.
 const DISABLE_F12_CONFIG_PATH = path.join(app.getPath('userData'), 'disable-f12.json')
 
 function readPersistedDisableF12() {
@@ -17512,10 +17418,10 @@ ipcMain.handle('moor:openExternal', (_event, url) => {
   }
 })
 
-// ── Find-in-page (Ctrl/Cmd+F) ─────────────────────────────────────────────
+// â”€â”€ Find-in-page (Ctrl/Cmd+F) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // The desktop supports multiple BrowserWindows (one primary plus any
 // per-session secondary windows spawned via `moor:window:openSession`).
-// Find must run against the requesting window, not a global — otherwise
+// Find must run against the requesting window, not a global â€” otherwise
 // Cmd+F pressed in a secondary session window would search the primary
 // and the match counter would report matches the user can't see. Resolve
 // the sender through `BrowserWindow.fromWebContents(event.sender)` and
@@ -17523,7 +17429,7 @@ ipcMain.handle('moor:openExternal', (_event, url) => {
 
 // Lazily-installed forwarder per sender webContents. We track one
 // uninstall fn per webContents id and prune entries when the sender goes
-// away — Electron does not auto-detach webContents listeners on close,
+// away â€” Electron does not auto-detach webContents listeners on close,
 // so the map is the cleanup path.
 const foundInPageForwarders = new Map<number, () => void>()
 
@@ -17566,7 +17472,7 @@ ipcMain.handle('moor:stop-find-in-page', event => {
   stopFind(win.webContents)
 })
 
-// The renderer can't know whether a loopback URL is reachable — only main
+// The renderer can't know whether a loopback URL is reachable â€” only main
 // knows which transport backs this gateway. Ask before loading one.
 ipcMain.handle('moor:preview:reach', async (event, url) => reachablePreviewUrl(event.sender.id, String(url || '')))
 
@@ -17642,7 +17548,7 @@ ipcMain.handle('moor:logs:recent', async () => ({ path: DESKTOP_LOG_PATH, lines:
 
 // Renderer error-boundary catches (#79428 defect B): the component stack only
 // exists in renderer memory, so the boundary posts it here and we persist it
-// via the desktop.log pipeline. `on`, not `handle` — the sender may be mid-
+// via the desktop.log pipeline. `on`, not `handle` â€” the sender may be mid-
 // crash and must not await. Flush immediately: a crashing window can be gone
 // before the debounced flush timer fires.
 ipcMain.on('moor:logs:renderer-error', (_event, report) => {
@@ -17651,7 +17557,7 @@ ipcMain.on('moor:logs:renderer-error', (_event, report) => {
   flushDesktopLogBufferSync()
 })
 
-// Local filesystem + plugin-root IPC (readDir/reveal/rename/trash/…) — see fs-ipc.ts.
+// Local filesystem + plugin-root IPC (readDir/reveal/rename/trash/â€¦) â€” see fs-ipc.ts.
 registerFsIpc({
   moorHome: MOOR_HOME,
   readActiveDesktopProfile,
@@ -17661,14 +17567,14 @@ registerFsIpc({
   resolveGitBinary
 })
 
-// Git-driven features (worktrees, review pane, repo scan) — see git-ipc.ts.
+// Git-driven features (worktrees, review pane, repo scan) â€” see git-ipc.ts.
 registerGitIpc({ resolveGitBinary, resolveGhBinary })
 
-// Client-side loopback callback for MCP OAuth against remote backends — see
+// Client-side loopback callback for MCP OAuth against remote backends â€” see
 // mcp-oauth-callback-ipc.ts.
 registerMcpOauthCallbackIpc()
 
-// Embedded terminal PTY host (moor:terminal:*) — see terminal-ipc.ts.
+// Embedded terminal PTY host (moor:terminal:*) â€” see terminal-ipc.ts.
 const terminalIpc = registerTerminalIpc({
   isWindows: IS_WINDOWS,
   findOnPath,
@@ -17680,8 +17586,8 @@ const terminalIpc = registerTerminalIpc({
 
 const disposeTerminalSession = terminalIpc.disposeTerminalSession
 
-ipcMain.handle('moor:updates:check', async () =>
-  checkUpdates().catch(error => ({
+ipcMain.handle('moor:updates:check', async (_event, opts) =>
+  checkUpdates({ force: Boolean(opts?.force) }).catch(error => ({
     supported: true,
     branch: readDesktopUpdateConfig().branch,
     error: 'check-failed',
@@ -17750,6 +17656,83 @@ ipcMain.handle('moor:updates:token:verify', async (_event, customPat?: string) =
   return await verifyGitHubToken(tokenToTest, cfg.repo)
 })
 
+async function verifyGitHubToken(
+  token: string,
+  repo?: string
+): Promise<{ ok: boolean; message?: string; login?: string; repoAccess?: boolean }> {
+  return new Promise(resolve => {
+    const headers: Record<string, string> = {
+      Accept: 'application/vnd.github+json',
+      'User-Agent': 'moor-desktop-update-check',
+      Authorization: `Bearer ${token}`
+    }
+
+    const req = https.get('https://api.github.com/user', { headers, timeout: 8000 }, res => {
+      const chunks: Buffer[] = []
+      res.on('data', chunk => chunks.push(chunk))
+      res.on('end', () => {
+        if (res.statusCode === 200) {
+          try {
+            const data = JSON.parse(Buffer.concat(chunks).toString('utf8'))
+            const login = (data.login as string) || 'authenticated-user'
+
+            if (repo && repo.includes('/')) {
+              const cleanRepo = repo.replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '')
+              const repoReq = https.get(`https://api.github.com/repos/${cleanRepo}`, { headers, timeout: 8000 }, rRes => {
+                if (rRes.statusCode === 200) {
+                  resolve({
+                    ok: true,
+                    login,
+                    repoAccess: true,
+                    message: `Connected as @${login} with access to ${cleanRepo}`
+                  })
+                } else if (rRes.statusCode === 404) {
+                  resolve({
+                    ok: false,
+                    login,
+                    repoAccess: false,
+                    message: `Connected as @${login}, but "${cleanRepo}" was not found or lacks token permissions.`
+                  })
+                } else {
+                  resolve({
+                    ok: false,
+                    login,
+                    repoAccess: false,
+                    message: `Token verified for @${login}, but repo check returned HTTP ${rRes.statusCode}.`
+                  })
+                }
+              })
+              repoReq.on('error', () => resolve({ ok: true, login, message: `Connected as @${login}` }))
+              repoReq.on('timeout', () => {
+                repoReq.destroy()
+                resolve({ ok: true, login, message: `Connected as @${login}` })
+              })
+            } else {
+              resolve({ ok: true, login, message: `Successfully connected to GitHub as @${login}` })
+            }
+          } catch {
+            resolve({ ok: true, message: 'Valid token accepted by GitHub.' })
+          }
+        } else if (res.statusCode === 401) {
+          resolve({ ok: false, message: 'Invalid or expired GitHub Personal Access Token (401 Unauthorized).' })
+        } else if (res.statusCode === 403) {
+          resolve({ ok: false, message: 'GitHub API rate limit exceeded or access forbidden (403 Forbidden).' })
+        } else {
+          resolve({ ok: false, message: `GitHub API returned HTTP ${res.statusCode}` })
+        }
+      })
+    })
+
+    req.on('timeout', () => {
+      req.destroy()
+      resolve({ ok: false, message: 'Connection to GitHub API timed out.' })
+    })
+    req.on('error', err => {
+      resolve({ ok: false, message: `Network error: ${err.message}` })
+    })
+  })
+}
+
 // Resolve the canonical Moor version (the one `release.py` bumps in
 // moor_cli/__init__.py + pyproject.toml) so the desktop About panel shows the
 // real Moor version instead of the Electron app's own package.json version,
@@ -17777,8 +17760,8 @@ function resolveMoorVersion() {
 
 // Renderer-bundle skew: `moor update` moves the SOURCE TREE, but the UI
 // (including bundled plugins like Bot Mode) is compiled into this binary at
-// build time. A terminal-side update — or an in-app update whose bundle-swap
-// leg failed — leaves the new runtime running under an old renderer, so About
+// build time. A terminal-side update â€” or an in-app update whose bundle-swap
+// leg failed â€” leaves the new runtime running under an old renderer, so About
 // shows the new version while the sidebar is missing that version's desktop
 // features. Compare the build stamp's commit against the tree, scoped to
 // apps/desktop/, and warn when the running renderer is provably behind.
@@ -17790,16 +17773,16 @@ async function detectRendererSkew() {
 
 // Re-resolve the live Moor version and push it into the native About panel
 // just before showing it, so an in-place `moor update` is reflected without
-// an app restart. macOS only — `showAboutPanel()` is a no-op elsewhere, and the
+// an app restart. macOS only â€” `showAboutPanel()` is a no-op elsewhere, and the
 // other platforms don't use this menu item.
 function showAboutPanelFresh() {
   void detectRendererSkew().then(skew => {
     app.setAboutPanelOptions({
       applicationName: APP_NAME,
       applicationVersion: skew.outOfSync
-        ? `${resolveMoorVersion()} — app build out of date, update the desktop app`
+        ? `${resolveMoorVersion()} â€” app build out of date, update the desktop app`
         : resolveMoorVersion(),
-      copyright: 'Copyright © 2026 Moor inc.'
+      copyright: 'Copyright Â© 2026 Moor inc.'
     })
     app.showAboutPanel()
   })
@@ -17816,7 +17799,7 @@ ipcMain.handle('moor:version', async () => {
     moorRoot: resolveUpdateRoot(),
     bundleOutOfSync: skew.outOfSync,
     bundleCommitsBehind: skew.desktopCommitsBehind,
-    // True when the bundle on disk is not the one this process loaded — a
+    // True when the bundle on disk is not the one this process loaded â€” a
     // plain app restart (no rebuild, no installer) clears the skew above.
     // Packaged only: a dev `--build-only` rewrites build/install-stamp.json
     // under a running `npm start`, which is a rebuild the developer asked for,
@@ -17835,18 +17818,94 @@ ipcMain.handle('moor:app:relaunch', async () => {
   void exitAfterBackendShutdown(0)
 })
 
+// Host facts the guided first run asks for once, to decide whether "set this
+// machine up" is the likeliest first task or just one option among several.
+// Age is the birthtime of the user's home directory â€” when the OS created this
+// account, the closest thing to "when did this machine become theirs" that
+// costs a single stat. Filesystems that keep no birthtime report null, and the
+// flow reads unknown as not-new.
+ipcMain.handle('moor:machine:profile', async () => {
+  let ageDays: null | number = null
+
+  try {
+    const { birthtimeMs } = fs.statSync(os.homedir())
+
+    if (birthtimeMs > 0) {
+      ageDays = Math.max(0, Math.floor((Date.now() - birthtimeMs) / 86_400_000))
+    }
+  } catch {
+    // Unknown age â€” the option still shows, it just doesn't lead.
+  }
+
+  // The OS login name powers a first-name SUGGESTION in the guided chat ("or
+  // I can just call you akp"). Best-effort: an unidentifiable user just gets
+  // no suggestion.
+  let username = ''
+
+  try {
+    username = os.userInfo().username
+  } catch {
+    // No account name to suggest â€” the guide simply asks.
+  }
+
+  return {
+    ageDays,
+    arch: process.arch,
+    // What the OS is set to, so a first run can open in the user's own
+    // language instead of asking them to go and find the setting. Chromium
+    // resolves this from the real OS preference (not the app's own bundle),
+    // so it is the honest answer even though every UI string is English
+    // until a translation exists.
+    locale: app.getLocale() || '',
+    model: readHardwareModel(),
+    nvidia: await hasNvidiaGpu(),
+    platform: process.platform,
+    release: os.release(),
+    username
+  }
+})
+
+/** The board's own name for itself. Firmware writes it to the device tree on
+ *  ARM systems (`NVIDIA_DGX_Spark`), which is how the first run can greet a
+ *  DGX Spark as a Spark instead of "a Linux box". Empty everywhere else,
+ *  Windows included â€” the RTX Spark is identified from the GPU instead. */
+function readHardwareModel(): string {
+  try {
+    return fs.readFileSync('/proc/device-tree/model', 'utf8').replace(/\0/g, '').trim()
+  } catch {
+    return ''
+  }
+}
+
+const NVIDIA_PCI_VENDOR_ID = 0x10de
+
+/** Chromium already enumerated the GPUs to decide how to composite, so this is
+ *  a lookup rather than a probe â€” no subprocess, no vendor tooling that a
+ *  just-unboxed machine may not have yet. Paired with Windows-on-Arm it is what
+ *  names an RTX Spark. */
+async function hasNvidiaGpu(): Promise<boolean> {
+  try {
+    // SAFETY: Electron's basic GPU info is Chromium's GPU record; each gpuDevice has a numeric PCI vendorId.
+    const info = (await app.getGPUInfo('basic')) as { gpuDevice?: { vendorId?: number }[] }
+
+    return (info.gpuDevice ?? []).some(device => device.vendorId === NVIDIA_PCI_VENDOR_ID)
+  } catch {
+    return false
+  }
+}
+
 // ===========================================================================
-// Uninstall — remove the Chat GUI (and optionally the agent / user data).
+// Uninstall â€” remove the Chat GUI (and optionally the agent / user data).
 // ===========================================================================
 //
-// The renderer's About → Danger Zone surfaces three options that mirror the
+// The renderer's About â†’ Danger Zone surfaces three options that mirror the
 // CLI exactly: GUI only, Lite (keep user data), Full. We ask the agent to do
-// the actual removal via `moor uninstall …` so the cross-platform PATH /
+// the actual removal via `moor uninstall â€¦` so the cross-platform PATH /
 // registry / service / node-symlink cleanup all lives in one place
 // (moor_cli/uninstall.py + moor_cli/gui_uninstall.py).
 //
 // getUninstallSummary() shells out to `--gui-summary` (a fast, no-side-effect
-// JSON probe) so the UI can gate options on what's actually installed — and
+// JSON probe) so the UI can gate options on what's actually installed â€” and
 // detect a missing agent (a future "lite client" that ships without the
 // bundled agent), hiding the agent/full options when there's nothing to remove.
 
@@ -17859,7 +17918,7 @@ async function getUninstallSummary() {
   const agentRoot = ACTIVE_MOOR_ROOT
 
   // Fast JS-side fallback used when the agent venv is gone (lite client) or the
-  // probe fails — the renderer still needs *something* to render options from.
+  // probe fails â€” the renderer still needs *something* to render options from.
   const fallback = () => ({
     moor_home: MOOR_HOME,
     agent_installed: isMoorSourceRoot(agentRoot) && fileExists(py),
@@ -17949,17 +18008,17 @@ async function runDesktopUninstall(mode) {
 
   // Interpreter choice (Finding 3): lite/full rmtree the venv that holds the
   // running python.exe. On Windows a running .exe is mandatory-locked, so the
-  // rmtree must NOT be driven by the venv's own interpreter — use a system
+  // rmtree must NOT be driven by the venv's own interpreter â€” use a system
   // Python with PYTHONPATH=<agentRoot> so `import moor_cli` resolves from
   // source while the venv is torn down. gui-only doesn't touch the venv, so the
   // venv python is fine there. If no system Python exists (the Windows edge
-  // case), fall back to the venv python — gui-only is unaffected; lite/full may
+  // case), fall back to the venv python â€” gui-only is unaffected; lite/full may
   // leave venv remnants the user can delete, which we log.
   let py = venvPy
   let pythonPath = null
 
   if (modeRemovesAgent(mode)) {
-    const sysPy = findSystemPython()
+    const sysPy = await findSystemPython()
 
     if (sysPy) {
       py = sysPy
@@ -17967,7 +18026,7 @@ async function runDesktopUninstall(mode) {
     } else if (IS_WINDOWS) {
       rememberLog(
         '[uninstall] no system Python found for lite/full on Windows; falling back ' +
-          'to the venv python — venv files locked by the running interpreter may ' +
+          'to the venv python â€” venv files locked by the running interpreter may ' +
           'remain and need manual deletion.'
       )
     }
@@ -17978,7 +18037,7 @@ async function runDesktopUninstall(mode) {
 
   // CRITICAL (Windows): tear down every backend the desktop owns and wait for
   // the venv shim to unlock BEFORE the cleanup script runs. lite/full delete
-  // the venv, and even gui-only removes the install tree's GUI artifacts — a
+  // the venv, and even gui-only removes the install tree's GUI artifacts â€” a
   // live backend grandchild (gateway / pty / REPL) holding a mandatory file
   // lock would make the script's rmdir half-fail (#37532 for the update path).
   // Reuses the incident-hardened update teardown; no-op on macOS/Linux.
@@ -18035,7 +18094,7 @@ async function runDesktopUninstall(mode) {
       `(removesAgent=${modeRemovesAgent(mode)} removesUserData=${modeRemovesUserData(mode)} bundle=${removeBundle || 'none'})`
   )
 
-  // Give the renderer a beat to show its "uninstalling…" state, then quit so
+  // Give the renderer a beat to show its "uninstallingâ€¦" state, then quit so
   // the venv python shim + app bundle unlock and the cleanup script can run.
   isQuittingForHandoff = true
   setTimeout(() => app.quit(), 800)
@@ -18051,7 +18110,7 @@ ipcMain.handle('moor:uninstall:run', async (_event, payload) => {
 })
 
 // Download a VS Code Marketplace extension and return the raw color-theme JSON
-// it contributes. No theme code is executed — we only read JSON from the .vsix.
+// it contributes. No theme code is executed â€” we only read JSON from the .vsix.
 ipcMain.handle('moor:vscode-theme:fetch', async (_event, id) => fetchMarketplaceThemes(String(id || '')))
 
 // Search the Marketplace for color-theme extensions (empty query = top installs).
@@ -18059,9 +18118,9 @@ ipcMain.handle('moor:vscode-theme:search', async (_event, query) => searchMarket
 
 // ---------------------------------------------------------------------------
 // moor:// deep links (e.g. moor://blueprint/morning-brief?time=08:00,
-// moor://mcp/install?name=NAME&config=B64 — the vendor "Add to Moor"
+// moor://mcp/install?name=NAME&config=B64 â€” the vendor "Add to Moor"
 // button, or moor://plugin/install?repo=owner/repo). Dev
-// (`MOOR_DESKTOP_DEV_SERVER`) registers moor-dev:// instead — bare
+// (`MOOR_DESKTOP_DEV_SERVER`) registers moor-dev:// instead â€” bare
 // Electron or a stale OS handler often owns moor:// on dev machines.
 // Parsing is generic ({kind, name, params}); the renderer routes per kind
 // and anything install-shaped requires explicit user confirmation there.
@@ -18074,6 +18133,8 @@ const MOOR_PROTOCOL = DEV_SERVER ? 'moor-dev' : 'moor'
 const DEEPLINK_SCHEMES = DEV_SERVER ? ['moor-dev', 'moor'] : ['moor']
 let _pendingDeepLink = null
 let _rendererReadyForDeepLink = false
+// Set by sendOpenUpdatesRequested() when the renderer cannot hear it yet.
+let _pendingOpenUpdates = false
 
 function _extractDeepLink(argv) {
   if (!Array.isArray(argv)) {
@@ -18139,6 +18200,11 @@ function handleDeepLink(url) {
 ipcMain.handle('moor:deep-link-ready', () => {
   _rendererReadyForDeepLink = true
 
+  if (_pendingOpenUpdates) {
+    _pendingOpenUpdates = false
+    sendOpenUpdatesRequested()
+  }
+
   if (_pendingDeepLink) {
     const queued = _pendingDeepLink
     _pendingDeepLink = null
@@ -18156,7 +18222,7 @@ function registerDeepLinkProtocol() {
     if (process.defaultApp && process.argv.length >= 2) {
       // Dev: register with the electron exec path + entry script so the OS can
       // relaunch us with the URL. argv[1] is usually "." when launched via
-      // `electron .` from apps/desktop — resolve against cwd.
+      // `electron .` from apps/desktop â€” resolve against cwd.
       const entry = path.resolve(process.argv[1])
       app.setAsDefaultProtocolClient(MOOR_PROTOCOL, process.execPath, [entry])
     } else {
@@ -18178,8 +18244,8 @@ const isPrimaryInstance = _gotSingleInstanceLock
 if (!isPrimaryInstance) {
   // Hard-exit, not app.quit(): the before-quit teardown coordinator defers a
   // plain quit (event.preventDefault + async backend shutdown), and in that
-  // window `ready` still fires — the lock-losing instance then runs the full
-  // startup (shortcut registration, createWindow → startMoor), whose
+  // window `ready` still fires â€” the lock-losing instance then runs the full
+  // startup (shortcut registration, createWindow â†’ startMoor), whose
   // reapOrphans() SIGTERMs the running instance's live backend (#87295).
   // app.exit() terminates immediately, before `ready`, so a second launch
   // routes into the running window and never touches backend machinery.
@@ -18202,7 +18268,7 @@ if (!isPrimaryInstance) {
   })
 }
 
-// macOS delivers deep links via 'open-url' — register early (can fire before
+// macOS delivers deep links via 'open-url' â€” register early (can fire before
 // whenReady; handleDeepLink queues until the renderer is ready).
 app.on('open-url', (event, url) => {
   event.preventDefault()
@@ -18236,7 +18302,7 @@ app.whenReady().then(() => {
   // Keychain encryption is opt-in (default OFF). One-shot: rewrite any
   // legacy safeStorage-encrypted secrets as plain so no later launch ever
   // touches the OS keychain unless the user turns encryption on in
-  // Settings → Gateway. Must run before createWindow() and the first
+  // Settings â†’ Gateway. Must run before createWindow() and the first
   // connection resolution.
   migrateLegacyEncryptedSecretsOnce()
 
@@ -18264,7 +18330,7 @@ app.whenReady().then(() => {
 
   setActiveGatewayProfile(primaryProfile)
   setWslBridgeProfileState(primaryProfile, !primaryBackendIsRemote())
-  // Quick Entry's global chord — registered on ready so a cold launch restores
+  // Quick Entry's global chord â€” registered on ready so a cold launch restores
   // it without the renderer visiting Settings. A failed registration is logged
   // here and surfaced in Settings via the IPC state (never silent).
   applyQuickEntrySettings(readQuickEntrySettings())
@@ -18412,50 +18478,24 @@ app.on('before-quit', event => {
   // already quitting (#91668).
   sshBootstrapCoordinator.shutdown()
 
-  if (!backendQuitTeardownDone) {
-    event.preventDefault()
-    void backendShutdown.run().finally(() => {
-      backendQuitTeardownDone = true
-      app.quit()
-    })
+  const backendNeedsWait = backendQuitNeedsWait({
+    connectionPending: backendConnectionState.getPendingPromise() !== null || localBackendLifecycle.hasPending(),
+    poolPending: poolStopper.hasPending(),
+    processAttached: backendConnectionState.getProcess() !== null,
+    shutdownPending: backendShutdown.isPending()
+  })
+
+  const sshNeedsWait =
+    sshConnections.size > 0 || sshBootstrapCoordinator.promises().length > 0 || sshTeardowns.hasPending()
+
+  const teardownTasks = [{ run: () => backendShutdown.run(), waitForCompletion: backendNeedsWait }]
+
+  if (sshNeedsWait) {
+    teardownTasks.push({ run: teardownSshForQuit, waitForCompletion: true })
   }
 
-  // backendShutdown.finally() re-enters before-quit. teardownSshConnection
-  // already deleted the map entries, so size===0 would skip the kill wait
-  // and let window-X quit finish while SSH exec is still running (#91668).
-  if (
-    sshQuitShouldBlock({
-      teardownDone: sshQuitTeardownDone,
-      connectionCount: sshConnections.size,
-      bootstrapPending: sshBootstrapCoordinator.promises().length,
-      inFlight: sshQuitTeardownPromise
-    })
-  ) {
+  if (quitTeardown.begin(teardownTasks)) {
     event.preventDefault()
-
-    if (!sshQuitTeardownPromise) {
-      const scopes = [...sshConnections.keys()]
-
-      const pending = Promise.allSettled([
-        ...scopes.map(scope => teardownSshConnection(scope || null)),
-        ...sshBootstrapCoordinator.promises()
-      ])
-
-      // cleanupStale waits up to 5s for the owned pid to exit (50 * 100ms).
-      // The previous 4s race could close SSH first and leave serve --isolated
-      // reparented to pid 1. Latch this promise BEFORE those deletes land so
-      // a re-entrant quit still waits.
-      sshQuitTeardownPromise = Promise.race([pending, new Promise<void>(resolve => setTimeout(resolve, 6_000))]).then(
-        async () => {
-          await sshBootstrapCoordinator.forceCleanupAll()
-        }
-      )
-    }
-
-    void sshQuitTeardownPromise.then(() => {
-      sshQuitTeardownDone = true
-      app.quit()
-    })
   }
 
   // Clean quit mid-boot should not trip next-launch --no-sandbox (#38216).
@@ -18474,8 +18514,9 @@ app.on('before-quit', event => {
   // pet can't keep the process alive or float over a quit app.
   closePetOverlay()
   wakeIndicatorController.close()
+  introRevealController.destroy()
 
-  // Same for the HUD — an always-on-top panel outliving the app would leave a
+  // Same for the HUD â€” an always-on-top panel outliving the app would leave a
   // floating composer with nothing behind it. Close it directly rather than via
   // closeHudWindow(): that also re-shows the main window, which is wrong on the
   // way out (and `hudRestoreMainWindow` may still be armed from entering HUD).
@@ -18488,7 +18529,7 @@ app.on('before-quit', event => {
 
   hudWindow = null
 
-  // Same for the Quick Entry composer — and release its global accelerator so a
+  // Same for the Quick Entry composer â€” and release its global accelerator so a
   // quitting Moor never keeps another app's chord hostage.
   closeQuickEntryWindow()
 
@@ -18520,7 +18561,7 @@ app.on('window-all-closed', () => {
   // macOS convention: keep the process alive in the Dock when the user closes
   // the last window. But when we're handing off to a detached updater / swap /
   // uninstall script, the process MUST exit so the script can replace or remove
-  // the bundle and relaunch — without this the script's PID-wait spins to its
+  // the bundle and relaunch â€” without this the script's PID-wait spins to its
   // full timeout and the user is left with an invisible app (or an uninstall
   // that appears to do nothing).
   if (process.platform !== 'darwin' || isQuittingForHandoff) {

@@ -1,5 +1,5 @@
-import type { ModelOptionProvider, ModelPricing } from '@hermes/shared'
-import { fuzzyRank, modelSearchText } from '@hermes/shared'
+import type { ModelOptionProvider, ModelPricing } from '@moor/shared'
+import { fuzzyRank, modelSearchText } from '@moor/shared'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -11,7 +11,7 @@ import { foldIncludes, normalize } from '@/lib/text'
 import { useStoreSelector } from '@/lib/use-session-slice'
 import { $localModelsEnabled } from '@/store/local-models-flag'
 import { $localRuntimeJobs, runningModelDownloads, watchLocalRuntimeJobs } from '@/store/local-runtime-jobs'
-import type { LocalModelLoadProgress } from '@/types/hermes'
+import type { LocalModelLoadProgress } from '@/types/moor'
 
 import type { MoorGateway } from '../moor'
 import { cn } from '../lib/utils'
@@ -62,7 +62,7 @@ export function ModelPickerDialog({
   // Own the search term so we can filter manually. cmdk's built-in
   // shouldFilter reorders items by its fuzzy-match score (≈alphabetical with
   // an empty query), which destroys the backend's curated order. We disable
-  // it: an empty query shows the curated list verbatim (like the `hermes
+  // it: an empty query shows the curated list verbatim (like the `moor
   // model` CLI picker) and a query ranks with the shared fuzzyRank.
   const [search, setSearch] = useState('')
 
@@ -505,7 +505,7 @@ function ProviderHeading({ provider }: { provider: ModelOptionProvider }) {
   const { t } = useI18n()
   const copy = t.modelPicker
 
-  // Two different facts wear the same badge: `free_tier` is a signed-in Nous
+  // Two different facts wear the same badge: `free_tier` is a signed-in Moor
   // account on the free plan; `free_tier_row` is the no-account route's own
   // row. Either way the user is on free inference, so say so. Never match the
   // route by name — the label is copy.

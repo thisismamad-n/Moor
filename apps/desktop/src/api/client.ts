@@ -90,7 +90,7 @@ export function connectionScoped(): { connectionId?: string } {
 // store/session's setConnection (same no-store-import contract as _apiProfile)
 // so api/ helpers can name the backend an UNTAGGED request lands on without
 // importing the heavy session store — which would close a module cycle
-// through @/hermes.
+// through @/moor.
 let _apiLocalMode = false
 
 export function setApiRequestLocalMode(local: boolean): void {

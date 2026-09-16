@@ -24,8 +24,8 @@ import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from hermes_state_holders import canonical_sqlite_path, read_only_db_uri
-from hermes_state_common import (
+from moor_state_holders import canonical_sqlite_path, read_only_db_uri
+from moor_state_common import (
     FTS_REBUILD_DEFERRAL_KEY, stat_db_file_identity as _stat_db_file_identity
 )
 
@@ -169,7 +169,7 @@ def _fd_is_truly_unlinked(fd_path: str, watched_path: str) -> bool:
     except OSError as exc:
         # ENOENT: the descriptor was closed after /proc was read. ESRCH: the whole
         # process exited mid-scan. Neither can keep a retired generation alive, so
-        # do not turn this scan race into a refusal (mirrors hermes_state_holders).
+        # do not turn this scan race into a refusal (mirrors moor_state_holders).
         if exc.errno in (errno.ENOENT, errno.ESRCH):
             return False
         return True
@@ -363,7 +363,7 @@ RETIRED_GENERATION_DIR_SUFFIX = ".retired-wal-"
 RETIRED_GENERATION_MANIFEST = "manifest.json"
 RETIRED_GENERATION_MANIFEST_VERSION = 1
 # Up to this size the main image is copied whole, so the artifact is a self-contained state.db + -wal
-# pair that `hermes sessions recover --source <dir>/state.db` can open. Above it only the 100-byte
+# pair that `moor sessions recover --source <dir>/state.db` can open. Above it only the 100-byte
 # header is kept (the manifest says so): unlike the WAL inode, the main file survives process exit at
 # its path, and a multi-GB copy inside a shutdown path is a worse failure than a header-only artifact.
 RETIRED_GENERATION_MAIN_IMAGE_MAX_BYTES = 512 * 1024 * 1024
@@ -378,7 +378,7 @@ class RetiredGenerationCaptureError(RuntimeError):
 def _fsync_path(path: Path) -> None:
     """fsync a file or directory we own. Never used on the live database: opening and closing a
     descriptor on a file SQLite has locked would cancel this process's POSIX advisory locks."""
-    from hermes_state import _IS_WINDOWS
+    from moor_state import _IS_WINDOWS
     if _IS_WINDOWS:
         return  # directories cannot be opened; file writes fsync their own handle
     fd = os.open(path, os.O_RDONLY)
@@ -460,7 +460,7 @@ def _parse_sqlite_header(header: bytes) -> Dict[str, Any]:
     if len(header) < _SQLITE_HEADER_BYTES or header[:16] != b"SQLite format 3\x00":
         return {"valid": False}
     raw_page_size = struct.unpack(">H", header[16:18])[0]
-    from hermes_state_errors import _STATE_DB_APPLICATION_ID_OFFSET
+    from moor_state_errors import _STATE_DB_APPLICATION_ID_OFFSET
     fields = {"change_counter": 24, "page_count": 28, "user_version": 60,
               "application_id": _STATE_DB_APPLICATION_ID_OFFSET, "version_valid_for": 92}
     parsed = {name: struct.unpack(">I", header[off:off + 4])[0] for name, off in fields.items()}
@@ -518,7 +518,7 @@ def capture_retired_wal_generation(
                 suffix: list(ident) for suffix, ident in _stat_sqlite_sidecar_identity(db_path).items()},
             "note": ("Frames in the captured WAL were committed by the retired generation. Whether they "
                      "belong on top of the main file now at the path is an operator decision; inspect "
-                     "the copied image with `hermes sessions recover --inspect-only` first."),
+                     "the copied image with `moor sessions recover --inspect-only` first."),
         }
         shm_identity = tuple(sidecar_identity.get("-shm") or ())
         shm_fd = _own_descriptor_for_identity(shm_identity) if shm_identity else None
@@ -581,7 +581,7 @@ def _preopen_header(path: Path, probe_bytes: int, force: bool) -> Optional[bytes
         if not path.is_file():
             return None
         path.stat()
-        from hermes_cli.sqlite_safe_read import has_live_connection, read_header_bytes_preopen
+        from moor_cli.sqlite_safe_read import has_live_connection, read_header_bytes_preopen
         if not force and has_live_connection(path):
             return None
         return read_header_bytes_preopen(path, length=max(16, probe_bytes), force=force)
@@ -591,7 +591,7 @@ def _preopen_header(path: Path, probe_bytes: int, force: bool) -> Optional[bytes
 
 def is_zeroed_state_db(path: Path, *, probe_bytes: int = 100, force: bool = False) -> bool:
     """Detect the zeroed state.db signature (0-byte or NUL header).  Prefers
-    ``hermes_cli.backup.is_zeroed_sqlite_file``; this copy keeps SessionDB openable without the CLI
+    ``moor_cli.backup.is_zeroed_sqlite_file``; this copy keeps SessionDB openable without the CLI
     package in constrained embed paths."""
     with contextlib.suppress(Exception):
         from moor_cli.backup import is_zeroed_sqlite_file
@@ -690,9 +690,9 @@ def quarantine_invalid_state_db(path: Path, *, already_locked: bool = False) -> 
         if not acquired:
             logger.error("quarantine lock for %s not acquired within 5s — refusing to "
                          "quarantine without the cross-process lock. The invalid file "
-                         "is left in place. If sessions fail to load, run `hermes sessions recover "
+                         "is left in place. If sessions fail to load, run `moor sessions recover "
                          "--source <state.db> --inspect-only`, or restore a snapshot with "
-                         "`/snapshot list` / `/snapshot restore <id>` (terminal `hermes` chat only).",
+                         "`/snapshot list` / `/snapshot restore <id>` (terminal `moor` chat only).",
                          path)
             return None
         return _do_quarantine()

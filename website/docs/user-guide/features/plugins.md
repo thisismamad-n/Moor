@@ -144,7 +144,7 @@ Within each source, Moor also recognizes sub-category directories that route plu
 | `plugins/context_engine/<name>/` | Context-compression engines (`ctx.register_context_engine()`) | **Own loader** in `plugins/context_engine/__init__.py` (one active at a time) |
 | `plugins/model-providers/<name>/` | LLM provider profiles (`register_provider(ProviderProfile(...))`) | **Own loader** in `providers/__init__.py` (lazily scanned on first `get_provider_profile()` call) |
 
-User plugins at `~/.hermes/plugins/model-providers/<name>/` override bundled model providers of the same name (last-writer-wins in `register_provider()`), so you can replace a built-in provider profile without any repo edits. Memory providers resolve the other way round: for `~/.hermes/plugins/memory/<name>/` the **bundled** provider wins on a name collision (bundled, then user, then project, then entry points; first seen wins), so a user memory provider needs its own unique name.
+User plugins at `~/.moor/plugins/model-providers/<name>/` override bundled model providers of the same name (last-writer-wins in `register_provider()`), so you can replace a built-in provider profile without any repo edits. Memory providers resolve the other way round: for `~/.moor/plugins/memory/<name>/` the **bundled** provider wins on a name collision (bundled, then user, then project, then entry points; first seen wins), so a user memory provider needs its own unique name.
 
 ## Plugins are opt-in (with a few exceptions)
 
@@ -191,18 +191,18 @@ plugin; choose a new exact commit explicitly with
 profile-local install metadata contains no config values, environment values,
 secrets, or capability grants.
 
-The same agent-plugin pin is available in Hermes Desktop: **Capabilities →
+The same agent-plugin pin is available in Moor Desktop: **Capabilities →
 Plugins → Install from Git** has a *Pin to commit* field that takes the full
 40-character SHA, and **Installed** shows a `pinned @ <sha8>` badge on pinned
 agent plugins. This does not guarantee a pinned standalone desktop-plugin
-install. `hermes plugins list` prints
+install. `moor plugins list` prints
 the pin in its Source column (`git pinned@<sha8>`). Pins work for private
 repositories too, through the same stored credentials described below.
 
 ### Installing from a private repository
 
-`hermes plugins install` clones non-interactively (it never prompts for a
-username or password), so a private repo needs a credential Hermes can find on
+`moor plugins install` clones non-interactively (it never prompts for a
+username or password), so a private repo needs a credential Moor can find on
 its own. For an `https://` source it tries, in order:
 
 1. `GITHUB_TOKEN` or `GH_TOKEN` from your `.env` (GitHub hosts only).
@@ -213,7 +213,7 @@ its own. For an `https://` source it tries, in order:
 The credential is sent as a one-shot HTTP header for that install or update;
 it is never written into the plugin's `.git/config` or the install metadata.
 SSH sources (`git@host:owner/repo.git`) authenticate through your ssh-agent as
-before. The same resolution applies to `hermes plugins update`, catalog MCP
+before. The same resolution applies to `moor plugins update`, catalog MCP
 installs from git, and profile distributions fetched from a git URL.
 
 ### What the allow-list does NOT gate
@@ -293,7 +293,7 @@ When you upgrade to a version of Moor that has opt-in plugins (config schema v21
 
 ## Available hooks
 
-Plugins can register the 27 lifecycle events currently accepted by `hermes_cli.plugins.VALID_HOOKS`. The **[Event Hooks catalog](/user-guide/features/hooks#shipped-plugin-hook-catalog)** is canonical for exact timing, return handling, payload fields, and privacy notes.
+Plugins can register the 27 lifecycle events currently accepted by `moor_cli.plugins.VALID_HOOKS`. The **[Event Hooks catalog](/user-guide/features/hooks#shipped-plugin-hook-catalog)** is canonical for exact timing, return handling, payload fields, and privacy notes.
 
 | Descriptive category | Shipped hooks |
 |---|---|
@@ -363,18 +363,18 @@ Declarative plugins are symlinked with a `nix-managed-` prefix — they coexist 
 ## Managing plugins
 
 ```bash
-hermes plugins                               # unified interactive UI
-hermes plugins list                          # table: enabled / disabled / not enabled
-hermes plugins search <term>                 # search the Hermes plugin catalog
-hermes plugins install <name>                # install a catalog entry (repo @ reviewed pinned SHA)
-hermes plugins install user/repo             # install from Git, then prompt Enable? [y/N]
-hermes plugins install user/repo --enable    # install AND enable (no prompt)
-hermes plugins install user/repo --no-enable # install but leave disabled (no prompt)
-hermes plugins update my-plugin              # pull latest (local edits are autostashed and re-applied)
-hermes plugins remove my-plugin              # uninstall
-hermes plugins enable my-plugin              # add to allow-list
-hermes plugins disable my-plugin             # remove from allow-list + add to disabled
-hermes plugins capabilities [my-plugin]      # declared vs granted capabilities
+moor plugins                               # unified interactive UI
+moor plugins list                          # table: enabled / disabled / not enabled
+moor plugins search <term>                 # search the Moor plugin catalog
+moor plugins install <name>                # install a catalog entry (repo @ reviewed pinned SHA)
+moor plugins install user/repo             # install from Git, then prompt Enable? [y/N]
+moor plugins install user/repo --enable    # install AND enable (no prompt)
+moor plugins install user/repo --no-enable # install but leave disabled (no prompt)
+moor plugins update my-plugin              # pull latest (local edits are autostashed and re-applied)
+moor plugins remove my-plugin              # uninstall
+moor plugins enable my-plugin              # add to allow-list
+moor plugins disable my-plugin             # remove from allow-list + add to disabled
+moor plugins capabilities [my-plugin]      # declared vs granted capabilities
 ```
 
 ### Installed and Browse in Desktop
@@ -417,16 +417,16 @@ deep links never auto-install, and agent-plugin installs go through the same
 
 Hybrid repos (agent + desktop halves in one repo) use one link and one
 dialog. The same modal is reachable without a link via **Capabilities →
-Plugins → Install from Git**. Legacy `hermes://plugin-agent/…` and
-`hermes://plugin-desktop/…` URLs route into the same dialog. In dev builds
-(`npm run dev`) the scheme is `hermes-dev://`.
+Plugins → Install from Git**. Legacy `moor://plugin-agent/…` and
+`moor://plugin-desktop/…` URLs route into the same dialog. In dev builds
+(`npm run dev`) the scheme is `moor-dev://`.
 
-The public [Plugin Catalog](/plugins) includes **Install in Hermes** on every
+The public [Plugin Catalog](/plugins) includes **Install in Moor** on every
 card. Catalog links carry `catalog_name`, a URL-encoded `repo` (including
 `#subdir` when present), and `sha`:
 
 ```text
-hermes://plugin/install?repo=owner%2Frepo&catalog_name=example-plugin&sha=0123456789abcdef0123456789abcdef01234567
+moor://plugin/install?repo=owner%2Frepo&catalog_name=example-plugin&sha=0123456789abcdef0123456789abcdef01234567
 ```
 
 The SHA parameter is display metadata only. For the agent-plugin install,
@@ -435,7 +435,7 @@ the link cannot override that pin. Do not treat the displayed SHA as a pin
 guarantee for a standalone desktop plugin. These catalog parameters require
 an updated Desktop build; older builds may only understand the repository
 link. If the app is missing or too old, update Desktop or use the copyable
-`hermes plugins install <catalog-name>` command in the expanded card to retain
+`moor plugins install <catalog-name>` command in the expanded card to retain
 catalog resolution.
 
 Websites need no SDK — a normal anchor works:
@@ -554,25 +554,25 @@ capability (`gateway.raw_events`) with a "no stability guarantee" label and a
 separate design, and has not shipped.
 :::
 
-### Discovering plugins — the Hermes plugin catalog
+### Discovering plugins — the Moor plugin catalog
 
-`hermes plugins search <term>` searches the **Hermes plugin catalog** — the
-curated, SHA-pinned catalog maintained in the hermes-agent repository
+`moor plugins search <term>` searches the **Moor plugin catalog** — the
+curated, SHA-pinned catalog maintained in the moor-agent repository
 (`plugin-catalog/`). Matching covers entry names, descriptions, and declared
 tools:
 
 ```bash
-hermes plugins search telegram    # search the catalog
-hermes plugins browse             # browse every entry
-hermes plugins info <name>        # full details for one entry
+moor plugins search telegram    # search the catalog
+moor plugins browse             # browse every entry
+moor plugins info <name>        # full details for one entry
 ```
 
 Once you've found a plugin, install it by bare name — the name resolves to
 the entry's repository at its **pinned commit SHA**, and catalog provenance is
-recorded so `hermes plugins update` can re-pin when the catalog moves:
+recorded so `moor plugins update` can re-pin when the catalog moves:
 
 ```bash
-hermes plugins install <catalog-name>
+moor plugins install <catalog-name>
 ```
 
 Explicit `owner/repo` or Git-URL identifiers never touch the catalog and are
@@ -602,7 +602,7 @@ description: STT + streaming TTS + approval relay
 author: hyper
 version: 1.0.0
 plugins:
-  - name: hermes-telegram-business       # bare plugin-catalog name…
+  - name: moor-telegram-business       # bare plugin-catalog name…
     ref: e905f3bc5eeaa5a9dab9bc5155601b3ebec75757
   - repo: owner/approval-relay           # …or explicit owner/repo (or git URL)
     ref: 8f3c2d1a9b4e5f6071829304a5b6c7d8e9f00112
@@ -623,7 +623,7 @@ moor plugins pack export --enabled-only       # only plugins.enabled
 **Supply-chain posture.** Every entry's `ref` must be an exact 40-character
 commit SHA — tags and branch names are rejected with an error naming the
 entry, the same rule as the plugin catalog. Pack installs ride the exact
-same pinned install path as `hermes plugins install --ref <sha>` and record
+same pinned install path as `moor plugins install --ref <sha>` and record
 the same provenance in `plugins/.install-metadata.json`, so two installs of
 the same pack resolve identically. Packs build on the
 [manifest v2 fields](/developer-guide/plugins) (`manifest_version`,
@@ -677,7 +677,7 @@ Three verdicts, matching Cowork's pass/warn/fail:
 | **caution** | Findings are shown; you confirm `Install anyway? [y/N]` (or pass `--force`) |
 | **dangerous** | Blocked. `--force` does **not** override |
 
-On `hermes plugins update`, a dangerous verdict on the updated tree
+On `moor plugins update`, a dangerous verdict on the updated tree
 disables the plugin until you review the findings and re-enable it. A
 dangerous block names the critical findings that caused it (e.g.
 `1 critical of 42 findings (destructive_root_rm)`), so a single blocking

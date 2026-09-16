@@ -430,7 +430,7 @@ def test_heal_never_deletes_the_only_surviving_copy(fleet):
 def test_heal_preserves_independent_grants_for_same_account(fleet, shape, claims):
     """An account can have independent device logins; identity is not lineage."""
     import base64
-    from hermes_cli.auth import heal_forked_single_use_oauth_grants
+    from moor_cli.auth import heal_forked_single_use_oauth_grants
 
     def pair(tag):
         payload = base64.urlsafe_b64encode(json.dumps({
@@ -473,7 +473,7 @@ def test_heal_rotated_fork_moves_provider_block_with_the_pool_row(fleet):
     must carry the fresher pair too or the next root load resurrects the spent one.
     """
     from agent.credential_pool import load_pool
-    from hermes_cli.auth import heal_forked_single_use_oauth_grants
+    from moor_cli.auth import heal_forked_single_use_oauth_grants
 
     def store(tag, exp_off):
         tokens = {"access_token": "at-" + tag, "refresh_token": "rt-" + tag}
@@ -699,14 +699,14 @@ def test_heal_same_store_skip_is_memoized_off_the_hot_path(fleet, monkeypatch):
 # ── E. the clean mark outlives the process ──────────────────────────────
 #
 # The in-memory mark only silences the heal for one process, so every fresh
-# `hermes` invocation re-paid its two nested EXCLUSIVE auth-store locks to
+# `moor` invocation re-paid its two nested EXCLUSIVE auth-store locks to
 # rediscover a store it had already cleared. Persisting the mark removes that,
 # but a mark that outlives the process must also invalidate on anything the
 # heal reads -- including the ROOT store, which the in-memory fingerprint
 # could safely ignore precisely because it died with the process.
 
 def _new_process(auth_mod):
-    """Simulate a fresh `hermes` invocation: in-memory state gone, disk kept."""
+    """Simulate a fresh `moor` invocation: in-memory state gone, disk kept."""
     auth_mod._oauth_heal_clean_marks.clear()
     auth_mod._global_auth_store_cache = None
 
@@ -714,12 +714,12 @@ def _new_process(auth_mod):
 def _count_locks(monkeypatch):
     """Count _auth_store_lock acquisitions, still really taking them.
 
-    The heal imports the lock from ``hermes_cli.auth`` inside the function, so
+    The heal imports the lock from ``moor_cli.auth`` inside the function, so
     patching it on that module is what the call site actually resolves.
     """
     import contextlib
 
-    import hermes_cli.auth as auth_mod
+    import moor_cli.auth as auth_mod
 
     taken = []
     real = auth_mod._auth_store_lock
@@ -750,8 +750,8 @@ def _kid_with_api_key_only(fleet, name="kid"):
 
 
 def test_clean_mark_persists_so_a_fresh_process_takes_no_auth_lock(fleet, monkeypatch):
-    import hermes_cli.auth as auth_mod
-    from hermes_cli import auth_oauth_grants as grants
+    import moor_cli.auth as auth_mod
+    from moor_cli import auth_oauth_grants as grants
 
     kid = _kid_with_api_key_only(fleet)
     fleet["use"](kid)
@@ -770,8 +770,8 @@ def test_persisted_mark_still_re_heals_when_the_root_store_gains_a_grant(fleet):
     """The mark may not outlive the facts. Root acquiring a counterpart turns
     a row the heal deliberately KEPT into a fork it must strip -- with the
     profile's own files untouched, so only root's stamp can catch it."""
-    import hermes_cli.auth as auth_mod
-    from hermes_cli import auth_oauth_grants as grants
+    import moor_cli.auth as auth_mod
+    from moor_cli import auth_oauth_grants as grants
 
     root = fleet["root"]
     store = json.loads((root / "auth.json").read_text())
@@ -781,7 +781,7 @@ def test_persisted_mark_still_re_heals_when_the_root_store_gains_a_grant(fleet):
     kid = _kid_with_api_key_only(fleet, "kid2")
     fork = {
         "id": "abc123", "label": "team-grant", "auth_type": "oauth",
-        "priority": 0, "source": "manual:hermes_pkce",
+        "priority": 0, "source": "manual:moor_pkce",
         "access_token": "sk-ant-oat01-AT0", "refresh_token": "sk-ant-ort-RT0",
         "expires_at_ms": int((time.time() + 3600) * 1000),
         "base_url": "https://api.anthropic.com",

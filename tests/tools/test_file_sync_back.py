@@ -98,9 +98,9 @@ class TestStaleSyncBackTempCleanup:
     """Sync-back temp entries leaked by a hard kill are reclaimed by the next sync-back (#110812)."""
 
     def test_removes_only_stale_prefixed_entries(self, tmp_path, monkeypatch):
-        stale_tar = tmp_path / "hermes-sync-back-stale.tar"
-        stale_dir = tmp_path / "hermes-sync-back-stale-staging"
-        recent = tmp_path / "hermes-sync-back-recent.tar"
+        stale_tar = tmp_path / "moor-sync-back-stale.tar"
+        stale_dir = tmp_path / "moor-sync-back-stale-staging"
+        recent = tmp_path / "moor-sync-back-recent.tar"
         unrelated = tmp_path / "other-process.tar"
         for path in (stale_tar, recent, unrelated):
             path.write_bytes(b"tar")
@@ -123,7 +123,7 @@ class TestStaleSyncBackTempCleanup:
         tmp_root = tmp_path / "tmproot"
         tmp_root.mkdir()
         monkeypatch.setattr(tempfile, "tempdir", str(tmp_root))
-        leaked = tmp_root / "hermes-sync-back-leaked.tar"
+        leaked = tmp_root / "moor-sync-back-leaked.tar"
         leaked.write_bytes(b"x" * 1024)
         old = time.time() - _SYNC_BACK_STALE_SECONDS - 60
         os.utime(leaked, (old, old))
@@ -132,7 +132,7 @@ class TestStaleSyncBackTempCleanup:
 
         def download(dest: Path):
             seen["tar"] = dest
-            _make_tar({"root/.hermes/x.txt": b"hi"}, dest)
+            _make_tar({"root/.moor/x.txt": b"hi"}, dest)
 
         mgr = _make_manager(tmp_path, bulk_download_fn=download)
         mgr.sync_back()

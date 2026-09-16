@@ -7,10 +7,10 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from hermes_state_common import (
+from moor_state_common import (
     AUTO_VACUUM_MIN_FREELIST_RATIO, _id_chunks, _placeholders, _sql_session_last_active, escape_like as _escape_like
 )
-from hermes_startup_watchdog import report_startup_progress
+from moor_startup_watchdog import report_startup_progress
 
 # caplog tests pin the "moor_state" logger name.
 logger = logging.getLogger("moor_state")

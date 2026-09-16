@@ -77,7 +77,7 @@ describe('capability helpers are connection-scoped', () => {
   it('marks an explicitly scoped Settings / Capabilities read as foreground (#111651)', () => {
     // A scope-selector pick is a visible user action: its cold dial must take
     // the pool's reserved foreground slot instead of queueing behind hydration.
-    getHermesConfigRecord('coder')
+    getMoorConfigRecord('coder')
     expect(last()).toMatchObject({ profile: 'coder', priority: 'foreground' })
 
     void getSkills('coder')
@@ -85,7 +85,7 @@ describe('capability helpers are connection-scoped', () => {
   })
 
   it('keeps ambient config reads unprioritized for background hydration', () => {
-    getHermesConfigRecord()
+    getMoorConfigRecord()
 
     expect(last()).not.toHaveProperty('priority')
   })

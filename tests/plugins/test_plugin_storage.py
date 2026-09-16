@@ -43,10 +43,10 @@ def test_hostile_names_are_rejected(moor_home, bad):
         plugin_data_dir(bad)
 
 
-def test_plugin_db_journal_mode_is_the_shared_fallback_verdict(hermes_home):
+def test_plugin_db_journal_mode_is_the_shared_fallback_verdict(moor_home):
     """Plugin DBs take the journal mode the core WAL helper decides for this SQLite build and
     filesystem (WAL normally; DELETE on WAL-reset-bug builds or network FS) — never a raw PRAGMA."""
-    from hermes_state_wal import is_sqlite_wal_reset_vulnerable
+    from moor_state_wal import is_sqlite_wal_reset_vulnerable
 
     conn = plugin_db("board")
     try:

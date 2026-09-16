@@ -89,7 +89,7 @@ def _scrub_config_yaml_mirrors(old_value: str, new_value: str | None) -> List[st
         return []
     from utils import atomic_yaml_write
 
-    from hermes_cli.config import get_config_path, read_user_config_raw, require_readable_config_before_write
+    from moor_cli.config import get_config_path, read_user_config_raw, require_readable_config_before_write
 
     config_path = get_config_path()
     if not config_path.exists():

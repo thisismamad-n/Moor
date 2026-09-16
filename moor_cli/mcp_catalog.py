@@ -379,7 +379,7 @@ def _do_git_install(entry: CatalogEntry) -> Path:
     # upfront so the fast path doesn't always fail noisily before the full-clone fallback.
     is_sha_ref = bool(re.fullmatch(r"[0-9a-f]{7,40}", install.ref))
     # Never hang on a credential prompt: installs run from CLI/dashboard flows nobody can answer.
-    from hermes_cli.git_credentials import with_git_auth
+    from moor_cli.git_credentials import with_git_auth
     _git_env = with_git_auth(noninteractive_git_env(), install.url)
 
     def _git(*args: str) -> int:

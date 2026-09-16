@@ -121,8 +121,8 @@ def _load_config_files() -> List[Dict[str, str]]:
     """Load ``terminal.credential_files`` from config.yaml (cached per profile home: the
     multiplexed gateway must never mount the launch profile's credential files into a
     secondary profile's sandbox)."""
-    from hermes_constants import hermes_home_key
-    home_key = hermes_home_key()
+    from moor_constants import moor_home_key
+    home_key = moor_home_key()
     cached = _config_files.get(home_key)
     if cached is not None:
         return cached
@@ -323,7 +323,7 @@ def _terminal_backend() -> str:
     return (terminal_env("TERMINAL_ENV") or "local").strip().lower()
 
 
-def to_agent_visible_cache_path(host_path: str, container_base: str = "/root/.hermes") -> str:
+def to_agent_visible_cache_path(host_path: str, container_base: str = "/root/.moor") -> str:
     """Translate a host cache path to where the active backend (TERMINAL_ENV) sees it.
 
     Mirrors ``_agent_cache_base_for_env`` in tools/image_generation_tool.py: docker/modal mount at

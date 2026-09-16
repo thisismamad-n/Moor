@@ -18,8 +18,8 @@ from dataclasses import dataclass
 from typing import Any, Optional
 
 from agent.deadline import kill_process_tree
-from agent.transports.hermes_tools_mcp_server import HERMES_TOOLS_MCP_SERVER_NAME
-from tools.environments.local import hermes_subprocess_env
+from agent.transports.moor_tools_mcp_server import MOOR_TOOLS_MCP_SERVER_NAME
+from tools.environments.local import moor_subprocess_env
 
 MIN_CODEX_VERSION = (0, 125, 0)
 
@@ -99,23 +99,23 @@ class CodexAppServerClient:
             DELEGATED_CHILD_ENV_MARKER, KANBAN_ENV_KEYS,
             delegated_child_subprocess_env, is_dispatcher_owned_worker_context,
         )
-        # Native shell children remain unowned. Only Hermes' managed MCP tool
+        # Native shell children remain unowned. Only Moor' managed MCP tool
         # endpoint acts for this worker; grant it scope via its existing per-server
         # environment (the entry the runtime migration registers), never by granting
         # the whole executor process ownership.
-        owned_task = os.environ.get("HERMES_KANBAN_TASK") and is_dispatcher_owned_worker_context()
+        owned_task = os.environ.get("MOOR_KANBAN_TASK") and is_dispatcher_owned_worker_context()
         if owned_task:
-            for key in (*KANBAN_ENV_KEYS, "HERMES_KANBAN_DB", "HERMES_KANBAN_BOARD"):
+            for key in (*KANBAN_ENV_KEYS, "MOOR_KANBAN_DB", "MOOR_KANBAN_BOARD"):
                 if key in os.environ:
-                    cmd += ["-c", f"mcp_servers.{HERMES_TOOLS_MCP_SERVER_NAME}.env.{key}={json.dumps(os.environ[key])}"]
-            cmd += ["-c", f'mcp_servers.{HERMES_TOOLS_MCP_SERVER_NAME}.env.{DELEGATED_CHILD_ENV_MARKER}=""']
+                    cmd += ["-c", f"mcp_servers.{MOOR_TOOLS_MCP_SERVER_NAME}.env.{key}={json.dumps(os.environ[key])}"]
+            cmd += ["-c", f'mcp_servers.{MOOR_TOOLS_MCP_SERVER_NAME}.env.{DELEGATED_CHILD_ENV_MARKER}=""']
         spawn_env = delegated_child_subprocess_env(spawn_env)
         # Kanban workers must write handoff/status to the board DB outside the
         # workspace: keep the sandbox on, add the Kanban root as writable.
         if owned_task:
-            kanban_db = spawn_env.get("HERMES_KANBAN_DB")
-            default_root = os.path.join(spawn_env.get("HERMES_HOME", os.path.expanduser("~/.hermes")), "kanban")
-            kanban_root = os.path.dirname(kanban_db) if kanban_db else spawn_env.get("HERMES_KANBAN_ROOT", default_root)
+            kanban_db = spawn_env.get("MOOR_KANBAN_DB")
+            default_root = os.path.join(spawn_env.get("MOOR_HOME", os.path.expanduser("~/.moor")), "kanban")
+            kanban_root = os.path.dirname(kanban_db) if kanban_db else spawn_env.get("MOOR_KANBAN_ROOT", default_root)
             cmd += [
                 "-c", 'sandbox_mode="workspace-write"',
                 "-c", f'sandbox_workspace_write.writable_roots=["{kanban_root}"]',

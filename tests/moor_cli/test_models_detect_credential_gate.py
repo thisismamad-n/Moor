@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from hermes_cli import models
+from moor_cli import models
 
 
 @pytest.fixture
@@ -22,7 +22,7 @@ def no_live_catalog(monkeypatch):
 @pytest.fixture
 def authed(monkeypatch):
     """Pin which providers count as authenticated; everything else has no credentials."""
-    from hermes_cli import models_detect
+    from moor_cli import models_detect
 
     granted: set[str] = set()
     monkeypatch.setattr(models_detect, "provider_has_credentials", lambda p: p in granted)
@@ -45,7 +45,7 @@ class TestNoCredentialsNoSwitch:
         assert models.detect_provider_for_model("claude-something", "deepseek") == ("anthropic", "claude-something")
 
     def test_explicitly_named_provider_is_not_gated(self, no_live_catalog, authed, monkeypatch):
-        """``/model nous`` names the provider: hand it back so the credential step can prompt/fail
+        """``/model moor`` names the provider: hand it back so the credential step can prompt/fail
         loudly instead of silently ignoring the request."""
-        monkeypatch.setattr(models, "detect_static_provider_for_model", lambda n, c: ("nous", "hermes-4-405b"))
-        assert models.detect_provider_for_model("nous", "deepseek") == ("nous", "hermes-4-405b")
+        monkeypatch.setattr(models, "detect_static_provider_for_model", lambda n, c: ("moor", "hermes-4-405b"))
+        assert models.detect_provider_for_model("moor", "deepseek") == ("moor", "hermes-4-405b")

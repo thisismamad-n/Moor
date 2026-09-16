@@ -227,7 +227,7 @@ instance (Chrome's "continue running background apps when closed" keeps a
 `chrome.exe` alive after you close the window). macOS and Linux can usually copy
 the profile while the browser is running. On every platform, each authentication
 database backup has a five-second retry budget. If the source or snapshot database
-stays locked, Hermes stops the launch and asks you to close the browser and retry.
+stays locked, Moor stops the launch and asks you to close the browser and retry.
 It preserves committed WAL data through SQLite rather than falling back to a raw
 file copy, which could silently lose recent logins. Unreadable or corrupt databases
 also stop the launch.
@@ -275,14 +275,14 @@ Three things to set up before scheduling one:
   list wins over the cron-platform config
   ([details](./cron.md#toolsets-available-to-cron-jobs)).
 - **Assume nothing can be prompted for.** A cron, webhook, API or
-  `hermes chat -q` session has nobody to answer a prompt, so a site that is not
+  `moor chat -q` session has nobody to answer a prompt, so a site that is not
   usable on the synced cookies alone — a login form, a fresh 2FA challenge —
   needs its credentials saved ahead of time, authenticator key included. That is
   the [credential vault's](./credential-vault.md#headless-sessions) job, and it
   is what carries a run after your own session has expired.
 
 **Windows prerequisite:** the browser has to be fully quit before a snapshot can
-be taken at all, so a scheduled tick needs it closed beforehand — Hermes never
+be taken at all, so a scheduled tick needs it closed beforehand — Moor never
 closes it without asking you first (see the note above).
 
 The bundled `product-price-monitor` skill is a worked example of the recurring
@@ -556,7 +556,7 @@ Then launch the Moor CLI and run `/browser connect`.
 
 **Why `--user-data-dir`?** Without it, launching a Chromium-family browser while a regular instance is already running typically opens a new window on the existing process — and that existing process was not started with `--remote-debugging-port`, so port 9222 never opens. A dedicated user-data-dir forces a fresh browser process where the debug port actually listens. `--no-first-run --no-default-browser-check` skips the first-launch wizard for the fresh profile.
 
-**Chrome 136+ makes the dedicated profile mandatory.** Two separate mechanisms are in play, and neither applies once you pass a non-default `--user-data-dir`. First, since [Chrome 136](https://developer.chrome.com/blog/remote-debugging-port) `--remote-debugging-port` and `--remote-debugging-pipe` "will no longer be respected if attempting to debug the default Chrome data directory" — the flag is silently ignored, no dialog, and `/browser connect` (or `curl http://127.0.0.1:9222/json/version`) gets connection refused even from a cold start. Second, [Chrome 144+](https://developer.chrome.com/blog/chrome-devtools-mcp-debug-your-browser-session) adds an opt-in *approval* flow for debugging your real profile: you enable it under `chrome://inspect/#remote-debugging`, and Chrome then shows an **"Allow remote debugging?"** dialog for **every incoming connection** (not once per launch), with nothing listening until you press **Allow**. If you see that dialog, you are on the approval path, not the flag path. The fix is exactly the commands above: point `--user-data-dir` somewhere other than your default profile directory (e.g. `$HOME/.hermes/chrome-debug`), which needs neither the toggle nor the dialog. This applies to Chrome, Chromium, Edge, and Brave builds that have picked up the change.
+**Chrome 136+ makes the dedicated profile mandatory.** Two separate mechanisms are in play, and neither applies once you pass a non-default `--user-data-dir`. First, since [Chrome 136](https://developer.chrome.com/blog/remote-debugging-port) `--remote-debugging-port` and `--remote-debugging-pipe` "will no longer be respected if attempting to debug the default Chrome data directory" — the flag is silently ignored, no dialog, and `/browser connect` (or `curl http://127.0.0.1:9222/json/version`) gets connection refused even from a cold start. Second, [Chrome 144+](https://developer.chrome.com/blog/chrome-devtools-mcp-debug-your-browser-session) adds an opt-in *approval* flow for debugging your real profile: you enable it under `chrome://inspect/#remote-debugging`, and Chrome then shows an **"Allow remote debugging?"** dialog for **every incoming connection** (not once per launch), with nothing listening until you press **Allow**. If you see that dialog, you are on the approval path, not the flag path. The fix is exactly the commands above: point `--user-data-dir` somewhere other than your default profile directory (e.g. `$HOME/.moor/chrome-debug`), which needs neither the toggle nor the dialog. This applies to Chrome, Chromium, Edge, and Brave builds that have picked up the change.
 
 A dedicated profile starts out signed out of everything. If you want the agent to browse with your existing logins *and* no approval dialog, use [`browser.use_real_profile`](#real-profile-browsing-use-your-own-logins) instead: it snapshots your active profile into a copy and drives that, which is a non-default user-data-dir and so never triggers either mechanism.
 :::

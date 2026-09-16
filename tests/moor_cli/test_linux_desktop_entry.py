@@ -428,11 +428,11 @@ def test_exec_finds_known_wrapper_when_resolver_has_no_candidate(
     """`None` from the resolver must still probe known wrapper locations.
 
     A cold relaunch (argv[0] is not an executable file, e.g. `-c` under
-    `python -m`, and PATH has no `hermes`) makes resolve_hermes_bin return
+    `python -m`, and PATH has no `moor`) makes resolve_moor_bin return
     None outright. The early `return primary` that used to fire here skipped
     the durable-wrapper probe, so the persisted Exec flipped to the bare
-    `<python> -m hermes_cli.main desktop` module form. Each flip between the
-    wrapper and module forms rewrites hermes.desktop on the next launch; any
+    `<python> -m moor_cli.main desktop` module form. Each flip between the
+    wrapper and module forms rewrites moor.desktop on the next launch; any
     rewrite that lands while gnome-shell's ShellApp for the entry is still
     STARTING crashes the shell (shell_app_dispose `state == STOPPED`
     assertion, gnome-shell 50.4). The entry must converge on the durable
@@ -440,10 +440,10 @@ def test_exec_finds_known_wrapper_when_resolver_has_no_candidate(
     """
     root = _make_project(tmp_path)
 
-    known_wrapper = tmp_path / "cold-home" / ".local" / "bin" / "hermes"
+    known_wrapper = tmp_path / "cold-home" / ".local" / "bin" / "moor"
     known_wrapper.parent.mkdir(parents=True)
     known_wrapper.write_text(
-        f'#!/bin/bash\nexec {root / "venv" / "bin" / "python"} {root / "hermes"} "$@"\n',
+        f'#!/bin/bash\nexec {root / "venv" / "bin" / "python"} {root / "moor"} "$@"\n',
         encoding="utf-8",
     )
     known_wrapper.chmod(0o755)
@@ -453,7 +453,7 @@ def test_exec_finds_known_wrapper_when_resolver_has_no_candidate(
     # yields None with or without argv[0].
     _argv0_context(monkeypatch, "-c")
     monkeypatch.setattr("shutil.which", lambda name: None)
-    monkeypatch.setattr("hermes_cli.relaunch.resolve_hermes_bin", lambda: None)
+    monkeypatch.setattr("moor_cli.relaunch.resolve_moor_bin", lambda: None)
     monkeypatch.setattr(lde, "refresh_desktop_databases", lambda _dir: [])
 
     entry = lde.install_desktop_entry(root)

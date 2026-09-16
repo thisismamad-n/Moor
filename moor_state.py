@@ -24,16 +24,16 @@ from collections import deque
 from contextlib import contextmanager
 from pathlib import Path
 
-from hermes_constants import get_hermes_home, mkdir_under_hermes_home
+from moor_constants import get_moor_home, mkdir_under_moor_home
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, TypeVar, cast
 
-from hermes_state_common import (
+from moor_state_common import (
     TITLE_SOURCE_DERIVED as _TITLE_SOURCE_DERIVED, TITLE_SOURCE_LLM as _TITLE_SOURCE_LLM,
     TITLE_SOURCE_USER as _TITLE_SOURCE_USER,
     escape_like as _escape_like, stat_db_file_identity as _stat_db_file_identity,
 )
-from hermes_state_holders import read_only_db_uri
-from hermes_state_errors import (
+from moor_state_holders import read_only_db_uri
+from moor_state_errors import (
     _DELETED_WAL_GENERATION_MSG, _DISK_IO_ERROR_MARKER, _STATE_DB_CORRUPT_MSG, _STATE_DB_GENERATION_KEY,
     _STATE_DB_REPLACED_MSG, DeletedWalGenerationError, SessionCompressionInProgressError, StateDbCorruptError,
     StateDbReplacedError, _is_no_more_rows, classify_persistence_error, is_malformed_db_error,
@@ -43,33 +43,33 @@ from moor_state_guard import (
     _STATE_DB_GUARD_BYPASS_ENV, _in_test_context, _is_production_state_db, _real_platform_state_root,
     _register_test_instance, _set_last_init_error, get_last_init_error,
 )
-from hermes_state_readpool import _READ_POOL_MAX, _proc_fd_targets, _read_budget_for
-from hermes_state_sessions import SessionSessionsMixin
-from hermes_state_fts import SessionFtsSetupMixin, load_fts5_cjk_extension
-from hermes_state_portability import SessionPortabilityMixin
-from hermes_state_telegram import SessionTelegramTopicsMixin
-from hermes_state_schema import SessionSchemaMixin
-import hermes_state_holders as _state_holders
-import hermes_state_lockguard as _lockguard
-from hermes_state_dbfile import (
+from moor_state_readpool import _READ_POOL_MAX, _proc_fd_targets, _read_budget_for
+from moor_state_sessions import SessionSessionsMixin
+from moor_state_fts import SessionFtsSetupMixin, load_fts5_cjk_extension
+from moor_state_portability import SessionPortabilityMixin
+from moor_state_telegram import SessionTelegramTopicsMixin
+from moor_state_schema import SessionSchemaMixin
+import moor_state_holders as _state_holders
+import moor_state_lockguard as _lockguard
+from moor_state_dbfile import (
     _connect_tracked_db, _fd_is_truly_unlinked, _prepare_connection_retirement,
     _read_sqlite_application_id, _stat_sqlite_sidecar_identity,
     _watched_sqlite_sidecar_paths, has_invalid_sqlite_header_preopen, is_zeroed_state_db, quarantine_cross_process_lock,
     quarantine_invalid_state_db,
     RetiredGenerationCaptureError, capture_retired_wal_generation, refuse_deleted_wal_generation,
 )
-from hermes_state_messages import SessionMessagesMixin
-from hermes_state_rewind import SessionRewindMixin
-from hermes_state_wal import (
+from moor_state_messages import SessionMessagesMixin
+from moor_state_rewind import SessionRewindMixin
+from moor_state_wal import (
     _WAL_INCOMPAT_MARKERS, _on_disk_journal_mode, apply_database_pragmas, apply_wal_with_fallback,
 )
-from hermes_state_repair import _claim_repair_attempt, preflight_db_writability, repair_state_db_schema
-from hermes_state_titles import SessionTitlesMixin
-from hermes_state_usage import SessionUsageMixin
-from hermes_state_maintenance import SessionMaintenanceMixin
-from hermes_state_gateway import SessionGatewayMixin
-from hermes_state_compression import SessionCompressionMixin
-from hermes_state_search import SessionSearchMixin
+from moor_state_repair import _claim_repair_attempt, preflight_db_writability, repair_state_db_schema
+from moor_state_titles import SessionTitlesMixin
+from moor_state_usage import SessionUsageMixin
+from moor_state_maintenance import SessionMaintenanceMixin
+from moor_state_gateway import SessionGatewayMixin
+from moor_state_compression import SessionCompressionMixin
+from moor_state_search import SessionSearchMixin
 
 try:  # Hard dependency, but tolerate scaffold-phase imports before pip install.
     import psutil
@@ -110,8 +110,8 @@ class SessionResumeTooLargeError(ValueError):
         self.scope = scope
         super().__init__(
             f"This session is too long to reload safely ({message_count} messages; limit {limit}). "
-            "Start a fresh chat and use `hermes sessions export` to keep a copy, or raise the limit "
-            "with `hermes config set sessions.max_resume_messages 0`."
+            "Start a fresh chat and use `moor sessions export` to keep a copy, or raise the limit "
+            "with `moor config set sessions.max_resume_messages 0`."
         )
 
 
@@ -234,7 +234,7 @@ def _secure_state_db_files(db_path: Path, *, create_main: bool = False) -> None:
     connection to the same database. A lock-losing close in one process lets a
     sibling's connection take the shared-memory DMS exclusively at its own
     close, checkpoint, and unlink the sidecars while long-lived holders
-    (gateway, desktop ``hermes serve``) keep using the deleted inodes.
+    (gateway, desktop ``moor serve``) keep using the deleted inodes.
     """
     if os.name == "nt":
         return
@@ -351,27 +351,27 @@ _SESSION_DB_CONSEQUENCE = "Sessions will not be saved until this is fixed."
 _NETWORK_DRIVE_HINT = " If the database lives on a network drive, move it to a local disk."
 _NETWORK_DRIVE_GLOSS = "the session database could not be opened; it may be on a network or unsupported drive"
 _NETWORK_DRIVE_ACTION = (
-    "Move it to a local disk (`hermes doctor` shows where it is), then start Hermes again."
+    "Move it to a local disk (`moor doctor` shows where it is), then start Moor again."
 )
 
 
 def format_session_db_unavailable(
-    prefix: str = "Hermes can't open its session history right now",
+    prefix: str = "Moor can't open its session history right now",
     *,
     details: bool = False,
 ) -> str:
     """User-facing one-liner: ``<prefix>: <gloss>. <consequence> <action>[ network hint]``.
 
-    The cause table lives in ``hermes_state_user_copy`` so CLI, gateway and TUI agree. Chat
+    The cause table lives in ``moor_state_user_copy`` so CLI, gateway and TUI agree. Chat
     surfaces (gateway, TUI) get the one-liner; ``details=True`` (the CLI banner) appends a
     ``Details: <raw cause>`` line for the raw SQLite text. Network filesystems (NFS/SMB/FUSE/ZFS)
     cannot host SQLite's write-ahead log: when the raw cause carries one of those markers the
-    message names the network-drive suspicion, because ``hermes doctor --fix`` cannot repair a
+    message names the network-drive suspicion, because ``moor doctor --fix`` cannot repair a
     mount — only moving the file can."""
     cause = get_last_init_error()
     if not cause:
-        return f"{prefix}. {_SESSION_DB_CONSEQUENCE} Run `hermes doctor` to check the storage location."
-    from hermes_state_user_copy import describe_storage_failure
+        return f"{prefix}. {_SESSION_DB_CONSEQUENCE} Run `moor doctor` to check the storage location."
+    from moor_state_user_copy import describe_storage_failure
     failure = describe_storage_failure(cause)
     gloss, action, hint = failure.gloss, failure.action, ""
     if any(m in cause.lower() for m in _WAL_INCOMPAT_MARKERS):
@@ -381,7 +381,7 @@ def format_session_db_unavailable(
             hint = _NETWORK_DRIVE_HINT
     text = f"{prefix}: {gloss}. {_SESSION_DB_CONSEQUENCE} {action}{hint}"
     if details:
-        from hermes_state_user_copy import storage_failure_details
+        from moor_state_user_copy import storage_failure_details
         text += f"\nDetails: {storage_failure_details(cause)}"
     return text
 
@@ -564,7 +564,7 @@ class SessionDB(
         self._retired_capture_lock = threading.Lock()
         self._retire_connection: Optional[Callable[[Any], None]] = None
         self._connection_pinned = False  # one unmatched C reference taken at most once per handle
-        self._wal_lock_guard: dict = {}  # hermes_state_lockguard.hold() record, see _open_writer
+        self._wal_lock_guard: dict = {}  # moor_state_lockguard.hold() record, see _open_writer
         self._db_corrupt, self._db_corrupt_reason = False, ""  # sticky quarantine (StateDbCorruptError)
         self._fts_usermerge_floor_applied = False  # one-shot usermerge-floor write guard
         self._fts_enabled = self._fts_stale = self._trigram_available = False
@@ -613,7 +613,7 @@ class SessionDB(
         malformed sqlite_master), generation stamp."""
         # Never materialize a deleted/archived named profile's home: a multiplexer or Desktop backend
         # still holding the profile's route would otherwise re-scaffold it on the next turn (#94590).
-        mkdir_under_hermes_home(self.db_path.parent)
+        mkdir_under_moor_home(self.db_path.parent)
         # Read-only file/sidecar preflight BEFORE the first connection: an actionable message
         # instead of an opaque "attempt to write a readonly database" from inside _init_schema.
         preflight_db_writability(self.db_path, db_label="state.db")
@@ -707,10 +707,10 @@ class SessionDB(
         qpath = quarantine_invalid_state_db(self.db_path, already_locked=already_locked)
         where = f"moved aside to {qpath}" if qpath else "left in place (it could not be moved aside)"
         msg = (
-            f"state.db was empty or damaged ({zsize} bytes) and has been {where}; Hermes started with a "
+            f"state.db was empty or damaged ({zsize} bytes) and has been {where}; Moor started with a "
             "fresh, empty session database. To bring old sessions back, run "
-            f"`hermes sessions recover --source {qpath or self.db_path} --inspect-only`, or restore a "
-            "snapshot with `/snapshot list` then `/snapshot restore <id>` (terminal `hermes` chat only)."
+            f"`moor sessions recover --source {qpath or self.db_path} --inspect-only`, or restore a "
+            "snapshot with `/snapshot list` then `/snapshot restore <id>` (terminal `moor` chat only)."
         )
         logger.error(msg)
         _set_last_init_error(msg)
@@ -1304,7 +1304,7 @@ class SessionDB(
         sqlite3_close would write the retired frames over the newer generation, so the exact
         connection is retired unclosed instead. A failed capture leaves the handle open for a retry
         -- but the pin is taken FIRST on such a runtime: every production caller reaches close()
-        through hermes_state_registry.release_or_close, which swallows the error, so an interpreter
+        through moor_state_registry.release_or_close, which swallows the error, so an interpreter
         exit before the retry must not be able to checkpoint the stale frames either."""
         self._db_wal_generation_lost = True
         retire_without_close = not self._disable_close_time_checkpoint() and self._retire_connection is not None
@@ -1446,7 +1446,7 @@ class SessionDB(
                     logger.warning(
                         "Skipping the close-time WAL checkpoint for %s: this "
                         "handle observed %s. Take a snapshot of state.db, -wal and -shm "
-                        "before restarting, then run `hermes sessions recover --source %s --inspect-only`.",
+                        "before restarting, then run `moor sessions recover --source %s --inspect-only`.",
                         self.db_path, quarantine_reason, self.db_path,
                     )
                 elif not self.read_only and not generation_lost:  # PASSIVE, not TRUNCATE (see docstring)

@@ -578,7 +578,7 @@ def test_breaker_opened_by_tool_errors_says_rejected_not_unreachable(monkeypatch
     """Three completed calls whose payload is an error still open the breaker (#10447), but the
     open-breaker message must not claim the server is unreachable — it answered every time
     (#11113); a single transport strike in the streak makes it "unreachable" again."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
 
     from tools import mcp_tool
     from tools.mcp_tool_handlers import _make_tool_handler

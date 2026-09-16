@@ -597,7 +597,7 @@
                   sleep 0.2
                 done
                 if [ ! -S "/run/user/$(id -u)/bus" ]; then
-                  echo "hermes-agent: no user bus at /run/user/$(id -u)/bus after 10s;" \
+                  echo "moor-agent: no user bus at /run/user/$(id -u)/bus after 10s;" \
                        "restart-safe cron dispatch will fail for the life of this process" >&2
                 fi
               '';

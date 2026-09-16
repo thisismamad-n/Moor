@@ -137,7 +137,7 @@ tools:
 
 ## Connectors (remote tools)
 
-When you are signed in to the Nous Portal, the bridge additionally reaches
+When you are signed in to the Moor Portal, the bridge additionally reaches
 **connectors** — remote tools served by the managed tool gateway. They are
 never registered locally: `tool_search` sends each query to the gateway, adds
 the gateway's hits to the local catalog as documents (tagged

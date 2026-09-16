@@ -220,6 +220,7 @@ LADDER: list[tuple[str, str]] = [
     (r"hermesctl", "moorctl"),                       # command fixture in FTS tests
     (r"HermesCtl", "MoorCtl"),
     (r"shermesa", "smoora"),                         # process token boundary test fixture
+    (r"HERMESTEX", "MOORTEX"),                       # matrix LaTeX sentinel token
     # Catch-alls for any remaining prefix forms (prose, quotes, braces,
     # f-strings, regex literals) — everything legitimate above is already
     # handled; whatever is left is brand text.

@@ -514,7 +514,7 @@ def _get_session_db() -> Optional[Any]:
     healthy cold init completes and the first write isn't dropped).
     """
     try:
-        from hermes_constants import get_hermes_home
+        from moor_constants import get_moor_home
 
         home = str(get_moor_home())
     except Exception as exc:  # pragma: no cover
@@ -523,8 +523,8 @@ def _get_session_db() -> Optional[Any]:
 
     cached = _DB_CACHE.get(home)
     if cached is not None and _registry_tore_down(cached):
-        # ``hermes profile delete`` force-closes every handle under the profile home
-        # (``hermes_state_registry.close_all_under``) before rmtree; a same-name recreate in this
+        # ``moor profile delete`` force-closes every handle under the profile home
+        # (``moor_state_registry.close_all_under``) before rmtree; a same-name recreate in this
         # process must acquire a fresh handle, not keep writing into the torn-down one.
         with _DB_BOOTSTRAP_LOCK:
             if _DB_CACHE.get(home) is cached:
@@ -574,12 +574,12 @@ def _acquire_session_db(home: str):
     """The registry's shared handle for ``home/state.db``. A bare ``SessionDB()`` here was a SECOND
     writer per profile beside the gateway's registry handle — its own token-writer thread and
     close-time checkpoint (the #90837 corruption shape), doubled under multiplexing."""
-    from hermes_state_registry import acquire
+    from moor_state_registry import acquire
     return acquire(Path(home) / "state.db")
 
 
 def _release_session_db(db) -> None:
-    from hermes_state_registry import release_or_close
+    from moor_state_registry import release_or_close
     try:
         release_or_close(db)
     except Exception:

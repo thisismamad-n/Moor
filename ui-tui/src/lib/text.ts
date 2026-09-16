@@ -1,5 +1,5 @@
-import { stripAnsi } from '@hermes/shared/ansi'
-import { compactNumber } from '@hermes/shared/format'
+import { stripAnsi } from '@moor/shared/ansi'
+import { compactNumber } from '@moor/shared/format'
 
 import {
   LIVE_RENDER_MAX_CHARS,

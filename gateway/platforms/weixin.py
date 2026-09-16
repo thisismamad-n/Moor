@@ -35,7 +35,7 @@ from gateway.platforms.base import (
     cache_audio_from_bytes_async, cache_document_from_bytes_async, cache_image_from_bytes_async,
 )
 from gateway.platforms.event import MessageEvent, MessageType
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 from utils import atomic_json_write
 from gateway.platforms._shared import extra_or_secret as _extra_or_env, get_scoped_secret as _wx_secret
 
@@ -715,7 +715,7 @@ class WeixinAdapter(OwnAccessPolicyMixin, BasePlatformAdapter):
         # trigger a separate agent run. 3s / 5s (after a ~2048-char split chunk) suit iLink's cadence.
         self._text_batch_delay_seconds = self._coerce_float_extra("text_batch_delay_seconds", 3.0)
         self._text_batch_split_delay_seconds = self._coerce_float_extra("text_batch_split_delay_seconds", 5.0)
-        persisted = load_weixin_account(hermes_home, self._account_id) if self._account_id and not self._token else None
+        persisted = load_weixin_account(moor_home, self._account_id) if self._account_id and not self._token else None
         if persisted:
             self._token = str(persisted.get("token") or "").strip()
             self._base_url = str(persisted.get("base_url") or self._base_url).strip().rstrip("/")

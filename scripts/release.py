@@ -2230,7 +2230,7 @@ def update_version_files(semver: str, calver_date: str):
         )
         desktop_pkg.write_text(pkg_text, encoding="utf-8")
 
-    # Keep the bootstrap installer (Hermes-Setup.dmg CFBundleShortVersionString)
+    # Keep the bootstrap installer (moor-setup.dmg CFBundleShortVersionString)
     # in lockstep with the Python package version. Tauri reads `version` from
     # package.json + tauri.conf.json; a hardcoded 0.0.1 ships in the DMG.
     installer_pkg = REPO_ROOT / "apps" / "bootstrap-installer" / "package.json"

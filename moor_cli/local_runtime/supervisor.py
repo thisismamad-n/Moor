@@ -23,8 +23,8 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from hermes_cli.local_runtime.binaries import server_binary, runtimes_root
-from hermes_cli.local_runtime.processes import spawn_server
+from moor_cli.local_runtime.binaries import server_binary, runtimes_root
+from moor_cli.local_runtime.processes import spawn_server
 
 logger = logging.getLogger(__name__)
 
@@ -224,8 +224,8 @@ class LlamaServerSupervisor:
                        "executable": proc.exe(), "owner_pid": os.getpid(),
                        "owner_create_time": psutil.Process().create_time()}
         path = state_path()
-        from hermes_constants import mkdir_under_hermes_home
-        mkdir_under_hermes_home(path.parent)
+        from moor_constants import mkdir_under_moor_home
+        mkdir_under_moor_home(path.parent)
         atomic_json_write(path, self._state, mode=0o600)
 
     def _wait_health(self, timeout_s: int) -> None:

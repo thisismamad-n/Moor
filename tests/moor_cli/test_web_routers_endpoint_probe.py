@@ -22,7 +22,7 @@ import pytest
     ],
 )
 def test_local_endpoint_probes_bypass_env_proxy(url, trusts_env, monkeypatch):
-    from hermes_cli.web_routers.config_env import _endpoint_probe_client
+    from moor_cli.web_routers.config_env import _endpoint_probe_client
 
     monkeypatch.setenv("HTTPS_PROXY", "http://127.0.0.1:1")
     monkeypatch.setenv("HTTP_PROXY", "http://127.0.0.1:1")
@@ -33,8 +33,8 @@ def test_local_endpoint_probes_bypass_env_proxy(url, trusts_env, monkeypatch):
 def test_openai_base_url_probe_names_the_http_status_instead_of_no_models(monkeypatch):
     """A reachable endpoint answering non-2xx with no model list is a failure the user can act on,
     not an empty catalog the GUI turns into 'start a model on that endpoint'."""
-    import hermes_cli.web_routers.config_env as mod
-    from hermes_cli.web_models import EnvVarUpdate
+    import moor_cli.web_routers.config_env as mod
+    from moor_cli.web_models import EnvVarUpdate
 
     class _Resp:
         status_code = 502

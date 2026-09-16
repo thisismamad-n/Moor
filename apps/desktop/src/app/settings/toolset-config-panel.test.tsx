@@ -42,10 +42,10 @@ const runToolsetPostSetup = vi.fn()
 const getActionStatus = vi.fn()
 const startOAuthLogin = vi.fn()
 const pollOAuthSession = vi.fn()
-const getHermesConfigRecord = vi.fn()
-const getHermesConfigSchema = vi.fn()
-const saveHermesConfig = vi.fn()
-const saveHermesConfigRecord = vi.fn()
+const getMoorConfigRecord = vi.fn()
+const getMoorConfigSchema = vi.fn()
+const saveMoorConfig = vi.fn()
+const saveMoorConfigRecord = vi.fn()
 const getElevenLabsVoices = vi.fn()
 
 vi.mock('@/moor', () => ({
@@ -63,10 +63,10 @@ vi.mock('@/moor', () => ({
   getActionStatus: (name: string, lines?: number) => getActionStatus(name, lines),
   startOAuthLogin: (providerId: string) => startOAuthLogin(providerId),
   pollOAuthSession: (providerId: string, sessionId: string) => pollOAuthSession(providerId, sessionId),
-  getHermesConfigRecord: () => getHermesConfigRecord(),
-  getHermesConfigSchema: () => getHermesConfigSchema(),
-  saveHermesConfig: (config: unknown) => saveHermesConfig(config),
-  saveHermesConfigRecord: (config: unknown, profile?: unknown) => saveHermesConfigRecord(config, profile),
+  getMoorConfigRecord: () => getMoorConfigRecord(),
+  getMoorConfigSchema: () => getMoorConfigSchema(),
+  saveMoorConfig: (config: unknown) => saveMoorConfig(config),
+  saveMoorConfigRecord: (config: unknown, profile?: unknown) => saveMoorConfigRecord(config, profile),
   getElevenLabsVoices: () => getElevenLabsVoices(),
   // use-config-record keys its query cache by scope via profileScopeKey; a
   // scoped panel reaches it, so the full-replacement mock must provide it.
@@ -158,9 +158,9 @@ beforeEach(() => {
       elevenlabs: { voice_id: 'pNInz6obpgDQGcFmaJgB', model_id: 'eleven_multilingual_v2' }
     }
   })
-  getHermesConfigSchema.mockResolvedValue({ fields: {}, category_order: [] })
-  saveHermesConfig.mockResolvedValue({ ok: true })
-  saveHermesConfigRecord.mockResolvedValue({ ok: true })
+  getMoorConfigSchema.mockResolvedValue({ fields: {}, category_order: [] })
+  saveMoorConfig.mockResolvedValue({ ok: true })
+  saveMoorConfigRecord.mockResolvedValue({ ok: true })
   getElevenLabsVoices.mockResolvedValue({ available: false, voices: [] })
 })
 
@@ -204,12 +204,12 @@ describe('ToolsetConfigPanel', () => {
     // closed Select.
     const voiceInput = screen.getByDisplayValue('alloy')
     fireEvent.change(voiceInput, { target: { value: 'marin' } })
-    await waitFor(() => expect(saveHermesConfigRecord).toHaveBeenCalled(), { timeout: 3000 })
-    const saved = saveHermesConfigRecord.mock.calls.at(-1)?.[0] as Record<string, Record<string, Record<string, string>>>
+    await waitFor(() => expect(saveMoorConfigRecord).toHaveBeenCalled(), { timeout: 3000 })
+    const saved = saveMoorConfigRecord.mock.calls.at(-1)?.[0] as Record<string, Record<string, Record<string, string>>>
     expect(saved.tts.openai.voice).toBe('marin')
     // Unscoped panel (no Capabilities override) → profile rides as undefined,
     // preserving the active-profile default. A scoped panel forwards its scope.
-    expect(saveHermesConfigRecord.mock.calls.at(-1)?.[1]).toBeUndefined()
+    expect(saveMoorConfigRecord.mock.calls.at(-1)?.[1]).toBeUndefined()
   })
 
   it('autosaves the inline voice fields into the profile the panel is scoped to', async () => {
@@ -225,7 +225,7 @@ describe('ToolsetConfigPanel', () => {
             tag: 'High quality voices',
             env_vars: [],
             post_setup: null,
-            requires_nous_auth: false,
+            requires_moor_auth: false,
             is_active: true,
             tts_provider: 'openai'
           }
@@ -237,8 +237,8 @@ describe('ToolsetConfigPanel', () => {
     render(<ToolsetConfigPanel onConfiguredChange={vi.fn()} profile={scope} toolset="tts" />)
 
     fireEvent.change(await screen.findByDisplayValue('alloy'), { target: { value: 'marin' } })
-    await waitFor(() => expect(saveHermesConfigRecord).toHaveBeenCalled(), { timeout: 3000 })
-    const [saved, forwarded] = saveHermesConfigRecord.mock.calls.at(-1) as [
+    await waitFor(() => expect(saveMoorConfigRecord).toHaveBeenCalled(), { timeout: 3000 })
+    const [saved, forwarded] = saveMoorConfigRecord.mock.calls.at(-1) as [
       Record<string, Record<string, Record<string, string>>>,
       unknown
     ]

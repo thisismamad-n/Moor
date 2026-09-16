@@ -82,10 +82,10 @@ def relay_explicitly_disabled() -> bool:
     """
     from gateway.config import Platform, PlatformConfig
     from gateway.config_loader import bridge_platform_shared_keys, merge_platform_sections, read_yaml_layers
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
     try:
-        cfg = read_yaml_layers(get_hermes_home())
+        cfg = read_yaml_layers(get_moor_home())
     except Exception:  # noqa: BLE001 - same fallback as load_gateway_config: no YAML layer at all
         return False
     if not isinstance(cfg, dict):

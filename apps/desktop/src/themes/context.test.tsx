@@ -165,7 +165,7 @@ describe('ThemeProvider highlight preview', () => {
 // `--dt-primary-solid` is the loud brand fill of every shipped preset. The
 // desktop's original ensureContrast ladder (5 rungs of 0.2 toward the pole
 // opposite the background, re-mixed from the ORIGINAL colour) is reproduced
-// here as a reference implementation; the shared @hermes/shared/color ladder
+// here as a reference implementation; the shared @moor/shared/color ladder
 // must land byte-identical for every preset in every mode, or presets change
 // colour under users on an "only math moved" refactor.
 describe('ThemeProvider --dt-primary-solid preset parity', () => {
@@ -260,7 +260,7 @@ describe('ThemeProvider --dt-primary-solid preset parity', () => {
     expect(cssVar('--dt-primary-solid')).toBe(expected)
 
     // At least some presets need a lift; the assertion must not be vacuous.
-    if (name === 'nous' && mode === 'dark') {
+    if (name === 'moor' && mode === 'dark') {
       expect(expected).not.toBe(primary)
     }
   })

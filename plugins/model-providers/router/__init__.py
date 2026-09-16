@@ -36,7 +36,7 @@ _disk_checked = False
 
 
 class _CacheState:
-    """Efforts cache + once-only flags for one Hermes home (same names as the module slots)."""
+    """Efforts cache + once-only flags for one Moor home (same names as the module slots)."""
 
     __slots__ = ("_efforts_cache", "_warm_started", "_disk_checked")
 
@@ -55,18 +55,18 @@ _state_by_home: dict[str, _CacheState] = {}
 def _state() -> Any:
     """Holder of ``_efforts_cache``/``_warm_started``/``_disk_checked``: this module when unscoped
     (tests monkeypatch those slots), else the active home's ``_CacheState``."""
-    from hermes_constants import get_hermes_home_override, hermes_home_key
+    from moor_constants import get_moor_home_override, moor_home_key
 
-    if get_hermes_home_override() is None:
+    if get_moor_home_override() is None:
         return sys.modules[__name__]
     with _efforts_lock:
-        return _state_by_home.setdefault(hermes_home_key(), _CacheState())
+        return _state_by_home.setdefault(moor_home_key(), _CacheState())
 
 
 def _base_url() -> str:
     """Router base URL: profile ``.env`` first (scope-aware), plain os.environ as the fallback."""
     try:
-        from hermes_cli.config import get_env_value_prefer_dotenv as prefer_dotenv
+        from moor_cli.config import get_env_value_prefer_dotenv as prefer_dotenv
     except Exception:
         prefer_dotenv = None
     for resolve in filter(None, (prefer_dotenv, os.environ.get)):

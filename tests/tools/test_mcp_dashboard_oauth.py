@@ -39,7 +39,7 @@ def test_dashboard_flow_preserves_rfc9207_iss():
         flow_id="flow-iss",
         server_name="cloudflare",
         profile=None,
-        hermes_home="/tmp/hermes-test",
+        moor_home="/tmp/moor-test",
         redirect_uri="https://agent.example/mcp/oauth/callback/flow-iss",
     )
     asyncio.run(flow.publish_authorization_url("https://idp.example/authorize?state=s1"))

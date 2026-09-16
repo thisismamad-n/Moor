@@ -12,7 +12,7 @@ from html import escape as html_escape
 import json
 from typing import Any, Dict, Iterable, Iterator, List, Literal, Optional, Tuple
 
-from hermes_cli.timefmt import coerce_epoch
+from moor_cli.timefmt import coerce_epoch
 
 
 ExportFormat = Literal["jsonl", "markdown"]

@@ -651,7 +651,7 @@ def test_session_resume_rejects_runaway_transcript_before_history_load(
 
     assert response["error"]["code"] == 4130
     assert "limit 20000" in response["error"]["message"]
-    assert "hermes sessions export" in response["error"]["message"]
+    assert "moor sessions export" in response["error"]["message"]
 
 
 def test_session_resume_deferred_and_omitted_paths_guard_the_tip_only(server, monkeypatch):
@@ -914,13 +914,13 @@ def test_enforce_session_cap_evicts_oldest_detached_only(server, monkeypatch):
 @pytest.mark.parametrize("closed_transport", [False, True])
 def test_idle_reaper_rearms_missing_ws_orphan_timer(server, monkeypatch, tmp_path, closed_transport):
     """A detached lane cannot keep its lease forever if initial timer setup was lost."""
-    from hermes_cli.active_sessions import (
+    from moor_cli.active_sessions import (
         active_session_registry_snapshot,
         try_acquire_active_session,
     )
 
-    home = tmp_path / ".hermes"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    home = tmp_path / ".moor"
+    monkeypatch.setenv("MOOR_HOME", str(home))
     sid = "detached-without-reaper"
     sibling_sid = "live-sibling"
     orphan_lease, message = try_acquire_active_session(
@@ -979,7 +979,7 @@ def test_idle_reaper_rearms_missing_ws_orphan_timer(server, monkeypatch, tmp_pat
 
     repo_root = Path(__file__).resolve().parents[2]
     env = os.environ.copy()
-    env["HERMES_HOME"] = str(home)
+    env["MOOR_HOME"] = str(home)
     env["PYTHONPATH"] = os.pathsep.join(
         part for part in (str(repo_root), env.get("PYTHONPATH", "")) if part
     )
@@ -988,7 +988,7 @@ def test_idle_reaper_rearms_missing_ws_orphan_timer(server, monkeypatch, tmp_pat
             sys.executable,
             "-c",
             (
-                "from hermes_cli.active_sessions import try_acquire_active_session; "
+                "from moor_cli.active_sessions import try_acquire_active_session; "
                 f"lease, refusal = try_acquire_active_session(session_id={sid!r}, surface='desktop', "
                 "config={}, track_liveness=True); "
                 "assert lease is not None and refusal is None, refusal; lease.release()"
@@ -1229,7 +1229,7 @@ def test_slash_exec_routes_a_secondary_only_bundle_to_dispatch(server, tmp_path,
     import agent.skill_bundles as sb_mod
     import agent.skill_commands as sc_mod
 
-    monkeypatch.delenv("HERMES_BUNDLES_DIR", raising=False)
+    monkeypatch.delenv("MOOR_BUNDLES_DIR", raising=False)
     profile_b = tmp_path / "profile_b"
     external_b = tmp_path / "external_b"
     for name in ("one", "two"):

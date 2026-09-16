@@ -172,7 +172,7 @@ class PluginDispatchMixin:
         are (loop-safe), otherwise the bare coroutine object is appended to the results and the
         plugin's body never runs (#12449).
         """
-        from hermes_cli.plugins import resolve_plugin_command_result
+        from moor_cli.plugins import resolve_plugin_command_result
         try:
             parameters = inspect.signature(callback).parameters
         except (TypeError, ValueError):
@@ -271,7 +271,7 @@ class PluginDispatchMixin:
                 _release_token()
                 done.set()
 
-        thread = threading.Thread(target=_runner, name=f"hermes-hook-{callback_name}"[:40], daemon=True)
+        thread = threading.Thread(target=_runner, name=f"moor-hook-{callback_name}"[:40], daemon=True)
         try:
             thread.start()
         except RuntimeError as exc:

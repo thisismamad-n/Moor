@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 def _snapshot_store() -> Path:
     # Resolved per call: the multiplexed gateway serves every profile from one process, so an
     # import-time path would keep every profile's snapshots in the launch profile's home.
-    return get_hermes_home() / "singularity_snapshots.json"
+    return get_moor_home() / "singularity_snapshots.json"
 
 
 def _find_singularity_executable() -> str:

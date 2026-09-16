@@ -121,7 +121,7 @@ def _absolutize_portal_url(portal_url: Optional[str]) -> Optional[str]:
 # cross-process file locks + reads two files per call, wasteful for the 2s charge poll loop
 # (~150 calls per purchase). The resolver only returns tokens with >=120s of life (its refresh
 # skew), so a 30s cache can never hand back an about-to-expire token; a 401 still surfaces.
-# Keyed by hermes_home_key() so a multiplex profile never bills through a sibling's token.
+# Keyed by moor_home_key() so a multiplex profile never bills through a sibling's token.
 _TOKEN_CACHE_TTL_SECONDS = 30.0
 _token_cache: dict[str, tuple[float, str, str]] = {}  # home key -> (cached_at, token, base)
 
@@ -145,9 +145,9 @@ def _billing_not_logged_in(exc: Optional[BaseException] = None) -> "BillingAuthE
 
 def _resolve_token_and_base(*, use_cache: bool = True) -> tuple[str, str]:
     """``(access_token, portal_base_url)``, cached for ``_TOKEN_CACHE_TTL_SECONDS`` unless ``use_cache=False``."""
-    from hermes_constants import hermes_home_key
+    from moor_constants import moor_home_key
 
-    cache_key = hermes_home_key()
+    cache_key = moor_home_key()
     cached = _token_cache.get(cache_key) if use_cache else None
     if cached is not None:
         cached_at, token, base = cached

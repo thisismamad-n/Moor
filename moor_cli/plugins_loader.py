@@ -278,9 +278,9 @@ class PluginLoaderMixin:
         if manifest.portable:
             self._load_portable_plugin(manifest, loaded)
             return
-        # requires_hermes gate: skip cleanly (no import, no traceback) on a version mismatch.
-        from hermes_cli.plugins_manifest import requires_hermes_error
-        reason = requires_hermes_error(manifest)
+        # requires_moor gate: skip cleanly (no import, no traceback) on a version mismatch.
+        from moor_cli.plugins_manifest import requires_moor_error
+        reason = requires_moor_error(manifest)
         if reason:
             loaded.error = reason
             logger.warning("Plugin '%s' skipped: %s", plugin_key, reason)

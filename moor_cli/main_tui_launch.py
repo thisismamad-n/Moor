@@ -40,7 +40,7 @@ def _print_tui_exit_summary(session_id: Optional[str], active_session_file: Opti
 
     db = None
     try:
-        from hermes_state import SessionDB
+        from moor_state import SessionDB
         db = SessionDB(read_only=True)  # exit epilogue only reads
         session = db.get_session(target)
         if not session:
@@ -429,11 +429,11 @@ def _npm_lifecycle_env(env: dict[str, str] | None = None) -> dict[str, str]:
     # The repo-root ``.npmrc`` is git-tracked, so the updater's autostash parks
     # any mirror/proxy line added there and every update reinstalls without it
     # (restricted networks then prune optional native deps like get-windows and
-    # the rebuild fails). ``$HERMES_HOME`` lives outside the git tree and the
-    # update hand-off already carries ``HERMES_HOME`` down to every npm child.
+    # the rebuild fails). ``$MOOR_HOME`` lives outside the git tree and the
+    # update hand-off already carries ``MOOR_HOME`` down to every npm child.
     # An explicit ``NPM_CONFIG_USERCONFIG`` wins (#106373).
-    from hermes_constants import get_hermes_home
-    npmrc = get_hermes_home() / "npmrc"
+    from moor_constants import get_moor_home
+    npmrc = get_moor_home() / "npmrc"
     if npmrc.is_file():
         run_env.setdefault("NPM_CONFIG_USERCONFIG", os.fspath(npmrc))
     return run_env
@@ -456,8 +456,8 @@ def _tui_node_bin(bin: str) -> str:
     if not path:
         print(
             f"Node.js is required for the TUI but `{bin}` was not found. Install it from "
-            "https://nodejs.org (run `hermes doctor` for the install hint for your OS), then "
-            "retry `hermes --tui`. To keep working now, run `hermes --cli`."
+            "https://nodejs.org (run `moor doctor` for the install hint for your OS), then "
+            "retry `moor --tui`. To keep working now, run `moor --cli`."
         )
         sys.exit(1)
     return path
@@ -738,7 +738,7 @@ def _launch_tui(
     # the single factory; keep secrets (the TUI/agent needs provider creds).
     from tools.environments.local import build_subprocess_env
     env = build_subprocess_env(scrub_secrets=False, inherit_profile_home=True)
-    from hermes_cli.shared_session_attach import configure_tui_attachment
+    from moor_cli.shared_session_attach import configure_tui_attachment
     try:
         configure_tui_attachment(env, resume_session_id)
     except (ValueError, RuntimeError) as exc:
@@ -818,7 +818,7 @@ def _launch_tui(
     # Exit code 42 = TUI requested an update. Relaunch as `moor update`;
     # preserve_inherited=False keeps --tui and other flags out of the subcommand.
     if code == 42:
-        from hermes_cli.relaunch import relaunch
+        from moor_cli.relaunch import relaunch
         print("\n☤ Launching update...\n")
         relaunch(["update"], preserve_inherited=False)
 

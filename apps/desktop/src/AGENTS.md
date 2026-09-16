@@ -16,15 +16,15 @@ NOT embed `moor --tui` — own composer, transcript, slash pipeline.
 
 **One backward-compat fallback:** `serve` is newer, so the spawn (`electron/backend-command.ts` +
 `createBackendServeSupportResolver()` in `electron/backend-serve-support.ts`) checks whether the runtime registers `serve`
-and ONLY when it does not (older managed install / PATH `hermes` not yet updated) rewrites argv to
+and ONLY when it does not (older managed install / PATH `moor` not yet updated) rewrites argv to
 legacy `dashboard --no-open`. Without it a new app against an un-upgraded runtime crashes on an
 unknown subcommand and bricks every mid-upgrade user. Keep it narrow and tested.
 
 Lifecycle: `serve` dies with the app by design; the messaging gateway survives it (spawned detached
 via `/api/gateway/*`). Never re-parent the gateway under the backend — `gateway/AGENTS.md`.
 
-The backend the app spawns is a **pooled `hermes serve --port 0` per (connection, profile)**: its
-launch home is that profile, `HERMES_DESKTOP=1` is set, and its in-process cron ticker stands down
+The backend the app spawns is a **pooled `moor serve --port 0` per (connection, profile)**: its
+launch home is that profile, `MOOR_DESKTOP=1` is set, and its in-process cron ticker stands down
 for homes a running gateway already serves. One process may still host sessions from several homes
 (`tui_gateway/AGENTS.md` § Profile scope); the first non-launch home flips `set_multiplex_active`.
 Remote connections (SSH, URL+token, Cloud) reach a backend with no desktop env var that may serve
@@ -40,9 +40,9 @@ backend (env-bound) and as a secondary served by one process (override-bound).
 - `src/lib/desktop-slash-commands.ts` is the load-bearing file: `DESKTOP_COMMAND_SPECS` (built-ins
   and their desktop surfaces) + the block-list. A command's desktop disposition (terminal-only /
   messaging-only / settings-owned / advanced / hidden) is authored ONCE, as `desktop=` on its
-  `CommandDef` in `hermes_cli/commands.py`; the live `commands.catalog` carries it, and
+  `CommandDef` in `moor_cli/commands.py`; the live `commands.catalog` carries it, and
   `src/lib/desktop-slash-registry.json` (regenerate with `scripts/dump_desktop_slash_registry.py`;
-  `tests/hermes_cli/test_desktop_slash_registry.py` + the vitest file fail on drift) is the offline
+  `tests/moor_cli/test_desktop_slash_registry.py` + the vitest file fail on drift) is the offline
   fallback. Only names the Python registry has never heard of (`/density`, `/details`, `/logs`,
   `/mouse` — Ink-local; `/pets`) live in `TS_ONLY_NO_DESKTOP_SURFACE`. `isDesktopSlashCommand(name)`
   gates **execution** (true
@@ -105,4 +105,4 @@ sign-in). `deriveBillingView` branches on `billing.free_tier` BEFORE `logged_in`
 `free_tier`: notice + one Sign in, Plan/Model/Connectors summary, no payment or usage rows). The
 sign-in dialog is a single claimed owner (first mount wins, like the real-profile consent prompt);
 its states map 1:1 to the poll route's `status` + `reason`. Copy is the ruled free-tier copy: never
-"guest", "anonymous", "claim" or "Nous Portal" in user-facing text.
+"guest", "anonymous", "claim" or "Moor Portal" in user-facing text.

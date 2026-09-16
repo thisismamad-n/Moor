@@ -1,4 +1,4 @@
-"""``hermes profile create --clone`` leaves messaging channels behind (``hermes_cli.profile_channels``).
+"""``moor profile create --clone`` leaves messaging channels behind (``moor_cli.profile_channels``).
 
 Invariant, not snapshot: the clone's credential fingerprint set — computed by the gateway's own
 ``_adapter_credential_fingerprint`` through the migrate preflight — is DISJOINT from the source's,
@@ -12,12 +12,12 @@ from pathlib import Path
 import pytest
 import yaml
 
-import hermes_constants
-from hermes_cli import gateway_migrate as gm
-from hermes_cli.profile_channels import (
+import moor_constants
+from moor_cli import gateway_migrate as gm
+from moor_cli.profile_channels import (
     channel_platforms_configured, shared_channel_credentials, strip_channel_env_file,
 )
-from hermes_cli.profiles import create_profile
+from moor_cli.profiles import create_profile
 
 _SOURCE_ENV = (
     "OPENAI_API_KEY=sk-model-key\n"
@@ -45,11 +45,11 @@ _SOURCE_CONFIG = {
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".moor"
     root.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(root))
-    monkeypatch.setattr(hermes_constants, "_default_hermes_root_memo", None)
+    monkeypatch.setenv("MOOR_HOME", str(root))
+    monkeypatch.setattr(moor_constants, "_default_moor_root_memo", None)
     for name in ("TELEGRAM_BOT_TOKEN", "DISCORD_BOT_TOKEN", "API_SERVER_KEY", "WHATSAPP_ENABLED",
                  "GATEWAY_MULTIPLEX_PROFILES", "TELEGRAM_ALLOWED_USERS"):
         monkeypatch.delenv(name, raising=False)
@@ -143,7 +143,7 @@ def test_clone_all_never_writes_through_a_symlinked_source_env(home, tmp_path):
 def test_clone_is_published_atomically_after_stripping(home, monkeypatch):
     """The multiplexer enumerates ``profiles/`` while a clone is built; the final directory must not
     exist (and no listable profile may appear) until the channel strip has run."""
-    from hermes_cli import profile_channels, profiles
+    from moor_cli import profile_channels, profiles
     seen = {}
     real_strip = profile_channels.strip_channel_settings
 
@@ -164,7 +164,7 @@ def test_clone_is_published_atomically_after_stripping(home, monkeypatch):
 def test_clone_channels_refusal_lives_in_create_profile(home, monkeypatch):
     """REST/TUI call ``create_profile`` directly: the live-multiplexer refusal must fire there, not
     only in the CLI, and ``--clone-channels`` without a clone source is an error, not a no-op."""
-    from hermes_cli import gateway_multiplex_served as served_mod
+    from moor_cli import gateway_multiplex_served as served_mod
     monkeypatch.setattr(served_mod, "recorded_served_profiles", lambda root=None: ["default", "other"])
     with pytest.raises(ValueError, match="already serves"):
         create_profile("twin", clone_config=True, no_alias=True, clone_channels=True)

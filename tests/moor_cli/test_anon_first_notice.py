@@ -1,4 +1,4 @@
-"""CLI one-time notice: an explicit-provider install learns once that the Nous free tier exists."""
+"""CLI one-time notice: an explicit-provider install learns once that the Moor free tier exists."""
 
 import base64
 import json
@@ -6,9 +6,9 @@ import time
 
 import pytest
 
-from hermes_cli import anon_auth
-from hermes_cli.auth import _auth_store_lock, _load_auth_store, _save_auth_store
-from hermes_cli.cli_agent_setup_mixin import CLIAgentSetupMixin
+from moor_cli import anon_auth
+from moor_cli.auth import _auth_store_lock, _load_auth_store, _save_auth_store
+from moor_cli.cli_agent_setup_mixin import CLIAgentSetupMixin
 
 
 def _jwt(**claims) -> str:
@@ -22,7 +22,7 @@ def _jwt(**claims) -> str:
 def _seed_guest() -> None:
     with _auth_store_lock():
         store = _load_auth_store()
-        store.setdefault("providers", {})["nous"] = {
+        store.setdefault("providers", {})["moor"] = {
             "auth_method": anon_auth.ANON_AUTH_METHOD, "account_tier": "anonymous", "anon_token": "anon_0001",
             "client_id": "nas-anonymous", "access_token": _jwt(), "expires_at": "2999-01-01T00:00:00+00:00",
             "inference_base_url": "https://welcome-api.nousresearch.com/v1"}
@@ -50,8 +50,8 @@ class _NoticeCLI(CLIAgentSetupMixin):
 
 @pytest.fixture(autouse=True)
 def _isolated_store(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
-    monkeypatch.setenv("HERMES_GUEST_ONBOARDING", "1")
+    monkeypatch.setenv("MOOR_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
+    monkeypatch.setenv("MOOR_GUEST_ONBOARDING", "1")
 
 
 def test_notice_prints_once_after_identity_appears_and_persists_the_flag():
@@ -72,15 +72,15 @@ def test_notice_prints_once_after_identity_appears_and_persists_the_flag():
     cli._maybe_print_free_tier_available_notice()
     _NoticeCLI()._maybe_print_free_tier_available_notice()
     assert len(cli.console.lines) == 1
-    assert _load_auth_store()["providers"]["nous"][anon_auth.GUEST_NOTICE_FLAG] is True
+    assert _load_auth_store()["providers"]["moor"][anon_auth.GUEST_NOTICE_FLAG] is True
     assert not anon_auth.guest_notice_pending()
 
 
 def test_signed_in_account_is_never_told_about_the_free_tier():
     with _auth_store_lock():
         store = _load_auth_store()
-        store.setdefault("providers", {})["nous"] = {
-            "auth_method": "oauth", "access_token": _jwt(client_id="hermes-cli", account_tier="pro"),
+        store.setdefault("providers", {})["moor"] = {
+            "auth_method": "oauth", "access_token": _jwt(client_id="moor-cli", account_tier="pro"),
             "refresh_token": "rt", "expires_at": "2999-01-01T00:00:00+00:00"}
         _save_auth_store(store)
     cli = _NoticeCLI()
@@ -89,4 +89,4 @@ def test_signed_in_account_is_never_told_about_the_free_tier():
 
     assert cli.console.lines == []
     assert anon_auth.mark_guest_notice_shown() is False
-    assert anon_auth.GUEST_NOTICE_FLAG not in _load_auth_store()["providers"]["nous"]
+    assert anon_auth.GUEST_NOTICE_FLAG not in _load_auth_store()["providers"]["moor"]

@@ -505,7 +505,7 @@ class OpenAICompatRoutesMixin:
             ephemeral_system_prompt=system_prompt, session_id=session_id,
             gateway_session_key=gateway_session_key, **agent_overrides, route=route,
             relay_metadata=relay_metadata,
-            # #98619: only an explicitly provided X-Hermes-Session-Id is wake-capable (the
+            # #98619: only an explicitly provided X-moor-session-Id is wake-capable (the
             # header is 403-gated on API_SERVER_KEY, so the wake self-post can authenticate
             # and the client can resume the session by sending it again). A fingerprint-derived
             # id from a header-less client is NOT: delegate_task keeps its forced-sync fallback
@@ -568,7 +568,7 @@ class OpenAICompatRoutesMixin:
         # Same #13437 identity contract as the SSE path: an explicit-header client is echoed
         # the stable id it sent; a fingerprint-derived (header-less) turn keeps reporting the
         # id the agent actually resolved, so headerless clients still learn where the turn went.
-        response_headers = {"X-Hermes-Session-Id": (provided_session_id or result.get("session_id", session_id))}
+        response_headers = {"X-moor-session-Id": (provided_session_id or result.get("session_id", session_id))}
         if gateway_session_key:
             response_headers["X-moor-session-Key"] = gateway_session_key
         # Hard fail (no usable text AND a real failure) -> 502 OpenAI error envelope so SDK

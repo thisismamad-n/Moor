@@ -360,7 +360,7 @@ function SkillCard({
             href={installUrl}
             onClick={(e) => e.stopPropagation()}
           >
-            Install in Hermes
+            Install in Moor
           </a>
         )}
 
@@ -432,9 +432,9 @@ function SkillCard({
               </div>
             )}
             <div className={styles.installHint}>
-              <code>{skill.installCmd || `hermes skills install ${skillCatalogInstallIdentifier(skill) || skill.name}`}</code>
+              <code>{skill.installCmd || `moor skills install ${skillCatalogInstallIdentifier(skill) || skill.name}`}</code>
               <CopyButton
-                text={skill.installCmd || `hermes skills install ${skillCatalogInstallIdentifier(skill) || skill.name}`}
+                text={skill.installCmd || `moor skills install ${skillCatalogInstallIdentifier(skill) || skill.name}`}
               />
             </div>
             {onPick ? (
@@ -535,7 +535,7 @@ export default function SkillsDashboard() {
           type: "moor-skill-pick",
           name: skill.name,
           identifier: skillCatalogInstallIdentifier(skill) || skill.name,
-          installCmd: skill.installCmd || `hermes skills install ${skillCatalogInstallIdentifier(skill) || skill.name}`,
+          installCmd: skill.installCmd || `moor skills install ${skillCatalogInstallIdentifier(skill) || skill.name}`,
           source: skill.source,
         },
         "*"
@@ -713,7 +713,7 @@ export default function SkillsDashboard() {
               <strong className={styles.heroAccent}>
                 {data ? allSkillsLocal.length.toLocaleString() : "…"}
               </strong>{" "}
-              skills across {sources.length - 1} registries. Open in Hermes Desktop to review and install, or copy the CLI command.
+              skills across {sources.length - 1} registries. Open in Moor Desktop to review and install, or copy the CLI command.
               {loadError && (
                 <span style={{ color: "#f87171", marginLeft: 8 }}>
                   · failed to load catalog ({loadError})

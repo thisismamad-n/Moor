@@ -3,16 +3,16 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import {
   getElevenLabsVoices,
-  getHermesConfigSchema,
+  getMoorConfigSchema,
   type ProfileScope,
   profileScopeKey,
-  saveHermesConfigRecord
-} from '@/hermes'
+  saveMoorConfigRecord
+} from '@/moor'
 import { useI18n } from '@/i18n'
 import { notifyError } from '@/store/notifications'
 import type { MoorConfigRecord } from '@/types/moor'
 
-import { hermesConfigCacheWriter, useHermesConfigRecord } from '../hooks/use-config-record'
+import { moorConfigCacheWriter, useMoorConfigRecord } from '../hooks/use-config-record'
 
 import { ConfigField } from './config-field'
 import { SECTIONS } from './constants'
@@ -53,14 +53,14 @@ export function VoiceProviderFields({
 }) {
   const { t } = useI18n()
   const keys = useMemo(() => voiceProviderKeys(section, providerKey), [section, providerKey])
-  const { data: loadedConfig } = useHermesConfigRecord(profile)
+  const { data: loadedConfig } = useMoorConfigRecord(profile)
   // Parents pass `profile` as a fresh object literal each render; keying the
   // writer and the autosave effect on its identity would re-arm the 550ms
   // timer on every unrelated re-render. Key on the scope string instead
   // (null when unscoped, which maps to the bare cache row).
   const scopeKey = profile == null ? null : profileScopeKey(profile)
   // eslint-disable-next-line react-hooks/exhaustive-deps -- scopeKey is the identity of `profile`
-  const writeConfigCache = useMemo(() => hermesConfigCacheWriter(profile), [scopeKey])
+  const writeConfigCache = useMemo(() => moorConfigCacheWriter(profile), [scopeKey])
 
   const { data: schemaResponse } = useQuery({
     queryKey: ['moor-config-schema'],
@@ -71,12 +71,12 @@ export function VoiceProviderFields({
   // Local editable draft, seeded once from the shared cache (background
   // refetches must not clobber in-progress edits) — the same shape as
   // config-settings.tsx's autosave loop.
-  const [config, setConfig] = useState<HermesConfigRecord | null>(null)
+  const [config, setConfig] = useState<MoorConfigRecord | null>(null)
   // Autosave sends only what changed against this baseline (config-settings.tsx
   // pattern): the seeded record is a default-expanded snapshot, and echoing it
   // whole would overwrite keys other surfaces changed since it loaded. The
   // baseline advances to each successfully saved draft.
-  const [baseline, setBaseline] = useState<HermesConfigRecord | null>(null)
+  const [baseline, setBaseline] = useState<MoorConfigRecord | null>(null)
   const seeded = useRef(false)
 
   // eslint-disable-next-line no-restricted-syntax -- one-shot config seed flag, not an atom mirror
@@ -97,7 +97,7 @@ export function VoiceProviderFields({
     }
 
     const timeout = window.setTimeout(() => {
-      void saveHermesConfigRecord(diffConfig(baseline ?? {}, config), profile)
+      void saveMoorConfigRecord(diffConfig(baseline ?? {}, config), profile)
         .then(() => {
           setBaseline(config)
           writeConfigCache(config)

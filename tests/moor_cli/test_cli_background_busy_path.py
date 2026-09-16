@@ -15,7 +15,7 @@ the UI thread; the command's own ``CommandDef`` already declares
 never consulted.
 
 These tests exercise the detector without starting a prompt_toolkit app,
-mirroring tests/hermes_cli/test_cli_steer_busy_path.py.
+mirroring tests/moor_cli/test_cli_steer_busy_path.py.
 """
 
 from __future__ import annotations

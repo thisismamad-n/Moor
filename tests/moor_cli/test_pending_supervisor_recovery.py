@@ -4,13 +4,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli import gateway, main, update_cmd_fleet as fleet
+from moor_cli import gateway, main, update_cmd_fleet as fleet
 
 
 @pytest.mark.linux_only
 @pytest.mark.parametrize("failure", ["listing", "timeout", "missing", "restart", "inactive", "running", None])
 def test_pending_marker_requires_complete_systemd_recovery(monkeypatch, tmp_path, failure):
-    monkeypatch.setattr(main, "_purge_stale_hermes_modules", lambda: None)
+    monkeypatch.setattr(main, "_purge_stale_moor_modules", lambda: None)
     stopped = []
     monkeypatch.setattr(gateway, "find_gateway_pids", lambda **kw: [123] if failure == "running" and not stopped else [])
     monkeypatch.setattr(gateway, "kill_gateway_processes", lambda **kw: stopped.append(True))
@@ -31,9 +31,9 @@ def test_pending_marker_requires_complete_systemd_recovery(monkeypatch, tmp_path
             if failure == "missing":
                 raise FileNotFoundError("systemctl")
             return SimpleNamespace(returncode=int(failure == "listing"), stdout=(
-                "hermes-gateway-one.service loaded active running\n"
-                "hermes-gateway-two.service loaded failed failed\n"), stderr="")
-        bad = cmd[-1] == "hermes-gateway-two"
+                "moor-gateway-one.service loaded active running\n"
+                "moor-gateway-two.service loaded failed failed\n"), stderr="")
+        bad = cmd[-1] == "moor-gateway-two"
         if "restart" in cmd:
             recovered.append(cmd[-1])
             return SimpleNamespace(returncode=int(bad and failure == "restart"), stdout="")
@@ -52,13 +52,13 @@ def test_pending_marker_requires_complete_systemd_recovery(monkeypatch, tmp_path
     else:
         fleet._apply_pending_fleet_restart_catchup()
         assert not marker.exists()
-        assert set(recovered) == {"hermes-gateway-one", "hermes-gateway-two"}
+        assert set(recovered) == {"moor-gateway-one", "moor-gateway-two"}
 
 
 @pytest.mark.parametrize("failure", ["listing", "restart", "inactive", "unloaded", None])
 def test_pending_launchd_requires_complete_supervision(monkeypatch, tmp_path, failure):
     # Host-independent subprocess-boundary fixture, not native launchd validation.
-    current, sibling = "ai.hermes.gateway", "ai.hermes.gateway-two"
+    current, sibling = "ai.moor.gateway", "ai.moor.gateway-two"
     (tmp_path / f"{sibling}.plist").touch()
     monkeypatch.setattr(gateway, "get_launchd_label", lambda: current)
     monkeypatch.setattr(gateway, "get_launchd_plist_path", lambda: tmp_path / f"{current}.plist")

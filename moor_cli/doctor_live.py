@@ -167,7 +167,7 @@ def _run_one(name: str, fn: Callable[[], ProbeResult], issues: List[str]) -> Pro
 def run_live_checks(issues: List[str]) -> List[ProbeResult]:
     """Run one bounded, read-only probe per configured tool backend — sequential by design (predictable output
     ordering). Appends a remediation line to ``issues`` per failed probe; skipped backends never append."""
-    from hermes_cli.config import load_config_readonly
+    from moor_cli.config import load_config_readonly
     config = load_config_readonly()
     try:
         timeout = float((config.get("doctor") or {}).get("live_probe_timeout", DEFAULT_PROBE_TIMEOUT))

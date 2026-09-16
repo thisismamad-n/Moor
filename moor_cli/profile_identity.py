@@ -23,7 +23,7 @@ def migrate_profile_identity(old_name: str, new_name: str) -> bool:
     """Retry the session/routing identity migration of a rename that already completed.
 
     ``rename_profile`` runs the migration itself; this is the standalone retry behind
-    ``hermes profile migrate-identity <old> <new>`` for when that attempt failed. The rename
+    ``moor profile migrate-identity <old> <new>`` for when that attempt failed. The rename
     cannot simply be repeated — ``profiles/<old>`` is gone — and the identity to migrate is read
     from the DB rows that still name *old*, so only the new profile has to exist here.
 
@@ -33,7 +33,7 @@ def migrate_profile_identity(old_name: str, new_name: str) -> bool:
     migration succeeds with nothing left to rekey. Returns True when the identity was migrated,
     False when a live gateway would not do it — the caller reports that as a failure.
     """
-    from hermes_cli.profiles import _canon_valid, _live_default_multiplexer, _unknown_profile_error, get_profile_dir
+    from moor_cli.profiles import _canon_valid, _live_default_multiplexer, _unknown_profile_error, get_profile_dir
     old_canon = _canon_valid(old_name)
     new_canon = _canon_valid(new_name)
     if "default" in (old_canon, new_canon):
@@ -73,8 +73,8 @@ def _migrate_profile_identity(old_canon: str, new_canon: str, live_mux: bool) ->
     not accept it. Never fatal to the rename, which has already happened by this point.
     """
     if live_mux:
-        from hermes_constants import get_default_hermes_root
-        root = get_default_hermes_root()
+        from moor_constants import get_default_moor_root
+        root = get_default_moor_root()
         try:
             from gateway.control_socket import migrate_gateway_profile_identity
             answer = migrate_gateway_profile_identity(root, old_canon, new_canon)
@@ -90,14 +90,14 @@ def _migrate_profile_identity(old_canon: str, new_canon: str, live_mux: bool) ->
         print(
             "⚠ Profile was renamed, but the live gateway could not migrate session identity"
             f" ({reason}). Restart the gateway, then run:\n"
-            f"    hermes profile migrate-identity {old_canon} {new_canon}",
+            f"    moor profile migrate-identity {old_canon} {new_canon}",
             file=sys.stderr)
         return False
 
-    from hermes_cli.profiles import get_profile_dir
-    from hermes_state_registry import acquire, release_or_close
-    from hermes_constants import get_default_hermes_root
-    root = get_default_hermes_root()
+    from moor_cli.profiles import get_profile_dir
+    from moor_state_registry import acquire, release_or_close
+    from moor_constants import get_default_moor_root
+    root = get_default_moor_root()
     migrated = True
     for db_path in (root / "state.db", get_profile_dir(new_canon) / "state.db"):
         if not db_path.exists():

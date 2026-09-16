@@ -34,18 +34,18 @@ _PROCESS_ID = uuid.uuid4().hex
 
 def _connect() -> sqlite3.Connection:
     # Late imports: a scheduler daemon that outlives an on-disk upgrade already has the OLD
-    # ``hermes_cli.sqlite_util`` / ``cron.jobs`` cached, so new names must be resolved at call time,
+    # ``moor_cli.sqlite_util`` / ``cron.jobs`` cached, so new names must be resolved at call time,
     # not at import time (the guarantee cron/ledger.py used to carry, see e24c8499).
     from cron.jobs import _ensure_cron_dir
-    from hermes_cli.sqlite_util import open_db
+    from moor_cli.sqlite_util import open_db
 
-    path = EXECUTIONS_FILE or (get_hermes_home().resolve() / "cron" / "executions.db")
+    path = EXECUTIONS_FILE or (get_moor_home().resolve() / "cron" / "executions.db")
     _ensure_cron_dir(path.parent)
-    return open_db(path, db_label="cron/executions.db", synchronous_full=True, initialize=_initialize_schema)
+    return open_db(path, db_label="cron/executions.db", synchromoor_full=True, initialize=_initialize_schema)
 
 
 def _initialize_schema(conn: sqlite3.Connection) -> None:
-    from hermes_cli.sqlite_util import add_column_if_missing
+    from moor_cli.sqlite_util import add_column_if_missing
 
     conn.execute(
         """CREATE TABLE IF NOT EXISTS executions (
@@ -90,7 +90,7 @@ def _initialize_schema(conn: sqlite3.Connection) -> None:
 
 @contextmanager
 def _transaction() -> Iterator[sqlite3.Connection]:
-    from hermes_cli.sqlite_util import transaction
+    from moor_cli.sqlite_util import transaction
 
     with _lock, transaction(_connect()) as conn:
         yield conn
@@ -151,7 +151,7 @@ def create_execution(
     """Persist a claimed attempt before executor/provider dispatch."""
     from cron.occurrences import scheduled_instant as canonical_instant
 
-    now = _hermes_now().isoformat()
+    now = _moor_now().isoformat()
     execution_id = uuid.uuid4().hex
     pid = os.getpid()
     with _transaction() as conn:

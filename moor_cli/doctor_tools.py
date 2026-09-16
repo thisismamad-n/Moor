@@ -119,7 +119,7 @@ def _enabled_cli_toolsets_for_doctor() -> set[str] | None:
 # `requires_env`, so the generic branch would call a missing credential a "system dependency".
 # Name the real fix instead (#9516).
 _TOOLSET_SETUP_HINTS: dict[str, str] = {
-    "image_gen": "(image generation unavailable — check the provider selection and its key or SDK with 'hermes tools')",
+    "image_gen": "(image generation unavailable — check the provider selection and its key or SDK with 'moor tools')",
 }
 
 
@@ -149,14 +149,14 @@ def _check_docker_backend(terminal_env: str, running_in_container: bool, issues:
     if terminal_env == "docker":
         if not _safe_which("docker"):
             _fail_and_issue("Docker not installed", "(needed for the 'docker' terminal backend)",
-                            "Install Docker, or run `hermes setup terminal` to switch backend.", issues)
+                            "Install Docker, or run `moor setup terminal` to switch backend.", issues)
         else:
             # `docker version` hits /version, which socket proxies (tecnativa) allow by default; `docker info`
             # needs /info and is commonly blocked, giving a false "daemon not running". The backend itself
             # probes with `docker version` too (environments/docker.py).
             _require(_run_ok(["docker", "version"], timeout=10), ("docker", "(daemon running)"),
                      ("Docker daemon not running", "(needed for the 'docker' terminal backend)"),
-                     "Start Docker, or run `hermes setup terminal` to switch backend.", issues)
+                     "Start Docker, or run `moor setup terminal` to switch backend.", issues)
     elif _safe_which("docker"):
         check_ok("docker", "(optional)")
     elif _is_termux():
@@ -169,7 +169,7 @@ def _check_ssh_backend(issues: list[str]) -> None:
     ssh_host = os.getenv("TERMINAL_SSH_HOST")
     if not ssh_host:
         return _fail_and_issue("SSH host not configured", "(needed for the 'ssh' terminal backend)",
-                               "run `hermes setup terminal` and enter the SSH host and user.", issues)
+                               "run `moor setup terminal` and enter the SSH host and user.", issues)
     ssh_user, ssh_port, ssh_key = (os.getenv(f"TERMINAL_SSH_{k}") for k in ("USER", "PORT", "KEY"))
     cmd = ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes"]
     if ssh_port:
@@ -190,7 +190,7 @@ def _require(cond, ok, bad, issue: str, issues: list[str]) -> None:
 def _check_daytona_backend(issues: list[str]) -> None:
     _require(os.getenv("DAYTONA_API_KEY"), ("Daytona API key", "(configured)"),
              ("Daytona API key missing", "(needed for the 'daytona' terminal backend)"),
-             "run `hermes setup terminal` (Daytona) to enter it.", issues)
+             "run `moor setup terminal` (Daytona) to enter it.", issues)
     try:
         from daytona import Daytona  # noqa: F401 — SDK presence check
         check_ok("daytona SDK", "(installed)")

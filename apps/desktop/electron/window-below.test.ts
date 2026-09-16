@@ -152,15 +152,15 @@ describe('resolveOutsideAsar', () => {
   // land on the unpacked copy electron-builder ships beside it.
   it('redirects a packaged specifier into app.asar.unpacked', () => {
     expect(
-      resolveOutsideAsar('file:///Applications/Hermes.app/Contents/Resources/app.asar/dist/node_modules/get-windows/index.js')
-    ).toBe('file:///Applications/Hermes.app/Contents/Resources/app.asar.unpacked/dist/node_modules/get-windows/index.js')
+      resolveOutsideAsar('file:///Applications/Moor.app/Contents/Resources/app.asar/dist/node_modules/get-windows/index.js')
+    ).toBe('file:///Applications/Moor.app/Contents/Resources/app.asar.unpacked/dist/node_modules/get-windows/index.js')
   })
 
   // The staged specifier is built with path.join, so on Windows the archive
   // segment is delimited by backslashes, not the slashes a file: URL has.
   it('redirects a Windows packaged path built with backslashes', () => {
-    expect(resolveOutsideAsar('C:\\Users\\me\\AppData\\Local\\Hermes\\resources\\app.asar\\dist\\node_modules\\get-windows\\index.js')).toBe(
-      'C:\\Users\\me\\AppData\\Local\\Hermes\\resources\\app.asar.unpacked\\dist\\node_modules\\get-windows\\index.js'
+    expect(resolveOutsideAsar('C:\\Users\\me\\AppData\\Local\\Moor\\resources\\app.asar\\dist\\node_modules\\get-windows\\index.js')).toBe(
+      'C:\\Users\\me\\AppData\\Local\\Moor\\resources\\app.asar.unpacked\\dist\\node_modules\\get-windows\\index.js'
     )
   })
 
@@ -169,7 +169,7 @@ describe('resolveOutsideAsar', () => {
   it('requires app.asar to be a complete path segment', () => {
     for (const untouched of [
       'file:///opt/app.asar-tools/node_modules/get-windows/index.js',
-      'file:///Users/dev/hermes-agent/node_modules/get-windows/index.js'
+      'file:///Users/dev/moor-agent/node_modules/get-windows/index.js'
     ]) {
       expect(resolveOutsideAsar(untouched)).toBe(untouched)
     }

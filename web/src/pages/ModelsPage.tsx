@@ -28,13 +28,13 @@ import {
   DASHBOARD_MODAL_PANEL,
   shouldCloseOuterModalOnEscape,
 } from "@/lib/dashboard-modal-shell";
-import { compactNumber } from "@hermes/shared";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { Stats } from "@nous-research/ui/ui/components/stats";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
-import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Switch } from "@nous-research/ui/ui/components/switch";
+import { compactNumber } from "@moor/shared";
+import { Button } from "@moor-research/ui/ui/components/button";
+import { Spinner } from "@moor-research/ui/ui/components/spinner";
+import { Stats } from "@moor-research/ui/ui/components/stats";
+import { Card, CardContent, CardHeader, CardTitle } from "@moor-research/ui/ui/components/card";
+import { Badge } from "@moor-research/ui/ui/components/badge";
+import { Switch } from "@moor-research/ui/ui/components/switch";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
 import { usePageHeader } from "@/contexts/usePageHeader";

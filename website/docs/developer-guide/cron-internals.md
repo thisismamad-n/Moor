@@ -158,7 +158,7 @@ dropped silently. The mechanics, in the order the due scan applies them
 6. **Paused / disabled / terminal jobs never catch up**; the due scan drops them
    before any of the above, and pause/resume clears any pending slot.
 
-The same store fields drive every topology: a standalone `hermes -p X gateway
+The same store fields drive every topology: a standalone `moor -p X gateway
 run` and a profile served by the default multiplexer (`_start_multiplex` ticks
 each home under `_profile_cron_scope`) evaluate the identical record.
 
@@ -231,7 +231,7 @@ If Chronos is misconfigured or the agent isn't logged into Moor,
 `resolve_cron_scheduler()` falls back to the built-in ticker (logged warning) —
 cron never loses its trigger. Recurring jobs re-arm after each fire; `repeat`-N
 jobs stop cleanly when the count is exhausted (no orphaned one-shot). The full
-agent↔Nous wire contract lives in [Chronos managed-cron contract](chronos-managed-cron-contract.md).
+agent↔Moor wire contract lives in [Chronos managed-cron contract](chronos-managed-cron-contract.md).
 
 ### Fresh Session Isolation
 
@@ -334,7 +334,7 @@ Platforms in the first group have explicit, validated target syntax — named ch
 
 For **Telegram topics**, use `telegram:<chat_id>:<thread_id>` (e.g., `telegram:-1001234567890:17585`). For **Slack threads**, the third segment is the parent message's `thread_ts` (e.g., `slack:C0123ABCD45:1700000000.000100`), so it only applies when replying under an existing message.
 
-**Bot Chat** (`bot-chat`, `bot-chat:<profile>`) is a machine-local pseudo-platform, not a gateway adapter. A mailbox-capable canonical live owner receives durable admission immediately (idle or busy); only that owner executes the incoming turn. `scheduler_delivery._deliver_to_bot_chat` resolves the target with `get_profile_dir` or the job's current `get_hermes_home`, derives the receipt ID from the source home, job ID, durable `execution_id`, and target home, and checks the receipt before discovering an owner. An existing receipt never permits CLI fallback. Without a mailbox owner it retains `hermes [-p <profile>] chat --in ~ -c "Bot Chat" --create-if-missing -Q --query-file <tmp>` and normal ownership fencing. Both lanes deliver a real inbound turn, not a transcript mirror. Queued/claimed receipts populate `last_delivery_queued` with receipt IDs. The delivery aggregator excludes admission notices from genuine errors and records execution `delivery_outcome=queued`; successful jobs use `last_status=delivery_queued`. Genuine errors on mixed targets take precedence as failed while retaining queued receipt metadata. The target profile’s durable receipt is authoritative for terminal completion. Queued is the historical admission outcome, not proof of delivery. Historical cron status does not automatically track later receipt completion. Bot-chat targets are excluded from `all` and credential preflight. Bot-chat-only external workers bypass the gateway delivery queue; mixed external-worker targets retain gateway handoff. `cron.bot_chat_delivery_timeout_seconds` (default 600) bounds only the legacy subprocess lane.
+**Bot Chat** (`bot-chat`, `bot-chat:<profile>`) is a machine-local pseudo-platform, not a gateway adapter. A mailbox-capable canonical live owner receives durable admission immediately (idle or busy); only that owner executes the incoming turn. `scheduler_delivery._deliver_to_bot_chat` resolves the target with `get_profile_dir` or the job's current `get_moor_home`, derives the receipt ID from the source home, job ID, durable `execution_id`, and target home, and checks the receipt before discovering an owner. An existing receipt never permits CLI fallback. Without a mailbox owner it retains `moor [-p <profile>] chat --in ~ -c "Bot Chat" --create-if-missing -Q --query-file <tmp>` and normal ownership fencing. Both lanes deliver a real inbound turn, not a transcript mirror. Queued/claimed receipts populate `last_delivery_queued` with receipt IDs. The delivery aggregator excludes admission notices from genuine errors and records execution `delivery_outcome=queued`; successful jobs use `last_status=delivery_queued`. Genuine errors on mixed targets take precedence as failed while retaining queued receipt metadata. The target profile’s durable receipt is authoritative for terminal completion. Queued is the historical admission outcome, not proof of delivery. Historical cron status does not automatically track later receipt completion. Bot-chat targets are excluded from `all` and credential preflight. Bot-chat-only external workers bypass the gateway delivery queue; mixed external-worker targets retain gateway handoff. `cron.bot_chat_delivery_timeout_seconds` (default 600) bounds only the legacy subprocess lane.
 
 ### Response Wrapping
 

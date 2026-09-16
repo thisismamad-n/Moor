@@ -1,7 +1,7 @@
 import { firstStringField, normalize } from '@/lib/text'
 import { isTodoToolName, parseTodos } from '@/lib/todos'
 import type { ToolResultMetadata } from '@/lib/tool-result-metadata'
-import type { SessionMessage } from '@/types/hermes'
+import type { SessionMessage } from '@/types/moor'
 
 import type { ChatMessage, ChatMessagePart, GatewayEventPayload } from './types'
 

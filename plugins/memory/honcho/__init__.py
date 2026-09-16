@@ -192,13 +192,13 @@ class HonchoMemoryProvider(DialecticMixin, MemoryProvider):
         except Exception:
             return False
 
-    def save_config(self, values, hermes_home):
-        """Merge ``values`` into $HERMES_HOME/honcho.json (Honcho SDK native format); a file that does not parse raises.
+    def save_config(self, values, moor_home):
+        """Merge ``values`` into $MOOR_HOME/honcho.json (Honcho SDK native format); a file that does not parse raises.
         Holds the token refresh locks so a rotation cannot land between the read and the write."""
         from pathlib import Path
         from utils import atomic_json_write
         from plugins.memory.honcho.oauth import _config_refresh_lock, _read_config_strict, _refresh_lock
-        config_path = Path(hermes_home) / "honcho.json"
+        config_path = Path(moor_home) / "honcho.json"
         with _refresh_lock, _config_refresh_lock(config_path):
             existing = _read_config_strict(config_path)
             atomic_json_write(config_path, {**existing, **values}, mode=0o600)
@@ -620,7 +620,7 @@ class HonchoMemoryProvider(DialecticMixin, MemoryProvider):
         user id from the transport, never peerName: a shared peerName would merge every user onto one peer."""
         text = self._init_peer_failure or ""
         if self._init_peer_platform in _LOCAL_PLATFORMS:
-            return f"{text} Set one with 'hermes honcho peer --user <name>'."
+            return f"{text} Set one with 'moor honcho peer --user <name>'."
         return f"{text} This platform supplied no user id for the chat, so memory stays off here."
 
     def _pop_peer_notice(self) -> str:

@@ -667,7 +667,7 @@ def test_spawn_local_stamps_owner_task_id_and_event_carries_it(monkeypatch, noti
     """spawn_local(owner_task_id=...) survives to the completion event, so a
     real subagent-spawned process (collapsed task_id) is suppressed on
     drain. Exercises the actual spawn -> _move_to_finished -> drain path."""
-    import hermes_cli.config as _cfg
+    import moor_cli.config as _cfg
     from tools.process_registry import ProcessRegistry
 
     monkeypatch.setattr(_cfg, "read_raw_config", lambda *a, **k: {})
@@ -692,7 +692,7 @@ def test_spawn_local_stamps_owner_task_id_and_event_carries_it(monkeypatch, noti
 def test_spawn_local_without_owner_defaults_to_task_id(monkeypatch, notification_child):
     """Backward compat: callers that don't pass owner_task_id behave exactly
     as before (owner falls back to task_id; parent-owned still delivers)."""
-    import hermes_cli.config as _cfg
+    import moor_cli.config as _cfg
     from tools.process_registry import ProcessRegistry
 
     monkeypatch.setattr(_cfg, "read_raw_config", lambda *a, **k: {})

@@ -8,11 +8,11 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from hermes_cli.dashboard_auth import clear_providers, register_provider
-from hermes_cli.dashboard_auth import refresh_singleflight as replay
-from hermes_cli.dashboard_auth.base import ProviderError, RefreshExpiredError, Session
-from hermes_cli.dashboard_auth.routes import router
-from tests.hermes_cli.conftest_dashboard_auth import StubAuthProvider
+from moor_cli.dashboard_auth import clear_providers, register_provider
+from moor_cli.dashboard_auth import refresh_singleflight as replay
+from moor_cli.dashboard_auth.base import ProviderError, RefreshExpiredError, Session
+from moor_cli.dashboard_auth.routes import router
+from tests.moor_cli.conftest_dashboard_auth import StubAuthProvider
 
 
 class Provider(StubAuthProvider):
@@ -180,7 +180,7 @@ class _RotatingReuseDetectingProvider(Provider):
 
 @pytest.fixture
 def gated_web_app():
-    from hermes_cli import web_server
+    from moor_cli import web_server
 
     prev = {k: getattr(web_server.app.state, k, None) for k in ("bound_host", "bound_port", "auth_required")}
     web_server.app.state.bound_host = "gw.example.test"
@@ -197,8 +197,8 @@ def test_cookie_gate_burst_with_stale_rt_rotates_once(gated_web_app):
     provider = _RotatingReuseDetectingProvider()
     provider.release.clear()
     register_provider(provider)
-    cookies = {"hermes_session_at": "expired-at", "hermes_session_rt": "stale-rt",
-               "hermes_session_provider": "stub"}
+    cookies = {"moor_session_at": "expired-at", "moor_session_rt": "stale-rt",
+               "moor_session_provider": "stub"}
 
     def call():
         # One TestClient per request: a shared jar would hand later requests the rotated RT.

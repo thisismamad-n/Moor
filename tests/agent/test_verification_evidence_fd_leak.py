@@ -16,7 +16,7 @@ from agent import verification_evidence as ve
 @pytest.fixture(autouse=True)
 def _ledger_on(monkeypatch):
     """The ledger is inert unless verify-on-stop is enabled; these tests exercise the ledger."""
-    monkeypatch.setenv("HERMES_VERIFY_ON_STOP", "1")
+    monkeypatch.setenv("MOOR_VERIFY_ON_STOP", "1")
 
 
 

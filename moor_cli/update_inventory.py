@@ -174,7 +174,7 @@ def _collect_gateway_runtimes(plan: UpdatePlan, profile_homes: list, seen: set[i
     supervisor = _supervisor_classifier()
     with _probe("Gateway-state inventory"):
         from gateway.status import live_gateway_pid_for_home, read_runtime_status
-        from hermes_cli.update_receipt import _socket_identity
+        from moor_cli.update_receipt import _socket_identity
 
         for profile, home in profile_homes:
             sock = _socket_identity(home)
@@ -188,7 +188,7 @@ def _collect_gateway_runtimes(plan: UpdatePlan, profile_homes: list, seen: set[i
             else:
                 # Verified identity, not bare PID existence: a ``stopped`` record whose PID was recycled
                 # by an unrelated process fabricated a phantom gateway the restart phase could never
-                # touch, so `hermes update` exited partial (#109680).
+                # touch, so `moor update` exited partial (#109680).
                 pid = live_gateway_pid_for_home(home)
                 if pid is None or pid in seen:
                     continue
@@ -407,8 +407,8 @@ def report_unaccounted_runtimes(outcomes: list[dict[str, Any]]) -> bool:
         # A serve/dashboard is not reachable by any `gateway restart` command: name the process, not the wrong verb.
         # See #100479.
         if sys.platform == "linux":
-            print("      systemctl --user restart hermes-serve.service   # unit-managed serve")
-        print("      relaunch `hermes serve` / `hermes dashboard`")
+            print("      systemctl --user restart moor-serve.service   # unit-managed serve")
+        print("      relaunch `moor serve` / `moor dashboard`")
     return True
 
 

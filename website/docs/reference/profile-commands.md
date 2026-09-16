@@ -81,7 +81,7 @@ Creates a new profile.
 |-------------------|-------------|
 | `<name>` | Name for the new profile. Must be a valid directory name (alphanumeric, hyphens, underscores). |
 | `--clone` | Copy `config.yaml`, `.env`, `SOUL.md`, skills, and the curated `memories/MEMORY.md` / `memories/USER.md` from the current profile. Sessions, `state.db` and cron jobs are not copied. |
-| `--clone-all` | Copy everything (config, memories, skills, plugins) from the current profile. Excludes per-profile history: sessions, `state.db`, backups, state-snapshots, checkpoints — and cron jobs, which stay bound to the source profile (a clone that inherited them would fire every job twice). When the source is the default profile, the machine-scoped local-model trees (`models/`, `runtimes/`, `node/`) are also skipped — the same trees `hermes backup` excludes. |
+| `--clone-all` | Copy everything (config, memories, skills, plugins) from the current profile. Excludes per-profile history: sessions, `state.db`, backups, state-snapshots, checkpoints — and cron jobs, which stay bound to the source profile (a clone that inherited them would fire every job twice). When the source is the default profile, the machine-scoped local-model trees (`models/`, `runtimes/`, `node/`) are also skipped — the same trees `moor backup` excludes. |
 | `--clone-from <profile>` | Clone config/skills/SOUL from a specific profile instead of the current one. Implies `--clone` unless paired with `--clone-all`. |
 | `--no-alias` | Skip wrapper script creation. |
 | `--description "<text>"` | One- or two-sentence description of what this profile is good at. Used by the kanban orchestrator to route tasks based on role instead of profile name alone. Skip and add later via `moor profile describe`. Persisted in `<profile_dir>/profile.yaml`. |
@@ -247,13 +247,13 @@ The rename also migrates the profile's persisted session/routing identity — se
 name. A live multiplexed gateway owns that migration (it holds the routing index in memory), so
 when it is running the CLI delegates to it.
 
-## `hermes profile migrate-identity`
+## `moor profile migrate-identity`
 
 ```bash
-hermes profile migrate-identity <old-name> <new-name>
+moor profile migrate-identity <old-name> <new-name>
 ```
 
-Retries the identity migration of a rename that already completed. Run it if `hermes profile
+Retries the identity migration of a rename that already completed. Run it if `moor profile
 rename` warned that the live gateway could not migrate session identity: restart the gateway
 (it reloads the routing index from the database, so the migration lands), or stop it — with no
 gateway holding the store the command performs the durable rewrite itself.
@@ -267,16 +267,16 @@ while the other succeeds), naming the database and error.
 **Example:**
 
 ```bash
-hermes profile rename mybot assistant
+moor profile rename mybot assistant
 # ⚠ Profile was renamed, but the live gateway could not migrate session identity (…).
 #   Restart the gateway, then run:
-#     hermes profile migrate-identity mybot assistant
+#     moor profile migrate-identity mybot assistant
 
-hermes profile migrate-identity mybot assistant
+moor profile migrate-identity mybot assistant
 # ✓ Session/routing identity migrated: mybot → assistant
 ```
 
-## `hermes profile export`
+## `moor profile export`
 
 ```bash
 moor profile export <name> [options]

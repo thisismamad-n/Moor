@@ -832,7 +832,7 @@ def test_profile_scoped_mcp_discovery_uses_target_home(monkeypatch, tmp_path):
         assert thread is not None
         thread.join(timeout=2)
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
     assert seen == [str(profile_home)]
 
@@ -2584,7 +2584,7 @@ def test_load_enabled_toolsets_rejects_disabled_mcp_env(monkeypatch, capsys):
     # _load_enabled_toolsets. Toolsets inside their first release
     # (_RECENTLY_SHIPPED_TOOLSETS) are back-filled onto saved lists that never
     # offered them — allow those too.
-    from hermes_cli.tools_config import _RECENTLY_SHIPPED_TOOLSETS
+    from moor_cli.tools_config import _RECENTLY_SHIPPED_TOOLSETS
 
     result = server._load_enabled_toolsets()
     assert result is not None
@@ -4404,7 +4404,7 @@ def test_apply_model_switch_persist_override_false_never_persists(monkeypatch):
         lambda *a: pytest.fail("persist_override must bypass resolve_persist_behavior"),
     )
     monkeypatch.setattr(
-        "hermes_cli.model_switch.persist_model_selection",
+        "moor_cli.model_switch.persist_model_selection",
         lambda _r: pytest.fail("persist_override=False must not persist"),
     )
     monkeypatch.setattr(
@@ -9106,20 +9106,20 @@ def test_setup_status_reports_provider_config(monkeypatch):
 
 
 def test_setup_status_answers_from_the_bootstrap_record_once_it_exists(monkeypatch):
-    """Under ``hermes serve`` the boot bootstrap owns the free-tier identity; ``setup.status`` reports
+    """Under ``moor serve`` the boot bootstrap owns the free-tier identity; ``setup.status`` reports
     its record (blocking for it while it is in flight) instead of re-probing, so a client's first poll
     sees the identity that exists rather than racing the mint."""
     import threading
-    from hermes_cli import free_tier_bootstrap as fb
+    from moor_cli import free_tier_bootstrap as fb
     fb.reset_for_tests()
-    monkeypatch.setattr("hermes_cli.main._has_any_provider_configured",
+    monkeypatch.setattr("moor_cli.main._has_any_provider_configured",
                         lambda **_kw: pytest.fail("setup.status must read the record, not re-probe"))
     release = threading.Event()
 
     def slow_bootstrap():
         release.wait(5)
         with fb._lock:
-            fb._record = fb.SetupRecord(provider_configured=True, inference_provider="nous", free_tier=True,
+            fb._record = fb.SetupRecord(provider_configured=True, inference_provider="moor", free_tier=True,
                                         has_identity=True, other_providers=False)
             fb._done.set()
     with fb._lock:
@@ -9130,7 +9130,7 @@ def test_setup_status_answers_from_the_bootstrap_record_once_it_exists(monkeypat
         resp = server.handle_request({"id": "1", "method": "setup.status", "params": {}})
         assert resp["result"]["provider_configured"] is True
         assert resp["result"]["ready"] is True and resp["result"]["free_tier"] is True
-        assert resp["result"]["inference_provider"] == "nous"
+        assert resp["result"]["inference_provider"] == "moor"
     finally:
         fb.reset_for_tests()
 
@@ -9140,13 +9140,13 @@ def test_invalid_params_and_unknown_method_name_the_version_skew_fix():
     resp = server.handle_request({"id": "1", "method": "no.such.method", "params": {}})
     assert resp["error"]["code"] == -32601
     assert resp["error"]["message"].startswith("unknown method: no.such.method")
-    assert "hermes update" in resp["error"]["message"]
+    assert "moor update" in resp["error"]["message"]
 
     resp = server.handle_request(
         {"id": "2", "method": "session.status", "params": {"session_id": "x", "turn_author": "y"}})
     assert resp["error"]["code"] == 4000
     assert resp["error"]["message"].startswith("invalid params for session.status: turn_author")
-    assert "hermes update" in resp["error"]["message"]
+    assert "moor update" in resp["error"]["message"]
 
 
 def test_probe_credentials_emits_exact_empty_key_warning():
@@ -9164,10 +9164,10 @@ def test_probe_credentials_allows_keyless_custom_runtime():
 
 
 def test_setup_runtime_check_rejects_empty_runtime_key(monkeypatch):
-    monkeypatch.setattr("hermes_cli.main._has_any_provider_configured", lambda **_kw: True)
+    monkeypatch.setattr("moor_cli.main._has_any_provider_configured", lambda **_kw: True)
     monkeypatch.setattr(server, "_resolve_startup_runtime", lambda: ("openrouter/test-model", None))
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "moor_cli.runtime_provider.resolve_runtime_provider",
         lambda requested=None, **_kw: {
             "provider": "openrouter",
             "api_key": "",
@@ -9189,7 +9189,7 @@ def test_setup_runtime_check_rejects_empty_runtime_key(monkeypatch):
 def test_setup_runtime_check_allows_no_key_custom_runtime(monkeypatch):
     monkeypatch.setattr("moor_cli.main._has_any_provider_configured", lambda **_kw: True)
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "moor_cli.runtime_provider.resolve_runtime_provider",
         lambda requested=None, **_kw: {
             "provider": "custom",
             "api_key": "no-key-required",
@@ -9206,7 +9206,7 @@ def test_setup_runtime_check_allows_no_key_custom_runtime(monkeypatch):
 def test_setup_runtime_check_rejects_implicit_bedrock_when_unconfigured(monkeypatch):
     monkeypatch.setattr("moor_cli.main._has_any_provider_configured", lambda **_kw: False)
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "moor_cli.runtime_provider.resolve_runtime_provider",
         lambda requested=None, **_kw: {
             "provider": "bedrock",
             "api_key": "aws-sdk",
@@ -9257,8 +9257,8 @@ def test_setup_runtime_check_agrees_with_session_fallback_chain(monkeypatch):
     """#111775: with the primary blocked and a complete fallback entry, the probe answers what
     ``_make_agent`` would build (fallback provider + model); an explicit ``provider`` stays strict
     so another provider's fallback cannot mask a failed connection."""
-    from hermes_cli.auth import AuthError
-    monkeypatch.setattr("hermes_cli.main._has_any_provider_configured", lambda **_kw: True)
+    from moor_cli.auth import AuthError
+    monkeypatch.setattr("moor_cli.main._has_any_provider_configured", lambda **_kw: True)
     monkeypatch.setattr(server, "_resolve_startup_runtime", lambda: ("claude-sonnet-4-5", None))
     monkeypatch.setattr(server, "_load_fallback_model",
                         lambda: [{"provider": "openrouter", "model": "openai/gpt-4.1-mini", "api_key": "sk-or-fb"}])
@@ -9268,7 +9268,7 @@ def test_setup_runtime_check_agrees_with_session_fallback_chain(monkeypatch):
             return {"provider": "openrouter", "api_key": explicit_api_key, "source": "explicit"}
         raise AuthError("No Anthropic credentials found.", provider="anthropic")
 
-    monkeypatch.setattr("hermes_cli.runtime_provider.resolve_runtime_provider", fake_resolve)
+    monkeypatch.setattr("moor_cli.runtime_provider.resolve_runtime_provider", fake_resolve)
 
     default = server.handle_request({"id": "1", "method": "setup.runtime_check", "params": {}})
     assert default["result"]["ok"] is True
@@ -9282,10 +9282,10 @@ def test_setup_runtime_check_agrees_with_session_fallback_chain(monkeypatch):
 
 def test_setup_runtime_check_reports_target_model_on_credential_failure(monkeypatch):
     """#111775: the probe names the model session creation would use, never ``model: null``."""
-    monkeypatch.setattr("hermes_cli.main._has_any_provider_configured", lambda **_kw: True)
+    monkeypatch.setattr("moor_cli.main._has_any_provider_configured", lambda **_kw: True)
     monkeypatch.setattr(server, "_resolve_startup_runtime", lambda: ("z-ai/glm-5.2", None))
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "moor_cli.runtime_provider.resolve_runtime_provider",
         lambda *, requested=None, target_model=None: {
             "provider": "zai", "api_key": "", "source": "env/config"
         },
@@ -9301,12 +9301,12 @@ def test_setup_runtime_check_scopes_launch_profile_in_multiplex_backend(monkeypa
     from agent import secret_scope
     from tui_gateway import launch_profile_policy
 
-    launch_home = tmp_path / ".hermes"
+    launch_home = tmp_path / ".moor"
     launch_home.mkdir()
-    monkeypatch.setenv("HERMES_CODEX_BASE_URL", "https://codex.launch.test/v1")
-    monkeypatch.setattr(server, "_hermes_home", launch_home)
+    monkeypatch.setenv("MOOR_CODEX_BASE_URL", "https://codex.launch.test/v1")
+    monkeypatch.setattr(server, "_moor_home", launch_home)
     monkeypatch.setattr(launch_profile_policy, "_snapshot", None)
-    monkeypatch.setattr("hermes_cli.main._has_any_provider_configured", lambda **_kw: True)
+    monkeypatch.setattr("moor_cli.main._has_any_provider_configured", lambda **_kw: True)
     monkeypatch.setattr(server, "_resolve_startup_runtime", lambda: ("gpt-5.3-codex", None))
 
     def resolve_codex(requested=None, **_kwargs):
@@ -9314,11 +9314,11 @@ def test_setup_runtime_check_scopes_launch_profile_in_multiplex_backend(monkeypa
         return {
             "provider": "openai-codex",
             "api_key": "codex-oauth-token",
-            "base_url": secret_scope.get_secret("HERMES_CODEX_BASE_URL"),
+            "base_url": secret_scope.get_secret("MOOR_CODEX_BASE_URL"),
             "source": "credential-pool",
         }
 
-    monkeypatch.setattr("hermes_cli.runtime_provider.resolve_runtime_provider", resolve_codex)
+    monkeypatch.setattr("moor_cli.runtime_provider.resolve_runtime_provider", resolve_codex)
     secret_scope.set_multiplex_active(True)
     try:
         response = server.handle_request(
@@ -15057,7 +15057,7 @@ def test_prompt_submit_fails_loudly_when_store_unavailable(monkeypatch):
 
     assert resp["error"]["code"] == 5072
     msg = resp["error"]["message"]
-    assert "not saved" in msg and "hermes doctor --fix" in msg
+    assert "not saved" in msg and "moor doctor --fix" in msg
     assert "utf-8 decode failure" not in msg  # raw cause rides `data.details`, never the lead
     assert resp["error"]["data"]["code"] == "storage_unavailable"
     assert "utf-8 decode failure" in resp["error"]["data"]["details"]
@@ -15179,7 +15179,7 @@ def test_session_list_returns_clean_error_when_state_db_is_unavailable(monkeypat
     assert "error" in resp
     # Plain cause + repair command; the machine-readable code lets a GUI attach "Run doctor".
     assert "Session storage is unavailable" in resp["error"]["message"]
-    assert "hermes doctor --fix" in resp["error"]["message"]
+    assert "moor doctor --fix" in resp["error"]["message"]
     assert resp["error"]["data"]["code"] == "storage_unavailable"
     assert resp["error"]["data"]["details"] == "locking protocol"
 
@@ -15376,7 +15376,7 @@ def test_session_list_honors_params_profile_opens_profile_db(monkeypatch, tmp_pa
     monkeypatch.setattr(server, "_profile_home", lambda p: profile_home if p == "mlperf" else None)
     monkeypatch.setattr(server, "_get_db", lambda: LaunchDB())
     monkeypatch.setattr(
-        "hermes_cli.web_server_sessions._open_session_db_at_path",
+        "moor_cli.web_server_sessions._open_session_db_at_path",
         lambda db_path, *, read_only: ProfileDB(db_path=db_path),
     )
 
@@ -15420,7 +15420,7 @@ def test_session_most_recent_honors_params_profile(monkeypatch, tmp_path):
     monkeypatch.setattr(server, "_profile_home", lambda p: profile_home if p == "mlperf" else None)
     monkeypatch.setattr(server, "_get_db", lambda: LaunchDB())
     monkeypatch.setattr(
-        "hermes_cli.web_server_sessions._open_session_db_at_path",
+        "moor_cli.web_server_sessions._open_session_db_at_path",
         lambda db_path, *, read_only: ProfileDB2(db_path=db_path),
     )
 
@@ -15821,7 +15821,7 @@ def test_session_branch_writes_to_parent_profile_db(monkeypatch, tmp_path):
     """session.branch must copy history into the parent's profile state.db."""
     profile_home = tmp_path / "profiles" / "mlperf"
     profile_home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     seen: dict = {"msgs": []}
 
     class LaunchDB:
@@ -16264,7 +16264,7 @@ def test_session_branch_installs_parent_profile_secret_scope(monkeypatch, tmp_pa
 
     profile_home = tmp_path / "profiles" / "mlperf"
     profile_home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     (profile_home / ".env").write_text(
         "PROXMOX_TOKEN=mlperf-secret\n", encoding="utf-8"
     )
@@ -16357,7 +16357,7 @@ def test_session_branch_uses_persisted_display_history_after_compaction(monkeypa
     """A live branch must copy the complete visible transcript, not the compacted model tail."""
     profile_home = tmp_path / "profiles" / "mlperf"
     profile_home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     seen: dict = {"msgs": []}
 
     display_history = [
@@ -17338,7 +17338,7 @@ def test_session_most_recent_handles_db_unavailable(monkeypatch):
 
 
 def test_verification_status_returns_recorded_evidence(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_VERIFY_ON_STOP", "1")  # ledger is inert when the guard is off
+    monkeypatch.setenv("MOOR_VERIFY_ON_STOP", "1")  # ledger is inert when the guard is off
     profile_home = tmp_path / "profiles" / "verify"
     profile_home.mkdir(parents=True)
     monkeypatch.setattr(server, "_profile_home", lambda p: profile_home if p == "verify" else None)
@@ -17379,7 +17379,7 @@ def test_verification_status_returns_recorded_evidence(tmp_path, monkeypatch):
 
 
 def test_verification_status_outside_workspace_is_not_applicable(monkeypatch, tmp_path):
-    monkeypatch.setenv("HERMES_VERIFY_ON_STOP", "1")  # ledger is inert when the guard is off
+    monkeypatch.setenv("MOOR_VERIFY_ON_STOP", "1")  # ledger is inert when the guard is off
     # A cwd with no project facts (outside any code workspace) must report
     # not_applicable. Force the "no facts" precondition rather than relying on
     # tmp_path's ancestors being pristine — a stray marker file in a shared
@@ -21019,7 +21019,7 @@ def test_prompt_submit_releases_old_history_before_heap_trim(monkeypatch, tmp_pa
     session = _session(agent=_Agent())
     profile_home = tmp_path / "profiles" / "worker"
     profile_home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     session["profile_home"] = str(profile_home)
     session["history"] = [
         {"role": "tool", "tool_call_id": "old", "content": "x" * 20_000}

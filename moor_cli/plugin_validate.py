@@ -1,11 +1,11 @@
-"""``hermes plugins validate`` — admission checks for a plugin directory.
+"""``moor plugins validate`` — admission checks for a plugin directory.
 
 This is the command the plugin-catalog admission CI (and the
 ``.github/actions/plugin-validate`` composite action) runs against a
 candidate plugin. It performs static manifest checks plus a
 subprocess-isolated capability probe: the plugin is imported and its
 ``register(ctx)`` called against a minimal recording stub context in a
-scratch child process (with a throwaway ``HERMES_HOME``), so a crashing or
+scratch child process (with a throwaway ``MOOR_HOME``), so a crashing or
 malicious plugin cannot take down the CLI, and the *actually registered*
 tools/hooks/middleware are compared against the manifest's declared
 ``provides_*`` lists.
@@ -29,7 +29,7 @@ _CONFIG_TYPES = {
     "bool", "boolean", "list", "array", "dict", "mapping", "map",
 }
 _PROBE_TIMEOUT = 30
-_PROBE_SENTINEL = "HERMES_VALIDATE_JSON:"
+_PROBE_SENTINEL = "MOOR_VALIDATE_JSON:"
 
 
 @dataclass
@@ -71,14 +71,14 @@ class ValidationReport:
 # ─── Static checks ───────────────────────────────────────────────────────────
 
 
-def _requires_hermes_spec_valid(spec: str) -> bool:
-    """Strictly validate a ``requires_hermes`` spec.
+def _requires_moor_spec_valid(spec: str) -> bool:
+    """Strictly validate a ``requires_moor`` spec.
 
-    Unlike :func:`hermes_cli.plugins_manifest.version_satisfies` (permissive at load
+    Unlike :func:`moor_cli.plugins_manifest.version_satisfies` (permissive at load
     time), validation REJECTS clauses whose version segment doesn't parse —
     a typo'd spec should fail admission, not silently gate nothing.
     """
-    from hermes_cli.plugins_manifest import _VERSION_COMPARATOR_RE, _version_tuple
+    from moor_cli.plugins_manifest import _VERSION_COMPARATOR_RE, _version_tuple
 
     for clause in spec.split(","):
         clause = clause.strip()
@@ -105,18 +105,18 @@ def _check_manifest_fields(report: ValidationReport, manifest: dict) -> None:
         report.add("manifest fields", True, "name, version, description present")
 
 
-def _check_requires_hermes(report: ValidationReport, manifest: dict) -> None:
-    spec = str(manifest.get("requires_hermes") or "").strip()
+def _check_requires_moor(report: ValidationReport, manifest: dict) -> None:
+    spec = str(manifest.get("requires_moor") or "").strip()
     if not spec:
-        report.add("requires_hermes", True, "not declared")
+        report.add("requires_moor", True, "not declared")
         return
-    if _requires_hermes_spec_valid(spec):
-        report.add("requires_hermes", True, f"spec {spec!r} parses")
+    if _requires_moor_spec_valid(spec):
+        report.add("requires_moor", True, f"spec {spec!r} parses")
     else:
         report.add(
-            "requires_hermes",
+            "requires_moor",
             False,
-            f"requires_hermes spec {spec!r} does not parse "
+            f"requires_moor spec {spec!r} does not parse "
             "(expected e.g. \">=0.19\" or \">=0.19, <1.0\")",
         )
 
@@ -184,7 +184,7 @@ def _check_requires_env(report: ValidationReport, manifest: dict) -> None:
 # module using the same file-location mechanics PluginManager uses, calls
 # register() against a recording stub ctx, and prints a sentinel-prefixed
 # JSON line of what was actually registered. Deliberately imports NOTHING
-# from hermes so a hostile plugin only sees a bare interpreter — the one
+# from moor so a hostile plugin only sees a bare interpreter — the one
 # exception is `providers` for `kind: model-provider`, whose contract IS
 # calling providers.register_provider at import.
 _PROBE_SCRIPT = r"""
@@ -206,7 +206,7 @@ recorded = {"tools": [], "hooks": [], "middleware": [], "commands": [], "provide
 class RecordingContext:
     plugin_config = {}
     profile_name = "default"
-    plugin_id = "hermes_validate_probe_plugin"
+    plugin_id = "moor_validate_probe_plugin"
 
     def register_tool(self, name, *args, **kwargs):
         recorded["tools"].append(str(name))
@@ -268,7 +268,7 @@ if provider_kind:
 
 try:
     spec = importlib.util.spec_from_file_location(
-        "hermes_validate_probe_plugin",
+        "moor_validate_probe_plugin",
         plugin_dir + "/__init__.py",
         submodule_search_locations=[plugin_dir],
     )
@@ -303,7 +303,7 @@ emit(recorded)
 
 
 def _probe_options(manifest: dict) -> dict:
-    from hermes_cli.plugins import PluginContext
+    from moor_cli.plugins import PluginContext
 
     return {
         "kind": str(manifest.get("kind") or ""),
@@ -321,9 +321,9 @@ def _run_capability_probe(plugin_dir: Path, manifest: dict) -> Tuple[Optional[di
     is the ``{tools, hooks, middleware, commands, providers}`` dict on
     success, and *error* is a human-readable failure description otherwise.
     """
-    with tempfile.TemporaryDirectory(prefix="hermes-validate-") as scratch:
+    with tempfile.TemporaryDirectory(prefix="moor-validate-") as scratch:
         env = dict(os.environ)
-        env["HERMES_HOME"] = scratch
+        env["MOOR_HOME"] = scratch
         try:
             result = subprocess.run(
                 [
@@ -505,7 +505,7 @@ def validate_plugin_dir(plugin_dir: Path) -> ValidationReport:
     report.add("manifest", True, "plugin.yaml parses")
 
     _check_manifest_fields(report, manifest)
-    _check_requires_hermes(report, manifest)
+    _check_requires_moor(report, manifest)
     _check_config_spec(report, manifest)
     _check_requires_env(report, manifest)
     recorded = _check_capabilities(report, manifest, plugin_dir)
@@ -521,7 +521,7 @@ def _validate_portable_plugin(report: ValidationReport, plugin_dir: Path) -> Val
     diagnostics (schema shape, name, supported subset).
     """
     try:
-        from hermes_cli.agent_plugins import read_agent_plugin_manifest
+        from moor_cli.agent_plugins import read_agent_plugin_manifest
 
         manifest, diagnostics = read_agent_plugin_manifest(plugin_dir)
     except Exception as exc:

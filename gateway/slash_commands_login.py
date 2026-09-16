@@ -14,7 +14,7 @@ from uuid import uuid4
 
 from gateway.run_agent_cache import _first_agent
 from gateway.slash_access import policy_for_source
-from hermes_cli import anon_auth
+from moor_cli import anon_auth
 
 logger = logging.getLogger("gateway.run")
 
@@ -52,7 +52,7 @@ class GatewayLoginCommandsMixin:
         executor = getattr(self, "_login_exec", None)
         if executor is None or getattr(executor, "_shutdown", False):
             executor = self._login_exec = concurrent.futures.ThreadPoolExecutor(
-                max_workers=1, thread_name_prefix="hermes-login")
+                max_workers=1, thread_name_prefix="moor-login")
         return executor
 
     async def _run_login_blocking(self, func):
@@ -88,7 +88,7 @@ class GatewayLoginCommandsMixin:
             if live is not None:
                 live.cancelled = True
 
-        state = await self._run_login_blocking(anon_auth.current_nous_state)
+        state = await self._run_login_blocking(anon_auth.current_moor_state)
         if state and not anon_auth.is_guest_state(state):
             return anon_auth.UPGRADE_ALREADY_SIGNED_IN
 
@@ -182,7 +182,7 @@ class GatewayLoginCommandsMixin:
         keys = [
             key for key, entry in entries
             if (agent := _first_agent(entry)) is not None
-            and str(getattr(agent, "provider", "")) == "nous"
+            and str(getattr(agent, "provider", "")) == "moor"
             and str(getattr(agent, "model", "")) == anon_auth.GUEST_MODEL
         ]
         failed = 0

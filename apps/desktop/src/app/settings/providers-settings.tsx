@@ -26,7 +26,7 @@ import { $localModelsEnabled } from '@/store/local-models-flag'
 import { notify, notifyError } from '@/store/notifications'
 import { $desktopOnboarding, startManualLocalEndpoint, startManualProviderOAuth } from '@/store/onboarding'
 import { $settingsRequestProfile } from '@/store/settings-scope'
-import type { EnvVarInfo, OAuthProvider } from '@/types/hermes'
+import type { EnvVarInfo, OAuthProvider } from '@/types/moor'
 
 import { isKeyVar, ProviderKeyRows } from './credential-key-ui'
 import { CustomEndpointsSettings } from './custom-endpoints-settings'
@@ -157,8 +157,8 @@ function OAuthPicker({
 
   const select = (p: OAuthProvider) => startManualProviderOAuth(p.id, profile)
 
-  // The free tier holds a token but no account: it is never "connected"; the featured Nous row
-  // names it (Nous · free tier) and offers the sign-in that keeps its connectors.
+  // The free tier holds a token but no account: it is never "connected"; the featured Moor row
+  // names it (Moor · free tier) and offers the sign-in that keeps its connectors.
   const isConnected = (p: OAuthProvider) => Boolean(p.status?.logged_in) && p.status?.free_tier !== true
   const featured = ordered.find(p => p.id === FEATURED_ID && !isConnected(p)) ?? null
   const rest = featured ? ordered.filter(p => p.id !== FEATURED_ID) : ordered

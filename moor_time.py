@@ -27,14 +27,14 @@ _tz_cache: Dict[Tuple[str, str], Tuple[str, Optional[ZoneInfo]]] = {}
 
 
 def _env_timezone() -> str:
-    """``HERMES_TIMEZONE`` when it may speak for the active profile. Under the multiplexed
+    """``MOOR_TIMEZONE`` when it may speak for the active profile. Under the multiplexed
     gateway the env var holds only the DEFAULT profile's value (bridged from its config.yaml at
     startup), so every routed profile must read its own config.yaml instead."""
     from agent.secret_scope import is_multiplex_active  # lazy: secret_scope pulls in more than a clock needs
 
     if is_multiplex_active():
         return ""
-    return os.getenv("HERMES_TIMEZONE", "").strip()
+    return os.getenv("MOOR_TIMEZONE", "").strip()
 
 
 def _timezone_cache_identity() -> Tuple[str, str]:
@@ -51,9 +51,9 @@ def _resolve_timezone_name() -> str:
         # Prefer the shared cached effective-config loader (mtime-keyed + libyaml, managed overlay
         # included so an administrator can pin ``timezone``): a direct safe_load of a large
         # config.yaml costs ~100 ms and this ran inside the FIRST system prompt build. The bare
-        # parse is the stdlib-safe fallback for bootstrap consumers without hermes_cli importable.
+        # parse is the stdlib-safe fallback for bootstrap consumers without moor_cli importable.
         try:
-            from hermes_cli.config_effective import load_user_config_effective
+            from moor_cli.config_effective import load_user_config_effective
             cfg = load_user_config_effective(get_config_path())
         except Exception:
             import yaml

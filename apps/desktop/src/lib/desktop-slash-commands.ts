@@ -284,7 +284,7 @@ const DESKTOP_COMMAND_SPECS: readonly DesktopCommandSpec[] = [
 
 /**
  * Offline fallback for the registry's `desktop=` metadata, dumped from
- * `hermes_cli/commands.py::desktop_surface_registry` by
+ * `moor_cli/commands.py::desktop_surface_registry` by
  * `scripts/dump_desktop_slash_registry.py`. The live `commands.catalog` answers
  * first (`specFromCatalog`); this copy only covers the gap before the backend
  * replies. A Python test and `desktop-slash-commands.test.ts` both fail when

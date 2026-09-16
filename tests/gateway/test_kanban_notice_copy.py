@@ -24,7 +24,7 @@ def test_gave_up_says_blocked_and_names_unblock_log_reassign():
     assert "blocked" in msg.lower()
     assert "3 times" in msg
     assert "spawn: profile 'coder' not found" in msg
-    for cmd in ("hermes kanban unblock T-123", "hermes kanban log T-123", "hermes kanban reassign T-123"):
+    for cmd in ("moor kanban unblock T-123", "moor kanban log T-123", "moor kanban reassign T-123"):
         assert f"`{cmd}`" in msg
     assert "spawn failures" not in msg  # wrong for crash/timeout-triggered trips
 

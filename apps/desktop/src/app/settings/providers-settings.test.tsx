@@ -21,7 +21,7 @@ vi.mock('@/store/profile', () => ({
   normalizeProfileKey: (p: string | null) => p || 'default'
 }))
 
-vi.mock('@/hermes', () => ({
+vi.mock('@/moor', () => ({
   setApiRequestProfile: vi.fn(),
   getProfiles: async () => ({ profiles: (await import('@/store/profile')).$profiles.get() }),
   setEnvVar: (key: string, value: string, profile?: string) => setEnvVar(key, value, profile),
@@ -151,11 +151,11 @@ describe('ProvidersSettings', () => {
       await renderProvidersSettings()
       expect(getEnvVars).toHaveBeenCalledWith('beta')
       expect(listOAuthProviders).toHaveBeenCalledWith('beta')
-      fireEvent.click(await screen.findByText('Nous Portal'))
-      expect(startManualProviderOAuth).toHaveBeenCalledWith('nous', 'beta')
-      fireEvent.click(await screen.findByRole('button', { name: 'Remove Nous Portal' }))
+      fireEvent.click(await screen.findByText('Moor Portal'))
+      expect(startManualProviderOAuth).toHaveBeenCalledWith('moor', 'beta')
+      fireEvent.click(await screen.findByRole('button', { name: 'Remove Moor Portal' }))
       fireEvent.click(await screen.findByRole('button', { name: 'Disconnect' }))
-      await waitFor(() => expect(disconnectOAuthProvider).toHaveBeenCalledWith('nous', 'beta'))
+      await waitFor(() => expect(disconnectOAuthProvider).toHaveBeenCalledWith('moor', 'beta'))
     } finally {
       $settingsScopeOverride.set(null)
     }
@@ -177,7 +177,7 @@ describe('ProvidersSettings', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }))
     })
 
-    await waitFor(() => expect(disconnectOAuthProvider).toHaveBeenCalledWith('nous', undefined))
+    await waitFor(() => expect(disconnectOAuthProvider).toHaveBeenCalledWith('moor', undefined))
     expect(listOAuthProviders).toHaveBeenCalledTimes(2)
   })
 
@@ -202,7 +202,7 @@ describe('ProvidersSettings', () => {
       fireEvent.click(await screen.findByText('Moor Portal'))
     })
 
-    expect(startManualProviderOAuth).toHaveBeenCalledWith('nous', undefined)
+    expect(startManualProviderOAuth).toHaveBeenCalledWith('moor', undefined)
     expect(disconnectOAuthProvider).not.toHaveBeenCalled()
   })
 

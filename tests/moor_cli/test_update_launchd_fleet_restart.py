@@ -196,9 +196,9 @@ class TestGetServicePidsScoping:
     def _wire(self, monkeypatch):
         monkeypatch.setattr(gw, "supports_systemd_services", lambda: False)
         # The all_profiles branch also runs a real ``launchctl list`` prefix scan; a developer
-        # box with a live ai.hermes.gateway* fleet would leak its PIDs into the assertion.
+        # box with a live ai.moor.gateway* fleet would leak its PIDs into the assertion.
         monkeypatch.setattr(gw.subprocess, "run", lambda *a, **k: _completed(0, ""))
-        monkeypatch.setattr(gw, "get_launchd_label", lambda: "ai.hermes.gateway")
+        monkeypatch.setattr(gw, "get_launchd_label", lambda: "ai.moor.gateway")
         monkeypatch.setattr(
             gw,
             "launchd_gateway_labels_for_install",
@@ -645,7 +645,7 @@ class TestIncompleteWarningOnMacos:
     ``kickstart`` line — a label in this list is likely deregistered (#88848)."""
 
     def test_launchd_labels_get_bootstrap_hint(self, capsys):
-        _warn_incomplete_gateway_fleet_restart(["ai.hermes.gateway-merit-ops"])
+        _warn_incomplete_gateway_fleet_restart(["ai.moor.gateway-merit-ops"])
         out = capsys.readouterr().out
         assert "Update incomplete" in out
         assert "launchctl bootstrap" in out

@@ -378,10 +378,10 @@ class SupermemoryMemoryProvider(MemoryProvider):
         print("\n  Start a new session to activate.\n")
 
     def initialize(self, session_id: str, **kwargs) -> None:
-        from hermes_constants import get_hermes_home
-        self._hermes_home = kwargs.get("hermes_home") or str(get_hermes_home())
+        from moor_constants import get_moor_home
+        self._moor_home = kwargs.get("moor_home") or str(get_moor_home())
         self._session_id, self._turn_count, self._pending_turns = session_id, 0, []
-        config = _load_supermemory_config(self._hermes_home)
+        config = _load_supermemory_config(self._moor_home)
         self._api_key = get_secret("SUPERMEMORY_API_KEY", "") or ""
         self._container_tag = _resolve_container_tag(config["container_tag"], kwargs.get("agent_identity", "default"))
         self._apply_config(config)
@@ -429,7 +429,7 @@ class SupermemoryMemoryProvider(MemoryProvider):
                 batch = [t for t in turns if t["session_id"] == sid]
                 now = datetime.now(timezone.utc)
                 content = "\n\n".join(_format_turn(t["user"], t["assistant"]) for t in batch)
-                metadata = {"type": "conversation", "session_id": sid, "timestamp": now.isoformat()}  # no sm_capture_mode: Hermes policy
+                metadata = {"type": "conversation", "session_id": sid, "timestamp": now.isoformat()}  # no sm_capture_mode: Moor policy
                 result = _quietly(lambda: self._client.add_memory(content, metadata=metadata, entity_context=self._entity_context,
                                                                   custom_id=_capture_custom_id(sid, now)),
                                   "Supermemory capture failed (%s, session=%s, %d turns pending)", mode, sid, len(batch),

@@ -241,7 +241,7 @@ class TestCatalogProbeThreadsSSLContext:
 
     @pytest.fixture(autouse=True)
     def _clear_probe_neg_cache(self):
-        import hermes_cli.models as models
+        import moor_cli.models as models
 
         models._probe_neg_cache.clear()
         yield

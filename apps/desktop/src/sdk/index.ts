@@ -43,7 +43,7 @@ import {
 import { onGatewayEvent } from '@/contrib/events'
 import { registry } from '@/contrib/registry'
 import type { WorkspaceMode } from '@/contrib/types'
-import { deleteProfile, getLogs, getStatus, hermesApi, type HermesGateway } from '@/hermes'
+import { deleteProfile, getLogs, getStatus, moorApi, type MoorGateway } from '@/moor'
 import { completeMcpDesktopOAuth } from '@/lib/mcp-dashboard-oauth'
 import {
   $gateway,
@@ -1704,7 +1704,7 @@ export { PROFILE_SWATCHES, profileColor, profileColorSoft } from '@/lib/profile-
  *  `ctx.socket` frame invalidating a query). Inside components keep using
  *  `useQueryClient`. */
 export { queryClient } from '@/lib/query-client'
-/** Compact labels for the reasoning levels exported from @hermes/shared, so a
+/** Compact labels for the reasoning levels exported from @moor/shared, so a
  *  plugin surfacing a thinking depth uses the same spelling as the app. */
 export { reasoningEffortLabel } from '@/lib/reasoning-effort'
 
@@ -1775,23 +1775,23 @@ export { requestTheme } from '@/themes/request'
 export { retintTheme, themeHue } from '@/themes/retint'
 export type { DesktopTheme, DesktopThemeColors } from '@/themes/types'
 export { THEMES_AREA } from '@/themes/user-themes'
-export type { StatusResponse } from '@/types/hermes'
+export type { StatusResponse } from '@/types/moor'
 /** Public SDK name for the shared gateway wire event; kept stable for plugins. */
-export type { GatewayEvent as RpcEvent } from '@hermes/shared'
+export type { GatewayEvent as RpcEvent } from '@moor/shared'
 /** THE compact-number formatter — every user-facing count/token figure goes
  *  through here (1230 → "1.2k", 1_500_000 → "1.5M"). Don't hand-roll `/1000`. */
-export { compactNumber } from '@hermes/shared'
-/** Hermes' reasoning levels, so a plugin surfacing a thinking depth uses the
+export { compactNumber } from '@moor/shared'
+/** Moor' reasoning levels, so a plugin surfacing a thinking depth uses the
  *  same scale as the rest of the app (labels: `reasoningEffortLabel`). */
 export {
   DEFAULT_REASONING_EFFORT,
   REASONING_EFFORT_VALUES,
   REASONING_EFFORTS,
   type ReasoningEffort
-} from '@hermes/shared'
+} from '@moor/shared'
 /** WCAG contrast, from the sRGB primitives shared with the TUI (`null` for
  *  an unparseable colour, never a fake 0). */
-export { contrastRatio } from '@hermes/shared/color'
+export { contrastRatio } from '@moor/shared/color'
 /** Subscribe a component to a `host.state` atom. */
 export { useStore as useValue } from '@nanostores/react'
 /** The app's data-fetching layer. Plugins share the ONE QueryClient mounted at

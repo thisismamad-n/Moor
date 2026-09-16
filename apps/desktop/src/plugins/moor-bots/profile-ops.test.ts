@@ -39,7 +39,7 @@ vi.mock('@moor/plugin-sdk', async () => {
   }
 })
 
-vi.mock('./shared', () => ({ getPluginCtx: () => ({ storage: storageMock }), ID: 'hermes-bots' }))
+vi.mock('./shared', () => ({ getPluginCtx: () => ({ storage: storageMock }), ID: 'moor-bots' }))
 vi.mock('./avatar-image', () => ({ isBackfilledFacePng: (data: string) => faceOnlyMock(data) }))
 vi.mock('./canonical-chat', () => ({ ensureBotMetadata: ensureBotMetadataMock }))
 

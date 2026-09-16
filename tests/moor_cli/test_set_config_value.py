@@ -345,7 +345,7 @@ class TestCronModelChangeNotice:
         notice = capsys.readouterr().out
         assert "keeps running" in notice
         assert "fail closed" not in notice
-        assert "hermes cron edit <job_id> --provider <provider> --model <model>" in notice
+        assert "moor cron edit <job_id> --provider <provider> --model <model>" in notice
         assert "cronjob action=update" not in notice
 
 
@@ -456,8 +456,8 @@ class TestSchemaValidation:
     scalars bridge into os.environ for skills/external apps — with a post-write notice.
     """
 
-    def test_unknown_subkey_under_known_section_refused_before_write(self, _isolated_hermes_home, capsys):
-        config_path = _isolated_hermes_home / "config.yaml"
+    def test_unknown_subkey_under_known_section_refused_before_write(self, _isolated_moor_home, capsys):
+        config_path = _isolated_moor_home / "config.yaml"
         config_path.write_text("model: gpt-4o\n", encoding="utf-8")
 
         with pytest.raises(SystemExit):
@@ -468,9 +468,9 @@ class TestSchemaValidation:
         assert "nothing was written" in err
         assert "discord.gateway_restart_notification" in err
 
-    def test_unknown_top_level_key_still_written_with_notice(self, _isolated_hermes_home, capsys):
+    def test_unknown_top_level_key_still_written_with_notice(self, _isolated_moor_home, capsys):
         set_config_value("brand_new_future_key", "value")
-        assert "brand_new_future_key" in _read_config(_isolated_hermes_home)
+        assert "brand_new_future_key" in _read_config(_isolated_moor_home)
         assert "not a recognized config key" in capsys.readouterr().out
 
 
@@ -728,7 +728,7 @@ class TestMalformedYAMLConfigPreservation:
 
         captured = capsys.readouterr()
         combined = captured.out + captured.err
-        assert "formatting error" in combined and "`hermes config edit`" in combined
+        assert "formatting error" in combined and "`moor config edit`" in combined
         # Original config must remain intact
         raw = _read_config(_isolated_moor_home)
         assert raw == self.BROKEN_CONFIG, f"Config was overwritten:\n{raw}"
@@ -744,8 +744,8 @@ class TestMalformedYAMLConfigPreservation:
 
         captured = capsys.readouterr()
         combined = captured.out + captured.err
-        assert "formatting error" in combined and "`hermes config edit`" in combined
-        raw = _read_config(_isolated_hermes_home)
+        assert "formatting error" in combined and "`moor config edit`" in combined
+        raw = _read_config(_isolated_moor_home)
         assert raw == self.BROKEN_CONFIG
 
 
@@ -888,9 +888,9 @@ class TestConfigGetRedaction:
 
     @pytest.mark.parametrize("key", ["providers", "providers.gemini.api_key", "GEMINI_API_KEY",
                                      "mcp_servers.s.env.MY_API_KEY"])
-    def test_config_get_masks_every_credential_path(self, _isolated_hermes_home, capsys, monkeypatch, key):
-        self._seed(_isolated_hermes_home, monkeypatch)
-        from hermes_cli.config import get_config_value
+    def test_config_get_masks_every_credential_path(self, _isolated_moor_home, capsys, monkeypatch, key):
+        self._seed(_isolated_moor_home, monkeypatch)
+        from moor_cli.config import get_config_value
 
         get_config_value(key)
         out = capsys.readouterr().out
@@ -900,9 +900,9 @@ class TestConfigGetRedaction:
         if key == "providers":
             assert "gemini" in out
 
-    def test_config_get_raw_prints_the_real_value(self, _isolated_hermes_home, capsys, monkeypatch):
-        self._seed(_isolated_hermes_home, monkeypatch)
-        from hermes_cli.config import get_config_value
+    def test_config_get_raw_prints_the_real_value(self, _isolated_moor_home, capsys, monkeypatch):
+        self._seed(_isolated_moor_home, monkeypatch)
+        from moor_cli.config import get_config_value
 
         get_config_value("providers.gemini.api_key", raw=True)
         assert capsys.readouterr().out.strip() == self.SECRET
@@ -921,12 +921,12 @@ class TestConfigGetRedaction:
         ("mcp_servers.s.env.UNSET_THING_API_KEY", "", "    env: {UNSET_THING_API_KEY: '${UNSET_THING_API_KEY}'}\n", False),
     ])
     def test_config_get_classifies_env_header_and_enum_keys(
-            self, _isolated_hermes_home, capsys, monkeypatch, key, env_line, yaml_line, masked):
+            self, _isolated_moor_home, capsys, monkeypatch, key, env_line, yaml_line, masked):
         monkeypatch.delenv("UNSET_THING_API_KEY", raising=False)
-        (_isolated_hermes_home / "config.yaml").write_text(
+        (_isolated_moor_home / "config.yaml").write_text(
             "mcp_servers:\n  s:\n    url: https://x.example\n" + yaml_line, encoding="utf-8")
-        (_isolated_hermes_home / ".env").write_text(env_line + "\n", encoding="utf-8")
-        from hermes_cli.config import get_config_value
+        (_isolated_moor_home / ".env").write_text(env_line + "\n", encoding="utf-8")
+        from moor_cli.config import get_config_value
 
         get_config_value(key)
         out = capsys.readouterr().out.strip()

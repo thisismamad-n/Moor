@@ -9,13 +9,13 @@ import time
 
 import pytest
 
-from hermes_cli import main_dashboard as output
-from hermes_cli import update_cmd
+from moor_cli import main_dashboard as output
+from moor_cli import update_cmd
 
 
 @pytest.mark.parametrize("gateway", [False, True, None])
 def test_child_progress_reaches_log_before_exit(tmp_path, monkeypatch, gateway):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     terminal = io.StringIO()
     monkeypatch.setattr(sys, "stdout", terminal)
     state = output._install_hangup_protection(gateway) if gateway is not None else None

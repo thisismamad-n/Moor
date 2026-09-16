@@ -427,7 +427,7 @@ platforms:
 ### 通过 CLI
 
 ```bash
-hermes webhook subscribe pr-feedback \
+moor webhook subscribe pr-feedback \
   --events "pull_request_review" \
   --cron-job "pr-review-sweeper" \
   --prompt "PR #{number} 收到反馈：{review.body}"

@@ -133,8 +133,8 @@ class TestMirrorToSession:
 
         with patch.object(mirror_mod, "_SESSIONS_DIR", sessions_dir), \
              patch.object(mirror_mod, "_SESSIONS_INDEX", index_file), \
-             patch("hermes_state_registry.acquire", return_value=broken_db), \
-             patch("hermes_state_registry.release_or_close"):
+             patch("moor_state_registry.acquire", return_value=broken_db), \
+             patch("moor_state_registry.release_or_close"):
             result = mirror_to_session("telegram", "123", "Hello!")
 
         assert result is False

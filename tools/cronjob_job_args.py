@@ -296,7 +296,7 @@ def _validate_cron_script_path(script: Optional[str]) -> Optional[str]:
 
     from moor_constants import get_moor_home
     raw = script.strip()
-    scripts_dir = get_hermes_home() / "scripts"
+    scripts_dir = get_moor_home() / "scripts"
     if raw.startswith(("/", "~")) or (len(raw) >= 2 and raw[1] == ":"):
         return (
             f"Script path must be relative to {scripts_dir}/. "

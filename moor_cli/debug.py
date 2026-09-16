@@ -15,7 +15,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Optional
 
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)
@@ -114,7 +114,7 @@ after 6 hours, but may be archived by third parties in the meantime.
 
 If paste.rs is unreachable, uploads fall back to dpaste.com: those pastes
 stay public for the --expire window (default: 1 day) and CANNOT be deleted
-with `hermes debug delete`.
+with `moor debug delete`.
 
 Use --local to view the report without uploading.
 """
@@ -186,7 +186,7 @@ def _upload_paste_rs(content: str) -> str:
 
 
 def _upload_dpaste_com(content: str, expiry_days: int = 1) -> str:
-    boundary = "----HermesDebugBoundary9f3c"
+    boundary = "----MoorDebugBoundary9f3c"
     fields = (("content", content), ("syntax", "text"), ("expiry_days", str(expiry_days)))
     body = ("".join(f'--{boundary}\r\nContent-Disposition: form-data; name="{n}"\r\n\r\n{v}\r\n'
                     for n, v in fields) + f"--{boundary}--\r\n").encode("utf-8")
@@ -514,12 +514,12 @@ def run_debug_share(args):
               f"{result.auto_delete_seconds // 3600} hours.")
         print(f"⚠️  {len(dpaste_urls)} of {len(result.urls)} upload(s) fell back to "
               f"dpaste.com: those pastes stay public for {expiry} day(s) and CANNOT be "
-              "deleted with `hermes debug delete`.\n"
-              "\nShare these links with the Hermes team for support.")
+              "deleted with `moor debug delete`.\n"
+              "\nShare these links with the Moor team for support.")
     else:
         print(f"\n⏱  Pastes will auto-delete in {result.auto_delete_seconds // 3600} hours.\n"
-              "To delete now:  hermes debug delete <url>\n"
-              "\nShare these links with the Hermes team for support.")
+              "To delete now:  moor debug delete <url>\n"
+              "\nShare these links with the Moor team for support.")
 
 
 _MOOR_PRIVACY_NOTICE = """\

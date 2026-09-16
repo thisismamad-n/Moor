@@ -20,7 +20,7 @@ interface ResolvedPrimaryRemote {
   baseUrl: string
   connectionId?: string
   headers?: Record<string, string>
-  remoteHermesVersion?: string
+  remoteMoorVersion?: string
   remoteHost?: string
   remoteKind?: 'cloud' | 'ssh' | 'url'
   source?: string

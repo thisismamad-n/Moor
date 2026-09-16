@@ -137,7 +137,7 @@ def _banner(lines, *styles) -> None:
 
 def _render_header(ctx):
     _banner(("┌─────────────────────────────────────────────────────────┐",
-             "│                 ☤ Hermes Agent Status                  │",
+             "│                 ☤ Moor Agent Status                  │",
              "└─────────────────────────────────────────────────────────┘"), Colors.CYAN)
     paused = _estop_status_line()
     if paused:
@@ -219,14 +219,14 @@ def _render_platforms(ctx):
 def _render_gateway(ctx):
     _section("Gateway Service")
     try:
-        from hermes_cli.gateway import (
+        from moor_cli.gateway import (
             get_gateway_runtime_snapshot, _format_gateway_pids, named_profile_served_by_running_multiplexer)
-        from hermes_cli.gateway_multiplex_served import multiplexer_served_secondaries
+        from moor_cli.gateway_multiplex_served import multiplexer_served_secondaries
         snapshot = get_gateway_runtime_snapshot()
         # A satellite profile has no gateway.pid of its own; the default multiplexer is its live process.
         if not snapshot.running and named_profile_served_by_running_multiplexer():
             _kv_flag("Status:", True, "running (via the default-profile multiplexer)", "stopped")
-            _kv("Manage with:", "hermes gateway status   # from the default profile")
+            _kv("Manage with:", "moor gateway status   # from the default profile")
             return
         _kv_flag("Status:", snapshot.running, "running", "stopped")
         _kv("Manager:", snapshot.manager)
@@ -234,7 +234,7 @@ def _render_gateway(ctx):
             _kv("PID(s):", _format_gateway_pids(snapshot.gateway_pids))
         if snapshot.running and (served := multiplexer_served_secondaries()):
             _kv("Serves:", ", ".join(served))
-            from hermes_cli.gateway_multiplex_served import served_profile_ingress_urls
+            from moor_cli.gateway_multiplex_served import served_profile_ingress_urls
             for name, per_platform in sorted(served_profile_ingress_urls().items()):
                 for platform, url in sorted(per_platform.items()):
                     _kv(f"  {name}/{platform}:", url)
@@ -277,7 +277,7 @@ def _render_sessions(ctx):
     # Gateway session count: state.db is the source of truth; fall back to sessions.json for
     # pre-migration installs.
     try:
-        from hermes_state import SessionDB
+        from moor_state import SessionDB
         db = SessionDB(read_only=True)  # status only reads; never a writer beside a running gateway
         try:
             gateway_rows = db.list_gateway_sessions(active_only=True) or []

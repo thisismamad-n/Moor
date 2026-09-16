@@ -39,7 +39,7 @@ class MoorProviderMixin:
 
     def __init__(self, *args: Any, token_user_agent: str | None = None, oauth_flow: str = "browser", **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self._hermes_oauth_flow = oauth_flow
+        self._moor_oauth_flow = oauth_flow
         # oauth.user_agent — stamped onto token-endpoint requests only; some authorization servers/WAFs
         # reject httpx's default (#75576).
         self._moor_token_user_agent = token_user_agent
@@ -47,11 +47,11 @@ class MoorProviderMixin:
     async def _perform_authorization(self):
         info = self.context.client_info
         grants = getattr(info, "grant_types", None) or []
-        if (getattr(self, "_hermes_oauth_flow", "browser") == "device"
+        if (getattr(self, "_moor_oauth_flow", "browser") == "device"
                 or ("urn:ietf:params:oauth:grant-type:device_code" in grants and "authorization_code" not in grants)):
             from tools.mcp_oauth import OAuthNonInteractiveError
             raise OAuthNonInteractiveError(
-                "MCP device authorization requires `hermes mcp login <server> --flow device`; "
+                "MCP device authorization requires `moor mcp login <server> --flow device`; "
                 "background reconnects cannot start a device login")
         self._tolerate_missing_iss_for_known_server()
         return await super()._perform_authorization()
@@ -69,7 +69,7 @@ class MoorProviderMixin:
         async def _fill_iss():
             result = await inner()
             if getattr(result, "iss", None) is None and getattr(result, "code", None):
-                self._hermes_logger.warning(
+                self._moor_logger.warning(
                     "MCP OAuth: %s omitted the iss parameter it advertises; accepting the redirect for that issuer only", issuer)
                 result = result.model_copy(update={"iss": str(self.context.oauth_metadata.issuer)})
             return result
@@ -100,8 +100,8 @@ class MoorProviderMixin:
         return self._prepare_token_request(await super()._exchange_token_authorization_code(*args, **kwargs))
 
     # Locked descriptor while this provider owns the refresh fence; cleared by
-    # _hermes_release_refresh_fence. Never shared across instances.
-    _hermes_fence: int | None = None
+    # _moor_release_refresh_fence. Never shared across instances.
+    _moor_fence: int | None = None
 
     async def async_auth_flow(self, request):
         """Guarantee fence release even if the auth generator is abandoned.
@@ -147,7 +147,7 @@ class MoorProviderMixin:
                     except BaseException as exc:
                         sent, thrown = None, exc
             finally:
-                await self._hermes_release_refresh_fence()
+                await self._moor_release_refresh_fence()
 
     async def _refresh_token(self):
         """Take the refresh fence, then build the request from the token we own.
@@ -165,7 +165,7 @@ class MoorProviderMixin:
         refreshes inside one process.
         """
         self._coerce_client_secret_post()
-        await self._hermes_acquire_refresh_fence()
+        await self._moor_acquire_refresh_fence()
         try:
             # Re-read under the fence: a peer may have rotated while we waited
             # for it, in which case the token we were about to POST is dead.
@@ -173,14 +173,14 @@ class MoorProviderMixin:
             # the fence before us won this generation; its value is the only one
             # the provider will still accept, so install it even when its access
             # token has already expired (the POST we build needs the new grant).
-            candidate = await self._hermes_rotated_candidate()
+            candidate = await self._moor_rotated_candidate()
             if candidate is not None:
-                if not self._hermes_install_disk_pair(candidate):
+                if not self._moor_install_disk_pair(candidate):
                     # Issuer binding stripped the peer's refresh token: nothing
                     # left to POST. Restart the flow so the SDK lands in 401 ->
                     # full authorization instead of raising over a dead grant.
                     raise _RefreshCompletedByPeer
-                if self._hermes_live_ttl() and self.context.is_token_valid():
+                if self._moor_live_ttl() and self.context.is_token_valid():
                     # The peer's access token is live: presenting our copy of the
                     # refresh token would only burn a generation on a single-use
                     # provider. Skip the POST and let the flow restart.
@@ -188,14 +188,14 @@ class MoorProviderMixin:
             return self._prepare_token_request(await super()._refresh_token())
         except BaseException:
             # Never hold the fence when no POST will follow.
-            await self._hermes_release_refresh_fence()
+            await self._moor_release_refresh_fence()
             raise
 
-    def _hermes_live_ttl(self) -> bool:
+    def _moor_live_ttl(self) -> bool:
         """True when the installed token is not known to be past due.
 
         Storage clamps a past-due token to ``expires_in == 0`` on read (see
-        HermesTokenStorage.get_tokens); the SDK's is_token_valid() compares
+        MoorTokenStorage.get_tokens); the SDK's is_token_valid() compares
         ``time.time() <= expiry`` and still reports True for that boundary,
         which would make us adopt a token the server rejects immediately.
         ``expires_in`` is optional in RFC 6749: None means no expiry was
@@ -206,7 +206,7 @@ class MoorProviderMixin:
         exp = getattr(self.context.current_tokens, "expires_in", None)
         return exp is None or int(exp) > 0
 
-    async def _hermes_acquire_refresh_fence(self) -> None:
+    async def _moor_acquire_refresh_fence(self) -> None:
         """Enter the fence, or let RefreshFenceTimeout abort this attempt.
 
         Fails closed on purpose: a refresh we are not certain we own must not
@@ -215,22 +215,22 @@ class MoorProviderMixin:
         """
         from tools.mcp_oauth import acquire_refresh_fence
 
-        await self._hermes_release_refresh_fence()
+        await self._moor_release_refresh_fence()
         storage = self.context.storage
         tokens_path = getattr(storage, "_tokens_path", None)
-        if tokens_path is None:  # pragma: no cover - non-Hermes storage
+        if tokens_path is None:  # pragma: no cover - non-Moor storage
             return
-        self._hermes_fence = await acquire_refresh_fence(tokens_path())
+        self._moor_fence = await acquire_refresh_fence(tokens_path())
 
-    async def _hermes_release_refresh_fence(self) -> None:
+    async def _moor_release_refresh_fence(self) -> None:
         """Release the fence if held. Idempotent and never raises."""
         from tools.mcp_oauth import release_refresh_fence
 
-        fd, self._hermes_fence = self._hermes_fence, None
+        fd, self._moor_fence = self._moor_fence, None
         if fd is not None:
             release_refresh_fence(fd)
 
-    async def _hermes_rotated_candidate(self):
+    async def _moor_rotated_candidate(self):
         """The on-disk pair, if a peer rotated it past the one we hold.
 
         A candidate must carry a refresh token different from ours (same
@@ -251,7 +251,7 @@ class MoorProviderMixin:
             return None
         return stored
 
-    def _hermes_install_disk_pair(self, tokens) -> bool:
+    def _moor_install_disk_pair(self, tokens) -> bool:
         """Publish a disk pair to the context and re-run issuer binding on it.
 
         Returns False when the enforcer strips the refresh token (the pair was
@@ -269,8 +269,8 @@ class MoorProviderMixin:
         then enforce refresh-token issuer binding."""
         await super()._initialize()
         storage = self.context.storage
-        from tools.mcp_oauth import HermesTokenStorage
-        if isinstance(storage, HermesTokenStorage) and self.context.oauth_metadata is None:
+        from tools.mcp_oauth import MoorTokenStorage
+        if isinstance(storage, MoorTokenStorage) and self.context.oauth_metadata is None:
             meta = storage.load_oauth_metadata()
             if meta is not None:
                 self.context.oauth_metadata = meta
@@ -302,20 +302,20 @@ class MoorProviderMixin:
         fenced section, whatever the outcome.
         """
         try:
-            return await self._hermes_handle_refresh_response(response)
+            return await self._moor_handle_refresh_response(response)
         finally:
-            await self._hermes_release_refresh_fence()
+            await self._moor_release_refresh_fence()
 
-    async def _hermes_handle_refresh_response(self, response) -> bool:
+    async def _moor_handle_refresh_response(self, response) -> bool:
         if not (200 <= response.status_code < 300):
-            self._hermes_logger.warning("Token refresh failed: %s", response.status_code)
-            # A writer outside the fence (interactive `hermes mcp login`, or a
-            # pre-fence Hermes sharing this HERMES_HOME) may have rotated the
+            self._moor_logger.warning("Token refresh failed: %s", response.status_code)
+            # A writer outside the fence (interactive `moor mcp login`, or a
+            # pre-fence Moor sharing this MOOR_HOME) may have rotated the
             # grant and persisted the replacement. Providers issuing single-use
             # refresh tokens reject our stale copy with a 400. Re-read disk
             # before destroying the session.
-            if await self._hermes_reload_tokens_after_refresh_failure():
-                self._hermes_logger.info(
+            if await self._moor_reload_tokens_after_refresh_failure():
+                self._moor_logger.info(
                     "Recovered a peer-rotated refresh token instead of clearing the session"
                 )
                 return True
@@ -343,20 +343,20 @@ class MoorProviderMixin:
         await self._store_tokens(token_response)
         return True
 
-    async def _hermes_reload_tokens_after_refresh_failure(self) -> bool:
+    async def _moor_reload_tokens_after_refresh_failure(self) -> bool:
         """Re-read tokens from disk after a rejected refresh.
 
         Returns True only when disk holds a pair that is BOTH different from
         the one we just failed with AND still live. That is the signature of
-        a writer outside the fence (an interactive ``hermes mcp login`` or a
-        pre-fence Hermes) having rotated the grant between our read and our
+        a writer outside the fence (an interactive ``moor mcp login`` or a
+        pre-fence Moor) having rotated the grant between our read and our
         POST -- a recoverable race, not a dead credential.
 
         Returns False for the genuinely-expired case (nobody wrote a newer
         pair), so the caller still clears state and surfaces the reauth
         prompt.
         """
-        candidate = await self._hermes_rotated_candidate()
+        candidate = await self._moor_rotated_candidate()
         if candidate is None:
             return False
         # Publish, then restore on rejection. is_token_valid() reads the
@@ -365,8 +365,8 @@ class MoorProviderMixin:
         # exactly as it found it.
         previous_tokens = self.context.current_tokens
         if (
-            self._hermes_install_disk_pair(candidate)
-            and self._hermes_live_ttl()
+            self._moor_install_disk_pair(candidate)
+            and self._moor_live_ttl()
             and self.context.is_token_valid()
         ):
             return True
@@ -384,11 +384,11 @@ def _metadata_issuer(context: Any) -> str | None:
 
 def bind_issuer_from_context(context: Any) -> None:
     """Record the discovered issuer so the next ``storage.set_tokens`` (exchange or refresh) carries
-    it. No-op when metadata is not discovered yet or storage is not Hermes'."""
-    from tools.mcp_oauth import HermesTokenStorage
+    it. No-op when metadata is not discovered yet or storage is not Moor'."""
+    from tools.mcp_oauth import MoorTokenStorage
     storage = getattr(context, "storage", None)
     issuer = _metadata_issuer(context)
-    if isinstance(storage, HermesTokenStorage) and issuer:
+    if isinstance(storage, MoorTokenStorage) and issuer:
         storage.bind_issuer(issuer)
 
 
@@ -401,10 +401,10 @@ def enforce_refresh_token_issuer(context: Any) -> None:
     access token stays usable; full re-authorization happens at expiry. Token files predating the field
     adopt the current issuer once rather than forcing a re-login. Runs after ``_initialize`` restored
     tokens + metadata, before the SDK's ``can_refresh_token()`` decision."""
-    from tools.mcp_oauth import HermesTokenStorage
+    from tools.mcp_oauth import MoorTokenStorage
     storage = getattr(context, "storage", None)
     tokens = getattr(context, "current_tokens", None)
-    if not isinstance(storage, HermesTokenStorage) or tokens is None or not getattr(tokens, "refresh_token", None):
+    if not isinstance(storage, MoorTokenStorage) or tokens is None or not getattr(tokens, "refresh_token", None):
         return
     current = _metadata_issuer(context)
     if current is None:  # not discovered yet; the SDK's 401-branch discovery + _store_tokens stamp it later

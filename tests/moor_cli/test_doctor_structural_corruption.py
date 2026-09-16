@@ -4,17 +4,17 @@ The write-health probe's failure used to be reported as "FTS write corruption" u
 routing operators to `--fix` / `sessions repair` (FTS rebuilds that cannot repair canonical-table
 damage) and to the .malformed-backup beside the DB (a snapshot of the same corrupt file). The
 discriminator maps integrity_check damage through sqlite_master.rootpage and keeps the FTS path
-only when every damaged object is a Hermes FTS shadow.
+only when every damaged object is a Moor FTS shadow.
 """
 
 import contextlib
 import io
 import sqlite3
 
-from hermes_cli.doctor_report import Finding
-from hermes_cli.doctor_state import _state_db_health
-from hermes_state import SessionDB
-from hermes_state_repair import integrity_damage_is_structural, state_db_has_structural_damage
+from moor_cli.doctor_report import Finding
+from moor_cli.doctor_state import _state_db_health
+from moor_state import SessionDB
+from moor_state_repair import integrity_damage_is_structural, state_db_has_structural_damage
 
 
 def test_integrity_damage_classifier_maps_tree_ids_through_rootpage():
@@ -61,9 +61,9 @@ def _run_doctor(db_path, should_fix):
 
 def test_doctor_routes_structural_damage_to_recover_not_fts_rebuild(tmp_path, monkeypatch):
     """Real torn ``sessions`` b-tree: doctor --fix must not run the FTS repair ladder (no
-    .malformed-backup, nothing fixed) and must point at `hermes sessions recover` for THIS
+    .malformed-backup, nothing fixed) and must point at `moor sessions recover` for THIS
     database with the profile pinned; a real FTS-only stomp still takes the FTS path."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     db_path, page_size, root = _seed(tmp_path)
     with open(db_path, "r+b") as f:
         f.seek((root - 1) * page_size + 8)

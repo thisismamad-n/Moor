@@ -1,8 +1,8 @@
-import { LOCAL_CONNECTION_ID, registryBackendScopeKey } from '@hermes/shared'
+import { LOCAL_CONNECTION_ID, registryBackendScopeKey } from '@moor/shared'
 import { atom, batch, computed } from 'nanostores'
 
-import type { HermesConnection } from '@/global'
-import { getProfiles, hermesApi, setApiRequestProfile, STARTUP_REQUEST_TIMEOUT_MS } from '@/hermes'
+import type { MoorConnection } from '@/global'
+import { getProfiles, moorApi, setApiRequestProfile, STARTUP_REQUEST_TIMEOUT_MS } from '@/moor'
 import { sortByProfileOrder as sortProfilesByOrder } from '@/lib/profile-order'
 import { invalidateProfileScopedQueries } from '@/lib/query-client'
 import {
@@ -69,7 +69,7 @@ export const $profilesByConnection = atom<ReadonlyMap<string, ProfileInfo[]>>(ne
 // Registry descriptors carry their connection id (a slug, so it never contains
 // ':'); legacy primaries are keyed by endpoint. Null is a reconnect blip (see
 // setConnection), not a source.
-function profileListSource(connection: HermesConnection | null): null | string {
+function profileListSource(connection: MoorConnection | null): null | string {
   if (!connection) {
     return null
   }
@@ -566,7 +566,7 @@ export async function ensureGatewayProfile(profile: string | null | undefined): 
   // renderer-side $activeGatewayProfile mirror is not proof of the socket:
   // applyActive can decline an epoch-losing publication while call sites
   // publish the atom anyway, leaving "atom says X, socket serves Y" (the
-  // #89206 split-brain — observed live as atom 'default' over a hermes-setup
+  // #89206 split-brain — observed live as atom 'default' over a moor-setup
   // socket during the guided-onboarding handoff). Verify the leg we're about
   // to rely on; on disagreement fall through to the full ensure path, which
   // re-activates the socket and leaves the atom and route agreeing. The one

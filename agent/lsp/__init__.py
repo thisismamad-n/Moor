@@ -18,7 +18,7 @@ from agent.lsp.manager import LSPService
 logger = logging.getLogger("agent.lsp")
 
 _service: Optional[LSPService] = None
-# Routed multiplex profiles (HERMES_HOME override) each get their own service: ``lsp.*`` config
+# Routed multiplex profiles (MOOR_HOME override) each get their own service: ``lsp.*`` config
 # (enabled, servers, idle timeout) is per profile, so one process-wide singleton would let the first
 # profile's settings decide whether every other profile gets diagnostics.
 _services_by_home: dict = {}
@@ -47,9 +47,9 @@ def get_service() -> Optional[LSPService]:
     kernel reaps the stateless servers with their parent.)
     """
     global _service
-    from hermes_constants import get_hermes_home_override, hermes_home_key
-    if get_hermes_home_override() is not None:
-        home_key = hermes_home_key()
+    from moor_constants import get_moor_home_override, moor_home_key
+    if get_moor_home_override() is not None:
+        home_key = moor_home_key()
         with _service_lock:
             if home_key not in _services_by_home:
                 _services_by_home[home_key] = LSPService.create_from_config()

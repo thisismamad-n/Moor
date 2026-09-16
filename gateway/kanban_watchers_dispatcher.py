@@ -254,9 +254,9 @@ class _KanbanDispatcher:
                     break
                 # Pin the board via env for the call: the decomposer connects
                 # with no board kwarg (same pattern as the dashboard specify endpoint).
-                prev_env = os.environ.get("HERMES_KANBAN_BOARD")
+                prev_env = os.environ.get("MOOR_KANBAN_BOARD")
                 try:
-                    os.environ["HERMES_KANBAN_BOARD"] = slug
+                    os.environ["MOOR_KANBAN_BOARD"] = slug
                     try:
                         triage_ids = _decomp.list_triage_ids()
                     except Exception as exc:
@@ -269,9 +269,9 @@ class _KanbanDispatcher:
                         successes += self._decompose_one(_decomp, slug, tid)
                 finally:
                     if prev_env is None:
-                        os.environ.pop("HERMES_KANBAN_BOARD", None)
+                        os.environ.pop("MOOR_KANBAN_BOARD", None)
                     else:
-                        os.environ["HERMES_KANBAN_BOARD"] = prev_env
+                        os.environ["MOOR_KANBAN_BOARD"] = prev_env
         return successes
 
     @staticmethod
@@ -299,17 +299,17 @@ def _default_profile_secret_scope():
 
     The tick runs via ``_to_thread_process_service`` in a fresh context, so no
     per-turn scope exists and ``get_secret`` fails closed. The decomposer's aux
-    LLM reads ``auxiliary.*`` from ``get_hermes_home()``, so its credentials come
+    LLM reads ``auxiliary.*`` from ``get_moor_home()``, so its credentials come
     from that same home. No-op for single-profile gateways.
     """
     from agent.secret_scope import (
         build_profile_secret_scope, is_multiplex_active, reset_secret_scope, set_secret_scope)
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
     if not is_multiplex_active():
         yield
         return
-    token = set_secret_scope(build_profile_secret_scope(Path(get_hermes_home())))
+    token = set_secret_scope(build_profile_secret_scope(Path(get_moor_home())))
     try:
         yield
     finally:

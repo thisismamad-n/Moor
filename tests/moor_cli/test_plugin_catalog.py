@@ -1,4 +1,4 @@
-"""Plugin catalog contracts (hermes_cli/plugin_catalog.py): the in-tree seed is valid, bad entries are
+"""Plugin catalog contracts (moor_cli/plugin_catalog.py): the in-tree seed is valid, bad entries are
 skipped not raised, kill-list matching is name-or-repo, and the live catalog degrades to in-tree."""
 
 from __future__ import annotations
@@ -7,7 +7,7 @@ import json
 
 import yaml
 
-from hermes_cli import plugin_catalog as pc
+from moor_cli import plugin_catalog as pc
 
 SHA = "38fe0fb53eff98d477f807432e965429e665ca33"
 

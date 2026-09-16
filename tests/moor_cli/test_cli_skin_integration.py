@@ -50,7 +50,7 @@ class TestCliSkinPromptIntegration:
         cli._voice_recording = True
         cli._voice_recorder = SimpleNamespace(current_rms=3000)
 
-        with patch.object(HermesCLI, "_get_tui_terminal_width", return_value=50):
+        with patch.object(MoorCLI, "_get_tui_terminal_width", return_value=50):
             frags = cli._get_tui_prompt_fragments()
 
         assert frags[0][0] == "class:voice-recording"

@@ -66,7 +66,7 @@ class TestWriteToSandbox:
         env = MagicMock()
         env.execute.return_value = {"output": "", "returncode": 0}
         big = "x" * 200_000
-        _write_to_sandbox(big, "/tmp/hermes-results/big.txt", env)
+        _write_to_sandbox(big, "/tmp/moor-results/big.txt", env)
         cmd = env.execute.call_args_list[0][0][0]
         assert len(cmd) < 1_000  # cmd is just `mkdir -p X && cat > Y`
         assert env.execute.call_args_list[0][1]["stdin_data"] == big
@@ -78,8 +78,8 @@ class TestWriteToSandbox:
         remote_path = "/tmp/moor results/abc file.txt"
         _write_to_sandbox("content", remote_path, env)
         cmd = env.execute.call_args_list[0][0][0]
-        assert "'/tmp/hermes results'" in cmd
-        assert "'/tmp/hermes results/abc file.txt'" in cmd
+        assert "'/tmp/moor results'" in cmd
+        assert "'/tmp/moor results/abc file.txt'" in cmd
 
     def test_shell_metacharacters_neutralized(self):
         """Paths with shell metacharacters must be quoted to prevent injection."""
@@ -144,10 +144,10 @@ class TestWriteToSandbox:
             {"output": f"{probed}\n", "returncode": 0},  # wc -c
             {"output": "", "returncode": 0},          # rm -f cleanup (mismatch only)
         ]
-        assert _write_to_sandbox(content, "/tmp/hermes-results/p.txt", env) is ok
+        assert _write_to_sandbox(content, "/tmp/moor-results/p.txt", env) is ok
         if not ok:
             rm_cmd = env.execute.call_args_list[2][0][0]
-            assert rm_cmd.startswith("rm -f ") and "/tmp/hermes-results/p.txt" in rm_cmd
+            assert rm_cmd.startswith("rm -f ") and "/tmp/moor-results/p.txt" in rm_cmd
         else:
             assert env.execute.call_count == 2
 
@@ -158,7 +158,7 @@ class TestWriteToSandbox:
             {"output": "", "returncode": 0},
             RuntimeError("exec transport gone"),
         ]
-        assert _write_to_sandbox("data", "/tmp/hermes-results/np.txt", env) is True
+        assert _write_to_sandbox("data", "/tmp/moor-results/np.txt", env) is True
 
 
 class TestResolveStorageDir:
@@ -466,7 +466,7 @@ class TestSpillover:
             threshold=30_000,
         )
         assert PERSISTED_OUTPUT_TAG in result
-        assert "/tmp/hermes-results/tc_remote_2.txt" in result
+        assert "/tmp/moor-results/tc_remote_2.txt" in result
         assert env.execute.call_count == 3
         # Host canonical copy exists regardless.
         assert (get_spillover_dir() / "tc_remote_2.txt").exists()

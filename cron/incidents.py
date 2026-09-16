@@ -19,8 +19,8 @@ from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional
 
 from cron import executions as _executions
-from hermes_constants import get_hermes_home
-from hermes_time import now as _hermes_now
+from moor_constants import get_moor_home
+from moor_time import now as _moor_now
 
 # Optional test override (mirrors ``cron.executions.EXECUTIONS_FILE``).
 EXECUTIONS_FILE: Optional[Path] = None
@@ -55,14 +55,14 @@ def _db_path() -> Path:
 
 def _connect() -> sqlite3.Connection:
     # Late imports: a scheduler daemon that outlives an on-disk upgrade already has the OLD
-    # ``hermes_cli.sqlite_util`` / ``cron.jobs`` cached, so new names must be resolved at call time,
+    # ``moor_cli.sqlite_util`` / ``cron.jobs`` cached, so new names must be resolved at call time,
     # not at import time (the guarantee cron/ledger.py used to carry, see e24c8499).
     from cron.jobs import _ensure_cron_dir
-    from hermes_cli.sqlite_util import open_db
+    from moor_cli.sqlite_util import open_db
 
     path = _db_path()
     _ensure_cron_dir(path.parent)
-    return open_db(path, db_label="cron/executions.db", synchronous_full=True, initialize=_initialize_schema)
+    return open_db(path, db_label="cron/executions.db", synchromoor_full=True, initialize=_initialize_schema)
 
 
 def _initialize_schema(conn: sqlite3.Connection) -> None:
@@ -93,7 +93,7 @@ def _initialize_schema(conn: sqlite3.Connection) -> None:
 
 @contextmanager
 def _transaction() -> Iterator[sqlite3.Connection]:
-    from hermes_cli.sqlite_util import transaction
+    from moor_cli.sqlite_util import transaction
 
     with _lock, transaction(_connect()) as conn:
         yield conn
@@ -220,12 +220,12 @@ def ack_incident(incident_id: str) -> bool:
 def close_incidents_for_recovered_job(job_id: str) -> int:
     """Mark every open incident for ``job_id`` ``resolved`` after a successful run; returns how many.
     Without this the ledger only ever grows: a one-off failure (a config drift skip, a provider
-    outage) stayed ``detected``/``alerted`` forever after the job recovered, so ``hermes cron
+    outage) stayed ``detected``/``alerted`` forever after the job recovered, so ``moor cron
     incidents`` showed dozens of "open" incidents for jobs that had been green for weeks (32 of 32 on
     one install). ``resolved`` is distinct from the operator's ``closed`` on purpose: a repeat of the
     same error re-opens a resolved incident and alerts again (see ``upsert_incident``), whereas
     ``closed`` keeps that signature silent."""
-    now = _hermes_now().isoformat()
+    now = _moor_now().isoformat()
     with _transaction() as conn:
         cursor = conn.execute(
             """UPDATE cron_incidents SET state='resolved', closed_at=?

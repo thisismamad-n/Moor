@@ -35,7 +35,7 @@ export const zhHant = defineLocale({
     retry: '再試一次',
     more: '顯示更多',
     pinned: '已審核的提交',
-    snapshotHint: '內容來自 Hermes 目錄。瀏覽時不會連線至來源程式碼儲存庫。',
+    snapshotHint: '內容來自 Moor 目錄。瀏覽時不會連線至來源程式碼儲存庫。',
     installHint: '安裝前請檢查原始碼。變更將於新的工作階段生效。',
     results: (count: number) => `${count.toLocaleString('zh-Hant')} 個結果`,
     back: '返回結果'
@@ -406,7 +406,7 @@ export const zhHant = defineLocale({
       deleteAction: '移除已儲存項目',
       otpField: '驗證器金鑰',
       otpPlaceholder: 'Base32 金鑰或 otpauth:// 連結',
-      otpHint: '啟用兩步驟驗證時網站顯示的「設定金鑰」。儲存後 Hermes 會自動產生驗證碼。',
+      otpHint: '啟用兩步驟驗證時網站顯示的「設定金鑰」。儲存後 Moor 會自動產生驗證碼。',
       twoFactorBadge: '自動 2FA',
       deleteTitle: '刪除此項目？',
       deleteDescription: label => `「${label}」將從加密保險庫中移除。此操作無法復原。`,
@@ -416,10 +416,10 @@ export const zhHant = defineLocale({
         blurb:
           '已安裝的密碼管理器會被自動偵測。代理第一次需要其中的登入資訊時會請你解鎖（每個工作階段一次）；記憶體中只保留工作階段權杖，代理永遠看不到你的主密碼或任何登入資訊。',
         toggleFailed: '無法更新密碼管理器',
-        notInstalled: name => `未偵測到。安裝 ${name} 命令列工具並登入後，Hermes 會自動偵測。`,
-        disabledDesc: '已偵測到，但已為 Hermes 關閉。',
+        notInstalled: name => `未偵測到。安裝 ${name} 命令列工具並登入後，Moor 會自動偵測。`,
+        disabledDesc: '已偵測到，但已為 Moor 關閉。',
         lockedDesc: '已偵測到。代理需要登入資訊時會請你解鎖，也可立即解鎖。',
-        unlockedDesc: '本工作階段已解鎖。閒置 30 分鐘或關閉 Hermes 後會自動鎖定。',
+        unlockedDesc: '本工作階段已解鎖。閒置 30 分鐘或關閉 Moor 後會自動鎖定。',
         statusLocked: '已鎖定',
         statusNotDetected: '未偵測到',
         statusOff: '已關閉',
@@ -567,10 +567,10 @@ export const zhHant = defineLocale({
       reactionsTitle: '訊息回應',
       reactionsDesc: 'iMessage 風格的表情回應 — 你可以對訊息做出回應，Moor 也能回應你的訊息。',
       tipsTitle: '應用程式內提示',
-      tipsDesc: '偶爾顯示來自應用程式和 Hermes 的提示，每則提示只出現一次。開始使用滿30天後自動關閉，你可以重新開啟。',
+      tipsDesc: '偶爾顯示來自應用程式和 Moor 的提示，每則提示只出現一次。開始使用滿30天後自動關閉，你可以重新開啟。',
       tipsReset: (count: number) => `再次顯示 ${count} 則提示`,
       toursTitle: '導覽',
-      toursDesc: '讓 Hermes 逐步標示每個位置，帶你認識應用程式。開始使用滿30天後自動關閉，你可以重新開啟。',
+      toursDesc: '讓 Moor 逐步標示每個位置，帶你認識應用程式。開始使用滿30天後自動關閉，你可以重新開啟。',
       composerPopoutTitle: '懸浮輸入框',
       composerPopoutDesc: '允許將輸入框拖出底部停靠區。關閉後，輸入框會鎖定在底部。',
       vibeHeartsTitle: '心情愛心',
@@ -868,15 +868,15 @@ export const zhHant = defineLocale({
       },
       browser: {
         useRealProfile:
-          '本機瀏覽會使用你的真實登入狀態。Hermes 會將預設瀏覽器的設定（Cookie、登入資訊與偏好）複製成受管理的快照，再以內建的 Chromium 驅動它——不會直接開啟你正在使用的設定檔，且每次執行都會從目前的設定檔重新整理副本。設定雲端瀏覽器後端時，也允許代理視需要開啟本機真實設定檔工作階段。僅支援 Chromium 系瀏覽器（Chrome、Edge、Brave、Brave Origin、Chromium）；若預設瀏覽器並非 Chromium 系，會顯示明確錯誤。預設關閉。'
+          '本機瀏覽會使用你的真實登入狀態。Moor 會將預設瀏覽器的設定（Cookie、登入資訊與偏好）複製成受管理的快照，再以內建的 Chromium 驅動它——不會直接開啟你正在使用的設定檔，且每次執行都會從目前的設定檔重新整理副本。設定雲端瀏覽器後端時，也允許代理視需要開啟本機真實設定檔工作階段。僅支援 Chromium 系瀏覽器（Chrome、Edge、Brave、Brave Origin、Chromium）；若預設瀏覽器並非 Chromium 系，會顯示明確錯誤。預設關閉。'
       },
       voice: {
         autoTts: '自動朗讀助手回覆。',
         voiceChatMode:
-          'chained：語音轉文字 → Hermes → 文字轉語音，使用下方的提供方。gpt-live：由全雙工 OpenAI 語音模型（gpt-live-1）負責聆聽與說話，並將每個實際請求交給 Hermes——由你選擇的任意模型使用完整工具集作答。需要 OpenAI API 金鑰；語音層每分鐘收費 $0.05。',
+          'chained：語音轉文字 → Moor → 文字轉語音，使用下方的提供方。gpt-live：由全雙工 OpenAI 語音模型（gpt-live-1）負責聆聽與說話，並將每個實際請求交給 Moor——由你選擇的任意模型使用完整工具集作答。需要 OpenAI API 金鑰；語音層每分鐘收費 $0.05。',
         gptLive: {
           voice: 'GPT-Live 模式使用的音色，可填入自訂音色 ID。',
-          instructions: '附加至即時語音人設的句子（語氣、語速、語言）。Hermes 會保留自己的系統提示詞。'
+          instructions: '附加至即時語音人設的句子（語氣、語速、語言）。Moor 會保留自己的系統提示詞。'
         }
       },
       stt: {
@@ -908,7 +908,7 @@ export const zhHant = defineLocale({
     uninstallSection: {
       dangerZone: '危險操作',
       confirmUninstall: '確認解除安裝',
-      uninstallHermes: '解除安裝 Hermes'
+      uninstallMoor: '解除安裝 Moor'
     },
     poolLimits: {
       warmBotBackendsAria: '預熱機器人後端',
@@ -1702,7 +1702,7 @@ export const zhHant = defineLocale({
     sharedGatewayRestartDescription: bots => `此裝置上的所有機器人都會重新連線：${bots}`,
     sharedGatewayRestartConfirm: '全部重新啟動',
     sharedGatewayRestarted: count => `共享閘道已重新啟動（${count} 個機器人）`,
-    updateHermes: '更新 Hermes',
+    updateMoor: '更新 Moor',
     reloadWindow: '重新載入視窗',
     actionRunning: '執行中',
     actionDone: '完成',
@@ -1756,10 +1756,10 @@ export const zhHant = defineLocale({
     restartFailedManual: '閘道重新啟動失敗 — 請手動重新啟動並檢查閘道日誌。',
     telegramQr: {
       title: '選擇連接 Telegram 機器人的方式',
-      subtitle: '兩種方式都會連接由你控制的機器人，憑證僅儲存在此 Hermes 安裝中。',
+      subtitle: '兩種方式都會連接由你控制的機器人，憑證僅儲存在此 Moor 安裝中。',
       quickSetup: '快速設定',
       recommended: '推薦',
-      quickHelp: '掃描 QR 碼並在 Telegram 中確認。Hermes 會自動建立機器人並偵測你的 Telegram 使用者 ID。',
+      quickHelp: '掃描 QR 碼並在 Telegram 中確認。Moor 會自動建立機器人並偵測你的 Telegram 使用者 ID。',
       createWithQr: '以 QR 碼建立',
       starting: '正在啟動…',
       replaceWarning: 'Telegram 憑證已設定。儲存後，新的 QR 設定或機器人權杖將取代目前的機器人。',
@@ -2741,7 +2741,7 @@ export const zhHant = defineLocale({
   },
 
   guidedGreeting: {
-    line: '來了，進來吧。我是 Hermes。給我兩分鐘，把這裡按你的習慣整理一下，然後我們找件你真正想做的事來做。\n\n先說，我該怎麼稱呼你？',
+    line: '來了，進來吧。我是 Moor。給我兩分鐘，把這裡按你的習慣整理一下，然後我們找件你真正想做的事來做。\n\n先說，我該怎麼稱呼你？',
     nameSuggestion: (name: string) => `（如果你願意，我也可以直接叫你 ${name}。）`
   },
   install: {
@@ -3448,7 +3448,7 @@ export const zhHant = defineLocale({
     sudoCommandUnavailable: '此代理未提供指令。如果無法在對話中確認，請取消。',
     sudoPlaceholder: 'sudo 密碼',
     secretTitle: '需要密鑰',
-    secretDesc: 'Hermes 需要一個憑證才能繼續。',
+    secretDesc: 'Moor 需要一個憑證才能繼續。',
     secretPlaceholder: '密鑰值',
     vaultUnlockSendFailed: '無法傳送主密碼',
     vaultUnlockTitle: name => `解鎖 ${name}`,
@@ -3460,7 +3460,7 @@ export const zhHant = defineLocale({
     vaultSaveSendFailed: '無法儲存登入資訊',
     vaultSaveTitle: site => `儲存 ${site} 的登入資訊？`,
     vaultSaveDesc: origin =>
-      `Hermes 到達了 ${origin} 的登入頁，但沒有為它儲存的登入資訊。在此輸入一次；它會在本機加密儲存並直接填入頁面，模型永遠看不到密碼。`,
+      `Moor 到達了 ${origin} 的登入頁，但沒有為它儲存的登入資訊。在此輸入一次；它會在本機加密儲存並直接填入頁面，模型永遠看不到密碼。`,
     vaultSaveIdentifierLabel: '電子郵件或使用者名稱',
     vaultSaveIdentifierPlaceholder: 'you@example.com',
     vaultSavePasswordPlaceholder: '密碼',
@@ -3470,9 +3470,9 @@ export const zhHant = defineLocale({
     vaultCodeSendFailed: '無法傳送驗證碼',
     vaultCodeTitle: site => `${site} 的驗證碼`,
     vaultCodeDesc: site =>
-      `${site} 要求輸入一次性驗證碼（簡訊、電子郵件或驗證器應用程式）。在此輸入，Hermes 會將其填入頁面；模型永遠看不到它。`,
+      `${site} 要求輸入一次性驗證碼（簡訊、電子郵件或驗證器應用程式）。在此輸入，Moor 會將其填入頁面；模型永遠看不到它。`,
     vaultCodeLabel: '驗證碼',
-    vaultCodeFootnote: '提示：在「設定 → 密碼與登入」中為此登入儲存驗證器金鑰後，Hermes 會自動填寫驗證碼。',
+    vaultCodeFootnote: '提示：在「設定 → 密碼與登入」中為此登入儲存驗證器金鑰後，Moor 會自動填寫驗證碼。',
     vaultCodeSkip: '略過',
     vaultCodeConfirm: '輸入驗證碼'
   },

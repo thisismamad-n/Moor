@@ -1,4 +1,4 @@
-"""``hermes_cli.session_schema_history`` must track SCHEMA_SQL.
+"""``moor_cli.session_schema_history`` must track SCHEMA_SQL.
 
 The page-level salvage lane infers a salvaged store's physical column order
 from this history. If a column is added to SCHEMA_SQL without an event here,
@@ -12,8 +12,8 @@ import sqlite3
 
 import pytest
 
-from hermes_cli import session_schema_history as history
-from hermes_state_common import SCHEMA_SQL
+from moor_cli import session_schema_history as history
+from moor_state_common import SCHEMA_SQL
 
 
 def _declared_now(table: str) -> tuple[str, ...]:
@@ -43,7 +43,7 @@ def test_replayed_history_ends_at_current_schema(table: str) -> None:
     declared = _declared_now(table)
     missing = [c for c in declared if c not in replayed]
     extra = [c for c in replayed if c not in declared]
-    hint = f"SCHEMA_HISTORY[{table!r}].events in hermes_cli/session_schema_history.py"
+    hint = f"SCHEMA_HISTORY[{table!r}].events in moor_cli/session_schema_history.py"
     assert not missing, (
         f"SCHEMA_SQL declares {missing} for {table} but the replayed history does not: "
         f"append ('+', <column>, <declared predecessor>) events to {hint}"

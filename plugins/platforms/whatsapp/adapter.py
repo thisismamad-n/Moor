@@ -17,8 +17,8 @@ from typing import Dict, Optional, Any
 from gateway.platforms._shared import (
     apply_yaml_bridge as _apply_yaml_bridge, extra_or_secret as _extra_or_secret, get_scoped_secret, send_error
 )
-from hermes_cli._subprocess_compat import windows_detach_popen_kwargs
-from hermes_constants import (find_node_executable, get_hermes_dir, with_hermes_node_path)
+from moor_cli._subprocess_compat import windows_detach_popen_kwargs
+from moor_constants import (find_node_executable, get_moor_dir, with_moor_node_path)
 
 _IS_WINDOWS = platform.system() == "Windows"
 
@@ -376,10 +376,10 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
 
     def _bridge_env(self) -> dict:
         """Subprocess env: the adapter's EFFECTIVE profile policy + profile-resolved WHATSAPP_* values + cache dirs."""
-        # with_hermes_node_path() copies os.environ when called with no arg: under a multiplexed secondary
+        # with_moor_node_path() copies os.environ when called with no arg: under a multiplexed secondary
         # that copy carries the DEFAULT profile's WHATSAPP_* values, so every bridge-consumed key is
         # re-resolved from this profile (dropped on a scoped miss), never inherited from the launch env.
-        bridge_env = with_hermes_node_path()
+        bridge_env = with_moor_node_path()
         if self._reply_prefix is not None:
             bridge_env["WHATSAPP_REPLY_PREFIX"] = self._reply_prefix
         bridge_env["WHATSAPP_SEND_READ_RECEIPTS"] = "true" if self._send_read_receipts else "false"
@@ -397,7 +397,7 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
             bridge_env["WHATSAPP_ALLOWED_USERS"] = allowed
         else:
             bridge_env.pop("WHATSAPP_ALLOWED_USERS", None)
-        # Without these the bridge hardcodes ~/.hermes/{image,audio,document}_cache (wrong under HERMES_HOME/profiles/cache layout).
+        # Without these the bridge hardcodes ~/.moor/{image,audio,document}_cache (wrong under MOOR_HOME/profiles/cache layout).
         img_dir, audio_dir, _video_dir, doc_dir = _cache_dirs()
         bridge_env.update(MOOR_IMAGE_CACHE_DIR=str(img_dir), MOOR_AUDIO_CACHE_DIR=str(audio_dir), MOOR_DOCUMENT_CACHE_DIR=str(doc_dir))
         return bridge_env

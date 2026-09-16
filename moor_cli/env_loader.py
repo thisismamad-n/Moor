@@ -81,9 +81,9 @@ def secret_source_names() -> tuple[str, ...]:
     return tuple(_SECRET_SOURCES)
 
 
-def get_secret_source_values(hermes_home: str | os.PathLike) -> dict[str, str]:
-    """Return the external-secret value snapshot for ``hermes_home``."""
-    return dict(_SECRET_SOURCE_VALUES_BY_HOME.get(str(Path(hermes_home).resolve()), {}))
+def get_secret_source_values(moor_home: str | os.PathLike) -> dict[str, str]:
+    """Return the external-secret value snapshot for ``moor_home``."""
+    return dict(_SECRET_SOURCE_VALUES_BY_HOME.get(str(Path(moor_home).resolve()), {}))
 
 
 def hydrate_profile_secret_sources(moor_home: str | os.PathLike) -> dict[str, str]:
@@ -150,19 +150,19 @@ def _hydrate_profile_secret_sources(home: Path) -> dict[str, str]:
     return dict(values)
 
 
-def reset_secret_source_cache(hermes_home: str | os.PathLike | None = None) -> None:
+def reset_secret_source_cache(moor_home: str | os.PathLike | None = None) -> None:
     """Forget applied homes so the next load re-pulls (tests, long-running processes after config edits).
 
-    ``hermes_home`` limits the reset to ONE home: a multiplex gateway keeps every profile's snapshot in
+    ``moor_home`` limits the reset to ONE home: a multiplex gateway keeps every profile's snapshot in
     this process, and a per-fire cron re-pull or a plugin-discovery refresh for one home must not wipe
     a sibling's hydrated snapshot — the sibling's next scope build would run empty until it re-hydrated
     (#102041)."""
-    if hermes_home is None:
+    if moor_home is None:
         _APPLIED_HOMES.clear()
         _SECRET_SOURCES.clear()
         _SECRET_SOURCE_VALUES_BY_HOME.clear()
         return
-    home_key = str(Path(hermes_home).resolve())
+    home_key = str(Path(moor_home).resolve())
     _APPLIED_HOMES.discard(home_key)
     _SECRET_SOURCE_VALUES_BY_HOME.pop(home_key, None)
 
@@ -328,8 +328,8 @@ def load_moor_dotenv(
     fallback that only fills gaps when the user env exists (and overrides shell vars when it does not)."""
     # Process home on purpose (never the per-turn override): a startup .env load must not follow a routed
     # profile — see the multiplex guard below.
-    from hermes_constants import get_process_hermes_home
-    home_path = Path(hermes_home) if hermes_home else get_process_hermes_home()
+    from moor_constants import get_process_moor_home
+    home_path = Path(moor_home) if moor_home else get_process_moor_home()
 
     # Multiplex gateway: while a routed profile-home override is active, copying that profile's .env
     # into os.environ would expose its credentials to sibling turns and every spawned child. Unscoped

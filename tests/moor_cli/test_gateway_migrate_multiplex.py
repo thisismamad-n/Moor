@@ -1,7 +1,7 @@
-"""``hermes gateway migrate``: preflight verdicts, apply/rollback bookkeeping, and the update hook.
+"""``moor gateway migrate``: preflight verdicts, apply/rollback bookkeeping, and the update hook.
 
 Service layer is faked through the module's ``_installed_services`` / ``_service_op`` seams (the same
-shape ``hermes gateway install`` tests use); the default gateway boot is faked by writing the
+shape ``moor gateway install`` tests use); the default gateway boot is faked by writing the
 ``served_profiles`` record the real multiplexer writes. Blockers reuse the gateway's own credential
 fingerprint and port-binding predicates, so the tests assert verdict → effect, not internal lists.
 """
@@ -15,25 +15,25 @@ from types import SimpleNamespace
 
 import pytest
 
-import hermes_constants
-from hermes_cli import gateway_migrate as gm
+import moor_constants
+from moor_cli import gateway_migrate as gm
 
 
 @pytest.fixture
 def fleet(tmp_path, monkeypatch):
     """default + coder + ops; both secondaries run a 'live' standalone gateway with a systemd unit."""
-    root = tmp_path / "hermes"
+    root = tmp_path / "moor"
     for sub in ("profiles/coder", "profiles/ops"):
         (root / sub).mkdir(parents=True)
     (root / "config.yaml").write_text("model:\n  default: x\n", encoding="utf-8")
     (root / ".env").write_text("TELEGRAM_BOT_TOKEN=111111:default-token\n", encoding="utf-8")
     (root / "profiles/coder/.env").write_text("TELEGRAM_BOT_TOKEN=222222:coder-token\n", encoding="utf-8")
     (root / "profiles/ops/.env").write_text("DISCORD_BOT_TOKEN=ops-discord-333333\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("MOOR_HOME", str(root))
     monkeypatch.delenv("GATEWAY_MULTIPLEX_PROFILES", raising=False)
     for name in ("TELEGRAM_BOT_TOKEN", "DISCORD_BOT_TOKEN", "API_SERVER_KEY", "WEBHOOK_ENABLED"):
         monkeypatch.delenv(name, raising=False)
-    monkeypatch.setattr(hermes_constants, "_default_hermes_root_memo", None)
+    monkeypatch.setattr(moor_constants, "_default_moor_root_memo", None)
 
     state = SimpleNamespace(
         # profile -> installed unit(s); a tuple is one unit, a list is every installed unit.
@@ -47,9 +47,9 @@ def fleet(tmp_path, monkeypatch):
         name = _name(home)
         state.ops.append((name, verb))
         if verb == "start" and name != "default":
-            # What the real `hermes -p <name> gateway run` checks first: is a live multiplexer
+            # What the real `moor -p <name> gateway run` checks first: is a live multiplexer
             # still recorded as serving me? (exit 78 if so — the unit is then parked for good).
-            from hermes_cli.gateway import named_profile_served_by_running_multiplexer
+            from moor_cli.gateway import named_profile_served_by_running_multiplexer
             state.refused_at_start[name] = named_profile_served_by_running_multiplexer(name)
         if verb == "uninstall":
             remaining = [u for u in _units(state.services.get(name)) if u != (kind, system)]
@@ -60,10 +60,10 @@ def fleet(tmp_path, monkeypatch):
         elif verb == "install":
             state.services[name] = (kind, system)
         elif verb in ("start", "restart") and name == "default":
-            (root / "gateway.pid").write_text(json.dumps({"pid": os.getpid(), "hermes_home": str(root)}))
+            (root / "gateway.pid").write_text(json.dumps({"pid": os.getpid(), "moor_home": str(root)}))
             runtime_path = root / "gateway_state.json"
             runtime = json.loads(runtime_path.read_text()) if runtime_path.exists() else {}
-            runtime.update({"pid": os.getpid(), "hermes_home": str(root), "gateway_state": "running"})
+            runtime.update({"pid": os.getpid(), "moor_home": str(root), "gateway_state": "running"})
             # Multiplex startup records ownership; standalone startup historically preserved the
             # old key, which is the stale-state half of #109473's rollback failure.
             if _config_flag(root):
@@ -72,7 +72,7 @@ def fleet(tmp_path, monkeypatch):
 
     import gateway.status as status
     # The default gateway the fixture "starts" is this process; the served probe verifies identity.
-    monkeypatch.setattr(status, "_read_process_cmdline", lambda pid: "hermes gateway run")
+    monkeypatch.setattr(status, "_read_process_cmdline", lambda pid: "moor gateway run")
     monkeypatch.setattr(gm, "_installed_services", lambda home: _units(state.services.get(_name(home))))
     monkeypatch.setattr(gm, "_live_gateway_pid", lambda home: state.pids.get(_name(home)))
     monkeypatch.setattr(gm, "_service_op", _service_op)
@@ -85,7 +85,7 @@ def fleet(tmp_path, monkeypatch):
 
 
 def _name(home: Path) -> str:
-    return hermes_constants.profile_name_for_home(home) or "default"
+    return moor_constants.profile_name_for_home(home) or "default"
 
 
 def _units(recorded) -> list:
@@ -159,7 +159,7 @@ def test_apply_records_manifest_flips_flag_and_rollback_restores(fleet, capsys):
     runtime = json.loads(runtime_path.read_text(encoding="utf-8"))
     assert runtime["served_profiles"] == []
     assert runtime["platforms"] == {"telegram": {"state": "connected"}}
-    from hermes_cli.gateway import named_profile_served_by_running_multiplexer
+    from moor_cli.gateway import named_profile_served_by_running_multiplexer
     assert named_profile_served_by_running_multiplexer("coder") is False
     assert not (fleet.root / gm.MANIFEST_NAME).exists()
 
@@ -340,7 +340,7 @@ def test_update_hook_refuses_to_cross_service_user_or_home_boundary(
     fleet, capsys, monkeypatch, secondary_service, secondary_uid, secondary_home, expected,
 ):
     """#109954: the unattended hook must not fold a secondary that sits behind a kernel-enforced
-    boundary (other service domain, other UNIX user, HERMES_HOME outside profiles/). It prints the
+    boundary (other service domain, other UNIX user, MOOR_HOME outside profiles/). It prints the
     boundary + the explicit command and touches nothing; the dry-run plan shows the same finding as a
     notice and the explicit command stays available."""
     fleet.services["default"] = ("systemd", False)
@@ -368,7 +368,7 @@ def test_update_hook_refuses_to_cross_service_user_or_home_boundary(
 
 def test_update_hook_still_migrates_same_user_same_scope_profiles_under_the_default_tree(fleet, capsys, monkeypatch):
     """The guard is a boundary check, not a kill switch: one user, one service domain, everything under
-    profiles/ (the shape `hermes profile create` produces) still auto-migrates."""
+    profiles/ (the shape `moor profile create` produces) still auto-migrates."""
     fleet.services["default"] = ("systemd", False)
     monkeypatch.setattr(gm, "_gateway_identity", lambda home, pid, service: (1000, home), raising=False)
 
@@ -381,7 +381,7 @@ def test_update_hook_still_migrates_same_user_same_scope_profiles_under_the_defa
 
 def test_auto_multiplex_migration_false_opts_out_of_the_update_hook_but_not_the_explicit_command(fleet, capsys):
     """``gateway.auto_multiplex_migration: false`` is a durable opt-out: an otherwise-eligible fleet is
-    left alone by ``hermes update`` (no output, no ops, no flag flip), while the operator typing
+    left alone by ``moor update`` (no output, no ops, no flag flip), while the operator typing
     ``migrate --multiplex`` still migrates. Only the nested key counts."""
     assert gm.build_migration_plan().eligible_for_migration()  # would migrate but for the flag
     (fleet.root / "config.yaml").write_text(
@@ -396,7 +396,7 @@ def test_auto_multiplex_migration_false_opts_out_of_the_update_hook_but_not_the_
     assert not (fleet.root / gm.MANIFEST_NAME).exists()
 
     # A top-level alias is NOT honoured; absent and an explicit true keep the automatic behaviour.
-    from hermes_cli.gateway_migrate_guards import auto_migration_opted_out
+    from moor_cli.gateway_migrate_guards import auto_migration_opted_out
     (fleet.root / "config.yaml").write_text(
         "model:\n  default: x\nauto_multiplex_migration: false\n", encoding="utf-8")
     assert auto_migration_opted_out(fleet.root) is False
@@ -422,9 +422,9 @@ def test_explicit_migrate_with_no_standalone_secondaries_still_flips_flag_and_re
 
     def _detached(home):  # no service manager anywhere -> detached start writes the served record
         fleet.services["default-detached"] = True
-        (fleet.root / "gateway.pid").write_text(json.dumps({"pid": os.getpid(), "hermes_home": str(fleet.root)}))
+        (fleet.root / "gateway.pid").write_text(json.dumps({"pid": os.getpid(), "moor_home": str(fleet.root)}))
         (fleet.root / "gateway_state.json").write_text(json.dumps({
-            "pid": os.getpid(), "hermes_home": str(fleet.root), "gateway_state": "running",
+            "pid": os.getpid(), "moor_home": str(fleet.root), "gateway_state": "running",
             "served_profiles": ["default", "coder", "ops"]}))
         return True
     monkeypatch.setattr(gm, "_spawn_detached_gateway", _detached)
@@ -521,8 +521,8 @@ def test_every_installed_unit_of_a_secondary_is_removed_and_restored(fleet, caps
 def test_unresolvable_system_unit_user_is_unknown_principal_not_directory_owner(fleet, tmp_path, monkeypatch, capsys):
     """A system unit pinned to a User= this host cannot resolve: the principal is unknown, never the
     profile directory's owner, and unknown blocks the unattended path."""
-    from hermes_cli import gateway as gw
-    from hermes_cli.gateway_migrate_guards import gateway_identity
+    from moor_cli import gateway as gw
+    from moor_cli.gateway_migrate_guards import gateway_identity
     unit_dir = tmp_path / "system"; unit_dir.mkdir()
     monkeypatch.setattr(gw, "_SYSTEM_UNIT_DIR", unit_dir)
     coder_home = fleet.root / "profiles/coder"
@@ -546,10 +546,10 @@ def test_opt_out_reads_effective_config_managed_false_wins_and_string_false_is_f
     """The opt-out authorizes an unattended destructive action, so it reads the same effective config
     the CLI does: a managed ``false`` overrides the user's ``true``; a hand-written ``"false"`` string is
     an opt-out, not a truthy value; the declared default keeps absent == opted in."""
-    from hermes_cli import config as cfg
-    from hermes_cli.config_defaults import DEFAULT_CONFIG
-    from hermes_cli.gateway_migrate_guards import auto_migration_opted_out
-    from hermes_cli import managed_scope
+    from moor_cli import config as cfg
+    from moor_cli.config_defaults import DEFAULT_CONFIG
+    from moor_cli.gateway_migrate_guards import auto_migration_opted_out
+    from moor_cli import managed_scope
     assert DEFAULT_CONFIG["gateway"]["auto_multiplex_migration"] is True
     assert auto_migration_opted_out(fleet.root) is False  # absent -> DEFAULT_CONFIG value
 
@@ -562,7 +562,7 @@ def test_opt_out_reads_effective_config_managed_false_wins_and_string_false_is_f
     assert auto_migration_opted_out(fleet.root) is False
     managed = tmp_path / "managed"; managed.mkdir()
     (managed / "config.yaml").write_text("gateway:\n  auto_multiplex_migration: false\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(managed))
+    monkeypatch.setenv("MOOR_MANAGED_DIR", str(managed))
     managed_scope.invalidate_managed_cache()
     with gm._home_env(fleet.root):
         assert cfg.load_config()["gateway"]["auto_multiplex_migration"] is False
@@ -634,7 +634,7 @@ def test_failure_anywhere_in_the_destructive_phase_restores_the_removed_secondar
 def test_known_bringup_refusal_is_rejected_before_any_secondary_is_touched(fleet, monkeypatch, capsys):
     """A system-unit fleet with no recorded User= run by root is the #110850 refusal: known from the plan,
     so it is refused before a working gateway is stopped rather than discovered and rolled back."""
-    from hermes_cli import gateway as gw
+    from moor_cli import gateway as gw
     fleet.services.update({"coder": ("systemd", True), "ops": ("systemd", True)})
     monkeypatch.setattr(gm, "_systemd_service_user", lambda home, services: None)
     monkeypatch.setattr(gm, "_preflight_apply", _real_preflight)
@@ -651,8 +651,8 @@ def test_unknown_default_system_principal_blocks_the_update_hook(fleet, tmp_path
     """Mirror of the unknown-secondary case: the default's system unit names a User= this host cannot
     resolve while both secondaries are known root system units. Folding INTO an unidentifiable
     principal is the same boundary; known-same uid still folds, known-different still refuses."""
-    from hermes_cli import gateway as gw
-    from hermes_cli.gateway_migrate_guards import auto_migration_blockers, gateway_identity
+    from moor_cli import gateway as gw
+    from moor_cli.gateway_migrate_guards import auto_migration_blockers, gateway_identity
     unit_dir = tmp_path / "system"; unit_dir.mkdir()
     monkeypatch.setattr(gw, "_SYSTEM_UNIT_DIR", unit_dir)
     with gm._home_env(fleet.root):

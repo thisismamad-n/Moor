@@ -1005,23 +1005,23 @@ def test_gui_registers_linux_desktop_entry_before_launch(tmp_path, monkeypatch):
 def test_gui_shell_launch_defers_desktop_entry_until_window_reveal(tmp_path, monkeypatch):
     """An app-grid launch (DESKTOP_STARTUP_ID set) writes the entry only after Electron reports
     its window on screen — never before the spawn, while gnome-shell has the app in STARTING
-    (#111906). Electron gets the pipe's write end via HERMES_DESKTOP_READY_FD."""
+    (#111906). Electron gets the pipe's write end via MOOR_DESKTOP_READY_FD."""
     root = _make_desktop_tree(tmp_path)
     monkeypatch.setattr(cli_main, "PROJECT_ROOT", root)
-    monkeypatch.setenv("DESKTOP_STARTUP_ID", "gnome-shell/Hermes/1-0_TIME1")
-    monkeypatch.setattr("hermes_cli.linux_desktop_entry.time.sleep", lambda _s: None)
+    monkeypatch.setenv("DESKTOP_STARTUP_ID", "gnome-shell/Moor/1-0_TIME1")
+    monkeypatch.setattr("moor_cli.linux_desktop_entry.time.sleep", lambda _s: None)
     packaged_exe = _make_packaged_executable(root, monkeypatch)
 
     events: list[str] = []
-    monkeypatch.setattr("hermes_cli.linux_desktop_entry.is_supported", lambda: True)
+    monkeypatch.setattr("moor_cli.linux_desktop_entry.is_supported", lambda: True)
     monkeypatch.setattr(
-        "hermes_cli.linux_desktop_entry.install_desktop_entry",
-        lambda project_root: events.append(f"install:{project_root}") or (tmp_path / "hermes.desktop"),
+        "moor_cli.linux_desktop_entry.install_desktop_entry",
+        lambda project_root: events.append(f"install:{project_root}") or (tmp_path / "moor.desktop"),
     )
 
     def fake_electron(cmd, **kwargs):
         events.append("spawn")
-        fd = int(kwargs["env"]["HERMES_DESKTOP_READY_FD"])
+        fd = int(kwargs["env"]["MOOR_DESKTOP_READY_FD"])
         assert fd in kwargs["pass_fds"]
         os.write(fd, b"r")  # main window revealed
         deadline = time.monotonic() + 10
@@ -1029,10 +1029,10 @@ def test_gui_shell_launch_defers_desktop_entry_until_window_reveal(tmp_path, mon
             time.sleep(0.01)
         return subprocess.CompletedProcess(cmd, 0)
 
-    with patch("hermes_cli.main_desktop._desktop_build_needed", return_value=False), \
-         patch("hermes_cli.main_install_repair._resolve_node_runtime_npm", return_value="/usr/bin/npm"), \
-         patch("hermes_cli.main_desktop._desktop_linux_sandbox_fixup", return_value=True), \
-         patch("hermes_cli.main.subprocess.run", side_effect=fake_electron), \
+    with patch("moor_cli.main_desktop._desktop_build_needed", return_value=False), \
+         patch("moor_cli.main_install_repair._resolve_node_runtime_npm", return_value="/usr/bin/npm"), \
+         patch("moor_cli.main_desktop._desktop_linux_sandbox_fixup", return_value=True), \
+         patch("moor_cli.main.subprocess.run", side_effect=fake_electron), \
          pytest.raises(SystemExit) as exc:
         cli_main.cmd_gui(_ns())
 

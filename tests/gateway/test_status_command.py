@@ -189,7 +189,7 @@ async def test_status_command_uses_most_recent_persisted_model_route(tmp_path):
 
         result = await runner._handle_message(_make_event("/status"))
 
-        assert "**Model:** `upstage/solar-pro4:free` (nous)" in result
+        assert "**Model:** `upstage/solar-pro4:free` (moor)" in result
         assert "**Model:** `z-ai/glm-5.2` (nvidia)" not in result
     finally:
         db.close()

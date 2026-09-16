@@ -277,7 +277,7 @@ export default function SystemPage() {
       api.getPortal(),
       // Cached (non-forced) check so the version row shows update status on
       // load without a separate effect / a forced network round-trip.
-      api.checkHermesUpdate(false),
+      api.checkMoorUpdate(false),
       api.getGatewayMigratePlan(),
     ])
       .then(([s, st, m, p, c, h, cur, prt, upd, mig]) => {
@@ -736,7 +736,7 @@ export default function SystemPage() {
       />
 
       <ConfirmDialog
-        open={canUpdateHermes && updateConfirmOpen}
+        open={canUpdateMoor && updateConfirmOpen}
         onCancel={() => setUpdateConfirmOpen(false)}
         onConfirm={() => void applyUpdate()}
         title="Update Moor?"

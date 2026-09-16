@@ -1,11 +1,11 @@
 """Messaging-channel settings a profile clone must NOT inherit.
 
 A ``--clone``d profile that keeps the source's bot tokens, allowlists and platform state makes two
-gateways fight over one bot (standalone) or blocks ``hermes gateway migrate --multiplex`` with a
+gateways fight over one bot (standalone) or blocks ``moor gateway migrate --multiplex`` with a
 duplicate-credential finding per platform.
 
 The inventory is OWNERSHIP-based and evaluated in the SOURCE profile's plugin scope: every adapter
-(built-in ``Platform`` member or plugin registered under the source's ``HERMES_HOME``) owns the env
+(built-in ``Platform`` member or plugin registered under the source's ``MOOR_HOME``) owns the env
 keys it declares outright (``required_env``, allowlist / allow-all / home-channel names, the gateway
 env-override table ``gateway.config_env._ENV_STEPS`` / ``_ENV_ENABLE_CREDENTIALS``) plus every key
 under its canonical ``<PLATFORM>_`` prefix and its historical alias prefixes. Gateway-wide channel
@@ -66,12 +66,12 @@ def _plugin_scope(source_dir: Optional[Path]):
     if source_dir is None:
         yield
         return
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-    token = set_hermes_home_override(str(source_dir))
+    from moor_constants import reset_moor_home_override, set_moor_home_override
+    token = set_moor_home_override(str(source_dir))
     try:
         yield
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
 
 def platform_env_prefixes(platform_id: str) -> tuple[str, ...]:
@@ -82,7 +82,7 @@ def platform_env_prefixes(platform_id: str) -> tuple[str, ...]:
 
 def _registry_entries() -> list:
     with contextlib.suppress(Exception):
-        from hermes_cli.plugins import discover_plugins
+        from moor_cli.plugins import discover_plugins
         discover_plugins()  # idempotent per profile scope
         from gateway.platform_registry import platform_registry
         return list(platform_registry.all_entries())
@@ -224,7 +224,7 @@ def _shared_adapters_active(source_dir: Optional[Path]) -> Set[str]:
         return set(_SHARED_WITH_TOOLS)  # no source to consult: the historical (strip) behaviour
     raw: dict = {}
     if (source_dir / "config.yaml").is_file():
-        from hermes_cli.config import read_user_config_raw
+        from moor_cli.config import read_user_config_raw
         with contextlib.suppress(Exception):
             raw = read_user_config_raw(source_dir / "config.yaml") or {}
     env = _env_values(source_dir / ".env")
@@ -330,7 +330,7 @@ def strip_channel_config(config_path: Path, index: Optional[ChannelKeyIndex] = N
     """Remove platform sections from a raw ``config.yaml`` in place. Returns the dotted paths removed."""
     if not config_path.is_file():
         return []
-    from hermes_cli.config import read_user_config_raw
+    from moor_cli.config import read_user_config_raw
     from utils import atomic_yaml_write
     index = index or ChannelKeyIndex()
     raw = read_user_config_raw(config_path)
@@ -404,7 +404,7 @@ def channel_platforms_configured(profile_dir: Path) -> List[str]:
                 found.add(platform)
     config_path = profile_dir / "config.yaml"
     if config_path.is_file():
-        from hermes_cli.config import read_user_config_raw
+        from moor_cli.config import read_user_config_raw
         raw = read_user_config_raw(config_path)
         for path in _channel_config_paths(raw, index.platforms):
             node = raw
@@ -421,9 +421,9 @@ def clone_channels_refusal(source_dir: Path, source_label: str) -> Optional[str]
     """Why ``--clone-channels`` must be refused for ``source_dir``: a live multiplexer already serves
     the source, so the copied bot would be parked as a duplicate credential at once (the same finding
     the migrate preflight reports). ``None`` when the copy is allowed. Shared by CLI, REST and TUI
-    through :func:`hermes_cli.profiles.create_profile`."""
-    from hermes_cli.gateway_multiplex_served import recorded_served_profiles
-    from hermes_cli.profiles import normalize_profile_name
+    through :func:`moor_cli.profiles.create_profile`."""
+    from moor_cli.gateway_multiplex_served import recorded_served_profiles
+    from moor_cli.profiles import normalize_profile_name
     served = recorded_served_profiles()
     if not served or len(served) < 2 or normalize_profile_name(source_label) not in {
         normalize_profile_name(p) for p in served
@@ -436,7 +436,7 @@ def clone_channels_refusal(source_dir: Path, source_label: str) -> Optional[str]
         f"--clone-channels would copy {', '.join(platforms)} from '{source_label}', which the running "
         "multiplexed gateway already serves: the bot can only belong to one profile, so the copy would be "
         "parked as a duplicate credential. Clone without --clone-channels and give the new profile its own bot "
-        "(hermes -p <name> setup), or route its chats with gateway.profile_routes instead."
+        "(moor -p <name> setup), or route its chats with gateway.profile_routes instead."
     )
 
 
@@ -445,7 +445,7 @@ def _config_platform_tokens(config_path: Path) -> Dict[str, str]:
     tokens: Dict[str, str] = {}
     if not config_path.is_file():
         return tokens
-    from hermes_cli.config import read_user_config_raw
+    from moor_cli.config import read_user_config_raw
     raw = read_user_config_raw(config_path)
     gateway: dict = raw["gateway"] if isinstance(raw.get("gateway"), dict) else {}
     for section in (raw.get("platforms"), gateway.get("platforms")):
@@ -462,7 +462,7 @@ def _config_platform_tokens(config_path: Path) -> Dict[str, str]:
 def shared_channel_credentials(profile_dir: Path, source_dir: Path) -> List[str]:
     """Platforms whose CONNECTING credential (bot token / app id / account) in ``profile_dir`` is
     byte-identical to ``source_dir``'s — the bots that will collide. Pure file reads: no secret
-    manager, no gateway config load, so ``hermes profile list`` can afford it per profile."""
+    manager, no gateway config load, so ``moor profile list`` can afford it per profile."""
     wanted = credential_env_keys()
     mine = _env_values(profile_dir / ".env", wanted)
     theirs = _env_values(source_dir / ".env", wanted)
@@ -476,9 +476,9 @@ def shared_channel_credentials(profile_dir: Path, source_dir: Path) -> List[str]
 def shared_credential_warning(profile: str, platforms: List[str], source: str = "default") -> str:
     return (
         f"⚠ Profile '{profile}' shares its {', '.join(platforms)} credential with {source}: the bot can "
-        f"only belong to one profile. Give '{profile}' its own bot (hermes -p {profile} setup, or the "
+        f"only belong to one profile. Give '{profile}' its own bot (moor -p {profile} setup, or the "
         f"dashboard Messaging page) or remove the token from '{profile}'; a multiplexed gateway parks "
-        f"the duplicate and `hermes gateway migrate --multiplex` refuses until it is gone."
+        f"the duplicate and `moor gateway migrate --multiplex` refuses until it is gone."
     )
 
 
@@ -490,6 +490,6 @@ def format_stripped_notice(profile: str, platforms: List[str], clone_flag: str =
     return [
         f"Messaging channels were NOT cloned ({', '.join(platforms)}): a copied bot token or allowlist "
         "would make two gateways fight over one bot.",
-        f"  Configure this profile's own bots:  hermes -p {profile} setup   (or the dashboard Messaging page)",
-        f"  To copy the source's channels anyway:  hermes profile create {profile} {clone_flag} --clone-channels",
+        f"  Configure this profile's own bots:  moor -p {profile} setup   (or the dashboard Messaging page)",
+        f"  To copy the source's channels anyway:  moor profile create {profile} {clone_flag} --clone-channels",
     ]

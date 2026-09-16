@@ -37,26 +37,26 @@ def auth_json_path():
     return get_moor_home() / "auth.json"
 
 
-def _read_nous_provider_state() -> Optional[dict]:
-    """The profile's Nous state, or None. A free-tier identity counts only while the free tier is on:
-    with ``nous.guest: false`` it is invisible here, so no cached or refreshed token of it is ever
+def _read_moor_provider_state() -> Optional[dict]:
+    """The profile's Moor state, or None. A free-tier identity counts only while the free tier is on:
+    with ``moor.guest: false`` it is invisible here, so no cached or refreshed token of it is ever
     attached to a request.
 
     Resolves through the same profile-then-global-root fallback every other credential reader
     uses: a profile created with ``share_auth`` has no ``auth.json`` of its own and signs in with
-    the root identity. Reading only ``HERMES_HOME/auth.json`` made that profile look signed out to
+    the root identity. Reading only ``MOOR_HOME/auth.json`` made that profile look signed out to
     the connector gate alone, so ``manage_connections`` vanished from its tool list."""
     try:
-        from hermes_cli.auth import get_provider_auth_state
+        from moor_cli.auth import get_provider_auth_state
 
-        nous_provider = get_provider_auth_state("nous")
-        if not isinstance(nous_provider, dict):
+        moor_provider = get_provider_auth_state("moor")
+        if not isinstance(moor_provider, dict):
             return None
-        from hermes_cli.anon_auth import guest_enabled, is_guest_state
+        from moor_cli.anon_auth import guest_enabled, is_guest_state
 
-        if is_guest_state(nous_provider) and not guest_enabled():
+        if is_guest_state(moor_provider) and not guest_enabled():
             return None
-        return nous_provider
+        return moor_provider
     except Exception:
         return None
 
@@ -98,21 +98,21 @@ def peek_moor_access_token() -> Optional[str]:
     return _read_user_token_override() or _clean((_read_moor_provider_state() or {}).get("access_token"))
 
 
-def read_nous_access_token() -> Optional[str]:
-    """Read a Nous Subscriber OAuth access token from auth store or env override.
+def read_moor_access_token() -> Optional[str]:
+    """Read a Moor Subscriber OAuth access token from auth store or env override.
 
-    A read: with no Nous identity there is no bearer and the answer is None. The free-tier identity
-    is created by the boot bootstrap (``hermes_cli.free_tier_bootstrap``), never on a token-read
+    A read: with no Moor identity there is no bearer and the answer is None. The free-tier identity
+    is created by the boot bootstrap (``moor_cli.free_tier_bootstrap``), never on a token-read
     path (NS-845 Q1.2). A retired free-tier credential IS replaced here, once: that is the explicit
     dead-credential rule, shared with inference.
     """
     if explicit := _read_user_token_override():
         return explicit
-    nous_provider = _read_nous_provider_state() or {}
-    if not nous_provider:
+    moor_provider = _read_moor_provider_state() or {}
+    if not moor_provider:
         return None
-    cached_token = peek_nous_access_token()
-    if cached_token and not _access_token_is_expiring(nous_provider.get("expires_at"), _NOUS_ACCESS_TOKEN_REFRESH_SKEW_SECONDS):
+    cached_token = peek_moor_access_token()
+    if cached_token and not _access_token_is_expiring(moor_provider.get("expires_at"), _MOOR_ACCESS_TOKEN_REFRESH_SKEW_SECONDS):
         return cached_token
     try:
         from moor_cli.auth import resolve_moor_access_token
@@ -122,17 +122,17 @@ def read_nous_access_token() -> Optional[str]:
     except Exception as exc:
         # Same dead-credential rule as inference (one place decides it: anon_auth): a retired free-tier
         # identity is replaced once, here, instead of handing back its stale token forever.
-        from hermes_cli.anon_auth import AnonCredentialDead
+        from moor_cli.anon_auth import AnonCredentialDead
 
         if isinstance(exc, AnonCredentialDead):
-            return _replace_dead_guest_token(nous_provider, str(exc.code or "anon_credential_dead"))
-        logger.debug("Nous access token refresh failed: %s", exc)
+            return _replace_dead_guest_token(moor_provider, str(exc.code or "anon_credential_dead"))
+        logger.debug("Moor access token refresh failed: %s", exc)
     return cached_token
 
 
 def _replace_dead_guest_token(dead_state: dict, code: str = "anon_credential_dead") -> Optional[str]:
-    from hermes_cli.anon_auth import ANON_ACCOUNT_LOCKED, clear_dead_guest, ensure_portal_identity
-    from hermes_cli.auth import resolve_nous_access_token
+    from moor_cli.anon_auth import ANON_ACCOUNT_LOCKED, clear_dead_guest, ensure_portal_identity
+    from moor_cli.auth import resolve_moor_access_token
 
     clear_dead_guest(code, dead_token=dead_state.get("anon_token"))
     # Same rule as inference: a locked account is retired but never silently replaced.
@@ -141,9 +141,9 @@ def _replace_dead_guest_token(dead_state: dict, code: str = "anon_credential_dea
     try:
         if ensure_portal_identity(explicit=True) is None:
             return None
-        return _clean(resolve_nous_access_token(refresh_skew_seconds=_NOUS_ACCESS_TOKEN_REFRESH_SKEW_SECONDS))
+        return _clean(resolve_moor_access_token(refresh_skew_seconds=_MOOR_ACCESS_TOKEN_REFRESH_SKEW_SECONDS))
     except Exception as exc:
-        logger.debug("Nous free tier replacement after a retired credential failed: %s", exc)
+        logger.debug("Moor free tier replacement after a retired credential failed: %s", exc)
         return None
 
 

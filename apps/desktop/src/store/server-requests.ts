@@ -1,4 +1,4 @@
-import type { ServerRequest } from '@hermes/shared'
+import type { ServerRequest } from '@moor/shared'
 
 /**
  * Live server→client requests (`tui_gateway/server_requests.py`) keyed by

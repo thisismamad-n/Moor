@@ -245,7 +245,7 @@ def test_background_mcp_discovery_propagates_profile_secret_scope(monkeypatch):
     seen = []
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.config",
+        "moor_cli.config",
         types.SimpleNamespace(
             read_raw_config=lambda: {"mcp_servers": {"demo": {"url": "https://mcp.example.test/mcp"}}},
         ),

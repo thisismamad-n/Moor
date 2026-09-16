@@ -445,8 +445,8 @@ def _moor_entitlement_message(capability: str) -> str:
             format_moor_portal_entitlement_message,
             get_moor_portal_account_info,
         )
-        account_info = get_nous_portal_account_info(force_fresh=True)
-        return format_nous_portal_entitlement_message(
+        account_info = get_moor_portal_account_info(force_fresh=True)
+        return format_moor_portal_entitlement_message(
             account_info, capability=capability, in_chat=True
         ) or ""
     except Exception:
@@ -762,7 +762,7 @@ def _restore_or_build_system_prompt(agent, system_message, conversation_history)
     # Persistence-disabled forks share their parent's session ID and are not real sessions.
     if not getattr(agent, "_persist_disabled", False):
         try:
-            from hermes_cli.lifecycle import invoke_hook as _invoke_hook
+            from moor_cli.lifecycle import invoke_hook as _invoke_hook
             _invoke_hook(
                 "on_session_start", session_id=agent.session_id, model=agent.model,
                 platform=getattr(agent, "platform", None) or "",

@@ -16,12 +16,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 
 def main():
-    with tempfile.TemporaryDirectory(prefix="hermes-timeline-bench-") as directory:
-        os.environ["HERMES_HOME"] = directory
+    with tempfile.TemporaryDirectory(prefix="moor-timeline-bench-") as directory:
+        os.environ["MOOR_HOME"] = directory
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
-        from hermes_state import SessionDB
-        from hermes_cli.web_routers.sessions import manage_router
+        from moor_state import SessionDB
+        from moor_cli.web_routers.sessions import manage_router
 
         sid = "generated-tool-heavy"
         prompt_count = 600

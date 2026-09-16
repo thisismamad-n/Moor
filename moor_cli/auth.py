@@ -6,8 +6,8 @@
   only I/O primitives (cross-process flock, atomic 0o600 writes).
 - ``resolve_provider()`` picks the active provider via the documented priority chain.
 - ``OAUTH_PROVIDER_FLOWS`` maps each OAuth provider to its resolver/status builder; the flows live in
-  ``auth_nous``/``auth_codex``/``auth_xai``/``auth_qwen``/``auth_minimax``/``auth_spotify``/``auth_openrouter`` and are
-  re-imported here so ``hermes_cli.auth.<name>`` stays the public/patchable surface."""
+  ``auth_moor``/``auth_codex``/``auth_xai``/``auth_qwen``/``auth_minimax``/``auth_spotify``/``auth_openrouter`` and are
+  re-imported here so ``moor_cli.auth.<name>`` stays the public/patchable surface."""
 
 from __future__ import annotations
 
@@ -28,12 +28,12 @@ from pathlib import Path
 from typing import Any, Callable, Dict, FrozenSet, Iterable, List, Optional, Tuple
 from urllib.parse import urlparse
 
-from hermes_cli.config import (
-    get_hermes_home, get_config_path, read_raw_config, require_readable_config_before_write)
-from hermes_constants import OPENROUTER_BASE_URL, hermes_home_key, secure_parent_dir
+from moor_cli.config import (
+    get_moor_home, get_config_path, read_raw_config, require_readable_config_before_write)
+from moor_constants import OPENROUTER_BASE_URL, moor_home_key, secure_parent_dir
 from agent.credential_persistence import sanitize_borrowed_credential_payload
 from utils import atomic_json_write, atomic_yaml_write, env_float, file_signature, is_truthy_value  # noqa: F401  (env_float: agent.credential_pool reads auth_mod.env_float)
-from hermes_cli.auth_zai_kimi import (  # noqa: F401  re-exported
+from moor_cli.auth_zai_kimi import (  # noqa: F401  re-exported
     KIMI_CODE_BASE_URL, ZAI_ENDPOINTS, _normalize_lmstudio_runtime_base_url, _resolve_kimi_base_url,
     _resolve_zai_base_url, detect_zai_endpoint)
 from moor_cli.auth_model_picker import (  # noqa: F401  re-exported
@@ -83,8 +83,8 @@ from moor_cli.auth_codex import (  # noqa: F401  re-exported
 from moor_cli.auth_spotify import (  # noqa: F401  re-exported
     _refresh_spotify_oauth_state, get_spotify_auth_status, login_spotify_command,
     resolve_spotify_runtime_credentials)
-from hermes_cli.auth_openrouter import _openrouter_pkce_login  # noqa: F401  re-exported
-from hermes_cli.auth_qwen import (  # noqa: F401  re-exported
+from moor_cli.auth_openrouter import _openrouter_pkce_login  # noqa: F401  re-exported
+from moor_cli.auth_qwen import (  # noqa: F401  re-exported
     _qwen_access_token_is_expiring, _qwen_cli_auth_path, _read_qwen_cli_tokens,
     _refresh_qwen_cli_tokens, _save_qwen_cli_tokens, get_qwen_auth_status,
     resolve_qwen_runtime_credentials)
@@ -348,11 +348,11 @@ def _model_level_key_env(provider_id: str) -> str:
     """``model.key_env`` when config.yaml's main model targets *provider_id*, else ``""``.
 
     The Desktop settings UI saves registry-provider keys as a credential pointer
-    (``model.key_env`` → ``$HERMES_HOME/.env``) instead of the registry's canonical env var,
+    (``model.key_env`` → ``$MOOR_HOME/.env``) instead of the registry's canonical env var,
     so credential resolution must consult it (#106336).
     """
     try:
-        from hermes_cli.config import load_config
+        from moor_cli.config import load_config
         model_cfg = (load_config() or {}).get("model")
     except Exception:
         return ""
@@ -381,10 +381,10 @@ def _resolve_api_key_provider_secret(provider_id: str, pconfig: ProviderConfig) 
 
     # Prefer ~/.moor/.env over os.environ so a deliberate key rotation in .env isn't shadowed by
     # a stale shell export inherited from a parent process (Codex CLI, test runners, etc.).
-    from hermes_cli.config import get_env_value_prefer_dotenv
+    from moor_cli.config import get_env_value_prefer_dotenv
 
     # Desktop-saved credential pointer: the settings UI persists registry-provider keys as
-    # model.key_env → $HERMES_HOME/.env (e.g. HERMES_CUSTOM_LMSTUDIO_API_KEY) while keeping
+    # model.key_env → $MOOR_HOME/.env (e.g. MOOR_CUSTOM_LMSTUDIO_API_KEY) while keeping
     # model.provider on the registry id, so the pointer must be honored here or the UI-saved
     # key is silently ignored and lmstudio falls through to its no-auth placeholder (#106336).
     key_env = _model_level_key_env(provider_id)
@@ -698,8 +698,8 @@ def _load_auth_store(auth_file: Optional[Path] = None) -> Dict[str, Any]:
 def _save_private_json(target: Path, data: Any, *, fsync_dir: bool = False, **dump_kwargs: Any) -> None:
     """0600 credential JSON under a 0700 parent (``secure_parent_dir`` refuses ``/``, top-level dirs
     and the install tree). ``atomic_json_write`` creates the temp file 0600 before any byte lands."""
-    from hermes_constants import mkdir_under_hermes_home
-    mkdir_under_hermes_home(target.parent)
+    from moor_constants import mkdir_under_moor_home
+    mkdir_under_moor_home(target.parent)
     secure_parent_dir(target)
     atomic_json_write(target, data, mode=0o600, fsync_dir=fsync_dir, **dump_kwargs)
 
@@ -809,7 +809,7 @@ def _save_provider_state_to_source(
     """Persist provider state back to the auth store it was read from.
 
     A token refresh rewrites credentials, not the user's choice of provider: ``active_provider`` is
-    left as it is (a Nous free-tier identity refreshed for a connector call must not become the
+    left as it is (a Moor free-tier identity refreshed for a connector call must not become the
     inference provider of an install that has its own key)."""
     if source_path is None or _same_path(source_path, _auth_file_path()):
         _store_provider_state(auth_store, provider_id, state, set_active=False)
@@ -1347,8 +1347,8 @@ def _logged_in_oauth_active_provider(*, skip_free_tier: bool = False) -> Optiona
     """auth.json ``active_provider`` when it is a registry provider that reports logged in."""
     try:
         _maybe = _load_auth_store().get("active_provider")
-        if _maybe == "nous":
-            from hermes_cli.anon_auth import guest_enabled, has_guest
+        if _maybe == "moor":
+            from moor_cli.anon_auth import guest_enabled, has_guest
             if has_guest() and (skip_free_tier or not guest_enabled()):
                 return None  # the free tier is off (or being discounted), so a guest is not a login
         if _maybe and _maybe in PROVIDER_REGISTRY and get_auth_status(_maybe).get("logged_in"):
@@ -1366,7 +1366,7 @@ def _config_model_provider() -> Tuple[Any, Optional[str]]:
     this is the safety net for the direct ``resolve_provider("auto")`` callers. A configured custom
     endpoint is explicit intent like any registry pin: without this rung the boot inventory
     (``free_tier_bootstrap``) read a llama.cpp/vLLM install as "nothing configured" and the
-    dashboard's Ink chat parked every session on Setup Required while ``hermes chat`` worked
+    dashboard's Ink chat parked every session on Setup Required while ``moor chat`` worked
     (#108383)."""
     try:
         from moor_cli.config import load_config
@@ -1382,7 +1382,7 @@ def _config_model_provider() -> Tuple[Any, Optional[str]]:
         # llama.cpp/vLLM/ollama server) — same explicit intent, spelled by URL.
         base_url = str(model_cfg.get("base_url") or "").strip() if isinstance(model_cfg, dict) else ""
         if base_url:
-            from hermes_cli.runtime_provider import _config_base_url_trustworthy_for_bare_custom
+            from moor_cli.runtime_provider import _config_base_url_trustworthy_for_bare_custom
             if _config_base_url_trustworthy_for_bare_custom(base_url, provider):
                 return model_cfg, "custom"
         return model_cfg, None
@@ -1432,7 +1432,7 @@ def resolve_provider(
     "auto" priority (explicit intent beats a stale OAuth login): 1. CLI api_key/base_url ->
     "openrouter"; 2. config.yaml ``model.provider``; 3. OPENAI_API_KEY / OPENROUTER_API_KEY ->
     "openrouter"; 4. OpenRouter pool; 5. provider env keys; 6. auth.json ``active_provider``;
-    7. Nous free tier when it is on and its identity exists (never created here);
+    7. Moor free tier when it is on and its identity exists (never created here);
     8. AWS Bedrock chain; 9. AuthError(no_provider_configured).
 
     ``skip_free_tier`` hides rungs 6-for-a-free-tier-identity and 7: the boot bootstrap asks
@@ -1485,7 +1485,7 @@ def resolve_provider(
                 _oauth_active)
         return _oauth_active
 
-    # Nous free tier, when it is on and its identity already exists. This rung sits ABOVE the Bedrock
+    # Moor free tier, when it is on and its identity already exists. This rung sits ABOVE the Bedrock
     # chain on purpose: every rung above this line is explicit user intent (CLI creds, config, env
     # keys, a sign-in); the boto chain below is implicit host state, and a leftover ~/.aws profile
     # used to win the first turn of a fresh install (NS-829). The rung never CREATES the identity:
@@ -1493,9 +1493,9 @@ def resolve_provider(
     # network and a fresh install without the bootstrap resolves exactly as upstream does.
     if not skip_free_tier:
         try:
-            from hermes_cli.anon_auth import guest_enabled, has_guest
+            from moor_cli.anon_auth import guest_enabled, has_guest
             if guest_enabled() and has_guest():
-                return "nous"
+                return "moor"
         except Exception as exc:
             logger.debug("free tier check during provider resolution skipped: %s", exc)
     # AWS Bedrock via the boto3 credential chain (IAM roles, SSO, env vars): implicit host state,
@@ -1506,12 +1506,12 @@ def resolve_provider(
             return "bedrock"
     except ImportError:
         pass  # boto3 not installed
-    from hermes_constants import display_hermes_home
+    from moor_constants import display_moor_home
     raise AuthError(
-        "Hermes is not connected to any AI provider yet. Run `hermes model` to pick one (the free "
-        "Nous tier needs no API key), type `/login` in chat, or add a key with "
-        f"`hermes auth add <provider>`. (Advanced: put an API key such as OPENROUTER_API_KEY in "
-        f"{display_hermes_home()}/.env.)",
+        "Moor is not connected to any AI provider yet. Run `moor model` to pick one (the free "
+        "Moor tier needs no API key), type `/login` in chat, or add a key with "
+        f"`moor auth add <provider>`. (Advanced: put an API key such as OPENROUTER_API_KEY in "
+        f"{display_moor_home()}/.env.)",
         code="no_provider_configured")
 
 
@@ -1588,9 +1588,9 @@ _MOOR_PORTAL_ALLOWED_HOSTS: FrozenSet[str] = frozenset({
 
 # Per-process memo for resolve_moor_access_token: startup runs one check_fn per managed tool and
 # each would trigger its own ~15s blocking refresh of an expired token; a short-TTL memo collapses
-# the burst into one round-trip. Callers needing freshness use force_fresh/refresh_nous_oauth_pure.
-# Keyed by hermes_home_key(): the resolution itself is profile-scoped (_auth_file_path reads the
-# per-turn HERMES_HOME override a multiplex gateway sets), so a single slot would hand profile A's
+# the burst into one round-trip. Callers needing freshness use force_fresh/refresh_moor_oauth_pure.
+# Keyed by moor_home_key(): the resolution itself is profile-scoped (_auth_file_path reads the
+# per-turn MOOR_HOME override a multiplex gateway sets), so a single slot would hand profile A's
 # Portal bearer to profile B for up to the TTL.
 _RESOLVE_TOKEN_CACHE_LOCK = threading.Lock()
 _RESOLVE_TOKEN_CACHE: "dict[str, tuple[float, str]]" = {}
@@ -1621,10 +1621,10 @@ def resolve_moor_access_token(
     insecure: Optional[bool] = None,
     ca_bundle: Optional[str] = None,
     refresh_skew_seconds: int = ACCESS_TOKEN_REFRESH_SKEW_SECONDS) -> str:
-    """Resolve a refresh-aware Nous Portal access token for managed tool gateways."""
+    """Resolve a refresh-aware Moor Portal access token for managed tool gateways."""
     # Only a default-TLS resolution is memoised; error paths never populate the memo.
     memoable = not insecure and ca_bundle is None
-    cache_key = hermes_home_key()
+    cache_key = moor_home_key()
     if memoable:
         with _RESOLVE_TOKEN_CACHE_LOCK:
             cached = _RESOLVE_TOKEN_CACHE.get(cache_key)
@@ -1647,8 +1647,8 @@ def resolve_moor_access_token(
             auth_store, "moor", state, state_source_path)
 
         lock_timeout = max(timeout_seconds + 5.0, AUTH_LOCK_TIMEOUT_SECONDS)
-        with _nous_shared_store_lock(timeout_seconds=lock_timeout):
-            from hermes_cli.anon_auth import is_guest_state, refresh_guest_state
+        with _moor_shared_store_lock(timeout_seconds=lock_timeout):
+            from moor_cli.anon_auth import is_guest_state, refresh_guest_state
             if is_guest_state(state):
                 # Guest seam: the anon_ credential is the identity; a first use has no access token
                 # yet and an expired one is re-exchanged. No refresh token, no quarantine.
@@ -1660,10 +1660,10 @@ def resolve_moor_access_token(
                                   headers={"Accept": "application/json"}, verify=verify) as client:
                     refresh_guest_state(state, client)
                 persist()
-                _write_shared_nous_state(state)
+                _write_shared_moor_state(state)
                 return _memo(state["access_token"])
 
-            merged_shared = _merge_shared_nous_oauth_state(state)
+            merged_shared = _merge_shared_moor_oauth_state(state)
             access_token = state.get("access_token")
             refresh_token = state.get("refresh_token")
             if not isinstance(access_token, str) or not access_token:
@@ -1830,7 +1830,7 @@ def get_xai_oauth_auth_status() -> Dict[str, Any]:
 
 def _provider_env_base_url(pconfig: ProviderConfig) -> str:
     if pconfig.id == "actual":
-        from hermes_cli.providers import normalize_provider
+        from moor_cli.providers import normalize_provider
 
         model = read_raw_config().get("model")
         if isinstance(model, dict) and normalize_provider(str(model.get("provider") or "")) == "actual":
@@ -2257,9 +2257,9 @@ def logout_command(args) -> None:
     if not target:
         print("No provider is currently logged in.")
         return
-    if target == "nous":
-        from hermes_cli.anon_auth import FREE_TIER_NOT_SIGNED_IN, is_guest_state
-        if is_guest_state(get_provider_auth_state("nous")):
+    if target == "moor":
+        from moor_cli.anon_auth import FREE_TIER_NOT_SIGNED_IN, is_guest_state
+        if is_guest_state(get_provider_auth_state("moor")):
             # Free tier is not a login; there is nothing to log out of and nothing is cleared.
             print(FREE_TIER_NOT_SIGNED_IN)
             return
@@ -2268,10 +2268,10 @@ def logout_command(args) -> None:
     if not (clear_provider_auth(target) or should_reset_config):
         print(f"No auth state found for {provider_name}.")
         return
-    if target == "nous":
+    if target == "moor":
         # A profile logout must not be re-adopted from the cross-profile store on the next boot.
-        from hermes_cli.auth_nous import _clear_shared_nous_state
-        _clear_shared_nous_state("logout")
+        from moor_cli.auth_moor import _clear_shared_moor_state
+        _clear_shared_moor_state("logout")
     if should_reset_config:
         _reset_config_provider()
     print(f"Logged out of {provider_name}.")

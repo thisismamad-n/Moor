@@ -21,8 +21,8 @@ import threading
 import time
 from typing import Any, Dict, List, Optional
 
-from hermes_cli.sqlite_util import add_column_if_missing
-from hermes_constants import get_hermes_home
+from moor_cli.sqlite_util import add_column_if_missing
+from moor_constants import get_moor_home
 
 logger = logging.getLogger(__name__)
 _DB_LOCK = threading.Lock()
@@ -143,7 +143,7 @@ def _db_path():
 
 
 def _connect() -> sqlite3.Connection:
-    from hermes_cli.sqlite_util import open_db
+    from moor_cli.sqlite_util import open_db
 
     # Shared state.db: SessionDB owns the durable PRAGMA set; this opener keeps the plain-tuple rows
     # and the 10 s busy timeout it always had.
@@ -175,7 +175,7 @@ def _initialize_schema(conn: sqlite3.Connection) -> None:
 
 
 def _transaction():
-    from hermes_cli.sqlite_util import transaction
+    from moor_cli.sqlite_util import transaction
 
     return transaction(_connect())
 

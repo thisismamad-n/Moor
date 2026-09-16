@@ -34,9 +34,9 @@ class TestGetDefaultMoorRoot:
     """Tests for get_default_moor_root() — Docker/custom deployment awareness."""
 
     @pytest.mark.linux_only
-    def test_no_hermes_home_returns_native(self, tmp_path, monkeypatch):
-        """When HERMES_HOME is not set, returns ~/.hermes."""
-        monkeypatch.delenv("HERMES_HOME", raising=False)
+    def test_no_moor_home_returns_native(self, tmp_path, monkeypatch):
+        """When MOOR_HOME is not set, returns ~/.moor."""
+        monkeypatch.delenv("MOOR_HOME", raising=False)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         assert get_default_moor_root() == tmp_path / ".moor"
@@ -368,7 +368,7 @@ class TestIsContainer:
         """#58135: a host that merely RUNS containers exposes each container's overlay lowerdir
         (``lowerdir=/var/lib/containerd/...``) at non-root mount points; only the root ('/') line
         says whether *this* process lives in a runtime overlay."""
-        from hermes_constants import _root_mount_has_marker
+        from moor_constants import _root_mount_has_marker
 
         markers = ("kubepods", "containerd", "crio")
         host = tmp_path / "host"

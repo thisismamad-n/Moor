@@ -1,6 +1,6 @@
-import type { ModelCapabilities, ModelOptionProvider, ModelOptionsResult } from '@hermes/shared'
+import type { ModelCapabilities, ModelOptionProvider, ModelOptionsResult } from '@moor/shared'
 
-import { getGlobalModelOptions, type HermesGateway } from '@/hermes'
+import { getGlobalModelOptions, type MoorGateway } from '@/moor'
 
 type CatalogProviderIdentity = Pick<ModelOptionProvider, 'aliases' | 'name' | 'slug'>
 

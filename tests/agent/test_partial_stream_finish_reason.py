@@ -995,7 +995,7 @@ class TestStreamIncludeUsageFinalChunk:
         mock_create.return_value = mock_client
 
         agent = _make_agent()
-        monkeypatch.setenv("HERMES_STREAM_RETRIES", "0")
+        monkeypatch.setenv("MOOR_STREAM_RETRIES", "0")
         response = agent._interruptible_streaming_api_call({})
 
         assert response.id == PARTIAL_STREAM_STUB_ID

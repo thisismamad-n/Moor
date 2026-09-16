@@ -813,20 +813,20 @@ class TestRuntimeFtsRebuild:
             SessionDB, "_reap_inactive_orphan_desktop_holders", lambda self, holders, *, min_age_seconds: [],
         )
         monkeypatch.setattr(
-            hermes_state_schema, "_read_proc_argv", lambda pid: ["python", "-m", "hermes_cli.main", "serve"], raising=False,
+            moor_state_schema, "_read_proc_argv", lambda pid: ["python", "-m", "moor_cli.main", "serve"], raising=False,
         )
         clock = [1000.0]
-        monkeypatch.setattr(hermes_state_schema.time, "time", lambda: clock[0])
+        monkeypatch.setattr(moor_state_schema.time, "time", lambda: clock[0])
 
-        from hermes_cli.doctor_state import _render_state_db_stats
-        from hermes_state_dbfile import collect_state_db_stats
+        from moor_cli.doctor_state import _render_state_db_stats
+        from moor_state_dbfile import collect_state_db_stats
 
         def doctor_blob():
             return " ".join(" ".join(row) for row in _render_state_db_stats(collect_state_db_stats(db_path))).lower()
 
         # Read via getattr so the red-on-base run reaches the behavioural assertion, not a NameError.
-        futile_attempts = getattr(hermes_state_schema, "_FTS_HOLDER_FUTILE_ATTEMPTS", 10)
-        futile_seconds = getattr(hermes_state_schema, "_FTS_HOLDER_FUTILE_SECONDS", 1800.0)
+        futile_attempts = getattr(moor_state_schema, "_FTS_HOLDER_FUTILE_ATTEMPTS", 10)
+        futile_seconds = getattr(moor_state_schema, "_FTS_HOLDER_FUTILE_SECONDS", 1800.0)
         reopened = SessionDB(db_path=db_path)
         try:
             cursor = reopened._conn.cursor()
@@ -849,7 +849,7 @@ class TestRuntimeFtsRebuild:
             futile_lines = [r for r in caplog.records if "waiting is futile" in r.getMessage()]
             assert len(futile_lines) == 1 and futile_lines[0].levelno == logging.ERROR
             msg = futile_lines[0].getMessage()
-            assert "pid 4242: python -m hermes_cli.main serve" in msg
+            assert "pid 4242: python -m moor_cli.main serve" in msg
             assert "Stop ONLY the other holder" in msg and "with the gateway stopped" not in msg
             blob = doctor_blob()
             assert "4242" in blob and "waiting is futile" in blob and "stop only" in blob
@@ -880,8 +880,8 @@ class TestRuntimeFtsRebuild:
         try:
             assert reopened._fts_stale is True
             # Backoff pinned at the cap by the same holder; the holder still there -> no retry.
-            reopened._fts_stale_retry_after = time.monotonic() + hermes_state_schema._FTS_STALE_RETRY_MAX_SECONDS
-            reopened._fts_stale_retry_interval = hermes_state_schema._FTS_STALE_RETRY_MAX_SECONDS
+            reopened._fts_stale_retry_after = time.monotonic() + moor_state_schema._FTS_STALE_RETRY_MAX_SECONDS
+            reopened._fts_stale_retry_interval = moor_state_schema._FTS_STALE_RETRY_MAX_SECONDS
             assert reopened.retry_deferred_fts_recovery() is False
             assert reopened._fts_stale is True
             # Holder leaves: the very next tick retries and rebuilds instead of waiting out the cap.

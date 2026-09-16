@@ -249,7 +249,7 @@ def export_current_turn_boundary(agent: Any, result: Any, user_message: Any) -> 
     """Stamp ``{turn_id, current_turn_user_idx}`` on a result envelope, proven against the
     exact ``result["messages"]`` projection it travels with.
 
-    Hosts that settle their own transcript by index (hermes-webui) must never guess which
+    Hosts that settle their own transcript by index (moor-webui) must never guess which
     row is the current user turn after this loop rewrote history (alternation repair,
     compaction, post-turn micro-compaction): a guessed index or a text match can relabel an
     identical historical prompt and claim its old answer as this turn's. So the producer

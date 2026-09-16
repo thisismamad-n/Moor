@@ -12,8 +12,8 @@ from typing import Any, Dict, List, Optional, Tuple
 from agent.context_compressor import _DB_PERSISTED_MARKER as _DB_PERSISTED_MARKER_KEY, split_user_originated_turn
 from agent.memory_manager import sanitize_context
 from agent.message_sanitization import _sanitize_surrogates
-from hermes_cli.timefmt import coerce_epoch
-from hermes_state_common import (
+from moor_cli.timefmt import coerce_epoch
+from moor_state_common import (
     _COMPRESSION_LOCK_ROW_SQL, _ENDED_ROW_SQL, _RESET_END_REASONS, _RESET_END_REASONS_SQL, _ended_by_compression,
     _legacy_reset_child_sql, _placeholders, _sql_json_extract)
 

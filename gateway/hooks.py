@@ -18,22 +18,22 @@ from typing import Any, Callable, Dict, List, Optional
 
 import yaml
 
-from hermes_cli.config import get_hermes_home
-from hermes_constants import hermes_home_key
+from moor_cli.config import get_moor_home
+from moor_constants import moor_home_key
 
 
-HOOKS_DIR = get_hermes_home() / "hooks"
+HOOKS_DIR = get_moor_home() / "hooks"
 _HOOKS_DIR_AT_IMPORT = HOOKS_DIR
 
 
 def _resolve_hooks_dir() -> Path:
     """Active profile's hooks dir at call time: the patched ``HOOKS_DIR`` when a test changed it,
-    else ``get_hermes_home()/hooks``. The import-time constant is the LAUNCH profile's; under
+    else ``get_moor_home()/hooks``. The import-time constant is the LAUNCH profile's; under
     ``gateway.multiplex_profiles`` every served profile has its own ``hooks/``, and a registry
     loaded from the launch home would run the default profile's handlers (arbitrary Python) on
     every other profile's messages, responses and user ids."""
     configured = Path(HOOKS_DIR)
-    return configured if configured != _HOOKS_DIR_AT_IMPORT else get_hermes_home() / "hooks"
+    return configured if configured != _HOOKS_DIR_AT_IMPORT else get_moor_home() / "hooks"
 
 
 def _skip(name: str, reason: str) -> None:
@@ -140,13 +140,13 @@ class HookRegistry:
 
 
 class ProfileHookRegistries:
-    """``HookRegistry`` per served profile home, picked at emit time from the active HERMES_HOME.
+    """``HookRegistry`` per served profile home, picked at emit time from the active MOOR_HOME.
 
     The gateway holds ONE of these. Every hook emit already runs inside the routed profile's
     ``_profile_runtime_scope`` (message handlers, /new, turn wiring), so resolving the registry by
-    ``get_hermes_home()`` there gives each profile its own ``hooks/`` and keeps the default
+    ``get_moor_home()`` there gives each profile its own ``hooks/`` and keeps the default
     profile's handlers from seeing other profiles' messages. Each home's registry is loaded on its
-    first emit, i.e. inside that profile's scope (handler imports see its HERMES_HOME); multiplexing off
+    first emit, i.e. inside that profile's scope (handler imports see its MOOR_HOME); multiplexing off
     means a single entry for the launch home, i.e. exactly the old behaviour.
     """
 
@@ -155,7 +155,7 @@ class ProfileHookRegistries:
         self._lock = threading.Lock()
 
     def _active(self) -> HookRegistry:
-        key = hermes_home_key(get_hermes_home())
+        key = moor_home_key(get_moor_home())
         registry = self._by_home.get(key)
         if registry is None:
             with self._lock:

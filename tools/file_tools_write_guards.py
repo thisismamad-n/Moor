@@ -30,7 +30,7 @@ _SENSITIVE_PATH_PREFIXES = (
 _SENSITIVE_EXACT_PATHS = {"/var/run/docker.sock", "/run/docker.sock"}
 
 # NOTE: these four are a TEST-OVERRIDE surface, not a process cache. Both getters
-# resolve per call in production (below) because ``get_hermes_home()`` /
+# resolve per call in production (below) because ``get_moor_home()`` /
 # ``get_config_path()`` are per-turn contextvar-scoped: a multiplexed gateway
 # (``gateway.multiplex_profiles: true``) serves many profiles in one process, and
 # a process-wide memo would freeze whichever profile's home/config ran first —
@@ -38,10 +38,10 @@ _SENSITIVE_EXACT_PATHS = {"/var/run/docker.sock", "/run/docker.sock"}
 # order-dependent, up to letting a later profile rewrite its own ``config.yaml``
 # the block exists to protect (#107327). A test can still pin a value by setting
 # the slot and its ``_loaded`` flag.
-_hermes_config_resolved: str | None = None
-_hermes_config_resolved_loaded = False
-_real_hermes_home_cached: str | None = None
-_real_hermes_home_loaded = False
+_moor_config_resolved: str | None = None
+_moor_config_resolved_loaded = False
+_real_moor_home_cached: str | None = None
+_real_moor_home_loaded = False
 
 
 def _config_path_resolved() -> str:
@@ -54,72 +54,72 @@ def _moor_home_real() -> str:
     return os.path.realpath(str(get_moor_home()))
 
 
-def _get_hermes_config_resolved() -> str | None:
-    """Resolved absolute path of the Hermes config file for the ACTIVE profile.
+def _get_moor_config_resolved() -> str | None:
+    """Resolved absolute path of the Moor config file for the ACTIVE profile.
 
-    Resolved per call so it tracks the per-turn ``HERMES_HOME`` scope (#107327);
-    a test may pin it via ``_hermes_config_resolved`` + ``_hermes_config_resolved_loaded``."""
-    if _hermes_config_resolved_loaded:
-        return _hermes_config_resolved
+    Resolved per call so it tracks the per-turn ``MOOR_HOME`` scope (#107327);
+    a test may pin it via ``_moor_config_resolved`` + ``_moor_config_resolved_loaded``."""
+    if _moor_config_resolved_loaded:
+        return _moor_config_resolved
     try:
         return _config_path_resolved()
     except Exception:
         # Resolver failure must stay bound to the ACTIVE profile's home, not the
         # subprocess HOME. ``_expand_tilde("~/...")`` follows the subprocess-HOME
         # contract, which under host ``auto`` mode can be the real/default user
-        # home rather than the active multiplex ``HERMES_HOME`` — comparing
+        # home rather than the active multiplex ``MOOR_HOME`` — comparing
         # beta's ``config.yaml`` against the default/root config would let the
         # hard-block fail open on the exception path. Re-derive from the same
-        # ``get_hermes_home()`` key the happy path uses, and substitute no
+        # ``get_moor_home()`` key the happy path uses, and substitute no
         # unrelated home if even that is gone (#107327 follow-up; PR #107335).
         try:
-            from hermes_constants import get_hermes_home
-            return str((Path(str(get_hermes_home())) / "config.yaml").resolve())
+            from moor_constants import get_moor_home
+            return str((Path(str(get_moor_home())) / "config.yaml").resolve())
         except Exception:
             return None
 
 
-def _get_real_hermes_home() -> str | None:
-    """Realpath of the authoritative Hermes home for the ACTIVE profile.
+def _get_real_moor_home() -> str | None:
+    """Realpath of the authoritative Moor home for the ACTIVE profile.
 
-    Resolved per call so it tracks the per-turn ``HERMES_HOME`` scope (#107327);
-    a test may pin it via ``_real_hermes_home_cached`` + ``_real_hermes_home_loaded``.
-    Consumers exempting a whole TREE want ``_hermes_exempt_homes()``: under a named
+    Resolved per call so it tracks the per-turn ``MOOR_HOME`` scope (#107327);
+    a test may pin it via ``_real_moor_home_cached`` + ``_real_moor_home_loaded``.
+    Consumers exempting a whole TREE want ``_moor_exempt_homes()``: under a named
     profile this home is ``<root>/profiles/<name>`` and the root is exempt too."""
-    if _real_hermes_home_loaded:
-        return _real_hermes_home_cached
+    if _real_moor_home_loaded:
+        return _real_moor_home_cached
     try:
-        return _hermes_home_real()
+        return _moor_home_real()
     except Exception:
         # Same active-profile binding on the exception path (see
-        # ``_get_hermes_config_resolved``): re-derive from ``get_hermes_home()``
-        # rather than ``_expand_tilde("~/.hermes")`` so the protected-instruction
+        # ``_get_moor_config_resolved``): re-derive from ``get_moor_home()``
+        # rather than ``_expand_tilde("~/.moor")`` so the protected-instruction
         # exemption resolves against the active profile — not the subprocess /
         # default home — and substitute no unrelated home if the active security
         # path cannot be established (PR #107335). A ``None`` here fails closed at
-        # the consumer: the ``~/.hermes`` exemption is skipped, so the gate runs.
+        # the consumer: the ``~/.moor`` exemption is skipped, so the gate runs.
         try:
-            from hermes_constants import get_hermes_home
-            return os.path.realpath(str(get_hermes_home()))
+            from moor_constants import get_moor_home
+            return os.path.realpath(str(get_moor_home()))
         except Exception:
             return None
 
 
-def _hermes_exempt_homes() -> tuple[str, ...]:
-    """Realpaths of the Hermes home tree(s) the protected-instruction gate must stay out of:
-    the ACTIVE profile's home, plus the Hermes ROOT when that home is a named profile
+def _moor_exempt_homes() -> tuple[str, ...]:
+    """Realpaths of the Moor home tree(s) the protected-instruction gate must stay out of:
+    the ACTIVE profile's home, plus the Moor ROOT when that home is a named profile
     (``<root>/profiles/<name>``). Exempting only the profile dir left the root's DIRECT files
-    (LEDGER.md / MEMORY.md / SOUL.md / AGENTS.md ...) to the ``.hermes`` component rule, which
-    gated them like a project-local ``<repo>/.hermes/config.yaml`` — fail-closed headless
+    (LEDGER.md / MEMORY.md / SOUL.md / AGENTS.md ...) to the ``.moor`` component rule, which
+    gated them like a project-local ``<repo>/.moor/config.yaml`` — fail-closed headless
     (#110630). They are the agent's own store, governed by their own guards, exactly like
-    ``~/.hermes`` under the default profile. The root is added only when the shape really is a
+    ``~/.moor`` under the default profile. The root is added only when the shape really is a
     named profile (``named_profile_home``), so a coincidental ``profiles/`` dir elsewhere never
-    exempts its parent; the home comes from the ACTIVE scope, never ``HERMES_HOME`` alone."""
-    home = _get_real_hermes_home()
+    exempts its parent; the home comes from the ACTIVE scope, never ``MOOR_HOME`` alone."""
+    home = _get_real_moor_home()
     if not home:
         return ()
     try:
-        from hermes_constants import named_profile_home
+        from moor_constants import named_profile_home
         profile_home = named_profile_home(home)
     except Exception:
         profile_home = None
@@ -220,10 +220,10 @@ def _protected_instruction_reason(filepath: str, task_id: str = "default",
 
     # ~/.moor itself is governed by its own guards (config.yaml hard-block,
     # mirror guard, write_approval); this gate targets PROJECT-LOCAL files only.
-    # Must run before the ``.hermes`` component rule, which would match the home.
-    # ``_hermes_exempt_homes`` also covers the ROOT when the active home is a named
-    # profile, so ~/.hermes/<file> cannot read as project-local ``.hermes`` config.
-    for real_home in _hermes_exempt_homes():
+    # Must run before the ``.moor`` component rule, which would match the home.
+    # ``_moor_exempt_homes`` also covers the ROOT when the active home is a named
+    # profile, so ~/.moor/<file> cannot read as project-local ``.moor`` config.
+    for real_home in _moor_exempt_homes():
         if resolved == real_home or resolved.startswith(real_home + os.sep):
             return None
 

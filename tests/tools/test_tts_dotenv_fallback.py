@@ -35,7 +35,7 @@ def isolate_env(monkeypatch):
 class TestDotenvFallbackPerProvider:
     """For each affected provider, when only ``~/.moor/.env`` carries the
     key, the provider must find it. These per-provider tests model that
-    dotenv-backed lookup by mocking ``hermes_cli.config.get_env_value`` directly;
+    dotenv-backed lookup by mocking ``moor_cli.config.get_env_value`` directly;
     the separate regression-guard tests cover the lower-level
     ``moor_cli.config.load_env`` integration. Before the fix, ``os.getenv``
     returned ``None`` and the provider raised
@@ -45,7 +45,7 @@ class TestDotenvFallbackPerProvider:
     def test_elevenlabs_reads_dotenv_key(self, tmp_path):
         from tools import tts_tool
 
-        with patch("hermes_cli.config.get_env_value", return_value="el-dotenv-key"), \
+        with patch("moor_cli.config.get_env_value", return_value="el-dotenv-key"), \
              patch.object(tts_tool, "_import_elevenlabs") as mock_import:
             mock_client = MagicMock()
             mock_client.text_to_speech.convert.return_value = iter([b"audio"])
@@ -58,7 +58,7 @@ class TestDotenvFallbackPerProvider:
 
     def test_xai_reads_dotenv_key(self, tmp_path):
         """xAI TTS resolves credentials through ``tools.xai_http``, which reads the
-        canonical ``hermes_cli.config.get_env_value`` — the dotenv contract from #17140.
+        canonical ``moor_cli.config.get_env_value`` — the dotenv contract from #17140.
         """
         from tools import tts_tool
 
@@ -72,7 +72,7 @@ class TestDotenvFallbackPerProvider:
             response.raise_for_status = MagicMock()
             return response
 
-        with patch("hermes_cli.config.get_env_value", return_value="xai-dotenv-key"), \
+        with patch("moor_cli.config.get_env_value", return_value="xai-dotenv-key"), \
              patch("requests.post", side_effect=fake_post):
             tts_tool._generate_xai_tts("hi", str(tmp_path / "out.mp3"), {})
 
@@ -118,7 +118,7 @@ class TestDotenvFallbackPerProvider:
                 return "gemini-dotenv-key"
             return None
 
-        with patch("hermes_cli.config.get_env_value", side_effect=fake_get_env_value), \
+        with patch("moor_cli.config.get_env_value", side_effect=fake_get_env_value), \
              patch("requests.post", side_effect=fake_post):
             tts_tool._generate_gemini_tts("hi", str(tmp_path / "out.wav"), {})
 

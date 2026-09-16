@@ -26,7 +26,7 @@ import {
   openForward,
   ownershipDirectory,
   pidIsOurDashboard,
-  probeHermesVersion,
+  probeMoorVersion,
   probeRemotePlatform,
   PROTOCOL_VERSION,
   readLockfile,
@@ -914,10 +914,10 @@ test('spawnRemoteDashboard always spawns serve (legacy dashboard path removed)',
 })
 
 test('READY_RE accepts both serve and dashboard sentinels', () => {
-  assert.equal(READY_RE.exec('HERMES_BACKEND_READY port=4321')?.[1], '4321')
-  assert.equal(READY_RE.exec('HERMES_DASHBOARD_READY port=8765')?.[1], '8765')
+  assert.equal(READY_RE.exec('MOOR_BACKEND_READY port=4321')?.[1], '4321')
+  assert.equal(READY_RE.exec('MOOR_DASHBOARD_READY port=8765')?.[1], '8765')
   // The remote log is `>> log 2>&1`, so a stderr chunk without a newline can be spliced onto the sentinel.
-  assert.equal(READY_RE.exec('INFO  Started server process [4711]HERMES_BACKEND_READY port=65238')?.[1], '65238')
+  assert.equal(READY_RE.exec('INFO  Started server process [4711]MOOR_BACKEND_READY port=65238')?.[1], '65238')
 })
 
 test('spawnRemoteDashboard rejects when no pid is returned', async () => {
@@ -1827,15 +1827,15 @@ test.skipIf(process.platform === 'win32')('capability probe survives a zsh login
     return
   }
 
-  const dir = await mkdtemp(path.join(os.tmpdir(), 'hermes-zsh-probe-'))
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'moor-zsh-probe-'))
 
   try {
-    const hermes = path.join(dir, 'hermes')
-    await writeFile(hermes, '#!/bin/sh\necho "--ssh-session-token-file --ssh-owner-nonce"\n', { mode: 0o700 })
+    const moor = path.join(dir, 'moor')
+    await writeFile(moor, '#!/bin/sh\necho "--ssh-session-token-file --ssh-owner-nonce"\n', { mode: 0o700 })
 
     const ssh = { exec: async (command: string) => (await exec(command, { shell: zsh })).stdout }
 
-    assert.equal(await remoteSupportsSshOwnership(ssh, hermes), true)
+    assert.equal(await remoteSupportsSshOwnership(ssh, moor), true)
   } finally {
     await rm(dir, { recursive: true, force: true })
   }
@@ -1850,12 +1850,12 @@ test('probes run under the remote watchdog so a hung CLI cannot orphan (#110478)
       (cmd: string) => {
         versionProbe = cmd
 
-        return 'Hermes Agent v0.18.2 (abc123)\n'
+        return 'Moor Agent v0.18.2 (abc123)\n'
       }
     ]
   ])
 
-  assert.equal(await probeHermesVersion(versionSsh, '/x/hermes'), 'Hermes Agent v0.18.2 (abc123)')
+  assert.equal(await probeMoorVersion(versionSsh, '/x/moor'), 'Moor Agent v0.18.2 (abc123)')
   assert.ok(versionProbe.includes('kill -9'), 'version probe wrapped in the remote watchdog')
 
   let helpProbe = ''
@@ -1871,7 +1871,7 @@ test('probes run under the remote watchdog so a hung CLI cannot orphan (#110478)
     ]
   ])
 
-  assert.equal(await remoteSupportsSshOwnership(helpSsh, '/x/hermes'), true)
+  assert.equal(await remoteSupportsSshOwnership(helpSsh, '/x/moor'), true)
   assert.ok(helpProbe.includes('kill -9'), 'ownership probe wrapped in the remote watchdog')
   assert.ok(/\$\(.*\(.*serve --help.*\) <\/dev\/null &/.test(helpProbe), 'watchdog nested around the inner serve --help')
 })
@@ -2005,7 +2005,7 @@ test('connect() does not declare a live dashboard dead when the liveness probe a
     [/printf '%s\\n'/, ''],
     [/setsid/, '777\n'],
     [(cmd: string) => /kill -0 777/.test(cmd) && !cmd.includes('while'), () => (liveness++ === 0 ? '' : 'ALIVE\n')],
-    [/cat .*\.log/, 'HERMES_DASHBOARD_READY port=51999\n']
+    [/cat .*\.log/, 'MOOR_DASHBOARD_READY port=51999\n']
   ])
 
   const result = await connect(connectDeps(ssh, { platform: { os: 'Linux', arch: 'x86_64' } }))
@@ -2051,12 +2051,12 @@ test('connect() post-spawn cleanup that cannot prove ownership keeps the origina
     [/printf '%s\\n'/, ''],
     [/setsid/, '777\n'],
     [/kill -0 777/, 'ALIVE\n'],
-    [/cat .*\.log/, 'HERMES_DASHBOARD_READY port=51999\n'],
+    [/cat .*\.log/, 'MOOR_DASHBOARD_READY port=51999\n'],
     [/print\("OWNED"/, '']
   ])
 
   await assert.rejects(
-    connect(connectDeps(ssh, { platform: { os: 'Linux', arch: 'x86_64' }, waitForHermes: async () => { throw boot } })),
+    connect(connectDeps(ssh, { platform: { os: 'Linux', arch: 'x86_64' }, waitForMoor: async () => { throw boot } })),
     (error: any) => error === boot && error.cleanupCause?.kind === 'transient-transport-error'
   )
 

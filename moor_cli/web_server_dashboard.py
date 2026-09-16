@@ -674,7 +674,7 @@ def _merged_plugins_hub(force_refresh: bool = False) -> Dict[str, Any]:
         _get_enabled_set,
         _read_manifest as _read_plugin_manifest_at,
     )
-    from hermes_cli.plugins_cmd_catalog import removed_annotation
+    from moor_cli.plugins_cmd_catalog import removed_annotation
 
     dashboard_list = _get_dashboard_plugins()
     dash_by_name = {str(p["name"]): p for p in dashboard_list}

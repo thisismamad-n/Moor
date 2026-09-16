@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as MoorModule from '@/moor'
 import { setSessionOwnerHint, setSessions } from '@/store/session'
 import { $sessionTiles, sessionTileDelegate } from '@/store/session-states'
-import type { SessionInfo } from '@/types/hermes'
+import type { SessionInfo } from '@/types/moor'
 
 import { useSessionTileDelegate } from './use-session-tile-delegate'
 

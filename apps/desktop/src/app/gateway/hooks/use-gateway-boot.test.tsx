@@ -382,7 +382,7 @@ describe('primary failure foreground isolation', () => {
     const snapshot = deferred<Awaited<ReturnType<ReturnType<typeof fakeDesktop>['getBootProgress']>>>()
     const desktop = fakeDesktop()
     desktop.getBootProgress.mockReturnValue(snapshot.promise)
-    ;(window as { hermesDesktop?: unknown }).hermesDesktop = desktop
+    ;(window as { moorDesktop?: unknown }).moorDesktop = desktop
     render(<Harness />)
     await flushAsync()
     expect($gatewayState.get()).toBe('open')
@@ -409,7 +409,7 @@ describe('primary failure foreground isolation', () => {
     const desktop = fakeDesktop()
     desktop.getBootProgress.mockReturnValue(snapshot.promise)
     desktop.getConnection.mockReturnValue(connection.promise)
-    ;(window as { hermesDesktop?: unknown }).hermesDesktop = desktop
+    ;(window as { moorDesktop?: unknown }).moorDesktop = desktop
     render(<Harness />)
     await flushAsync()
 
@@ -454,7 +454,7 @@ describe('primary failure foreground isolation', () => {
         connectionId: primaryMode === 'local' ? 'local' : 'primary-vps',
         mode: primaryMode
       } as typeof primaryConn)
-      ;(window as { hermesDesktop?: unknown }).hermesDesktop = desktop
+      ;(window as { moorDesktop?: unknown }).moorDesktop = desktop
       render(<Harness />)
       await flushAsync()
       let opening!: Promise<boolean>
@@ -500,7 +500,7 @@ describe('primary failure foreground isolation', () => {
 
       desktop.getConnection.mockResolvedValue(cloud as typeof primaryConn)
 
-      ;(window as { hermesDesktop?: unknown }).hermesDesktop = desktop
+      ;(window as { moorDesktop?: unknown }).moorDesktop = desktop
       const { BootFailureOverlay } = await import('@/components/boot-failure-overlay')
 
       const overlay = render(
@@ -1622,7 +1622,7 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
   })
 
   it('manual reconnect replaces only the active secondary route', async () => {
-    ;(window as { hermesDesktop?: unknown }).hermesDesktop = {
+    ;(window as { moorDesktop?: unknown }).moorDesktop = {
       ...fakeDesktop(),
       getConnectionFor: vi.fn(async () => coderConn),
       getGatewayWsUrlFor: vi.fn(async () => coderConn.wsUrl)
@@ -1738,11 +1738,11 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
 
   it('a backend exit while the boot overlay is up fails the overlay and does not add a dead-button toast', async () => {
     // reconnectGateway() is a no-op before boot completes, so a "Restart
-    // Hermes" toast here would do nothing when clicked; the overlay's own
+    // Moor" toast here would do nothing when clicked; the overlay's own
     // Retry is the recovery.
     const desktop = fakeDesktop()
     desktop.getConnection = vi.fn(() => new Promise<never>(() => undefined))
-    ;(window as { hermesDesktop?: unknown }).hermesDesktop = desktop
+    ;(window as { moorDesktop?: unknown }).moorDesktop = desktop
 
     render(<Harness />)
     await flushAsync()
@@ -1906,14 +1906,14 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
     desktop.getBootProgress = vi.fn(async () => ({
       error: null,
       fakeMode: false,
-      message: 'Hermes is ready',
+      message: 'Moor is ready',
       phase: 'backend.ready',
       progress: 100,
       retryable: false,
       running: true,
       timestamp: 1
     }))
-    ;(window as { hermesDesktop?: unknown }).hermesDesktop = desktop
+    ;(window as { moorDesktop?: unknown }).moorDesktop = desktop
     FakeWebSocket.mode = 'fail'
 
     render(<Harness />)
@@ -1941,14 +1941,14 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
     desktop.getBootProgress = vi.fn(async () => ({
       error: null,
       fakeMode: false,
-      message: 'Hermes is ready',
+      message: 'Moor is ready',
       phase: 'backend.ready',
       progress: 100,
       retryable: false,
       running: true,
       timestamp: 1
     }))
-    ;(window as { hermesDesktop?: unknown }).hermesDesktop = desktop
+    ;(window as { moorDesktop?: unknown }).moorDesktop = desktop
     FakeWebSocket.mode = 'fail'
 
     render(<Harness />)
@@ -1966,24 +1966,24 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
     desktop.getBootProgress = vi.fn(async () => ({
       error: null,
       fakeMode: false,
-      message: 'Hermes is ready',
+      message: 'Moor is ready',
       phase: 'backend.ready',
       progress: 100,
       retryable: false,
       running: true,
       timestamp: 1
     }))
-    ;(window as { hermesDesktop?: unknown }).hermesDesktop = desktop
+    ;(window as { moorDesktop?: unknown }).moorDesktop = desktop
 
-    const refreshHermesConfig = vi.fn(async () => {
+    const refreshMoorConfig = vi.fn(async () => {
       FakeWebSocket.instances[0]?.drop()
       throw new Error('post-connect initialization failed')
     })
 
-    render(<Harness refreshHermesConfig={refreshHermesConfig} />)
+    render(<Harness refreshMoorConfig={refreshMoorConfig} />)
     await flushAsync()
 
-    expect(refreshHermesConfig).toHaveBeenCalledTimes(1)
+    expect(refreshMoorConfig).toHaveBeenCalledTimes(1)
     expect($desktopBoot.get().error).toBeTruthy()
     expect(desktop.getConnection).toHaveBeenCalledTimes(1)
     await advanceBackoff()

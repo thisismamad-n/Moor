@@ -364,8 +364,8 @@ def _guarded_write(name: str, skill_dir: Path, target: Path, action: str, label:
         if read_guard := _background_review_read_before_write_guard(name, target, action, label):
             return read_guard
         original = target.read_text(encoding="utf-8")
-    from hermes_constants import mkdir_under_hermes_home
-    mkdir_under_hermes_home(target.parent)
+    from moor_constants import mkdir_under_moor_home
+    mkdir_under_moor_home(target.parent)
     atomic_write_text(target, content, preserve_mode=True, create_mode=0o644)
     scan_error = _security_scan_skill(skill_dir)
     if not scan_error:
@@ -422,8 +422,8 @@ def _create_skill(name: str, content: str, category: str = None) -> Dict[str, An
     if existing := _find_skill(name):
         return _err(f"A skill named '{name}' already exists at {existing['path']}.")
     skill_dir = _resolve_skill_dir(name, category)
-    from hermes_constants import mkdir_under_hermes_home
-    mkdir_under_hermes_home(skill_dir)
+    from moor_constants import mkdir_under_moor_home
+    mkdir_under_moor_home(skill_dir)
     skill_md = skill_dir / "SKILL.md"
     atomic_write_text(skill_md, content, preserve_mode=True, create_mode=0o644)
     if scan_error := _security_scan_skill(skill_dir):
@@ -674,8 +674,8 @@ def _maybe_debounced_sync_push(skill_name: str) -> None:
             return
     except Exception:
         return
-    from hermes_constants import hermes_home_key
-    home_key = hermes_home_key()
+    from moor_constants import moor_home_key
+    home_key = moor_home_key()
     # Timer threads start with empty ContextVars; without the scheduling turn's context the push would
     # resolve the launch profile's home and credentials instead of the writing profile's.
     ctx = _ctxvars.copy_context()

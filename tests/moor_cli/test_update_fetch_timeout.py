@@ -1,4 +1,4 @@
-"""A dead-stalled network fetch ends `hermes update` with an error, never a hang (#93759, #95777).
+"""A dead-stalled network fetch ends `moor update` with an error, never a hang (#93759, #95777).
 
 `_git_run(network=True)` bounds the wait; a `TimeoutExpired` becomes a failed
 CompletedProcess whose stderr names the stall, so every caller's existing
@@ -8,7 +8,7 @@ fetch-failure path prints one clear line. Local git (network=False) is unbounded
 import subprocess
 from unittest.mock import MagicMock, patch
 
-import hermes_cli.update_cmd as update_cmd
+import moor_cli.update_cmd as update_cmd
 
 
 def _timeout(cmd, **kwargs):

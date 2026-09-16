@@ -360,7 +360,7 @@ class TestNoDowngradeUnderConcurrentOpeners:
             moor_state_wal, "is_sqlite_wal_reset_vulnerable",
             lambda version_info=None: False,
         )
-        hermes_state_wal._wal_probe_unknown_paths.clear()
+        moor_state_wal._wal_probe_unknown_paths.clear()
 
         class _LockedProbeConnection(sqlite3.Connection):
             def execute(self, sql, *args, **kwargs):  # type: ignore[override]
@@ -375,7 +375,7 @@ class TestNoDowngradeUnderConcurrentOpeners:
             str(tmp_path / "nfs.db"), factory=_LockedProbeConnection
         )
         try:
-            with caplog.at_level(logging.WARNING, logger="hermes_state_wal"):
+            with caplog.at_level(logging.WARNING, logger="moor_state_wal"):
                 result = apply_wal_with_fallback(conn, db_label="nfs.db")
             # The set-pragma never ran (it would have raised "locking
             # protocol" above); the configured WAL mode is assumed instead.

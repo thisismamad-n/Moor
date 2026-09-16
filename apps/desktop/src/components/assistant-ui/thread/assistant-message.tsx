@@ -651,7 +651,7 @@ const ErrorRecoveryActions: FC = () => {
   // One table decides which buttons this failure gets (lib/error-surface.ts).
   const plan = errorRecoveryPlan(surface)
 
-  // An expired/revoked OAuth grant (HTTP 401 on nous / openai-codex / ...):
+  // An expired/revoked OAuth grant (HTTP 401 on moor / openai-codex / ...):
   // the one-click fix is re-running that provider's sign-in, which the
   // onboarding overlay already owns end to end (device code → poll →
   // reload.env → model confirm). Scoped to the gateway profile the failed
@@ -676,7 +676,7 @@ const ErrorRecoveryActions: FC = () => {
   }, [])
 
   // Reveal a local folder through Electron; `logsRoot` is the profile's
-  // HERMES_HOME/logs, and its parent is the Hermes data folder itself (what
+  // MOOR_HOME/logs, and its parent is the Moor data folder itself (what
   // the user needs to see to free space after a disk-full failure).
   const openLocalDir = useCallback(async (resolve: (logsRoot: string) => string, failedMessage: string) => {
     try {
@@ -688,7 +688,7 @@ const ErrorRecoveryActions: FC = () => {
         return
       }
 
-      const result = await window.hermesDesktop?.openDir?.(resolve(root))
+      const result = await window.moorDesktop?.openDir?.(resolve(root))
 
       if (result && !result.ok) {
         notifyError(new Error(result.error || 'open failed'), failedMessage)
@@ -703,9 +703,9 @@ const ErrorRecoveryActions: FC = () => {
     [copy.errorOpenLogsFailed, openLocalDir]
   )
 
-  const openHermesFolder = useCallback(
-    () => openLocalDir(root => root.replace(/[\\/]+logs[\\/]*$/, ''), copy.errorOpenHermesFolderFailed),
-    [copy.errorOpenHermesFolderFailed, openLocalDir]
+  const openMoorFolder = useCallback(
+    () => openLocalDir(root => root.replace(/[\\/]+logs[\\/]*$/, ''), copy.errorOpenMoorFolderFailed),
+    [copy.errorOpenMoorFolderFailed, openLocalDir]
   )
 
   const diagnosticsText = useCallback(
@@ -728,7 +728,7 @@ const ErrorRecoveryActions: FC = () => {
     setModelPickerOpen(true)
   }, [])
 
-  const localFolders = Boolean(window.hermesDesktop?.logsRoot)
+  const localFolders = Boolean(window.moorDesktop?.logsRoot)
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
@@ -763,9 +763,9 @@ const ErrorRecoveryActions: FC = () => {
           to={updateApiKeyRoute(surface)}
         />
       )}
-      {plan.openHermesFolder && localFolders && (
-        <button className="aui-error-action" onClick={() => void openHermesFolder()} type="button">
-          {copy.errorOpenHermesFolder}
+      {plan.openMoorFolder && localFolders && (
+        <button className="aui-error-action" onClick={() => void openMoorFolder()} type="button">
+          {copy.errorOpenMoorFolder}
         </button>
       )}
       {plan.retry && (

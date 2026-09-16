@@ -860,4 +860,4 @@ moor kanban runs t_abcd
 
 ## 范围之外
 
-Kanban 是刻意单主机的。`~/.hermes/kanban.db` 是本地 SQLite 文件，调度器在同一台机器上启动 worker。不支持跨两台主机运行共享看板 —— 没有"主机 A 上的 worker X，主机 B 上的 worker Y"的协调原语，崩溃检测路径假设 PID 是主机本地的。如果你需要多主机，每台主机运行独立的看板，并使用 `delegate_task` / 消息队列来桥接它们。
+Kanban 是刻意单主机的。`~/.moor/kanban.db` 是本地 SQLite 文件，调度器在同一台机器上启动 worker。不支持跨两台主机运行共享看板 —— 没有"主机 A 上的 worker X，主机 B 上的 worker Y"的协调原语，崩溃检测路径假设 PID 是主机本地的。如果你需要多主机，每台主机运行独立的看板，并使用 `delegate_task` / 消息队列来桥接它们。

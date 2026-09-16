@@ -35,7 +35,7 @@ def test_api_key_client_and_its_copies_never_carry_the_env_bearer(monkeypatch):
         assert headers.get("x-api-key") == "provider-key"
         assert "authorization" not in headers
     # The bearer mirror (no env x-api-key beside a portal JWT) is owned by
-    # tests/agent/test_nous_portal_anthropic_wire.py::TestClientShape.
+    # tests/agent/test_moor_portal_anthropic_wire.py::TestClientShape.
 
 
 def test_third_party_request_on_the_wire_carries_no_foreign_bearer(monkeypatch):

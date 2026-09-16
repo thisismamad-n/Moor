@@ -188,7 +188,7 @@ class TestOpencodeFreeFollowUps:
         """A delisted id the relay still LISTS (deepseek-v4-flash-free: docs/zen dropped it,
         every POST 400s "Model is unavailable") must not reach the keyless picker; offering it
         lets a first-turn 400 drive a fallback switch that strands the session (#111749)."""
-        import hermes_cli.models as mod
+        import moor_cli.models as mod
 
         self._reset_memo(mod)
 
@@ -205,7 +205,7 @@ class TestOpencodeFreeFollowUps:
             return _Resp(_json.dumps({"data": [{"id": m} for m in _LIVE_RAW_IDS]}).encode())
 
         try:
-            with patch("hermes_cli.urllib_security.open_credentialed_url", fake_open):
+            with patch("moor_cli.urllib_security.open_credentialed_url", fake_open):
                 live = mod._fetch_opencode_free_models(force_refresh=True)
         finally:
             self._reset_memo(mod)
@@ -217,7 +217,7 @@ class TestOpencodeFreeFollowUps:
     def test_keyed_zen_live_first_picker_drops_delisted_model(self, monkeypatch):
         """The keyed opencode-zen picker is live-first over GET /zen/v1/models, which still lists
         deepseek-v4-flash-free; it must take the same exclusion as the keyless catalog (#111749)."""
-        import hermes_cli.models as mod
+        import moor_cli.models as mod
         from providers import get_provider_profile
 
         prof = get_provider_profile("opencode-zen")

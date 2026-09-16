@@ -59,16 +59,16 @@ If the prompt times out part-way, answers the user already locked are kept: the 
 ## `connections` toolset
 
 One tool for both kinds of external app. A target is a managed connector (`"gmail"` or
-`{"name": "gmail"}`, authorized through the Nous gateway) or a local MCP server
+`{"name": "gmail"}`, authorized through the Moor gateway) or a local MCP server
 (`{"name": "linear", "mcp": true}`, an entry in `mcp_servers`).
 
 | Tool | Description | Requires environment |
 |------|-------------|----------------------|
-| `manage_connections` | Managed actions: `status`, `connect`, `reconnect` (repairs only what is not connected; `force: true` restarts a working one). MCP actions, for `mcp: true` targets only: `install` a catalog entry, `enable` a disabled configured server, `authorize` (OAuth). On the desktop every action shows a card and blocks until each target is connected, skipped, or the deadline passes; the result lists targets as `connected`, `skipped` or `not_connected` and carries no link. On surfaces with no card (CLI, TUI, messaging) managed targets return a `connect_url` per app for the user to open, and MCP targets return `unavailable` with the `hermes mcp install <name>` / `hermes mcp login <name>` commands. Cannot disconnect or revoke an account. | — |
+| `manage_connections` | Managed actions: `status`, `connect`, `reconnect` (repairs only what is not connected; `force: true` restarts a working one). MCP actions, for `mcp: true` targets only: `install` a catalog entry, `enable` a disabled configured server, `authorize` (OAuth). On the desktop every action shows a card and blocks until each target is connected, skipped, or the deadline passes; the result lists targets as `connected`, `skipped` or `not_connected` and carries no link. On surfaces with no card (CLI, TUI, messaging) managed targets return a `connect_url` per app for the user to open, and MCP targets return `unavailable` with the `moor mcp install <name>` / `moor mcp login <name>` commands. Cannot disconnect or revoke an account. | — |
 
 The deadline for one call is five minutes, fixed by the backend when the call starts;
 reopening the chat or restarting the desktop never extends it. The tool is present only when the
-Nous Portal has enabled connectors for the signed-in account (the `managed_tools` claim on its
+Moor Portal has enabled connectors for the signed-in account (the `managed_tools` claim on its
 token). Other sessions do not see it.
 
 ## `code_execution` toolset
@@ -282,7 +282,7 @@ targets for either. One tip is on screen at a time; a new one replaces the last.
 The app can also show its own, walking a built-in catalog of app features in
 order, paced like a game's loading-screen tips rather than a notification: a few
 minutes into a launch at the earliest, then at most one every six hours, and
-only at a genuinely idle moment. A tip from Hermes shares that cooldown, so it
+only at a genuinely idle moment. A tip from Moor shares that cooldown, so it
 also buys the user six hours of quiet from the rotation. The rotation is a single
 lap: each catalog tip shows once, whether it timed out or was closed with the ✕,
 and once every tip has had its turn the app goes quiet. The settings row starts

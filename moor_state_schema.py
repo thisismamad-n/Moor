@@ -26,8 +26,8 @@ from moor_state_common import (
     LEGACY_FTS_TRIGRAM_SQL, SCHEMA_SQL,
     SCHEMA_VERSION, _FTS_CJK_TRIGGERS, _FTS_TRIGGERS, _ephemeral_child_sql, _sql_json_extract, fts_rebuild_admission,
 )
-from hermes_state_fts import _drop_orphan_fts_shadow_tables
-from hermes_state_holders import _read_proc_argv
+from moor_state_fts import _drop_orphan_fts_shadow_tables
+from moor_state_holders import _read_proc_argv
 
 # Pre-split logger identity so log filtering/capture is unchanged.
 logger = logging.getLogger("moor_state")
@@ -35,7 +35,7 @@ logger = logging.getLogger("moor_state")
 _FTS_HOLDER_ESCALATE_ATTEMPTS = 3
 _FTS_HOLDER_ESCALATE_SECONDS = 60.0
 # The same holder PID set blocking this many deferrals over this long is a structurally resident
-# peer (a supervised service on the same HERMES_HOME), not a transient one worth waiting out (#106393).
+# peer (a supervised service on the same MOOR_HOME), not a transient one worth waiting out (#106393).
 _FTS_HOLDER_FUTILE_ATTEMPTS = 10
 _FTS_HOLDER_FUTILE_SECONDS = 1800.0
 # retry_deferred_fts_recovery cadence: startup paid the full admission wait once; later
@@ -525,15 +525,15 @@ class SessionSchemaMixin:
             logger.error(
                 "state.db FTS repair has been blocked by the same holder(s) for %d deferrals over %.0f min "
                 "(%s); waiting is futile. Stop ONLY the other holder(s) — this process keeps running and its "
-                "own retry admits the rebuild within %.0fs of the holder leaving. `hermes doctor` shows this.",
+                "own retry admits the rebuild within %.0fs of the holder leaving. `moor doctor` shows this.",
                 holders_attempts, (now - holders_since) / 60.0,
                 ", ".join(f"pid {pid}: {_holder_cmdline(pid)}" for pid in holder_pids), _FTS_STALE_RETRY_SECONDS,
             )
         elif attempts >= _FTS_HOLDER_ESCALATE_ATTEMPTS and now - first_seen >= _FTS_HOLDER_ESCALATE_SECONDS:
             logger.error(
                 "state.db FTS repair remains blocked after %d deferrals by holder(s) %s. Stop the listed "
-                "processes (this process's own retry then rebuilds), or run `hermes sessions optimize-storage` "
-                "with every holder stopped. `hermes doctor` reports this degraded state.", attempts, foreign_holders,
+                "processes (this process's own retry then rebuilds), or run `moor sessions optimize-storage` "
+                "with every holder stopped. `moor doctor` reports this degraded state.", attempts, foreign_holders,
             )
         logger.warning(
             "Deferred stale state.db FTS rebuild while foreign processes "
@@ -670,7 +670,7 @@ class SessionSchemaMixin:
 
     def _trigram_tokenizer_available(self, cursor: sqlite3.Cursor) -> bool:
         """Probe trigram support without publishing a persistent FTS object."""
-        probe = "temp.hermes_fts5_trigram_probe"
+        probe = "temp.moor_fts5_trigram_probe"
         cursor.execute(f"DROP TABLE IF EXISTS {probe}")
         try:
             cursor.execute(f"CREATE VIRTUAL TABLE {probe} USING fts5(content, tokenize='trigram')")

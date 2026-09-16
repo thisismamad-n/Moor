@@ -394,8 +394,8 @@ def read_yaml_layers(home: Path) -> dict:
             yaml_cfg = yaml.safe_load(f) or {}
 
     # Managed scope: overlay administrator-pinned values (this loader bypasses
-    # hermes_cli.config.load_config, so managed quick_commands / stt would otherwise be ignored).
-    from hermes_cli import managed_scope
+    # moor_cli.config.load_config, so managed quick_commands / stt would otherwise be ignored).
+    from moor_cli import managed_scope
     return managed_scope.apply_managed_overlay(yaml_cfg)
 
 

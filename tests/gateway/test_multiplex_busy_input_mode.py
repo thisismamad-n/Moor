@@ -460,16 +460,16 @@ async def test_primary_adapter_busy_origin_uses_routed_privacy(
     """The primary busy callback bypasses the scoped normal-message handler."""
     from dataclasses import asdict
     from agent.agent_runtime_helpers import apply_pending_steer_to_tool_results
-    from hermes_constants import get_hermes_home_override
+    from moor_constants import get_moor_home_override
     from run_agent import AIAgent
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     secondary = home / "profiles" / "research"
     secondary.mkdir(parents=True)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setattr("gateway.run._hermes_home", home)
-    monkeypatch.setenv("HERMES_GATEWAY_BUSY_ACK_ENABLED", "false")
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.setattr("gateway.run._moor_home", home)
+    monkeypatch.setenv("MOOR_GATEWAY_BUSY_ACK_ENABLED", "false")
     for directory, privacy in ((home, not secondary_privacy), (secondary, secondary_privacy)):
         (directory / "config.yaml").write_text(
             f"privacy:\n  redact_pii: {str(privacy).lower()}\n", encoding="utf-8",
@@ -497,7 +497,7 @@ async def test_primary_adapter_busy_origin_uses_routed_privacy(
     agent._executing_tools = mode == "interrupt"
     runner._session_state(key).turn.agent = agent
     adapter._active_sessions[key] = asyncio.Event()
-    ambient = get_hermes_home_override()
+    ambient = get_moor_home_override()
     await adapter._handle_message_while_active(event, key)
     messages = [{"role": "tool", "tool_call_id": "probe", "content": "Tool completed."}]
     apply_pending_steer_to_tool_results(agent, messages, 1)
@@ -506,5 +506,5 @@ async def test_primary_adapter_busy_origin_uses_routed_privacy(
     for value in (event.source.chat_id, event.source.user_id, event.message_id, "research"):
         assert (value not in output) is secondary_privacy
     assert asdict(event.source) == original
-    assert get_hermes_home_override() == ambient
+    assert get_moor_home_override() == ambient
     assert key not in adapter._pending_messages

@@ -126,8 +126,8 @@ def _read_suppressed_names() -> set:
 
 def _write_manifest(entries: Dict[str, str]):
     """Atomic v2 write, preserving an existing file's mode/owner (not mkstemp's 0600)."""
-    from hermes_constants import mkdir_under_hermes_home
-    mkdir_under_hermes_home(_manifest_file().parent)
+    from moor_constants import mkdir_under_moor_home
+    mkdir_under_moor_home(_manifest_file().parent)
     try:
         data = "".join(f"{n}:{h}\n" for n, h in sorted(entries.items()))
         atomic_write_text(_manifest_file(), data, tmp_prefix=".bundled_manifest_", preserve_mode=True)

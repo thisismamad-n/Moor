@@ -365,7 +365,7 @@ export interface MessageReactResult {
   row_id: number
   reactions: MessageReaction[]
 }
-/** One persisted reaction row (``hermes_state_messages.set_message_reaction``); ``seen`` is stamped once announced. */
+/** One persisted reaction row (``moor_state_messages.set_message_reaction``); ``seen`` is stamped once announced. */
 export interface MessageReaction {
   emoji: string
   author: string
@@ -537,7 +537,7 @@ export interface ConfigGetResult {
   mtime?: number | null
   mcp_rev?: string | null
 }
-/** ``hermes_cli/models.py::list_available_providers`` row. */
+/** ``moor_cli/models.py::list_available_providers`` row. */
 export interface ConfigProviderRef {
   id: string
   label: string
@@ -668,13 +668,13 @@ export interface SetupRuntimeCheckResult {
   free_tier?: boolean | null
   profile?: string | null
 }
-export interface DiagnosticsShareNousParams {
+export interface DiagnosticsShareMoorParams {
   error_context?: string | null
   extra_files?: Record<string, string> | null
   log_lines?: number | null
 }
 /** Structured envelope: ``ok=False`` + ``error`` renders inline instead of failing the RPC. */
-export interface DiagnosticsShareNousResult {
+export interface DiagnosticsShareMoorResult {
   ok: boolean
   view_url?: string | null
   upload_id?: string | null
@@ -710,7 +710,7 @@ export interface ModelOptionsResult {
   model?: string
   provider?: string
 }
-/** One ``hermes_cli/inventory.py::build_models_payload`` provider row (the union of every field the builder sets; ``pricing_pending`` / ``free_tier_pending`` mark the cached-only path). */
+/** One ``moor_cli/inventory.py::build_models_payload`` provider row (the union of every field the builder sets; ``pricing_pending`` / ``free_tier_pending`` mark the cached-only path). */
 export interface ModelOptionProvider {
   slug: string
   name: string
@@ -735,13 +735,13 @@ export interface ModelOptionProvider {
   unavailable_models?: string[] | null
   [key: string]: unknown
 }
-/** ``hermes_cli/inventory.py::_apply_capabilities``. */
+/** ``moor_cli/inventory.py::_apply_capabilities``. */
 export interface ModelCapabilities {
   fast: boolean
   reasoning: boolean
   can_disable_reasoning?: boolean | null
 }
-/** ``hermes_cli/inventory.py::_apply_pricing`` — formatted $/Mtok strings (``""`` unknown, ``"free"``); the sale fields are Nous Portal-only. */
+/** ``moor_cli/inventory.py::_apply_pricing`` — formatted $/Mtok strings (``""`` unknown, ``"free"``); the sale fields are Moor Portal-only. */
 export interface ModelPricing {
   input: string
   output: string
@@ -831,7 +831,7 @@ export interface GoalSnapshot {
   last_reason?: string | null
   wait_barrier?: WaitBarrierUntil | WaitBarrierTarget | null
 }
-/** ``hermes_cli/goals.py::GoalContract.to_dict``. */
+/** ``moor_cli/goals.py::GoalContract.to_dict``. */
 export interface GoalContractSnapshot {
   outcome?: string
   verification?: string
@@ -1716,7 +1716,7 @@ export interface SessionForeignListResult {
   host: string
   unreadable?: number
 }
-/** ``hermes_cli/foreign_sessions_browser.py::list_foreign_sessions`` — ``id`` is an opaque handle, never a path. */
+/** ``moor_cli/foreign_sessions_browser.py::list_foreign_sessions`` — ``id`` is an opaque handle, never a path. */
 export interface ForeignSessionRow {
   id: string
   source: ForeignSource
@@ -1789,7 +1789,7 @@ export interface ProjectsPayload {
   projects: ProjectInfo[]
   active_id?: string | null
 }
-/** ``hermes_cli/projects_db.py::Project.to_dict`` — one stored project with its folders. */
+/** ``moor_cli/projects_db.py::Project.to_dict`` — one stored project with its folders. */
 export interface ProjectInfo {
   id: string
   slug: string
@@ -1803,7 +1803,7 @@ export interface ProjectInfo {
   created_at: number
   folders?: ProjectFolder[]
 }
-/** ``hermes_cli/projects_db.py::ProjectFolder.to_dict``. */
+/** ``moor_cli/projects_db.py::ProjectFolder.to_dict``. */
 export interface ProjectFolder {
   path: string
   label?: string | null
@@ -3382,7 +3382,7 @@ export interface SkillHubHit {
   name: string
   description: string
 }
-/** ``hermes_cli.skills_hub.browse_skills`` row. */
+/** ``moor_cli.skills_hub.browse_skills`` row. */
 export interface SkillBrowseItem {
   name?: string
   description?: string
@@ -3391,7 +3391,7 @@ export interface SkillBrowseItem {
   identifier?: string | null
   [key: string]: unknown
 }
-/** ``hermes_cli.skills_hub.inspect_skill``; ``{}`` when the identifier resolves nowhere. */
+/** ``moor_cli.skills_hub.inspect_skill``; ``{}`` when the identifier resolves nowhere. */
 export interface SkillInspectInfo {
   name?: string | null
   description?: string | null
@@ -3650,7 +3650,7 @@ export interface PluginsManageParams {
   ref?: string | null
 }
 export type PluginsAction = 'list' | 'toggle' | 'install' | 'update'
-/** ``list`` → ``plugins`` + counts; ``toggle`` → ``ok``/``unchanged``/``name``/``plugin``; ``install`` → ``hermes_cli.plugins_cmd.dashboard_install_plugin``'s ok payload; ``update`` → ``ok``/``unchanged``/``sha``. */
+/** ``list`` → ``plugins`` + counts; ``toggle`` → ``ok``/``unchanged``/``name``/``plugin``; ``install`` → ``moor_cli.plugins_cmd.dashboard_install_plugin``'s ok payload; ``update`` → ``ok``/``unchanged``/``sha``. */
 export interface PluginsManageResult {
   plugins?: AgentPluginRow[] | null
   user_count?: number | null
@@ -3816,7 +3816,7 @@ export interface GatewayReadyPayload {
   replay_epoch: string
   heartbeat?: boolean | null
 }
-/** ``tui_gateway/change_watcher.py::resolve_skin`` — the resolved active skin (``HermesSkin``). ``{}`` when the skin engine failed to load. Colour maps are token → colour string. */
+/** ``tui_gateway/change_watcher.py::resolve_skin`` — the resolved active skin (``MoorSkin``). ``{}`` when the skin engine failed to load. Colour maps are token → colour string. */
 export interface SkinPayload {
   name?: string
   description?: string
@@ -3830,7 +3830,7 @@ export interface SkinPayload {
   help_header?: string
   [key: string]: unknown
 }
-/** ``hermes_cli/free_tier_bootstrap.py::SetupRecord.as_payload``. */
+/** ``moor_cli/free_tier_bootstrap.py::SetupRecord.as_payload``. */
 export interface SetupReadyPayload {
   provider_configured: boolean
   inference_provider: string
@@ -3887,7 +3887,7 @@ export interface BillingBlock {
   provider_label: string
   model: string
   billing_url: string | null
-  is_nous: boolean
+  is_moor: boolean
   message: string
   unverified?: boolean | null
 }
@@ -4187,7 +4187,7 @@ export interface RpcMethods {
   'billing.charge': { params: BillingChargeParams; result: BillingChargeResult }
   /** Poll one charge by id. */
   'billing.charge_status': { params: BillingChargeStatusParams; result: BillingChargeStatusResult }
-  /** Read-only billing view (no scope); the Nous free tier is answered locally without a portal call. */
+  /** Read-only billing view (no scope); the Moor free tier is answered locally without a portal call. */
   'billing.state': { params: ProfileParams; result: BillingStateResult }
   /** Run the billing:manage device flow; the URL/code arrive via billing.step_up.verification. */
   'billing.step_up': { params: BillingStepUpParams; result: BillingStepUpResult }
@@ -4211,7 +4211,7 @@ export interface RpcMethods {
   'browser.manage': { params: BrowserManageParams; result: BrowserManageResult }
   /** Lock one answer of a batch clarify request (editable until every question is locked). */
   'clarify.lock': { params: ClarifyLockParams; result: ClarifyLockResult }
-  /** Run ``hermes <argv>`` non-interactively and capture its output; ``blocked`` explains a refusal. */
+  /** Run ``moor <argv>`` non-interactively and capture its output; ``blocked`` explains a refusal. */
   'cli.exec': { params: CliExecParams; result: CliExecResult }
   /** Save the host clipboard image into the session and queue it for the next turn. */
   'clipboard.paste': { params: ClipboardPasteParams; result: AttachedImageResult }
@@ -4245,8 +4245,8 @@ export interface RpcMethods {
   'delegation.pause': { params: DelegationPauseParams; result: DelegationPauseResult }
   /** Running subagent tree plus the spawn pause flag and limits. */
   'delegation.status': { params: ProfileParams; result: DelegationStatusResult }
-  /** Upload a force-redacted debug bundle to Nous-internal diagnostics storage. */
-  'diagnostics.share_nous': { params: DiagnosticsShareNousParams; result: DiagnosticsShareNousResult }
+  /** Upload a force-redacted debug bundle to Moor-internal diagnostics storage. */
+  'diagnostics.share_moor': { params: DiagnosticsShareMoorParams; result: DiagnosticsShareMoorResult }
   /** Stage a non-image file into the session workspace and hand back its @file: ref. */
   'file.attach': { params: FileAttachParams; result: FileAttachResult }
   /** Mark the one-time availability notice as shown on the free-tier identity. */
@@ -4451,7 +4451,7 @@ export interface RpcMethods {
   'prompt.btw': { params: SideAgentParams; result: TaskIdResult }
   /** Send a user turn to a live session; busy sessions queue / steer / redirect instead of refusing. */
   'prompt.submit': { params: PromptSubmitParams; result: PromptSubmitResult }
-  /** Re-read ~/.hermes/.env (CLI /reload parity); built agents keep their pool until /new. */
+  /** Re-read ~/.moor/.env (CLI /reload parity); built agents keep their pool until /new. */
   'reload.env': { params: ReloadEnvParams; result: ReloadEnvResult }
   /** Tear down and rediscover MCP servers for every live session (prompt cache is invalidated). */
   'reload.mcp': { params: ReloadMcpParams; result: ReloadMcpResult }
@@ -4507,7 +4507,7 @@ export interface RpcMethods {
   'session.redirect': { params: SessionCorrectionParams; result: SessionCorrectionResult }
   /** Attach to a stored session: reuse it if live here, else lazy / deferred / cold / eager rebuild. */
   'session.resume': { params: SessionResumeParams; result: SessionResumeResult }
-  /** Export the transcript to ~/.hermes/sessions/saved (classic /save). */
+  /** Export the transcript to ~/.moor/sessions/saved (classic /save). */
   'session.save': { params: SessionSaveParams; result: SessionSaveResult }
   /** Set/clear hidden (out of the default list, still resumable by its owner) on a session + lineage. */
   'session.set_hidden': { params: SessionSetHiddenParams; result: SessionSetHiddenResult }
@@ -4519,7 +4519,7 @@ export interface RpcMethods {
   'session.title': { params: SessionTitleParams; result: SessionTitleResult }
   /** Drop the last user turn (and everything after it) from an idle session. */
   'session.undo': { params: SessionUndoParams; result: SessionUndoResult }
-  /** Token / context / cost counters for the session (+ Nous credit lines when available). */
+  /** Token / context / cost counters for the session (+ Moor credit lines when available). */
   'session.usage': { params: SessionUsageParams; result: SessionUsageResult }
   /** Re-home a stored session's workspace; git identity is replaced and a live agent follows. */
   'session.workspace.move': { params: SessionWorkspaceMoveParams; result: SessionWorkspaceMoveResult }
@@ -4646,7 +4646,7 @@ export const RPC_METHODS = [
   'cron.manage',
   'delegation.pause',
   'delegation.status',
-  'diagnostics.share_nous',
+  'diagnostics.share_moor',
   'file.attach',
   'free_tier.ack_notice',
   'free_tier.provision',

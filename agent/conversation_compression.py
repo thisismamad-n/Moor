@@ -33,7 +33,7 @@ from agent.memory_provider import PRE_COMPRESS_CHECKPOINT_API_VERSION
 from agent.model_metadata import estimate_messages_tokens_rough, estimate_request_tokens_rough
 from agent.session_activity import ActivityProvenance, normalize_activity_provenance
 from agent.usage_anchor import set_usage_anchor
-from hermes_state_ids import new_session_id as mint_session_id
+from moor_state_ids import new_session_id as mint_session_id
 
 logger = logging.getLogger(__name__)
 
@@ -1771,7 +1771,7 @@ def _lower_threshold_to_aux_context(
 
 def _aux_inherits_main_route(agent: Any, aux_model: str, aux_base_url: str) -> bool:
     """True when the auxiliary compression client is the main model on the main endpoint."""
-    from hermes_cli.route_identity import normalize_route_base_url
+    from moor_cli.route_identity import normalize_route_base_url
     if str(aux_model or "").strip().lower() != str(getattr(agent, "model", "") or "").strip().lower():
         return False
     main_base = normalize_route_base_url(str(getattr(agent, "base_url", "") or ""))
@@ -1814,8 +1814,8 @@ def check_compression_model_feasibility(agent: Any) -> None:
                 )
             else:
                 msg = (
-                    "⚠ No auxiliary LLM provider configured: Hermes has no helper model for summarising "
-                    "long chats, so older messages will be cut without a summary. Run `hermes setup` to add one."
+                    "⚠ No auxiliary LLM provider configured: Moor has no helper model for summarising "
+                    "long chats, so older messages will be cut without a summary. Run `moor setup` to add one."
                 )
             agent._compression_warning = msg
             agent._emit_status(msg)
@@ -3037,7 +3037,7 @@ def _warn_summary_or_aux_fallback(agent: Any) -> None:
                 _aux_fail_model, _aux_fail_err or "unknown error",
             )
             agent._emit_warning(
-                f"ℹ Configured compression model '{_aux_fail_model}' failed, so Hermes summarised "
+                f"ℹ Configured compression model '{_aux_fail_model}' failed, so Moor summarised "
                 "with your main model instead. Check auxiliary.compression.model in your config."
             )
 

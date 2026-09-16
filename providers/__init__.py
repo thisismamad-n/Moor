@@ -99,7 +99,7 @@ def routed_model_rejects_vision_tool_messages(provider: str, model: str) -> bool
     # Routing aggregators accept a ``vendor/model`` identifier while the request is sent
     # to the aggregator; the target provider can have stricter message-shape support than
     # the aggregator's generic OpenAI-compatible transport profile.
-    from hermes_cli.providers import is_routing_aggregator
+    from moor_cli.providers import is_routing_aggregator
     if not is_routing_aggregator(provider_name):
         return False
 

@@ -514,19 +514,19 @@ elif ! grep -q '^API_SERVER_KEY=..*' "$MOOR_HOME/.env" 2>/dev/null; then
     fi
 fi
 
-# --- Sync deploy-injected Nous routing overrides into every profile .env ---
-# Under multiplex, hermes_cli.auth_nous reads HERMES_PORTAL_BASE_URL (or its
-# NOUS_PORTAL_BASE_URL alias) and NOUS_INFERENCE_BASE_URL through the profile
+# --- Sync deploy-injected Moor routing overrides into every profile .env ---
+# Under multiplex, moor_cli.auth_moor reads MOOR_PORTAL_BASE_URL (or its
+# MOOR_PORTAL_BASE_URL alias) and MOOR_INFERENCE_BASE_URL through the profile
 # secret scope (agent.secret_scope.get_secret, #108319 / #111809), built from
 # <profile>/.env with no os.environ fallback — a value that lives only in the
 # container env is invisible on every routed turn, the Portal URL heals to
 # production and a non-production login is quarantined. The deploy therefore
-# carries the value into $HERMES_HOME/.env and every profiles/*/.env: the
+# carries the value into $MOOR_HOME/.env and every profiles/*/.env: the
 # container wins over a stale line, an already-correct line is left alone, and
 # lines written here carry a marker so a boot WITHOUT the variable removes them
 # again (a hand-set line is never touched). Known gap: a profile created while the container
 # runs is synced on the next boot. Interim until the managed scope
-# (/etc/hermes/.env) composition reverted by #111600 is restored.
+# (/etc/moor/.env) composition reverted by #111600 is restored.
 _ROUTING_MARK='# stage2-managed'
 # rewrite_env_var FILE NAME DROP_PATTERN [LINE]: drop the lines matching DROP_PATTERN (a BRE),
 # append LINE when given. Rewritten through the existing inode (owner and mode kept — sed -i would
@@ -556,7 +556,7 @@ sync_routing_overrides() {
     if refuse_symlinked_path "sync" "$_file"; then
         return 0
     fi
-    for _name in HERMES_PORTAL_BASE_URL NOUS_PORTAL_BASE_URL NOUS_INFERENCE_BASE_URL; do
+    for _name in MOOR_PORTAL_BASE_URL MOOR_PORTAL_BASE_URL MOOR_INFERENCE_BASE_URL; do
         eval "_value=\${$_name:-}"
         _managed="^$_name=.* $_ROUTING_MARK\$"
         if [ -z "$_value" ]; then
@@ -569,8 +569,8 @@ sync_routing_overrides() {
         if grep -qxF -- "$_line" "$_file" 2>/dev/null; then
             continue
         fi
-        if [ ! -f "$_file" ] && ! (umask 077 && as_hermes touch "$_file") 2>/dev/null; then
-            echo "[stage2] Warning: could not create $_file — the Nous routing overrides will not reach this profile's secret scope"
+        if [ ! -f "$_file" ] && ! (umask 077 && as_moor touch "$_file") 2>/dev/null; then
+            echo "[stage2] Warning: could not create $_file — the Moor routing overrides will not reach this profile's secret scope"
             return 0
         fi
         if rewrite_env_var "$_file" "$_name" "^$_name=" "$_line"; then
@@ -578,8 +578,8 @@ sync_routing_overrides() {
         fi
     done
 }
-sync_routing_overrides "$HERMES_HOME/.env"
-for _profile_dir in "$HERMES_HOME"/profiles/*/; do
+sync_routing_overrides "$MOOR_HOME/.env"
+for _profile_dir in "$MOOR_HOME"/profiles/*/; do
     [ -d "$_profile_dir" ] || continue
     sync_routing_overrides "${_profile_dir}.env"
 done

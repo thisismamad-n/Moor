@@ -88,11 +88,11 @@ def _skill_lookup_path_error(name: str) -> Optional[str]:
 
 
 def load_env() -> Dict[str, str]:
-    """Snapshot of HERMES_HOME/.env for the post-skill secret-capture diff (same tokenizer that
+    """Snapshot of MOOR_HOME/.env for the post-skill secret-capture diff (same tokenizer that
     installs the profile scope, so a captured value never differs from the served one)."""
     from agent.secret_scope import load_env_file
 
-    return load_env_file(get_hermes_home() / ".env")
+    return load_env_file(get_moor_home() / ".env")
 
 
 def set_secret_capture_callback(callback) -> None:

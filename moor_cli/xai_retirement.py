@@ -160,7 +160,7 @@ def apply_migration(
 
     backup_path: Optional[Path] = None
     if backup:
-        from hermes_cli.config_backups import backup_config
+        from moor_cli.config_backups import backup_config
         backup_path = backup_config(config_path, "pre-migrate-xai")
 
     from moor_cli.config import require_readable_config_before_write

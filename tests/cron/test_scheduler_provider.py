@@ -905,7 +905,7 @@ def test_multiplex_ticker_reenumerates_profiles_each_cycle(tmp_path):
     import threading
     from unittest.mock import patch
     from cron.scheduler_provider import InProcessCronScheduler
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
     alpha = tmp_path / "alpha"
     gamma = tmp_path / "gamma"
@@ -915,8 +915,8 @@ def test_multiplex_ticker_reenumerates_profiles_each_cycle(tmp_path):
     ticked: list[str] = []
 
     def _tick(*args, **kwargs):
-        ticked.append(str(get_hermes_home()))
-        if len(ticked) == 1:  # "hermes profile create gamma" happens between two cycles
+        ticked.append(str(get_moor_home()))
+        if len(ticked) == 1:  # "moor profile create gamma" happens between two cycles
             (gamma / "cron").mkdir(parents=True)
             homes.append(("gamma", gamma))
         if len(ticked) >= 4:

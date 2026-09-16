@@ -1,6 +1,6 @@
 """moor_cli.plugin_compat: detect plugins on old import paths, tell the user, disable after the date.
 
-Kept with the compat layer (tests/hermes_cli/test_compat_manifest_targets.py); deleted with it.
+Kept with the compat layer (tests/moor_cli/test_compat_manifest_targets.py); deleted with it.
 """
 from __future__ import annotations
 

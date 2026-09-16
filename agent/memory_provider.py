@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 def ctx_bound(fn: Callable[..., Any]) -> Callable[..., Any]:
     """Bind ``fn`` to the CALLER's contextvars for another thread/executor. Profile isolation
-    is a ContextVar-scoped HERMES_HOME override plus the per-turn secret scope; a worker started
+    is a ContextVar-scoped MOOR_HOME override plus the per-turn secret scope; a worker started
     with an empty context silently lands on the default profile (or fails closed on secrets)."""
     ctx = contextvars.copy_context()
     return lambda *args, **kwargs: ctx.run(fn, *args, **kwargs)

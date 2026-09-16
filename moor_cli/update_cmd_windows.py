@@ -426,9 +426,9 @@ def _relaunch_stopped_serves(token: dict) -> None:
 def _is_backend_argv(argv_low: str) -> bool:
     """Whether an argv is a DESKTOP backend — feeds ``taskkill /T`` via ``_orphaned_desktop_backend_pids``.
 
-    Same predicate as ``_looks_like_desktop_control_plane``: ``-m hermes_cli.main`` entry shape (the
+    Same predicate as ``_looks_like_desktop_control_plane``: ``-m moor_cli.main`` entry shape (the
     Desktop's only spawn shape, ``apps/desktop/electron/main.ts``) AND the canonical holder classifier says
-    ``serve``/``dashboard``. A user-launched ``hermes.exe serve`` / ``hermes dashboard`` is NOT the
+    ``serve``/``dashboard``. A user-launched ``moor.exe serve`` / ``moor dashboard`` is NOT the
     Desktop's: the guard refuses on it, never reaps it.
     """
     return _looks_like_desktop_control_plane(argv_low)
@@ -752,10 +752,10 @@ def _windows_cold_start_plan() -> dict | None:
     (#109538) — the dead attestation is the only surviving "a gateway was up" evidence, and the Desktop
     does not restart the messaging gateway itself. Keep the plan, and record the attestation
     *generation* that authorized it on the token: the marker is a mutable one-shot that any concurrent
-    ``hermes gateway status``/``start`` consumes, so execution authorizes the spawn from the token and
+    ``moor gateway status``/``start`` consumes, so execution authorizes the spawn from the token and
     consumes only that generation (#110020 review)."""
-    from hermes_cli.update_cmd import _desktop_owns_gateway_lifecycle
-    from hermes_cli import gateway_windows
+    from moor_cli.update_cmd import _desktop_owns_gateway_lifecycle
+    from moor_cli import gateway_windows
     with _best_effort('Could not check Windows gateway autostart state before update: %s'):
         if not gateway_windows.is_installed():
             return None
@@ -938,12 +938,12 @@ def _record_attested_cold_start_profiles(token: dict, running_profiles: set) -> 
     dead-but-attested default beside a still-running ``beta`` never got a cold-start obligation. Only
     Desktop-owned installs need this (elsewhere autostart brings the profile back); the active profile is
     left to the existing plan so it is never spawned twice. Best-effort: never blocks the pause."""
-    from hermes_cli.update_cmd import _desktop_owns_gateway_lifecycle
-    from hermes_cli import gateway_windows
+    from moor_cli.update_cmd import _desktop_owns_gateway_lifecycle
+    from moor_cli import gateway_windows
     with _best_effort("Could not evaluate per-profile attested cold-starts before update: %s"):
         if not _desktop_owns_gateway_lifecycle():
             return
-        from hermes_cli.profiles import get_active_profile_name, profiles_to_serve
+        from moor_cli.profiles import get_active_profile_name, profiles_to_serve
         active = get_active_profile_name() or "default"
         cold: dict[str, str] = {}
         for name, home in profiles_to_serve(multiplex=True):
@@ -957,10 +957,10 @@ def _record_attested_cold_start_profiles(token: dict, running_profiles: set) -> 
 
 
 def _cold_start_attested_profiles(token: dict) -> None:
-    """Spawn each ``cold_start_profiles`` entry under its own HERMES_HOME and consume exactly the
+    """Spawn each ``cold_start_profiles`` entry under its own MOOR_HOME and consume exactly the
     generation that authorized it; one profile's failure never aborts the others (#110959)."""
-    from hermes_cli import gateway_windows
-    from hermes_cli.profiles import get_profile_dir
+    from moor_cli import gateway_windows
+    from moor_cli.profiles import get_profile_dir
     pending = dict(token.get("cold_start_profiles") or {})
     if not pending:
         return
@@ -1004,7 +1004,7 @@ def _cold_start_windows_gateway_after_update(token: dict | None = None) -> bool:
     attested gateway that died without a clean exit is restored even then (#109538) — the Desktop does
     not restart the messaging gateway itself. That authority is the ``attested_generation`` the plan
     recorded on ``token``, not the marker on disk: the marker is a mutable one-shot a concurrent
-    ``hermes gateway status``/``start`` consumes, which would otherwise skip this spawn and clear the
+    ``moor gateway status``/``start`` consumes, which would otherwise skip this spawn and clear the
     token (#110020 review). Only that generation is consumed afterwards — never a newer marker.
     """
     from moor_cli.update_cmd import _desktop_owns_gateway_lifecycle, _m

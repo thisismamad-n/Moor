@@ -285,11 +285,11 @@ def _gateway_run_argv(python_exe: str, profile_arg: str) -> list[str]:
 
 
 def _launcher_settings(home: Path | None = None) -> tuple[str, str, str, str]:
-    """Return (python_path, working_dir, hermes_home, profile_arg) for generated launchers.
-    ``home`` targets another profile's HERMES_HOME (per-profile cold-start, #110959)."""
-    from hermes_cli.gateway import PROJECT_ROOT, _profile_arg, get_python_path  # avoid circular init
+    """Return (python_path, working_dir, moor_home, profile_arg) for generated launchers.
+    ``home`` targets another profile's MOOR_HOME (per-profile cold-start, #110959)."""
+    from moor_cli.gateway import PROJECT_ROOT, _profile_arg, get_python_path  # avoid circular init
 
-    hermes_home = str(home if home is not None else _hermes_home())
+    moor_home = str(home if home is not None else _moor_home())
     return (
         _preserve_moor_home_path(get_python_path()),
         _stable_gateway_working_dir(PROJECT_ROOT),
@@ -580,7 +580,7 @@ def _build_gateway_argv(home: Path | None = None) -> tuple[list[str], str, dict[
     _assert_windows()
     from moor_cli.gateway import PROJECT_ROOT
 
-    python_path, working_dir, hermes_home, profile_arg = _launcher_settings(home)
+    python_path, working_dir, moor_home, profile_arg = _launcher_settings(home)
     python_exe, venv_dir, extra_pythonpath = _resolve_detached_python(python_path)
     env_overlay = {"MOOR_HOME": moor_home, **dict(_GATEWAY_ENV), "VIRTUAL_ENV": _preserve_moor_home_path(venv_dir)}
     _prepend_pythonpath(env_overlay, [_preserve_moor_home_path(p) for p in (PROJECT_ROOT, *extra_pythonpath)])
@@ -821,7 +821,7 @@ def _live_gateway_pids(all_profiles: bool = False, home: Path | None = None) -> 
 
         pid = get_running_pid(home / "gateway.pid", cleanup_stale=False)
         return [pid] if pid else []
-    from hermes_cli.gateway import find_gateway_pids
+    from moor_cli.gateway import find_gateway_pids
 
     return list(find_gateway_pids(all_profiles=all_profiles))
 
@@ -882,7 +882,7 @@ _START_ATTESTATION_RELATIVE = ("state", "gateway.start-attestation.json")
 
 def _start_attestation_path(home: Path | None = None) -> Path:
     """Marker path; ``home`` addresses another profile's marker (per-profile cold-start, #110959)."""
-    return (home if home is not None else _hermes_home()).joinpath(*_START_ATTESTATION_RELATIVE)
+    return (home if home is not None else _moor_home()).joinpath(*_START_ATTESTATION_RELATIVE)
 
 
 def _write_start_attestation(pids: list[int], via: str, home: Path | None = None) -> None:
@@ -890,11 +890,11 @@ def _write_start_attestation(pids: list[int], via: str, home: Path | None = None
 
     ``generation`` identifies this marker instance: the update resume token records the generation
     whose death authorized a cold-start, so execution consumes exactly that marker and never a
-    newer one written by a concurrent ``hermes gateway start`` (#110020 review)."""
+    newer one written by a concurrent ``moor gateway start`` (#110020 review)."""
     try:
         path = _start_attestation_path(home)
         path.parent.mkdir(parents=True, exist_ok=True)
-        from hermes_cli.process_identity import _process_create_time
+        from moor_cli.process_identity import _process_create_time
 
         payload = {
             "pids": [int(p) for p in pids], "via": via, "ts": datetime.now(timezone.utc).isoformat(),
@@ -919,7 +919,7 @@ def _clear_start_attestation(home: Path | None = None) -> None:
 
 
 # A start attestation older than this is no authority (#110020 review (d)): the marker is a one-shot
-# meant to bridge the seconds between a ✓ and the next ``hermes gateway status``/``update``; a
+# meant to bridge the seconds between a ✓ and the next ``moor gateway status``/``update``; a
 # historical marker must never later override Desktop ownership into a duplicate gateway (#76129).
 START_ATTESTATION_MAX_AGE_S = 24 * 3600
 # Same slack process_identity uses for psutil create_time comparisons (PID reuse disambiguation).
@@ -992,7 +992,7 @@ def _attested_pid_exited_cleanly(pid: int, create_time: float | None = None, hom
     try:
         from gateway.lifecycle_ledger import get_lifecycle_sentinel_path
 
-        sentinel = get_lifecycle_sentinel_path(home if home is not None else _hermes_home())
+        sentinel = get_lifecycle_sentinel_path(home if home is not None else _moor_home())
         data = json.loads(sentinel.read_text(encoding="utf-8"))
     except OSError:
         return False
@@ -1025,7 +1025,7 @@ def attested_death_generation(current_pids: list[int], home: Path | None = None)
     or ``None``.
 
     Read-only twin of :func:`check_start_attestation` for callers that must not consume the
-    one-shot marker — ``hermes update`` consults it to decide whether a Desktop-owned install
+    one-shot marker — ``moor update`` consults it to decide whether a Desktop-owned install
     still owes a gateway cold-start (#109538) and records the generation in its resume token so the
     execution step consumes exactly the marker it was authorized by. Callers pass the liveness they
     already established (``[]`` after their own discovery came back empty) so the process table is

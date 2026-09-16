@@ -26,9 +26,9 @@ from typing import Any, Callable, Dict, List, Optional
 
 from agent.memory_provider import MemoryProvider, RecallStatus, spawn_context_thread
 from agent.secret_scope import UnscopedSecretError, get_secret
-from hermes_cli.config import cfg_get
-from hermes_constants import get_hermes_home
-from hermes_time import now as _hermes_now
+from moor_cli.config import cfg_get
+from moor_constants import get_moor_home
+from moor_time import now as _moor_now
 from tools.registry import tool_error
 from utils import read_json_or_empty
 
@@ -258,7 +258,7 @@ REFLECT_SCHEMA = {
 def _load_config() -> dict:
     """$MOOR_HOME/hindsight/config.json (profile-scoped), else ~/.hindsight/config.json
     (legacy, shared), else environment variables."""
-    for path in (get_hermes_home() / "hindsight" / "config.json", Path.home() / ".hindsight" / "config.json"):
+    for path in (get_moor_home() / "hindsight" / "config.json", Path.home() / ".hindsight" / "config.json"):
         # A corrupt (or empty) file falls through to the next source, as before the dedup.
         if path.exists() and (data := read_json_or_empty(path)):
             return data
@@ -275,7 +275,7 @@ def _load_config() -> dict:
         "retain_source": _scoped_setting("HINDSIGHT_RETAIN_SOURCE", _DEFAULT_RETAIN_SOURCE),
         "retain_user_prefix": _scoped_setting("HINDSIGHT_RETAIN_USER_PREFIX", "User"),
         "retain_assistant_prefix": _scoped_setting("HINDSIGHT_RETAIN_ASSISTANT_PREFIX", "Assistant"),
-        "banks": {"hermes": {"bankId": get_secret("HINDSIGHT_BANK_ID", "") or "hermes",
+        "banks": {"moor": {"bankId": get_secret("HINDSIGHT_BANK_ID", "") or "moor",
                              "budget": os.environ.get("HINDSIGHT_BUDGET", "mid"), "enabled": True}},
     }
 
@@ -404,7 +404,7 @@ class HindsightMemoryProvider(MemoryProvider):
     def save_config(self, values, moor_home):
         """Merge *values* into $MOOR_HOME/hindsight/config.json."""
         from utils import atomic_json_write
-        config_path = Path(hermes_home) / "hindsight" / "config.json"
+        config_path = Path(moor_home) / "hindsight" / "config.json"
         atomic_json_write(config_path, {**read_json_or_empty(config_path), **values}, mode=0o600)
 
     def post_setup(self, moor_home: str, config: dict) -> None:

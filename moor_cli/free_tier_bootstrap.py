@@ -1,14 +1,14 @@
-"""Serve-start bootstrap for the Nous free tier: the ONE place a free-tier identity is created.
+"""Serve-start bootstrap for the Moor free tier: the ONE place a free-tier identity is created.
 
-Every Hermes process that may need the free tier runs this once at boot (``hermes serve`` on a
+Every Moor process that may need the free tier runs this once at boot (``moor serve`` on a
 daemon thread beside the other background boots; the CLI first-run guard synchronously). It
 inventories credentials cheap-first, creates the identity only when the launch gate is open
-(:func:`hermes_cli.anon_auth.guest_enabled`), resolves which provider carries inference, records
+(:func:`moor_cli.anon_auth.guest_enabled`), resolves which provider carries inference, records
 the answer in process memory, and tells every connected client with one ``setup.ready`` event.
 
 Nothing else mints. ``free_tier.status`` and ``setup.status`` read the record; provider resolution
 never reaches the portal; a dead credential is replaced by the explicit re-mint in
-``auth_nous.resolve_nous_runtime_credentials``. Ruling: NS-845 Q1.2 (recorded on NS-847).
+``auth_moor.resolve_moor_runtime_credentials``. Ruling: NS-845 Q1.2 (recorded on NS-847).
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ import time
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, Optional
 
-logger = logging.getLogger("hermes_cli.auth")
+logger = logging.getLogger("moor_cli.auth")
 
 # The desktop's first ``setup.status`` waits this long for the record before falling back to a live
 # probe. The mint budget is 5 s (``GUEST_MINT_TIMEOUT_SECONDS``); the rest covers the inventory.
@@ -35,7 +35,7 @@ class SetupRecord:
     provider_configured: bool      # some provider can carry inference (free tier included)
     inference_provider: str        # ``resolve_provider("auto")``'s answer, "" when nothing resolves
     free_tier: bool                # the identity that exists is the free tier AND the tier is on
-    has_identity: bool             # a Nous identity (free tier or account) is on disk
+    has_identity: bool             # a Moor identity (free tier or account) is on disk
     other_providers: bool          # the inventory found something usable BESIDES the free tier
     error: str = ""                # why the mint did not happen, when it did not; "" otherwise
     # The mint memo's verdict, verbatim (``anon_auth.MintFailure.as_payload``):
@@ -91,16 +91,16 @@ def _inventory_other_providers() -> bool:
     config pin, a sign-in or a host credential answers; nothing else falls through to
     ``no_provider_configured``. Not ``_has_any_provider_configured``: that first-run guard counts
     keyless catalog providers as "configured" and is True on a blank machine."""
-    from hermes_cli.auth import resolve_provider
+    from moor_cli.auth import resolve_provider
     try:
-        return resolve_provider("auto", skip_free_tier=True) != "nous"
+        return resolve_provider("auto", skip_free_tier=True) != "moor"
     except Exception as exc:
         logger.debug("free tier bootstrap: nothing else carries inference (%s)", exc)
         return False
 
 
 def _resolve_inference() -> str:
-    from hermes_cli.auth import resolve_provider
+    from moor_cli.auth import resolve_provider
     try:
         return str(resolve_provider("auto") or "")
     except Exception:
@@ -110,18 +110,18 @@ def _resolve_inference() -> str:
 def _build_record(*, other: bool, force: bool) -> SetupRecord:
     """One inventory-then-mint pass into a record. ``force`` is the user's own retry: it makes one
     attempt even inside the mint memo's cooldown (``anon_auth.ensure_portal_identity``)."""
-    from hermes_cli import anon_auth
+    from moor_cli import anon_auth
 
     error = ""
     failure: Dict[str, Any] = {}
-    state: Optional[Dict[str, Any]] = anon_auth.current_nous_state()
+    state: Optional[Dict[str, Any]] = anon_auth.current_moor_state()
     if anon_auth.guest_enabled():
         try:
             # ``other`` decides whether the mint may also claim ``active_provider`` (NS-845 Q1.3).
             state = anon_auth.ensure_portal_identity(explicit=True, carries_inference=not other, force=force)
         except Exception as exc:
             error = str(exc)
-            logger.info("Nous free tier not set up at boot: %s", exc)
+            logger.info("Moor free tier not set up at boot: %s", exc)
         if state is None:
             # Either this attempt failed (the memo now holds why) or an earlier one did and its
             # cooldown still runs: the record carries that verdict either way.
@@ -209,7 +209,7 @@ def _retry_until_settled() -> None:
         _sleep(max(1, int(record.failure.get("retry_after") or 0)))
         record = retry_bootstrap_mint(force=False)
         if record.has_identity:
-            logger.info("Nous free tier set up after a boot-time retry")
+            logger.info("Moor free tier set up after a boot-time retry")
             return
 
 
@@ -230,7 +230,7 @@ def _broadcast(record: SetupRecord) -> None:
 
 
 def start_background_bootstrap() -> threading.Thread:
-    """``hermes serve`` entry: run on a daemon thread so a slow portal never delays the socket."""
+    """``moor serve`` entry: run on a daemon thread so a slow portal never delays the socket."""
     thread = threading.Thread(target=_bootstrap_then_retry, daemon=True, name="free-tier-bootstrap")
     thread.start()
     return thread

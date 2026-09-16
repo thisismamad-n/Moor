@@ -93,16 +93,16 @@ class TestProviderPrecedence:
 
 
 def _logged_out(monkeypatch):
-    monkeypatch.setattr("hermes_cli.auth._load_auth_store", lambda: {})
-    monkeypatch.setattr("hermes_cli.auth.get_auth_status", lambda p: {"logged_in": False})
+    monkeypatch.setattr("moor_cli.auth._load_auth_store", lambda: {})
+    monkeypatch.setattr("moor_cli.auth.get_auth_status", lambda p: {"logged_in": False})
 
 
 def _free_tier(monkeypatch, *, on=True, identity=False):
     """Free tier switch + whether a free-tier identity already exists. The resolver is a READ: any
     call into the creator from inside it is a bug, so the stub fails loudly."""
-    monkeypatch.setattr("hermes_cli.anon_auth.guest_enabled", lambda: on)
-    monkeypatch.setattr("hermes_cli.anon_auth.has_guest", lambda: identity)
-    monkeypatch.setattr("hermes_cli.anon_auth.ensure_portal_identity",
+    monkeypatch.setattr("moor_cli.anon_auth.guest_enabled", lambda: on)
+    monkeypatch.setattr("moor_cli.anon_auth.has_guest", lambda: identity)
+    monkeypatch.setattr("moor_cli.anon_auth.ensure_portal_identity",
                         lambda **kw: (_ for _ in ()).throw(AssertionError("resolve_provider must not mint")))
 
 
@@ -114,7 +114,7 @@ class TestFreeTierBeatsImplicitHostCredentials:
     creates the identity; the boot bootstrap does, before any turn asks."""
 
     @pytest.mark.parametrize("free_tier_on, identity, env_key, login, expected", [
-        (True, True, None, None, "nous"),                 # existing identity beats the AWS chain
+        (True, True, None, None, "moor"),                 # existing identity beats the AWS chain
         (True, False, None, None, "bedrock"),             # no identity yet: Bedrock, nothing minted
         (False, True, None, None, "bedrock"),             # free tier off: Bedrock as before
         (True, True, "OPENAI_API_KEY", None, "openrouter"),  # env key still wins
@@ -142,6 +142,6 @@ class TestFreeTierBeatsImplicitHostCredentials:
         _logged_out(monkeypatch)
         monkeypatch.setattr("agent.bedrock_adapter.has_aws_credentials", lambda: False)
         _free_tier(monkeypatch, on=True, identity=True)
-        assert resolve_provider("auto") == "nous"
+        assert resolve_provider("auto") == "moor"
         with pytest.raises(AuthError):
             resolve_provider("auto", skip_free_tier=True)

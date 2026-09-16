@@ -6,19 +6,19 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from hermes_state import SessionDB
+from moor_state import SessionDB
 
 
 @pytest.fixture
 def timeline_store(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setattr("hermes_state.DEFAULT_DB_PATH", home / "state.db")
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.setattr("moor_state.DEFAULT_DB_PATH", home / "state.db")
     db = SessionDB(db_path=home / "state.db")
     db.create_session(session_id="timeline-root", source="desktop")
-    from hermes_cli.web_routers.sessions import manage_router
+    from moor_cli.web_routers.sessions import manage_router
 
     app = FastAPI()
     app.include_router(manage_router)
@@ -174,7 +174,7 @@ def test_exact_owner_lineage_validation_and_bounded_jump(timeline_store):
 def test_timeline_sql_never_reads_tool_columns_or_writes(timeline_store, monkeypatch):
     import sqlite3
     from contextlib import contextmanager
-    from hermes_state_timeline import get_session_timeline
+    from moor_state_timeline import get_session_timeline
 
     db, _, home = timeline_store
     db.append_messages_batch("timeline-root", [

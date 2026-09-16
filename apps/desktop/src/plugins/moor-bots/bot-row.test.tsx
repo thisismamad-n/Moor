@@ -15,7 +15,7 @@
  * old plugin.js bundle and rendered it against a hand-built jsx stub.
  */
 
-import type * as HermesSdk from '@hermes/plugin-sdk'
+import type * as MoorSdk from '@moor/plugin-sdk'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 

@@ -38,69 +38,69 @@ moor [global-options] <command> [subcommand/options]
 
 | Command | Purpose |
 |---------|---------|
-| `hermes chat` | Interactive or one-shot chat with the agent. |
-| `hermes model` | Interactively choose the default provider and model. |
-| `hermes moa` | Configure named Mixture of Agents presets selectable from the model picker. |
-| `hermes fallback` | Manage fallback providers tried when the primary model errors. |
-| `hermes gateway` | Run or manage the messaging gateway service. |
-| `hermes proxy` | Local OpenAI-compatible proxy that attaches OAuth provider credentials. See [Subscription Proxy](../user-guide/features/subscription-proxy.md). |
-| `hermes egress` | Outbound credential-injection firewall for remote terminal sandboxes (iron-proxy). Disabled by default. See [Egress proxy](../user-guide/egress/iron-proxy.md). |
-| `hermes lsp` | Manage Language Server Protocol integration (semantic diagnostics for write_file/patch). |
-| `hermes setup` | Interactive setup wizard for all or part of the configuration. |
-| `hermes whatsapp` | Configure and pair the WhatsApp bridge. |
-| `hermes whatsapp-cloud` | Configure the official Meta WhatsApp Business Cloud API adapter (Business account + public webhook required). Distinct from `hermes whatsapp` (Baileys personal-account bridge). |
-| `hermes slack` | Slack helpers (currently: generate the app manifest with every command as a native slash). |
-| `hermes auth` | Manage credentials — add, list, remove, reset, status, logout. Handles OAuth flows for Codex/Nous/Anthropic. |
-| `hermes login` / `logout` | **Deprecated** — use `hermes auth` instead. |
-| `hermes send` | Send a one-shot message to a configured messaging platform (Telegram, Discord, Slack, Signal, SMS, …). Useful from shell scripts, cron jobs, CI hooks, and monitoring daemons — no agent loop, no LLM. |
-| `hermes peer` | Register peer Hermes gateways on other machines and DM their agents' canonical Bot Chats (`hermes peer dm <peer>[/<agent>] "…"`). The transport behind cross-machine bot-to-bot messaging. |
-| `hermes secrets` | Manage external secret sources (currently Bitwarden Secrets Manager) for pulling API keys at process startup instead of from `~/.hermes/.env`. |
-| `hermes migrate` | Diagnose and (optionally) rewrite `config.yaml` to replace references to retired models or deprecated settings (e.g. `migrate xai`). |
-| `hermes status` | Show agent, auth, and platform status. |
-| `hermes cron` | Inspect and tick the cron scheduler. |
-| `hermes pause` / `hermes resume` | Global emergency stop: no new cron fires (built-in ticker, managed-cron webhook, misfire catch-up), kanban dispatch or gateway turns start until resumed; in-flight work is never killed. |
-| `hermes kanban` | Multi-profile collaboration board (tasks, links, dispatcher). |
-| `hermes project` | Manage named, multi-folder workspaces (projects). Anchors desktop session grouping and, when bound to a kanban board, gives tasks a deterministic worktree + branch convention. State is per-profile. |
-| `hermes webhook` | Manage dynamic webhook subscriptions for event-driven activation. |
-| `hermes hooks` | Inspect, approve, or remove shell-script hooks declared in `config.yaml`. |
-| `hermes doctor` | Diagnose config and dependency issues. |
-| `hermes security audit` | On-demand supply-chain audit (OSV.dev) for the venv, plugin requirements, and pinned MCP servers. |
-| `hermes approvals` | Approval-prompt tools — mine approval history into allowlist proposals. |
-| `hermes dump` | Copy-pasteable setup summary for support/debugging. |
-| `hermes prompt-size` | Show a byte breakdown of the system prompt + tool schemas (skills index, memory, profile). Runs offline. |
-| `hermes debug` | Debug tools — upload logs and system info for support. |
-| `hermes backup` | Back up Hermes home directory to a zip file. |
-| `hermes checkpoints` | Inspect / prune / clear `~/.hermes/checkpoints/` (the shadow store used by `/rollback`). Run with no args for a status overview. |
-| `hermes import` | Restore a Hermes backup from a zip file. |
-| `hermes logs` | View, tail, and filter agent/gateway/error log files. |
-| `hermes config` | Show, edit, migrate, and query configuration files. |
-| `hermes skin` | List, switch, and tweak display skins. |
-| `hermes console` | Open the safe Hermes command console. |
-| `hermes pairing` | Approve or revoke messaging pairing codes. |
-| `hermes skills` | Browse, install, publish, audit, and configure skills. |
-| `hermes bundles` | Group several skills under a single `/<name>` slash command. See [Skill Bundles](../user-guide/features/skills.md#skill-bundles). |
-| `hermes curator` | Background skill maintenance — status, run, pause, pin. See [Curator](../user-guide/features/curator.md). |
-| `hermes journey` (aliases `learning`, `memory-graph`) | Timeline of learned skills + memories over time. |
-| `hermes memory` | Configure external memory provider. Plugin-specific subcommands (e.g. `hermes honcho`) register automatically when their provider is active. |
-| `hermes acp` | Run Hermes as an ACP server for editor integration. |
-| `hermes mcp` | Manage MCP server configurations and run Hermes as an MCP server. |
-| `hermes plugins` | Manage Hermes Agent plugins (install, enable, disable, remove). |
-| `hermes portal` | Nous Portal status, subscription link, and Tool Gateway routing. See [Tool Gateway](../user-guide/features/tool-gateway.md). |
-| `hermes tools` | Configure enabled tools per platform. |
-| `hermes computer-use` | Install or check the Computer Use (cua-driver) backend (macOS/Windows/Linux). |
-| `hermes pets` | Browse, install, and select [petdex](../user-guide/features/pets.md) animated pets shown across the CLI, TUI, and desktop app. Subcommands: `list`, `install`, `select`, `show`, `off`, `scale`, `remove`, `doctor`. |
-| `hermes sessions` | Browse, export, prune, rename, and delete sessions. |
-| `hermes insights` | Show token/cost/activity analytics. |
-| `hermes claw` | OpenClaw migration helpers. |
-| `hermes import-agent` | Import a Claude Code (`~/.claude`) or Codex CLI (`~/.codex`) setup. |
-| `hermes dashboard` | Launch the web dashboard for managing config, API keys, and sessions. |
-| `hermes serve` | Start the Hermes backend server (headless; powers the desktop app and remote backends). |
-| `hermes desktop` (alias `gui`) | Build and launch the native Electron desktop app. |
-| `hermes profile` | Manage profiles — multiple isolated Hermes instances. |
-| `hermes completion` | Print shell completion scripts (bash/zsh/fish). |
-| `hermes --version` | Show version information. |
-| `hermes update` | Pull latest code and reinstall dependencies. `--check` previews without installing; `--backup` takes a pre-pull `HERMES_HOME` snapshot. |
-| `hermes uninstall` | Remove Hermes from the system. |
+| `moor chat` | Interactive or one-shot chat with the agent. |
+| `moor model` | Interactively choose the default provider and model. |
+| `moor moa` | Configure named Mixture of Agents presets selectable from the model picker. |
+| `moor fallback` | Manage fallback providers tried when the primary model errors. |
+| `moor gateway` | Run or manage the messaging gateway service. |
+| `moor proxy` | Local OpenAI-compatible proxy that attaches OAuth provider credentials. See [Subscription Proxy](../user-guide/features/subscription-proxy.md). |
+| `moor egress` | Outbound credential-injection firewall for remote terminal sandboxes (iron-proxy). Disabled by default. See [Egress proxy](../user-guide/egress/iron-proxy.md). |
+| `moor lsp` | Manage Language Server Protocol integration (semantic diagnostics for write_file/patch). |
+| `moor setup` | Interactive setup wizard for all or part of the configuration. |
+| `moor whatsapp` | Configure and pair the WhatsApp bridge. |
+| `moor whatsapp-cloud` | Configure the official Meta WhatsApp Business Cloud API adapter (Business account + public webhook required). Distinct from `moor whatsapp` (Baileys personal-account bridge). |
+| `moor slack` | Slack helpers (currently: generate the app manifest with every command as a native slash). |
+| `moor auth` | Manage credentials — add, list, remove, reset, status, logout. Handles OAuth flows for Codex/Moor/Anthropic. |
+| `moor login` / `logout` | **Deprecated** — use `moor auth` instead. |
+| `moor send` | Send a one-shot message to a configured messaging platform (Telegram, Discord, Slack, Signal, SMS, …). Useful from shell scripts, cron jobs, CI hooks, and monitoring daemons — no agent loop, no LLM. |
+| `moor peer` | Register peer Moor gateways on other machines and DM their agents' canonical Bot Chats (`moor peer dm <peer>[/<agent>] "…"`). The transport behind cross-machine bot-to-bot messaging. |
+| `moor secrets` | Manage external secret sources (currently Bitwarden Secrets Manager) for pulling API keys at process startup instead of from `~/.moor/.env`. |
+| `moor migrate` | Diagnose and (optionally) rewrite `config.yaml` to replace references to retired models or deprecated settings (e.g. `migrate xai`). |
+| `moor status` | Show agent, auth, and platform status. |
+| `moor cron` | Inspect and tick the cron scheduler. |
+| `moor pause` / `moor resume` | Global emergency stop: no new cron fires (built-in ticker, managed-cron webhook, misfire catch-up), kanban dispatch or gateway turns start until resumed; in-flight work is never killed. |
+| `moor kanban` | Multi-profile collaboration board (tasks, links, dispatcher). |
+| `moor project` | Manage named, multi-folder workspaces (projects). Anchors desktop session grouping and, when bound to a kanban board, gives tasks a deterministic worktree + branch convention. State is per-profile. |
+| `moor webhook` | Manage dynamic webhook subscriptions for event-driven activation. |
+| `moor hooks` | Inspect, approve, or remove shell-script hooks declared in `config.yaml`. |
+| `moor doctor` | Diagnose config and dependency issues. |
+| `moor security audit` | On-demand supply-chain audit (OSV.dev) for the venv, plugin requirements, and pinned MCP servers. |
+| `moor approvals` | Approval-prompt tools — mine approval history into allowlist proposals. |
+| `moor dump` | Copy-pasteable setup summary for support/debugging. |
+| `moor prompt-size` | Show a byte breakdown of the system prompt + tool schemas (skills index, memory, profile). Runs offline. |
+| `moor debug` | Debug tools — upload logs and system info for support. |
+| `moor backup` | Back up Moor home directory to a zip file. |
+| `moor checkpoints` | Inspect / prune / clear `~/.moor/checkpoints/` (the shadow store used by `/rollback`). Run with no args for a status overview. |
+| `moor import` | Restore a Moor backup from a zip file. |
+| `moor logs` | View, tail, and filter agent/gateway/error log files. |
+| `moor config` | Show, edit, migrate, and query configuration files. |
+| `moor skin` | List, switch, and tweak display skins. |
+| `moor console` | Open the safe Moor command console. |
+| `moor pairing` | Approve or revoke messaging pairing codes. |
+| `moor skills` | Browse, install, publish, audit, and configure skills. |
+| `moor bundles` | Group several skills under a single `/<name>` slash command. See [Skill Bundles](../user-guide/features/skills.md#skill-bundles). |
+| `moor curator` | Background skill maintenance — status, run, pause, pin. See [Curator](../user-guide/features/curator.md). |
+| `moor journey` (aliases `learning`, `memory-graph`) | Timeline of learned skills + memories over time. |
+| `moor memory` | Configure external memory provider. Plugin-specific subcommands (e.g. `moor honcho`) register automatically when their provider is active. |
+| `moor acp` | Run Moor as an ACP server for editor integration. |
+| `moor mcp` | Manage MCP server configurations and run Moor as an MCP server. |
+| `moor plugins` | Manage Moor Agent plugins (install, enable, disable, remove). |
+| `moor portal` | Moor Portal status, subscription link, and Tool Gateway routing. See [Tool Gateway](../user-guide/features/tool-gateway.md). |
+| `moor tools` | Configure enabled tools per platform. |
+| `moor computer-use` | Install or check the Computer Use (cua-driver) backend (macOS/Windows/Linux). |
+| `moor pets` | Browse, install, and select [petdex](../user-guide/features/pets.md) animated pets shown across the CLI, TUI, and desktop app. Subcommands: `list`, `install`, `select`, `show`, `off`, `scale`, `remove`, `doctor`. |
+| `moor sessions` | Browse, export, prune, rename, and delete sessions. |
+| `moor insights` | Show token/cost/activity analytics. |
+| `moor claw` | OpenClaw migration helpers. |
+| `moor import-agent` | Import a Claude Code (`~/.claude`) or Codex CLI (`~/.codex`) setup. |
+| `moor dashboard` | Launch the web dashboard for managing config, API keys, and sessions. |
+| `moor serve` | Start the Moor backend server (headless; powers the desktop app and remote backends). |
+| `moor desktop` (alias `gui`) | Build and launch the native Electron desktop app. |
+| `moor profile` | Manage profiles — multiple isolated Moor instances. |
+| `moor completion` | Print shell completion scripts (bash/zsh/fish). |
+| `moor --version` | Show version information. |
+| `moor update` | Pull latest code and reinstall dependencies. `--check` previews without installing; `--backup` takes a pre-pull `MOOR_HOME` snapshot. |
+| `moor uninstall` | Remove Moor from the system. |
 
 ## `moor chat`
 
@@ -137,16 +137,16 @@ Common options:
 Examples:
 
 ```bash
-hermes
-hermes chat -q "Summarize the latest PRs"          # seeds an interactive session
-hermes chat --oneshot -q "Summarize the latest PRs"  # answer and exit
-hermes chat --provider openrouter --model anthropic/claude-sonnet-4.6
-hermes chat --toolsets web,terminal,skills
-hermes chat --quiet -q "Return only JSON"
-hermes chat -q "Inspect this repository" --format stream-json
-hermes chat --worktree -q "Review this repo and open a PR"
-hermes chat --ignore-user-config --ignore-rules -q "Repro without my personal setup"
-hermes chat --safe-mode -q "Is this bug mine or Hermes'?"
+moor
+moor chat -q "Summarize the latest PRs"          # seeds an interactive session
+moor chat --oneshot -q "Summarize the latest PRs"  # answer and exit
+moor chat --provider openrouter --model anthropic/claude-sonnet-4.6
+moor chat --toolsets web,terminal,skills
+moor chat --quiet -q "Return only JSON"
+moor chat -q "Inspect this repository" --format stream-json
+moor chat --worktree -q "Review this repo and open a PR"
+moor chat --ignore-user-config --ignore-rules -q "Repro without my personal setup"
+moor chat --safe-mode -q "Is this bug mine or Moor'?"
 ```
 
 ### `--format stream-json` — structured JSONL output
@@ -157,7 +157,7 @@ quiet non-interactive CLI mode, and rejects an explicit `--tui` request. Every
 stdout line is one JSON object; diagnostics and the `session_id:` line stay on stderr.
 
 ```bash
-hermes chat -q "Summarize this repository" --format stream-json
+moor chat -q "Summarize this repository" --format stream-json
 ```
 
 Every event carries `timestamp` (Unix epoch milliseconds).
@@ -181,7 +181,7 @@ stdio) the process exit code reports the turn's outcome, on both the quiet and
 the non-quiet path: `0` the turn completed; `1` it failed, stopped partway
 (`partial`), hit the iteration budget, or never ran (credentials / agent init
 failed); `130` it was interrupted. A Kanban dispatcher-spawned worker
-(`HERMES_KANBAN_TASK` set) whose turn failed only because the provider was
+(`MOOR_KANBAN_TASK` set) whose turn failed only because the provider was
 rate-limited, overloaded, returning 5xx, timing out, or the account hit a
 billing/quota wall, exits
 `75` (`EX_TEMPFAIL`) so the dispatcher requeues the task without counting a
@@ -209,7 +209,7 @@ Delegation remains process-local. Interrupting or terminating the parent can
 cancel unfinished children. Use a durable scheduler for work that must survive
 the initiating process.
 
-### `hermes -z <prompt>` — scripted one-shot
+### `moor -z <prompt>` — scripted one-shot
 
 For programmatic callers (shell scripts, CI, cron, parent processes piping in a prompt), `moor -z` is the purest one-shot entry point: **single prompt in, final response text out, nothing else on stdout or stderr.** No banner, no spinner, no tool previews, no `Session:` line — just the agent's final reply as plain text.
 
@@ -316,8 +316,8 @@ Subcommands:
 | `uninstall` | Remove the installed service. |
 | `setup` | Interactive messaging-platform setup. |
 | `migrate` | Move per-profile standalone gateways onto one multiplexed default gateway (`--multiplex`, the default) or roll back from the recorded manifest (`--standalone`). Runs a preflight (duplicate bot tokens, secondary port-binders without a `/p/<profile>/` ingress) and changes nothing when blocked. Flags: `--dry-run`, `-y`/`--yes`. See [Migrating from per-profile gateways](/user-guide/multi-profile-gateways#migrating-from-per-profile-gateways). |
-| `migrate-legacy` | Remove legacy `hermes.service` units left over from pre-rename installs. Profile units (`hermes-gateway-<profile>.service`) and unrelated services are never touched. Flags: `--dry-run`, `-y`/`--yes`. |
-| `enroll` | Experimental: enroll this gateway with a relay connector and save relay credentials for connector-backed platforms. See [Hermes Relay](/user-guide/messaging/relay). |
+| `migrate-legacy` | Remove legacy `moor.service` units left over from pre-rename installs. Profile units (`moor-gateway-<profile>.service`) and unrelated services are never touched. Flags: `--dry-run`, `-y`/`--yes`. |
+| `enroll` | Experimental: enroll this gateway with a relay connector and save relay credentials for connector-backed platforms. See [Moor Relay](/user-guide/messaging/relay). |
 
 Options:
 
@@ -328,7 +328,7 @@ Options:
 | `--external-supervisor` | On `run`: declare that a wrapper-provided process manager owns the foreground gateway. Use this when `sudo`, `env -i`, or another wrapper strips launchd/systemd's native environment marker. In-chat restarts and updates exit back to that manager instead of spawning a detached replacement. |
 
 `--external-supervisor` is a restart-policy contract: an in-chat restart,
-`hermes gateway restart`, or service-restart update exits with status `75`
+`moor gateway restart`, or service-restart update exits with status `75`
 (the CLI then waits for the supervisor's fresh PID instead of running a
 foreground gateway of its own), so the wrapper's supervisor must
 relaunch the gateway after that nonzero exit. For systemd, use
@@ -642,21 +642,21 @@ On-demand vulnerability scan against [OSV.dev](https://osv.dev). Covers the Moor
 Manage credential pools for same-provider key rotation. See [Credential Pools](/user-guide/features/credential-pools) for full documentation.
 
 ```bash
-hermes auth                                              # Interactive wizard
-hermes auth list                                         # Show all pools
-hermes auth list openrouter                              # Show specific provider
-hermes auth add openrouter --api-key sk-or-v1-xxx        # Add API key
-hermes auth add openrouter --type oauth                  # Browser login (OpenRouter PKCE) mints a key for you
-hermes auth add anthropic --type oauth                   # Add OAuth credential
-hermes auth add openai-codex --type oauth --priority 0   # Add an account and try it first
-hermes auth remove openrouter 2                          # Remove by index
-hermes auth priority openrouter backup-key 0             # Move a credential to the front of fill_first order
-hermes auth reset openrouter                             # Clear cooldowns
-hermes auth reset openrouter 2                           # Clear the cooldown on one credential
-hermes auth refresh openai-codex work                    # Refresh one OAuth credential and clear its cooldown
-hermes auth status anthropic                             # Show auth status for a provider
-hermes auth logout anthropic                             # Log out and clear stored auth state
-hermes auth spotify                                      # Authenticate Hermes with Spotify via PKCE
+moor auth                                              # Interactive wizard
+moor auth list                                         # Show all pools
+moor auth list openrouter                              # Show specific provider
+moor auth add openrouter --api-key sk-or-v1-xxx        # Add API key
+moor auth add openrouter --type oauth                  # Browser login (OpenRouter PKCE) mints a key for you
+moor auth add anthropic --type oauth                   # Add OAuth credential
+moor auth add openai-codex --type oauth --priority 0   # Add an account and try it first
+moor auth remove openrouter 2                          # Remove by index
+moor auth priority openrouter backup-key 0             # Move a credential to the front of fill_first order
+moor auth reset openrouter                             # Clear cooldowns
+moor auth reset openrouter 2                           # Clear the cooldown on one credential
+moor auth refresh openai-codex work                    # Refresh one OAuth credential and clear its cooldown
+moor auth status anthropic                             # Show auth status for a provider
+moor auth logout anthropic                             # Log out and clear stored auth state
+moor auth spotify                                      # Authenticate Moor with Spotify via PKCE
 ```
 
 Subcommands: `add`, `list`, `remove`, `reset`, `priority`, `refresh`, `status`, `logout`, `spotify`. When called with no subcommand, launches the interactive management wizard.
@@ -884,10 +884,10 @@ moor webhook subscribe <name> [options]
 | `--deliver-chat-id` | Target chat/channel ID for cross-platform delivery. |
 | `--secret` | Custom HMAC secret. Auto-generated if omitted. |
 | `--deliver-only` | Skip the agent — deliver the rendered `--prompt` as the literal message. Zero LLM cost, sub-second delivery. Requires `--deliver` to be a real target (not `log`). |
-| `--script` | Filter/transform script under `~/.hermes/scripts/`. The webhook payload is passed as JSON on stdin; JSON stdout replaces the payload, and empty stdout, `[SILENT]`, or a nonzero exit code ignores the webhook. See [Script Filters and Transforms](../user-guide/messaging/webhooks.md#script-filters-and-transforms). |
+| `--script` | Filter/transform script under `~/.moor/scripts/`. The webhook payload is passed as JSON on stdin; JSON stdout replaces the payload, and empty stdout, `[SILENT]`, or a nonzero exit code ignores the webhook. See [Script Filters and Transforms](../user-guide/messaging/webhooks.md#script-filters-and-transforms). |
 | `--route-profile` | Bind the route to a multiplexed profile: it is then reachable only at `/p/<profile>/webhooks/<name>` and the agent runs as that profile. Validated against existing profiles; kept on update when omitted. Not the same as the global `-p/--profile`, which selects the gateway whose subscriptions file is written. See [Multi-profile gateways](../user-guide/multi-profile-gateways.md). |
 
-Subscriptions persist to `~/.hermes/webhook_subscriptions.json` and are hot-reloaded by the webhook adapter without a gateway restart. Re-running `subscribe` for an existing name keeps its secret and profile binding unless you pass `--secret` / `--route-profile`.
+Subscriptions persist to `~/.moor/webhook_subscriptions.json` and are hot-reloaded by the webhook adapter without a gateway restart. Re-running `subscribe` for an existing name keeps its secret and profile binding unless you pass `--secret` / `--route-profile`.
 
 ## `moor doctor`
 
@@ -1018,7 +1018,7 @@ Create a zip archive of your Moor configuration, skills, sessions, and data. The
 | `-o`, `--output <path>` | Output path for the zip file (default: `~/moor-backup-<timestamp>.zip`). |
 | `-q`, `--quick` | Quick snapshot: only critical state files (config.yaml, state.db, .env, auth, cron jobs). Much faster than a full backup. |
 | `-l`, `--label <name>` | Label for the snapshot (only used with `--quick`). |
-| `-k`, `--keep <N>` | After a full backup, delete older `hermes-backup-*.zip` files in the output directory beyond the newest N (default 3; `0` keeps everything). Custom-named zips are never touched. |
+| `-k`, `--keep <N>` | After a full backup, delete older `moor-backup-*.zip` files in the output directory beyond the newest N (default 3; `0` keeps everything). Custom-named zips are never touched. |
 
 The backup uses SQLite's `backup()` API for safe copying, so it works correctly even when Moor is running (WAL-mode safe).
 
@@ -1026,10 +1026,10 @@ The backup uses SQLite's `backup()` API for safe copying, so it works correctly 
 
 - `*.db-wal`, `*.db-shm`, `*.db-journal` — SQLite's WAL / shared-memory / journal sidecars. The `*.db` file already got a consistent snapshot via `sqlite3.backup()`; shipping the live sidecars alongside it would let a restore see a half-committed state.
 - `checkpoints/` — per-session trajectory caches. Hash-keyed and regenerated per session; wouldn't port cleanly to another install anyway.
-- `models/`, `runtimes/`, `node/` at the root of `~/.hermes` (and of each `profiles/<name>/`) — regenerable runtime downloads, often tens of GB. Deeper directories with the same names (a skill's `models/`) are kept.
+- `models/`, `runtimes/`, `node/` at the root of `~/.moor` (and of each `profiles/<name>/`) — regenerable runtime downloads, often tens of GB. Deeper directories with the same names (a skill's `models/`) are kept.
 - Regenerable entries of `cache/` at those same roots — model/plugin catalogs, stamps, browser profiles, tool-output spill. Durable artifacts stay in: `cache/images`, `cache/audio`, `cache/videos`, `cache/documents`, `cache/screenshots` (media delivered to or received from you) and `cache/citations` (the grounded-citations ledger). A deeper `cache/` (inside a skill) is kept whole.
 - Unix sockets, devices, and symlinks — a zip cannot hold them; before they were excluded, a stray `gateway.sock` made every full backup report `Backup incomplete`.
-- The `hermes-agent` code itself (this is a user-data backup, not a repo snapshot).
+- The `moor-agent` code itself (this is a user-data backup, not a repo snapshot).
 
 ### Examples
 
@@ -1241,8 +1241,8 @@ Subcommands:
 |------------|-------------|
 | `show` | Show current config values. |
 | `edit` | Open `config.yaml` in your editor. |
-| `get <key> [--json] [--raw]` | Print a single config value by dotted key (e.g. `hermes config get model.default`). `--json` emits machine-readable output. Credential-shaped values (`api_key`, `*_TOKEN`, `*_SECRET`, `password`, …) are masked (`sk-o...7890`) because the agent runs this from sessions whose transcripts persist; `--raw` prints the real value (or set `security.redact_secrets: false`). |
-| `set <key> <value> [--force]` | Set a config value. Dotted paths go to `config.yaml`; every `UPPER_SNAKE` name (`OPENROUTER_API_KEY`, `DISCORD_HOME_CHANNEL`, `TELEGRAM_GROUP_ALLOWED_USERS`, `HERMES_TIMEZONE`, …) is an environment variable and goes to `.env` — the same file the platform setup flows and `/sethome` write, and the one every runtime reader resolves against. `config set` never writes an `UPPER_SNAKE` key into `config.yaml`, `--force` included; names on the env writer's denylist (`HERMES_YOLO_MODE`, `PATH`, …) are refused outright; any other `UPPER_SNAKE` name is saved to `.env` as-is (plugins, skills and external tools read it from the process environment). An unknown path under a known section (`gateway.discord.foo`) is refused with a did-you-mean and nothing is written; an unknown lowercase *top-level* key is written with a notice (top-level scalars are bridged into the environment for skills). `--force` writes either of those. |
+| `get <key> [--json] [--raw]` | Print a single config value by dotted key (e.g. `moor config get model.default`). `--json` emits machine-readable output. Credential-shaped values (`api_key`, `*_TOKEN`, `*_SECRET`, `password`, …) are masked (`sk-o...7890`) because the agent runs this from sessions whose transcripts persist; `--raw` prints the real value (or set `security.redact_secrets: false`). |
+| `set <key> <value> [--force]` | Set a config value. Dotted paths go to `config.yaml`; every `UPPER_SNAKE` name (`OPENROUTER_API_KEY`, `DISCORD_HOME_CHANNEL`, `TELEGRAM_GROUP_ALLOWED_USERS`, `MOOR_TIMEZONE`, …) is an environment variable and goes to `.env` — the same file the platform setup flows and `/sethome` write, and the one every runtime reader resolves against. `config set` never writes an `UPPER_SNAKE` key into `config.yaml`, `--force` included; names on the env writer's denylist (`MOOR_YOLO_MODE`, `PATH`, …) are refused outright; any other `UPPER_SNAKE` name is saved to `.env` as-is (plugins, skills and external tools read it from the process environment). An unknown path under a known section (`gateway.discord.foo`) is refused with a did-you-mean and nothing is written; an unknown lowercase *top-level* key is written with a notice (top-level scalars are bridged into the environment for skills). `--force` writes either of those. |
 | `unset <key>` | Remove a config key, reverting it to the built-in default. For `UPPER_SNAKE` names this removes the `.env` entry and also drops a stale top-level `config.yaml` copy left by older `config set` runs (`get` reports such a copy as stale). |
 | `path` | Print the config file path. |
 | `env-path` | Print the `.env` file path. |
@@ -1533,8 +1533,8 @@ Unified plugin management — general plugins, memory providers, and context eng
 | Subcommand | Description |
 |------------|-------------|
 | *(none)* | Composite interactive UI — general plugin toggles + provider plugin configuration. |
-| `install <identifier> [--force] [--ref COMMIT_SHA] [--allow-removed]` | Install a plugin from the Hermes plugin catalog (bare entry name), a Git URL, or `owner/repo` shorthand. Catalog names resolve to the entry's repo at its pinned 40-hex commit SHA, show the declared capability summary, and record catalog provenance in a `.hermes-catalog.json` sidecar. Raw URLs are flagged as custom (unreviewed) sources; `--ref` (full 40-character commit SHA) pins them. `--allow-removed` (DANGEROUS) bypasses the removed-plugin blocklist. |
-| `search [term] [--json]` | Search the Hermes plugin catalog (matches entry names, descriptions, and declared tools; omit `term` to list everything). The catalog is curated in-repo (`plugin-catalog/`), refreshed from the live repo with a 6-hour cache, and falls back to the in-tree copy offline. Cataloged ≠ audited — admission reviews the entry, not the code. |
+| `install <identifier> [--force] [--ref COMMIT_SHA] [--allow-removed]` | Install a plugin from the Moor plugin catalog (bare entry name), a Git URL, or `owner/repo` shorthand. Catalog names resolve to the entry's repo at its pinned 40-hex commit SHA, show the declared capability summary, and record catalog provenance in a `.moor-catalog.json` sidecar. Raw URLs are flagged as custom (unreviewed) sources; `--ref` (full 40-character commit SHA) pins them. `--allow-removed` (DANGEROUS) bypasses the removed-plugin blocklist. |
+| `search [term] [--json]` | Search the Moor plugin catalog (matches entry names, descriptions, and declared tools; omit `term` to list everything). The catalog is curated in-repo (`plugin-catalog/`), refreshed from the live repo with a 6-hour cache, and falls back to the in-tree copy offline. Cataloged ≠ audited — admission reviews the entry, not the code. |
 | `update <name>` | Pull latest changes for an unpinned installed plugin. Pinned plugins must be reinstalled with `--force --ref <new-commit>` to move. |
 | `remove <name>` (aliases: `rm`, `uninstall`) | Remove an installed plugin. |
 | `enable <name>` | Enable a disabled plugin. |
@@ -1740,7 +1740,7 @@ Import a **Claude Code** (`~/.claude`) or **OpenAI Codex CLI** (`~/.codex`) setu
 | `--yes`, `-y` | Skip confirmation prompts. |
 | `--sync` | Re-import every previously imported source whose files changed since the last import. Prompt-free; combine with `--dry-run` to preview. |
 
-Every successful import registers its source in `~/.hermes/import-sync.json`; `hermes import-agent --sync` then re-imports any registered source whose files changed (a cron-friendly way to keep an imported Claude Code / Codex setup current). See the **[import guide](../user-guide/import-from-other-agents.md)** for the full mapping tables.
+Every successful import registers its source in `~/.moor/import-sync.json`; `moor import-agent --sync` then re-imports any registered source whose files changed (a cron-friendly way to keep an imported Claude Code / Codex setup current). See the **[import guide](../user-guide/import-from-other-agents.md)** for the full mapping tables.
 
 ## `moor serve`
 
@@ -1819,16 +1819,16 @@ Manage profiles — multiple isolated Moor instances, each with its own config, 
 Examples:
 
 ```bash
-hermes profile list
-hermes profile create work --clone
-hermes profile create work --clone --sync-imports   # also carry over the import-agent sync manifest
-hermes profile use work
-hermes profile alias work --name h-work
-hermes profile export work -o work-backup.tar.gz
-hermes profile import work-backup.tar.gz --name restored
-hermes profile install github.com/user/my-distro --alias
-hermes profile update work
-hermes -p work chat -q "Hello from work profile"
+moor profile list
+moor profile create work --clone
+moor profile create work --clone --sync-imports   # also carry over the import-agent sync manifest
+moor profile use work
+moor profile alias work --name h-work
+moor profile export work -o work-backup.tar.gz
+moor profile import work-backup.tar.gz --name restored
+moor profile install github.com/user/my-distro --alias
+moor profile update work
+moor -p work chat -q "Hello from work profile"
 ```
 
 ## `moor completion`

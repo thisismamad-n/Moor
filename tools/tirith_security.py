@@ -21,7 +21,7 @@ import time
 import urllib.request
 from contextlib import suppress
 
-from hermes_constants import get_hermes_home, get_hermes_home_override, hermes_home_key
+from moor_constants import get_moor_home, get_moor_home_override, moor_home_key
 
 logger = logging.getLogger(__name__)
 _REPO = "sheeki03/tirith"
@@ -111,15 +111,15 @@ def _warn_once(key: str, message: str, *args) -> None:
 
 def _cached_path() -> str | None:
     """The path resolved on a previous call, or None if unresolved (None) / failed (_INSTALL_FAILED)."""
-    if get_hermes_home_override() is not None:
-        return _resolved_path_by_home.get(hermes_home_key())
+    if get_moor_home_override() is not None:
+        return _resolved_path_by_home.get(moor_home_key())
     return _resolved_path or None
 
 
 def _store_resolved(path: str) -> None:
     global _resolved_path
-    if get_hermes_home_override() is not None:
-        _resolved_path_by_home[hermes_home_key()] = path
+    if get_moor_home_override() is not None:
+        _resolved_path_by_home[moor_home_key()] = path
     else:
         _resolved_path = path
 
