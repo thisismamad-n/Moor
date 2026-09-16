@@ -171,7 +171,7 @@ export interface ResolveVenvMoorCommandDeps {
   isCommandScript: (command: string) => boolean
   fileExists: (filePath: string) => boolean
   directoryExists: (filePath: string) => boolean
-  canImportMoorCli: (python: string, opts?: { env?: Record<string, string> }) => boolean
+  canImportHermesCli: (python: string, opts?: { env?: Record<string, string> }) => Promise<boolean>
   getVenvPython: (venvRoot: string) => string
   getVenvSitePackagesEntries: (venvRoot: string) => string[]
   buildDesktopBackendEnv: (opts: {
@@ -205,11 +205,11 @@ export interface ResolveVenvMoorCommandDeps {
  * python doesn't exist, or the import probe fails. Otherwise returns the
  * resolved backend descriptor.
  */
-export function resolveVenvMoorCommand(
+export async function resolveVenvHermesCommand(
   command: string,
   backendArgs: string[],
-  deps: ResolveVenvMoorCommandDeps
-): {
+  deps: ResolveVenvHermesCommandDeps
+): Promise<{
   label: string
   command: string
   args: string[]
@@ -218,7 +218,7 @@ export function resolveVenvMoorCommand(
   kind: 'python'
   root: string
   shell: false
-} | null {
+} | null> {
   const {
     isWindows,
     isCommandScript,
@@ -261,13 +261,13 @@ export function resolveVenvMoorCommand(
   const root = dirname(venvRoot)
 
   if (
-    !canImportMoorCli(python, {
+    !(await canImportHermesCli(python, {
       env: {
         PYTHONPATH: [...(directoryExists(root) ? [root] : []), process.env.PYTHONPATH]
           .filter((entry): entry is string => Boolean(entry))
           .join(path.delimiter)
       }
-    })
+    }))
   ) {
     rememberLog?.(
       `Ignoring venv Moor at ${python}: runtime import probe failed (broken/partial venv); falling through to bootstrap.`

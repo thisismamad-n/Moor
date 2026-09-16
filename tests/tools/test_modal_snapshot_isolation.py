@@ -59,13 +59,13 @@ def _install_modal_test_modules(
 ):
     _reset_modules(("tools", "moor_cli", "modal"))
 
-    moor_cli = types.ModuleType("moor_cli")
-    moor_cli.__path__ = []  # type: ignore[attr-defined]
-    sys.modules["moor_cli"] = moor_cli
-    moor_home = tmp_path / "moor-home"
-    os.environ["MOOR_HOME"] = str(moor_home)
-    sys.modules["moor_cli.config"] = types.SimpleNamespace(
-        get_moor_home=lambda: moor_home,
+    hermes_cli = types.ModuleType("hermes_cli")
+    hermes_cli.__path__ = [str(REPO_ROOT / "hermes_cli")]  # type: ignore[attr-defined]
+    sys.modules["hermes_cli"] = hermes_cli
+    hermes_home = tmp_path / "hermes-home"
+    os.environ["HERMES_HOME"] = str(hermes_home)
+    sys.modules["hermes_cli.config"] = types.SimpleNamespace(
+        get_hermes_home=lambda: hermes_home,
     )
 
     tools_package = types.ModuleType("tools")

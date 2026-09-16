@@ -38,8 +38,9 @@ _cached: dict[str, str] = {}
 
 
 def _default_home() -> str:
-    """Ambient MOOR_HOME (env, else ~/.moor) as a string."""
-    return os.getenv("MOOR_HOME") or os.path.expanduser("~/.moor")
+    """Ambient process HERMES_HOME (env, else the platform default) as a string."""
+    from hermes_constants import get_process_hermes_home
+    return str(get_process_hermes_home())
 
 
 def _resolve_home(home: str | os.PathLike | None) -> Path:

@@ -11,8 +11,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from gateway.config import GatewayConfig, Platform, PlatformConfig
-from gateway.platforms.base import MessageEvent
-from moor_state import AsyncSessionDB
+from gateway.platforms.event import MessageEvent
+from hermes_state import AsyncSessionDB
 from gateway.session import (
     SessionContext,
     SessionEntry,

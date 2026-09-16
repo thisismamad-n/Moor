@@ -21,9 +21,10 @@ from pathlib import Path
 
 import pytest
 
-from moor_cli import kanban_db as kb
-from moor_cli import kanban_db_connect as kbc
-from moor_cli import kanban_db_workspace as kbw
+from hermes_cli import kanban_db as kb
+from hermes_cli.kanban_db_graph import decompose_triage_task
+from hermes_cli import kanban_db_connect as kbc
+from hermes_cli import kanban_db_workspace as kbw
 
 
 @pytest.fixture
@@ -78,7 +79,7 @@ def test_decompose_worktree_children_get_own_workspace(kanban_home):
         )
         conn.commit()
 
-        child_ids = kb.decompose_triage_task(
+        child_ids = decompose_triage_task(
             conn,
             root,
             root_assignee="orchestrator",

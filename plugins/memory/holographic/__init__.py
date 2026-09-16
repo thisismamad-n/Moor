@@ -111,18 +111,12 @@ class HolographicMemoryProvider(MemoryProvider):
     def is_available(self) -> bool:
         return True  # SQLite is always available, numpy is optional
 
-    def save_config(self, values, moor_home):
-        """Write config to config.yaml under plugins.moor-memory-store."""
-        config_path = Path(moor_home) / "config.yaml"
-        try:
-            import yaml
-            from moor_cli.config import read_user_config_raw  # raw read: merged defaults must not be persisted
-            existing = read_user_config_raw(config_path)
-            existing.setdefault("plugins", {})["moor-memory-store"] = values
-            with open(config_path, "w", encoding="utf-8") as f:
-                yaml.dump(existing, f, default_flow_style=False)
-        except Exception:
-            pass
+    def save_config(self, values, hermes_home):
+        """Write config to config.yaml under plugins.hermes-memory-store."""
+        # The canonical writer: config lock, managed-mode refusal, default stripping, atomic replace.
+        # ``merge_existing`` keeps every other section; *hermes_home* is the active profile already.
+        from hermes_cli.config import save_config
+        save_config({"plugins": {"hermes-memory-store": dict(values)}}, merge_existing=True)
 
     def get_config_schema(self):
         from moor_constants import display_moor_home

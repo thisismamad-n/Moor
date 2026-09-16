@@ -41,8 +41,8 @@ def test_refresh_secret_sources_noop_without_plugin_sources(monkeypatch):
 
     monkeypatch.setattr(reg, "list_plugin_sources", lambda: [])
     monkeypatch.setattr(
-        "moor_cli.env_loader.reset_secret_source_cache",
-        lambda: called.__setitem__("reset", called["reset"] + 1),
+        "hermes_cli.env_loader.reset_secret_source_cache",
+        lambda *a, **kw: called.__setitem__("reset", called["reset"] + 1),
     )
     monkeypatch.setattr(
         "moor_cli.env_loader.load_moor_dotenv",
@@ -67,8 +67,8 @@ def test_refresh_secret_sources_noop_when_only_builtins(monkeypatch):
         lambda: {"secrets": {"bitwarden": {"enabled": True}}},
     )
     monkeypatch.setattr(
-        "moor_cli.env_loader.reset_secret_source_cache",
-        lambda: called.__setitem__("reset", called["reset"] + 1),
+        "hermes_cli.env_loader.reset_secret_source_cache",
+        lambda *a, **kw: called.__setitem__("reset", called["reset"] + 1),
     )
     monkeypatch.setattr(
         "moor_cli.env_loader.load_moor_dotenv",
@@ -91,8 +91,8 @@ def test_refresh_secret_sources_repulls_when_plugin_enabled(monkeypatch):
         lambda: {"secrets": {"myvault": {"enabled": True}}},
     )
     monkeypatch.setattr(
-        "moor_cli.env_loader.reset_secret_source_cache",
-        lambda: called.__setitem__("reset", called["reset"] + 1),
+        "hermes_cli.env_loader.reset_secret_source_cache",
+        lambda *a, **kw: called.__setitem__("reset", called["reset"] + 1),
     )
     monkeypatch.setattr(
         "moor_cli.env_loader.load_moor_dotenv",
@@ -119,8 +119,8 @@ def test_refresh_respects_custom_is_enabled(monkeypatch):
         lambda: {"secrets": {"myvault": {"vault_id": "abc123"}}},
     )
     monkeypatch.setattr(
-        "moor_cli.env_loader.reset_secret_source_cache",
-        lambda: called.__setitem__("reset", called["reset"] + 1),
+        "hermes_cli.env_loader.reset_secret_source_cache",
+        lambda *a, **kw: called.__setitem__("reset", called["reset"] + 1),
     )
     monkeypatch.setattr(
         "moor_cli.env_loader.load_moor_dotenv",
@@ -146,8 +146,8 @@ def test_refresh_skips_custom_source_when_not_activated(monkeypatch):
         lambda: {"secrets": {"myvault": {"enabled": True}}},
     )
     monkeypatch.setattr(
-        "moor_cli.env_loader.reset_secret_source_cache",
-        lambda: called.__setitem__("reset", called["reset"] + 1),
+        "hermes_cli.env_loader.reset_secret_source_cache",
+        lambda *a, **kw: called.__setitem__("reset", called["reset"] + 1),
     )
     monkeypatch.setattr(
         "moor_cli.env_loader.load_moor_dotenv",
@@ -174,8 +174,8 @@ def test_refresh_skips_source_whose_is_enabled_raises(monkeypatch):
         lambda: {"secrets": {"myvault": {"enabled": True}}},
     )
     monkeypatch.setattr(
-        "moor_cli.env_loader.reset_secret_source_cache",
-        lambda: called.__setitem__("reset", called["reset"] + 1),
+        "hermes_cli.env_loader.reset_secret_source_cache",
+        lambda *a, **kw: called.__setitem__("reset", called["reset"] + 1),
     )
     monkeypatch.setattr(
         "moor_cli.env_loader.load_moor_dotenv",

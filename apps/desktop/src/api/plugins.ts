@@ -1,5 +1,6 @@
-import type { MoorConnection } from '@/global'
-import { reconnectBackoffDelayMs } from '@/lib/reconnect-backoff'
+import { reconnectBackoffDelayMs } from '@hermes/shared'
+
+import type { HermesConnection } from '@/global'
 import { RECONNECT_ATTEMPT_TIMEOUT_MS, withTimeout } from '@/lib/with-timeout'
 
 import { getApiRequestConnection, getApiRequestProfile, moorApi, profileScoped } from './client'

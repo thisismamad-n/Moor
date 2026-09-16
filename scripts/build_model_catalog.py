@@ -86,9 +86,7 @@ def build_catalog() -> dict:
                 "metadata": {
                     "display_name": "Moor Portal",
                     "note": (
-                        "Free-tier gating is determined live via Portal pricing "
-                        "(partition_moor_models_by_tier), not this manifest. "
-                        'The entry labeled "default": true is the model Moor '
+                        'The entry labeled "default": true is the model Hermes '
                         "silently lands on when the user never picked one."
                     ),
                 },

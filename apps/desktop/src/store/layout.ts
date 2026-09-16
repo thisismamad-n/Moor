@@ -2,13 +2,17 @@ import { atom, computed, type ReadableAtom, type WritableAtom } from 'nanostores
 
 import { SIDEBAR_COLLAPSE_MEDIA_QUERY } from '@/app/layout-constants'
 import { PANE_TOGGLE_REVEAL_EVENT } from '@/components/pane-shell'
-import { isPaneVisible, revealTreePane } from '@/components/pane-shell/tree/store'
+import {
+  restoreHiddenTreeSideTabs,
+  restoreMinimizedTreeSide,
+  setTreeSideCollapsed
+} from '@/components/pane-shell/tree/store'
 import { matchesQuery } from '@/hooks/use-media-query'
 import { connectionScopedAtom } from '@/lib/connection-scoped'
 import { type Codec, Codecs, persistentAtom } from '@/lib/persisted'
 import { arraysEqual, insertUniqueId, readKey } from '@/lib/storage'
 
-import { $paneStates, ensurePaneRegistered, setPaneOpen, setPaneWidthOverride, togglePane } from './panes'
+import { $paneStates, ensurePaneRegistered, setPaneOpen, setPaneWidthOverride } from './panes'
 import { $showAllProfiles, setShowAllProfiles } from './profile'
 import type { PullRequestBucket } from './pull-requests'
 import type { SessionStatusBucket } from './session-dot-state'
@@ -28,32 +32,33 @@ export const SIDEBAR_SESSIONS_PAGE_SIZE = 50
 // among the last 50 rows" — so narrowing the view widens the window it reads.
 export const SIDEBAR_FILTERED_PAGE_SIZE = 300
 
-const SIDEBAR_PINNED_STORAGE_KEY = 'moor.desktop.pinnedSessions'
-const SIDEBAR_AGENTS_GROUPED_STORAGE_KEY = 'moor.desktop.agentsGroupedByWorkspace'
-const SIDEBAR_CRON_OPEN_STORAGE_KEY = 'moor.desktop.sidebarCronOpen'
-const SIDEBAR_MESSAGING_OPEN_STORAGE_KEY = 'moor.desktop.sidebarMessagingOpen'
-const SIDEBAR_SESSION_ORDER_STORAGE_KEY = 'moor.desktop.sessionOrder'
-const SIDEBAR_SESSION_ORDER_MANUAL_STORAGE_KEY = 'moor.desktop.sessionOrder.manual'
-const SIDEBAR_GROUPING_STORAGE_KEY = 'moor.desktop.sidebarGrouping'
-const SIDEBAR_ALL_PROFILES_GROUPING_STORAGE_KEY = 'moor.desktop.sidebarGrouping.allProfiles'
-const SIDEBAR_ALL_PROFILES_AGENTS_GROUPED_STORAGE_KEY = 'moor.desktop.sidebarAgentsGrouped.allProfiles'
-const SIDEBAR_SORT_KEY_STORAGE_KEY = 'moor.desktop.sidebarSortKey'
-const SIDEBAR_ROW_META_STORAGE_KEY = 'moor.desktop.sidebarRowMeta'
-const SIDEBAR_CARD_ROWS_STORAGE_KEY = 'moor.desktop.sidebarCardRows'
-const SIDEBAR_STATUS_FILTER_STORAGE_KEY = 'moor.desktop.sidebarStatusFilter'
-const SIDEBAR_SHOW_ARCHIVED_STORAGE_KEY = 'moor.desktop.sidebarShowArchived'
-const SIDEBAR_PROJECT_FILTER_STORAGE_KEY = 'moor.desktop.sidebarProjectFilter'
-const SIDEBAR_PROFILE_FILTER_STORAGE_KEY = 'moor.desktop.sidebarProfileFilter'
-const SIDEBAR_PR_FILTER_STORAGE_KEY = 'moor.desktop.sidebarPrFilter'
-const SIDEBAR_WORKSPACE_ORDER_STORAGE_KEY = 'moor.desktop.workspaceOrder'
-const SIDEBAR_WORKSPACE_PARENT_ORDER_STORAGE_KEY = 'moor.desktop.workspaceParentOrder'
-const SIDEBAR_PROJECT_ORDER_STORAGE_KEY = 'moor.desktop.projectOrder'
-const SIDEBAR_WORKSPACE_COLLAPSED_STORAGE_KEY = 'moor.desktop.workspaceCollapsed'
-const SIDEBAR_WORKSPACE_NODE_OPEN_STORAGE_KEY = 'moor.desktop.workspaceNodeOpen'
-const SIDEBAR_DISMISSED_AUTO_PROJECTS_STORAGE_KEY = 'moor.desktop.dismissedAutoProjects'
-const SIDEBAR_DISMISSED_WORKTREES_STORAGE_KEY = 'moor.desktop.dismissedWorktrees'
-const PANES_FLIPPED_STORAGE_KEY = 'moor.desktop.panesFlipped'
-const RIGHT_RAIL_ACTIVE_TAB_STORAGE_KEY = 'moor.desktop.rightRailActiveTab'
+const SIDEBAR_PINNED_STORAGE_KEY = 'hermes.desktop.pinnedSessions'
+const SIDEBAR_AGENTS_GROUPED_STORAGE_KEY = 'hermes.desktop.agentsGroupedByWorkspace'
+const SIDEBAR_CRON_OPEN_STORAGE_KEY = 'hermes.desktop.sidebarCronOpen'
+const SIDEBAR_MESSAGING_OPEN_STORAGE_KEY = 'hermes.desktop.sidebarMessagingOpen'
+const SIDEBAR_SESSION_ORDER_STORAGE_KEY = 'hermes.desktop.sessionOrder'
+const SIDEBAR_SESSION_ORDER_MANUAL_STORAGE_KEY = 'hermes.desktop.sessionOrder.manual'
+const SIDEBAR_GROUPING_STORAGE_KEY = 'hermes.desktop.sidebarGrouping'
+const SIDEBAR_ALL_PROFILES_GROUPING_STORAGE_KEY = 'hermes.desktop.sidebarGrouping.allProfiles'
+const SIDEBAR_ALL_PROFILES_AGENTS_GROUPED_STORAGE_KEY = 'hermes.desktop.sidebarAgentsGrouped.allProfiles'
+const SIDEBAR_SORT_KEY_STORAGE_KEY = 'hermes.desktop.sidebarSortKey'
+const SIDEBAR_ROW_META_STORAGE_KEY = 'hermes.desktop.sidebarRowMeta'
+const SIDEBAR_CARD_ROWS_STORAGE_KEY = 'hermes.desktop.sidebarCardRows'
+const SIDEBAR_SHOW_ALL_SESSIONS_STORAGE_KEY = 'hermes.desktop.sidebarShowAllSessions'
+const SIDEBAR_STATUS_FILTER_STORAGE_KEY = 'hermes.desktop.sidebarStatusFilter'
+const SIDEBAR_SHOW_ARCHIVED_STORAGE_KEY = 'hermes.desktop.sidebarShowArchived'
+const SIDEBAR_PROJECT_FILTER_STORAGE_KEY = 'hermes.desktop.sidebarProjectFilter'
+const SIDEBAR_PROFILE_FILTER_STORAGE_KEY = 'hermes.desktop.sidebarProfileFilter'
+const SIDEBAR_PR_FILTER_STORAGE_KEY = 'hermes.desktop.sidebarPrFilter'
+const SIDEBAR_WORKSPACE_ORDER_STORAGE_KEY = 'hermes.desktop.workspaceOrder'
+const SIDEBAR_WORKSPACE_PARENT_ORDER_STORAGE_KEY = 'hermes.desktop.workspaceParentOrder'
+const SIDEBAR_PROJECT_ORDER_STORAGE_KEY = 'hermes.desktop.projectOrder'
+const SIDEBAR_WORKSPACE_COLLAPSED_STORAGE_KEY = 'hermes.desktop.workspaceCollapsed'
+const SIDEBAR_WORKSPACE_NODE_OPEN_STORAGE_KEY = 'hermes.desktop.workspaceNodeOpen'
+const SIDEBAR_DISMISSED_AUTO_PROJECTS_STORAGE_KEY = 'hermes.desktop.dismissedAutoProjects'
+const SIDEBAR_DISMISSED_WORKTREES_STORAGE_KEY = 'hermes.desktop.dismissedWorktrees'
+const PANES_FLIPPED_STORAGE_KEY = 'hermes.desktop.panesFlipped'
+const RIGHT_RAIL_ACTIVE_TAB_STORAGE_KEY = 'hermes.desktop.rightRailActiveTab'
 
 export const CHAT_SIDEBAR_PANE_ID = 'chat-sidebar'
 export const FILE_BROWSER_PANE_ID = 'file-browser'
@@ -206,6 +211,9 @@ export const $dismissedWorktreeIds = persistentAtom(
   [] as string[],
   Codecs.stringArray
 )
+// Only successful git removals may reappear on discovery. Explicit hides,
+// including legacy dismissals without provenance, remain hidden.
+export const $removedWorktreeIds = persistentAtom('hermes.desktop.removedWorktrees', [] as string[], Codecs.stringArray)
 export const $sidebarPinsOpen = atom(true)
 export const $sidebarRecentsOpen = atom(true)
 // Cron-job sessions live in their own section below recents, collapsed by
@@ -317,6 +325,13 @@ export const $sidebarRowMeta = persistentAtom<SidebarRowMeta[]>(
  *  grouping is active. Off by default; dense tree surfaces never use it. */
 export const $sidebarCardRows = persistentAtom(SIDEBAR_CARD_ROWS_STORAGE_KEY, false, Codecs.bool)
 
+/** Project overview: two complete recency groups instead of three preview rows. */
+export const $sidebarShowAllSessions = persistentAtom(SIDEBAR_SHOW_ALL_SESSIONS_STORAGE_KEY, false, Codecs.bool)
+
+export function setSidebarShowAllSessions(on: boolean) {
+  $sidebarShowAllSessions.set(on)
+}
+
 export function setSidebarCardRows(on: boolean) {
   $sidebarCardRows.set(on)
 }
@@ -384,12 +399,20 @@ export const $sidebarFiltersActive: ReadableAtom<boolean> = computed(
  *  offering. Broader than `$sidebarFiltersActive`, which only knows about what
  *  hides rows, not about how they're grouped, sorted or labelled. */
 export const $sidebarViewCustomized: ReadableAtom<boolean> = computed(
-  [$sidebarGrouping, $sidebarOrdering, $sidebarRowMeta, $sidebarCardRows, $sidebarFiltersActive],
-  (grouping, ordering, rowMeta, cardRows, filtersActive) =>
+  [
+    $sidebarGrouping,
+    $sidebarOrdering,
+    $sidebarRowMeta,
+    $sidebarCardRows,
+    $sidebarShowAllSessions,
+    $sidebarFiltersActive
+  ],
+  (grouping, ordering, rowMeta, cardRows, showAllSessions, filtersActive) =>
     grouping !== SIDEBAR_DEFAULT_GROUPING ||
     ordering !== SIDEBAR_DEFAULT_ORDERING ||
     !sameRowMeta(rowMeta, SIDEBAR_DEFAULT_ROW_META) ||
     cardRows ||
+    showAllSessions ||
     filtersActive
 )
 
@@ -467,8 +490,9 @@ export function filterVisibleProjects<T extends { id: string; isAuto?: boolean }
   return projects.filter(project => !(project.isAuto && dismissed.has(project.id)))
 }
 
-// Hide a worktree row after it's been removed via git.
-export function dismissWorktree(id: string): void {
+export function dismissWorktree(id: string, { removed = false }: { removed?: boolean } = {}): void {
+  const removedIds = $removedWorktreeIds.get().filter(worktreeId => worktreeId !== id)
+  $removedWorktreeIds.set(removed ? [...removedIds, id] : removedIds)
   const current = $dismissedWorktreeIds.get()
 
   if (!current.includes(id)) {
@@ -479,6 +503,7 @@ export function dismissWorktree(id: string): void {
 // A hidden worktree becomes visible again as soon as the user explicitly starts
 // or opens work there (for example, selecting an already-checked-out branch).
 export function restoreWorktree(id: string): void {
+  $removedWorktreeIds.set($removedWorktreeIds.get().filter(worktreeId => worktreeId !== id))
   const current = $dismissedWorktreeIds.get()
 
   if (current.includes(id)) {
@@ -508,12 +533,21 @@ function revealNarrowPane(id: string, mode: 'close' | 'open' | 'toggle'): boolea
 
 export function setSidebarOpen(open: boolean) {
   setPaneOpen(CHAT_SIDEBAR_PANE_ID, open)
+  setTreeSideCollapsed('left', !open)
+
+  if (open) {
+    restoreMinimizedTreeSide('left')
+    restoreHiddenTreeSideTabs('left')
+  }
+
   revealNarrowPane(CHAT_SIDEBAR_PANE_ID, open ? 'open' : 'close')
 }
 
 export function toggleSidebarOpen() {
   if (!revealNarrowPane(CHAT_SIDEBAR_PANE_ID, 'toggle')) {
-    togglePane(CHAT_SIDEBAR_PANE_ID)
+    const open = restoreMinimizedTreeSide('left') || !$sidebarOpen.get()
+    setPaneOpen(CHAT_SIDEBAR_PANE_ID, open)
+    setTreeSideCollapsed('left', !open)
   }
 }
 
@@ -522,23 +556,20 @@ export function toggleFileBrowserOpen() {
     return
   }
 
-  // Ask the TREE, not the pane's boolean. `$fileBrowserOpen` stays true while
-  // the tree pane sits behind a sibling tab in the shared right column (the
-  // preview rail, the diff) or inside a minimized zone, so ⌘J spent its press
-  // re-asserting a value it already held and read as a dead key. Only fold the
-  // side when the tree is genuinely the thing on screen; otherwise bring it
-  // forward through the reveal path, which fronts and un-minimizes.
-  if (!isPaneVisible(FILES_PANE_ID) && $fileBrowserOpen.get()) {
-    revealTreePane(FILES_PANE_ID)
-
-    return
-  }
-
-  togglePane(FILE_BROWSER_PANE_ID)
+  const open = restoreMinimizedTreeSide('right') || !$fileBrowserOpen.get()
+  setPaneOpen(FILE_BROWSER_PANE_ID, open)
+  setTreeSideCollapsed('right', !open)
 }
 
 export function setFileBrowserOpen(open: boolean) {
   setPaneOpen(FILE_BROWSER_PANE_ID, open)
+  setTreeSideCollapsed('right', !open)
+
+  if (open) {
+    restoreMinimizedTreeSide('right')
+    restoreHiddenTreeSideTabs('right')
+  }
+
   revealNarrowPane(FILE_BROWSER_PANE_ID, open ? 'open' : 'close')
 }
 
@@ -691,6 +722,7 @@ export function resetSidebarView() {
   setSidebarOrdering(SIDEBAR_DEFAULT_ORDERING)
   $sidebarRowMeta.set(SIDEBAR_DEFAULT_ROW_META)
   $sidebarCardRows.set(false)
+  $sidebarShowAllSessions.set(false)
   clearSidebarFilters()
 }
 

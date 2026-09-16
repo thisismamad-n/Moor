@@ -7,6 +7,7 @@
 
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import net from 'node:net'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -15,7 +16,8 @@ import { test } from 'vitest'
 import {
   canImportMoorCli,
   DEFAULT_PROBE_TIMEOUT_MS,
-  moorRuntimeImportProbe,
+  execProbe,
+  hermesRuntimeImportProbe,
   PROBE_TIMEOUT_MS,
   resolveProbeTimeoutMs,
   shouldTrustMoorOverride,
@@ -29,24 +31,71 @@ import {
 // (a tiny script we write to disk that exits 0 on --version).
 const NODE_BIN = process.execPath
 
-test('canImportMoorCli returns false when path is falsy', () => {
-  assert.equal(canImportMoorCli(''), false)
-  assert.equal(canImportMoorCli(null), false)
-  assert.equal(canImportMoorCli(undefined), false)
+test('execProbe keeps the parent event loop available to the child', async () => {
+  let unexpectedSocketError: Error | undefined
+
+  const server = net.createServer((socket) => {
+    socket.on('error', (error) => {
+      // A successful child exits immediately after reading the sentinel. On
+      // Windows that peer close can surface as ECONNRESET on the server side.
+      if ((error as NodeJS.ErrnoException).code !== 'ECONNRESET') {
+        unexpectedSocketError ??= error
+      }
+    })
+    socket.end('pong')
+  })
+
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject)
+    server.listen(0, '127.0.0.1', resolve)
+  })
+
+  const address = server.address()
+  assert.ok(address && typeof address === 'object')
+
+  const childScript = `
+    const net = require('node:net')
+    let reply = ''
+    const socket = net.createConnection(${address.port}, '127.0.0.1')
+    socket.setEncoding('utf8')
+    socket.on('data', (chunk) => { reply += chunk })
+    socket.on('end', () => process.exit(reply === 'pong' ? 0 : 1))
+    socket.on('error', () => process.exit(1))
+  `
+
+  try {
+    await execProbe(NODE_BIN, ['-e', childScript], {
+      stdio: 'ignore',
+      timeout: 5_000,
+      windowsHide: true
+    })
+  } finally {
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => (error ? reject(error) : resolve()))
+    })
+  }
+
+  assert.ifError(unexpectedSocketError)
 })
 
-test('canImportMoorCli returns false when interpreter cannot run -c', () => {
-  // node IS an interpreter, but `node -c "import moor_cli"` is a
+test('canImportHermesCli returns false when path is falsy', async () => {
+  assert.equal(await canImportHermesCli(''), false)
+  assert.equal(await canImportHermesCli(null), false)
+  assert.equal(await canImportHermesCli(undefined), false)
+})
+
+test('canImportHermesCli returns false when interpreter cannot run -c', async () => {
+  // node IS an interpreter, but `node -c "import hermes_cli"` is a
   // SyntaxError -- different exit reason from a real Python's
   // ModuleNotFoundError, but the predicate is "exit 0 or not" and
   // both land on "not", which is exactly what we want for the
   // resolver fall-through.
-  assert.equal(canImportMoorCli(NODE_BIN), false)
+  assert.equal(await canImportHermesCli(NODE_BIN), false)
 })
 
-test('canImportMoorCli returns false when binary does not exist', () => {
-  const ghost = path.join(os.tmpdir(), 'moor-probes-ghost-' + Date.now() + '.exe')
-  assert.equal(canImportMoorCli(ghost), false)
+test('canImportHermesCli returns false when binary does not exist', async () => {
+  const ghost = path.join(os.tmpdir(), 'hermes-probes-ghost-' + Date.now() + '.exe')
+  assert.equal(await canImportHermesCli(ghost), false)
 })
 
 test('moor runtime import probe checks config dependencies', () => {
@@ -68,18 +117,18 @@ test('empty Moor override is not authoritative', () => {
   assert.equal(shouldTrustMoorOverride(undefined), false)
 })
 
-test('verifyMoorCli returns false when command is falsy', () => {
-  assert.equal(verifyMoorCli(''), false)
-  assert.equal(verifyMoorCli(null), false)
-  assert.equal(verifyMoorCli(undefined), false)
+test('verifyHermesCli returns false when command is falsy', async () => {
+  assert.equal(await verifyHermesCli(''), false)
+  assert.equal(await verifyHermesCli(null), false)
+  assert.equal(await verifyHermesCli(undefined), false)
 })
 
-test('verifyMoorCli returns false when binary does not exist', () => {
-  const ghost = path.join(os.tmpdir(), 'moor-probes-ghost-' + Date.now() + '.exe')
-  assert.equal(verifyMoorCli(ghost), false)
+test('verifyHermesCli returns false when binary does not exist', async () => {
+  const ghost = path.join(os.tmpdir(), 'hermes-probes-ghost-' + Date.now() + '.exe')
+  assert.equal(await verifyHermesCli(ghost), false)
 })
 
-test('verifyMoorCli returns true when --version exits 0', () => {
+test('verifyHermesCli returns true when --version exits 0', async () => {
   // Write a tiny script that exits 0 regardless of args, then invoke
   // it through node. This stands in for a working moor binary --
   // verifyMoorCli only cares about the exit code.
@@ -92,7 +141,7 @@ test('verifyMoorCli returns true when --version exits 0', () => {
     // execFileSync passes ['--version'] as args, which node ignores
     // gracefully (well, it prints its version and exits 0, which is
     // perfect -- exit code 0 is the only signal we read).
-    assert.equal(verifyMoorCli(NODE_BIN), true)
+    assert.equal(await verifyHermesCli(NODE_BIN), true)
   } finally {
     try {
       fs.unlinkSync(scriptPath)
@@ -102,12 +151,12 @@ test('verifyMoorCli returns true when --version exits 0', () => {
   }
 })
 
-test('verifyMoorCli swallows timeouts (does not throw)', () => {
+test('verifyHermesCli swallows timeouts (does not throw)', async () => {
   // We can't easily provoke a real hang in CI without slowing the
   // suite, but we CAN confirm that an invocation that DOES throw
   // (because the binary is missing) returns false rather than
   // propagating. Same code path the timeout case takes.
-  assert.equal(verifyMoorCli('/definitely/not/a/real/binary/anywhere'), false)
+  assert.equal(await verifyHermesCli('/definitely/not/a/real/binary/anywhere'), false)
 })
 
 test('default probe timeout is 15s (not the old 5s death-loop value)', () => {

@@ -28,9 +28,7 @@ from tools import terminal_tool_sudo as tts
 def _clean_sudo_state(monkeypatch):
     """Isolate sudo-related process/thread state per test."""
     monkeypatch.delenv("SUDO_PASSWORD", raising=False)
-    monkeypatch.delenv("MOOR_GATEWAY_SESSION", raising=False)
-    # Host sudoers NOPASSWD must not short-circuit the path under test.
-    monkeypatch.setattr(tts, "_sudo_nopasswd_works", lambda: False)
+    monkeypatch.delenv("HERMES_GATEWAY_SESSION", raising=False)
     tts._reset_cached_sudo_passwords()
     tt.set_sudo_password_callback(None)
     yield
@@ -69,7 +67,7 @@ class TestDelegatedChildNeverPrompts:
         monkeypatch.setattr(
             tts,
             "_prompt_for_sudo_password",
-            lambda timeout_seconds=45: calls.append(1) or "hunter2",
+            lambda timeout_seconds=45, *, command="": calls.append(1) or "hunter2",
         )
 
         transformed, sudo_stdin = _transform_in_child("sudo apt-get update")
@@ -102,7 +100,7 @@ class TestDelegatedChildNeverPrompts:
         """The fix must not break interactive prompting outside children."""
         monkeypatch.setenv("MOOR_INTERACTIVE", "1")
         monkeypatch.setattr(
-            tts, "_prompt_for_sudo_password", lambda timeout_seconds=45: "hunter2"
+            tts, "_prompt_for_sudo_password", lambda timeout_seconds=45, *, command="": "hunter2"
         )
 
         transformed, sudo_stdin = tts._transform_sudo_command("sudo whoami")

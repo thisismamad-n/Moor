@@ -14,7 +14,14 @@ import type {
   StatusResponse
 } from '@/types/moor'
 
-import { capabilityScoped, moorApi, type ProfileScope, profileScoped, STARTUP_REQUEST_TIMEOUT_MS } from './client'
+import {
+  capabilityScoped,
+  hermesApi,
+  type ProfileScope,
+  profileScoped,
+  scopedDialPriority,
+  STARTUP_REQUEST_TIMEOUT_MS
+} from './client'
 
 export function getStatus(): Promise<StatusResponse> {
   return moorApi<StatusResponse>({
@@ -68,10 +75,14 @@ export function getMoorConfig(profile?: string): Promise<MoorConfig> {
   })
 }
 
-export function getMoorConfigRecord(profile?: ProfileScope): Promise<MoorConfigRecord> {
-  return window.moorDesktop.api<MoorConfigRecord>({
+export function getHermesConfigRecord(
+  profile?: ProfileScope,
+  { includeDefaults = true }: { includeDefaults?: boolean } = {}
+): Promise<HermesConfigRecord> {
+  return window.hermesDesktop.api<HermesConfigRecord>({
     ...capabilityScoped(profile),
-    path: '/api/config'
+    ...scopedDialPriority(profile),
+    path: includeDefaults ? '/api/config' : '/api/config?include_defaults=false'
   })
 }
 
@@ -86,14 +97,20 @@ export function getMoorConfigDefaults(): Promise<MoorConfigRecord> {
 export function getMoorConfigSchema(profile?: null | string): Promise<ConfigSchemaResponse> {
   return moorApi<ConfigSchemaResponse>({
     ...profileScoped(profile),
+    ...scopedDialPriority(profile),
     path: '/api/config/schema'
   })
 }
 
-export function saveMoorConfig(config: MoorConfigRecord, profile?: null | string): Promise<{ ok: boolean }> {
-  return moorApi<{ ok: boolean }>({
+export function saveHermesConfig(
+  config: HermesConfigRecord,
+  profile?: null | string,
+  { preserveLanguage = false }: { preserveLanguage?: boolean } = {}
+): Promise<{ ok: boolean }> {
+  return hermesApi<{ ok: boolean }>({
     ...profileScoped(profile),
-    path: '/api/config',
+    ...scopedDialPriority(profile),
+    path: preserveLanguage ? '/api/config?preserve_language=true' : '/api/config',
     method: 'PUT',
     body: { config }
   })
@@ -105,6 +122,7 @@ export function saveMoorConfig(config: MoorConfigRecord, profile?: null | string
 export function saveMoorConfigRecord(config: MoorConfigRecord, profile?: ProfileScope): Promise<{ ok: boolean }> {
   return window.moorDesktop.api<{ ok: boolean }>({
     ...capabilityScoped(profile),
+    ...scopedDialPriority(profile),
     path: '/api/config',
     method: 'PUT',
     body: { config }
@@ -114,6 +132,7 @@ export function saveMoorConfigRecord(config: MoorConfigRecord, profile?: Profile
 export function getEnvVars(profile?: null | string): Promise<Record<string, EnvVarInfo>> {
   return moorApi<Record<string, EnvVarInfo>>({
     ...profileScoped(profile),
+    ...scopedDialPriority(profile),
     path: '/api/env'
   })
 }
@@ -121,6 +140,7 @@ export function getEnvVars(profile?: null | string): Promise<Record<string, EnvV
 export function setEnvVar(key: string, value: string, profile?: ProfileScope): Promise<{ ok: boolean }> {
   return window.moorDesktop.api<{ ok: boolean }>({
     ...capabilityScoped(profile),
+    ...scopedDialPriority(profile),
     path: '/api/env',
     method: 'PUT',
     body: { key, value }
@@ -130,6 +150,7 @@ export function setEnvVar(key: string, value: string, profile?: ProfileScope): P
 export function deleteEnvVar(key: string, profile?: ProfileScope): Promise<{ ok: boolean }> {
   return window.moorDesktop.api<{ ok: boolean }>({
     ...capabilityScoped(profile),
+    ...scopedDialPriority(profile),
     path: '/api/env',
     method: 'DELETE',
     body: { key }
@@ -139,6 +160,7 @@ export function deleteEnvVar(key: string, profile?: ProfileScope): Promise<{ ok:
 export function revealEnvVar(key: string, profile?: ProfileScope): Promise<{ key: string; value: string }> {
   return window.moorDesktop.api<{ key: string; value: string }>({
     ...capabilityScoped(profile),
+    ...scopedDialPriority(profile),
     path: '/api/env/reveal',
     method: 'POST',
     body: { key }
@@ -198,16 +220,21 @@ export function deleteCustomEndpoint(id: string): Promise<CustomEndpointsRespons
   })
 }
 
-export function listOAuthProviders(): Promise<OAuthProvidersResponse> {
-  return moorApi<OAuthProvidersResponse>({
-    ...profileScoped(),
+export function listOAuthProviders(profile?: null | string): Promise<OAuthProvidersResponse> {
+  return hermesApi<OAuthProvidersResponse>({
+    ...profileScoped(profile),
+    ...scopedDialPriority(profile),
     path: '/api/providers/oauth'
   })
 }
 
-export function disconnectOAuthProvider(providerId: string): Promise<{ ok: boolean; provider: string }> {
-  return moorApi<{ ok: boolean; provider: string }>({
-    ...profileScoped(),
+export function disconnectOAuthProvider(
+  providerId: string,
+  profile?: null | string
+): Promise<{ ok: boolean; provider: string }> {
+  return hermesApi<{ ok: boolean; provider: string }>({
+    ...profileScoped(profile),
+    ...scopedDialPriority(profile),
     path: `/api/providers/oauth/${encodeURIComponent(providerId)}`,
     method: 'DELETE'
   })
@@ -216,15 +243,22 @@ export function disconnectOAuthProvider(providerId: string): Promise<{ ok: boole
 export function startOAuthLogin(providerId: string, profile?: ProfileScope): Promise<OAuthStartResponse> {
   return window.moorDesktop.api<OAuthStartResponse>({
     ...capabilityScoped(profile),
+    ...scopedDialPriority(profile),
     path: `/api/providers/oauth/${encodeURIComponent(providerId)}/start`,
     method: 'POST',
     body: {}
   })
 }
 
-export function submitOAuthCode(providerId: string, sessionId: string, code: string): Promise<OAuthSubmitResponse> {
-  return moorApi<OAuthSubmitResponse>({
-    ...profileScoped(),
+export function submitOAuthCode(
+  providerId: string,
+  sessionId: string,
+  code: string,
+  profile?: null | string
+): Promise<OAuthSubmitResponse> {
+  return hermesApi<OAuthSubmitResponse>({
+    ...profileScoped(profile),
+    ...scopedDialPriority(profile),
     path: `/api/providers/oauth/${encodeURIComponent(providerId)}/submit`,
     method: 'POST',
     body: { session_id: sessionId, code }
@@ -238,13 +272,15 @@ export function pollOAuthSession(
 ): Promise<OAuthPollResponse> {
   return window.moorDesktop.api<OAuthPollResponse>({
     ...capabilityScoped(profile),
+    ...scopedDialPriority(profile),
     path: `/api/providers/oauth/${encodeURIComponent(providerId)}/poll/${encodeURIComponent(sessionId)}`
   })
 }
 
-export function cancelOAuthSession(sessionId: string): Promise<{ ok: boolean }> {
-  return moorApi<{ ok: boolean }>({
-    ...profileScoped(),
+export function cancelOAuthSession(sessionId: string, profile?: null | string): Promise<{ ok: boolean }> {
+  return hermesApi<{ ok: boolean }>({
+    ...profileScoped(profile),
+    ...scopedDialPriority(profile),
     path: `/api/providers/oauth/sessions/${encodeURIComponent(sessionId)}`,
     method: 'DELETE'
   })

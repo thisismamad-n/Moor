@@ -20,7 +20,7 @@ from datetime import datetime, timedelta
 from unittest.mock import patch
 
 
-from gateway.config import GatewayConfig, Platform, SessionResetPolicy
+from gateway.config import GatewayConfig, Platform
 from gateway.session import SessionEntry, SessionStore
 
 
@@ -31,8 +31,8 @@ def test_session_store_default_db_uses_runtime_moor_home(tmp_path, monkeypatch):
     moor_state before a fixture redirected MOOR_HOME used to pin every
     default SessionDB() at the developer's real ~/.moor/state.db.
     """
-    config = GatewayConfig(default_reset_policy=SessionResetPolicy(mode="none"))
-    fake_home = tmp_path / "alt_moor_home"
+    config = GatewayConfig()
+    fake_home = tmp_path / "alt_hermes_home"
     fake_home.mkdir()
     monkeypatch.setenv("MOOR_HOME", str(fake_home))
 
@@ -50,7 +50,7 @@ def test_session_store_default_db_uses_runtime_moor_home(tmp_path, monkeypatch):
 def _make_store(tmp_path, max_age_days: int = 90, has_active_processes_fn=None):
     """Build a SessionStore bypassing SQLite/disk-load side effects."""
     config = GatewayConfig(
-        default_reset_policy=SessionResetPolicy(mode="none"),
+
         session_store_max_age_days=max_age_days,
     )
     with patch("gateway.session.SessionStore._ensure_loaded"):
@@ -188,7 +188,7 @@ class TestPrunePersistsToDisk:
     def test_prune_rewrites_sessions_json(self, tmp_path):
         """After prune, sessions.json on disk reflects the new dict."""
         config = GatewayConfig(
-            default_reset_policy=SessionResetPolicy(mode="none"),
+
             session_store_max_age_days=90,
         )
         store = SessionStore(sessions_dir=tmp_path, config=config)
@@ -257,5 +257,4 @@ class TestReadmeSentinel:
         assert next(iter(raw)) == "_README"
         # The note points users at the real store and command.
         assert "state.db" in raw["_README"]
-        assert "moor sessions list" in raw["_README"]
-
+        assert "hermes sessions list" in raw["_README"]

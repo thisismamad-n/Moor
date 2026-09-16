@@ -96,19 +96,23 @@ def _scrub_child_env(source_env, is_passthrough=None, is_windows=None):
     # delegate_task children are marked by a ContextVar, not os.environ, and the sandbox crosses
     # a process boundary: strip dispatcher-owned Kanban vars AFTER the scrub so an explicit
     # passthrough cannot re-grant a delegated child the parent's board mutation capability.
-    try:
-        from agent.delegation_context import is_delegated_child_process_context, scrub_kanban_env
-        if is_delegated_child_process_context():
-            scrubbed = scrub_kanban_env(scrubbed)
-    except Exception:
-        pass
-    return scrubbed
+    from agent.delegation_context import (
+        DELEGATED_CHILD_ENV_MARKER, delegated_child_subprocess_env,
+    )
+    scoped = delegated_child_subprocess_env(source_env)
+    # Preserve location only when carrying the descendant fence, not for arbitrary
+    # non-allowlisted HERMES_* values in otherwise ordinary execution environments.
+    if scoped.get(DELEGATED_CHILD_ENV_MARKER):
+        for key in (DELEGATED_CHILD_ENV_MARKER, "HERMES_KANBAN_DB", "HERMES_KANBAN_BOARD"):
+            if key in scoped:
+                scrubbed[key] = scoped[key]
+    return delegated_child_subprocess_env(scrubbed)
 
 
 def _build_child_env(*, rpc_endpoint: str, rpc_token: str, tmpdir: str,
                      child_python: str) -> Dict[str, str]:
     """Build the scrubbed child environment both execution paths share."""
-    from moor_constants import apply_subprocess_home_env
+    from hermes_constants import apply_subprocess_home_env, get_hermes_home_override
     child_env = _scrub_child_env(os.environ)
     child_env["MOOR_RPC_SOCKET"] = rpc_endpoint
     child_env["MOOR_RPC_TOKEN"] = rpc_token
@@ -117,18 +121,29 @@ def _build_child_env(*, rpc_endpoint: str, rpc_token: str, tmpdir: str,
     # code page (cp1252) and print("→") raises; harmless under a C/POSIX locale (containers).
     child_env["PYTHONIOENCODING"] = "utf-8"
     child_env["PYTHONUTF8"] = "1"
-    # Only TZ reaches the child; MOOR_TIMEZONE is an internal setting.
-    _tz_name = os.getenv("MOOR_TIMEZONE", "").strip()
+    # Only TZ reaches the child; HERMES_TIMEZONE is an internal setting (and under the multiplexed
+    # gateway holds only the default profile's value — hermes_time resolves the routed profile's).
+    from hermes_time import get_timezone_name
+
+    _tz_name = get_timezone_name()
     if _tz_name:
         child_env["TZ"] = _tz_name
     child_env.pop("MOOR_TIMEZONE", None)
     apply_subprocess_home_env(child_env)
-    # PYTHONPATH: the staging dir (moor_tools.py) must always be importable even when project
-    # mode changes CWD. Moor's root is added ONLY when the child runs in Moor's Python env —
-    # exposing Moor's site-packages to an external interpreter can mix incompatible compiled
-    # extensions (3.12 NumPy under a 3.9 venv). Inherited moor-owned entries are stripped first.
-    # Before re-injecting PYTHONPATH, strip moor-owned entries that leaked through _scrub_child_env
-    # (PYTHONPATH is in _SAFE_ENV_PREFIXES so it passes the scrub). They are redundant for same-Moor-
+    # Multiplexed gateway/Desktop (#110303): the server process env carries the machine-default
+    # HERMES_HOME, but this turn runs under a per-profile override (ContextVar bound per turn).
+    # The scrub above passed the stale default through; rewrite it so skill scripts see the
+    # active profile's home — the same per-turn rewrite apply_subprocess_home_env does for HOME.
+    # No override (dedicated per-profile process) → leave the inherited value untouched.
+    _home_override = get_hermes_home_override()
+    if _home_override:
+        child_env["HERMES_HOME"] = _home_override
+    # PYTHONPATH: the staging dir (hermes_tools.py) must always be importable even when project
+    # mode changes CWD. Hermes's root is added ONLY when the child runs in Hermes's Python env —
+    # exposing Hermes's site-packages to an external interpreter can mix incompatible compiled
+    # extensions (3.12 NumPy under a 3.9 venv). Inherited Hermes-owned entries are stripped first.
+    # Before re-injecting PYTHONPATH, strip Hermes-owned entries that leaked through _scrub_child_env
+    # (PYTHONPATH is in _SAFE_ENV_PREFIXES so it passes the scrub). They are redundant for same-Hermes-
     # environment children and may be incompatible with external interpreters (project mode can select a
     # different venv), so they must not shadow or poison the child's sys.path (#74817).
     from tools.environments.local_pythonpath import _strip_moor_owned_pythonpath
