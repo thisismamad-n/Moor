@@ -273,47 +273,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path, *, assume_yes: 
 
     See #97052.
     """
-    from moor_cli.update_cmd import _count_commits_between, _has_upstream_remote, _no_prompt_git_kwargs, _should_skip_upstream_prompt
-    if not _has_upstream_remote(git_cmd, cwd) and (
-        _should_skip_upstream_prompt() or not _offer_upstream_remote(git_cmd, cwd, assume_yes=assume_yes, input_fn=input_fn)
-    ):
-        return False
-    print("\n→ Fetching upstream...")
-    try:
-        subprocess.run(git_cmd + ["fetch", "upstream", "main", "--quiet"], cwd=cwd, capture_output=True, check=True, **_no_prompt_git_kwargs())
-    except subprocess.CalledProcessError:
-        print("  ✗ Failed to fetch upstream. Skipping upstream sync.")
-        return False
-    origin_ahead = _count_commits_between(git_cmd, cwd, "upstream/main", "origin/main")
-    upstream_ahead = _count_commits_between(git_cmd, cwd, "origin/main", "upstream/main")
-    if origin_ahead < 0 or upstream_ahead < 0:
-        print("  ✗ Could not compare branches. Skipping upstream sync.")
-        return False
-    if origin_ahead > 0:
-        print(
-            f"\nℹ Your fork has {origin_ahead} commit(s) not on upstream.\n"
-            "  Skipping upstream sync to preserve your changes.\n"
-            "  If you want to merge upstream changes, run:\n    git pull upstream main"
-        )
-        return True
-    if upstream_ahead == 0:
-        print("  ✓ Fork is up to date with upstream")
-        return True
-    print(f"\n→ Fork is {upstream_ahead} commit(s) behind upstream\n→ Pulling from upstream...")
-    try:
-        subprocess.run(git_cmd + ["pull", "--ff-only", "upstream", "main"], cwd=cwd, check=True, **_no_prompt_git_kwargs())
-    except subprocess.CalledProcessError:
-        print("  ✗ Failed to pull from upstream. You may need to resolve conflicts manually.")
-        return False
-    print("  ✓ Updated from upstream\n→ Syncing fork...")
-    if _sync_fork_with_upstream(git_cmd, cwd):
-        print("  ✓ Fork synced with upstream")
-    else:
-        print(
-            "  ℹ Got updates from upstream but couldn't push to fork (no write access?)\n"
-            "    Your local repo is updated, but your fork on GitHub may be behind."
-        )
-    return True
+    return False
 
 
 def _has_http_code(stderr: str, *codes: str) -> bool:

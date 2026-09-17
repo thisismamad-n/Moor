@@ -1323,6 +1323,8 @@ def _cmd_update_impl(args, gateway_mode: bool):
     print("☤ Updating Moor Agent...")
     print()
 
+    from moor_cli.update_source import validate_checkout
+    validate_checkout(_m().PROJECT_ROOT, _m()._resolve_update_branch(args))
     _pre_update_plan = _begin_update_receipt_and_plan(args)
 
     # Backup before any git/file mutation; the snapshot id (None if disabled/failed) feeds
@@ -1400,6 +1402,8 @@ def _cmd_update_impl(args, gateway_mode: bool):
             _print_fetch_failure(fetch_result.stderr)
             sys.exit(1)
 
+        from moor_cli.update_source import validate_git_target
+        validate_git_target(git_cmd, _m().PROJECT_ROOT, branch)
         current_branch = _current_branch_name(git_cmd, check=True)
         _plan = _prepare_checkout_for_update(
             git_cmd, branch, current_branch, is_fork=is_fork, assume_yes=assume_yes,

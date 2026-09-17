@@ -400,7 +400,7 @@ import {
 import { branchTipApiUrl, cacheIsFresh, compareApiUrl, githubRepoSlug, parseCompare } from './update-api-check'
 import { waitForUpdateClearance } from './update-gate'
 import { readLiveUpdateMarker, updateHandoffConflict, writeUpdateMarker } from './update-marker'
-import { isOfficialSshRemote, OFFICIAL_REPO_HTTPS_URL, resolveGitAuthArgs, resolveUpdateAuthHeaders } from './update-remote'
+import { canonicalGitHubRemote, resolveMoorUpdateSource, resolveMoorUpdateEnv } from './update-remote'
 import {
   collectRelaunchArgs,
   describeUpdaterHandoffFailure,
@@ -880,7 +880,7 @@ const PROFILE_NAME_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/
 // Branch we track for self-update. The GUI work has merged to main, so this
 // tracks main. User can also override at runtime via
 // moorDesktop.updates.setBranch().
-const DEFAULT_UPDATE_BRANCH = 'main'
+const DEFAULT_UPDATE_BRANCH = 'master'
 // desktop.log lives under MOOR_HOME/logs/ so it sits next to agent.log,
 // errors.log, gateway.log produced by moor_logging.setup_logging â€” one log
 // directory per user, regardless of which UI surface produced the line.
@@ -3132,26 +3132,13 @@ function emitUpdateProgress(payload) {
 // "ref absent" (exit 2), never on a transient network error, so a flaky
 // connection can't strand a user on the wrong branch.
 async function resolveHealedBranch(updateRoot, branch) {
-  if (!branch || branch === 'main') {
-    return branch || 'main'
-  }
-
-  const originUrl = await getOriginUrl(updateRoot)
-  const remote = isOfficialSshRemote(originUrl) ? OFFICIAL_REPO_HTTPS_URL : 'origin'
-  const probe = await runGit(['ls-remote', '--exit-code', '--heads', remote, branch], { cwd: updateRoot })
-
-  if (probe.code !== 2) {
-    return branch
-  }
-
-  rememberLog(`[updates] origin/${branch} is gone (merged?); falling back to main`)
   const config = readDesktopUpdateConfig()
-
-  if (config.branch !== 'main') {
-    writeDesktopUpdateConfig({ ...config, branch: 'main' })
+  const source = resolveMoorUpdateSource(config.repo, branch)
+  const originUrl = await getOriginUrl(updateRoot)
+  if (canonicalGitHubRemote(originUrl) !== canonicalGitHubRemote(source.url)) {
+    throw new Error('Backend origin is not the Moor repository. Repair the installation before updating.')
   }
-
-  return 'main'
+  return source.branch
 }
 
 // Passive checks never touch git's network side. Every client used to `git
@@ -3188,15 +3175,16 @@ async function checkUpdates({ force = false }: { force?: boolean } = {}) {
     getOriginUrl(updateRoot)
   ])
 
+  const source = resolveMoorUpdateSource(readDesktopUpdateConfig().repo, branch)
   const cached = readUpdateCheckCache()
   const now = Date.now()
 
-  if (!force && cacheIsFresh(cached, { branch, currentSha, now })) {
+  if (!force && cached?.status?.repo === source.repo && cacheIsFresh(cached, { branch, currentSha, now })) {
     return { ...cached.status, dirty: dirtyStr.length > 0, currentBranch }
   }
 
   branch = await resolveHealedBranch(updateRoot, branch)
-  const slug = githubRepoSlug(originUrl)
+  const slug = source.repo
 
   const status = slug
     ? await checkUpdatesViaApi({ slug, branch, currentSha })
@@ -3204,6 +3192,7 @@ async function checkUpdates({ force = false }: { force?: boolean } = {}) {
 
   const result = {
     supported: true,
+    repo: source.repo,
     branch,
     currentBranch,
     currentSha,
@@ -3283,8 +3272,10 @@ async function checkUpdatesViaApi({ slug, branch, currentSha }) {
 // counting via the local graph only when the tip is already known locally.
 async function checkUpdatesViaLsRemote({ updateRoot, branch, currentSha }) {
   const cfg = readDesktopUpdateConfig()
-  const authArgs = resolveGitAuthArgs(cfg.pat || process.env.MOOR_GITHUB_TOKEN || process.env.GITHUB_TOKEN || process.env.GH_TOKEN)
-  const target = await runGit([...authArgs, 'ls-remote', 'origin', `refs/heads/${branch}`], { cwd: updateRoot })
+  const source = resolveMoorUpdateSource(cfg.repo, branch)
+  const target = await runGit(['ls-remote', source.url, `refs/heads/${source.branch}`], {
+    cwd: updateRoot, env: resolveMoorUpdateEnv(cfg.pat)
+  })
   const targetSha = firstLine(target.stdout).split(/\s+/)[0] || ''
 
   if (target.code !== 0 || !targetSha) {
@@ -3985,6 +3976,10 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
   updateInFlight = true
 
   try {
+    await resolveHealedBranch(resolveUpdateRoot(), readDesktopUpdateConfig().branch)
+    if (IS_WINDOWS && !resolveUpdateScriptHandoff(resolveUpdateRoot())) {
+      return { ok: false, error: 'unsafe-updater', message: 'Install a current Moor installer before updating; the legacy updater cannot verify Moor releases.' }
+    }
     const updater = resolveUpdaterBinary()
 
     if (!updater && !IS_WINDOWS) {
@@ -4224,7 +4219,7 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
       child = spawnUpdaterProcess(wrapped.command, wrapped.args, {
         cwd: MOOR_HOME,
         env: {
-          ...process.env,
+          ...resolveMoorUpdateEnv(readDesktopUpdateConfig().pat),
           MOOR_HOME,
           MOOR_UPDATE_STARTED_AT: String(updateStartedAt),
           PATH: pathWithMoorManagedNode(venvBin)
@@ -4623,7 +4618,7 @@ async function applyUpdatesPosixHandoff(opts: any) {
   const child = spawnUpdaterProcess(handoff.command, args, {
     cwd: MOOR_HOME,
     env: {
-      ...process.env,
+      ...resolveMoorUpdateEnv(readDesktopUpdateConfig().pat),
       MOOR_HOME,
       MOOR_UPDATE_STARTED_AT: String(updateStartedAt),
       PATH: pathWithMoorManagedNode(path.join(updateRoot, 'venv', 'bin'))
@@ -17604,7 +17599,7 @@ ipcMain.handle('moor:updates:apply', async (_event, payload) =>
   }))
 )
 
-ipcMain.handle('moor:updates:branch:get', async () => readDesktopUpdateConfig())
+ipcMain.handle('moor:updates:branch:get', async () => ({ branch: readDesktopUpdateConfig().branch }))
 
 ipcMain.handle('moor:updates:branch:set', async (_event, name) => {
   const current = readDesktopUpdateConfig()

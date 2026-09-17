@@ -69,6 +69,33 @@ function isOfficialSshRemote(url?: string | null, customCanonical?: string | nul
   return isSshRemote(url) && (canonical === official || canonical === LEGACY_UPSTREAM_CANONICAL || canonical === OFFICIAL_REPO_CANONICAL)
 }
 
+export function resolveMoorUpdateSource(repo?: string, branch?: string) {
+  const source = { repo: 'thisismamad-n/Moor', branch: 'master', url: 'https://github.com/thisismamad-n/Moor.git' }
+  if (repo && canonicalGitHubRemote(repo) !== canonicalGitHubRemote(source.url)) {
+    throw new Error('Updates must use thisismamad-n/Moor. Configure the Moor repository in Settings → About.')
+  }
+  if (branch && branch !== source.branch) {
+    throw new Error('Moor updates are published on master. Select master before updating.')
+  }
+  return source
+}
+
+export function resolveMoorUpdateEnv(token?: string, base: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  const clean = (token || base.MOOR_GITHUB_TOKEN || base.GITHUB_TOKEN || base.GH_TOKEN || '').trim()
+  if (/[\r\n\0]/.test(clean)) throw new Error('Invalid update token.')
+  const env: NodeJS.ProcessEnv = { ...base, GIT_TERMINAL_PROMPT: '0', GCM_INTERACTIVE: 'Never' }
+  if (!clean) return env
+  const count = Number(env.GIT_CONFIG_COUNT || 0)
+  if (!Number.isSafeInteger(count) || count < 0) throw new Error('Invalid Git environment configuration.')
+  return {
+    ...env,
+    MOOR_GITHUB_TOKEN: clean,
+    GIT_CONFIG_COUNT: String(count + 1),
+    [`GIT_CONFIG_KEY_${count}`]: `http.${resolveMoorUpdateSource().url}.extraHeader`,
+    [`GIT_CONFIG_VALUE_${count}`]: `Authorization: Basic ${Buffer.from(`x-access-token:${clean}`).toString('base64')}`
+  }
+}
+
 function resolveGitAuthArgs(token?: string | null): string[] {
   const clean = String(token || '').trim()
   if (!clean) {

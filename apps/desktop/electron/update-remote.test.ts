@@ -27,6 +27,8 @@ import {
   OFFICIAL_REPO_CANONICAL,
   OFFICIAL_REPO_HTTPS_URL,
   resolveGitAuthArgs,
+  resolveMoorUpdateSource,
+  resolveMoorUpdateEnv,
   resolveUpdateAuthHeaders
 } from './update-remote'
 
@@ -83,6 +85,26 @@ test('resolveGitAuthArgs formats git extraHeader args when token is supplied', (
   assert.deepEqual(resolveGitAuthArgs(''), [])
   assert.deepEqual(resolveGitAuthArgs('  '), [])
   assert.deepEqual(resolveGitAuthArgs('ghp_testToken123'), ['-c', 'http.extraHeader=AUTHORIZATION: bearer ghp_testToken123'])
+})
+
+test('Moor source rejects other repositories and branches', () => {
+  const source = resolveMoorUpdateSource()
+  assert.equal(source.repo, 'thisismamad-n/Moor')
+  assert.equal(source.branch, 'master')
+  assert.equal(source.url, 'https://github.com/thisismamad-n/Moor.git')
+  assert.deepEqual(resolveMoorUpdateSource(source.url, source.branch), source)
+  assert.throws(() => resolveMoorUpdateSource('unrelated/agent'))
+  assert.throws(() => resolveMoorUpdateSource(source.repo, 'main'))
+})
+
+test('Moor handoff keeps credentials in scoped environment only', () => {
+  const env = resolveMoorUpdateEnv('test-token', { PATH: 'tools' })
+  assert.equal(env.PATH, 'tools')
+  assert.equal(env.MOOR_GITHUB_TOKEN, 'test-token')
+  assert.equal(env.GIT_TERMINAL_PROMPT, '0')
+  assert.equal(env.GIT_CONFIG_KEY_0, 'http.https://github.com/thisismamad-n/Moor.git.extraHeader')
+  assert.equal(env.GIT_CONFIG_VALUE_0, `Authorization: Basic ${Buffer.from('x-access-token:test-token').toString('base64')}`)
+  assert.throws(() => resolveMoorUpdateEnv('bad\r\ntoken', {}))
 })
 
 test('resolveUpdateAuthHeaders creates headers with optional Bearer token', () => {
