@@ -698,3 +698,121 @@ Whenever merging changes from upstream Hermes (`NousResearch/hermes-agent`):
    python scripts/rebrand.py --verify
    ```
 
+---
+
+## 12. CLI visual brand system & upstream sync preservation pipeline
+
+Moor CLI is the executive terminal interface for autonomous operations. Downstream upstream merges and the rebrand pipeline must never degrade or revert the Moor CLI back to the legacy Hermes appearance, ASCII art, Greek Caduceus symbols, or gold/amber color palettes.
+
+### A. The Moor CLI Visual Brand System
+
+#### 1. Brutalist "MOOR" Lettermark Banner (`MOOR_AGENT_LOGO`)
+Located in `moor_cli/banner.py`:
+- 6-line brutalist block ASCII font spanning 43 columns:
+  ```
+  [bold #38bdf8]███╗   ███╗   ██████╗    ██████╗   ██████╗ [/]
+  [bold #3b82f6]████╗ ████║  ██╔═══██╗  ██╔═══██╗  ██╔══██╗[/]
+  [#2563eb]██╔████╔██║  ██║   ██║  ██║   ██║  ██████╔╝[/]
+  [#2563eb]██║╚██╔╝██║  ██║   ██║  ██║   ██║  ██╔══██╗[/]
+  [#06b6d4]██║ ╚═╝ ██║  ╚██████╔╝  ╚██████╔╝  ██║  ██║[/]
+  [#0891b2]╚═╝     ╚═╝   ╚═════╝    ╚═════╝   ╚═╝  ╚═╝[/]
+  ```
+- Rendered when terminal width >= 95 columns.
+- Never revert to `HERMES-AGENT` or generic yellow fonts.
+
+#### 2. Precision Cyber-Ant Terminal Hero Emblem (`MOOR_ANT_HERO`)
+Located in `moor_cli/banner.py`:
+- 13-line, 30-column Braille/Unicode cybernetic ant silhouette:
+  - Antennae: Forward sensory arcs angled at 38° with glowing ionic terminals (`#06b6d4`).
+  - Head: Angular cybernetic crest with optic visor slit (`#38bdf8`).
+  - Thorax & Core: Segmented hexagonal armor chassis with glowing center core node `⬡` (`#2563eb` / `#3b82f6`).
+  - Abdomen: Deep tapered hydraulic shell (`#1d4ed8`).
+  - Legs: Articulated three-joint stance lines projecting stability and speed (`#1e2532`).
+  - Baseline: `[dim #06b6d4]cyber-ant online[/]`
+- Replaces the legacy Greek Hermes Caduceus wings/staff.
+- Alias `MOOR_CADUCEUS = MOOR_ANT_HERO` is retained for backwards compatibility.
+
+#### 3. Cyber-Obsidian Default Skin & Theme Palette
+Defined in `moor_cli/skin_engine.py`:
+- Base `default` skin palette:
+  - `banner_border`: `#2563eb` (Electric Cobalt)
+  - `banner_title`: `#38bdf8` (Bright Cyan)
+  - `banner_accent`: `#3b82f6` (Cobalt Glow)
+  - `banner_dim`: `#64748b` (Slate Muted)
+  - `banner_text`: `#f1f5f9` (High-contrast Titanium)
+  - `status_bar_bg`: `#090b10` (Deep Obsidian)
+  - `status_bar_text`: `#f1f5f9`
+  - `status_bar_strong`: `#38bdf8`
+  - `status_bar_dim`: `#64748b`
+  - `status_bar_good`: `#10b981` (Emerald)
+  - `status_bar_warn`: `#f59e0b` (Amber)
+  - `status_bar_bad`: `#ef4444` (Crimson)
+  - `status_bar_critical`: `#dc2626`
+  - `ui_accent`: `#3b82f6`
+  - `ui_label`: `#06b6d4`
+  - `input_rule`: `#2563eb`
+  - `response_border`: `#2563eb`
+  - `completion_menu_bg`: `#090b10`
+  - `completion_menu_current_bg`: `#1e293b`
+  - `selection_bg`: `#1e2532`
+  - `shell_dollar`: `#06b6d4`
+  - `voice_status_bg`: `#090b10`
+- Contrast floors: Passes all WCAG contrast checks against `#101014` dark pole and `#ffffff` light pole in `tests/moor_cli/test_skin_palettes.py`.
+- Legacy gold theme preserved as `"classic-gold"` for users who want retro styling (`moor skin classic-gold`).
+
+#### 4. Persona Branding, Glyphs & Zero-Emoji Directive
+- Symbol: Hexagonal Node `"⬡"` (hive/ant cluster). Replaces the Greek Caduceus `"☤"`.
+- Help header: `[?] Available Commands`. Replaces kawaii emoji faces `(^_^)?`.
+- Farewell: `Session terminated.`. Replaces `Goodbye! ☤`.
+- Zero-Emoji Directive: Strict enforcement across all CLI outputs, status bars, and banners.
+
+#### 5. Bundled/Legacy Provider Plugin Compatibility
+- Located in `agent/portal_tags.py`:
+  - `nous_portal_tags = moor_portal_tags  # LEGACY-PORTAL-TAGS: legacy provider alias`
+  - `nous_client_tag = moor_client_tag    # LEGACY-PORTAL-TAGS: legacy client tag alias`
+- Prevents `cannot import name 'nous_portal_tags' from 'agent.portal_tags'` crashes when older plugins or cached provider packages attempt to import legacy attribution symbols.
+
+---
+
+### B. Upstream Sync Preservation Pipeline (`phase_cli_branding`)
+
+When merging upstream updates from `NousResearch/hermes-agent`, upstream content arrives with `HERMES-AGENT` block art, Caduceus Braille art, and gold theme defaults. Because regex ladders cannot transform multiline block art or Braille Unicode, `scripts/rebrand.py` incorporates a dedicated Phase:
+
+```
+Phase 3b: CLI Branding (phase_cli_branding)
+```
+
+1. **Detection & Stamping**:
+   - Inspects `moor_cli/banner.py`. If `MOOR_ANT_HERO` is missing or upstream `HERMES-AGENT` / Caduceus art is detected, stamps `_CANONICAL_MOOR_LOGO` and `_CANONICAL_MOOR_ANT_HERO`.
+   - Inspects `moor_cli/skin_engine.py`. If `Classic Moor — gold and kawaii` or `Goodbye! ☤` is detected, stamps the Cyber-Obsidian default theme, `classic-gold` skin, and `⬡` branding.
+   - Inspects `moor_cli/cli_session_mixin.py` and `moor_cli/cli_tui_mixin.py`. Ensures `Session terminated.` and Cyber-Obsidian fallbacks.
+   - Inspects `agent/portal_tags.py`. Ensures `nous_portal_tags = moor_portal_tags` compatibility aliases are intact.
+2. **Protected Symbols**:
+   - `scripts/rebrand.py` `PROTECT_PATTERNS` explicitly includes `nous_portal_tags = moor_portal_tags` and `nous_client_tag = moor_client_tag` so the text ladder never strips the backward-compatibility aliases.
+3. **Idempotency Contract**:
+   - Re-running `phase_cli_branding` on an already-converged repository reports `0` changes.
+
+---
+
+### C. CLI Rebrand Verification Commands
+
+After any upstream merge or rebrand rule modification, run:
+
+```powershell
+# 1. Verify CLI palette completeness and WCAG contrast floors
+.venv\Scripts\pytest.exe tests/moor_cli/test_skin_palettes.py
+
+# 2. Verify CLI visual branding, artwork, and zero-emoji compliance
+.venv\Scripts\pytest.exe tests/moor_cli/test_cli_branding.py
+
+# 3. Verify skin engine unit tests
+.venv\Scripts\pytest.exe tests/moor_cli/test_skin_engine.py
+
+# 4. Verify portal tags legacy compatibility
+.venv\Scripts\pytest.exe tests/agent/test_portal_tags.py
+
+# 5. Run rebrand rule regression suite (108+ cases must pass)
+.venv\Scripts\python.exe scripts/rebrand_selftest.py
+```
+
+

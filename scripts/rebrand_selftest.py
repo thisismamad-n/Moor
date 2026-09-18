@@ -199,6 +199,42 @@ def main() -> int:
         else:
             ok += 1
 
+    # CLI branding preservation and legacy portal tags protection tests
+    cli_protected = [
+        "nous_portal_tags = moor_portal_tags  # LEGACY-PORTAL-TAGS: legacy provider alias",
+        "nous_client_tag = moor_client_tag    # LEGACY-PORTAL-TAGS: legacy client tag alias",
+    ]
+    for line in cli_protected:
+        got = rb.transform_text(line, None)
+        if got == line:
+            ok += 1
+        else:
+            fail += 1
+            print(f"FAIL cli protected alias: {line!r} -> {got!r}")
+
+    # phase_cli_branding must report 0 changes on an already-converged tree (idempotent)
+    changes = rb.phase_cli_branding(dry=True)
+    if not changes:
+        ok += 1
+    else:
+        fail += 1
+        print(f"FAIL phase_cli_branding not idempotent on converged tree: {changes}")
+
+    # Verify canonical files on disk conform to Moor brand standards
+    banner_text = (rb.REPO / "moor_cli" / "banner.py").read_text(encoding="utf-8")
+    if "MOOR_ANT_HERO" in banner_text and "HERMES-AGENT" not in banner_text and "██╗  ██╗███████╗" not in banner_text:
+        ok += 1
+    else:
+        fail += 1
+        print("FAIL banner.py does not contain canonical MOOR and MOOR_ANT_HERO")
+
+    skin_text = (rb.REPO / "moor_cli" / "skin_engine.py").read_text(encoding="utf-8")
+    if "Cyber-Obsidian" in skin_text and "classic-gold" in skin_text and "Goodbye! ☤" not in skin_text:
+        ok += 1
+    else:
+        fail += 1
+        print("FAIL skin_engine.py does not contain Cyber-Obsidian and classic-gold skins")
+
     print(f"{ok} passed, {fail} failed")
     return 1 if fail else 0
 

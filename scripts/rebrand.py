@@ -172,6 +172,9 @@ PROTECT_PATTERNS: list[str] = [
     # (e.g. the AaronWong1999/hermesclaw WeChat bridge) — external repos,
     # links stay functional.
     r"(?i:[\w.-]{0,100}hermesclaw(?:[\w.-]{0,100})?)",
+    # Legacy Portal tags backwards-compatibility aliases in agent/portal_tags.py
+    r"nous_portal_tags\s*=\s*moor_portal_tags",
+    r"nous_client_tag\s*=\s*moor_client_tag",
 ]
 
 _PROTECT_COMBINED = re.compile("|".join(f"(?:{p})" for p in PROTECT_PATTERNS))
@@ -664,6 +667,228 @@ def phase_injections(dry: bool) -> list[str]:
     return applied, problems
 
 
+# --------------------------------------------------------------------------
+# CLI Brand System Enforcer
+# --------------------------------------------------------------------------
+
+_CANONICAL_MOOR_LOGO = (
+    """[bold #38bdf8]███╗   ███╗   ██████╗    ██████╗   ██████╗ [/]\n"""
+    """[bold #3b82f6]████╗ ████║  ██╔═══██╗  ██╔═══██╗  ██╔══██╗[/]\n"""
+    """[#2563eb]██╔████╔██║  ██║   ██║  ██║   ██║  ██████╔╝[/]\n"""
+    """[#2563eb]██║╚██╔╝██║  ██║   ██║  ██║   ██║  ██╔══██╗[/]\n"""
+    """[#06b6d4]██║ ╚═╝ ██║  ╚██████╔╝  ╚██████╔╝  ██║  ██║[/]\n"""
+    """[#0891b2]╚═╝     ╚═╝   ╚═════╝    ╚═════╝   ╚═╝  ╚═╝[/]"""
+)
+
+_CANONICAL_MOOR_ANT_HERO = (
+    """[#06b6d4]⠀⠀⠀⠀⠀⠀⢀⡤⠖⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠲⢤⡀⠀⠀⠀⠀⠀⠀[/]\n"""
+    """[#06b6d4]⠀⠀⠀⠀⠀⢠⠞⠁⠀⠀⠀⠀⢀⣴⢶⣦⡀⠀⠀⠀⠀⠈⠳⡄⠀⠀⠀⠀⠀⠀[/]\n"""
+    """[#38bdf8]⠀⠀⠀⠀⠀⡞⠁⠀⠀⠀⠀⠀⢸⣯⡉⠉⣹⡇⠀⠀⠀⠀⠀⠈⢳⠀⠀⠀⠀⠀[/]\n"""
+    """[#38bdf8]⠀⠀⠀⠀⡼⠀⠀⠀⠀⠀⠀⠀⠙⠿⣶⠿⠋⠀⠀⠀⠀⠀⠀⠀⢧⠀⠀⠀⠀⠀[/]\n"""
+    """[#2563eb]⠀⠀⠀⠐⢯⣀⠀⠀⠀⠀⠀⠀⢀⣴⣿⣦⡀⠀⠀⠀⠀⠀⠀⣀⣽⠂⠀⠀⠀⠀[/]\n"""
+    """[#2563eb]⠀⠀⠀⠀⠀⠉⠳⣄⠀⢀⣀⣤⣾⣿⬡⣿⣿⣷⣤⣀⡀⠀⣠⠞⠉⠀⠀⠀⠀⠀[/]\n"""
+    """[#3b82f6]⠀⠀⠀⠀⢀⡤⠞⢁⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⡈⠳⢤⡀⠀⠀⠀⠀[/]\n"""
+    """[#2563eb]⠀⠀⠀⠀⠙⠒⠚⠉⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠉⠓⠒⠋⠀⠀⠀⠀[/]\n"""
+    """[#2563eb]⠀⠀⠀⠀⠀⢀⣀⡤⠖⠋⠙⢿⣿⣿⣿⣿⣿⣿⡿⠋⠙⠲⢤⣀⡀⠀⠀⠀⠀⠀[/]\n"""
+    """[#1d4ed8]⠀⠀⠀⠀⠀⢰⠋⠀⠀⠀⠀⠀⠈⠻⣿⣿⠟⠁⠀⠀⠀⠀⠀⠙⡆⠀⠀⠀⠀⠀[/]\n"""
+    """[#1d4ed8]⠀⠀⠀⠀⡞⠀⠀⠀⠀⠀⠀⠀⠀⣰⣿⣆⠀⠀⠀⠀⠀⠀⠀⠀⢳⠀⠀⠀⠀⠀[/]\n"""
+    """[#1e2532]⠀⠀⠀⠀⠓⠦⠤⠤⠤⠤⠤⠤⠾⠿⠿⠿⠿⠷⠤⠤⠤⠤⠤⠴⠚⠀⠀⠀⠀⠀[/]\n"""
+    """[dim #06b6d4]⠀⠀⠀⠀⠀⠀⠀cyber-ant online⠀⠀⠀⠀⠀⠀⠀[/]"""
+)
+
+_CANONICAL_DEFAULT_AND_CLASSIC_SKINS = (
+'''    "default": {
+        "name": "default", "description": "Cyber-Obsidian — official Moor executive theme",
+        # Dark-authored; official Cyber-Obsidian & Electric Cobalt/Cyan palette.
+        "colors": {
+            "banner_border": "#2563eb", "banner_title": "#38bdf8", "banner_accent": "#3b82f6",
+            "banner_dim": "#64748b", "banner_text": "#f1f5f9", "ui_accent": "#3b82f6",
+            "ui_label": "#06b6d4", "ui_ok": "#10b981", "ui_error": "#ef4444", "ui_warn": "#f59e0b",
+            "prompt": "#f1f5f9", "input_rule": "#2563eb", "response_border": "#2563eb",
+            "status_bar_bg": "#090b10", "status_bar_text": "#f1f5f9",
+            "status_bar_strong": "#38bdf8", "status_bar_dim": "#64748b",
+            "status_bar_good": "#10b981", "status_bar_warn": "#f59e0b", "status_bar_bad": "#ef4444",
+            "status_bar_critical": "#dc2626", "session_label": "#06b6d4",
+            "session_border": "#4d648d", "completion_menu_bg": "#090b10",
+            "completion_menu_current_bg": "#1e293b", "selection_bg": "#1e2532",
+            "shell_dollar": "#06b6d4", "voice_status_bg": "#090b10"},
+        # Light overlay (Titanium-Paper canvas with deep cobalt accents).
+        "light_colors": {
+            "banner_title": "#1d4ed8", "banner_accent": "#2563eb", "banner_dim": "#475569",
+            "banner_text": "#0f172a", "ui_accent": "#2563eb", "ui_label": "#0891b2",
+            "ui_ok": "#059669", "ui_error": "#dc2626", "ui_warn": "#d97706", "prompt": "#0f172a",
+            "input_rule": "#2563eb", "response_border": "#2563eb", "session_label": "#0891b2",
+            "status_bar_text": "#0f172a", "status_bar_strong": "#1d4ed8", "status_bar_dim": "#64748b",
+            "status_bar_good": "#059669", "status_bar_warn": "#d97706", "status_bar_bad": "#dc2626",
+            "status_bar_critical": "#b91c1c", "shell_dollar": "#0891b2",
+            "completion_menu_bg": "#f1f5f9", "completion_menu_current_bg": "#cbd5e1",
+            "selection_bg": "#cbd5e1", "status_bar_bg": "#f8fafc", "voice_status_bg": "#f8fafc"},
+        "spinner": {},
+        "branding": _MOOR_BRANDING,
+        "tool_prefix": "┊"},
+    "classic-gold": {
+        "name": "classic-gold", "description": "Classic Moor — legacy gold theme",
+        # Dark-authored; legacy gold palette.
+        "colors": {
+            "banner_border": "#CD7F32", "banner_title": "#FFD700", "banner_accent": "#FFBF00",
+            "banner_dim": "#B8860B", "banner_text": "#FFF8DC", "ui_accent": "#FFBF00",
+            "ui_label": "#DAA520", "ui_ok": "#4caf50", "ui_error": "#ef5350", "ui_warn": "#ffa726",
+            "prompt": "#FFF8DC", "input_rule": "#CD7F32", "response_border": "#FFD700",
+            "status_bar_bg": "#1a1a2e", "status_bar_text": "#C0C0C0",
+            "status_bar_strong": "#FFD700", "status_bar_dim": "#8A7A4A",
+            "status_bar_good": "#8FBC8F", "status_bar_warn": "#FFD700", "status_bar_bad": "#FF8C00",
+            "status_bar_critical": "#FF6B6B", "session_label": "#DAA520",
+            "session_border": "#8B8682", "completion_menu_bg": "#1a1a2e",
+            "completion_menu_current_bg": "#333355", "selection_bg": "#3a3a55",
+            "shell_dollar": "#4dabf7", "voice_status_bg": "#1a1a2e"},
+        "light_colors": {
+            "banner_title": "#C8961E", "banner_accent": "#D89B04", "banner_dim": "#B8860B",
+            "banner_text": "#5C4718", "ui_accent": "#D89B04", "ui_label": "#A97E10",
+            "ui_ok": "#2E7D32", "ui_error": "#C62828", "ui_warn": "#D97706", "prompt": "#5C4718",
+            "response_border": "#C8961E", "session_label": "#A97E10", "status_bar_text": "#6F6F6F",
+            "status_bar_strong": "#C8961E", "status_bar_dim": "#9A8A5A",
+            "status_bar_good": "#2E7D32", "status_bar_warn": "#C8961E", "status_bar_bad": "#C2410C",
+            "status_bar_critical": "#B91C1C", "shell_dollar": "#1E6FC0",
+            "completion_menu_bg": "#F5F5F5", "completion_menu_current_bg": "#E0D1BF",
+            "selection_bg": "#D4E4F7", "status_bar_bg": "#F5F5F5", "voice_status_bg": "#F5F5F5"},
+        "spinner": {},
+        "branding": _branding("Moor", "⬡", "Session terminated.", prompt="❯", help_header="[?] Available Commands"),
+        "tool_prefix": "┊"},'''
+)
+
+
+def phase_cli_branding(dry: bool) -> list[str]:
+    """Ensure CLI ASCII artwork, cyber-ant hero, and cyber-obsidian skin are enforced.
+
+    When upstream merges pull in upstream's hermes_cli/banner.py or skin_engine.py,
+    the text ladder cannot convert multiline block ASCII fonts or Braille art.
+    This phase stamps the canonical Moor brutalist logo, Cyber-Ant hero, and
+    Cyber-Obsidian theme into place. Idempotent: reports 0 changes when already current.
+    """
+    applied = []
+
+    # 1. banner.py
+    banner_path = REPO / "moor_cli" / "banner.py"
+    if banner_path.is_file():
+        text = banner_path.read_text(encoding="utf-8")
+        orig = text
+        if "MOOR_ANT_HERO" not in text or "██╗  ██╗███████╗" in text or "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡀⠀⣀⣀⠀⢀⣀⡀" in text:
+            pattern = re.compile(
+                r'MOOR_AGENT_LOGO = """.*?"""\s*\n\s*MOOR_CADUCEUS = """.*?"""',
+                re.DOTALL
+            )
+            replacement = (
+                'MOOR_AGENT_LOGO = """' + _CANONICAL_MOOR_LOGO + '"""\n\n'
+                'MOOR_ANT_HERO = """' + _CANONICAL_MOOR_ANT_HERO + '"""\n\n'
+                '# Backward compatibility alias for any caller expecting MOOR_CADUCEUS\n'
+                'MOOR_CADUCEUS = MOOR_ANT_HERO'
+            )
+            text = pattern.sub(replacement, text)
+            text = text.replace(
+                'accent = _skin_color("banner_accent", "#FFBF00")',
+                'accent = _skin_color("banner_accent", "#3b82f6")'
+            )
+            text = text.replace(
+                'dim = _skin_color("banner_dim", "#B8860B")',
+                'dim = _skin_color("banner_dim", "#64748b")'
+            )
+            text = text.replace(
+                'text = _skin_color("banner_text", "#FFF8DC")',
+                'text = _skin_color("banner_text", "#f1f5f9")'
+            )
+            text = text.replace(
+                'getattr(_bskin, "banner_hero", None) or MOOR_CADUCEUS',
+                'getattr(_bskin, "banner_hero", None) or MOOR_ANT_HERO'
+            )
+            text = text.replace(
+                "_skin_color('banner_title', '#FFD700')",
+                "_skin_color('banner_title', '#38bdf8')"
+            )
+            text = text.replace(
+                '_skin_color("banner_border", "#CD7F32")',
+                '_skin_color("banner_border", "#2563eb")'
+            )
+        if text != orig:
+            if not dry:
+                banner_path.write_text(text, encoding="utf-8")
+            applied.append("moor_cli/banner.py (MOOR logo & Cyber-Ant hero)")
+
+    # 2. skin_engine.py
+    skin_path = REPO / "moor_cli" / "skin_engine.py"
+    if skin_path.is_file():
+        text = skin_path.read_text(encoding="utf-8")
+        orig = text
+        if "Classic Moor — gold and kawaii" in text or "Goodbye! ☤" in text or '"classic-gold":' not in text:
+            text = re.sub(
+                r'_MOOR_BRANDING: Dict\[str, str\] = _branding\([^)]+\)',
+                '_MOOR_BRANDING: Dict[str, str] = _branding(\n'
+                '    "Moor", "⬡", "Session terminated.", prompt="❯", help_header="[?] Available Commands")',
+                text
+            )
+            text = text.replace(
+                'def get_active_help_header(fallback: str = "(^_^)? Available Commands") -> str:',
+                'def get_active_help_header(fallback: str = "[?] Available Commands") -> str:'
+            )
+            text = text.replace(
+                'def get_active_goodbye(fallback: str = "Goodbye! ☤") -> str:',
+                'def get_active_goodbye(fallback: str = "Session terminated.") -> str:'
+            )
+            if '"classic-gold":' not in text:
+                pattern = re.compile(
+                    r'("default":\s*\{\s*"name":\s*"default",\s*"description":\s*"Classic Moor — gold and kawaii".*?tool_prefix":\s*"[^"]+"\},)',
+                    re.DOTALL
+                )
+                text = pattern.sub(_CANONICAL_DEFAULT_AND_CLASSIC_SKINS, text)
+            text = text.replace('("input_rule", "input_rule", "#CD7F32")', '("input_rule", "input_rule", "#2563eb")')
+            text = text.replace('("title", "banner_title", "#FFD700")', '("title", "banner_title", "#38bdf8")')
+            text = text.replace('("text", "banner_text", "#FFF8DC")', '("text", "banner_text", "#f1f5f9")')
+            text = text.replace('("dim", "banner_dim", "#555555")', '("dim", "banner_dim", "#64748b")')
+            text = text.replace('("warn", "ui_warn", "#FF8C00")', '("warn", "ui_warn", "#f59e0b")')
+            text = text.replace('("error", "ui_error", "#FF6B6B")', '("error", "ui_error", "#ef4444")')
+            text = text.replace('("status_bg", "status_bar_bg", "#1a1a2e")', '("status_bg", "status_bar_bg", "#090b10")')
+            text = text.replace('("ok", "ui_ok", "#8FBC8F")', '("ok", "ui_ok", "#10b981")')
+            text = text.replace('("menu_bg", "completion_menu_bg", "#1a1a2e")', '("menu_bg", "completion_menu_bg", "#090b10")')
+            text = text.replace('("menu_current_bg", "completion_menu_current_bg", "#333355")', '("menu_current_bg", "completion_menu_current_bg", "#1e293b")')
+        if text != orig:
+            if not dry:
+                skin_path.write_text(text, encoding="utf-8")
+            applied.append("moor_cli/skin_engine.py (Cyber-Obsidian & classic-gold skin)")
+
+    # 3. cli_session_mixin.py
+    session_path = REPO / "moor_cli" / "cli_session_mixin.py"
+    if session_path.is_file():
+        text = session_path.read_text(encoding="utf-8")
+        orig = text
+        if "Goodbye! ☤" in text:
+            text = text.replace('get_active_goodbye("Goodbye! ☤")', 'get_active_goodbye("Session terminated.")')
+            text = text.replace('goodbye = "Goodbye! ☤"', 'goodbye = "Session terminated."')
+        if text != orig:
+            if not dry:
+                session_path.write_text(text, encoding="utf-8")
+            applied.append("moor_cli/cli_session_mixin.py (Session terminated. farewell)")
+
+    # 4. portal_tags.py legacy aliases
+    pt_path = REPO / "agent" / "portal_tags.py"
+    if pt_path.is_file():
+        text = pt_path.read_text(encoding="utf-8")
+        orig = text
+        if "nous_portal_tags = moor_portal_tags" not in text:
+            text = text.replace(
+                "moor_portal_tags = moor_portal_tags  # LEGACY-PORTAL-TAGS: legacy alias",
+                "nous_portal_tags = moor_portal_tags  # LEGACY-PORTAL-TAGS: legacy provider alias"
+            )
+            text = text.replace(
+                "moor_client_tag = moor_client_tag  # LEGACY-CLIENT-TAG: alias",
+                "nous_client_tag = moor_client_tag    # LEGACY-PORTAL-TAGS: legacy client tag alias"
+            )
+        if text != orig:
+            if not dry:
+                pt_path.write_text(text, encoding="utf-8")
+            applied.append("agent/portal_tags.py (nous_portal_tags legacy aliases)")
+
+    return applied
+
+
 def phase_cleanup(dry: bool) -> list[str]:
     removed = []
     legacy = REPO / LEGACY_ROOT_SCRIPT
@@ -997,6 +1222,9 @@ def main() -> int:
     print(f"[3/6] injections: {', '.join(inj) if inj else 'none (already present)'}")
     for p in problems:
         print(f"  ! {p}")
+
+    cli_brand = phase_cli_branding(args.dry_run)
+    print(f"[3b/6] cli-branding: {', '.join(cli_brand) if cli_brand else 'none (already canonical)'}")
 
     removed = phase_cleanup(args.dry_run)
     print(f"[4/6] cleanup: {len(removed)} items removed (egg-info/__pycache__/legacy script)")

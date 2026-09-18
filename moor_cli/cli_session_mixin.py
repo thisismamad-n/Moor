@@ -1125,9 +1125,9 @@ class CLISessionMixin:
         if not msg_count:
             try:
                 from moor_cli.skin_engine import get_active_goodbye
-                goodbye = get_active_goodbye("Goodbye! ☤")
+                goodbye = get_active_goodbye("Session terminated.")
             except Exception:
-                goodbye = "Goodbye! ☤"
+                goodbye = "Session terminated."
             print(goodbye)
             return
 

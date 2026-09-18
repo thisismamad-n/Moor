@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { AntSwarmConnecting } from './ant-swarm-connecting'
 
 describe('AntSwarmConnecting', () => {
-  it('renders canvas and beacon icon without errors', () => {
+  it('renders canvas and beacon icon without errors with default Number 2 gyroscopic symmetry', () => {
     const { container } = render(<AntSwarmConnecting active={true} />)
 
     const canvas = container.querySelector('canvas')
@@ -17,8 +17,19 @@ describe('AntSwarmConnecting', () => {
 
     // Telemetry display should show initial technical status
     expect(screen.getByText(/SWARM CONSTELLATION LINK/i)).toBeTruthy()
-    expect(screen.getByText(/NODES: 64 ACTIVE/i)).toBeTruthy()
+    expect(screen.getByText(/NODES: 56 ACTIVE/i)).toBeTruthy()
+    expect(screen.getByText(/SYMMETRY: CONCENTRIC GYRO/i)).toBeTruthy()
     expect(screen.getByText(/BUS: PHEROMONE-IPC/i)).toBeTruthy()
+  })
+
+  it('renders hexagonal variant with correct symmetry badge', () => {
+    render(<AntSwarmConnecting active={true} variant="hexagonal" />)
+    expect(screen.getByText(/SYMMETRY: 6-FOLD RADIAL/i)).toBeTruthy()
+  })
+
+  it('renders mandala variant with correct symmetry badge', () => {
+    render(<AntSwarmConnecting active={true} variant="mandala" />)
+    expect(screen.getByText(/SYMMETRY: 8-FOLD MANDALA/i)).toBeTruthy()
   })
 
   it('renders reduced motion fallback gracefully', () => {
@@ -32,4 +43,3 @@ describe('AntSwarmConnecting', () => {
     expect(screen.getByText(/MOUNTING WORKSTATION ENVIRONMENT/i)).toBeTruthy()
   })
 })
-

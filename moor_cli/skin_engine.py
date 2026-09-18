@@ -57,12 +57,41 @@ def _wings(*glyphs) -> List[List[str]]:
 
 # Branding shared by every moor-named built-in (mono/daylight override help_header).
 _MOOR_BRANDING: Dict[str, str] = _branding(
-    "Moor", "☤", "Goodbye! ☤", prompt="❯", help_header="(^_^)? Available Commands")
+    "Moor", "⬡", "Session terminated.", prompt="❯", help_header="[?] Available Commands")
 
 _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
     "default": {
-        "name": "default", "description": "Classic Moor — gold and kawaii",
-        # Dark-authored; values match the TUI's DARK_THEME so both render the same gold.
+        "name": "default", "description": "Cyber-Obsidian — official Moor executive theme",
+        # Dark-authored; official Cyber-Obsidian & Electric Cobalt/Cyan palette.
+        "colors": {
+            "banner_border": "#2563eb", "banner_title": "#38bdf8", "banner_accent": "#3b82f6",
+            "banner_dim": "#64748b", "banner_text": "#f1f5f9", "ui_accent": "#3b82f6",
+            "ui_label": "#06b6d4", "ui_ok": "#10b981", "ui_error": "#ef4444", "ui_warn": "#f59e0b",
+            "prompt": "#f1f5f9", "input_rule": "#2563eb", "response_border": "#2563eb",
+            "status_bar_bg": "#090b10", "status_bar_text": "#f1f5f9",
+            "status_bar_strong": "#38bdf8", "status_bar_dim": "#64748b",
+            "status_bar_good": "#10b981", "status_bar_warn": "#f59e0b", "status_bar_bad": "#ef4444",
+            "status_bar_critical": "#dc2626", "session_label": "#06b6d4",
+            "session_border": "#4d648d", "completion_menu_bg": "#090b10",
+            "completion_menu_current_bg": "#1e293b", "selection_bg": "#1e2532",
+            "shell_dollar": "#06b6d4", "voice_status_bg": "#090b10"},
+        # Light overlay (Titanium-Paper canvas with deep cobalt accents).
+        "light_colors": {
+            "banner_title": "#1d4ed8", "banner_accent": "#2563eb", "banner_dim": "#475569",
+            "banner_text": "#0f172a", "ui_accent": "#2563eb", "ui_label": "#0891b2",
+            "ui_ok": "#059669", "ui_error": "#dc2626", "ui_warn": "#d97706", "prompt": "#0f172a",
+            "input_rule": "#2563eb", "response_border": "#2563eb", "session_label": "#0891b2",
+            "status_bar_text": "#0f172a", "status_bar_strong": "#1d4ed8", "status_bar_dim": "#64748b",
+            "status_bar_good": "#059669", "status_bar_warn": "#d97706", "status_bar_bad": "#dc2626",
+            "status_bar_critical": "#b91c1c", "shell_dollar": "#0891b2",
+            "completion_menu_bg": "#f1f5f9", "completion_menu_current_bg": "#cbd5e1",
+            "selection_bg": "#cbd5e1", "status_bar_bg": "#f8fafc", "voice_status_bg": "#f8fafc"},
+        "spinner": {},
+        "branding": _MOOR_BRANDING,
+        "tool_prefix": "┊"},
+    "classic-gold": {
+        "name": "classic-gold", "description": "Classic Moor — legacy gold theme",
+        # Dark-authored; legacy gold palette.
         "colors": {
             "banner_border": "#CD7F32", "banner_title": "#FFD700", "banner_accent": "#FFBF00",
             "banner_dim": "#B8860B", "banner_text": "#FFF8DC", "ui_accent": "#FFBF00",
@@ -75,11 +104,6 @@ _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
             "session_border": "#8B8682", "completion_menu_bg": "#1a1a2e",
             "completion_menu_current_bg": "#333355", "selection_bg": "#3a3a55",
             "shell_dollar": "#4dabf7", "voice_status_bg": "#1a1a2e"},
-        # Light overlay (merged onto `colors`). Goldenrod ladder: on white the vivid
-        # #FFD700/#FFBF00 read as glare and WCAG-darkened mustard (#867000) as mud; the
-        # statusbar's goldenrod family (#B8860B/#DAA520) keeps the hue, tames saturation.
-        # Hierarchy on white: ink body 8.9:1 > fade 5.2 > label 3.7 > muted 3.3 > title 2.7 >
-        # headers 2.4. Fills (*_bg) flip the dark navy surfaces to light polarity.
         "light_colors": {
             "banner_title": "#C8961E", "banner_accent": "#D89B04", "banner_dim": "#B8860B",
             "banner_text": "#5C4718", "ui_accent": "#D89B04", "ui_label": "#A97E10",
@@ -90,8 +114,8 @@ _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
             "status_bar_critical": "#B91C1C", "shell_dollar": "#1E6FC0",
             "completion_menu_bg": "#F5F5F5", "completion_menu_current_bg": "#E0D1BF",
             "selection_bg": "#D4E4F7", "status_bar_bg": "#F5F5F5", "voice_status_bg": "#F5F5F5"},
-        "spinner": {},  # empty = hardcoded defaults in display.py
-        "branding": _MOOR_BRANDING,
+        "spinner": {},
+        "branding": _branding("Moor", "⬡", "Session terminated.", prompt="❯", help_header="[?] Available Commands"),
         "tool_prefix": "┊"},
     "ares": {
         "name": "ares", "description": "War-god theme — crimson and bronze",
@@ -485,27 +509,27 @@ def get_active_prompt_symbol(fallback: str = "❯") -> str:
     return f"{cleaned or fallback.strip()} "
 
 
-def get_active_help_header(fallback: str = "(^_^)? Available Commands") -> str:
+def get_active_help_header(fallback: str = "[?] Available Commands") -> str:
     return _active_branding("help_header", fallback)
 
 
-def get_active_goodbye(fallback: str = "Goodbye! ☤") -> str:
+def get_active_goodbye(fallback: str = "Session terminated.") -> str:
     return _active_branding("goodbye", fallback)
 
 
 # Palette resolution order for prompt_toolkit styles: (name, skin color key, fallback). A
 # fallback starting with "@" names an earlier entry (so a missing key inherits its remapped value).
 _STYLE_PALETTE = (
-    ("prompt", "prompt", ""), ("input_rule", "input_rule", "#CD7F32"),
-    ("title", "banner_title", "#FFD700"), ("text", "banner_text", "#FFF8DC"),
-    ("dim", "banner_dim", "#555555"), ("label", "ui_label", "@title"), ("warn", "ui_warn", "#FF8C00"),
-    ("error", "ui_error", "#FF6B6B"), ("status_bg", "status_bar_bg", "#1a1a2e"),
+    ("prompt", "prompt", ""), ("input_rule", "input_rule", "#2563eb"),
+    ("title", "banner_title", "#38bdf8"), ("text", "banner_text", "#f1f5f9"),
+    ("dim", "banner_dim", "#64748b"), ("label", "ui_label", "@title"), ("warn", "ui_warn", "#f59e0b"),
+    ("error", "ui_error", "#ef4444"), ("status_bg", "status_bar_bg", "#090b10"),
     ("status_text", "status_bar_text", "@text"), ("status_strong", "status_bar_strong", "@title"),
-    ("status_dim", "status_bar_dim", "@dim"), ("ok", "ui_ok", "#8FBC8F"),
+    ("status_dim", "status_bar_dim", "@dim"), ("ok", "ui_ok", "#10b981"),
     ("status_good", "status_bar_good", "@ok"), ("status_warn", "status_bar_warn", "@warn"),
     ("accent", "banner_accent", "@warn"), ("status_bad", "status_bar_bad", "@accent"),
     ("status_critical", "status_bar_critical", "@error"), ("voice_bg", "voice_status_bg", "@status_bg"),
-    ("menu_bg", "completion_menu_bg", "#1a1a2e"), ("menu_current_bg", "completion_menu_current_bg", "#333355"),
+    ("menu_bg", "completion_menu_bg", "#090b10"), ("menu_current_bg", "completion_menu_current_bg", "#1e293b"),
     ("menu_meta_bg", "completion_menu_meta_bg", "@menu_bg"),
     ("menu_meta_current_bg", "completion_menu_meta_current_bg", "@menu_current_bg"))
 

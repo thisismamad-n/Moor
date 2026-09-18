@@ -59,28 +59,29 @@ def _skin_color(key: str, fallback: str) -> str:
 
 from moor_cli import __version__ as VERSION, __release_date__ as RELEASE_DATE
 
-MOOR_AGENT_LOGO = """[bold #FFD700]██╗  ██╗███████╗██████╗ ███╗   ███╗███████╗███████╗       █████╗  ██████╗ ███████╗███╗   ██╗████████╗[/]
-[bold #FFD700]██║  ██║██╔════╝██╔══██╗████╗ ████║██╔════╝██╔════╝      ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝[/]
-[#FFBF00]███████║█████╗  ██████╔╝██╔████╔██║█████╗  ███████╗█████╗███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║[/]
-[#FFBF00]██╔══██║██╔══╝  ██╔══██╗██║╚██╔╝██║██╔══╝  ╚════██║╚════╝██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║[/]
-[#CD7F32]██║  ██║███████╗██║  ██║██║ ╚═╝ ██║███████╗███████║      ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║[/]
-[#CD7F32]╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚══════╝      ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝[/]"""
+MOOR_AGENT_LOGO = """[bold #38bdf8]███╗   ███╗   ██████╗    ██████╗   ██████╗ [/]
+[bold #3b82f6]████╗ ████║  ██╔═══██╗  ██╔═══██╗  ██╔══██╗[/]
+[#2563eb]██╔████╔██║  ██║   ██║  ██║   ██║  ██████╔╝[/]
+[#2563eb]██║╚██╔╝██║  ██║   ██║  ██║   ██║  ██╔══██╗[/]
+[#06b6d4]██║ ╚═╝ ██║  ╚██████╔╝  ╚██████╔╝  ██║  ██║[/]
+[#0891b2]╚═╝     ╚═╝   ╚═════╝    ╚═════╝   ╚═╝  ╚═╝[/]"""
 
-MOOR_CADUCEUS = """[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡀⠀⣀⣀⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#CD7F32]⠀⠀⠀⠀⠀⠀⢀⣠⣴⣾⣿⣿⣇⠸⣿⣿⠇⣸⣿⣿⣷⣦⣄⡀⠀⠀⠀⠀⠀⠀[/]
-[#FFBF00]⠀⢀⣠⣴⣶⠿⠋⣩⡿⣿⡿⠻⣿⡇⢠⡄⢸⣿⠟⢿⣿⢿⣍⠙⠿⣶⣦⣄⡀⠀[/]
-[#FFBF00]⠀⠀⠉⠉⠁⠶⠟⠋⠀⠉⠀⢀⣈⣁⡈⢁⣈⣁⡀⠀⠉⠀⠙⠻⠶⠈⠉⠉⠀⠀[/]
-[#FFD700]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣴⣿⡿⠛⢁⡈⠛⢿⣿⣦⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#FFD700]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠿⣿⣦⣤⣈⠁⢠⣴⣿⠿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#FFBF00]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠻⢿⣿⣦⡉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#FFBF00]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⢷⣦⣈⠛⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣴⠦⠈⠙⠿⣦⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⣿⣤⡈⠁⢤⣿⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⠷⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⠑⢶⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠁⢰⡆⠈⡿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠳⠈⣡⠞⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]"""
+MOOR_ANT_HERO = """[#06b6d4]⠀⠀⠀⠀⠀⠀⢀⡤⠖⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠲⢤⡀⠀⠀⠀⠀⠀⠀[/]
+[#06b6d4]⠀⠀⠀⠀⠀⢠⠞⠁⠀⠀⠀⠀⢀⣴⢶⣦⡀⠀⠀⠀⠀⠈⠳⡄⠀⠀⠀⠀⠀⠀[/]
+[#38bdf8]⠀⠀⠀⠀⠀⡞⠁⠀⠀⠀⠀⠀⢸⣯⡉⠉⣹⡇⠀⠀⠀⠀⠀⠈⢳⠀⠀⠀⠀⠀[/]
+[#38bdf8]⠀⠀⠀⠀⡼⠀⠀⠀⠀⠀⠀⠀⠙⠿⣶⠿⠋⠀⠀⠀⠀⠀⠀⠀⢧⠀⠀⠀⠀⠀[/]
+[#2563eb]⠀⠀⠀⠐⢯⣀⠀⠀⠀⠀⠀⠀⢀⣴⣿⣦⡀⠀⠀⠀⠀⠀⠀⣀⣽⠂⠀⠀⠀⠀[/]
+[#2563eb]⠀⠀⠀⠀⠀⠉⠳⣄⠀⢀⣀⣤⣾⣿⬡⣿⣿⣷⣤⣀⡀⠀⣠⠞⠉⠀⠀⠀⠀⠀[/]
+[#3b82f6]⠀⠀⠀⠀⢀⡤⠞⢁⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⡈⠳⢤⡀⠀⠀⠀⠀[/]
+[#2563eb]⠀⠀⠀⠀⠙⠒⠚⠉⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠉⠓⠒⠋⠀⠀⠀⠀[/]
+[#2563eb]⠀⠀⠀⠀⠀⢀⣀⡤⠖⠋⠙⢿⣿⣿⣿⣿⣿⣿⡿⠋⠙⠲⢤⣀⡀⠀⠀⠀⠀⠀[/]
+[#1d4ed8]⠀⠀⠀⠀⠀⢰⠋⠀⠀⠀⠀⠀⠈⠻⣿⣿⠟⠁⠀⠀⠀⠀⠀⠙⡆⠀⠀⠀⠀⠀[/]
+[#1d4ed8]⠀⠀⠀⠀⡞⠀⠀⠀⠀⠀⠀⠀⠀⣰⣿⣆⠀⠀⠀⠀⠀⠀⠀⠀⢳⠀⠀⠀⠀⠀[/]
+[#1e2532]⠀⠀⠀⠀⠓⠦⠤⠤⠤⠤⠤⠤⠾⠿⠿⠿⠿⠷⠤⠤⠤⠤⠤⠴⠚⠀⠀⠀⠀⠀[/]
+[dim #06b6d4]⠀⠀⠀⠀⠀⠀⠀cyber-ant online⠀⠀⠀⠀⠀⠀⠀[/]"""
+
+# Backward compatibility alias for any caller expecting MOOR_CADUCEUS
+MOOR_CADUCEUS = MOOR_ANT_HERO
 
 # === Skills scanning ===
 
@@ -956,12 +957,12 @@ def build_welcome_banner(
         availability = compute_toolset_availability(enabled_toolsets)
     _enabled_ts = {str(t) for t in enabled_toolsets}
     # Resolve skin colors once for the entire banner
-    accent = _skin_color("banner_accent", "#FFBF00")
-    dim = _skin_color("banner_dim", "#B8860B")
-    text = _skin_color("banner_text", "#FFF8DC")
-    # Use skin's custom caduceus art if provided
+    accent = _skin_color("banner_accent", "#3b82f6")
+    dim = _skin_color("banner_dim", "#64748b")
+    text = _skin_color("banner_text", "#f1f5f9")
+    # Use skin's custom hero art if provided
     _bskin = _quiet(_active_skin)
-    left_lines = ["", getattr(_bskin, "banner_hero", None) or MOOR_CADUCEUS, ""]
+    left_lines = ["", getattr(_bskin, "banner_hero", None) or MOOR_ANT_HERO, ""]
     left_lines += _banner_left_lines(model, cwd, session_id, context_length, provider, accent=accent, dim=dim)
     right_lines = _banner_tool_lines(
         tools, availability.get("unavailable_toolsets", []), get_toolset_for_tool,
@@ -1018,8 +1019,8 @@ def build_welcome_banner(
     if release_info:
         version_label = f"[link={release_info[1]}]{version_label}[/link]"
     outer_panel = Panel(
-        layout_table, title=f"[bold {_skin_color('banner_title', '#FFD700')}]{version_label}[/]",
-        border_style=_skin_color("banner_border", "#CD7F32"), padding=(0, 2))
+        layout_table, title=f"[bold {_skin_color('banner_title', '#38bdf8')}]{version_label}[/]",
+        border_style=_skin_color("banner_border", "#2563eb"), padding=(0, 2))
     console.print()
     if shutil.get_terminal_size().columns >= 95:
         console.print(getattr(_bskin, "banner_logo", None) or MOOR_AGENT_LOGO)

@@ -1,0 +1,933 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Moor Swarm Loading Animation — Concentric Gyroscopic (Centered Core)</title>
+  <style>
+    :root {
+      --bg: #07090e;
+      --panel-bg: rgba(12, 17, 26, 0.85);
+      --border: rgba(56, 189, 248, 0.2);
+      --border-bright: rgba(56, 189, 248, 0.5);
+      --cyan: #38bdf8;
+      --cyan-bright: #7dd3fc;
+      --blue: #2563eb;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      background: radial-gradient(circle at center, #0e1524 0%, #07090e 100%);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+
+    /* Top Studio Header */
+    header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      z-index: 50;
+    }
+
+    .studio-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      color: var(--cyan);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 10px var(--cyan);
+      animation: pulse 1.6s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* Version Selector Tabs */
+    .tabs-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tab-btn:hover {
+      color: #fff;
+      background: rgba(56, 189, 248, 0.08);
+    }
+
+    .tab-btn.active {
+      color: #030712;
+      background: var(--cyan);
+      border-color: var(--cyan-bright);
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.4);
+      font-weight: 700;
+    }
+
+    /* Main Viewport */
+    .viewport {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    /* DEAD-CENTERED Central Hex Core Beacon */
+    .core-beacon {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 96px;
+      height: 96px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    .antenna-ring-1 {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-top-color: var(--cyan-bright);
+      animation: spin 7s linear infinite;
+    }
+
+    .antenna-ring-2 {
+      position: absolute;
+      inset: -12px;
+      border-radius: 50%;
+      border: 1px dashed rgba(37, 99, 235, 0.4);
+      border-bottom-color: var(--cyan);
+      animation: spin-rev 14s linear infinite;
+    }
+
+    .shockwave {
+      position: absolute;
+      border-radius: 50%;
+      border: 2px solid var(--cyan);
+      pointer-events: none;
+      opacity: 0;
+      transform: scale(0.5);
+    }
+
+    @keyframes shockwave-expand {
+      0% { transform: scale(0.6); opacity: 0.9; border-width: 3px; }
+      100% { transform: scale(3.5); opacity: 0; border-width: 1px; }
+    }
+
+    .emblem-box {
+      position: relative;
+      width: 72px;
+      height: 72px;
+      border-radius: 20px;
+      border: 1.5px solid rgba(56, 189, 248, 0.5);
+      background: #090b10;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 35px rgba(56, 189, 248, 0.3);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .emblem-box.absorb-flash {
+      box-shadow: 0 0 60px rgba(56, 189, 248, 0.8), 0 0 20px #fff;
+      border-color: #fff;
+      transform: scale(1.1);
+    }
+
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes spin-rev {
+      100% { transform: rotate(-360deg); }
+    }
+
+    /* Telemetry Block - Anchored BELOW the dead-center Moor Beacon */
+    .telemetry-block {
+      position: absolute;
+      top: calc(50% + 72px);
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      z-index: 20;
+      pointer-events: none;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    .telemetry-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.28em;
+      color: var(--cyan);
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .telemetry-sub {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      min-height: 16px;
+    }
+
+    .matrix-readout {
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 4px 14px;
+      border-radius: 6px;
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      font-size: 0.62rem;
+      color: #94a3b8;
+    }
+
+    .matrix-readout span.val {
+      color: #e2e8f0;
+      font-weight: 600;
+    }
+
+    /* Bottom Floating Action Bar */
+    footer {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 18px;
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      z-index: 50;
+    }
+
+    .action-btn {
+      background: rgba(56, 189, 248, 0.12);
+      color: var(--cyan-bright);
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      border-radius: 7px;
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.08em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      text-transform: uppercase;
+    }
+
+    .action-btn:hover {
+      background: var(--cyan);
+      color: #050b14;
+      border-color: var(--cyan);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.5);
+    }
+
+    .action-btn.primary {
+      background: var(--cyan);
+      color: #030712;
+      border-color: var(--cyan-bright);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.35);
+    }
+
+    .action-btn.primary:hover {
+      background: #7dd3fc;
+      box-shadow: 0 0 24px rgba(56, 189, 248, 0.7);
+    }
+
+    .action-btn:active {
+      transform: scale(0.97);
+    }
+
+    .toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      user-select: none;
+      padding: 4px 8px;
+    }
+
+    .toggle-wrap input {
+      accent-color: var(--cyan);
+      cursor: pointer;
+    }
+
+    .speed-select {
+      background: #090e17;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.7rem;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Studio Top Navigation -->
+  <header>
+    <div class="studio-brand">
+      <div class="status-dot"></div>
+      <span>Moor Swarm Studio // Symmetric Core Link</span>
+    </div>
+
+    <!-- 3 Symmetrical Variants Switcher (Defaulting to Number 2: Concentric Gyroscopic) -->
+    <div class="tabs-wrap" role="tablist">
+      <button class="tab-btn" id="tab-hex" onclick="setVariant('hexagonal')">
+        <span>[1]</span> Hexagonal Hive Matrix
+      </button>
+      <button class="tab-btn active" id="tab-gyro" onclick="setVariant('gyroscopic')">
+        <span>[2]</span> Concentric Gyroscopic (Selected)
+      </button>
+      <button class="tab-btn" id="tab-mandala" onclick="setVariant('mandala')">
+        <span>[3]</span> Quantum Mandala
+      </button>
+    </div>
+  </header>
+
+  <!-- Canvas & Central Core Viewport -->
+  <main class="viewport">
+    <canvas id="swarm-canvas"></canvas>
+
+    <!-- Exact Dead-Center Core Beacon -->
+    <div class="core-beacon" id="core-beacon">
+      <div class="antenna-ring-1"></div>
+      <div class="antenna-ring-2"></div>
+      <div class="shockwave" id="shockwave"></div>
+
+      <!-- Moor Ant Brand Emblem -->
+      <div class="emblem-box" id="emblem-box">
+        <svg aria-label="Moor Brand Emblem" fill="none" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: 100%;">
+          <defs>
+            <linearGradient id="moorCobaltGrad" x1="0%" x2="100%" y1="0%" y2="100%">
+              <stop offset="0%" stopColor="#38bdf8" />
+              <stop offset="50%" stopColor="#2563eb" />
+              <stop offset="100%" stopColor="#1d4ed8" />
+            </linearGradient>
+            <linearGradient id="moorHexGrad" x1="0%" x2="0%" y1="0%" y2="100%">
+              <stop offset="0%" stopColor="#2563eb" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.05" />
+            </linearGradient>
+          </defs>
+          <polygon points="32,4 56,18 56,46 32,60 8,46 8,18" stroke="#38bdf8" stroke-opacity="0.45" fill="url(#moorHexGrad)" stroke-width="1.5" />
+          <circle cx="32" cy="4" r="1.5" fill="#38bdf8" />
+          <circle cx="56" cy="18" r="1.5" fill="#38bdf8" />
+          <circle cx="56" cy="46" r="1.5" fill="#38bdf8" />
+          <circle cx="32" cy="60" r="1.5" fill="#38bdf8" />
+          <circle cx="8" cy="46" r="1.5" fill="#38bdf8" />
+          <circle cx="8" cy="18" r="1.5" fill="#38bdf8" />
+          <!-- Antennae -->
+          <path d="M26 22 L20 12 L13 14" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M38 22 L44 12 L51 14" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+          <!-- Head -->
+          <polygon points="32,18 39,24 32,29 25,24" fill="rgba(56,189,248,0.2)" stroke="#7dd3fc" stroke-width="1.8" />
+          <circle cx="32" cy="23.5" r="1.8" fill="#7dd3fc" />
+          <!-- Architecture M -->
+          <path d="M17 44 L25 29 L32 37 L39 29 L47 44" fill="none" stroke="url(#moorCobaltGrad)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" />
+          <!-- Thorax bridge -->
+          <path d="M25 39 L32 45 L39 39" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          <!-- Abdomen anchor -->
+          <polygon points="32,46 37,52 32,55 27,52" fill="rgba(37,99,235,0.3)" stroke="#38bdf8" stroke-width="1.6" />
+          <!-- Core power node -->
+          <circle cx="32" cy="37" r="2.2" fill="#fff" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Real-time Telemetry Readout (Positioned below the centered core) -->
+    <div class="telemetry-block">
+      <div class="telemetry-title" id="telemetry-title">
+        <span class="status-dot"></span>
+        <span id="title-text">SWARM CONSTELLATION LINK</span>
+      </div>
+      <div class="telemetry-sub" id="telemetry-sub">COLONY MESH // DISCOVERING WORKER NODES</div>
+
+      <div class="matrix-readout">
+        <div>NODES: <span class="val" id="readout-nodes">56 ACTIVE</span></div>
+        <div style="color: rgba(56,189,248,0.4)">•</div>
+        <div>SYMMETRY: <span class="val" id="readout-sym">CONCENTRIC GYRO</span></div>
+        <div style="color: rgba(56,189,248,0.4)">•</div>
+        <div>BUS: <span class="val">PHEROMONE-IPC</span></div>
+        <div style="color: rgba(56,189,248,0.4)">•</div>
+        <div>LATENCY: <span class="val">&lt;1ms</span></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Interactive Control Footer -->
+  <footer>
+    <button class="action-btn primary" id="converge-btn" onclick="toggleConvergence()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="m16 12-4-4-4 4"></path>
+        <path d="M12 16V8"></path>
+      </svg>
+      Trigger Core Convergence
+    </button>
+
+    <button class="action-btn" onclick="resetSwarm()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+        <path d="M3 3v5h5"></path>
+      </svg>
+      Reset
+    </button>
+
+    <label class="toggle-wrap">
+      <input type="checkbox" id="auto-loop-chk" checked />
+      Auto-Replay Loop
+    </label>
+
+    <label class="toggle-wrap">
+      <input type="checkbox" id="guidelines-chk" checked />
+      Symmetry Guidelines
+    </label>
+
+    <select class="speed-select" id="speed-select" onchange="setSpeed(this.value)">
+      <option value="0.5">0.5x Speed</option>
+      <option value="1.0" selected>1.0x Normal</option>
+      <option value="1.8">1.8x Fast</option>
+    </select>
+  </footer>
+
+  <script>
+    // Canvas & Render Setup
+    const canvas = document.getElementById('swarm-canvas');
+    const ctx = canvas.getContext('2d');
+    const coreBeacon = document.getElementById('core-beacon');
+    const emblemBox = document.getElementById('emblem-box');
+    const shockwaveEl = document.getElementById('shockwave');
+    const titleText = document.getElementById('title-text');
+    const subText = document.getElementById('telemetry-sub');
+    const nodesReadout = document.getElementById('readout-nodes');
+    const symReadout = document.getElementById('readout-sym');
+    const convergeBtn = document.getElementById('converge-btn');
+    const autoLoopChk = document.getElementById('auto-loop-chk');
+    const guidelinesChk = document.getElementById('guidelines-chk');
+
+    // Default to Number 2: Concentric Gyroscopic
+    let currentVariant = 'gyroscopic';
+    let isConverging = false;
+    let speedMultiplier = 1.0;
+    let width = 0;
+    let height = 0;
+    let centerX = 0;
+    let centerY = 0;
+
+    const CORE_RADIUS = 36; // Exact outer edge of the Moor emblem box
+
+    // Particle representation with polar coordinates centered exactly on the Moor emblem
+    class SymmetricParticle {
+      constructor(radius, angle, groupIndex, variant) {
+        this.radius = radius;
+        this.initialRadius = radius;
+        this.angle = angle;
+        this.initialAngle = angle;
+        this.groupIndex = groupIndex;
+        this.variant = variant;
+        this.size = 3.2;
+        this.opacity = 0.85;
+        this.trail = [];
+        this.active = true;
+        this.convergeProgress = 0;
+      }
+
+      update(time, dt) {
+        if (!this.active) return;
+
+        if (!isConverging) {
+          if (this.variant === 'gyroscopic') {
+            // Concentric counter-rotating rings:
+            // Rings 0 & 2: clockwise; Rings 1 & 3: counter-clockwise
+            const ringDir = this.groupIndex % 2 === 0 ? 1 : -1;
+            const ringSpeed = (0.007 + (4 - this.groupIndex) * 0.0025) * ringDir;
+            this.angle += ringSpeed * speedMultiplier;
+            this.currentRadius = this.radius;
+          } else if (this.variant === 'hexagonal') {
+            const rotSpeed = 0.008 * (this.groupIndex % 2 === 0 ? 1 : -0.75);
+            this.angle += rotSpeed * speedMultiplier;
+            const breathing = Math.sin(time * 0.002 + this.groupIndex) * 6;
+            this.currentRadius = this.radius + breathing;
+          } else if (this.variant === 'mandala') {
+            const pulse = Math.cos(time * 0.003) * 8;
+            this.currentRadius = this.radius + pulse;
+            this.angle += 0.005 * speedMultiplier;
+          }
+        } else {
+          // LOGARITHMIC SPIRAL VORTEX SUCTION DIRECTLY INTO CORE CENTER
+          this.convergeProgress += 0.018 * speedMultiplier;
+          const decay = Math.min(1, this.convergeProgress);
+          const easeDecay = Math.pow(decay, 1.8);
+          
+          this.currentRadius = this.initialRadius * (1 - easeDecay * 0.95);
+          const vortexDirection = this.groupIndex % 2 === 0 ? 1 : -1;
+          this.angle += (0.035 + easeDecay * 0.09) * vortexDirection * speedMultiplier;
+
+          // Absorb into the core when reaching the emblem perimeter
+          if (this.currentRadius <= CORE_RADIUS) {
+            this.active = false;
+            this.opacity = 0;
+            triggerCoreAbsorptionSpark(this.angle);
+          }
+        }
+
+        // Subpixel Cartesian coordinates directly centered on Moor emblem
+        this.x = centerX + Math.cos(this.angle) * this.currentRadius;
+        this.y = centerY + Math.sin(this.angle) * this.currentRadius;
+
+        // Trail history
+        this.trail.unshift({ x: this.x, y: this.y, opacity: this.opacity });
+        if (this.trail.length > 7) this.trail.pop();
+      }
+
+      draw(ctx) {
+        if (!this.active && this.trail.length === 0) return;
+
+        // Draw symmetric photon trail
+        if (this.trail.length > 1) {
+          ctx.beginPath();
+          ctx.moveTo(this.trail[0].x, this.trail[0].y);
+          for (let i = 1; i < this.trail.length; i++) {
+            ctx.lineTo(this.trail[i].x, this.trail[i].y);
+          }
+          ctx.strokeStyle = `rgba(56, 189, 248, ${Math.max(0, this.opacity * 0.3)})`;
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+        }
+
+        if (!this.active) return;
+
+        // Render micro-ant node with precise orientation
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        const heading = isConverging ? this.angle + Math.PI / 2 + 0.45 : this.angle + Math.PI / 2;
+        ctx.rotate(heading);
+
+        // Glow
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur = 8;
+
+        // Rear abdomen
+        ctx.fillStyle = `rgba(37, 99, 235, ${this.opacity})`;
+        ctx.beginPath();
+        ctx.ellipse(-this.size * 1.0, 0, this.size * 0.9, this.size * 0.6, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Thorax
+        ctx.fillStyle = `rgba(56, 189, 248, ${this.opacity})`;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, this.size * 0.6, this.size * 0.45, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Head
+        ctx.fillStyle = `rgba(125, 211, 252, ${Math.min(1, this.opacity + 0.2)})`;
+        ctx.beginPath();
+        ctx.ellipse(this.size * 0.9, 0, this.size * 0.5, this.size * 0.4, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Antennae rays
+        ctx.strokeStyle = `rgba(56, 189, 248, ${this.opacity * 0.9})`;
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(this.size * 1.1, -this.size * 0.2);
+        ctx.lineTo(this.size * 1.9, -this.size * 0.7);
+        ctx.moveTo(this.size * 1.1, this.size * 0.2);
+        ctx.lineTo(this.size * 1.9, this.size * 0.7);
+        ctx.stroke();
+
+        ctx.restore();
+      }
+    }
+
+    let particles = [];
+    let absorptionSparks = [];
+
+    // Core absorption particle spark effect
+    function triggerCoreAbsorptionSpark(angle) {
+      emblemBox.classList.add('absorb-flash');
+      setTimeout(() => emblemBox.classList.remove('absorb-flash'), 120);
+
+      shockwaveEl.style.animation = 'none';
+      void shockwaveEl.offsetWidth; // trigger reflow
+      shockwaveEl.style.animation = 'shockwave-expand 0.6s ease-out forwards';
+
+      for (let i = 0; i < 4; i++) {
+        absorptionSparks.push({
+          x: centerX + Math.cos(angle) * (CORE_RADIUS - 4),
+          y: centerY + Math.sin(angle) * (CORE_RADIUS - 4),
+          vx: (Math.cos(angle + (i - 1.5) * 0.4)) * (1.5 + Math.random() * 2),
+          vy: (Math.sin(angle + (i - 1.5) * 0.4)) * (1.5 + Math.random() * 2),
+          life: 1.0,
+          size: 1.5
+        });
+      }
+    }
+
+    // Build symmetric constellation particles
+    function buildParticles() {
+      particles = [];
+      absorptionSparks = [];
+      isConverging = false;
+      convergeBtn.classList.add('primary');
+      convergeBtn.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="m16 12-4-4-4 4"></path>
+          <path d="M12 16V8"></path>
+        </svg>
+        Trigger Core Convergence
+      `;
+      titleText.innerText = 'SWARM CONSTELLATION LINK';
+      subText.innerText = 'COLONY MESH // DISCOVERING WORKER NODES';
+
+      if (currentVariant === 'gyroscopic') {
+        // VERSION 2: Concentric Gyroscopic Orbits (counter-rotating rings)
+        // 4 rings: 8, 12, 16, 20 nodes with uniform spacing (total 56 nodes)
+        const ringConfigs = [
+          { radius: 80, count: 8 },
+          { radius: 125, count: 12 },
+          { radius: 170, count: 16 },
+          { radius: 215, count: 20 }
+        ];
+        ringConfigs.forEach((cfg, ringIdx) => {
+          for (let i = 0; i < cfg.count; i++) {
+            const angle = (i * 2 * Math.PI) / cfg.count;
+            particles.push(new SymmetricParticle(cfg.radius, angle, ringIdx, 'gyroscopic'));
+          }
+        });
+        nodesReadout.innerText = `${particles.length} ACTIVE`;
+        symReadout.innerText = 'CONCENTRIC GYRO';
+      } else if (currentVariant === 'hexagonal') {
+        const RINGS = [85, 115, 145, 175, 205, 235];
+        RINGS.forEach((radius, groupIdx) => {
+          const angularOffset = (groupIdx * Math.PI) / 6;
+          for (let sector = 0; sector < 6; sector++) {
+            const angle = (sector * Math.PI) / 3 + angularOffset;
+            particles.push(new SymmetricParticle(radius, angle, groupIdx, 'hexagonal'));
+          }
+        });
+        nodesReadout.innerText = `${particles.length} ACTIVE`;
+        symReadout.innerText = '6-FOLD RADIAL (HEX)';
+      } else if (currentVariant === 'mandala') {
+        const RINGS = [75, 110, 145, 180, 215, 250];
+        RINGS.forEach((radius, layerIdx) => {
+          const phase = (layerIdx % 2) * (Math.PI / 8);
+          for (let i = 0; i < 8; i++) {
+            const angle = (i * 2 * Math.PI) / 8 + phase;
+            particles.push(new SymmetricParticle(radius, angle, layerIdx, 'mandala'));
+          }
+        });
+        nodesReadout.innerText = `${particles.length} ACTIVE`;
+        symReadout.innerText = '8-FOLD MANDALA';
+      }
+    }
+
+    // Exact Subpixel Center Alignment: Dynamically measures Moor emblem's true center on screen!
+    function updateCenter() {
+      const beaconRect = coreBeacon.getBoundingClientRect();
+      const canvasRect = canvas.getBoundingClientRect();
+      centerX = (beaconRect.left + beaconRect.width / 2) - canvasRect.left;
+      centerY = (beaconRect.top + beaconRect.height / 2) - canvasRect.top;
+    }
+
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      updateCenter();
+    }
+
+    window.addEventListener('resize', () => {
+      resize();
+      buildParticles();
+    });
+
+    // Draw background symmetry guidelines centered exactly on the Moor emblem
+    function drawGuidelines() {
+      if (!guidelinesChk.checked) return;
+
+      ctx.save();
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.07)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 7]);
+
+      const guideRings = currentVariant === 'gyroscopic'
+        ? [80, 125, 170, 215]
+        : currentVariant === 'hexagonal'
+        ? [85, 115, 145, 175, 205, 235]
+        : [75, 110, 145, 180, 215, 250];
+
+      guideRings.forEach(r => {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+
+      // Draw radial symmetry axes
+      const sectors = currentVariant === 'mandala' ? 8 : currentVariant === 'gyroscopic' ? 8 : 6;
+      for (let s = 0; s < sectors; s++) {
+        const angle = (s * 2 * Math.PI) / sectors;
+        ctx.beginPath();
+        ctx.moveTo(centerX + Math.cos(angle) * CORE_RADIUS, centerY + Math.sin(angle) * CORE_RADIUS);
+        ctx.lineTo(centerX + Math.cos(angle) * 260, centerY + Math.sin(angle) * 260);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    // Dynamic web laser connections between symmetric neighbors
+    function drawSymmetricWeb() {
+      ctx.save();
+      ctx.lineWidth = 0.75;
+
+      if (currentVariant === 'gyroscopic') {
+        ctx.strokeStyle = 'rgba(37, 99, 235, 0.18)';
+        for (let i = 0; i < particles.length; i++) {
+          for (let j = i + 1; j < particles.length; j++) {
+            if (Math.abs(particles[i].groupIndex - particles[j].groupIndex) === 1 && particles[i].active && particles[j].active) {
+              const dx = particles[i].x - particles[j].x;
+              const dy = particles[i].y - particles[j].y;
+              if (dx * dx + dy * dy < 3800) {
+                ctx.beginPath();
+                ctx.moveTo(particles[i].x, particles[i].y);
+                ctx.lineTo(particles[j].x, particles[j].y);
+                ctx.stroke();
+              }
+            }
+          }
+        }
+      } else if (currentVariant === 'hexagonal') {
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.16)';
+        for (let i = 0; i < particles.length; i++) {
+          for (let j = i + 1; j < particles.length; j++) {
+            if (particles[i].groupIndex === particles[j].groupIndex && particles[i].active && particles[j].active) {
+              const dx = particles[i].x - particles[j].x;
+              const dy = particles[i].y - particles[j].y;
+              const d = Math.sqrt(dx * dx + dy * dy);
+              if (d < 160) {
+                ctx.beginPath();
+                ctx.moveTo(particles[i].x, particles[i].y);
+                ctx.lineTo(particles[j].x, particles[j].y);
+                ctx.stroke();
+              }
+            }
+          }
+        }
+      } else if (currentVariant === 'mandala') {
+        ctx.strokeStyle = 'rgba(125, 211, 252, 0.15)';
+        for (let i = 0; i < particles.length; i++) {
+          for (let j = i + 1; j < particles.length; j++) {
+            if (particles[i].active && particles[j].active) {
+              const dx = particles[i].x - particles[j].x;
+              const dy = particles[i].y - particles[j].y;
+              const distSq = dx * dx + dy * dy;
+              if (distSq < 4200) {
+                ctx.beginPath();
+                ctx.moveTo(particles[i].x, particles[i].y);
+                ctx.lineTo(particles[j].x, particles[j].y);
+                ctx.stroke();
+              }
+            }
+          }
+        }
+      }
+
+      ctx.restore();
+    }
+
+    // Animation Loop
+    let lastTime = performance.now();
+
+    function render(currentTime) {
+      const dt = currentTime - lastTime;
+      lastTime = currentTime;
+
+      updateCenter(); // Ensure subpixel lock onto Moor emblem
+      ctx.clearRect(0, 0, width, height);
+
+      // 1. Draw static / dynamic geometric guides
+      drawGuidelines();
+
+      // 2. Draw dynamic symmetric connections
+      drawSymmetricWeb();
+
+      // 3. Update & render swarm particles
+      let activeCount = 0;
+      particles.forEach(p => {
+        p.update(currentTime, dt);
+        p.draw(ctx);
+        if (p.active) activeCount++;
+      });
+
+      // 4. Render absorption sparks
+      for (let i = absorptionSparks.length - 1; i >= 0; i--) {
+        const s = absorptionSparks[i];
+        s.x += s.vx * speedMultiplier;
+        s.y += s.vy * speedMultiplier;
+        s.life -= 0.04 * speedMultiplier;
+        if (s.life <= 0) {
+          absorptionSparks.splice(i, 1);
+          continue;
+        }
+        ctx.fillStyle = `rgba(125, 211, 252, ${s.life})`;
+        ctx.fillRect(s.x, s.y, s.size, s.size);
+      }
+
+      // 5. Handle Auto-Loop Replay when all nodes have converged into core
+      if (isConverging && activeCount === 0 && autoLoopChk.checked) {
+        if (!window.replayTimeout) {
+          window.replayTimeout = setTimeout(() => {
+            window.replayTimeout = null;
+            buildParticles();
+          }, 1400);
+        }
+      }
+
+      requestAnimationFrame(render);
+    }
+
+    // Trigger Core Convergence
+    function toggleConvergence() {
+      if (isConverging) return;
+      isConverging = true;
+      convergeBtn.classList.remove('primary');
+      convergeBtn.innerText = 'CONVERGING INTO CORE...';
+      titleText.innerText = 'COLONY LINK ESTABLISHED';
+      subText.innerText = 'MOUNTING WORKSTATION ENVIRONMENT';
+    }
+
+    function resetSwarm() {
+      if (window.replayTimeout) {
+        clearTimeout(window.replayTimeout);
+        window.replayTimeout = null;
+      }
+      buildParticles();
+    }
+
+    function setVariant(variant) {
+      currentVariant = variant;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      if (variant === 'hexagonal') document.getElementById('tab-hex').classList.add('active');
+      if (variant === 'gyroscopic') document.getElementById('tab-gyro').classList.add('active');
+      if (variant === 'mandala') document.getElementById('tab-mandala').classList.add('active');
+      resetSwarm();
+    }
+
+    function setSpeed(val) {
+      speedMultiplier = parseFloat(val);
+    }
+
+    // Keyboard Hotkeys: [1], [2], [3] for variants, Space/Enter to trigger convergence
+    window.addEventListener('keydown', e => {
+      if (e.key === '1') setVariant('hexagonal');
+      if (e.key === '2') setVariant('gyroscopic');
+      if (e.key === '3') setVariant('mandala');
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        toggleConvergence();
+      }
+      if (e.key === 'r' || e.key === 'R') resetSwarm();
+    });
+
+    // Boot
+    resize();
+    buildParticles();
+    requestAnimationFrame(render);
+  </script>
+</body>
+</html>
