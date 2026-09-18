@@ -48,18 +48,8 @@ export function AntSwarmConnecting({
 }: AntSwarmConnectingProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const beaconRef = useRef<HTMLDivElement | null>(null)
-  const [telemetryStep, setTelemetryStep] = useState(0)
   const [coreFlash, setCoreFlash] = useState(false)
   const reduceMotion = prefersReducedMotion()
-
-  // Cycle technical telemetry status
-  useEffect(() => {
-    if (!active) return
-    const interval = window.setInterval(() => {
-      setTelemetryStep(prev => (prev + 1) % 4)
-    }, 900)
-    return () => window.clearInterval(interval)
-  }, [active])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -391,18 +381,10 @@ export function AntSwarmConnecting({
     }
   }, [converging, reduceMotion, variant])
 
-  const telemetryLabels = [
-    'COLONY MESH // DISCOVERING WORKER NODES',
-    'PHEROMONE PROTOCOL // ESTABLISHING CARRIER',
-    'AUTONOMOUS AGENT // ROUTING SYNAPSE',
-    'GATEWAY LINK // SECURING LOCALHOST INTERFACE'
-  ]
-
-  const symmetryLabel =
-    variant === 'gyroscopic' ? 'CONCENTRIC GYRO' : variant === 'hexagonal' ? '6-FOLD RADIAL' : '8-FOLD MANDALA'
-
   return (
     <div
+      aria-label="Connecting"
+      role="status"
       className={cn(
         'relative flex size-full items-center justify-center select-none overflow-hidden',
         className
@@ -444,34 +426,6 @@ export function AntSwarmConnecting({
           )}
         >
           <MoorAntIcon className="size-full animate-pulse" />
-        </div>
-      </div>
-
-      {/* Telemetry & Connection Status - Anchored Below the Centered Core */}
-      <div
-        aria-live="polite"
-        className="absolute top-[calc(50%+4.25rem)] left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 text-center pointer-events-none w-full max-w-sm"
-      >
-        <div className="flex items-center gap-2">
-          <span className="size-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#38bdf8] animate-ping" />
-          <h1 className="font-mono text-xs font-bold tracking-[0.25em] text-cyan-400 uppercase">
-            {converging ? 'COLONY LINK ESTABLISHED' : 'SWARM CONSTELLATION LINK'}
-          </h1>
-        </div>
-
-        <p className="font-mono text-[0.6875rem] text-muted-foreground/80 tracking-wide transition-all duration-300">
-          {converging ? 'MOUNTING WORKSTATION ENVIRONMENT' : telemetryLabels[telemetryStep]}
-        </p>
-
-        {/* Real-time system matrix readout */}
-        <div className="mt-2 flex items-center gap-3 rounded-md border border-cyan-500/20 bg-muted/10 px-3 py-1 font-mono text-[0.625rem] text-muted-foreground">
-          <span>NODES: 56 ACTIVE</span>
-          <span className="text-cyan-500/40">•</span>
-          <span>SYMMETRY: {symmetryLabel}</span>
-          <span className="text-cyan-500/40">•</span>
-          <span>BUS: PHEROMONE-IPC</span>
-          <span className="text-cyan-500/40">•</span>
-          <span>LATENCY: &lt;1ms</span>
         </div>
       </div>
     </div>
