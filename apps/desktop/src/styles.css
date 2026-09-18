@@ -1730,11 +1730,11 @@ body.guest-pointer-lock :is(webview, iframe) {
    something a class-merge or a missed scan can quietly drop, leaving the
    wordmark rendered in body text. */
 .wordmark {
-  font-family: 'Collapse', var(--font-sans);
+  font-family: 'Space Grotesk', 'Syne', 'JetBrains Mono', var(--font-sans), sans-serif;
   font-weight: 700;
-  line-height: 0.9;
+  line-height: 0.92;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
 }
 
 .fit-text > [aria-hidden] {

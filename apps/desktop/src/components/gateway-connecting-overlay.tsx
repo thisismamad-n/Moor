@@ -1,7 +1,7 @@
 import { useStore } from '@nanostores/react'
 import { useEffect, useRef, useState } from 'react'
 
-import { DecodeText } from '@/components/ui/decode-text'
+import { AntSwarmConnecting } from '@/components/ui/ant-swarm-connecting'
 import { prefersReducedMotion } from '@/hooks/use-media-query'
 import { cn } from '@/lib/utils'
 import { $desktopBoot } from '@/store/boot'
@@ -9,19 +9,15 @@ import { $gatewaySwitching } from '@/store/gateway-switch'
 import { guidedOnboardingActive } from '@/store/onboarding-gate'
 import { $gatewayState } from '@/store/session'
 
-// Decode mechanics live in the shared <DecodeText> primitive
-// (components/ui/decode-text.tsx). "CONN" stays legible via prefix={4}.
-const TEXT = 'CONNECTING'
-
-// Exit choreography (ms): text fades down + out, hold, then the overlay fades.
-const TEXT_OUT_MS = 360
-const POST_TEXT_HOLD_MS = 300
-const OVERLAY_OUT_MS = 520
+// Exit choreography (ms): ant swarm converges + fades down, hold, then overlay fades.
+const SWARM_OUT_MS = 420
+const POST_TEXT_HOLD_MS = 240
+const OVERLAY_OUT_MS = 500
 // Preview-only: how long to "connect" for, and the pause before replaying.
-const PREVIEW_CONNECT_MS = 2600
-const PREVIEW_REPLAY_MS = 1100
+const PREVIEW_CONNECT_MS = 3200
+const PREVIEW_REPLAY_MS = 1200
 
-type Phase = 'live' | 'text-out' | 'overlay-out' | 'gone'
+type Phase = 'live' | 'swarm-out' | 'overlay-out' | 'gone'
 
 // Dev affordance: a warm Cmd+R reconnects almost instantly, so the overlay
 // only flashes. Load with `?connecting=1` to force a looping preview.
@@ -43,7 +39,7 @@ export function GatewayConnectingOverlay() {
   const gatewaySwitching = useStore($gatewaySwitching)
   const [previewing] = useState(forcedPreview)
   const reduce = prefersReducedMotion()
-  // Under reduced motion, skip the multi-phase exit choreography (text-out →
+  // Under reduced motion, skip the multi-phase exit choreography (swarm-out →
   // hold → overlay fade) and jump straight to gone so the overlay unmounts
   // the instant the gateway opens. E2E screenshots rely on this to avoid
   // catching the overlay mid-fade.
@@ -82,24 +78,24 @@ export function GatewayConnectingOverlay() {
     }
 
     if (previewing) {
-      const id = window.setTimeout(() => setPhase('text-out'), PREVIEW_CONNECT_MS)
+      const id = window.setTimeout(() => setPhase('swarm-out'), PREVIEW_CONNECT_MS)
 
       return () => window.clearTimeout(id)
     }
 
     if (gatewayState === 'open' && shownRef.current) {
       // Under reduced motion, skip the multi-phase exit choreography
-      // (text-out → hold → overlay fade) and jump straight to gone so the
+      // (swarm-out → hold → overlay fade) and jump straight to gone so the
       // overlay unmounts the instant the gateway opens. E2E screenshots
       // rely on this to avoid catching the overlay mid-fade.
-      setPhase(reduce ? 'gone' : 'text-out')
+      setPhase(reduce ? 'gone' : 'swarm-out')
     }
   }, [phase, previewing, gatewayState, reduce])
 
-  // Advance the exit choreography: text-out -> overlay-out -> gone.
+  // Advance the exit choreography: swarm-out -> overlay-out -> gone.
   useEffect(() => {
-    if (phase === 'text-out') {
-      const id = window.setTimeout(() => setPhase('overlay-out'), TEXT_OUT_MS + POST_TEXT_HOLD_MS)
+    if (phase === 'swarm-out') {
+      const id = window.setTimeout(() => setPhase('overlay-out'), SWARM_OUT_MS + POST_TEXT_HOLD_MS)
 
       return () => window.clearTimeout(id)
     }
@@ -156,16 +152,17 @@ export function GatewayConnectingOverlay() {
       // in styles.css.
       data-glass-opaque=""
     >
-      <DecodeText
-        active={phase === 'live' && (previewing || connecting)}
+      <div
         className={cn(
-          'pl-[0.4em] text-(--theme-primary) transition duration-300 ease-out',
-          leaving ? 'translate-y-2 opacity-0 saturate-0' : 'translate-y-0 opacity-100 saturate-100'
+          'size-full transition-all duration-400 ease-out',
+          leaving ? 'scale-95 opacity-0' : 'scale-100 opacity-100'
         )}
-        cursor
-        prefix={4}
-        text={TEXT}
-      />
+      >
+        <AntSwarmConnecting
+          active={phase === 'live' && (previewing || connecting)}
+          converging={leaving}
+        />
+      </div>
     </div>
   )
 }

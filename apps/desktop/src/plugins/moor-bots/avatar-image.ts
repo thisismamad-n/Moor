@@ -109,8 +109,8 @@ export async function generateAvatarImage(
 
   const res = await host.request<GeneratedImage>('image.generate', {
     prompt:
-      `Cute minimal robot avatar for an AI agent named "${who}". ` +
-      'Friendly simple mascot face, bold flat vector style, solid color background, centered, no text.',
+      `Stylized high-tech cybernetic ant agent avatar for an autonomous AI named "${who}". ` +
+      'Sleek insectoid specialist mascot with distinct antennae, chitin armor plates, glowing compound optic eyes, bold flat vector style, solid dark background, centered, no text.',
     aspect_ratio: 'square'
   })
 

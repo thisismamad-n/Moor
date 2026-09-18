@@ -60,31 +60,38 @@ export default function ProgressScreen({ bootstrap }: ProgressProps) {
   const pct = Math.round(progress.fraction * 100)
 
   return (
-    <div className="moor-fade-in flex h-full flex-col">
-      {/* Header: brand + title + description, matching the desktop install overlay. */}
-      <div className="flex shrink-0 items-start gap-4 px-6 pt-6 pb-4">
-        <BrandMark className="size-11" />
+    <div className="moor-fade-in flex h-full flex-col bg-[#06080e] text-foreground">
+      {/* Cockpit Status Rail */}
+      <div className="flex shrink-0 items-center justify-between border-b border-cyan-500/20 bg-muted/10 px-6 py-2.5 font-mono text-[0.6875rem] text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <span className="size-1.5 rounded-full bg-cyan-400 animate-ping" />
+          <span className="font-bold tracking-wider text-cyan-400 uppercase">MOOR SYSTEM SETUP</span>
+        </div>
+        <span className="tabular-nums font-mono text-cyan-400 font-semibold">{pct}% COMPLETE</span>
+      </div>
+
+      {/* Header: brand + title + description */}
+      <div className="flex shrink-0 items-start gap-4 px-6 pt-5 pb-3">
+        <BrandMark className="size-11 border-cyan-500/30 shrink-0" />
         <div className="min-w-0">
-          <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
-          <p className="mt-1.5 text-sm text-muted-foreground">{description}</p>
+          <h2 className="text-xl font-bold tracking-tight text-foreground">{title}</h2>
+          <p className="mt-1 text-xs text-muted-foreground">{description}</p>
         </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 overflow-y-auto px-6 pt-2 pb-4">
-          {/* Progress line + bar; the count shimmers while the install runs.
-              pt-2 matches the log header's py-2 so the "steps complete" line and
-              the "Live output" header share a baseline. */}
-          <div className="mb-4">
-            <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-              <span className={clsx(bootstrap.status === 'running' && 'shimmer')}>
+          {/* Progress line + bar */}
+          <div className="mb-4 rounded-xl border border-cyan-500/20 bg-[#090d16]/80 p-3.5">
+            <div className="mb-2 flex items-center justify-between font-mono text-xs text-muted-foreground">
+              <span className={clsx(bootstrap.status === 'running' && 'text-cyan-300 font-semibold')}>
                 {progress.done} of {progress.total} steps complete
               </span>
-              <span className="tabular-nums">{pct}%</span>
+              <span className="tabular-nums font-bold text-cyan-400">{pct}%</span>
             </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-(--ui-bg-tertiary)">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted/30 border border-cyan-500/20">
               <div
-                className="h-full bg-primary transition-all duration-300 ease-out"
+                className="h-full bg-linear-to-r from-cyan-500 via-blue-500 to-emerald-400 shadow-[0_0_12px_rgba(6,182,212,0.5)] transition-all duration-300 ease-out"
                 style={{ width: `${Math.max(2, progress.fraction * 100)}%` }}
               />
             </div>

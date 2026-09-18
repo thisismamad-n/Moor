@@ -9,7 +9,7 @@
 import * as sdk from '@moor/plugin-sdk'
 import { profileColor } from '@moor/plugin-sdk'
 
-import type { AvatarAppearance, AvatarShape, BotMeta, FaceMood } from './types'
+import type { AntCaste, AvatarAppearance, AvatarShape, BotMeta, FaceMood } from './types'
 
 // Deterministic blob avatars (name → face). Feature-detected: older SDKs
 // without the export fall back to the legacy math-face shapes below.
@@ -20,11 +20,46 @@ const createBudgetedLoop = typeof sdk === 'undefined' ? undefined : sdk.createBu
 
 // ── avatars (shape + color + eyes) ──────────────────────────────────────────
 
-// The original flat shapes. Sigils ('sigil-N') and platonic
-// solids remain render-only so any bot that picked one during the experiments
-// keeps its look.
-const AVATAR_SHAPES: AvatarShape[] = ['circle', 'squircle', 'pill', 'triangle', 'hexagon', 'cloud', 'drop']
-export const AVATAR_PICKER_SHAPES = ['circle', 'blob', 'squircle', 'pill', 'triangle', 'hexagon', 'cloud', 'drop']
+export const ANT_CASTES: AntCaste[] = [
+  'ant-worker',
+  'ant-scout',
+  'ant-architect',
+  'ant-sentry',
+  'ant-commander'
+]
+
+export function isAntCaste(shape: null | string | undefined): shape is AntCaste {
+  if (!shape || typeof shape !== 'string') return false
+  return ANT_CASTES.includes(shape as AntCaste)
+}
+
+// Ant Castes lead the palette, followed by classic geometric shapes.
+const AVATAR_SHAPES: AvatarShape[] = [
+  'ant-worker',
+  'ant-scout',
+  'ant-architect',
+  'ant-sentry',
+  'ant-commander',
+  'circle',
+  'squircle',
+  'pill',
+  'triangle',
+  'hexagon',
+  'cloud',
+  'drop'
+]
+
+export const AVATAR_PICKER_SHAPES = [
+  'ant-worker',
+  'ant-scout',
+  'ant-architect',
+  'ant-sentry',
+  'ant-commander',
+  'circle',
+  'blob',
+  'squircle',
+  'hexagon'
+]
 
 /** xorshift PRNG seeded from a string — stable across sessions/platforms. */
 function sigilRng(text: string) {
@@ -111,7 +146,8 @@ export function defaultShapeFor(name: string): AvatarShape {
     hash = (hash * 31 + ch.charCodeAt(0)) >>> 0
   }
 
-  return AVATAR_SHAPES[hash % AVATAR_SHAPES.length]
+  // Default bots automatically select from the 5 Cyber-Ant Castes
+  return ANT_CASTES[hash % ANT_CASTES.length]
 }
 
 // ── blobatar shapes mode (default for new agents) ───────────────────────────
@@ -990,6 +1026,185 @@ interface BotFaceProps {
 }
 
 /**
+ * Procedural Cyber-Ant Castes SVG face renderer.
+ * Produces crisp, scalable vector ant avatars with antennae, chitin plates, mandibles, and compound optic visors.
+ */
+function renderAntCasteFace(caste: AntCaste | string, color: string, name: string, size: number, mood: FaceMood = 'idle') {
+  const working = mood === 'work' || mood === 'think'
+  const isDark = isDarkColor(color)
+  const visorGlow = isDark ? '#38bdf8' : '#0284c7'
+  const plateBorder = 'rgba(0, 0, 0, 0.35)'
+
+  switch (caste) {
+    case 'ant-scout':
+      return (
+        <svg aria-hidden className="block overflow-visible select-none" data-ant-caste="ant-scout" data-bot-face={name} height={size} viewBox="0 0 40 44" width={size}>
+          {/* Swept-back aerodynamic antennae */}
+          <path
+            d="M17 11 L7 2 L3 5 M23 11 L33 2 L37 5"
+            fill="none"
+            stroke={color}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.8}
+          />
+          <circle cx={3} cy={5} fill={visorGlow} r={1.2} />
+          <circle cx={37} cy={5} fill={visorGlow} r={1.2} />
+          {/* Precision mandibles */}
+          <path d="M17 29 L15 37 L19 34 Z M23 29 L25 37 L21 34 Z" fill={color} stroke={plateBorder} strokeWidth={1} />
+          {/* Aerodynamic head shield */}
+          <polygon
+            fill={color}
+            points="20,7 30,17 26,29 20,32 14,29 10,17"
+            stroke={plateBorder}
+            strokeLinejoin="round"
+            strokeWidth={1.4}
+          />
+          {/* Wraparound optical visor */}
+          <path
+            d={working ? 'M12 17 Q20 12 28 17 Q20 22 12 17 Z' : 'M13 18 Q20 15 27 18 Q20 21 13 18 Z'}
+            fill={visorGlow}
+          />
+          <circle cx={16} cy={18} fill="#ffffff" opacity={0.8} r={0.8} />
+          <circle cx={24} cy={18} fill="#ffffff" opacity={0.8} r={0.8} />
+        </svg>
+      )
+
+    case 'ant-architect':
+      return (
+        <svg aria-hidden className="block overflow-visible select-none" data-ant-caste="ant-architect" data-bot-face={name} height={size} viewBox="0 0 40 44" width={size}>
+          {/* Stepped telemetry antennae */}
+          <path
+            d="M15 10 L8 8 L8 2 M25 10 L32 8 L32 2"
+            fill="none"
+            stroke={color}
+            strokeLinecap="square"
+            strokeLinejoin="miter"
+            strokeWidth={1.8}
+          />
+          <circle cx={8} cy={2} fill={visorGlow} r={1.2} />
+          <circle cx={32} cy={2} fill={visorGlow} r={1.2} />
+          {/* Geometric caliper mandibles */}
+          <path d="M16 29 L12 36 L17 34 Z M24 29 L28 36 L23 34 Z" fill={color} stroke={plateBorder} strokeWidth={1} />
+          {/* Hexagonal faceted chitin plate */}
+          <polygon
+            fill={color}
+            points="20,6 30,12 30,26 20,32 10,26 10,12"
+            stroke={plateBorder}
+            strokeLinejoin="round"
+            strokeWidth={1.4}
+          />
+          {/* Internal architectural lines */}
+          <path d="M20 6 L20 16 M10 12 L20 16 L30 12" fill="none" opacity={0.3} stroke="#000000" strokeWidth={1} />
+          {/* Dual matrix lens eyes */}
+          <rect fill={visorGlow} height={3.5} rx={1} width={4.5} x={13} y={18} />
+          <rect fill={visorGlow} height={3.5} rx={1} width={4.5} x={22.5} y={18} />
+          <circle cx={14.5} cy={19.5} fill="#ffffff" opacity={0.9} r={0.65} />
+          <circle cx={24} cy={19.5} fill="#ffffff" opacity={0.9} r={0.65} />
+        </svg>
+      )
+
+    case 'ant-sentry':
+      return (
+        <svg aria-hidden className="block overflow-visible select-none" data-ant-caste="ant-sentry" data-bot-face={name} height={size} viewBox="0 0 40 44" width={size}>
+          {/* Heavy armored spikes */}
+          <path
+            d="M15 10 L8 3 M25 10 L32 3"
+            fill="none"
+            stroke={color}
+            strokeLinecap="round"
+            strokeWidth={2.4}
+          />
+          <circle cx={8} cy={3} fill={visorGlow} r={1.4} />
+          <circle cx={32} cy={3} fill={visorGlow} r={1.4} />
+          {/* Heavy flared defensive mandibles */}
+          <polygon fill={color} points="15,28 10,38 18,34" stroke={plateBorder} strokeWidth={1.2} />
+          <polygon fill={color} points="25,28 30,38 22,34" stroke={plateBorder} strokeWidth={1.2} />
+          {/* Broad armored shield head */}
+          <polygon
+            fill={color}
+            points="20,5 33,11 30,27 20,32 10,27 7,11"
+            stroke={plateBorder}
+            strokeLinejoin="round"
+            strokeWidth={1.6}
+          />
+          {/* Tactical armored visor slot */}
+          <rect fill="#090b10" height={4} rx={1} stroke={plateBorder} strokeWidth={0.8} width={18} x={11} y={16} />
+          <rect fill={visorGlow} height={2} rx={0.5} width={working ? 16 : 14} x={working ? 12 : 13} y={17} />
+          <circle cx={15} cy={18} fill="#ffffff" opacity={0.8} r={0.6} />
+          <circle cx={25} cy={18} fill="#ffffff" opacity={0.8} r={0.6} />
+        </svg>
+      )
+
+    case 'ant-commander':
+      return (
+        <svg aria-hidden className="block overflow-visible select-none" data-ant-caste="ant-commander" data-bot-face={name} height={size} viewBox="0 0 40 44" width={size}>
+          {/* Regal branching antennae */}
+          <path
+            d="M15 8 L7 2 M11 5 L6 7 M25 8 L33 2 M29 5 L34 7"
+            fill="none"
+            stroke={color}
+            strokeLinecap="round"
+            strokeWidth={1.8}
+          />
+          <circle cx={7} cy={2} fill={visorGlow} r={1.3} />
+          <circle cx={33} cy={2} fill={visorGlow} r={1.3} />
+          {/* Double-flanged mandibles */}
+          <polygon fill={color} points="15,29 11,38 18,35" stroke={plateBorder} strokeWidth={1.2} />
+          <polygon fill={color} points="25,29 29,38 22,35" stroke={plateBorder} strokeWidth={1.2} />
+          {/* Royal crested chitin crown */}
+          <polygon
+            fill={color}
+            points="20,4 25,8 32,14 28,27 20,32 12,27 8,14 15,8"
+            stroke={plateBorder}
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+          />
+          {/* Central power node */}
+          <circle cx={20} cy={11} fill={visorGlow} r={1.8} />
+          {/* Commander compound lenses */}
+          <ellipse cx={14.5} cy={19} fill={visorGlow} rx={3} ry={working ? 3.2 : 2.5} />
+          <ellipse cx={25.5} cy={19} fill={visorGlow} rx={3} ry={working ? 3.2 : 2.5} />
+          <circle cx={13.8} cy={18.2} fill="#ffffff" opacity={0.9} r={0.8} />
+          <circle cx={24.8} cy={18.2} fill="#ffffff" opacity={0.9} r={0.8} />
+        </svg>
+      )
+
+    case 'ant-worker':
+    default:
+      return (
+        <svg aria-hidden className="block overflow-visible select-none" data-ant-caste="ant-worker" data-bot-face={name} height={size} viewBox="0 0 40 44" width={size}>
+          {/* Geniculate jointed antennae */}
+          <path
+            d="M16 10 L10 3 L6 5 M24 10 L30 3 L34 5"
+            fill="none"
+            stroke={color}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.8}
+          />
+          <circle cx={6} cy={5} fill={visorGlow} r={1.2} />
+          <circle cx={34} cy={5} fill={visorGlow} r={1.2} />
+          {/* Worker mandibles */}
+          <path d="M16 28 L14 36 L19 33 Z M24 28 L26 36 L21 33 Z" fill={color} stroke={plateBorder} strokeWidth={1} />
+          {/* Chitinous worker head */}
+          <path
+            d="M20 8 C11 8 9 16 11 24 C13 28 17 31 20 31 C23 31 27 28 29 24 C31 16 29 8 20 8 Z"
+            fill={color}
+            stroke={plateBorder}
+            strokeWidth={1.4}
+          />
+          {/* Dual glowing compound optic eyes */}
+          <ellipse cx={15} cy={19} fill={visorGlow} rx={2.6} ry={working ? 3 : 2.3} />
+          <ellipse cx={25} cy={19} fill={visorGlow} rx={2.6} ry={working ? 3 : 2.3} />
+          <circle cx={14.2} cy={18.2} fill="#ffffff" opacity={0.9} r={0.7} />
+          <circle cx={24.2} cy={18.2} fill="#ffffff" opacity={0.9} r={0.7} />
+        </svg>
+      )
+  }
+}
+
+/**
  * Live math face. Photos still use <img>. Shape avatars stay SVG so
  * the clock can move them (a baked PNG cannot).
  */
@@ -1011,6 +1226,12 @@ export function BotFace({ shape, color, image, size = 36, name = 'agent', mood =
         }}
       />
     )
+  }
+
+  const effectiveShape = shape || defaultShapeFor(name)
+
+  if (isAntCaste(effectiveShape) || (typeof effectiveShape === 'string' && effectiveShape.startsWith('ant-'))) {
+    return renderAntCasteFace(effectiveShape as AntCaste, color, name, size, mood)
   }
 
   // Blobatar shapes: the library draws the whole face (body + eyes + its own

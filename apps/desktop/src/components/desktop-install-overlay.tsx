@@ -135,23 +135,41 @@ function StageRow({ descriptor, result, now }: StageRowProps) {
   const reason = result?.json?.reason || result?.error || null
 
   return (
-    <li className="flex items-center gap-3 px-3 py-1">
-      {state === 'running' && (
-        <div className="-mr-2 -ml-4 flex size-6 flex-shrink-0 items-center justify-center">{icon}</div>
+    <li
+      className={cn(
+        'flex items-center gap-3 px-4 py-2.5 transition-colors',
+        state === 'running' ? 'bg-cyan-500/10 text-cyan-300' : 'hover:bg-muted/5'
       )}
+    >
+      <div className="flex size-5 shrink-0 items-center justify-center">
+        {icon}
+      </div>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
-          <span className={cn('truncate text-sm', state === 'running' ? 'font-medium' : 'text-muted-foreground')}>
+        <div className="flex items-center gap-2">
+          <span
+            className={cn(
+              'truncate text-xs font-mono',
+              state === 'running' ? 'font-bold text-cyan-300' : 'text-foreground/85'
+            )}
+          >
             {formatStageName(descriptor.name)}
           </span>
-          {state !== 'running' && <span className="flex size-4 shrink-0 items-center justify-center">{icon}</span>}
+          {state === 'running' && (
+            <span className="rounded bg-cyan-500/20 px-1.5 py-0.2 font-mono text-[0.625rem] font-semibold text-cyan-400 uppercase">
+              ACTIVE
+            </span>
+          )}
         </div>
-        {reason && state !== 'pending' && <p className="mt-0.5 truncate text-xs text-muted-foreground">{reason}</p>}
+        {reason && state !== 'pending' && (
+          <p className="mt-0.5 truncate font-mono text-[0.6875rem] text-muted-foreground/80">{reason}</p>
+        )}
       </div>
-      <span className="flex-shrink-0 text-xs tabular-nums text-muted-foreground">
+      <span className="flex-shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
         {state === 'running' ? (elapsed ? `${copy.stageStates[state]} · ${elapsed}` : copy.stageStates[state]) : null}
-        {state === 'succeeded' || state === 'skipped' ? formatDuration(result?.durationMs) : null}
-        {state === 'failed' ? copy.stageStates[state] : null}
+        {state === 'succeeded' || state === 'skipped' ? (
+          <span className="font-medium text-emerald-400/90">{formatDuration(result?.durationMs) || 'OK'}</span>
+        ) : null}
+        {state === 'failed' ? <span className="font-medium text-destructive">{copy.stageStates[state]}</span> : null}
       </span>
     </li>
   )
@@ -413,31 +431,42 @@ export function DesktopInstallOverlay({ enabled = true }: DesktopInstallOverlayP
 
   if (state.setupChoice) {
     return (
-      <div className="fixed inset-0 z-(--z-setup) flex items-center justify-center bg-background/90 p-4 backdrop-blur-md">
-        <div className="w-full max-w-2xl rounded-xl border border-(--stroke-moor) bg-card p-8 shadow-moor">
+      <div className="fixed inset-0 z-(--z-setup) flex items-center justify-center bg-[#05070c]/90 p-4 backdrop-blur-2xl">
+        <div className="w-full max-w-2xl rounded-2xl border border-cyan-500/30 bg-linear-to-b from-[#0e131f] via-[#090d16] to-[#06080e] p-8 shadow-[0_0_50px_rgba(6,182,212,0.18)] text-foreground">
+          {/* Top Telemetry Header */}
+          <div className="mb-6 flex items-center justify-between border-b border-cyan-500/20 pb-3 font-mono text-[0.6875rem] text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <span className="size-1.5 rounded-full bg-cyan-400 animate-ping" />
+              <span className="font-bold tracking-wider text-cyan-400 uppercase">SYSTEM INITIALIZER // RUNTIME SETUP</span>
+            </div>
+            <span className="text-muted-foreground/70">ENVIRONMENT: DESKTOP</span>
+          </div>
+
           <div className="flex items-start gap-4">
-            <BrandMark className="size-11 shrink-0" />
+            <BrandMark className="size-12 shrink-0 border-cyan-500/40" />
             <div className="min-w-0">
-              <h2 className="text-xl font-semibold tracking-tight">{copy.setupChoiceTitle}</h2>
-              <p className="mt-1.5 text-sm text-muted-foreground">{copy.setupChoiceDesc}</p>
+              <h2 className="text-xl font-bold tracking-tight text-foreground">{copy.setupChoiceTitle}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">{copy.setupChoiceDesc}</p>
             </div>
           </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          <div className="mt-6 grid gap-3.5 sm:grid-cols-2">
             <button
-              className="rounded-lg border border-(--ui-stroke-tertiary) bg-(--ui-bg-quinary) p-4 text-left transition hover:bg-(--chrome-action-hover)"
+              className="rounded-xl border border-cyan-500/30 bg-[#0c101c]/70 p-5 text-left transition-all hover:border-cyan-400/70 hover:bg-cyan-500/10 hover:shadow-[0_0_24px_rgba(6,182,212,0.18)] group cursor-pointer"
               onClick={() => setRemoteOpen(true)}
               type="button"
             >
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Globe className="size-4 text-muted-foreground" />
+              <div className="flex items-center gap-2.5 text-sm font-semibold text-foreground group-hover:text-cyan-400 transition-colors">
+                <div className="flex size-7 items-center justify-center rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-400">
+                  <Globe className="size-4" />
+                </div>
                 <span>{copy.connectExistingTitle}</span>
               </div>
-              <p className="mt-2 text-sm leading-5 text-muted-foreground">{copy.connectExistingDesc}</p>
+              <p className="mt-2.5 text-xs leading-5 text-muted-foreground">{copy.connectExistingDesc}</p>
             </button>
 
             <button
-              className="rounded-lg border border-(--ui-stroke-tertiary) bg-(--ui-bg-quinary) p-4 text-left transition hover:bg-(--chrome-action-hover) disabled:cursor-wait disabled:opacity-60"
+              className="rounded-xl border border-primary/40 bg-[#0c101c]/70 p-5 text-left transition-all hover:border-primary/80 hover:bg-primary/10 hover:shadow-[0_0_24px_rgba(37,99,235,0.18)] group cursor-pointer disabled:cursor-wait disabled:opacity-60"
               disabled={localStarting}
               onClick={async () => {
                 setLocalStart({ root: activeRoot, starting: true, error: null })
@@ -456,15 +485,17 @@ export function DesktopInstallOverlay({ enabled = true }: DesktopInstallOverlayP
               }}
               type="button"
             >
-              <div className="flex items-center gap-2 text-sm font-medium">
-                {localStarting ? (
-                  <Loader2 className="size-4 animate-spin text-muted-foreground" />
-                ) : (
-                  <Monitor className="size-4 text-muted-foreground" />
-                )}
+              <div className="flex items-center gap-2.5 text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                <div className="flex size-7 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 text-primary">
+                  {localStarting ? (
+                    <Loader2 className="size-4 animate-spin text-primary" />
+                  ) : (
+                    <Monitor className="size-4" />
+                  )}
+                </div>
                 <span>{copy.installLocalTitle}</span>
               </div>
-              <p className="mt-2 text-sm leading-5 text-muted-foreground">{copy.installLocalDesc}</p>
+              <p className="mt-2.5 text-xs leading-5 text-muted-foreground">{copy.installLocalDesc}</p>
             </button>
           </div>
 
@@ -475,9 +506,9 @@ export function DesktopInstallOverlay({ enabled = true }: DesktopInstallOverlayP
             </div>
           ) : null}
 
-          <div className="mt-6 text-xs text-muted-foreground">
-            {copy.installTo}{' '}
-            <code className="font-mono text-(--ui-text-secondary)">{state.setupChoice.activeRoot}</code>
+          <div className="mt-6 flex items-center justify-between border-t border-cyan-500/15 pt-3 text-xs text-muted-foreground font-mono">
+            <span>{copy.installTo}</span>
+            <code className="text-cyan-400/90">{state.setupChoice.activeRoot}</code>
           </div>
         </div>
       </div>
@@ -565,55 +596,90 @@ export function DesktopInstallOverlay({ enabled = true }: DesktopInstallOverlayP
   const currentElapsed = typeof currentStartedAt === 'number' ? formatElapsed(now - currentStartedAt) : ''
 
   return (
-    <div className="fixed inset-0 z-(--z-setup) flex items-center justify-center bg-background/90 backdrop-blur-md p-4">
-      <div className="flex w-full max-w-2xl max-h-[90vh] flex-col rounded-xl border border-(--stroke-moor) bg-card shadow-moor">
-        {/* Header -- always visible, never scrolls */}
-        <div className="flex flex-shrink-0 items-start gap-4 p-8 pb-4">
-          {!failed && <BrandMark className="size-11 shrink-0" />}
+    <div className="fixed inset-0 z-(--z-setup) flex items-center justify-center bg-[#05070c]/90 backdrop-blur-2xl p-4 sm:p-6 select-none">
+      <div className="flex w-full max-w-3xl max-h-[92vh] flex-col rounded-2xl border border-cyan-500/30 bg-linear-to-b from-[#0e131f] via-[#090d16] to-[#06080e] shadow-[0_0_50px_rgba(6,182,212,0.18)] overflow-hidden text-foreground">
+        {/* Cockpit Top Status Rail */}
+        <div className="flex items-center justify-between border-b border-cyan-500/20 bg-muted/10 px-6 py-2.5 font-mono text-[0.6875rem] text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <span
+              className={cn(
+                'size-2 rounded-full',
+                failed ? 'bg-destructive animate-pulse' : 'bg-cyan-400 animate-ping'
+              )}
+            />
+            <span className="font-bold tracking-wider text-cyan-400 uppercase">
+              {failed ? 'BOOTSTRAP ENGINE // FAILED' : 'BOOTSTRAP ENGINE // EXECUTING'}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span>PIPELINE: v{state.manifest?.protocolVersion || '2'}</span>
+            <span className="text-cyan-500/30">•</span>
+            <span className="tabular-nums">STAGES: {completedCount}/{totalCount}</span>
+          </div>
+        </div>
+
+        {/* Header -- always visible */}
+        <div className="flex flex-shrink-0 items-start gap-4 px-8 pt-6 pb-4">
+          {!failed && <BrandMark className="size-12 shrink-0 border-cyan-500/40" />}
           <div className="min-w-0">
-            <h2 className="text-xl font-semibold tracking-tight">
+            <h2 className="text-xl font-bold tracking-tight text-foreground">
               {failed ? copy.failedTitle : state.active ? copy.settingUpTitle : copy.finishingTitle}
             </h2>
-            <p className="mt-1.5 text-sm text-muted-foreground">{failed ? copy.failedDesc : copy.activeDesc}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{failed ? copy.failedDesc : copy.activeDesc}</p>
           </div>
         </div>
 
         {/* Scrollable middle: progress, stages, error block, log */}
-        <div className="min-h-0 flex-1 overflow-y-auto px-8 pb-2">
+        <div className="min-h-0 flex-1 overflow-y-auto px-8 pb-3">
           {totalCount > 0 && (
-            <div className="mb-4">
-              <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-                <span>
-                  {copy.progress(completedCount, totalCount)}
-                  {currentStage && copy.currentStage(formatStageName(currentStage))}
-                  {currentElapsed && ` (${currentElapsed})`}
+            <div className="mb-5 rounded-xl border border-cyan-500/20 bg-[#090d16]/80 p-4">
+              <div className="mb-2 flex items-center justify-between text-xs font-mono text-muted-foreground">
+                <span className="flex items-center gap-2">
+                  <span className="text-cyan-400 font-bold">{progressPct}%</span>
+                  <span>{copy.progress(completedCount, totalCount)}</span>
+                  {currentStage && (
+                    <span className="text-cyan-300 font-semibold">• {formatStageName(currentStage)}</span>
+                  )}
+                  {currentElapsed && <span className="text-muted-foreground/70">({currentElapsed})</span>}
                 </span>
-                <span className="tabular-nums">{progressPct}%</span>
+                <span className="tabular-nums">{completedCount} / {totalCount} COMPLETE</span>
               </div>
-              <Progress
-                aria-label={copy.progress(completedCount, totalCount)}
-                className="bg-(--ui-bg-tertiary)"
-                destructive={failed}
-                value={progressPct / 100}
-              />
+              <div
+                aria-label="Bootstrap installation progress"
+                aria-valuemax={100}
+                aria-valuemin={0}
+                aria-valuenow={progressPct}
+                className="relative h-2 w-full overflow-hidden rounded-full bg-muted/30"
+                role="progressbar"
+              >
+                <div
+                  className={cn(
+                    'h-full transition-all duration-300 ease-out',
+                    failed
+                      ? 'bg-destructive shadow-[0_0_12px_rgba(239,68,68,0.5)]'
+                      : 'bg-linear-to-r from-cyan-500 via-blue-500 to-emerald-400 shadow-[0_0_14px_rgba(6,182,212,0.6)]'
+                  )}
+                  style={{ width: `${Math.max(3, progressPct)}%` }}
+                />
+              </div>
             </div>
           )}
 
           {totalCount === 0 && state.active && (
-            <div className="mb-4 flex items-center gap-2.5 text-sm text-muted-foreground">
-              <Loader className="size-5" type="fourier-flow" />
+            <div className="mb-4 flex items-center gap-2.5 rounded-lg border border-cyan-500/20 bg-muted/10 p-3 text-sm text-cyan-400 font-mono">
+              <Loader className="size-5 text-cyan-400" type="fourier-flow" />
               <span>{copy.fetchingManifest}</span>
             </div>
           )}
 
           {failed && state.error && (
-            <div className="mb-4 flex items-start gap-2 text-sm">
-              <ErrorIcon className="mt-0.5 shrink-0" size="1rem" />
+            <div className="mb-4 flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm">
+              <ErrorIcon className="mt-0.5 shrink-0" size="1.1rem" />
               <div className="min-w-0">
-                <div className="font-medium text-destructive">{copy.error}</div>
+                <div className="font-semibold text-destructive">{copy.error}</div>
                 <p className="mt-0.5 whitespace-pre-wrap break-words text-foreground/90">{failureLead}</p>
                 {failureDetail ? (
-                  <p className="mt-1 whitespace-pre-wrap break-words font-mono text-xs text-muted-foreground">
+                  <p className="mt-1.5 whitespace-pre-wrap break-words font-mono text-xs text-muted-foreground">
                     {failureDetail}
                   </p>
                 ) : null}
@@ -622,16 +688,16 @@ export function DesktopInstallOverlay({ enabled = true }: DesktopInstallOverlayP
           )}
 
           {stages.length > 0 && (
-            <ol className="mb-4 space-y-0.5">
+            <ol className="mb-4 divide-y divide-cyan-500/10 rounded-xl border border-cyan-500/20 bg-[#080c15]/60 overflow-hidden">
               {stages.map(stage => (
                 <StageRow descriptor={stage} key={stage.name} now={now} result={state.stages[stage.name]} />
               ))}
             </ol>
           )}
 
-          <div className="pt-3">
+          <div className="pt-2">
             <Button
-              className="-ml-2 text-muted-foreground hover:text-foreground"
+              className="-ml-2 text-cyan-400/80 hover:text-cyan-300 font-mono text-xs"
               onClick={() => setLogOpen(v => !v)}
               size="xs"
               type="button"
@@ -639,33 +705,53 @@ export function DesktopInstallOverlay({ enabled = true }: DesktopInstallOverlayP
             >
               {logOpen ? <ChevronDown className={iconSize.sm} /> : <ChevronRight className={iconSize.sm} />}
               <span>{logOpen ? copy.hideOutput : copy.showOutput}</span>
-              <span className="ml-1 tabular-nums">({copy.lines(state.log.length)})</span>
+              <span className="ml-1 tabular-nums text-muted-foreground">({copy.lines(state.log.length)})</span>
             </Button>
 
             {logOpen && (
-              <LogView className={cn('mt-2', failed ? 'max-h-96' : 'max-h-64')}>
-                {state.log.length === 0 ? (
-                  <div>{copy.noOutput}</div>
-                ) : (
-                  <>
-                    {state.log.map((entry, i) => (
-                      <div className={cn(entry.stream === 'stderr' && 'text-muted-foreground/70')} key={i}>
-                        {entry.stage ? <span className="text-muted-foreground/60">[{entry.stage}] </span> : null}
-                        <span>{entry.line}</span>
-                      </div>
-                    ))}
-                    <div ref={logEndRef} />
-                  </>
-                )}
-              </LogView>
+              <div className="mt-2.5 rounded-xl border border-cyan-500/30 bg-[#04060a] p-3 shadow-inner">
+                <div className="mb-2 flex items-center justify-between border-b border-cyan-500/20 pb-1.5 font-mono text-[0.6875rem] text-muted-foreground">
+                  <span className="font-semibold text-cyan-400">TELEMETRY STREAM // STDOUT &amp; STDERR</span>
+                  <span className="tabular-nums">{state.log.length} events logged</span>
+                </div>
+                <div
+                  aria-label="Installer output log"
+                  aria-live="polite"
+                  className={cn('overflow-y-auto font-mono text-[11px] leading-relaxed', failed ? 'max-h-80' : 'max-h-60')}
+                  role="log"
+                >
+                  {state.log.length === 0 ? (
+                    <div className="text-muted-foreground/60">{copy.noOutput}</div>
+                  ) : (
+                    <>
+                      {state.log.map((entry, i) => (
+                        <div
+                          className={cn(
+                            'py-0.5 whitespace-pre-wrap break-all',
+                            entry.stream === 'stderr' ? 'text-amber-400/80' : 'text-foreground/85'
+                          )}
+                          key={i}
+                        >
+                          {entry.stage ? <span className="text-cyan-500/70 font-semibold">[{entry.stage}] </span> : null}
+                          <span>{entry.line}</span>
+                        </div>
+                      ))}
+                      <div ref={logEndRef} />
+                    </>
+                  )}
+                </div>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Active footer: let the user actually cancel a running install. */}
+        {/* Active footer */}
         {state.active && !failed && (
-          <div className="flex-shrink-0 bg-card p-4">
-            <div className="flex items-center justify-end">
+          <div className="flex-shrink-0 border-t border-cyan-500/20 bg-muted/5 px-8 py-3.5">
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-xs text-muted-foreground/70">
+                STAGES MONITORED VIA IPC BUS
+              </span>
               <Button
                 disabled={cancelling}
                 onClick={async () => {

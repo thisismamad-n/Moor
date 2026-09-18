@@ -286,7 +286,22 @@ export interface GatewaySource {
   reachable?: boolean
 }
 
-export type AvatarShape = 'circle' | 'cloud' | 'drop' | 'hexagon' | 'pill' | 'squircle' | 'triangle'
+export type AntCaste =
+  | 'ant-worker'
+  | 'ant-scout'
+  | 'ant-architect'
+  | 'ant-sentry'
+  | 'ant-commander'
+
+export type AvatarShape =
+  | AntCaste
+  | 'circle'
+  | 'cloud'
+  | 'drop'
+  | 'hexagon'
+  | 'pill'
+  | 'squircle'
+  | 'triangle'
 
 export type BlobKind =
   'boxy' | 'capsule' | 'cloud' | 'droplet' | 'hexagon' | 'nub' | 'organic' | 'round' | 'sun' | 'triangle'

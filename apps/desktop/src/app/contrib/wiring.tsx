@@ -147,7 +147,6 @@ import {
   titlebarToolsRightCss,
   titlebarToolsWidthCss
 } from '../shell/titlebar'
-import { TitlebarControls } from '../shell/titlebar-controls'
 import { UpdatesOverlay } from '../updates-overlay'
 
 import { ContribWiringContext } from './context'
@@ -1299,16 +1298,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
           } as CSSProperties
         }
       >
-        {/* HUD and the popped-out Browser have no titlebar to hang these off —
-            the clusters are `fixed`, so without this they'd float over the
-            surface as orphaned buttons. */}
-        {!isHudWindow() && !isBrowserWindow() && (
-          <TitlebarControls
-            leftTools={leftTitlebarTools}
-            onOpenSettings={() => navigate(SETTINGS_ROUTE)}
-            tools={rightTitlebarTools}
-          />
-        )}
+        {/* GlobalOrientationHeader in DesktopController hosts the unified 3-zone header and controls natively */}
         {children}
       </div>
 

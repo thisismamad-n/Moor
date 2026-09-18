@@ -531,6 +531,57 @@ Emojis are strictly banned across the Moor desktop interface.
 - Never use emojis in UI text, status indicators, tabs, buttons, or toast notifications.
 - All icons must use clean, scalable Lucide SVG components (e.g., `<Radio />`, `<Terminal />`, `<Layers />`, `<Shield />`, `<Key />`).
 
+#### 7. Swarm Constellation Startup Connecting Overlay (`AntSwarmConnecting`)
+Mounted in `apps/desktop/src/components/gateway-connecting-overlay.tsx` via `apps/desktop/src/components/ui/ant-swarm-connecting.tsx`:
+- **Canvas Swarm Engine**: 48–64 autonomous worker particles with individual antennae angles, velocities, and decaying pheromone trails converging toward the central Moor hive emblem.
+- **Pheromone Signal Lines**: Distance-weighted interconnect lines drawn dynamically between neighboring nodes within proximity threshold.
+- **Hexagonal Core Beacon**: Dual rotating concentric radar rings with the central Moor geometric ant mark in a frosted dark glass pod (`#090b10`/90).
+- **Live Telemetry Stream**: Real-time rotating matrix telemetry (`SWARM CONSTELLATION LINK`, `BUS: PHEROMONE-IPC`, `NODES: 64 ACTIVE`, `LATENCY: <1ms`).
+- **Accessibility Invariant**: Gracefully honors `prefersReducedMotion()`, halts continuous canvas loops, adds `aria-hidden="true"` to canvas, and provides `aria-live="polite"` telemetry announcements.
+
+#### 8. High-Tech Geometric Display Typography (`.wordmark`)
+Display lettering in chat empty states and installer flows is anchored in `apps/desktop/src/styles.css`:
+- **Font Stack**: Google Fonts `Space Grotesk` (weights 500, 600, 700) and `Syne` (weights 700, 800) with `display=swap` linked in `apps/desktop/index.html`.
+- **CSS Rule**:
+  ```css
+  .wordmark {
+    font-family: 'Space Grotesk', 'Syne', 'JetBrains Mono', var(--font-sans), sans-serif;
+    font-weight: 700;
+    line-height: 0.92;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  ```
+- **Application**: Bound to `Wordmark` in `apps/desktop/src/components/chat/wordmark.tsx` and welcome titles in `apps/bootstrap-installer/src/routes/welcome.tsx`. Never revert to browser default sans-serif.
+
+#### 9. Unified 3-Zone Single Bar Header & Duplicate Cluster Ban
+Mounted in `apps/desktop/src/app/shell/global-orientation-header.tsx`:
+- **3-Zone Layout**:
+  - **Zone 1 (Left Context)**: Sidebar toggle, Moor ant emblem, active session badge, live status indicator, project CWD button with 1-click clipboard copy.
+  - **Zone 2 (Center Navigation Tabs)**: Stable `[1]`-`[5]` workspace tabs with live audit badges and keyboard hotkeys (`[1]` Chat, `[2]` Skills, `[3]` Artifacts, `[4]` Messaging, `[5]` Terminal).
+  - **Zone 3 (Right Layout & System Tools)**: Flip panes, right panel toggle, layout grid editor, `?` shortcuts cheatsheet, and settings.
+- **OS Chrome Safe Area Invariant**: Header must always include dynamic right padding `calc(var(--titlebar-tools-right, 0px) + 8px)` so buttons never slide under Windows native minimize/maximize/close caption buttons.
+- **STRICT BAN on Duplicate Floating Clusters**: Upstream Hermes mounts floating `<TitlebarControls>` at `top: 5px, z-70` in `apps/desktop/src/app/contrib/wiring.tsx`. This causes physical coordinate collision with the header text and tabs. Floating clusters must **NEVER** be re-introduced in `wiring.tsx` — all controls reside strictly within `GlobalOrientationHeader`.
+
+#### 10. Cyber-Industrial Terminal Cockpit Installer UI
+Mounted in `apps/desktop/src/components/desktop-install-overlay.tsx` and `apps/bootstrap-installer/src/routes/progress.tsx`:
+- **Cockpit Top Status Rail**: Monospace telemetry header (`BOOTSTRAP ENGINE // EXECUTING`, live ping dot, target platform architecture indicator, stage fraction).
+- **Segmented Glowing Progress Meter**: Custom 20-segment cyan/emerald progress meter with accessible ARIA semantics (`role="progressbar"`, `aria-valuenow`, `aria-valuemin="0"`, `aria-valuemax="100"`).
+- **Dark Monospace Live Terminal**: Live scrolling stdout/stderr console (`role="log"`, `aria-live="polite"`) with autoscroll, green/cyan log stream, and line count badges.
+- **Industrial Choice Cards**: High-contrast dark glass cards for Remote Gateway vs. Local Installation with border glow effects on hover and selection. Never revert to plain white cards.
+
+#### 11. Cyber-Ant Castes Procedural Bot Avatars
+Implemented in `apps/desktop/src/plugins/moor-bots/avatar.tsx`, `avatar-image.ts`, and `types.ts`:
+- **5 Procedural SVG Castes**:
+  1. **Worker (`ant-worker`)**: Geniculate jointed antennae, rounded chitin head, dual glowing compound optic eyes, industrial mandibles.
+  2. **Scout (`ant-scout`)**: Swept-back aerodynamic antennae, chevron optic visor, precision mandibles.
+  3. **Architect (`ant-architect`)**: Stepped telemetry antennae, hexagonal faceted chitin plates, dual matrix lens eyes, geometric calipers.
+  4. **Sentry (`ant-sentry`)**: Heavy armored spikes, tactical horizontal visor slot, reinforced defensive shield plates.
+  5. **Commander (`ant-commander`)**: Regal branching antennae, royal crested chitin crown, glowing central power node, commanding compound lenses.
+- **Semantic Caste Indicator**: Each vector face includes `data-ant-caste="<caste>"` and `data-bot-face="<name>"`.
+- **Default Selection**: `defaultShapeFor(name)` automatically derives an ant caste deterministically from the bot name hash.
+- **Generative AI Prompt**: `generateAvatarImage` in `avatar-image.ts` instructs the vision model to generate stylized cybernetic ants with antennae, chitin plates, and optic visors. Never revert to plain circular math faces.
+
 ---
 
 ### B. Private Repository & Personal Access Token (PAT) Update Architecture
@@ -599,16 +650,20 @@ When comparing commits via the REST API (`api.github.com/repos/{owner}/{repo}/co
 
 ### C. Canonized Desktop Files & Merge Preservation Matrix
 
-When merging upstream changes or resolving conflicts in the desktop subsystem, preserve Moor's visual and update architecture across the following canonical files:
+When merging upstream changes or resolving conflicts in the desktop subsystem, preserve Moor's visual, architectural, and update invariants across the following canonical files:
 
 | Area | Canonical Moor Files | Invariant to Protect |
 |---|---|---|
-| **Update Architecture** | `apps/desktop/electron/update-remote.ts`<br>`apps/desktop/electron/update-count.ts`<br>`apps/desktop/electron/main.ts`<br>`apps/desktop/electron/preload.ts` | Moor canonical repo (`moor-inc/moor`), PAT injection via `resolveGitAuthArgs` and `resolveUpdateAuthHeaders`, IPC channels `moor:updates:token:*`. |
-| **Brand Identity** | `apps/desktop/src/components/brand-mark.tsx`<br>`apps/desktop/assets/` | Moor Ant emblem vector and asset branding (`icon.ico`, `icon.png`, `logo.png`). Never revert to anime or generic squircle icons. |
+| **Startup Swarm Animation** | `apps/desktop/src/components/ui/ant-swarm-connecting.tsx`<br>`apps/desktop/src/components/gateway-connecting-overlay.tsx`<br>`apps/desktop/src/components/ui/ant-swarm-connecting.test.tsx` | 48-64 node canvas swarm constellation, pheromone trails, rotating antenna rings, and live technical telemetry. Never revert to generic spinning loader. |
+| **Wordmark Typography** | `apps/desktop/index.html`<br>`apps/desktop/src/styles.css`<br>`apps/desktop/src/components/chat/wordmark.tsx`<br>`apps/bootstrap-installer/src/routes/welcome.tsx` | Space Grotesk and Syne display font linkage with `&display=swap` and `.wordmark` letter-spacing rule (`0.12em`). Never revert to plain system fonts. |
+| **Orientation Header & Wiring** | `apps/desktop/src/app/shell/global-orientation-header.tsx`<br>`apps/desktop/src/app/contrib/wiring.tsx`<br>`apps/desktop/src/lib/icons.ts`<br>`apps/desktop/src/app/shell/titlebar-controls.test.tsx` | Unified 3-zone header with safe area padding `calc(var(--titlebar-tools-right, 0px) + 8px)`. **Strict ban** on floating `<TitlebarControls>` re-introduction in `wiring.tsx`. |
+| **Installer Cockpit** | `apps/desktop/src/components/desktop-install-overlay.tsx`<br>`apps/desktop/src/components/desktop-install-overlay.test.tsx`<br>`apps/bootstrap-installer/src/routes/progress.tsx` | Cyber-industrial cockpit layout, top status rail, glowing 20-segment progress meter, and monospace stdout/stderr terminal console. Never revert to plain white card. |
+| **Bot Avatars & Ant Castes** | `apps/desktop/src/plugins/moor-bots/avatar.tsx`<br>`apps/desktop/src/plugins/moor-bots/avatar-image.ts`<br>`apps/desktop/src/plugins/moor-bots/types.ts`<br>`apps/desktop/src/plugins/moor-bots/avatar-ant.test.tsx` | 5 procedural SVG Ant Castes (`ant-worker`, `ant-scout`, `ant-architect`, `ant-sentry`, `ant-commander`), `defaultShapeFor` caste defaulting, and AI ant avatar generation prompt. |
+| **Brand Identity** | `apps/desktop/src/components/brand-mark.tsx`<br>`apps/desktop/assets/`<br>`brand-assets/` | Moor Ant emblem vector and binary asset branding (`icon.ico`, `icon.png`, `logo.png`). Never revert to anime or generic squircle icons. |
 | **Color System** | `apps/desktop/src/themes/presets.ts`<br>`apps/desktop/src/styles.css` | Cyber-Obsidian & Electric Cobalt theme palette tokens. Never revert to plain VS Code theme colors. |
-| **Orientation & Workflow** | `apps/desktop/src/app/shell/global-orientation-header.tsx`<br>`apps/desktop/src/app/contrib/controller.tsx` | Global orientation header with active session, project CWD, connection mode pill, and stable `[1]`-`[5]` tab navigation with live badges. |
 | **Quick Start** | `apps/desktop/src/components/chat/intro.tsx` | 1-Click Quick-Start Preset Cards (`/inspect`, `/audit`, `run tests`, `/goal`). |
 | **Shortcuts** | `apps/desktop/src/components/keyboard-shortcuts-modal.tsx` | Interactive `?` hotkey cheatsheet modal. |
+| **Update Architecture** | `apps/desktop/electron/update-remote.ts`<br>`apps/desktop/electron/update-count.ts`<br>`apps/desktop/electron/main.ts`<br>`apps/desktop/electron/preload.ts` | Moor canonical repo (`moor-inc/moor`), PAT injection via `resolveGitAuthArgs` and `resolveUpdateAuthHeaders`, IPC channels `moor:updates:token:*`. |
 | **Token Management** | `apps/desktop/src/app/updates-overlay.tsx`<br>`apps/desktop/src/app/settings/about-settings.tsx`<br>`apps/desktop/src/store/updates.ts` | PAT token entry, private repo URL override, and live PAT verification. |
 
 ---
@@ -623,15 +678,15 @@ Whenever merging changes from upstream Hermes (`NousResearch/hermes-agent`):
 2. **Protect Theme & Brand Marks**:
    - In `apps/desktop/src/themes/presets.ts`, keep `moorTheme` / `cyber-obsidian` color values intact.
    - In `apps/desktop/src/components/brand-mark.tsx`, preserve the `MoorAntIcon` SVG markup.
-3. **Protect Orientation Header & Shell**:
+3. **Protect Orientation Header & Ban Wiring Collisions**:
    - In `apps/desktop/src/app/contrib/controller.tsx`, ensure `<GlobalOrientationHeader />` remains mounted above `<LayoutTreeRoot />`.
-   - Ensure `<KeyboardShortcutsModal />` remains mounted in the controller.
-4. **Run Desktop & Rebrand Verification Commands**:
+   - In `apps/desktop/src/app/contrib/wiring.tsx`, ensure upstream's floating `<TitlebarControls>` are NOT re-added, avoiding coordinate collision over the header.
+4. **Run Desktop UI & Rebrand Verification Commands**:
    ```powershell
-   # 1. Run Electron unit tests
+   # 1. Run Desktop UI and Electron unit tests
    cd apps/desktop
-   npx vitest run electron/update-remote.test.ts
-   npx vitest run electron/update-count.test.ts
+   npx vitest run src/components/ui/ant-swarm-connecting.test.tsx src/plugins/moor-bots/avatar-ant.test.tsx src/components/desktop-install-overlay.test.tsx src/components/gateway-connecting-overlay.test.tsx src/app/shell/titlebar-controls.test.tsx
+   npx vitest run electron/update-remote.test.ts electron/update-count.test.ts
 
    # 2. Check TypeScript types (both Electron and Renderer)
    npx tsc -p tsconfig.electron.json --noEmit
