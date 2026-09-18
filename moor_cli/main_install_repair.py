@@ -1246,8 +1246,12 @@ def _resolve_node_runtime_npm() -> str | None:
 
 
 def _resolve_update_branch(args) -> str:
-    """Normalize ``args.branch`` to a non-empty name (default ``main``; blank/whitespace = default)."""
-    from moor_cli.update_source import BRANCH, URL, validate_source
-    branch = (getattr(args, "branch", None) or BRANCH).strip() or BRANCH
-    validate_source(URL, branch)
-    return branch
+    """Normalize ``args.branch`` to a non-empty name (default ``master``; blank/whitespace = default).
+
+    No source validation here: ``--branch`` explicitly targets non-default
+    branches, and fork checkouts update from their own origin. Content
+    authenticity is enforced after the fetch by ``validate_git_target`` /
+    ``validate_update_tree``.
+    """
+    from moor_cli.update_source import BRANCH
+    return (getattr(args, "branch", None) or BRANCH).strip() or BRANCH

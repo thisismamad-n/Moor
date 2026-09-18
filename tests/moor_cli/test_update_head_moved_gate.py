@@ -42,6 +42,17 @@ def _make_head_moved_side_effect(pre_sha="abc123", post_sha="def456"):
                 return SimpleNamespace(returncode=0, stdout=f"{pre_sha}\n", stderr="")
             return SimpleNamespace(returncode=0, stdout=f"{post_sha}\n", stderr="")
 
+        # git show origin/<branch>:<path>  (post-fetch content gate) —
+        # serve Moor content so validation passes.
+        if "show" in joined and "origin/" in joined:
+            if "pyproject.toml" in joined:
+                return SimpleNamespace(
+                    returncode=0,
+                    stdout='[project]\nname = "moor-agent"\n\n[project.scripts]\nmoor = "moor_cli.main:main"\n',
+                    stderr="",
+                )
+            return SimpleNamespace(returncode=0, stdout="value = 1\n", stderr="")
+
         # Everything else (merge, checkout, etc.) succeeds quietly.
         return SimpleNamespace(returncode=0, stdout="", stderr="")
 
@@ -62,6 +73,17 @@ def _make_head_pinned_side_effect(sha="abc123"):
 
         if joined.endswith("rev-parse HEAD"):
             return SimpleNamespace(returncode=0, stdout=f"{sha}\n", stderr="")
+
+        # git show origin/<branch>:<path>  (post-fetch content gate) —
+        # serve Moor content so validation passes.
+        if "show" in joined and "origin/" in joined:
+            if "pyproject.toml" in joined:
+                return SimpleNamespace(
+                    returncode=0,
+                    stdout='[project]\nname = "moor-agent"\n\n[project.scripts]\nmoor = "moor_cli.main:main"\n',
+                    stderr="",
+                )
+            return SimpleNamespace(returncode=0, stdout="value = 1\n", stderr="")
 
         return SimpleNamespace(returncode=0, stdout="", stderr="")
 

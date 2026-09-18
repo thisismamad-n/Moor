@@ -69,7 +69,7 @@ impl ScriptKind {
 /// build.rs) or override it at runtime (`$MOOR_GITHUB_REPO`).  Previously
 /// hardcoded inline in `download()`, which is how the pre-rebrand slug
 /// survived here while the rest of the app said Moor.
-pub const UPSTREAM_INSTALL_REPO: &str = "NousResearch/hermes-agent";
+pub const UPSTREAM_INSTALL_REPO: &str = "thisismamad-n/Moor";
 
 /// Which GitHub `OWNER/REPO` to download install.ps1/sh from when the network
 /// path is unavoidable.  Precedence: baked/runtime pin (`pin.repo`) ->
@@ -461,9 +461,9 @@ mod tests {
         let pinned = Pin {
             commit: None,
             branch: Some("main".to_string()),
-            repo: Some("moor-inc/moor".to_string()),
+            repo: Some("thisismamad-n/Moor".to_string()),
         };
-        assert_eq!(resolve_install_repo(&pinned), "moor-inc/moor");
+        assert_eq!(resolve_install_repo(&pinned), "thisismamad-n/Moor");
 
         // No pin -> upstream default (legacy behaviour preserved).
         assert_eq!(resolve_install_repo(&Pin::default()), UPSTREAM_INSTALL_REPO);

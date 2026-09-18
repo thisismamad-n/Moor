@@ -27,6 +27,9 @@ def test_runtime_status_probes_running_venv_outside_checkout(tmp_path, monkeypat
 
 
 def test_summary_withholds_success_when_sqlite_remediation_failed(capsys, monkeypatch):
+    # Asserts the posix one-liner, so pin posix: on Windows the PowerShell
+    # variant prints instead (sibling test below pins True for that arm).
+    monkeypatch.setattr(update_cmd._m(), "_is_windows", lambda: False)
     monkeypatch.setattr(
         update_cmd,
         "_post_update_sqlite_runtime_status",

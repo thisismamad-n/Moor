@@ -28,8 +28,11 @@ def _isolate_update(isolated_update_runtime, monkeypatch):
     monkeypatch.setattr(update_cmd, "_post_update_sqlite_runtime_status", lambda: (True, None))
 
 
+_MOOR_REMOTE_PYPROJECT = '[project]\nname = "moor-agent"\n\n[project.scripts]\nmoor = "moor_cli.main:main"\n'
+
+
 def _make_run_side_effect(
-    branch="main", verify_ok=True, commit_count="1", dirty=False
+    branch="master", verify_ok=True, commit_count="1", dirty=False
 ):
     """Minimal subprocess.run side_effect for the update flow."""
 
@@ -42,6 +45,14 @@ def _make_run_side_effect(
             return subprocess.CompletedProcess(
                 cmd, 0 if verify_ok else 128, stdout="", stderr=""
             )
+        # git show origin/<branch>:<path>  (post-fetch content gate) —
+        # serve Moor content so validation passes.
+        if "show" in joined and "origin/" in joined:
+            if "pyproject.toml" in joined:
+                return subprocess.CompletedProcess(
+                    cmd, 0, stdout=_MOOR_REMOTE_PYPROJECT, stderr="")
+            return subprocess.CompletedProcess(
+                cmd, 0, stdout="value = 1\n", stderr="")
         if "rev-list" in joined:
             return subprocess.CompletedProcess(
                 cmd, 0, stdout=f"{commit_count}\n", stderr=""
@@ -82,7 +93,7 @@ class TestUpdateYesConfigMigration:
         capsys,
     ):
         mock_run.side_effect = _make_run_side_effect(
-            branch="main", verify_ok=True, commit_count="1"
+            branch="master", verify_ok=True, commit_count="1"
         )
         mock_migrate.return_value = {"env_added": [], "config_added": []}
 
@@ -124,7 +135,7 @@ class TestUpdateYesConfigMigration:
     ):
         """Regression guard: without --yes, the TTY prompt path still fires."""
         mock_run.side_effect = _make_run_side_effect(
-            branch="main", verify_ok=True, commit_count="1"
+            branch="master", verify_ok=True, commit_count="1"
         )
         mock_migrate.return_value = {"env_added": [], "config_added": []}
 
@@ -183,7 +194,7 @@ class TestUnicodeDecodeErrorInUpdatePrompts:
         capsys,
     ):
         mock_run.side_effect = _make_run_side_effect(
-            branch="main", verify_ok=True, commit_count="1"
+            branch="master", verify_ok=True, commit_count="1"
         )
         mock_migrate.return_value = {"env_added": [], "config_added": []}
         args = SimpleNamespace(yes=False)

@@ -211,7 +211,7 @@ fn resolve_repo_pin() -> Option<String> {
             }
         }
     }
-    Some("NousResearch/hermes-agent".to_string())
+    Some("thisismamad-n/Moor".to_string())
 }
 
 /// Parse `https://github.com/O/R(.git)`, `git@github.com:O/R(.git)` and

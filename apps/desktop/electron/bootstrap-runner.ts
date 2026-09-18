@@ -44,7 +44,7 @@ const IS_WINDOWS = process.platform === 'win32'
 
 const STAMP_COMMIT_RE = /^[0-9a-f]{7,40}$/i
 const FALLBACK_COMMIT_RE = /^0{7,40}$/
-const FALLBACK_BRANCH = 'main'
+const FALLBACK_BRANCH = 'master'
 
 /**
  * Last-resort download source when the packaged app has no bundled install
@@ -55,7 +55,7 @@ const FALLBACK_BRANCH = 'main'
  * call site, which is how the pre-rebrand slug survived here while the rest
  * of the app said Moor.
  */
-const UPSTREAM_INSTALL_REPO = 'NousResearch/hermes-agent'
+const UPSTREAM_INSTALL_REPO = 'thisismamad-n/Moor'
 
 /**
  * Which GitHub `OWNER/REPO` to download install.ps1/sh from when the network
@@ -822,7 +822,7 @@ function buildPinArgs(installStamp, { pinCommit = true } = {}) {
   if (installStamp && installStamp.branch) {
     args.push('-Branch', installStamp.branch)
   } else {
-    args.push('-Branch', 'main')
+    args.push('-Branch', 'master')
   }
 
   return args
@@ -834,7 +834,7 @@ function buildPosixPinArgs({ installStamp, activeRoot, moorHome, pinCommit = tru
   if (installStamp && installStamp.branch) {
     args.push('--branch', installStamp.branch)
   } else {
-    args.push('--branch', 'main')
+    args.push('--branch', 'master')
   }
 
   if (pinCommit && installStamp && isPinnedCommit(installStamp.commit)) {

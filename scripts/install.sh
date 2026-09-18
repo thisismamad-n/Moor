@@ -43,8 +43,8 @@ NC='\033[0m' # No Color
 BOLD='\033[1m'
 
 # Configuration
-REPO_URL_SSH="git@github.com:NousResearch/hermes-agent.git"
-REPO_URL_HTTPS="https://github.com/NousResearch/hermes-agent.git"
+REPO_URL_SSH="git@github.com:thisismamad-n/Moor.git"
+REPO_URL_HTTPS="https://github.com/thisismamad-n/Moor.git"
 MOOR_HOME="${MOOR_HOME:-$HOME/.moor}"
 # INSTALL_DIR is resolved AFTER arg parsing and OS detection so we can pick an
 # FHS-style layout for root installs.  Track whether the user gave us an
@@ -72,7 +72,7 @@ RUN_SETUP=true
 SKIP_BROWSER=false
 SKIP_COMPUTER_USE=false
 NO_SKILLS=false
-BRANCH="main"
+BRANCH="master"
 INSTALL_COMMIT=""
 FORCE_COMMIT=false
 ENSURE_DEPS=""

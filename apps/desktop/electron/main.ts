@@ -397,7 +397,7 @@ import {
   windowOpacityFor,
   windowOpacityOptions
 } from './translucency'
-import { branchTipApiUrl, cacheIsFresh, compareApiUrl, githubRepoSlug, parseCompare } from './update-api-check'
+import { branchTipApiUrl, cacheIsFresh, compareApiUrl, parseCompare } from './update-api-check'
 import { waitForUpdateClearance } from './update-gate'
 import { readLiveUpdateMarker, updateHandoffConflict, writeUpdateMarker } from './update-marker'
 import { canonicalGitHubRemote, resolveMoorUpdateSource, resolveMoorUpdateEnv } from './update-remote'
@@ -3236,7 +3236,8 @@ async function checkUpdatesViaApi({ slug, branch, currentSha }) {
   try {
     targetSha = String(await fetchGitHubApi(branchTipApiUrl(slug, branch), 'application/vnd.github.sha')).trim()
   } catch (error) {
-    return { error: 'fetch-failed', message: describeUpdateCheckFailure(error) }
+    const authRequired = error?.statusCode === 401 || error?.statusCode === 404
+    return { error: authRequired ? 'auth-required' : 'fetch-failed', message: describeUpdateCheckFailure(error) }
   }
 
   if (!/^[0-9a-f]{40}$/i.test(targetSha)) {
@@ -17604,6 +17605,7 @@ ipcMain.handle('moor:updates:branch:get', async () => ({ branch: readDesktopUpda
 ipcMain.handle('moor:updates:branch:set', async (_event, name) => {
   const current = readDesktopUpdateConfig()
   const branch = typeof name === 'string' && name.trim() ? name.trim() : DEFAULT_UPDATE_BRANCH
+  resolveMoorUpdateSource(current.repo, branch)
   const updated = { ...current, branch }
   writeDesktopUpdateConfig(updated)
 
@@ -17614,7 +17616,7 @@ ipcMain.handle('moor:updates:token:get', async () => {
   const cfg = readDesktopUpdateConfig()
   return {
     branch: cfg.branch,
-    repo: cfg.repo || '',
+    repo: cfg.repo || resolveMoorUpdateSource().repo,
     hasPat: Boolean(cfg.pat),
     maskedPat: cfg.pat ? (cfg.pat.length > 8 ? `...${cfg.pat.slice(-4)}` : '••••••••') : ''
   }
@@ -17633,7 +17635,12 @@ ipcMain.handle('moor:updates:token:set', async (_event, payload: { pat?: string;
   if (payload?.repo === '') {
     delete updated.repo
   }
+  const source = resolveMoorUpdateSource(updated.repo)
+  resolveMoorUpdateEnv(updated.pat)
+  updated.repo = source.repo
+  updated.branch = source.branch
   writeDesktopUpdateConfig(updated)
+  writeUpdateCheckCache(null)
   return {
     branch: updated.branch,
     repo: updated.repo || '',
@@ -17648,7 +17655,7 @@ ipcMain.handle('moor:updates:token:verify', async (_event, customPat?: string) =
   if (!tokenToTest) {
     return { ok: false, message: 'No Personal Access Token provided.' }
   }
-  return await verifyGitHubToken(tokenToTest, cfg.repo)
+  return await verifyGitHubToken(tokenToTest, resolveMoorUpdateSource(cfg.repo).repo)
 })
 
 async function verifyGitHubToken(

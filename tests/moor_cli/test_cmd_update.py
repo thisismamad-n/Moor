@@ -13,7 +13,10 @@ from moor_cli import main_install_repair
 from moor_cli import update_cmd
 
 
-def _make_run_side_effect(branch="main", verify_ok=True, commit_count="0"):
+_MOOR_REMOTE_PYPROJECT = '[project]\nname = "moor-agent"\n\n[project.scripts]\nmoor = "moor_cli.main:main"\n'
+
+
+def _make_run_side_effect(branch="master", verify_ok=True, commit_count="0"):
     """Build a side_effect function for subprocess.run that simulates git commands."""
 
     def side_effect(cmd, **kwargs):
@@ -27,6 +30,13 @@ def _make_run_side_effect(branch="main", verify_ok=True, commit_count="0"):
         if "rev-parse" in joined and "--verify" in joined:
             rc = 0 if verify_ok else 128
             return subprocess.CompletedProcess(cmd, rc, stdout="", stderr="")
+
+        # git show origin/{branch}:{path}  (update content gate reads the
+        # fetched tree; serve realistic Moor content so validation passes)
+        if "show" in joined and "origin/" in joined:
+            if "pyproject.toml" in joined:
+                return subprocess.CompletedProcess(cmd, 0, stdout=_MOOR_REMOTE_PYPROJECT, stderr="")
+            return subprocess.CompletedProcess(cmd, 0, stdout="value = 1\n", stderr="")
 
         # git rev-list HEAD..origin/{branch} --count
         if "rev-list" in joined:
@@ -275,14 +285,14 @@ class TestCmdUpdateBranchFallback:
         self, mock_run, _mock_which, mock_args, capsys
     ):
         """Regression for issue #26172: forks whose local HEAD already matches
-        origin/main must still consult upstream/main before printing
+        origin/master must still consult upstream/master before printing
         "Already up to date!" — otherwise a fork that's caught up to its own
-        origin but behind NousResearch/hermes-agent silently misses updates.
+        origin but behind thisismamad-n/Moor silently misses updates.
         """
         from moor_cli import main as hm
 
         mock_run.side_effect = _make_run_side_effect(
-            branch="main", verify_ok=True, commit_count="0"
+            branch="master", verify_ok=True, commit_count="0"
         )
 
         with patch.object(
@@ -309,7 +319,7 @@ class TestCmdUpdateBranchFallback:
     def test_yes_on_fork_without_upstream_does_not_claim_up_to_date(
         self, mock_run, _mock_which, capsys
     ):
-        """#97052 review: genuine fork, no upstream remote, HEAD == origin/main,
+        """#97052 review: genuine fork, no upstream remote, HEAD == origin/master,
         --yes. The prompt is skipped without mutating remotes, and because the
         official repo was never consulted the completion line must not claim
         plain "Already up to date!"."""
@@ -317,7 +327,7 @@ class TestCmdUpdateBranchFallback:
         from moor_cli import update_cmd
 
         mock_run.side_effect = _make_run_side_effect(
-            branch="main", verify_ok=True, commit_count="0"
+            branch="master", verify_ok=True, commit_count="0"
         )
 
         with patch.object(
@@ -367,7 +377,7 @@ class TestCmdUpdateBranchFallback:
 
         mock_args.gateway = True
         mock_run.side_effect = _make_run_side_effect(
-            branch="main", verify_ok=True, commit_count="0"
+            branch="master", verify_ok=True, commit_count="0"
         )
 
         with patch.object(
@@ -421,7 +431,7 @@ class TestCmdUpdateBranchFallback:
 
         mock_args.gateway = True
         mock_run.side_effect = _make_run_side_effect(
-            branch="main", verify_ok=True, commit_count="0"
+            branch="master", verify_ok=True, commit_count="0"
         )
 
         with patch.object(
@@ -455,7 +465,7 @@ class TestCmdUpdateBranchFallback:
         from moor_cli import update_cmd
 
         mock_run.side_effect = _make_run_side_effect(
-            branch="main", verify_ok=True, commit_count="0"
+            branch="master", verify_ok=True, commit_count="0"
         )
 
         # The first two reads bracket the upstream sync (aaaaaaa -> bbbbbbb:
@@ -535,7 +545,7 @@ class TestCmdUpdateBranchFallback:
             mock_sys.stdin.isatty.return_value = False
             mock_sys.stdout.isatty.return_value = False
             mock_run.side_effect = _make_run_side_effect(
-                branch="main", verify_ok=True, commit_count="1"
+                branch="master", verify_ok=True, commit_count="1"
             )
 
             cmd_update(mock_args)
@@ -576,7 +586,7 @@ class TestCmdUpdateMigrationPrompt:
             return_value={"env_added": [], "config_added": [], "warnings": []},
         ) as mock_migrate:
             mock_run.side_effect = _make_run_side_effect(
-                branch="main", verify_ok=True, commit_count="1"
+                branch="master", verify_ok=True, commit_count="1"
             )
 
             cmd_update(mock_args)
@@ -619,7 +629,7 @@ class TestCmdUpdateMigrationPrompt:
             },
         ):
             mock_run.side_effect = _make_run_side_effect(
-                branch="main", verify_ok=True, commit_count="1"
+                branch="master", verify_ok=True, commit_count="1"
             )
 
             cmd_update(mock_args)
@@ -659,7 +669,7 @@ class TestCmdUpdateMigrationPrompt:
             mock_sys.stdin.isatty.return_value = True
             mock_sys.stdout.isatty.return_value = True
             mock_run.side_effect = _make_run_side_effect(
-                branch="main", verify_ok=True, commit_count="1"
+                branch="master", verify_ok=True, commit_count="1"
             )
 
             cmd_update(mock_args)
@@ -717,7 +727,7 @@ class TestCmdUpdateProfileSkillSync:
         from pathlib import Path
 
         mock_run.side_effect = _make_run_side_effect(
-            branch="main", verify_ok=True, commit_count="1"
+            branch="master", verify_ok=True, commit_count="1"
         )
 
         default_p = SimpleNamespace(name="default", path=Path("/fake/.moor"))
@@ -755,7 +765,7 @@ class TestCmdUpdateProfileSkillSync:
         from pathlib import Path
 
         mock_run.side_effect = _make_run_side_effect(
-            branch="main", verify_ok=True, commit_count="1"
+            branch="master", verify_ok=True, commit_count="1"
         )
 
         default_p = SimpleNamespace(name="default", path=Path("/fake/.moor"))
@@ -780,7 +790,7 @@ class TestCmdUpdateProfileSkillSync:
 class TestCmdUpdateBranchFlag:
     """``moor update --branch <name>`` targets the requested branch.
 
-    The CLI default stays 'main'; --branch lets callers pick a different
+    The CLI default stays 'master'; --branch lets callers pick a different
     target without monkey-patching the implementation.
     """
 
@@ -812,6 +822,17 @@ class TestCmdUpdateBranchFlag:
                 err = f"error: pathspec '{target_branch}' did not match\n" if checkout_fails else ""
                 return subprocess.CompletedProcess(cmd, rc, stdout="", stderr=err)
 
+            if "show" in joined and "origin/" in joined:
+                # A branch missing on origin has no ref to authenticate;
+                # the downstream checkout reports it with the friendly
+                # "does not exist locally or on origin" error.
+                if track_fails:
+                    raise subprocess.CalledProcessError(
+                        128, cmd, stderr=f"fatal: path '{target_branch}' does not exist in 'origin/{target_branch}'\n")
+                if "pyproject.toml" in joined:
+                    return subprocess.CompletedProcess(cmd, 0, stdout=_MOOR_REMOTE_PYPROJECT, stderr="")
+                return subprocess.CompletedProcess(cmd, 0, stdout="value = 1\n", stderr="")
+
             if "rev-list" in joined:
                 return subprocess.CompletedProcess(cmd, 0, stdout=f"{commit_count}\n", stderr="")
 
@@ -832,14 +853,14 @@ class TestCmdUpdateBranchFlag:
 
         commands = [" ".join(str(a) for a in c.args[0]) for c in mock_run.call_args_list]
 
-        # rev-list must compare against origin/bb/gui, not origin/main
+        # rev-list must compare against origin/bb/gui, not origin/master
         rev_list_cmds = [c for c in commands if "rev-list" in c]
         assert any("origin/bb/gui" in c for c in rev_list_cmds), rev_list_cmds
-        assert not any("origin/main" in c for c in rev_list_cmds), rev_list_cmds
+        assert not any("origin/master" in c for c in rev_list_cmds), rev_list_cmds
 
         # the ff-only merge must target origin/bb/gui
         merge_cmds = [c for c in commands if "merge --ff-only" in c]
-        assert any("origin/bb/gui" in c and "origin/main" not in c for c in merge_cmds), merge_cmds
+        assert any("origin/bb/gui" in c and "origin/master" not in c for c in merge_cmds), merge_cmds
 
 
     @patch("shutil.which", return_value=None)
@@ -847,7 +868,7 @@ class TestCmdUpdateBranchFlag:
     def test_branch_flag_fails_when_branch_missing_everywhere(self, mock_run, _mock_which, capsys):
         """If branch doesn't exist locally OR on origin, exit non-zero with clear error."""
         mock_run.side_effect = self._branch_side_effect(
-            current_branch="main",
+            current_branch="master",
             target_branch="nonexistent",
             checkout_fails=True,
             track_fails=True,
@@ -891,7 +912,7 @@ class TestCmdUpdateCheckBranchFlag:
                                  on origin)
         - ``commit_count``       rev-list count (0 = up-to-date)
         - ``upstream_fetch_ok``  if False, ``git fetch upstream`` fails
-                                 (forces fallback to origin on branch==main)
+                                 (forces fallback to origin on branch==master)
         """
 
         def side_effect(cmd, **kwargs):
@@ -921,7 +942,7 @@ class TestCmdUpdateCheckBranchFlag:
     def test_check_branch_compares_against_named_origin_branch(
         self, mock_run, _mock_method, capsys
     ):
-        """--check --branch bb/gui compares against origin/bb/gui, never origin/main."""
+        """--check --branch bb/gui compares against origin/bb/gui, never origin/master."""
         mock_run.side_effect = self._check_side_effect(
             target_branch="bb/gui", verify_ok=True, commit_count="2"
         )
@@ -937,7 +958,7 @@ class TestCmdUpdateCheckBranchFlag:
         assert any("origin/bb/gui" in c for c in verify_cmds), verify_cmds
         rev_list_cmds = [c for c in commands if "rev-list" in c]
         assert any("origin/bb/gui" in c for c in rev_list_cmds), rev_list_cmds
-        assert not any("origin/main" in c for c in rev_list_cmds), rev_list_cmds
+        assert not any("origin/master" in c for c in rev_list_cmds), rev_list_cmds
 
     @patch("moor_cli.config.detect_install_method", return_value="git")
     @patch("subprocess.run")
@@ -972,12 +993,12 @@ class TestCmdUpdateCheckBranchFlag:
 
     @patch("moor_cli.config.detect_install_method", return_value="git")
     @patch("subprocess.run")
-    def test_check_default_main_still_prefers_upstream(
+    def test_check_default_master_still_prefers_upstream(
         self, mock_run, _mock_method, capsys
     ):
         """No --branch (or --branch=None) preserves the upstream-then-origin probe."""
         mock_run.side_effect = self._check_side_effect(
-            target_branch="main", verify_ok=True, commit_count="0"
+            target_branch="master", verify_ok=True, commit_count="0"
         )
         args = SimpleNamespace(check=True, branch=None)
 
@@ -986,9 +1007,9 @@ class TestCmdUpdateCheckBranchFlag:
         commands = [" ".join(str(a) for a in c.args[0]) for c in mock_run.call_args_list]
         # Should have tried upstream first.
         assert any("fetch" in c and "upstream" in c for c in commands), commands
-        # Compare ref is upstream/main (upstream fetch succeeded).
+        # Compare ref is upstream/master (upstream fetch succeeded).
         rev_list_cmds = [c for c in commands if "rev-list" in c]
-        assert any("upstream/main" in c for c in rev_list_cmds), rev_list_cmds
+        assert any("upstream/master" in c for c in rev_list_cmds), rev_list_cmds
 
 
 class TestCmdUpdateZipBranchRefusal:
@@ -1103,7 +1124,7 @@ class TestNodeRuntimeNpmResolution:
              patch.object(main_web_build, "_run_with_idle_timeout") as mock_idle_build, \
              patch.object(hm, "_run_logged_subprocess") as mock_desktop_build:
             mock_run.side_effect = _make_run_side_effect(
-                branch="main", verify_ok=True, commit_count="1"
+                branch="master", verify_ok=True, commit_count="1"
             )
             cmd_update(mock_args)
 
@@ -1170,9 +1191,15 @@ class TestNodeRuntimeNpmResolution:
         packaged_exe.parent.mkdir(parents=True)
         packaged_exe.write_bytes(b"desktop")
 
-        def write_source_zip(_url, destination):
+        def write_source_zip(_branch, destination):
             with zipfile.ZipFile(destination, "w") as archive:
-                archive.writestr("moor-agent-main/apps/desktop/package.json", "{}")
+                archive.writestr("moor-agent-master/apps/desktop/package.json", "{}")
+                # Moor-shaped tree: the ZIP content gate rejects anything else.
+                archive.writestr(
+                    "moor-agent-master/pyproject.toml", _MOOR_REMOTE_PYPROJECT)
+                for name in ("moor_cli/main.py", "scripts/rebrand.py",
+                             "moor_cli/update_source.py"):
+                    archive.writestr(f"moor-agent-master/{name}", "value = 1\n")
 
         def fail_git_fetch(command, **_kwargs):
             if "fetch" in command:
@@ -1223,7 +1250,7 @@ class TestNodeRuntimeNpmResolution:
         with (
             patch("moor_cli.config.load_config", return_value={}),
             patch("subprocess.run", side_effect=fail_git_fetch),
-            patch("urllib.request.urlretrieve", side_effect=write_source_zip),
+            patch("moor_cli.update_source.download_archive", side_effect=write_source_zip),
             patch("moor_cli.managed_uv.ensure_uv", return_value="uv"),
             patch("moor_cli.managed_uv.update_managed_uv"),
             patch(

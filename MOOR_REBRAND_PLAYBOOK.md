@@ -333,6 +333,20 @@ ignore it.
 20. **Worktree checkout on Windows materializes lazily.** After
     `git worktree add`, wait and `Test-Path` before copying files in, or
     the copies fail with confusing NotFound errors.
+21. **Install endpoints are the deliberate PROTECT exception.** The docs
+    host `hermes-agent.nousresearch.com` stays protected — EXCEPT the
+    `/install.sh` and `/install.ps1` paths and the bare-domain reinstall
+    hints (`reinstall from …`, `reinstall: …`, standalone quoted URL).
+    Those are live recovery paths printed when an install is broken; they
+    must fetch the fork's own scripts, so `transform_update_source`
+    rewrites them to
+    `https://raw.githubusercontent.com/thisismamad-n/Moor/master/scripts/…`
+    (one-liners, mirroring the desktop bootstrap-runner URL shape) and
+    `https://github.com/thisismamad-n/Moor` (bare hints). The rules are
+    scoped to those exact wordings/paths — a `…/docs/…` URL never matches.
+    Member files: `moor_cli/update_cmd*.py`, `moor_cli/uninstall.py`,
+    `moor_constants.py` (plus the original desktop/installer set).
+    Covered in `rebrand_selftest.py` `CASES_UPDATE_SOURCE`.
 
 ---
 

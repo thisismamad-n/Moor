@@ -27,7 +27,7 @@ import {
 import { ListRow, SectionHeading, SettingsContent } from './primitives'
 import { UninstallSection } from './uninstall-section'
 
-const RELEASE_NOTES_URL = 'https://github.com/moor-inc/moor/releases'
+const RELEASE_NOTES_URL = 'https://github.com/thisismamad-n/Moor/releases'
 const INSTALLER_URL = 'https://moor-inc.github.io/moor/'
 
 function relativeTime(ms: number | undefined, a: Translations['settings']['about']) {
@@ -251,7 +251,7 @@ function MoorPatConfigCard({ onTokenSaved }: { onTokenSaved?: () => void }) {
   const verifyResult = useStore($moorTokenVerifyResult)
 
   const [patInput, setPatInput] = useState('')
-  const [repoInput, setRepoInput] = useState(tokenConfig.repo || 'moor-inc/moor')
+  const [repoInput, setRepoInput] = useState(tokenConfig.repo || 'thisismamad-n/Moor')
   const [isEditing, setIsEditing] = useState(false)
   const [feedback, setFeedback] = useState<string | null>(null)
 
@@ -298,7 +298,7 @@ function MoorPatConfigCard({ onTokenSaved }: { onTokenSaved?: () => void }) {
             <p className="font-medium">Private Repository & PAT Authentication</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {tokenConfig.hasPat
-                ? `Token configured (${tokenConfig.maskedPat}) for updates from ${tokenConfig.repo || 'moor-inc/moor'}`
+                ? `Token configured (${tokenConfig.maskedPat}) for updates from ${tokenConfig.repo || 'thisismamad-n/Moor'}`
                 : 'No PAT configured. Private repository checks require a token with repo read scope.'}
             </p>
           </div>
@@ -333,7 +333,7 @@ function MoorPatConfigCard({ onTokenSaved }: { onTokenSaved?: () => void }) {
             <input
               className="w-full rounded-md border border-input bg-background px-3 py-1.5 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               onChange={e => setRepoInput(e.target.value)}
-              placeholder="moor-inc/moor"
+              placeholder='thisismamad-n/Moor'
               value={repoInput}
             />
           </div>

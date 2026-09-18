@@ -401,6 +401,85 @@ def apply_ladder(text: str, ladder) -> str:
     return text
 
 
+UPDATE_SOURCE_FILES = {
+    "apps/desktop/electron/update-remote.ts",
+    "apps/desktop/electron/bootstrap-runner.ts",
+    "apps/desktop/scripts/write-build-stamp.mjs",
+    "apps/desktop/package.json",
+    "apps/desktop/src/app/updates-overlay.tsx",
+    "apps/desktop/src/app/settings/about-settings.tsx",
+    "apps/bootstrap-installer/src-tauri/build.rs",
+    "apps/bootstrap-installer/src-tauri/src/install_script.rs",
+    "moor_cli/update_cmd_git.py",
+    "moor_cli/update_cmd.py",
+    "moor_cli/update_cmd_zip.py",
+    "moor_cli/update_cmd_maint.py",
+    "moor_cli/update_cmd_deps.py",
+    "moor_cli/uninstall.py",
+    "moor_constants.py",
+    "scripts/install.ps1",
+    "scripts/install.sh",
+}
+
+#: Where reinstall one-liners point after the rebrand: the fork's own
+#: install scripts, fetched straight from GitHub. Mirrors the URL shape the
+#: desktop bootstrap runner builds
+#: (``https://raw.githubusercontent.com/<repo>/<ref>/scripts/<name>``).
+_MOOR_INSTALL_BASE = "https://raw.githubusercontent.com/thisismamad-n/Moor/master/scripts"
+#: Bare-domain reinstall hints (``reinstall from https://...``) point here.
+_MOOR_REPO_HOME = "https://github.com/thisismamad-n/Moor"
+
+
+def transform_update_source(text: str, rel: str) -> str:
+    if rel not in UPDATE_SOURCE_FILES:
+        return text
+    text = re.sub(
+        r"(?i)(github\.com[:/]|raw\.githubusercontent\.com/|api\.github\.com/repos/)(?:NousResearch/hermes-agent|moor-inc/moor)",
+        r"\g<1>thisismamad-n/Moor",
+        text,
+    )
+    text = re.sub(
+        r"(?i)(['\"])(?:NousResearch/hermes-agent|moor-inc/moor)\1",
+        lambda m: m[1] + "thisismamad-n/Moor" + m[1],
+        text,
+    )
+    text = text.replace("$Branch = \"main\"", "$Branch = \"master\"")
+    text = text.replace("BRANCH=\"main\"", "BRANCH=\"master\"")
+    text = text.replace('FALLBACK_BRANCH = "main"', 'FALLBACK_BRANCH = "master"')
+    text = text.replace("const FALLBACK_BRANCH = 'main'", "const FALLBACK_BRANCH = 'master'")
+    text = text.replace("'-Branch', 'main'", "'-Branch', 'master'")
+    text = text.replace("'--branch', 'main'", "'--branch', 'master'")
+    # Reinstall one-liners served from the upstream docs host must fetch the
+    # fork's own install scripts instead. Scoped to the /install.sh and
+    # /install.ps1 paths only — docs/API hosts (…/docs/…, portal, inference)
+    # stay protected per the playbook.
+    text = text.replace(
+        "https://hermes-agent.nousresearch.com/install.sh",
+        _MOOR_INSTALL_BASE + "/install.sh",
+    )
+    text = text.replace(
+        "https://hermes-agent.nousresearch.com/install.ps1",
+        _MOOR_INSTALL_BASE + "/install.ps1",
+    )
+    # Bare-domain reinstall hints point at the fork's GitHub home. Scoped to
+    # the two hint wordings plus a standalone quoted URL (the update_cmd_deps
+    # "reinstall:" print) so docs URLs never match.
+    text = text.replace(
+        "reinstall from https://hermes-agent.nousresearch.com",
+        "reinstall from " + _MOOR_REPO_HOME,
+    )
+    text = text.replace(
+        "reinstall: https://hermes-agent.nousresearch.com",
+        "reinstall: " + _MOOR_REPO_HOME,
+    )
+    text = re.sub(
+        r"([\"']\s{4})https://hermes-agent\.nousresearch\.com([\"'])",
+        lambda m: m[1] + _MOOR_REPO_HOME + m[2],
+        text,
+    )
+    return text
+
+
 def transform_text(text: str, fork: str | None) -> str:
     """Full content pipeline: heal -> fork -> protect -> ladder -> restore."""
     for pat, repl in HEAL_RULES:
@@ -481,7 +560,9 @@ def phase_contents(files: list[str], fork: str | None, dry: bool) -> tuple[int, 
             continue
         text, codec = decoded
         had_bom = raw.startswith(UTF8_BOM)
-        new_text = transform_text(text, fork)
+        new_text = transform_update_source(text, rel)
+        if new_text == text:
+            new_text = transform_text(text, fork)
         if new_text != text:
             changed += 1
             if not dry:

@@ -18,6 +18,7 @@ from pathlib import Path
 
 from moor_cli.config import get_moor_home  # noqa: F401  (re-exported; patched via update_cmd)
 from moor_cli.update_cmd_common import _best_effort
+from moor_cli.update_source import BRANCH as _UPDATE_DEFAULT_BRANCH
 from moor_constants import get_default_moor_root, venv_python_path
 
 # Re-exports: every split-module name stays reachable (and monkeypatchable) as update_cmd.<name>.
@@ -480,7 +481,7 @@ def _run_logged_subprocess(cmd, *, cwd=None, env=None):
         proc.stdout.close()
 
 
-def _cmd_update_check(branch: str = "main", *, branch_explicit: bool = False):
+def _cmd_update_check(branch: str = _UPDATE_DEFAULT_BRANCH, *, branch_explicit: bool = False):
     """``moor update --check``: fetch and report without installing. ``branch_explicit`` is
     True iff --branch was passed (Docker installs print a notice instead of dropping the flag)."""
     # Same marker-first admission gate as the apply path, so --check never reports git
@@ -511,7 +512,7 @@ def _cmd_update_check(branch: str = "main", *, branch_explicit: bool = False):
         print(f"  (removed {len(swept)} aborted-fetch pack temp file(s))")
 
     # Fetch only <branch> (a bare fetch pulls thousands of auto-generated branches). Prefer
-    # upstream only for main (a fork's other branches have no upstream counterpart). Installer
+    # upstream only for the default branch (a fork's other branches have no upstream counterpart). Installer
     # checkouts are shallow: a plain fetch would unshallow them and rev-list would report a
     # bogus huge "behind" count, so fetch --depth 1 and report presence-only.
     is_shallow = _is_shallow_checkout(git_cmd)
@@ -519,7 +520,7 @@ def _cmd_update_check(branch: str = "main", *, branch_explicit: bool = False):
 
     # Probe locally for an 'upstream' remote before a network fetch non-forks always fail.
     fetch_result = None
-    if branch == "main" and _git_run(git_cmd, ["remote", "get-url", "upstream"]).returncode == 0:
+    if branch == _UPDATE_DEFAULT_BRANCH and _git_run(git_cmd, ["remote", "get-url", "upstream"]).returncode == 0:
         print("→ Fetching from upstream...")
         fetch_result = _git_run(git_cmd, ["fetch"] + depth_args + ["upstream", branch], network=True)
     if fetch_result is not None and fetch_result.returncode == 0:
@@ -943,7 +944,7 @@ def _prepare_checkout_for_update(
     # "Already up to date!" and verified nothing). Non-fork checkouts have no upstream question: origin IS
     # the official repo, so "Already up to date!" is fully verified there.
     upstream_checked = True
-    if commit_count == 0 and is_fork and branch == "main":
+    if commit_count == 0 and is_fork and branch == _UPDATE_DEFAULT_BRANCH:
         pre_sync_sha = _capture_head_sha(git_cmd, _m().PROJECT_ROOT)
         upstream_checked = _m()._sync_with_upstream_if_needed(
             git_cmd, _m().PROJECT_ROOT, assume_yes=assume_yes, input_fn=gw_input_fn)
@@ -1073,7 +1074,7 @@ def _prepare_git_command() -> tuple[bool, list, bool]:
     use_zip_update = not git_dir.exists()
     if use_zip_update and sys.platform != "win32":
         print("✗ Not a git repository. Please reinstall:")
-        print("  curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash")
+        print("  curl -fsSL https://raw.githubusercontent.com/thisismamad-n/Moor/master/scripts/install.sh | bash")
         sys.exit(1)
 
     git_cmd = _base_git_cmd()
@@ -1252,7 +1253,7 @@ def _apply_pulled_update(
     # Stale .pyc would ImportError on gateway restart when new source references new names.
     _sweep_bytecode_after_update(branch)
 
-    if is_fork and branch == "main":
+    if is_fork and branch == _UPDATE_DEFAULT_BRANCH:
         _m()._sync_with_upstream_if_needed(
             git_cmd, _m().PROJECT_ROOT, assume_yes=opts.assume_yes, input_fn=opts.gw_input_fn)
 
@@ -1323,8 +1324,11 @@ def _cmd_update_impl(args, gateway_mode: bool):
     print("☤ Updating Moor Agent...")
     print()
 
-    from moor_cli.update_source import validate_checkout
-    validate_checkout(_m().PROJECT_ROOT, _m()._resolve_update_branch(args))
+    # NOTE: no origin-URL gate here on purpose. Fork checkouts (origin = the
+    # user's fork) are a supported layout — the fork/upstream sync below keeps
+    # them current, and the fetched tree's *content* is authenticated after
+    # the fetch by ``validate_git_target``. Gating on origin == official URL
+    # would refuse every fork checkout its update.
     _pre_update_plan = _begin_update_receipt_and_plan(args)
 
     # Backup before any git/file mutation; the snapshot id (None if disabled/failed) feeds
@@ -1403,7 +1407,12 @@ def _cmd_update_impl(args, gateway_mode: bool):
             sys.exit(1)
 
         from moor_cli.update_source import validate_git_target
-        validate_git_target(git_cmd, _m().PROJECT_ROOT, branch)
+        try:
+            validate_git_target(git_cmd, _m().PROJECT_ROOT, branch)
+        except ValueError as e:
+            print(f"✗ {e}")
+            print("  Refusing to update from a remote tree that is not Moor.")
+            sys.exit(1)
         current_branch = _current_branch_name(git_cmd, check=True)
         _plan = _prepare_checkout_for_update(
             git_cmd, branch, current_branch, is_fork=is_fork, assume_yes=assume_yes,

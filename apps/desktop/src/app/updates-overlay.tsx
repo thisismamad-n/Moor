@@ -180,7 +180,7 @@ function TokenAuthView({
   const verifyResult = useStore($moorTokenVerifyResult)
 
   const [patInput, setPatInput] = useState('')
-  const [repoInput, setRepoInput] = useState(tokenConfig.repo || 'moor-inc/moor')
+  const [repoInput, setRepoInput] = useState(tokenConfig.repo || 'thisismamad-n/Moor')
   const [savedSuccess, setSavedSuccess] = useState(false)
 
   useEffect(() => {
@@ -238,7 +238,7 @@ function TokenAuthView({
           <input
             className="w-full rounded-md border border-input bg-background px-3 py-1.5 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             onChange={e => setRepoInput(e.target.value)}
-            placeholder="moor-inc/moor"
+            placeholder='thisismamad-n/Moor'
             value={repoInput}
           />
         </div>

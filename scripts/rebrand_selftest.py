@@ -81,6 +81,44 @@ FORK_CASE = (
     "and github.com/acme/moor.git and github.com/acme/moor/issues/1",
 )
 
+CASES_UPDATE_SOURCE = [
+    # (rel, src, want): reinstall one-liners go GitHub-direct.
+    ("moor_cli/update_cmd.py",
+     "print(\"  curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash\")",
+     "print(\"  curl -fsSL https://raw.githubusercontent.com/thisismamad-n/Moor/master/scripts/install.sh | bash\")"),
+    ("moor_cli/uninstall.py",
+     "True: \"  iex (irm https://hermes-agent.nousresearch.com/install.ps1)\",",
+     "True: \"  iex (irm https://raw.githubusercontent.com/thisismamad-n/Moor/master/scripts/install.ps1)\","),
+    ("moor_cli/update_cmd_zip.py",
+     "reinstall from https://hermes-agent.nousresearch.com",
+     "reinstall from https://github.com/thisismamad-n/Moor"),
+    ("moor_constants.py",
+     "reinstall: https://hermes-agent.nousresearch.com",
+     "reinstall: https://github.com/thisismamad-n/Moor"),
+    ("moor_cli/update_cmd_deps.py",
+     "print(\"    https://hermes-agent.nousresearch.com\")",
+     "print(\"    https://github.com/thisismamad-n/Moor\")"),
+    # Repo slugs and fallback branches keep rewriting.
+    ("apps/desktop/electron/bootstrap-runner.ts",
+     "const UPSTREAM_INSTALL_REPO = 'NousResearch/hermes-agent'",
+     "const UPSTREAM_INSTALL_REPO = 'thisismamad-n/Moor'"),
+    ("apps/desktop/electron/bootstrap-runner.ts",
+     "const FALLBACK_BRANCH = 'main'",
+     "const FALLBACK_BRANCH = 'master'"),
+    # Docs URLs are protected even inside member files.
+    ("moor_cli/update_cmd_maint.py",
+     "print(\"  Docs:         https://hermes-agent.nousresearch.com/docs/user-guide/features/curator\")",
+     "print(\"  Docs:         https://hermes-agent.nousresearch.com/docs/user-guide/features/curator\")"),
+    # Non-member files are never touched.
+    ("moor_cli/banner.py",
+     "print(\"  curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash\")",
+     "print(\"  curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash\")"),
+    # Already-rebranded input is stable.
+    ("moor_cli/update_cmd.py",
+     "print(\"  curl -fsSL https://raw.githubusercontent.com/thisismamad-n/Moor/master/scripts/install.sh | bash\")",
+     "print(\"  curl -fsSL https://raw.githubusercontent.com/thisismamad-n/Moor/master/scripts/install.sh | bash\")"),
+]
+
 PATH_CASES = [
     ("moor_cli/config.py", "moor_cli/config.py"),
     ("tests/moor_cli/test_moor_account.py", "tests/moor_cli/test_moor_account.py"),
@@ -146,6 +184,20 @@ def main() -> int:
         else:
             fail += 1
             print(f"FAIL path: {src} -> {got} (want {want})")
+
+    for rel, src, want in CASES_UPDATE_SOURCE:
+        got = rb.transform_update_source(src, rel)
+        if got == want:
+            ok += 1
+        else:
+            fail += 1
+            print(f"FAIL update-source [{rel}]: {src!r}\n  got  {got!r}\n  want {want!r}")
+        twice = rb.transform_update_source(got, rel)
+        if twice != got:
+            fail += 1
+            print(f"FAIL update-source idempotent [{rel}]: {got!r} -> {twice!r}")
+        else:
+            ok += 1
 
     print(f"{ok} passed, {fail} failed")
     return 1 if fail else 0

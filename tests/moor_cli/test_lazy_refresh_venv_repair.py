@@ -195,6 +195,16 @@ def test_cmd_update_captures_and_propagates_pre_rebuild_snapshot(
             return SimpleNamespace(returncode=0, stdout="main\n", stderr="")
         if "rev-list" in cmd:
             return SimpleNamespace(returncode=0, stdout="0\n", stderr="")
+        # The post-fetch content gate reads origin/<branch>:<path> via
+        # ``git show`` — serve Moor content so validation passes.
+        if "show" in cmd:
+            if any("pyproject.toml" in c for c in cmd):
+                return SimpleNamespace(
+                    returncode=0,
+                    stdout='[project]\nname = "moor-agent"\n\n[project.scripts]\nmoor = "moor_cli.main:main"\n',
+                    stderr="",
+                )
+            return SimpleNamespace(returncode=0, stdout="value = 1\n", stderr="")
         return SimpleNamespace(returncode=0, stdout="", stderr="")
 
     def fake_refresh(prefix, *, env=None, features=None):

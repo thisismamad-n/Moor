@@ -275,15 +275,19 @@ def _download_and_swap_zip(branch: str, zip_url: str) -> None:
     from moor_cli.update_cmd import _m
 
     import tempfile
-    from urllib.request import urlretrieve
+    from moor_cli.update_source import REPO, URL, download_archive, validate_source, validate_update_tree
+    validate_source(URL, branch)
+    if zip_url != f"https://api.github.com/repos/{REPO}/zipball/{branch}":
+        raise ValueError("Update rejected: archive source is not Moor.")
     print("→ Downloading latest version...")
     tmp_dir = tempfile.mkdtemp(prefix="moor-update-")
     try:
         zip_path = os.path.join(tmp_dir, f"moor-agent-{branch}.zip")
-        urlretrieve(zip_url, zip_path)
+        download_archive(branch, zip_path)
         print("→ Extracting...")
         _extract_zip_safely(zip_path, tmp_dir)
         extracted = _extracted_root(tmp_dir, branch)
+        validate_update_tree(lambda name: (Path(extracted) / name).read_text(encoding="utf-8-sig"))
         entries = [i for i in os.listdir(extracted) if i not in _ZIP_PRESERVED_TOP_LEVEL]
         project_root = str(_m().PROJECT_ROOT)
         _require_staging_space(extracted, entries, project_root)
@@ -310,7 +314,7 @@ def _download_and_swap_zip(branch: str, zip_url: str) -> None:
         print(f"✗ ZIP update failed: {e}")
         # Two-phase replace commits all or rolls all back, so no mixed tree here — don't push a needless reinstall.
         print("  Your existing install was left in place.")
-        print("  Re-run `moor update` to retry; if the agent won't start, reinstall from https://hermes-agent.nousresearch.com")
+        print("  Re-run `moor update` to retry; if the agent won't start, reinstall from https://github.com/thisismamad-n/Moor")
         _m().sys.exit(1)
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
@@ -368,18 +372,20 @@ def _update_via_zip(args, *, had_desktop_app_before_update: bool = False) -> boo
     pre_update_version = _read_project_version()  # snapshot before files are replaced, for the completion line
     # The static archive would silently ignore --branch — the exact silent-divergence bug it exists to
     # prevent. Refuse rather than lie.
+    from moor_cli.update_source import BRANCH
     branch = _m()._resolve_update_branch(args)
-    if branch != "master":
+    if branch != BRANCH:
         print(f"✗ --branch={branch} is not supported on the Windows ZIP-fallback update path.")
         print(
             "  This path runs when git file I/O is broken on the system. "
             "Either resolve the git-side breakage (typically an antivirus "
             "or NTFS filter holding files open) and rerun `moor update "
-            f"--branch {branch}`, or update against main with `moor update`."
+            f"--branch {branch}`, or update against {BRANCH} with `moor update`."
         )
         _m().sys.exit(1)
     _abort_zip_update_if_dirty_tree()
-    _download_and_swap_zip(branch, f"https://github.com/NousResearch/hermes-agent/archive/refs/heads/{branch}.zip")
+    from moor_cli.update_source import REPO
+    _download_and_swap_zip(branch, f"https://api.github.com/repos/{REPO}/zipball/{branch}")
     _sweep_bytecode_after_update(branch)
     # Self-lock deferral: the code swap is committed; defer only the dependency sync when this process
     # holds a native extension the sync must rewrite.
