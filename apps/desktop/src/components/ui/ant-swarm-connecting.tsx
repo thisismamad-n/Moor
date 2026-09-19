@@ -397,35 +397,53 @@ export function AntSwarmConnecting({
         ref={canvasRef}
       />
 
-      {/* Dead-Centered Central Hexagonal Core Beacon */}
+      {/* Dead-Centered Central Cyber-Optic Core Beacon */}
       <div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex size-24 items-center justify-center pointer-events-none"
         ref={beaconRef}
       >
+        {/* Reticle Cardinal Micro-Ticks */}
+        <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 h-1.5 w-0.5 rounded-full bg-cyan-400/80 shadow-[0_0_6px_rgba(56,189,248,0.8)]" />
+        <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 h-1.5 w-0.5 rounded-full bg-cyan-400/80 shadow-[0_0_6px_rgba(56,189,248,0.8)]" />
+        <div className="absolute top-1/2 -left-0.5 -translate-y-1/2 h-0.5 w-1.5 rounded-full bg-cyan-400/80 shadow-[0_0_6px_rgba(56,189,248,0.8)]" />
+        <div className="absolute top-1/2 -right-0.5 -translate-y-1/2 h-0.5 w-1.5 rounded-full bg-cyan-400/80 shadow-[0_0_6px_rgba(56,189,248,0.8)]" />
+
         {/* Rotating decorative geometric antenna ring */}
         <div
           className={cn(
-            'absolute inset-0 rounded-full border border-cyan-500/25 border-t-cyan-400',
+            'absolute inset-0 rounded-full border border-cyan-500/30 border-t-cyan-300 shadow-[0_0_12px_rgba(56,189,248,0.15)]',
             !reduceMotion && 'animate-spin'
           )}
-          style={{ animationDuration: '6s' }}
+          style={{ animationDuration: '7s' }}
         />
         <div
           className={cn(
-            'absolute -inset-2.5 rounded-full border border-dashed border-primary/20 border-b-cyan-500/40',
+            'absolute -inset-2.5 rounded-full border border-dashed border-cyan-500/20 border-b-cyan-400/50',
             !reduceMotion && 'animate-spin'
           )}
-          style={{ animationDuration: '12s', animationDirection: 'reverse' }}
+          style={{ animationDuration: '14s', animationDirection: 'reverse' }}
         />
 
-        {/* Central Moor Brand Emblem with absorption shockwave flash */}
+        {/* Central Moor Circular Cyber-Optic Core Lens */}
         <div
           className={cn(
-            'relative flex size-18 items-center justify-center rounded-2xl border border-cyan-500/40 bg-[#090b10]/90 p-3.5 shadow-[0_0_35px_rgba(56,189,248,0.25)] backdrop-blur-md transition-all duration-300',
-            coreFlash && 'shadow-[0_0_55px_rgba(56,189,248,0.65)] border-cyan-300 scale-105'
+            'relative flex size-18 items-center justify-center rounded-full border border-cyan-400/45 bg-[radial-gradient(circle_at_center,#0d1527_0%,#080e1a_60%,#030509_100%)] p-3.5 shadow-[0_0_30px_rgba(56,189,248,0.28),inset_0_0_18px_rgba(56,189,248,0.16)] backdrop-blur-xl transition-all duration-300',
+            coreFlash && 'shadow-[0_0_65px_rgba(56,189,248,0.85),inset_0_0_28px_rgba(56,189,248,0.45),0_0_20px_#fff] border-white scale-105'
           )}
         >
-          <MoorAntIcon className="size-full animate-pulse" />
+          {/* Inner hairline precision ring */}
+          <div className="pointer-events-none absolute inset-1 rounded-full border border-cyan-400/20" />
+
+          {/* Ethereal Core Energy Pulse */}
+          <div
+            className={cn(
+              'pointer-events-none absolute inset-2 rounded-full bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.25)_0%,rgba(37,99,235,0.08)_55%,transparent_75%)]',
+              !reduceMotion && 'animate-pulse'
+            )}
+          />
+
+          {/* Moor Ant Emblem with optical drop glow */}
+          <MoorAntIcon className="relative z-10 size-full drop-shadow-[0_0_8px_rgba(56,189,248,0.6)]" />
         </div>
       </div>
     </div>

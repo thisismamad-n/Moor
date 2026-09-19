@@ -186,22 +186,91 @@
       position: relative;
       width: 72px;
       height: 72px;
-      border-radius: 20px;
-      border: 1.5px solid rgba(56, 189, 248, 0.5);
-      background: #090b10;
-      padding: 14px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(56, 189, 248, 0.45);
+      background: radial-gradient(circle at 50% 50%, #0d1527 0%, #080e1a 60%, #030509 100%);
+      padding: 13.5px;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 0 35px rgba(56, 189, 248, 0.3);
-      backdrop-filter: blur(10px);
+      box-shadow: 0 0 30px rgba(56, 189, 248, 0.28), inset 0 0 18px rgba(56, 189, 248, 0.16);
+      backdrop-filter: blur(14px);
       transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
+    .emblem-inner-ring {
+      position: absolute;
+      inset: 3px;
+      border-radius: 50%;
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      pointer-events: none;
+    }
+
+    .emblem-core-aura {
+      position: absolute;
+      inset: 6px;
+      border-radius: 50%;
+      background: radial-gradient(circle at center, rgba(56, 189, 248, 0.25) 0%, rgba(37, 99, 235, 0.08) 55%, transparent 75%);
+      pointer-events: none;
+      animation: core-breathe 3.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes core-breathe {
+      0% { opacity: 0.5; transform: scale(0.96); }
+      100% { opacity: 1; transform: scale(1.04); }
+    }
+
+    .ant-svg {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      z-index: 5;
+      filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.6));
+    }
+
+    .reticle-tick {
+      position: absolute;
+      background: rgba(56, 189, 248, 0.7);
+      box-shadow: 0 0 6px rgba(56, 189, 248, 0.8);
+      pointer-events: none;
+    }
+    .reticle-tick.top {
+      top: -2px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 2px;
+      height: 6px;
+      border-radius: 1px;
+    }
+    .reticle-tick.bottom {
+      bottom: -2px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 2px;
+      height: 6px;
+      border-radius: 1px;
+    }
+    .reticle-tick.left {
+      left: -2px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 6px;
+      height: 2px;
+      border-radius: 1px;
+    }
+    .reticle-tick.right {
+      right: -2px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 6px;
+      height: 2px;
+      border-radius: 1px;
+    }
+
     .emblem-box.absorb-flash {
-      box-shadow: 0 0 60px rgba(56, 189, 248, 0.8), 0 0 20px #fff;
+      box-shadow: 0 0 65px rgba(56, 189, 248, 0.85), inset 0 0 28px rgba(56, 189, 248, 0.45), 0 0 20px #fff;
       border-color: #fff;
-      transform: scale(1.1);
+      transform: scale(1.08);
     }
 
     @keyframes spin {
@@ -383,13 +452,21 @@
 
     <!-- Exact Dead-Center Core Beacon -->
     <div class="core-beacon" id="core-beacon">
+      <!-- Reticle Cardinal Micro-Ticks -->
+      <div class="reticle-tick top"></div>
+      <div class="reticle-tick bottom"></div>
+      <div class="reticle-tick left"></div>
+      <div class="reticle-tick right"></div>
+
       <div class="antenna-ring-1"></div>
       <div class="antenna-ring-2"></div>
       <div class="shockwave" id="shockwave"></div>
 
-      <!-- Moor Ant Brand Emblem -->
+      <!-- Moor Ant Brand Emblem (Sleek Circular Optic Lens) -->
       <div class="emblem-box" id="emblem-box">
-        <svg aria-label="Moor Brand Emblem" fill="none" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: 100%;">
+        <div class="emblem-inner-ring"></div>
+        <div class="emblem-core-aura"></div>
+        <svg class="ant-svg" aria-label="Moor Brand Emblem" fill="none" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="moorCobaltGrad" x1="0%" x2="100%" y1="0%" y2="100%">
               <stop offset="0%" stopColor="#38bdf8" />
