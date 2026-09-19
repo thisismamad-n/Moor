@@ -58,3 +58,98 @@ test('a repair that deleted the marker does not strand a healthy install', () =>
   // usability, not marker presence, must decide the next boot.
   assert.equal(classifyActiveRuntime(null, 1, true).shouldUseActiveRuntime, true)
 })
+
+test('packaged app with matching marker commit uses active runtime', () => {
+  const result = classifyActiveRuntime(VALID_MARKER, 1, true, {
+    isPackaged: true,
+    installStamp: { commit: VALID_MARKER.pinnedCommit }
+  })
+
+  assert.deepEqual(result, {
+    hasValidMarker: true,
+    shouldUseActiveRuntime: true,
+    usabilityReason: 'usable'
+  })
+})
+
+test('packaged app with stale marker commit triggers upgrade-needed', () => {
+  const result = classifyActiveRuntime(VALID_MARKER, 1, true, {
+    isPackaged: true,
+    installStamp: { commit: 'fedcba0987654321fedcba0987654321fedcba09' }
+  })
+
+  assert.deepEqual(result, {
+    hasValidMarker: true,
+    shouldUseActiveRuntime: false,
+    usabilityReason: 'upgrade-needed'
+  })
+})
+
+test('packaged app with missing marker triggers upgrade-needed when install stamp is valid', () => {
+  const result = classifyActiveRuntime(null, 1, true, {
+    isPackaged: true,
+    installStamp: { commit: 'fedcba0987654321fedcba0987654321fedcba09' }
+  })
+
+  assert.deepEqual(result, {
+    hasValidMarker: false,
+    shouldUseActiveRuntime: false,
+    usabilityReason: 'upgrade-needed'
+  })
+})
+
+test('packaged app preserves active runtime when activeCommit matches packaged build', () => {
+  const targetCommit = 'fedcba0987654321fedcba0987654321fedcba09'
+  const result = classifyActiveRuntime(null, 1, true, {
+    isPackaged: true,
+    installStamp: { commit: targetCommit },
+    activeCommit: targetCommit
+  })
+
+  assert.deepEqual(result, {
+    hasValidMarker: false,
+    shouldUseActiveRuntime: true,
+    usabilityReason: 'usable'
+  })
+})
+
+test('packaged app preserves active runtime when user is ahead via moor update', () => {
+  const result = classifyActiveRuntime(VALID_MARKER, 1, true, {
+    isPackaged: true,
+    installStamp: { commit: '9999999999999999999999999999999999999999' },
+    activeIsAhead: true
+  })
+
+  assert.deepEqual(result, {
+    hasValidMarker: true,
+    shouldUseActiveRuntime: true,
+    usabilityReason: 'usable'
+  })
+})
+
+test('development mode never forces upgrade even with different commit', () => {
+  const result = classifyActiveRuntime(VALID_MARKER, 1, true, {
+    isPackaged: false,
+    installStamp: { commit: 'different_commit_123456789' }
+  })
+
+  assert.deepEqual(result, {
+    hasValidMarker: true,
+    shouldUseActiveRuntime: true,
+    usabilityReason: 'usable'
+  })
+})
+
+test('unusable runtime is never used even if commit matches', () => {
+  const result = classifyActiveRuntime(VALID_MARKER, 1, false, {
+    isPackaged: true,
+    installStamp: { commit: VALID_MARKER.pinnedCommit }
+  })
+
+  assert.deepEqual(result, {
+    hasValidMarker: true,
+    shouldUseActiveRuntime: false,
+    usabilityReason: 'unusable'
+  })
+})
+

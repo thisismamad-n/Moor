@@ -29,7 +29,7 @@ import {
   systemPreferences
 } from 'electron'
 
-import { classifyActiveRuntime } from './active-runtime-state'
+import { classifyActiveRuntime, hasValidBootstrapMarker, isRealCommitSha } from './active-runtime-state'
 import {
   destroyKeepaliveAgents,
   downloadAgentFor,
@@ -1530,7 +1530,7 @@ let poolLimits = readPersistedPoolLimits()
 const localBackendSpawnCoordinator = new LocalBackendSpawnCoordinator(poolLimits.maxBackends)
 const backgroundSlotRetryBackoff = new BackgroundSlotRetryBackoff()
 // How long a spawn may wait for a free local slot. Must stay under the
-// renderer's BACKEND_BOOT_WAIT_TIMEOUT_MS (45s, src/lib/with-timeout.ts) so
+// renderer's BACKEND_BOOT_WAIT_TIMEOUT_MS (120s, src/lib/with-timeout.ts) so
 // the queued ticket fails before the renderer does and the user sees why.
 const POOL_SLOT_WAIT_MS = 30_000
 
@@ -1706,7 +1706,7 @@ let bootstrapRepairRequested = false
 // to "hard reinstall" so a transient backend stall (issue #74874) stops
 // looping the user through a destructive venv reinstall.
 let bootstrapRepairAttempt = 0
-const MAX_BOOTSTRAP_REPAIR_SOFT_ATTEMPTS = 3
+const MAX_BOOTSTRAP_REPAIR_SOFT_ATTEMPTS = 1
 let connectionConfigCache = null
 let connectionConfigCacheMtime = null
 let connectionRegistryCache = null
@@ -4697,35 +4697,100 @@ function readBootstrapMarker() {
   return readJson(BOOTSTRAP_COMPLETE_MARKER)
 }
 
+const verifiedActivePythonRuntimes = new Set<string>()
+
+async function resolveActiveRuntimeGitInfo(root: string): Promise<{ activeCommit: string | null; activeIsAhead: boolean }> {
+  try {
+    if (!fs.existsSync(path.join(root, '.git'))) {
+      return { activeCommit: null, activeIsAhead: false }
+    }
+
+    const headRes = await runGit(['rev-parse', 'HEAD'], { cwd: root })
+
+    if (headRes.code !== 0 || !headRes.stdout?.trim()) {
+      return { activeCommit: null, activeIsAhead: false }
+    }
+
+    const activeCommit = headRes.stdout.trim()
+    let activeIsAhead = false
+
+    if (INSTALL_STAMP?.commit && isRealCommitSha(INSTALL_STAMP.commit)) {
+      const mergeBaseRes = await runGit(['merge-base', '--is-ancestor', INSTALL_STAMP.commit, activeCommit], { cwd: root })
+
+      if (mergeBaseRes.code === 0) {
+        activeIsAhead = true
+      }
+    }
+
+    return { activeCommit, activeIsAhead }
+  } catch {
+    return { activeCommit: null, activeIsAhead: false }
+  }
+}
+
 // Marker-independent: is the canonical install at ACTIVE_MOOR_ROOT actually
 // runnable right now? A complete CLI install (`install.sh --include-desktop`)
 // or a DMG launch over a prior CLI install satisfies this WITHOUT the desktop
 // ever having written the bootstrap marker -- so we must be able to recognise
 // "already installed" off the filesystem alone, not just the marker.
-async function isActiveRuntimeUsable() {
+async function isActiveRuntimeUsable(options?: { fastCheck?: boolean }) {
   const venvPython = getVenvPython(VENV_ROOT)
 
-  return (
-    isMoorSourceRoot(ACTIVE_MOOR_ROOT) &&
-    fileExists(venvPython) &&
-    // Explicit await: a bare promise as the last `&&` operand only works via
-    // async-return flattening; any operand appended after it would make the
-    // expression truthy regardless of the probe result.
-    (await canImportMoorCli(venvPython, {
-      env: {
-        PYTHONPATH: [ACTIVE_MOOR_ROOT, process.env.PYTHONPATH].filter(Boolean).join(path.delimiter)
-      }
-    }))
-  )
+  if (!isMoorSourceRoot(ACTIVE_MOOR_ROOT) || !fileExists(venvPython)) {
+    return false
+  }
+
+  // Fast path: if the active install was already verified by a matching bootstrap
+  // marker, avoid spawning an extra python.exe child process on every single launch.
+  if (options?.fastCheck) {
+    return true
+  }
+
+  if (verifiedActivePythonRuntimes.has(venvPython)) {
+    return true
+  }
+
+  const ok = await canImportMoorCli(venvPython, {
+    env: {
+      PYTHONPATH: [ACTIVE_MOOR_ROOT, process.env.PYTHONPATH].filter(Boolean).join(path.delimiter)
+    }
+  })
+
+  if (ok) {
+    verifiedActivePythonRuntimes.add(venvPython)
+  }
+
+  return ok
 }
 
 async function activeRuntimeState() {
-  // We DELIBERATELY do NOT verify that the checkout is currently at the
-  // pinned commit -- users update via the in-app update path or `moor
-  // update`, which moves HEAD legitimately. The marker only attests "a
-  // desktop-managed bootstrap ran here at least once"; runtime usability is
-  // what decides whether we can actually launch.
-  return classifyActiveRuntime(readBootstrapMarker(), BOOTSTRAP_MARKER_SCHEMA_VERSION, await isActiveRuntimeUsable())
+  const marker = readBootstrapMarker()
+  const hasMarker = hasValidBootstrapMarker(marker, BOOTSTRAP_MARKER_SCHEMA_VERSION)
+
+  // In packaged releases, check whether active install is synchronized with the packaged commit.
+  // If marker matches the packaged commit, it was installed for this release:
+  const isPackaged = IS_PACKAGED
+  const markerMatchesPackaged =
+    isPackaged &&
+    isRealCommitSha(INSTALL_STAMP?.commit) &&
+    hasMarker &&
+    typeof marker?.pinnedCommit === 'string' &&
+    marker.pinnedCommit.trim().toLowerCase() === INSTALL_STAMP.commit.trim().toLowerCase()
+
+  let gitInfo = { activeCommit: null as string | null, activeIsAhead: false }
+
+  if (isPackaged && isRealCommitSha(INSTALL_STAMP?.commit) && !markerMatchesPackaged) {
+    gitInfo = await resolveActiveRuntimeGitInfo(ACTIVE_MOOR_ROOT)
+  }
+
+  const usable = await isActiveRuntimeUsable({ fastCheck: markerMatchesPackaged })
+
+  return classifyActiveRuntime(marker, BOOTSTRAP_MARKER_SCHEMA_VERSION, usable, {
+    isPackaged,
+    installStamp: INSTALL_STAMP,
+    activeCommit: gitInfo.activeCommit,
+    activeIsAhead: gitInfo.activeIsAhead
+  })
 }
 
 function writeBootstrapMarker(payload) {
@@ -5079,6 +5144,10 @@ async function resolveMoorBackend(backendArgs) {
 
   if (bootstrapRepairRequested) {
     rememberLog('[bootstrap] repair requested; bypassing the usable active runtime to re-run the installer')
+  } else if (activeRuntime.usabilityReason === 'upgrade-needed') {
+    rememberLog(
+      `[bootstrap] Active Moor runtime at ${ACTIVE_MOOR_ROOT} is out of sync with packaged app commit ${INSTALL_STAMP?.commit}; upgrading runtime from bundled package.`
+    )
   }
 
   // 4. Existing `moor` on PATH -- installed via install.ps1 / install.sh from
@@ -12672,11 +12741,11 @@ async function runPoolBackendStart(profile, entry, opts: { forceLocal?: boolean;
   // Mark handled so an early rejection (child dies during the claim) can't
   // surface as an unhandled rejection before the Promise.race below attaches.
   portAnnouncement.catch(() => {})
-  await claimBackendChild(child, `${backend.command} ${backend.args.join(' ')}`, profile, backendNonce, outputTail)
-  assertPoolEntryStillOwned(poolKey, entry, { releaseSlot: false })
 
   child.stdout.on('data', rememberLog)
   child.stderr.on('data', rememberLog)
+
+  const claimTask = claimBackendChild(child, `${backend.command} ${backend.args.join(' ')}`, profile, backendNonce, outputTail)
 
   let ready = false
   let rejectStart = null
@@ -12712,8 +12781,8 @@ async function runPoolBackendStart(profile, entry, opts: { forceLocal?: boolean;
     }
   })
 
-  // Discover the ephemeral port the child bound to
-  const port = await Promise.race([portAnnouncement, startFailed])
+  // Discover the ephemeral port the child bound to, while completing identity claim in parallel
+  const [port] = await Promise.all([Promise.race([portAnnouncement, startFailed]), claimTask])
   assertPoolEntryStillOwned(poolKey, entry, { releaseSlot: false })
 
   if (readyFile) {
@@ -13142,13 +13211,6 @@ async function runMoorStart() {
     // Mark handled so an early rejection (child dies during the claim) can't
     // surface as an unhandled rejection before the Promise.race below attaches.
     portAnnouncement.catch(() => {})
-    await claimBackendChild(
-      moorProcess,
-      `${backend.command} ${backend.args.join(' ')}`,
-      profile,
-      backendNonce,
-      primaryOutputTail
-    )
     const processOwner = backendConnectionState.attachProcess(connectionAttempt, moorProcess)
 
     if (!processOwner) {
@@ -13160,6 +13222,14 @@ async function runMoorStart() {
 
     moorProcess.stdout.on('data', rememberLog)
     moorProcess.stderr.on('data', rememberLog)
+
+    const claimTask = claimBackendChild(
+      moorProcess,
+      `${backend.command} ${backend.args.join(' ')}`,
+      profile,
+      backendNonce,
+      primaryOutputTail
+    )
     let backendReady = false
     let rejectBackendStart = null
 
@@ -13228,8 +13298,8 @@ async function runMoorStart() {
     await advanceBootProgress('backend.port', 'Waiting for Moor backend to launch', 86)
     backendConnectionState.assertCurrentAttempt(connectionAttempt)
 
-    // Discover the ephemeral port the child bound to
-    const port = await Promise.race([portAnnouncement, backendStartFailed])
+    // Discover the ephemeral port the child bound to, while completing identity claim in parallel
+    const [port] = await Promise.all([Promise.race([portAnnouncement, backendStartFailed]), claimTask])
     backendConnectionState.assertCurrentAttempt(connectionAttempt)
 
     if (readyFile) {

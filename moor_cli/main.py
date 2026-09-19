@@ -2564,18 +2564,28 @@ def _dashboard_prepare_runtime(args, headless_backend) -> bool:
                      exc_info=True)
 
     _resolve_dashboard_web_dist(args, headless_backend)
+
     # Load plugins so any DashboardAuthProvider plugin registers BEFORE
     # start_server's fail-closed gate check. Argparse setup skips discovery
     # for built-in subcommands (~500ms), but the dashboard's server-side
     # runtime depends on plugin-registered providers (image_gen, web,
-    # dashboard_auth, …).
+    # dashboard_auth, ...).
+    # For desktop-spawned headless backends (MOOR_DESKTOP=1, headless_backend=True),
+    # auth is loopback-token gated and does not rely on third-party auth plugins.
+    # Launch discovery in the background via start_background_plugin_discovery()
+    # so the socket binds and announces MOOR_BACKEND_READY without delay.
+    is_desktop_headless = headless_backend and os.environ.get("MOOR_DESKTOP") == "1"
     try:
-        from moor_cli.plugins import discover_plugins
-        discover_plugins()
+        from moor_cli.plugins import discover_plugins, start_background_plugin_discovery
+        if is_desktop_headless:
+            start_background_plugin_discovery()
+        else:
+            discover_plugins()
     except Exception as exc:
         # Must not block startup; the gate's fail-closed branch surfaces a
         # missing provider if it matters.
-        print(f"⚠ Plugin discovery failed: {exc}", file=sys.stderr)
+        logger.warning("Plugin discovery failed: %s", exc)
+        print(f"[plugins] Plugin discovery failed: {exc}", file=sys.stderr)
 
     # Desktop chat uses the in-process /api/ws gateway (tui_gateway.server
     # ._make_agent), which only snapshots the tool registry and never starts
