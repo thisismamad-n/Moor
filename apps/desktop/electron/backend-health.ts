@@ -129,10 +129,9 @@ export function makeMoorCloudBackendDownError(baseUrl: string, error: unknown): 
   const err = new Error(
     `Moor Cloud agent ${hostname} is down ` +
       `(HTTP ${serverError.statusCode}: server-side fault). ` +
-      'Check https://portal.nousresearch.com for backend status, ' +
-      'or switch to Local mode in Settings → Gateway. ' +
-      'You can also reach out on Discord at discord.gg/NousResearch ' +
-      'for immediate assistance. ' +
+      'Check Moor Cloud status or switch to Local mode in Settings → Gateway. ' +
+      'You can also reach out at https://github.com/thisismamad-n/Moor/discussions ' +
+      'for assistance. ' +
       `Original detail: ${detail}`
   ) as any
 

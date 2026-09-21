@@ -97,16 +97,16 @@ def _bare_custom_provider_def(current_base_url: str) -> Optional[ProviderDef]:
 # --- Non-agentic model warning
 
 _MOOR_MODEL_WARNING = (
-    "Moor inc. Hermes 3 & 4 models are NOT agentic and are not designed "
+    "Moor Chat models (v3/v4) are NOT agentic and are not designed "
     "for use with Moor Agent. They lack the tool-calling capabilities "
     "required for agent workflows. Consider using an agentic model instead "
     "(Claude, GPT, Gemini, DeepSeek, etc.).")
 
-# Match only the real Moor inc. Hermes 3 / 4 chat families; a bare substring check
+# Match only the real Moor chat / Hermes 3 / 4 chat families; a bare substring check
 # false-positived on tool-capable local Modelfiles like ``moor-brain:qwen3-14b-ctx16k``.
-#   match:    NousResearch/Hermes-3-Llama-3.1-70B, hermes-4-405b, openrouter/hermes3:70b
+#   match:    moor-4-405b, hermes-4-405b, openrouter/hermes3:70b
 #   no match: moor-brain:qwen3-14b-ctx16k, qwen3:14b, claude-opus-4-6
-_MOOR_MOOR_NON_AGENTIC_RE = re.compile(r"(?:^|[/:])moor[-_ ]?[34](?:[-_.:]|$)", re.IGNORECASE)
+_MOOR_MOOR_NON_AGENTIC_RE = re.compile(r"(?:^|[/:])(?:moor|hermes)[-_ ]?[34](?:[-_.:]|$)", re.IGNORECASE)  # LEGACY-REBRAND-COMPAT: legacy model regex
 
 
 # Opaque proxy model IDs (Palantir Foundry: ``ri.language-model-service..language-model.<slug>``)
@@ -124,12 +124,12 @@ def format_model_for_display(model_name: str) -> str:
 
 
 def is_moor_moor_non_agentic(model_name: str) -> bool:
-    """True if *model_name* is a real Nous Hermes 3/4 chat model (single owner; cli.py uses it too)."""
+    """True if *model_name* is a Moor chat model (v3/v4; single owner; cli.py uses it too)."""
     return bool(model_name and _MOOR_MOOR_NON_AGENTIC_RE.search(model_name))
 
 
 def _check_moor_model_warning(model_name: str) -> str:
-    """Warning string if *model_name* is a Nous Hermes 3/4 chat model, else ""."""
+    """Warning string if *model_name* is a Moor chat model (v3/v4), else ""."""
     return _MOOR_MODEL_WARNING if is_moor_moor_non_agentic(model_name) else ""
 
 

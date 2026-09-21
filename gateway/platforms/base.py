@@ -602,7 +602,7 @@ async def _cache_media_from_url(url: str, ext: str, retries: int, *, media_type:
     import httpx
     if not is_safe_url(url):
         raise ValueError(f"Blocked unsafe URL (SSRF protection): {safe_url_for_log(url)}")
-    headers = {"User-Agent": "Mozilla/5.0 (compatible; HermesAgent/1.0)", "Accept": accept}
+    headers = {"User-Agent": "Mozilla/5.0 (compatible; MoorAgent/1.0)", "Accept": accept}
     async with create_ssrf_safe_async_client(
         timeout=30.0, follow_redirects=True, event_hooks={"response": [_ssrf_redirect_guard]},
     ) as client:

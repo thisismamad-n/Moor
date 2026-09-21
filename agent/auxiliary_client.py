@@ -817,7 +817,7 @@ _PROVIDERS_WITHOUT_VISION: frozenset = frozenset({"kimi-coding", "kimi-coding-cn
 
 # OpenRouter app attribution (always sent). `X-Title` is what the dashboard reads.
 _OR_HEADERS_BASE = {
-    "HTTP-Referer": "https://hermes-agent.nousresearch.com",
+    "HTTP-Referer": "https://github.com/thisismamad-n/Moor",
     "X-Title": "Moor Agent",
     "X-OpenRouter-Categories": "productivity,cli-agent",
 }
@@ -885,9 +885,9 @@ def build_nvidia_nim_headers(base_url: str | None) -> dict:
 from moor_cli import __version__ as _MOOR_VERSION
 
 _AI_GATEWAY_HEADERS = {
-    "HTTP-Referer": "https://hermes-agent.nousresearch.com",
+    "HTTP-Referer": "https://github.com/thisismamad-n/Moor",
     "X-Title": "Moor Agent",
-    "User-Agent": f"HermesAgent/{_MOOR_VERSION}",
+    "User-Agent": f"MoorAgent/{_MOOR_VERSION}",
 }
 
 # Moor Portal attribution extra_body. Tags come from agent.portal_tags so the client= marker
@@ -6074,7 +6074,7 @@ def _contains_profile_reasoning_fields(value: Any) -> bool:
     )
 
 
-_MOOR_PROVIDER_NAMES = frozenset({"moor", "moor-portal", "nousresearch"})
+_MOOR_PROVIDER_NAMES = frozenset({"moor", "moor-portal", "nousresearch", "nous"})  # LEGACY-REBRAND-COMPAT: fallback provider alias
 
 
 def _moor_on_messages_wire(provider_norm: str, model: str) -> bool:

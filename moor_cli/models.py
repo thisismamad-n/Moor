@@ -1883,7 +1883,7 @@ def copilot_default_headers(*, is_agent_turn: bool = True) -> dict[str, str]:
     except ImportError:
         return {
             "Editor-Version": COPILOT_EDITOR_VERSION,
-            "User-Agent": "HermesAgent/1.0",
+            "User-Agent": "MoorAgent/1.0",
             "Openai-Intent": "conversation-edits",
             "x-initiator": "agent" if is_agent_turn else "user"}
 
@@ -2170,9 +2170,9 @@ def opencode_zen_free_headers() -> dict:
         _v = "0"
     return {
         "Authorization": "",
-        "HTTP-Referer": "https://hermes-agent.nousresearch.com",
+        "HTTP-Referer": "https://github.com/thisismamad-n/Moor",
         "X-Title": "Moor Agent",
-        "User-Agent": f"HermesAgent/{_v}"}
+        "User-Agent": f"MoorAgent/{_v}"}
 
 
 def _fetch_opencode_free_models(

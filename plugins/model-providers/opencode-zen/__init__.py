@@ -14,9 +14,9 @@ from providers.base import ProviderProfile
 # Attribution headers (same values as OpenRouter / Vercel / Fireworks); via
 # default_headers so they survive model switches and credential rotation.
 _ATTRIBUTION_HEADERS = {
-    "HTTP-Referer": "https://hermes-agent.nousresearch.com",
+    "HTTP-Referer": "https://github.com/thisismamad-n/Moor",
     "X-Title": "Moor Agent",
-    "User-Agent": f"HermesAgent/{_MOOR_VERSION}",
+    "User-Agent": f"MoorAgent/{_MOOR_VERSION}",
 }
 
 

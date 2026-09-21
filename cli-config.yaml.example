@@ -49,7 +49,7 @@ model:
   #   "auto"         - Auto-detect from credentials (default)
   #   "openrouter"   - OpenRouter (requires: OPENROUTER_API_KEY or OPENAI_API_KEY)
   #   "moor"         - Moor Portal OAuth (requires: moor auth add moor)
-  #   "moor-api"     - Moor Portal API key (requires: NOUS_API_KEY)
+  #   "moor-api"     - Moor Portal API key (requires: MOOR_API_KEY or NOUS_API_KEY)
   #   "anthropic"    - Direct Anthropic API (requires: ANTHROPIC_API_KEY)
   #   "openai-codex" - OpenAI Codex (requires: moor auth)
   #   "copilot"      - GitHub Copilot / GitHub Models (requires: GITHUB_TOKEN)
@@ -2133,7 +2133,7 @@ updates:
 #     are skipped with a startup warning (never a silent clobber)
 #   - a source's override_existing lets it beat .env/shell values, but
 #     never another secret source's claim
-# Docs: https://hermes-agent.nousresearch.com/docs/user-guide/secrets/
+# Docs: https://github.com/thisismamad-n/Moor/tree/master/website/docs/user-guide/secrets/
 #
 # secrets:
 #   # Optional explicit ordering of enabled sources.

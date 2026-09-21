@@ -113,13 +113,16 @@ the Actions UI if you don't want the compute.
 
 ---
 
-## 4. What stays Nous (on purpose)
+## 4. Compiled surface isolation & vendor independence
 
-Per policy, external identifiers that other systems resolve are preserved so
-features keep working. Residual "nous"/"hermes" strings exist only inside
-protected constants (API hosts, model slugs, `NOUS_API_KEY`, contributor
-identity data, upstream Discord invite). Users never see them in normal use;
-the verification phase enforces that nothing else leaks.
+A user who compiles the Desktop application (`Moor.exe`) or installs the CLI runtime must **never see any reference to `NousResearch` or `Hermes`**:
+- **User-Facing UI & Errors**: All support links, documentation links, diagnostics dialogs, and error messages point to Moor GitHub (`thisismamad-n/Moor`), Moor issues, and Moor discussions.
+- **Multi-Tier Catalogs & Skills Index**: Remote catalogs (`plugin-catalog.json`, `model-catalog.json`, and Skills Hub index) fetch from `thisismamad-n/Moor` raw GitHub as primary, with automatic upstream mirror fallbacks to guarantee 100% uptime.
+- **Dual API Key Resolution**: `MOOR_API_KEY` is the primary credential, with `NOUS_API_KEY` supported as an automatic fallback for backward compatibility.
+- **Provider Aliases**: The `moor` provider route transparently normalizes legacy `nous`, `nousresearch`, and `moor-portal` slugs.
+- **Outgoing Attribution**: Outgoing headers (`User-Agent`, `originator`, `HTTP-Referer`) across all client transports identify strictly as `MoorAgent/{version}` pointing to `https://github.com/thisismamad-n/Moor`.
+- **Under the Hood**: Machine-facing network API endpoints (`portal.nousresearch.com`, `inference-api.nousresearch.com`) remain functional as default low-level routes (overridable via `MOOR_PORTAL_URL` and `MOOR_INFERENCE_URL`), so OAuth clusters and model inference don't fail due to missing external servers.
+- **Regression Tests**: Any backward-compatibility mapping lines in code MUST carry `# LEGACY-REBRAND-COMPAT:`, and test lines checking the absence of legacy terms MUST carry `# LEGACY-REBRAND-TEST:`. Run `pytest tests/moor_cli/test_rebrand_solutions.py` to verify.
 
 ---
 
@@ -156,8 +159,10 @@ mascot in the desktop app + bootstrap installer).
 
 ## 8. Tooling reference
 
-| Script | Purpose |
+| Script / Command | Purpose |
 |---|---|
 | `scripts/rebrand.py` | Canonical rebrand engine (this whole document) |
-| `scripts/rebrand_selftest.py` | 66-case regression suite for the transform rules |
+| `scripts/rebrand.py --verify` | Strict residual audit (must report 0 unexpected residuals) |
+| `scripts/rebrand_selftest.py` | 108-case regression suite for the transform rules |
 | `scripts/rebrand_inventory.py` | Audit: counts brand-term occurrences by file/dir/variant |
+| `pytest tests/moor_cli/test_rebrand_solutions.py` | Unit tests for vendor independence, dual keys, & fallbacks |

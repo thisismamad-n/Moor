@@ -198,7 +198,7 @@ class CLIInfoMixin:
         if is_moor_moor_non_agentic(getattr(self, "model", "") or ""):
             self._console_print()
             self._console_print(
-                "[bold yellow]⚠  Moor inc. Hermes 3 & 4 models are NOT agentic and are not "
+                "[bold yellow]⚠  Moor Chat models (v3/v4) are NOT agentic and are not "
                 "designed for use with Moor Agent.[/]")
             self._console_print(
                 "[dim]   They lack tool-calling capabilities required for agent workflows. "

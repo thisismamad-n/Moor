@@ -14,9 +14,9 @@ fireworks = ProviderProfile(
     # Attribution headers (canonical Moor set); via default_headers so they
     # survive switch_model and credential rotation.
     default_headers={
-        "HTTP-Referer": "https://hermes-agent.nousresearch.com",
+        "HTTP-Referer": "https://github.com/thisismamad-n/Moor",
         "X-Title": "Moor Agent",
-        "User-Agent": f"HermesAgent/{_MOOR_VERSION}",
+        "User-Agent": f"MoorAgent/{_MOOR_VERSION}",
     },
     default_aux_model="accounts/fireworks/models/glm-5p2",
     # Picker safety net when the live catalog fetch fails.

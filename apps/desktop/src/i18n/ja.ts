@@ -1085,7 +1085,7 @@ export const ja = defineLocale({
       sshErrHostKey:
         '前回の接続以降、ホスト鍵が変更されています。想定どおりか確認し、ssh-keygen -R <host> を実行してから再接続してください。',
       sshErrNotInstalled:
-        'リモートホストに Moor がインストールされていません。リモートでインストールする（curl -fsSL https://hermes-agent.nousresearch.com/install.sh | sh）か、Moor パスを設定してください。',
+        'リモートホストに Moor がインストールされていません。リモートでインストールする（curl -fsSL https://raw.githubusercontent.com/thisismamad-n/Moor/master/scripts/install.sh | bash）か、Moor パスを設定してください。',
       sshErrPlatform:
         'サポートされていないリモートプラットフォームです。Moor Desktop の SSH モードは Linux、macOS、Windows のリモートホストに対応しています。',
       sshErrTimeout: 'SSH 接続がタイムアウトしました。ホストが到達不能、またはスリープ中の可能性があります。',

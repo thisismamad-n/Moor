@@ -47,9 +47,9 @@ export const CONTROL_TEXT = 'text-xs'
 export const PROVIDER_GROUPS: ProviderPrefix[] = [
   {
     prefix: 'MOOR_',
-    name: 'Moor Portal',
-    description: 'Hosted Moor & Moor-trained models',
-    docsUrl: 'https://portal.nousresearch.com',
+    name: 'Moor Cloud',
+    description: 'Hosted Moor model family',
+    docsUrl: 'https://github.com/thisismamad-n/Moor',
     priority: 0
   },
   {

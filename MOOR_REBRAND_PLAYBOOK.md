@@ -813,6 +813,131 @@ After any upstream merge or rebrand rule modification, run:
 
 # 5. Run rebrand rule regression suite (108+ cases must pass)
 .venv\Scripts\python.exe scripts/rebrand_selftest.py
+
+# 6. Verify vendor independence and dual key resilience
+.venv\Scripts\pytest.exe tests/moor_cli/test_rebrand_solutions.py
+
+# 7. Verify full repo residual scan (0 unexpected residuals required)
+.venv\Scripts\python.exe scripts/rebrand.py --verify
 ```
+
+---
+
+## 11. Compiled & Installed Application Surface Isolation (Audio 2 Directive)
+
+### The Core Boundary Rule
+
+When an end user installs `Moor.exe` (Desktop app) or installs the Moor CLI/Python agent runtime, **that machine must never display or leak any reference to `NousResearch` or `Hermes` in any user-facing context**:
+- Menus, dialogs, error messages, and onboarding screens
+- Logs, diagnostic uploads, and boot failure overlays
+- Terminal banners, prompt indicators, and help screens
+- External documentation links and support contacts
+- Outgoing network attribution headers (`User-Agent`, `HTTP-Referer`, `originator`)
+- Multi-language localization bundles
+
+**Crucial Distinction**: Internal fork developer tooling (`scripts/rebrand*.py`, `agent/legacy_home_migration.py`, and this playbook) intentionally contain explanatory mapping tables. That is expected and required. However, **no active compiled or runtime code** may expose legacy brand names to the end user.
+
+---
+
+### Why Naive Renaming Broke the App (The 4 Traps)
+
+Past attempts to blindly rename all occurrences of `hermes` and `nous` broke the application in 4 catastrophic ways:
+
+1. **DNS Resolution & Auth Failures**:
+   - Moor inc. does not host an independent OAuth/device-code cluster on `moorinc.com`.
+   - Naively rewriting `portal.nousresearch.com` or `inference-api.nousresearch.com` to hypothetical moor domains made DNS lookups fail immediately during `moor auth add moor` or model queries.
+   - **Solution**: Keep low-level network API defaults functional in `auth_constants.py` and `providers.py` (with env var overrides `MOOR_PORTAL_URL` and `MOOR_INFERENCE_URL`), while all user-facing UI, documentation, errors, and banners display only "Moor Cloud", "Moor Portal", or Moor GitHub URLs.
+
+2. **Model 404 Not Found Errors**:
+   - Upstream inference providers (OpenRouter, HuggingFace, etc.) serve models under canonical slugs (e.g., `hermes-3-llama-3.1-70b`, `hermes-4-405b`).
+   - Renaming request slugs broke upstream inference routes.
+   - **Solution**: Protect wire-level model IDs in API calls. For user prompts and warnings, use pattern matchers such as `_MOOR_MOOR_NON_AGENTIC_RE` (annotated with `# LEGACY-REBRAND-COMPAT:`) to support both Moor and legacy model names without crashing.
+
+3. **Skills Hub & Catalog Outages**:
+   - The Skills Hub and catalogs originally fetched manifests solely from `hermes-agent.nousresearch.com`.
+   - Renaming this single host caused the Skills Hub to fail initializing when the endpoint was unreachable or rate-limited.
+   - **Solution**: Implement **multi-tier fallback architecture**:
+     - **Tier 1 (Primary)**: Fetch from `https://raw.githubusercontent.com/thisismamad-n/Moor/master/...`.
+     - **Tier 2 (Fallback)**: Transparent fallback to upstream mirror if tier 1 is unreachable. The application never crashes and the Skills Hub remains 100% available.
+
+4. **Missing Auth Keys in Existing Environments**:
+   - Environments that only had `NOUS_API_KEY` configured broke when the code only checked `MOOR_API_KEY`.
+   - **Solution**: Implement **dual API key resolution**:
+     - Check `MOOR_API_KEY` first.
+     - Fall back to `NOUS_API_KEY` transparently.
+     - Register `extra_env_vars=("MOOR_API_KEY", "NOUS_API_KEY")` in `MOOR_OVERLAYS["moor"]` and `plugins/model-providers/moor/`.
+
+---
+
+### D. Anti-Regression & Vendor Independence Rules
+
+To ensure that future updates or upstream syncs do not revert these fixes, every developer and agent must strictly follow these rules:
+
+#### Rule 1: Multi-Tier Catalog & Index Fallback Pattern
+Any remote catalog, manifest, or skill index fetched by the agent must follow this structure:
+```python
+# Primary: Moor repository raw GitHub assets
+DEFAULT_CATALOG_URL = (
+    "https://raw.githubusercontent.com/thisismamad-n/Moor/master/website/static/api/model-catalog.json"
+)
+# Fallback: Upstream mirrors if primary is unreachable
+DEFAULT_CATALOG_FALLBACK_URLS = (
+    "https://raw.githubusercontent.com/NousResearch/hermes-agent/main/website/static/api/model-catalog.json",
+    "https://hermes-agent.nousresearch.com/docs/api/model-catalog.json",
+)
+```
+
+#### Rule 2: Outgoing Attribution Headers
+All HTTP and WebSocket clients must identify as `MoorAgent`:
+- `codex_headers.py`: `User-Agent: MoorAgent/{version}`, `originator: moor-agent`
+- `anthropic_adapter.py`: `MoorAgent/{version}`
+- `auxiliary_client.py`: `_OR_HEADERS_BASE = {"HTTP-Referer": "https://github.com/thisismamad-n/Moor", "X-Title": "Moor Agent"}`
+- `gateway/relay/media.py`: `MoorAgent-Relay/1.0 (+https://github.com/thisismamad-n/Moor)`
+- `tools/discord_tool.py`: `moor-agent (https://github.com/thisismamad-n/Moor)`
+- All provider plugins in `plugins/model-providers/`: User-Agent set to `MoorAgent` and Referer to Moor GitHub.
+
+#### Rule 3: Dual API Key Resolution
+Whenever `MOOR_API_KEY` is referenced, ensure `NOUS_API_KEY` is supported as an alternate/legacy env var in:
+- `moor_cli/providers.py` (`MOOR_OVERLAYS["moor"].extra_env_vars`)
+- `plugins/model-providers/moor/__init__.py` (`MoorProfile.env_vars`)
+- `moor_cli/doctor.py` (`_PROVIDER_ENV_HINTS`)
+- `moor_cli/dump.py` (`_ENV_KEYS`)
+
+#### Rule 4: Provider Alias Normalization
+`_ALIAS_GROUPS["moor"]` in `moor_cli/providers.py` must always map:
+```python
+"moor": ("nous", "nousresearch", "moor-portal"),  # LEGACY-REBRAND-COMPAT: fallback provider alias
+```
+And `agent/agent_init.py` and `agent/auxiliary_client.py` must include `"nous"` in provider sets.
+
+#### Rule 5: Annotation Policy for Policy Verifier
+`scripts/rebrand.py --verify` enforces `ALLOWED_LINE_MARKERS = re.compile(r"LEGACY-[A-Z-]+:")`.
+- Any line containing legacy terms for backward-compatibility MUST carry:
+  `# LEGACY-REBRAND-COMPAT: <reason>`
+- Any test line asserting the absence of legacy terms MUST carry:
+  `# LEGACY-REBRAND-TEST: <reason>`
+Lines without these markers will fail CI and block verification.
+
+#### Rule 6: Desktop Application Hygiene
+- Maintainer in `apps/desktop/package.json`: `support@moorinc.com`
+- Authors in `apps/bootstrap-installer/src-tauri/Cargo.toml`: `support@moorinc.com`
+- All support and diagnostic dialogs in `apps/desktop/src/` must link to `https://github.com/thisismamad-n/Moor/issues` or discussions.
+- All remote installation commands in `apps/desktop/src/i18n/*.ts` must use:
+  `curl -fsSL https://raw.githubusercontent.com/thisismamad-n/Moor/master/scripts/install.sh | bash`
+- Run `npm run typecheck` in `apps/desktop` to ensure TypeScript types pass with 0 errors.
+
+#### Rule 7: Dedicated Regression Test Suite
+Always verify changes with:
+```powershell
+pytest tests/moor_cli/test_rebrand_solutions.py
+```
+This suite specifically checks:
+- Dual API key resolution (`MOOR_API_KEY` + `NOUS_API_KEY`)
+- Alias normalization (`nous` / `nousresearch` -> `moor`)
+- Outgoing User-Agent attribution
+- Canonical repository targets
+- Skills Hub and Catalog fallback URLs
+- Zero emoji directive compliance on all brand copy
+
 
 

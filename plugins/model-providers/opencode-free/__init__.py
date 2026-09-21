@@ -36,9 +36,9 @@ opencode_free = OpenCodeFreeProfile(
     # override that keeps the SDK's "Bearer <placeholder>" off the wire (free tier 401s it).
     default_headers={
         "Authorization": "",
-        "HTTP-Referer": "https://hermes-agent.nousresearch.com",
+        "HTTP-Referer": "https://github.com/thisismamad-n/Moor",
         "X-Title": "Moor Agent",
-        "User-Agent": f"HermesAgent/{_MOOR_VERSION}",
+        "User-Agent": f"MoorAgent/{_MOOR_VERSION}",
     },
     # laguna-s-2.1-free was delisted by the relay 2026-09-09 (anon 401). Of the
     # surviving anonymous models mimo-v2.5-free is the only one that answers

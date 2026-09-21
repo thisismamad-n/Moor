@@ -297,8 +297,8 @@ def _beta_header(betas: list) -> Dict[str, str]:
 def _attribution_headers() -> Dict[str, str]:
     """Same client-attribution set sent to OpenRouter / Vercel AI Gateway / Fireworks."""
     return {
-        "HTTP-Referer": "https://hermes-agent.nousresearch.com", "X-Title": "Moor Agent",
-        "User-Agent": f"HermesAgent/{_MOOR_VERSION}",
+        "HTTP-Referer": "https://github.com/thisismamad-n/Moor", "X-Title": "Moor Agent",
+        "User-Agent": f"MoorAgent/{_MOOR_VERSION}",
     }
 
 

@@ -1,15 +1,16 @@
 """``moor portal`` — the human-readable entry point for Moor Portal."""
 from __future__ import annotations
 
+import os
 import sys
 import webbrowser
 
 from moor_cli.colors import Colors, color
 from moor_cli.config import load_config
 
-DEFAULT_PORTAL_URL = "https://portal.nousresearch.com"
-SUBSCRIPTION_URL = "https://portal.nousresearch.com/manage-subscription"
-DOCS_URL = "https://hermes-agent.nousresearch.com/docs/user-guide/features/tool-gateway"
+DEFAULT_PORTAL_URL = os.getenv("MOOR_PORTAL_URL", "https://portal.nousresearch.com")
+SUBSCRIPTION_URL = os.getenv("MOOR_SUBSCRIPTION_URL", f"{DEFAULT_PORTAL_URL}/manage-subscription")
+DOCS_URL = "https://github.com/thisismamad-n/Moor/tree/master/website/docs/user-guide/features/tool-gateway"
 # Static `portal tools` catalog — the partners Tool Gateway routes to today: (key, label, partner).
 _CATALOG = [
     ("web", "Web search & extract", "Firecrawl"),

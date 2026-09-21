@@ -29,7 +29,8 @@ class MoorOverlay:
 MOOR_OVERLAYS: Dict[str, MoorOverlay] = {
     "moa": MoorOverlay(auth_type="virtual", base_url_override="moa://local"),
     "openrouter": MoorOverlay(is_aggregator=True, base_url_env_var="OPENROUTER_BASE_URL"),
-    "moor": MoorOverlay(auth_type="oauth_device_code", base_url_override="https://inference-api.nousresearch.com/v1"),
+    "moor": MoorOverlay(auth_type="oauth_device_code", base_url_override="https://inference-api.nousresearch.com/v1",
+                         extra_env_vars=("MOOR_API_KEY", "NOUS_API_KEY")),
     "openai-codex": MoorOverlay(transport="codex_responses", auth_type="oauth_external",
                                   base_url_override="https://chatgpt.com/backend-api/codex"),
     "openai-api": MoorOverlay(transport="codex_responses", base_url_override="https://api.openai.com/v1",
@@ -115,6 +116,7 @@ class ProviderDef:
 # -- Aliases: human-friendly / legacy names grouped by canonical (models.dev where possible) id;
 # ``ALIASES`` is the inverted lookup table. ---------------------------------------------------
 _ALIAS_GROUPS: Dict[str, Tuple[str, ...]] = {
+    "moor": ("nous", "nousresearch", "moor-portal"),  # LEGACY-REBRAND-COMPAT: fallback provider alias
     "openrouter": ("openai",), "zai": ("glm", "z-ai", "z.ai", "zhipu"), "xai": ("x-ai", "x.ai", "grok"),
     "xai-oauth": ("grok-oauth", "xai-oauth", "x-ai-oauth", "xai-grok-oauth"),
     "nvidia": ("nim", "nvidia-nim", "build-nvidia", "nemotron"),

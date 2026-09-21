@@ -567,7 +567,7 @@ def _maybe_setup_dashboard_auth_interactively(args) -> None:
             "    moor dashboard register\n"
             "  It provisions a Moor Portal OAuth client and writes "
             "MOOR_DASHBOARD_OAUTH_CLIENT_ID into ~/.moor/.env for you.\n"
-            "  Docs: https://hermes-agent.nousresearch.com/docs/"
+            "  Docs: https://github.com/thisismamad-n/Moor/tree/master/website/docs/"
             "user-guide/features/web-dashboard#authentication-gated-mode"
         )
         sys.exit(0)

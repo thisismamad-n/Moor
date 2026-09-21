@@ -237,7 +237,7 @@ async function locateMoor(ssh, remoteMoorPath) {
 
   const err: any = new Error(
     'Moor is not installed on the remote host (could not find a `moor` executable). ' +
-      'Install it on the remote with:  curl -fsSL https://hermes-agent.nousresearch.com/install.sh | sh  ' +
+      'Install it on the remote with:  curl -fsSL https://raw.githubusercontent.com/thisismamad-n/Moor/master/scripts/install.sh | bash  ' +
       '— or set the Moor path explicitly in the SSH connection settings.'
   )
 

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import time
 from dataclasses import dataclass, field
@@ -30,7 +31,11 @@ CATALOG_TIERS = ("official", "community")
 # Browse taxonomy for the catalog page / picker. Entries without one land on the Desktop shelf
 # (the common case for community submissions); "general" is for plugins that fit no shelf.
 CATALOG_CATEGORIES = ("desktop", "memory", "platform", "web", "tools", "voice", "automation", "models", "general")
-LIVE_CATALOG_URL = "https://hermes-agent.nousresearch.com/docs/api/plugin-catalog.json"
+LIVE_CATALOG_URL = os.environ.get(
+    "MOOR_PLUGIN_CATALOG_URL",
+    "https://raw.githubusercontent.com/thisismamad-n/Moor/master/website/static/api/plugin-catalog.json",
+)
+LIVE_CATALOG_FALLBACK_URL = "https://hermes-agent.nousresearch.com/docs/api/plugin-catalog.json"
 LIVE_CATALOG_TTL_SECONDS = 6 * 60 * 60
 _REQUEST_TIMEOUT = 5.0
 _MAX_LIVE_BYTES = 2 * 1024 * 1024
@@ -240,8 +245,13 @@ def fetch_live_catalog(*, force: bool = False) -> Optional[Dict[str, Any]]:
         import httpx
         from moor_constants import mkdir_under_moor_home
 
-        resp = httpx.get(LIVE_CATALOG_URL, timeout=_REQUEST_TIMEOUT, follow_redirects=True)
-        resp.raise_for_status()
+        try:
+            resp = httpx.get(LIVE_CATALOG_URL, timeout=_REQUEST_TIMEOUT, follow_redirects=True)
+            resp.raise_for_status()
+        except Exception as primary_exc:
+            logger.debug("Primary plugin catalog fetch failed: %s; trying fallback", primary_exc)
+            resp = httpx.get(LIVE_CATALOG_FALLBACK_URL, timeout=_REQUEST_TIMEOUT, follow_redirects=True)
+            resp.raise_for_status()
         if len(resp.content) > _MAX_LIVE_BYTES:
             raise ValueError("live catalog payload too large")
         data = resp.json()

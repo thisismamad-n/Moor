@@ -30,10 +30,10 @@ export interface CatalogEntry {
   search: string
 }
 
-const DOCS_ORIGIN = 'https://hermes-agent.nousresearch.com'
-// The public domain redirects here without CORS headers on the redirect.
-// Use the docs' actual static host, not GitHub's API or repository endpoints.
-const CATALOG_BASE = 'https://nousresearch.github.io/hermes-agent/docs/api'
+const DOCS_ORIGIN = 'https://raw.githubusercontent.com/thisismamad-n/Moor/master'
+// The primary catalog base points to Moor's GitHub raw assets; fallback mirrors upstream if needed.
+const CATALOG_BASE = 'https://raw.githubusercontent.com/thisismamad-n/Moor/master/website/static/api'
+const FALLBACK_CATALOG_BASE = 'https://nousresearch.github.io/hermes-agent/docs/api'
 const text = (value: unknown): string => typeof value === 'string' ? value : ''
 const strings = (value: unknown): string[] => Array.isArray(value) ? value.filter(v => typeof v === 'string') : []
 
@@ -108,18 +108,28 @@ export function parseCatalog(kind: CatalogKind, data: unknown): CatalogEntry[] {
 }
 
 export async function fetchCatalog(kind: CatalogKind): Promise<CatalogEntry[]> {
-  // These are the same published snapshots as the docs galleries. Never fan
-  // out to repositories, README previews, avatars, or live hub searches.
-  const response = await fetch(`${CATALOG_BASE}/${kind}.json`, {
+  try {
+    const response = await fetch(`${CATALOG_BASE}/${kind}.json`, {
+      credentials: 'omit',
+      signal: AbortSignal.timeout(10_000)
+    })
+    if (response.ok) {
+      return parseCatalog(kind, await response.json())
+    }
+  } catch {
+    // Fall back to mirror if primary endpoint is not available
+  }
+
+  const fallbackResponse = await fetch(`${FALLBACK_CATALOG_BASE}/${kind}.json`, {
     credentials: 'omit',
     signal: AbortSignal.timeout(60_000)
   })
 
-  if (!response.ok) {
-    throw new Error(`Catalog HTTP ${response.status}`)
+  if (!fallbackResponse.ok) {
+    throw new Error(`Catalog HTTP ${fallbackResponse.status}`)
   }
 
-  return parseCatalog(kind, await response.json())
+  return parseCatalog(kind, await fallbackResponse.json())
 }
 
 export function useCatalog(kind: CatalogKind, enabled = true) {

@@ -339,7 +339,7 @@ export function BootFailureOverlay() {
       {
         key: 'portal',
         label: copy.cloudDownCheckPortal,
-        onClick: () => openExternalLink('https://portal.nousresearch.com'),
+        onClick: () => openExternalLink('https://github.com/thisismamad-n/Moor'),
         icon: <ExternalLink />
       },
       localAction,
@@ -347,7 +347,7 @@ export function BootFailureOverlay() {
       {
         key: 'discord',
         label: copy.cloudDownDiscord,
-        onClick: () => openExternalLink('https://discord.gg/NousResearch'),
+        onClick: () => openExternalLink('https://github.com/thisismamad-n/Moor/discussions'),
         variant: 'ghost'
       },
       { ...settingsAction, variant: 'ghost' }

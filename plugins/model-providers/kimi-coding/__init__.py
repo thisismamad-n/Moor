@@ -10,9 +10,9 @@ from providers import register_provider
 from providers.base import OMIT_TEMPERATURE, ProviderProfile
 
 _HEADERS = {
-    "HTTP-Referer": "https://hermes-agent.nousresearch.com",
+    "HTTP-Referer": "https://github.com/thisismamad-n/Moor",
     "X-Title": "Moor Agent",
-    "User-Agent": f"HermesAgent/{_MOOR_VERSION}",
+    "User-Agent": f"MoorAgent/{_MOOR_VERSION}",
 }
 
 

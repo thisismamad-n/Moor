@@ -23,7 +23,14 @@ from tools.skills_hub_sources import BrowseShSource, LobeHubSource, UrlSource, W
 # Log-record parity with the origin module.
 logger = logging.getLogger("tools.skills_hub")
 
-MOOR_INDEX_URL = "https://hermes-agent.nousresearch.com/docs/api/skills-index.json"
+import os
+
+_PRIMARY_MOOR_INDEX_URL = os.environ.get(
+    "MOOR_SKILLS_INDEX_URL",
+    "https://raw.githubusercontent.com/thisismamad-n/Moor/master/website/static/api/skills-index.json"
+)
+_FALLBACK_INDEX_URL = "https://hermes-agent.nousresearch.com/docs/api/skills-index.json"
+MOOR_INDEX_URL = _PRIMARY_MOOR_INDEX_URL
 MOOR_INDEX_TTL = 6 * 3600  # 6 hours
 
 
@@ -33,8 +40,8 @@ def _moor_index_cache_file() -> Path:
 
 
 def _load_moor_index() -> Optional[dict]:
-    """Fetch the centralized skills index (docs site, rebuilt daily), cached
-    locally for MOOR_INDEX_TTL; on any failure serve the stale cache.
+    """Fetch the centralized skills index, cached locally for MOOR_INDEX_TTL;
+    on any failure serve the stale cache.
 
     Brotli is deliberately NOT negotiated: the index is tens of MB and httpx's
     streaming Brotli decoder (brotlicffi, pinned for Discord attachments) raises
@@ -48,20 +55,28 @@ def _load_moor_index() -> Optional[dict]:
     if cached is not None:
         return cached
     data = None
-    for accept_encoding in ("gzip, deflate", "identity"):
-        try:
-            resp = httpx.get(MOOR_INDEX_URL, timeout=15, follow_redirects=True,
-                             headers={"Accept-Encoding": accept_encoding})
-            if resp.status_code != 200:
-                logger.debug("Moor index fetch returned %d", resp.status_code)
-                return _load_stale_index_cache()
-            data = resp.json()
+    urls_to_try = [MOOR_INDEX_URL]
+    if _FALLBACK_INDEX_URL not in urls_to_try:
+        urls_to_try.append(_FALLBACK_INDEX_URL)
+
+    for target_url in urls_to_try:
+        for accept_encoding in ("gzip, deflate", "identity"):
+            try:
+                resp = httpx.get(target_url, timeout=15, follow_redirects=True,
+                                 headers={"Accept-Encoding": accept_encoding})
+                if resp.status_code != 200:
+                    logger.debug("Moor index fetch returned %d from %s", resp.status_code, target_url)
+                    continue
+                data = resp.json()
+                if isinstance(data, dict) and "skills" in data:
+                    break
+            except httpx.DecodingError as e:
+                logger.debug("Moor index decode failed (Accept-Encoding=%s): %s", accept_encoding, e)
+            except (httpx.HTTPError, json.JSONDecodeError) as e:
+                logger.debug("Moor index fetch failed from %s: %s", target_url, e)
+        if isinstance(data, dict) and "skills" in data:
             break
-        except httpx.DecodingError as e:
-            logger.debug("Moor index decode failed (Accept-Encoding=%s): %s", accept_encoding, e)
-        except (httpx.HTTPError, json.JSONDecodeError) as e:
-            logger.debug("Moor index fetch failed: %s", e)
-            return _load_stale_index_cache()
+
     if not isinstance(data, dict) or "skills" not in data:
         return _load_stale_index_cache()
     try:

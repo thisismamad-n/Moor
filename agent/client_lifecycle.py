@@ -24,7 +24,7 @@ _NO_SOCKETS_SUFFIX = " — no sockets found; in-flight request may keep running 
 def _routermint_headers() -> dict:
     """User-Agent RouterMint needs to avoid Cloudflare 1010 blocks."""
     from moor_cli import __version__ as _MOOR_VERSION
-    return {"User-Agent": f"HermesAgent/{_MOOR_VERSION}"}
+    return {"User-Agent": f"MoorAgent/{_MOOR_VERSION}"}
 
 
 def _qwen_portal_headers() -> dict:

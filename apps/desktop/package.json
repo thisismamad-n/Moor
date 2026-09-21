@@ -304,7 +304,7 @@
     },
     "linux": {
       "category": "Development",
-      "maintainer": "Moor inc. <support@nousresearch.com>",
+      "maintainer": "Moor inc. <support@moorinc.com>",
       "synopsis": "Native desktop shell for Moor Agent.",
       "target": [
         "AppImage",

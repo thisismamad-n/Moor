@@ -396,7 +396,7 @@ def _resolve_api_mode(agent, api_mode, provider_name, base_url):
         host.startswith("bedrock-runtime.") and base_url_host_matches(url, "amazonaws.com")
     ):
         agent.api_mode = "bedrock_converse"
-    elif agent.provider in {"moor", "moor-portal", "nousresearch"}:
+    elif agent.provider in {"moor", "moor-portal", "nousresearch", "nous"}:  # LEGACY-REBRAND-COMPAT: fallback provider alias
         # Portal is dual-wire (anthropic/* → Messages, else chat_completions); covers direct
         # AIAgent construction without a resolved runtime.
         from moor_cli.providers import moor_api_mode

@@ -382,7 +382,7 @@ def is_nix_install_method(method: str) -> bool:
 
 
 _UPDATE_COMMAND_BY_METHOD = {
-    "docker": "docker pull nousresearch/hermes-agent:latest",
+    "docker": "docker pull ghcr.io/thisismamad-n/moor:latest",
     "apt": "pkg upgrade moor-agent",  # "apt" == Termux APT by contract; uses Termux's `pkg`.
 }
 
@@ -406,25 +406,25 @@ def recommended_update_command() -> str:
 # forks. The published image excludes ``.git``, so the git update path can never succeed there
 # and the generic "reinstall via install.sh" fallback would install a NEW host-side Moor.
 _DOCKER_UPDATE_MESSAGE = """\
-✗ ``moor update`` doesn't apply inside the Docker container.
+Error: ``moor update`` doesn't apply inside the Docker container.
 
-Moor Agent runs as a published image (nousresearch/hermes-agent), not a
+Moor Agent runs as a published image (ghcr.io/thisismamad-n/moor), not a
 git checkout — the container has no working tree to pull into.  Update by
 pulling a fresh image and restarting your container instead:
 
-  docker pull nousresearch/hermes-agent:latest
+  docker pull ghcr.io/thisismamad-n/moor:latest
   # then restart whatever started the container, e.g.:
   docker compose up -d --force-recreate moor-agent
   # or, for ad-hoc runs, exit the current container and `docker run` again
 
 Verify the new version after restart:
-  docker run --rm nousresearch/hermes-agent:latest --version
+  docker run --rm ghcr.io/thisismamad-n/moor:latest --version
 
 Notes:
   • If you pinned a specific tag (e.g. ``:v0.14.0``) the ``:latest`` tag
     won't move your container — pull the newer tag you actually want, or
-    switch to ``:latest`` / ``:main`` for rolling updates.  See available
-    tags at https://hub.docker.com/r/nousresearch/hermes-agent/tags
+    switch to ``:latest`` / ``:master`` for rolling updates.  See available
+    tags on GitHub Container Registry (ghcr.io/thisismamad-n/moor).
   • Your config and session history live under ``$MOOR_HOME`` (``/opt/data``
     in the container, typically bind-mounted from the host) and persist
     across image upgrades — re-pulling doesn't lose any state.
