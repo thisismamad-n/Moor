@@ -817,7 +817,7 @@ export const en: Translations = {
         sidebar: 'Sidebar only'
       },
       backdropTitle: 'Chat Backdrop',
-      backdropDesc: 'The faint statue image behind the conversation.',
+      backdropDesc: 'The faint Moor ant artwork behind the conversation.',
       userBubbleTitle: 'Message Bubble',
       userBubbleDesc: 'How see-through your own messages are. Solid at 0; only the outline remains at 100.',
       introSplashTitle: 'Intro Splash',

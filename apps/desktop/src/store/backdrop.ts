@@ -4,7 +4,7 @@ import { persistBoolean, storedBoolean } from '@/lib/storage'
 
 const KEY = 'moor.desktop.backdrop.v1'
 
-/** Whether the faint statue image renders behind the chat transcript. */
+/** Whether the faint Moor ant artwork renders behind the chat transcript. */
 export const $backdrop = atom(storedBoolean(KEY, false))
 
 $backdrop.subscribe(on => persistBoolean(KEY, on))

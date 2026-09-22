@@ -329,6 +329,9 @@ ASSET_OVERRIDES = {
         "apps/desktop/public/mascot.jpg",
         "apps/bootstrap-installer/public/mascot.jpg",
     ],
+    "filler-bg0.jpg": [
+        "apps/desktop/public/ds-assets/filler-bg0.jpg",
+    ],
 }
 
 # Residual lines allowed by policy (matched against the full line).

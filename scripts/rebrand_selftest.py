@@ -235,6 +235,17 @@ def main() -> int:
         fail += 1
         print("FAIL skin_engine.py does not contain Cyber-Obsidian and classic-gold skins")
 
+    # Verify filler-bg0.jpg desktop backdrop asset override & storage
+    if (
+        "filler-bg0.jpg" in rb.ASSET_OVERRIDES
+        and "apps/desktop/public/ds-assets/filler-bg0.jpg" in rb.ASSET_OVERRIDES["filler-bg0.jpg"]
+        and (rb.REPO / "brand-assets" / "filler-bg0.jpg").is_file()
+    ):
+        ok += 1
+    else:
+        fail += 1
+        print("FAIL filler-bg0.jpg missing from ASSET_OVERRIDES or brand-assets/")
+
     print(f"{ok} passed, {fail} failed")
     return 1 if fail else 0
 

@@ -378,11 +378,13 @@ All canonical Moor artwork is permanently stored in `brand-assets/` at the repos
 - `brand-assets/icon.png`: 1024x1024 master icon PNG with transparent outer corners.
 - `brand-assets/icon.icns`: Apple macOS bundle icon.
 - `brand-assets/logo.png`: 512x512 square logo.
+- `brand-assets/filler-bg0.jpg`: Master classical copperplate etching of the Moor Ant among Roman arches and cascading waterfalls in duotone cobalt blue on warm cream vintage paper, serving as the subtle desktop chat backdrop.
 
 During Phase 5 (`ASSETS`), `scripts/rebrand.py` automatically copies these canonical files into all required destinations:
 - `apps/desktop/assets/` (`icon.ico`, `icon.png`, `icon.icns`)
 - `apps/bootstrap-installer/src-tauri/icons/` (`icon.ico`, `icon.icns`)
 - `apps/desktop/public/` (`apple-touch-icon.png`)
+- `apps/desktop/public/ds-assets/` (`filler-bg0.jpg`)
 - `website/static/img/` (`apple-touch-icon.png`, `logo.png`, `moor-logo.png`)
 
 ### Load-bearing Windows `.exe` icon stamping
@@ -396,7 +398,7 @@ The Windows packaging chain reads the icon from two distinct locations:
 ### Routine post-rebrand action for desktop
 
 Whenever upstream changes are merged or brand artwork is refreshed:
-1. Ensure `brand-assets/` contains the canonical Moor ant icon files (`icon.ico`, `icon.png`, `icon.icns`, `logo.png`).
+1. Ensure `brand-assets/` contains the canonical Moor ant icon and artwork files (`icon.ico`, `icon.png`, `icon.icns`, `logo.png`, `filler-bg0.jpg`).
 2. Run `python scripts/rebrand.py` so the `ASSETS` phase overwrites any upstream image placeholders with Moor's artwork.
 3. Recompile the desktop executables:
    ```powershell
@@ -660,6 +662,7 @@ When merging upstream changes or resolving conflicts in the desktop subsystem, p
 | **Installer Cockpit** | `apps/desktop/src/components/desktop-install-overlay.tsx`<br>`apps/desktop/src/components/desktop-install-overlay.test.tsx`<br>`apps/bootstrap-installer/src/routes/progress.tsx` | Cyber-industrial cockpit layout, top status rail, glowing 20-segment progress meter, and monospace stdout/stderr terminal console. Never revert to plain white card. |
 | **Bot Avatars & Ant Castes** | `apps/desktop/src/plugins/moor-bots/avatar.tsx`<br>`apps/desktop/src/plugins/moor-bots/avatar-image.ts`<br>`apps/desktop/src/plugins/moor-bots/types.ts`<br>`apps/desktop/src/plugins/moor-bots/avatar-ant.test.tsx` | 5 procedural SVG Ant Castes (`ant-worker`, `ant-scout`, `ant-architect`, `ant-sentry`, `ant-commander`), `defaultShapeFor` caste defaulting, and AI ant avatar generation prompt. |
 | **Brand Identity** | `apps/desktop/src/components/brand-mark.tsx`<br>`apps/desktop/assets/`<br>`brand-assets/` | Moor Ant emblem vector and binary asset branding (`icon.ico`, `icon.png`, `logo.png`). Never revert to anime or generic squircle icons. |
+| **Chat Backdrop Artwork** | `apps/desktop/src/components/Backdrop.tsx`<br>`apps/desktop/public/ds-assets/filler-bg0.jpg`<br>`brand-assets/filler-bg0.jpg` | Subtle Moor Ant classical copperplate engraving/woodcut etching in cobalt blue duotone on ivory parchment paper (`opacity-[0.025] mix-blend-difference`). **Strict ban** on reverting to upstream Hermes statue image. Automatically synced from `brand-assets/filler-bg0.jpg` via `rebrand.py`. |
 | **Color System** | `apps/desktop/src/themes/presets.ts`<br>`apps/desktop/src/styles.css` | Cyber-Obsidian & Electric Cobalt theme palette tokens. Never revert to plain VS Code theme colors. |
 | **Quick Start** | `apps/desktop/src/components/chat/intro.tsx` | 1-Click Quick-Start Preset Cards (`/inspect`, `/audit`, `run tests`, `/goal`). |
 | **Shortcuts** | `apps/desktop/src/components/keyboard-shortcuts-modal.tsx` | Interactive `?` hotkey cheatsheet modal. |
