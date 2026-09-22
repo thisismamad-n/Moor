@@ -6,7 +6,7 @@
 # Uses uv for desktop/server installs and Python's stdlib venv + pip on Termux.
 #
 # Usage:
-#   curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/thisismamad-n/Moor/master/scripts/install.sh | bash
 #
 # Or with options:
 #   curl -fsSL ... | bash -s -- --no-venv --skip-setup
@@ -550,7 +550,7 @@ detect_os() {
             OS="windows"
             DISTRO="windows"
             log_error "Windows detected. Please use the PowerShell installer:"
-            log_info "  iex (irm https://hermes-agent.nousresearch.com/install.ps1)"
+            log_info "  iex (irm https://raw.githubusercontent.com/thisismamad-n/Moor/master/scripts/install.ps1)"
             exit 1
             ;;
         *)
@@ -2102,7 +2102,7 @@ setup_path() {
         MOOR_BIN="$INSTALL_DIR/venv/bin/python"
         MOOR_ENTRYPOINT="$INSTALL_DIR/moor"
     else
-        MOOR_BIN="$(which hermes 2>/dev/null || echo "")"
+        MOOR_BIN="$(which moor 2>/dev/null || which hermes 2>/dev/null || echo "")"
         if [ -z "$MOOR_BIN" ]; then
             log_warn "moor not found on PATH after install"
             return 0

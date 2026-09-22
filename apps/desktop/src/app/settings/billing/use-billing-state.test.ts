@@ -766,7 +766,7 @@ describe('buildManageSubscriptionUrl', () => {
     // Regression: the fallback must be the last-resort ORIGIN, not a bare return that
     // silently drops org_id/plan.
     expect(buildManageSubscriptionUrl({ org_id: 'org_z', portal_url: null }, null, 'tier_q')).toBe(
-      'https://portal.nousresearch.com/manage-subscription?org_id=org_z&plan=tier_q'
+      'https://portal.moorinc.com/manage-subscription?org_id=org_z&plan=tier_q'
     )
   })
 })

@@ -8430,7 +8430,7 @@ async function freshGatewayWsUrl(profile) {
 // Canonical Moor portal base URL, overridable for staging/dev. Mirrors the CLI
 // convention (moor_cli/auth.py DEFAULT_MOOR_PORTAL_URL + the same env names)
 // so a single override flips every Moor surface to the same portal.
-const DEFAULT_MOOR_PORTAL_URL = 'https://portal.nousresearch.com'
+const DEFAULT_MOOR_PORTAL_URL = 'https://portal.moorinc.com'
 
 function resolvePortalBaseUrl() {
   const raw = process.env.MOOR_PORTAL_BASE_URL || process.env.MOOR_PORTAL_BASE_URL || DEFAULT_MOOR_PORTAL_URL

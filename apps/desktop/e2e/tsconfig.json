@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.e2e.json",
+  "include": [
+    "./**/*",
+    "../playwright.config.ts",
+    "../../../tests-js/scripts/**/*"
+  ],
+  "exclude": [
+    "../src",
+    "../electron"
+  ]
+}

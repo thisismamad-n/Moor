@@ -5,7 +5,7 @@
 # Uses uv for fast Python provisioning and package management.
 #
 # Usage:
-#   iex (irm https://hermes-agent.nousresearch.com/install.ps1)
+#   iex (irm https://raw.githubusercontent.com/thisismamad-n/Moor/master/scripts/install.ps1)
 #
 # Or download and run with options:
 #   .\install.ps1 -NoVenv -SkipSetup
@@ -1499,18 +1499,6 @@ function Install-Git {
 
     try {
         $arch = Get-WindowsArch
-        if ($arch -eq 'arm64') {
-            $assetTag = 'arm64'
-            $downloadIsZip = $false
-        } elseif ($arch -eq 'x64') {
-            $assetTag = '64-bit'
-            $downloadIsZip = $false
-        } else {
-            # PortableGit does not ship 32-bit / arm builds -- fall back to MinGit
-            # 32-bit with a warning that bash-based features will be unavailable.
-            $assetTag = '32-bit-mingit'
-            $downloadIsZip = $true
-        }
 
         # Pinned git-for-windows release. We deliberately do NOT hit
         # api.github.com/repos/.../releases/latest here: that endpoint
@@ -1523,20 +1511,21 @@ function Install-Git {
         $gitVer    = "2.54.0"
         $gitVerTag = "$gitVer.windows.1"
 
-        if ($arch -eq "32-bit-mingit") {
-            Write-Warn "32-bit Windows detected -- PortableGit is 64-bit only.  Installing MinGit 32-bit as a last resort; bash-dependent Moor features (terminal tool, agent-browser) will not work on this machine."
-            $assetName    = "MinGit-$gitVer-32-bit.zip"
-            $downloadIsZip = $true
-        } elseif ($arch -eq "arm64") {
-            $assetName    = "PortableGit-$gitVer-arm64.7z.exe"
+        if ($arch -eq "arm64") {
+            $assetName     = "PortableGit-$gitVer-arm64.7z.exe"
+            $downloadIsZip = $false
+        } elseif ($arch -eq "x64") {
+            $assetName     = "PortableGit-$gitVer-64-bit.7z.exe"
             $downloadIsZip = $false
         } else {
-            $assetName    = "PortableGit-$gitVer-64-bit.7z.exe"
-            $downloadIsZip = $false
+            # PortableGit does not ship 32-bit / arm builds -- fall back to MinGit
+            # 32-bit with a warning that bash-based features will be unavailable.
+            Write-Warn "32-bit Windows detected -- PortableGit is 64-bit only.  Installing MinGit 32-bit as a last resort; bash-dependent Moor features (terminal tool, agent-browser) will not work on this machine."
+            $assetName     = "MinGit-$gitVer-32-bit.zip"
+            $downloadIsZip = $true
         }
 
         $downloadUrl = "https://github.com/git-for-windows/git/releases/download/$gitTag/$assetName"
-        $downloadExt = if ($downloadIsZip) { "zip" } else { "7z.exe" }
         $tmpFile = "$env:TEMP\$assetName"
         $gitDir = "$MoorHome\git"
 
@@ -3050,6 +3039,7 @@ except Exception:
     )
     $installed = $skipPipFallback
     if (-not $skipPipFallback) {
+        foreach ($tier in $installTiers) {
             Write-Info "Trying tier: $($tier.Name) ..."
             Invoke-NativeWithRelaxedErrorAction { & $UvCmd pip install -e $tier.Spec }
             if ($LASTEXITCODE -ne 0) {
@@ -5119,7 +5109,7 @@ try {
     Write-Err "Installation failed: $_"
     Write-Host ""
     Write-Info "If the error is unclear, try downloading and running the script directly:"
-    Write-Host "  Invoke-WebRequest -Uri 'https://hermes-agent.nousresearch.com/install.ps1' -OutFile install.ps1" -ForegroundColor Yellow
+    Write-Host "  Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/thisismamad-n/Moor/master/scripts/install.ps1' -OutFile install.ps1" -ForegroundColor Yellow
     Write-Host "  .\install.ps1" -ForegroundColor Yellow
     Write-Host ""
 }

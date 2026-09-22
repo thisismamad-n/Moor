@@ -244,6 +244,7 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
   const [cloudAgents, setCloudAgents] = useState<DesktopCloudAgent[]>([])
   const [cloudDiscover, setCloudDiscover] = useState<CloudDiscoverStatus>('idle')
   const [cloudConnectingId, setCloudConnectingId] = useState<null | string>(null)
+  const [cloudPortalUrl, setCloudPortalUrl] = useState('https://portal.moorinc.com')
   // Multi-org users: when discovery returns needsOrgSelection, we hold the org
   // list here and show a picker. `cloudOrg` is the chosen org slug/id (null =
   // not yet chosen / single-org user).
@@ -792,6 +793,9 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
           return
         }
 
+        if (status.portalBaseUrl) {
+          setCloudPortalUrl(status.portalBaseUrl)
+        }
         setCloudSignedIn(status.signedIn)
 
         if (status.signedIn) {
@@ -1303,7 +1307,7 @@ export function GatewaySettings({ embedded = false }: { embedded?: boolean } = {
                     <AlertCircle className="mt-0.5 size-4 shrink-0" />
                     <span>
                       {g.cloudNoAgents.before}
-                      <ExternalLink href="https://portal.nousresearch.com/agents" showExternalIcon={false}>
+                      <ExternalLink href={`${cloudPortalUrl}/agents`} showExternalIcon={false}>
                         {g.cloudNoAgents.linkText}
                       </ExternalLink>
                       {g.cloudNoAgents.after}

@@ -942,5 +942,13 @@ This suite specifically checks:
 - Skills Hub and Catalog fallback URLs
 - Zero emoji directive compliance on all brand copy
 
+#### Rule 8: Zero Upstream Leak in Bundled Desktop & Gateway Settings
+When the desktop application is bundled or installed, all user-facing links, gateway endpoints, and error recovery dialogs must be branded strictly for Moor:
+- **Default Moor Portal URL**: `DEFAULT_MOOR_PORTAL_URL` in `apps/desktop/electron/main.ts` and billing fallback in `use-billing-state.ts` must point to Moor domains (`https://portal.moorinc.com`), overridable via `MOOR_PORTAL_BASE_URL`.
+- **Gateway Settings Links**: Links in `apps/desktop/src/app/settings/gateway-settings.tsx` (such as `{g.cloudNoAgents.linkText}`) must resolve dynamically through `cloudPortalUrl` (pointing to `${cloudPortalUrl}/agents`), never hardcoding `portal.nousresearch.com`.
+- **Installer Syntax & Packaging Integrity**: `scripts/install.ps1` must maintain valid PowerShell AST syntax with 0 parse errors (`[System.Management.Automation.Language.Parser]::ParseFile`) and ensure all fallback tiers (`foreach ($tier in $installTiers)`) are intact so `install.ps1 -Manifest` succeeds during offline/bootstrap initialization.
+- **Skills Hub Data Feed**: The Skills Hub endpoint in `skills-hub.tsx` and `catalog-data.ts` remains active so users can browse and install functional community skills without interruption.
+
+
 
 
