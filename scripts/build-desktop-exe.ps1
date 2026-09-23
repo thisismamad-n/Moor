@@ -383,9 +383,12 @@ Write-LogOk "Frontend assets and Electron main bundle compiled successfully"
 # `npm run build` already ran write-build-stamp + stage-offline-bundle, but
 # verify AGAIN as a separate loud gate: if repo.zip / staged install scripts /
 # stamp are missing or stale here, electron-builder would still package an
-# .exe that MUST phone home on first launch (the offline 429 failure). Fail
+# .exe that MUST phone home on first launch (the offline 429 failure). The
+# same gate also refuses a staged install.ps1 that fails the PowerShell parse
+# (a 2026-09-22 .exe shipped an unparseable installer and died at -Manifest
+# before any stage ran — see OFFLINE_DESKTOP_BUNDLE.md §10). Fail
 # the build instead of shipping that .exe.
-Write-LogInfo "Verifying offline first-launch bundle (repo.zip + install scripts + stamp)..."
+Write-LogInfo "Verifying offline first-launch bundle (repo.zip + install scripts + stamp + installer syntax)..."
 Push-Location $DesktopDir
 try {
     & node scripts/stage-offline-bundle.mjs --verify

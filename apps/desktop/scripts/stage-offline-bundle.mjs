@@ -39,6 +39,7 @@
  */
 
 import { createHash } from 'node:crypto'
+import { execFileSync } from 'node:child_process'
 import {
   copyFileSync,
   existsSync,
@@ -79,6 +80,14 @@ function readStamp() {
 /**
  * Stage byte-identical copies of the source install scripts next to repo.zip.
  * Returns [{ name, bytes, sha256 }].
+ *
+ * The staged install.ps1 is ALSO PowerShell-parse-checked before it is
+ * accepted: on 2026-09-22 an .exe shipped a freshly-staged but unparseable
+ * install.ps1 (merge 19ccf2b981 dropped the `foreach ($tier ...)` opener while
+ * keeping the loop body, so a stray `}` closed the enclosing `try` early and
+ * every first launch died at `install.ps1 -Manifest` with
+ * MissingCatchOrFinally). Freshness checks alone cannot catch that — validity
+ * must be gated too. See OFFLINE_DESKTOP_BUNDLE.md §10.
  */
 export function stageInstallScripts({
   repoRoot = REPO_ROOT,
@@ -92,9 +101,70 @@ export function stageInstallScripts({
     }
     const dest = join(outDir, name)
     copyFileSync(src, dest)
+    if (name === 'install.ps1') {
+      assertInstallPs1Parses(dest)
+    }
     const { size } = statSync(dest)
     return { name, bytes: size, sha256: sha256OfFile(dest) }
   })
+}
+
+/**
+ * Locate a PowerShell capable of running the install.ps1 syntax gate.
+ * `pwsh` first (cross-platform), then Windows PowerShell (always present
+ * where desktop .exes are built). Returns null when neither exists.
+ */
+export function findPowerShell() {
+  for (const candidate of ['pwsh', 'powershell']) {
+    try {
+      execFileSync(candidate, ['-NoProfile', '-Command', '$true'], { stdio: 'ignore' })
+      return candidate
+    } catch {
+      // Try the next candidate.
+    }
+  }
+  return null
+}
+
+/**
+ * Fail loudly if the given install.ps1 cannot be parsed by PowerShell.
+ * This is the exact operation first launch performs (`install.ps1 -Manifest`
+ * never even starts when the file has a syntax error), so a failure here
+ * means the .exe would be dead on arrival. Throws with the parser's own
+ * line numbers; returns { skipped } when no PowerShell exists on this
+ * machine (Linux CI without pwsh — the pytest suite in
+ * tests/test_installer_syntax.py covers the same file wherever a
+ * PowerShell is available).
+ */
+export function assertInstallPs1Parses(ps1Path) {
+  const shell = findPowerShell()
+  if (!shell) {
+    console.warn(
+      '[stage-offline-bundle] WARNING: no PowerShell (pwsh/powershell) on PATH — skipping install.ps1 syntax gate. ' +
+        'Do not ship a release .exe from this machine without running tests/test_installer_syntax.py elsewhere first.'
+    )
+    return { skipped: true }
+  }
+  // Single-quoted path: no interpolation, safe for spaces/backslashes.
+  const quoted = `'${ps1Path.replace(/'/g, "''")}'`
+  const probe =
+    `$errs = $null; [void][System.Management.Automation.Language.Parser]::ParseFile(${quoted}, [ref]$null, [ref]$errs); ` +
+    `if ($errs.Count -gt 0) { $errs | ForEach-Object { Write-Host (\"PARSE_ERROR L\" + $_.Extent.StartLineNumber + \" C\" + $_.Extent.StartColumnNumber + \": \" + $_.Message) }; exit 1 }`
+  let output = ''
+  try {
+    output = execFileSync(shell, ['-NoProfile', '-Command', probe], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe']
+    })
+  } catch (err) {
+    const details = [err.stdout, err.stderr].filter(Boolean).join('\n').trim()
+    throw new Error(
+      `[stage-offline-bundle] install.ps1 FAILED PowerShell parse (${ps1Path})${details ? ':\n' + details : ''}\n` +
+        'Refusing to ship an .exe whose first launch would die at `install.ps1 -Manifest` before any install stage runs. ' +
+        'Fix scripts/install.ps1 (see OFFLINE_DESKTOP_BUNDLE.md §10) and re-run the stager.'
+    )
+  }
+  return { skipped: false, output: String(output).trim() }
 }
 
 /**
@@ -152,6 +222,10 @@ export function verifyOfflineBundle({
       `[stage-offline-bundle] MISSING ${relative(repoRoot, stampPath)} — run \`node scripts/write-build-stamp.mjs\` first.`
     )
   }
+
+  // Freshness is not validity: the staged script must also PARSE, or the
+  // packaged .exe dies at `install.ps1 -Manifest` on first launch (§10).
+  assertInstallPs1Parses(join(scriptsDir, 'install.ps1'))
 
   if (existsSync(manifestPath)) {
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))

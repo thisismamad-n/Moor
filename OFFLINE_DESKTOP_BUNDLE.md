@@ -174,6 +174,8 @@ for future *online* updates, and skips the `-Commit`/`--commit` pin fetch
 | `apps/bootstrap-installer/.../tauri.conf.json` | `bundle.resources`: both install scripts + `repo.zip`. |
 | `scripts/install.ps1` | `-BundledRepo` param (`$MOOR_BUNDLED_REPO` default); `Install-Repository` unpacks the zip first, inits a local snapshot commit, skips network pins for it. |
 | `scripts/install.sh` | `--bundled-repo` flag / `$MOOR_BUNDLED_REPO`; `clone_repo()` unpacks with `unzip` first, skips `--commit` fetch for it. |
+| `apps/desktop/scripts/stage-offline-bundle.mjs` (gate, §10) | `assertInstallPs1Parses()` + `findPowerShell()`: the staged `install.ps1` must pass the PowerShell AST parse — the exact operation first launch performs. Enforced both when staging (`stageInstallScripts()`) and when verifying (`verifyOfflineBundle()`, i.e. the 1-click compiler's Step 1b). Freshness is not validity: a byte-fresh but unparseable script is refused instead of shipped. Warns-and-skips only when no PowerShell exists on the build machine (never the case where `.exe`s are built). |
+| `apps/desktop/scripts/stage-offline-bundle.test.mjs` (gate, §10) | 2 new cases: the gate rejects the dropped-`foreach` shape, and `verifyOfflineBundle()` rejects a fresh-but-unparseable staged bundle (the field-failure shape end to end). |
 | `scripts/build-desktop-exe.ps1` | Step 1b: loud `--verify` gate + offline-manifest summary; description documents the offline guarantee. |
 | `build-desktop-exe.bat` | Notes the automatic offline bundle (forwards to the `.ps1`). |
 
@@ -263,11 +265,100 @@ when unreachable, so the picker and skills work offline.
 | Build fails at `stage-offline-bundle --verify` (`MISSING`/`STALE`) | Skipped staging or edited `scripts/install.*` after staging | Re-run `node scripts/stage-offline-bundle.mjs` (or just rebuild) |
 | `STALE ... hash differs` | Source installer edited post-stage | Re-stage; the gate prevents shipping a mismatched installer |
 | First launch still clones on an offline box | `$MOOR_BUNDLED_REPO` not reaching `install.ps1` (custom driver) | Pass `-BundledRepo <repo.zip>` / `--bundled-repo`, or keep the stock Electron/Tauri drivers which set it |
+| `install.ps1 -Manifest failed: exit 1` + `MissingCatchOrFinally` at one line / `Unexpected token '}'` ~130 lines later | `.exe` built from a commit whose `scripts/install.ps1` does not parse (field case §10: merge dropped the tier-loop `foreach` opener) | Rebuild from fixed source (`cf3ca979cc` or later); the Step 1b `--verify` gate now refuses to package such an `.exe`. Check the stamp in the log (`stamp=…`) to identify the bad build |
 | `python`/`dependencies` fail offline on a virgin box | Expected per §7 (ecosystem payloads, not bundled) | Pre-seed `uv`/npm caches, or go online once |
 
 ---
 
-## 10. Rebrand follow-ups (needs a human decision, not a script)
+## 10. Field incident 2026-09-22 — the shipped `.exe` whose installer could not parse (READ THIS BEFORE TOUCHING THE INSTALLER)
+
+### 10.1 What the user saw
+
+On a user's laptop, first launch never got past setup. The UI appeared
+"stuck on repository", and on some attempts seemed to reach "venv" before
+dying. The log told a simpler story — every single attempt died in the same
+place, before any install stage ran:
+
+```
+[bootstrap] using bundled install.ps1 at C:\Program Files\Moor\resources\scripts\install.ps1
+At ...\install.ps1:3067 char:6
+The Try statement is missing its Catch or Finally block.
+At ...\install.ps1:3204 char:1
+Unexpected token '}' in expression or statement.
+    + FullyQualifiedErrorId : MissingCatchOrFinally
+{"type":"failed","error":"install.ps1 -Manifest failed: exit 1 ..."}
+```
+
+`stage: __manifest__` on every failure. `-Manifest` is the handshake the
+desktop runs *before* stage 1 to learn the stage list (`repository`,
+`venv`, … — the very names the UI was displaying). A file with a syntax
+error cannot answer that handshake, so bootstrap aborted and the progress
+ladder on screen froze at whatever rung was showing — "repository",
+occasionally "venv". **No repository/venv code ever executed in that log.**
+The stage names on screen were the manifest's *plan*, not progress. When
+triaging "stuck on step X", always check whether the log has any output
+from stage X at all; a `__manifest__` failure means nothing ran.
+
+### 10.2 Root cause: a merge dropped one line
+
+The `.exe`'s stamp was `49a8d1bd9acd`. At that commit,
+`scripts/install.ps1` referenced `$tier` inside the dependency-tier install
+block but the loop opener was gone:
+
+```powershell
+    $installed = $skipPipFallback
+    if (-not $skipPipFallback) {
+            # <-- `foreach ($tier in $installTiers) {` SHOULD BE HERE
+            Write-Info "Trying tier: $($tier.Name) ..."   # $tier is $null
+            ...
+        }   # closes the `if`
+    }       # STRAY brace: closes the enclosing `try {` with no `catch` yet
+```
+
+The stray `}` closed the `try` early (hence `MissingCatchOrFinally` at
+3067); the real `} catch {` further down then dangled (hence
+`Unexpected token '}'` at 3204). The whole 4700-line file was unparseable
+by *every* PowerShell (5.1 and 7 alike — this was not a version quirk).
+
+`git log -S` traces the loss to merge `19ccf2b981` ("sync: merge upstream
+main + reapply Moor rebrand"): upstream had reworked the loop body
+(`--offline` retry) while our side owned the `foreach` opener, and the
+conflict resolution kept the new body but deleted the opener line. One
+line, no test, no gate — shipped inside the `.exe`.
+
+### 10.3 Why nothing caught it (the process mistake — do not repeat)
+
+1. **The `--verify` gate checked freshness, not validity.** Staged scripts
+   are hash-compared against source, so a *freshly-staged broken* script
+   passed with flying colours. Fresh ≠ runnable.
+2. **No test parsed the installer.** `tests/test_installer_syntax.py` (AST
+   parse + `-Manifest` execution) was only added together with the fix in
+   `cf3ca979cc` — after the bad `.exe` was already built.
+3. **The stamp identified the build, but nobody looked.** The log line
+   `stamp=49a8d1bd9acd` names the exact source commit; comparing its
+   `install.ps1` against HEAD would have shown the missing line in seconds.
+
+### 10.4 The rules that now enforce this
+
+- **Validity is gated at build time, not just in CI.**
+  `assertInstallPs1Parses()` in `stage-offline-bundle.mjs` runs the
+  PowerShell AST parse over the staged `install.ps1` both when staging and
+  when verifying (`--verify`, the 1-click compiler's Step 1b). A broken
+  installer fails the build instead of shipping. Proven against the actual
+  bad file: it rejects `49a8d1bd9acd`'s script with the exact L3067/L3204
+  signature from the field log, and accepts the fixed one.
+- **Any merge touching `scripts/install.*` must run**
+  `pytest tests/test_installer_syntax.py` (or at minimum
+  `install.ps1 -Manifest`) **before building an `.exe`.** Conflict
+  resolutions in very long files silently drop lines; the parser is the
+  reviewer that never blinks.
+- **Field triage starts at the stamp.** `stamp=<sha>` in the bootstrap log
+  → `git show <sha>:scripts/install.ps1` → parse-check it. If the shipped
+  script doesn't parse, stop investigating stages: nothing ran.
+
+---
+
+## 11. Rebrand follow-ups (needs a human decision, not a script)
 
 1. **Canonical Moor repo slug.** `MOOR_GITHUB_REPO` / `--github-fork` is the
    lever; until the fork slug is canonical, builds keep stamping `origin`.
