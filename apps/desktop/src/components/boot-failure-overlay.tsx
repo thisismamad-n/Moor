@@ -12,6 +12,7 @@ import { useI18n } from '@/i18n'
 import { openExternalLink } from '@/lib/external-link'
 import { ChevronLeft, ExternalLink, FileText, Loader2, LogIn, RefreshCw, SlidersHorizontal, Wrench } from '@/lib/icons'
 import { $desktopBoot } from '@/store/boot'
+import { $desktopBootstrap, isBootstrapActive } from '@/store/bootstrap'
 import { notify, notifyError } from '@/store/notifications'
 import { $desktopOnboarding } from '@/store/onboarding'
 
@@ -73,6 +74,7 @@ function BootFailureModal({ children, title }: { children: ReactNode; title?: st
 export function BootFailureOverlay() {
   const boot = useStore($desktopBoot)
   const onboarding = useStore($desktopOnboarding)
+  const bootstrap = useStore($desktopBootstrap)
   const { t } = useI18n()
   const [busy, setBusy] = useState<BusyAction>(null)
   const [logs, setLogs] = useState<string[]>([])
@@ -88,10 +90,11 @@ export function BootFailureOverlay() {
   const [view, setView] = useState<RecoveryView>('recovery')
 
   const visible = Boolean(boot.error) && !boot.running
-  // While first-run onboarding owns the picker/flow we let it surface its own
-  // progress; the recovery overlay is for hard failures, which it covers via a
-  // higher z-index regardless of onboarding state.
-  const suppressed = onboarding.flow.status !== 'idle' && onboarding.flow.status !== 'error'
+  // While first-run onboarding or bootstrap install/choice owns the flow,
+  // suppress the recovery overlay so it does not pop up over active progress.
+  const suppressed =
+    (onboarding.flow.status !== 'idle' && onboarding.flow.status !== 'error') ||
+    isBootstrapActive(bootstrap)
 
   useEffect(() => {
     if (!visible) {

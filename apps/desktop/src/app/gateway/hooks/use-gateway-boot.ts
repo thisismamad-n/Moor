@@ -24,6 +24,7 @@ import {
   resumeDesktopBootForRetry,
   setDesktopBootStep
 } from '@/store/boot'
+import { waitForMoorConnectionWithBootstrap } from '@/store/bootstrap'
 import { resetBackgroundPollingGuard } from '@/store/composer-status'
 import {
   $gateway,
@@ -666,10 +667,9 @@ export function useGatewayBoot({
         // the `finally` below only runs once this promise settles. Uses the
         // shared backend-boot budget rather than the reconnect budget because
         // ensureBackend may cold-spawn a pooled helper backend here.
-        const conn = await withTimeout(
-          desktop.getConnection(windowProfileOverride() ?? undefined),
-          BACKEND_BOOT_WAIT_TIMEOUT_MS,
-          'Timed out reconnecting to Moor backend'
+        const conn = await waitForMoorConnectionWithBootstrap(
+          () => desktop.getConnection(windowProfileOverride() ?? undefined),
+          BACKEND_BOOT_WAIT_TIMEOUT_MS
         )
 
         if (!ownsSwitch()) {
@@ -1133,10 +1133,9 @@ export function useGatewayBoot({
         // round-trip must not hang "Starting Moor…" forever. Initial boot
         // rides out a full backend cold spawn, so it gets the shared 45s
         // backend-boot budget, not the 20s reconnect budget.
-        const conn = await withTimeout(
-          desktop.getConnection(windowProfileOverride() ?? undefined),
-          BACKEND_BOOT_WAIT_TIMEOUT_MS,
-          'Timed out connecting to Moor backend'
+        const conn = await waitForMoorConnectionWithBootstrap(
+          () => desktop.getConnection(windowProfileOverride() ?? undefined),
+          BACKEND_BOOT_WAIT_TIMEOUT_MS
         )
 
         if (cancelled) {

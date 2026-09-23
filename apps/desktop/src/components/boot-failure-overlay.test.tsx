@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { $desktopBoot } from '@/store/boot'
+import { $desktopBootstrap, EMPTY_BOOTSTRAP_STATE } from '@/store/bootstrap'
 import { $desktopOnboarding } from '@/store/onboarding'
 
 import { BootFailureOverlay } from './boot-failure-overlay'
@@ -48,6 +49,7 @@ const remoteToken = {
 }
 
 beforeEach(() => {
+  $desktopBootstrap.set(EMPTY_BOOTSTRAP_STATE)
   $desktopOnboarding.set({
     configured: true,
     flow: { status: 'idle' },
@@ -247,5 +249,27 @@ describe('BootFailureOverlay', () => {
     } finally {
       restore()
     }
+  })
+
+  it('suppresses the recovery overlay while bootstrap is actively installing', () => {
+    $desktopBootstrap.set({
+      ...EMPTY_BOOTSTRAP_STATE,
+      active: true
+    })
+
+    const { container } = render(<BootFailureOverlay />)
+    expect(container.firstChild).toBeNull()
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('suppresses the recovery overlay while first-run setup choice is pending', () => {
+    $desktopBootstrap.set({
+      ...EMPTY_BOOTSTRAP_STATE,
+      setupChoice: { platform: 'win32', activeRoot: 'C:\\Moor' }
+    })
+
+    const { container } = render(<BootFailureOverlay />)
+    expect(container.firstChild).toBeNull()
+    expect(screen.queryByRole('dialog')).toBeNull()
   })
 })

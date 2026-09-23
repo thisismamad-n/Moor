@@ -194,112 +194,7 @@ export function splitFailureDetails(text: string | null): [string, string | null
   return [lead || value, detail || null]
 }
 
-const EMPTY_STATE: DesktopBootstrapState = {
-  active: false,
-  manifest: null,
-  stages: {},
-  error: null,
-  log: [],
-  startedAt: null,
-  completedAt: null,
-  setupChoice: null,
-  unsupportedPlatform: null
-}
-
-function applyEvent(state: DesktopBootstrapState, ev: DesktopBootstrapEvent): DesktopBootstrapState {
-  if (ev.type === 'dismissed') {
-    return { ...EMPTY_STATE }
-  }
-
-  if (ev.type === 'setup-choice') {
-    return {
-      ...state,
-      active: false,
-      manifest: null,
-      stages: {},
-      error: null,
-      setupChoice: ev.active
-        ? {
-            platform: ev.platform || state.setupChoice?.platform || 'unknown',
-            activeRoot: ev.activeRoot || state.setupChoice?.activeRoot || ''
-          }
-        : null,
-      unsupportedPlatform: null
-    }
-  }
-
-  if (ev.type === 'manifest') {
-    const stages: Record<string, DesktopBootstrapStageResult> = {}
-
-    for (const stage of ev.stages) {
-      stages[stage.name] = { state: 'pending', durationMs: null, startedAt: null, json: null, error: null }
-    }
-
-    return {
-      ...state,
-      active: true,
-      manifest: { type: 'manifest', stages: ev.stages, protocolVersion: ev.protocolVersion },
-      stages,
-      error: null,
-      setupChoice: null,
-      startedAt: state.startedAt || Date.now()
-    }
-  }
-
-  if (ev.type === 'stage') {
-    const prev = state.stages[ev.name]
-
-    return {
-      ...state,
-      stages: {
-        ...state.stages,
-        [ev.name]: {
-          state: ev.state,
-          durationMs: ev.durationMs ?? null,
-          // Stamp the start time on the running transition so the UI can show
-          // a live elapsed timer; preserve it across repeated running events.
-          startedAt: ev.state === 'running' ? (prev?.startedAt ?? Date.now()) : (prev?.startedAt ?? null),
-          json: ev.json ?? null,
-          error: ev.error ?? null
-        }
-      }
-    }
-  }
-
-  if (ev.type === 'log') {
-    const next = state.log.concat({ ts: Date.now(), stage: ev.stage ?? null, line: ev.line, stream: ev.stream })
-
-    while (next.length > 500) {
-      next.shift()
-    }
-
-    return { ...state, log: next }
-  }
-
-  if (ev.type === 'complete') {
-    return { ...state, active: false, completedAt: Date.now(), error: null }
-  }
-
-  if (ev.type === 'failed') {
-    return { ...state, active: false, error: ev.error || 'unknown error', setupChoice: null }
-  }
-
-  if (ev.type === 'unsupported-platform') {
-    return {
-      ...state,
-      active: false,
-      setupChoice: null,
-      unsupportedPlatform: {
-        platform: ev.platform,
-        activeRoot: ev.activeRoot,
-        installCommand: ev.installCommand,
-        docsUrl: ev.docsUrl
-      }
-    }
-  }
-
-  return state
-}
+import { $desktopBootstrap, applyBootstrapEvent as applyEvent, EMPTY_BOOTSTRAP_STATE as EMPTY_STATE } from '@/store/bootstrap'
 
 export function DesktopInstallOverlay({ enabled = true }: DesktopInstallOverlayProps) {
   const { t } = useI18n()
@@ -344,6 +239,7 @@ export function DesktopInstallOverlay({ enabled = true }: DesktopInstallOverlayP
       .then(snapshot => {
         if (!cancelled && snapshot) {
           setState(snapshot)
+          $desktopBootstrap.set(snapshot)
         }
       })
       .catch(() => {
@@ -351,7 +247,13 @@ export function DesktopInstallOverlay({ enabled = true }: DesktopInstallOverlayP
         // stays empty, app falls through to existing onboarding flow.
       })
 
-    const off = desktop.onBootstrapEvent(ev => setState(prev => applyEvent(prev, ev)))
+    const off = desktop.onBootstrapEvent(ev => {
+      setState(prev => {
+        const next = applyEvent(prev, ev)
+        $desktopBootstrap.set(next)
+        return next
+      })
+    })
 
     return () => {
       cancelled = true

@@ -631,9 +631,20 @@ function spawnPowerShell(scriptPath, args, { emit, stageName, abortSignal, moorH
       killed = true
 
       try {
-        child.kill('SIGTERM')
+        if (process.platform === 'win32' && child.pid) {
+          execFileSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], {
+            windowsHide: true,
+            stdio: 'ignore'
+          })
+        } else {
+          child.kill('SIGTERM')
+        }
       } catch {
-        void 0
+        try {
+          child.kill('SIGTERM')
+        } catch {
+          void 0
+        }
       }
     }
 

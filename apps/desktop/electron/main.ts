@@ -1692,7 +1692,8 @@ let backendStartFailure = null
 let remoteReauthFailure = null
 // Active first-launch install, so the renderer's Cancel button (and app quit)
 // can abort the in-flight install.sh/ps1 instead of leaving it running.
-let bootstrapAbortController = null
+let bootstrapAbortController: AbortController | null = null
+let inFlightBootstrapPromise: Promise<unknown> | null = null
 // Explicit "the user asked for a repair" flag. Repair used to signal intent by
 // deleting the bootstrap marker, which stranded healthy installs whose only
 // problem was a transient backend error (#72166). Intent now lives here, so
@@ -5305,6 +5306,12 @@ async function runEnsureRuntime(backend: any, assertStillOwned: () => void): Pro
   // will rewire startup to spawn the window first and route bootstrap events
   // to a renderer-side install overlay.
   if (backend.kind === 'bootstrap-needed') {
+    if (inFlightBootstrapPromise) {
+      rememberLog('[bootstrap] bootstrap already in flight; joining active run')
+      await inFlightBootstrapPromise
+      return ensureRuntime(await resolveMoorBackend(backend.args), assertStillOwned)
+    }
+
     rememberLog('[bootstrap] no Moor install found; starting first-launch bootstrap')
 
     if (await handOffWindowsBootstrapRecovery('bootstrap-needed')) {
@@ -5335,41 +5342,50 @@ async function runEnsureRuntime(backend: any, assertStillOwned: () => void): Pro
     }
 
     localBackendLifecycle.assertCanStart()
-    bootstrapAbortController = new AbortController()
+    const currentAbortController = new AbortController()
+    bootstrapAbortController = currentAbortController
 
     // The repair request has been honoured by reaching the installer; clear it
     // so a later boot isn't forced through bootstrap again.
     bootstrapRepairRequested = false
     bootstrapRepairAttempt = 0
 
-    const bootstrapResult = await runBootstrap({
-      installStamp: backend.installStamp,
-      activeRoot: backend.activeRoot,
-      sourceRepoRoot: SOURCE_REPO_ROOT,
-      moorHome: MOOR_HOME,
-      logRoot: path.join(MOOR_HOME, 'logs'),
-      abortSignal: bootstrapAbortController.signal,
-      onEvent: ev => {
-        // Tee every bootstrap event to (a) the desktop log for forensics
-        // and (b) the renderer for live progress UI. Either may be absent;
-        // tolerate both gracefully so a renderer crash doesn't stall the
-        // bootstrap and a log-write failure doesn't suppress the UI signal.
-        try {
-          rememberLog(`[bootstrap] ${JSON.stringify(ev)}`)
-        } catch {
-          void 0
-        }
+    let bootstrapResult: Awaited<ReturnType<typeof runBootstrap>>
+    try {
+      const runPromise = runBootstrap({
+        installStamp: backend.installStamp,
+        activeRoot: backend.activeRoot,
+        sourceRepoRoot: SOURCE_REPO_ROOT,
+        moorHome: MOOR_HOME,
+        logRoot: path.join(MOOR_HOME, 'logs'),
+        abortSignal: currentAbortController.signal,
+        onEvent: ev => {
+          // Tee every bootstrap event to (a) the desktop log for forensics
+          // and (b) the renderer for live progress UI. Either may be absent;
+          // tolerate both gracefully so a renderer crash doesn't stall the
+          // bootstrap and a log-write failure doesn't suppress the UI signal.
+          try {
+            rememberLog(`[bootstrap] ${JSON.stringify(ev)}`)
+          } catch {
+            void 0
+          }
 
-        try {
-          broadcastBootstrapEvent(ev)
-        } catch {
-          void 0
-        }
-      },
-      writeMarker: writeBootstrapMarker
-    })
-
-    bootstrapAbortController = null
+          try {
+            broadcastBootstrapEvent(ev)
+          } catch {
+            void 0
+          }
+        },
+        writeMarker: writeBootstrapMarker
+      })
+      inFlightBootstrapPromise = runPromise
+      bootstrapResult = await runPromise
+    } finally {
+      if (bootstrapAbortController === currentAbortController) {
+        bootstrapAbortController = null
+      }
+      inFlightBootstrapPromise = null
+    }
 
     if (bootstrapResult.cancelled) {
       const cancelledError = new Error('Moor install was cancelled.') as any
@@ -15349,6 +15365,20 @@ ipcMain.handle('moor:bootstrap:reset', async () => {
   // reset connection state so the next startMoor() call restarts the
   // full backend flow (including a fresh runBootstrap pass).
   rememberLog('[bootstrap] reset requested by renderer; clearing latched failure')
+  if (bootstrapAbortController) {
+    try {
+      bootstrapAbortController.abort()
+    } catch {
+      void 0
+    }
+  }
+  if (inFlightBootstrapPromise) {
+    try {
+      await inFlightBootstrapPromise
+    } catch {
+      void 0
+    }
+  }
   await teardownPrimaryBackendAndWait()
   bootstrapFailure = null
   backendStartFailure = null
@@ -15369,9 +15399,24 @@ ipcMain.handle('moor:bootstrap:repair', async () => {
   // (#72166). The explicit flag carries the intent instead.
   bootstrapRepairAttempt += 1
 
+  if (bootstrapAbortController) {
+    try {
+      bootstrapAbortController.abort()
+    } catch {
+      void 0
+    }
+  }
+  if (inFlightBootstrapPromise) {
+    try {
+      await inFlightBootstrapPromise
+    } catch {
+      void 0
+    }
+  }
+
   // Probe the live backend process so the guard can distinguish "venv is
   // genuinely broken" (force reinstall) from "backend is just transiently
-  // stalled under GIL pressure" (#74874 â€” `event loop stalled` followed by
+  // stalled under GIL pressure" (#74874 — `event loop stalled` followed by
   // `ws ready frame send failed`, then renderer keeps reporting dead).
   const primaryProc = backendConnectionState.getProcess()
 
@@ -15399,7 +15444,7 @@ ipcMain.handle('moor:bootstrap:repair', async () => {
   // the existing flag: if the guard said "soft restart", we skip the
   // "bypass active runtime" path inside startMoor() and fall through
   // to the normal restart branch, which just kills the current child
-  // and respawns it against the same venv. See #74874 â€” this is what
+  // and respawns it against the same venv. See #74874 — this is what
   // breaks the infinite reinstall loop the user hit.
   bootstrapRepairRequested = repairDecision.hardReinstall
   bootstrapFailure = null

@@ -1539,7 +1539,12 @@ function Install-Git {
         New-Item -ItemType Directory -Path $gitDir -Force | Out-Null
 
         if ($downloadIsZip) {
-            Expand-Archive -Path $tmpFile -DestinationPath $gitDir -Force
+            try {
+                Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction SilentlyContinue
+                [System.IO.Compression.ZipFile]::ExtractToDirectory($tmpFile, $gitDir)
+            } catch {
+                Expand-Archive -Path $tmpFile -DestinationPath $gitDir -Force
+            }
         } else {
             # PortableGit is a self-extracting 7z archive.  Invoke it with
             # `-o<target> -y` (silent) to extract to $gitDir.  No 7z install
@@ -1773,106 +1778,107 @@ function Test-Node {
 
         if ($zipName) {
             $downloadUrl = "${indexUrl}${zipName}"
-            $tmpZip = "$env:TEMP\$zipName"
-            $tmpDir = "$env:TEMP\moor-node-extract"
+            $nodeGuid = [Guid]::NewGuid().ToString("N")
+            $tmpZip = Join-Path $env:TEMP ("node-$nodeGuid.zip")
+            $tmpDir = Join-Path $env:TEMP ("moor-node-extract-$nodeGuid")
 
-            Invoke-WebRequest -Uri $downloadUrl -OutFile $tmpZip -UseBasicParsing
-            if (Test-Path $tmpDir) { Remove-Item -Recurse -Force $tmpDir }
-            Expand-Archive -Path $tmpZip -DestinationPath $tmpDir -Force
-
-            $extractedDir = Get-ChildItem $tmpDir -Directory | Select-Object -First 1
-            if ($extractedDir) {
-                # Rename-swap instead of delete-then-move: the live tree is
-                # never removed before its replacement is fully extracted.
-                # Windows permits renaming a tree with running executables,
-                # but if a process holds it without FILE_SHARE_DELETE the
-                # rename fails with WinError 5 -- that refusal means the tree
-                # is in use, so defer instead of forcing the write (#80926).
-                # Best-effort sweep of staging/backup litter from interrupted
-                # runs; locked files simply stay for the next attempt.  Only
-                # dirs older than 10 minutes are removed so a concurrent
-                # heal's in-flight swap is never disturbed.
-                Get-ChildItem "$MoorHome" -Directory -Filter "node.old-*" -ErrorAction SilentlyContinue |
-                    Where-Object { $_.LastWriteTime -lt (Get-Date).AddMinutes(-10) } |
-                    Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
-                Get-ChildItem "$MoorHome" -Directory -Filter "node.new-*" -ErrorAction SilentlyContinue |
-                    Where-Object { $_.LastWriteTime -lt (Get-Date).AddMinutes(-10) } |
-                    Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
-                $stamp = [Guid]::NewGuid().ToString("N")
-                $staged = "$MoorHome\node.new-$stamp"
-                $backup = "$MoorHome\node.old-$stamp"
-                # Stage to a sibling directory so the final swap is a
-                # same-volume rename (atomic), not a cross-volume Move-Item
-                # (copy+delete, non-atomic -- a partial copy would leave a
-                # broken tree).  Move from $env:TEMP here, rename below.
+            try {
+                Invoke-WebRequest -Uri $downloadUrl -OutFile $tmpZip -UseBasicParsing
+                if (Test-Path -LiteralPath $tmpDir) { Remove-Item -Recurse -Force -LiteralPath $tmpDir -ErrorAction SilentlyContinue }
                 try {
-                    Move-Item $extractedDir.FullName $staged -ErrorAction Stop
+                    Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction SilentlyContinue
+                    [System.IO.Compression.ZipFile]::ExtractToDirectory($tmpZip, $tmpDir)
                 } catch {
-                    Write-Warn "Failed to stage the new Node.js tree; aborting the Node upgrade."
-                    Remove-Item -Recurse -Force $tmpDir -ErrorAction SilentlyContinue
-                    Remove-Item -Force $tmpZip -ErrorAction SilentlyContinue
-                    return $false
-                }
-                if (Test-Path "$MoorHome\node") {
-                    try {
-                        Rename-Item "$MoorHome\node" $backup -ErrorAction Stop
-                    } catch {
-                        Write-Warn "moor-managed Node.js is in use by a running app; deferring its upgrade. Close the app and re-run the update."
-                        Remove-Item -Recurse -Force $staged -ErrorAction SilentlyContinue
-                        Remove-Item -Recurse -Force $tmpDir -ErrorAction SilentlyContinue
-                        Remove-Item -Force $tmpZip -ErrorAction SilentlyContinue
-                        return $false
-                    }
-                    # A rename preserves LastWriteTime, so a backup renamed
-                    # from a long-lived tree would instantly look older than
-                    # the litter-sweep cutoff to a concurrent heal.  Touch it
-                    # (best-effort) so the in-flight backup is never swept.
-                    try {
-                        (Get-Item $backup).LastWriteTime = Get-Date
-                    } catch { }
-                    try {
-                        Rename-Item $staged "$MoorHome\node" -ErrorAction Stop
-                    } catch {
-                        # Restore the live tree before bailing.  The swap is a
-                        # same-volume rename, so a failure leaves no partial
-                        # target to clear.
-                        Rename-Item $backup "$MoorHome\node" -ErrorAction SilentlyContinue
-                        Remove-Item -Recurse -Force $staged -ErrorAction SilentlyContinue
-                        Remove-Item -Recurse -Force $tmpDir -ErrorAction SilentlyContinue
-                        Remove-Item -Force $tmpZip -ErrorAction SilentlyContinue
-                        return $false
-                    }
-                    Remove-Item -Recurse -Force $backup -ErrorAction SilentlyContinue
-                } else {
-                    try {
-                        Rename-Item $staged "$MoorHome\node" -ErrorAction Stop
-                    } catch {
-                        Remove-Item -Recurse -Force $staged -ErrorAction SilentlyContinue
-                        Remove-Item -Recurse -Force $tmpDir -ErrorAction SilentlyContinue
-                        Remove-Item -Force $tmpZip -ErrorAction SilentlyContinue
-                        return $false
-                    }
+                    Expand-Archive -Path $tmpZip -DestinationPath $tmpDir -Force
                 }
 
-                # Session PATH so the rest of this run sees node/npm.
-                $env:Path = "$MoorHome\node;$env:Path"
+                $extractedDir = Get-ChildItem -LiteralPath $tmpDir -Directory | Select-Object -First 1
+                if ($extractedDir) {
+                    # Rename-swap instead of delete-then-move: the live tree is
+                    # never removed before its replacement is fully extracted.
+                    # Windows permits renaming a tree with running executables,
+                    # but if a process holds it without FILE_SHARE_DELETE the
+                    # rename fails with WinError 5 -- that refusal means the tree
+                    # is in use, so defer instead of forcing the write (#80926).
+                    # Best-effort sweep of staging/backup litter from interrupted
+                    # runs; locked files simply stay for the next attempt.  Only
+                    # dirs older than 10 minutes are removed so a concurrent
+                    # heal's in-flight swap is never disturbed.
+                    Get-ChildItem "$MoorHome" -Directory -Filter "node.old-*" -ErrorAction SilentlyContinue |
+                        Where-Object { $_.LastWriteTime -lt (Get-Date).AddMinutes(-10) } |
+                        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+                    Get-ChildItem "$MoorHome" -Directory -Filter "node.new-*" -ErrorAction SilentlyContinue |
+                        Where-Object { $_.LastWriteTime -lt (Get-Date).AddMinutes(-10) } |
+                        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+                    $stamp = [Guid]::NewGuid().ToString("N")
+                    $staged = "$MoorHome\node.new-$stamp"
+                    $backup = "$MoorHome\node.old-$stamp"
+                    # Stage to a sibling directory so the final swap is a
+                    # same-volume rename (atomic), not a cross-volume Move-Item
+                    # (copy+delete, non-atomic -- a partial copy would leave a
+                    # broken tree).  Move from $env:TEMP here, rename below.
+                    try {
+                        Move-Item $extractedDir.FullName $staged -ErrorAction Stop
+                    } catch {
+                        Write-Warn "Failed to stage the new Node.js tree; aborting the Node upgrade."
+                        return $false
+                    }
+                    if (Test-Path "$MoorHome\node") {
+                        try {
+                            Rename-Item "$MoorHome\node" $backup -ErrorAction Stop
+                        } catch {
+                            Write-Warn "moor-managed Node.js is in use by a running app; deferring its upgrade. Close the app and re-run the update."
+                            Remove-Item -Recurse -Force $staged -ErrorAction SilentlyContinue
+                            return $false
+                        }
+                        # A rename preserves LastWriteTime, so a backup renamed
+                        # from a long-lived tree would instantly look older than
+                        # the litter-sweep cutoff to a concurrent heal.  Touch it
+                        # (best-effort) so the in-flight backup is never swept.
+                        try {
+                            (Get-Item $backup).LastWriteTime = Get-Date
+                        } catch { }
+                        try {
+                            Rename-Item $staged "$MoorHome\node" -ErrorAction Stop
+                        } catch {
+                            # Restore the live tree before bailing.  The swap is a
+                            # same-volume rename, so a failure leaves no partial
+                            # target to clear.
+                            Rename-Item $backup "$MoorHome\node" -ErrorAction SilentlyContinue
+                            Remove-Item -Recurse -Force $staged -ErrorAction SilentlyContinue
+                            return $false
+                        }
+                        Remove-Item -Recurse -Force $backup -ErrorAction SilentlyContinue
+                    } else {
+                        try {
+                            Rename-Item $staged "$MoorHome\node" -ErrorAction Stop
+                        } catch {
+                            Remove-Item -Recurse -Force $staged -ErrorAction SilentlyContinue
+                            return $false
+                        }
+                    }
 
-                # Persist to User PATH so fresh shells (and future stages
-                # in cross-process driver mode) see it.  Matches the
-                # pattern Install-Git uses for PortableGit.  See
-                # Set-ManagedNodeFirstOnUserPath for why this is a
-                # move-to-front and not an add-if-missing.
-                Set-ManagedNodeFirstOnUserPath "$MoorHome\node"
+                    # Session PATH so the rest of this run sees node/npm.
+                    $env:Path = "$MoorHome\node;$env:Path"
 
-                $version = & "$MoorHome\node\node.exe" --version
-                Write-Success "Node.js $version installed to $MoorHome\node\ (portable, user-scoped)"
-                # The zip's bundled npm is below the repo's engines.npm floor.
-                Update-ManagedNpm "$MoorHome\node" | Out-Null
-                $script:HasNode = $true
+                    # Persist to User PATH so fresh shells (and future stages
+                    # in cross-process driver mode) see it.  Matches the
+                    # pattern Install-Git uses for PortableGit.  See
+                    # Set-ManagedNodeFirstOnUserPath for why this is a
+                    # move-to-front and not an add-if-missing.
+                    Set-ManagedNodeFirstOnUserPath "$MoorHome\node"
 
-                Remove-Item -Force $tmpZip -ErrorAction SilentlyContinue
-                Remove-Item -Recurse -Force $tmpDir -ErrorAction SilentlyContinue
-                return $true
+                    $version = & "$MoorHome\node\node.exe" --version
+                    Write-Success "Node.js $version installed to $MoorHome\node\ (portable, user-scoped)"
+                    # The zip's bundled npm is below the repo's engines.npm floor.
+                    Update-ManagedNpm "$MoorHome\node" | Out-Null
+                    $script:HasNode = $true
+
+                    return $true
+                }
+            } finally {
+                if (Test-Path -LiteralPath $tmpZip) { Remove-Item -Force -LiteralPath $tmpZip -ErrorAction SilentlyContinue }
+                if (Test-Path -LiteralPath $tmpDir) { Remove-Item -Recurse -Force -LiteralPath $tmpDir -ErrorAction SilentlyContinue }
             }
         }
     } catch {
@@ -2389,15 +2395,21 @@ function Install-Repository {
         if ([string]::IsNullOrWhiteSpace($bundledZip)) { $bundledZip = $env:MOOR_BUNDLED_REPO }
         if (-not [string]::IsNullOrWhiteSpace($bundledZip) -and (Test-Path -LiteralPath $bundledZip)) {
             Write-Info "Unpacking bundled Moor repository (offline, no download)..."
+            $expandTmp = Join-Path $env:TEMP ("moor-bundled-extract-" + [Guid]::NewGuid().ToString("N"))
             try {
-                if (Test-Path $InstallDir) { Remove-Item -Recurse -Force $InstallDir -ErrorAction SilentlyContinue }
-                $expandTmp = "$env:TEMP\moor-bundled-extract"
-                if (Test-Path $expandTmp) { Remove-Item -Recurse -Force $expandTmp -ErrorAction SilentlyContinue }
-                Expand-Archive -Path $bundledZip -DestinationPath $expandTmp -Force
+                if (Test-Path -LiteralPath $InstallDir) { Remove-Item -Recurse -Force -LiteralPath $InstallDir -ErrorAction SilentlyContinue }
+                if (Test-Path -LiteralPath $expandTmp) { Remove-Item -Recurse -Force -LiteralPath $expandTmp -ErrorAction SilentlyContinue }
+                try {
+                    Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction SilentlyContinue
+                    [System.IO.Compression.ZipFile]::ExtractToDirectory($bundledZip, $expandTmp)
+                } catch {
+                    Expand-Archive -Path $bundledZip -DestinationPath $expandTmp -Force
+                }
                 New-Item -ItemType Directory -Force -Path (Split-Path $InstallDir) -ErrorAction SilentlyContinue | Out-Null
                 New-Item -ItemType Directory -Force -Path $InstallDir -ErrorAction SilentlyContinue | Out-Null
-                Copy-Item -Path "$expandTmp\*" -Destination $InstallDir -Recurse -Force
-                Remove-Item -Recurse -Force $expandTmp -ErrorAction SilentlyContinue
+                Get-ChildItem -LiteralPath $expandTmp -Force | ForEach-Object {
+                    Copy-Item -LiteralPath $_.FullName -Destination $InstallDir -Recurse -Force
+                }
                 # Give the snapshot a local git identity WITHOUT touching the
                 # network: `git init` + a snapshot commit so HEAD resolves for
                 # later stages/markers, `origin` set for future ONLINE updates.
@@ -2407,7 +2419,12 @@ function Install-Repository {
                     git -c windows.appendAtomically=false init -q 2>$null
                     git -c windows.appendAtomically=false config windows.appendAtomically false 2>$null
                     git -c windows.appendAtomically=false config core.autocrlf false 2>$null
-                    git remote add origin $RepoUrlHttps 2>$null
+                    $remotes = git remote 2>$null
+                    if ($remotes -contains "origin") {
+                        git remote set-url origin $RepoUrlHttps 2>$null
+                    } else {
+                        git remote add origin $RepoUrlHttps 2>$null
+                    }
                     git -c windows.appendAtomically=false -c user.name=moor -c user.email=moor@localhost add -A 2>$null
                     git -c windows.appendAtomically=false -c user.name=moor -c user.email=moor@localhost commit -qm "bundled offline snapshot" 2>$null
                 } finally { Pop-Location }
@@ -2416,6 +2433,10 @@ function Install-Repository {
                 Write-Success "Unpacked bundled repository (no download needed)"
             } catch {
                 Write-Warn "Bundled repository unpack failed ($_); falling back to git clone..."
+            } finally {
+                if (Test-Path -LiteralPath $expandTmp) {
+                    Remove-Item -Recurse -Force -LiteralPath $expandTmp -ErrorAction SilentlyContinue
+                }
             }
         }
 
@@ -2468,77 +2489,89 @@ function Install-Repository {
                     $zipUrl = "https://github.com/thisismamad-n/Moor/archive/refs/heads/$Branch.zip"
                     $zipLabel = $Branch
                 }
-                $zipPath = "$env:TEMP\moor-agent-$zipLabel.zip"
-                $extractPath = "$env:TEMP\moor-agent-extract"
+                $repoGuid = [Guid]::NewGuid().ToString("N")
+                $zipPath = Join-Path $env:TEMP ("moor-agent-$zipLabel-$repoGuid.zip")
+                $extractPath = Join-Path $env:TEMP ("moor-agent-extract-$repoGuid")
 
-                Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing
-                if (Test-Path $extractPath) { Remove-Item -Recurse -Force $extractPath }
-                Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
-
-                # GitHub ZIPs extract to repo-branch/ subdirectory
-                $extractedDir = Get-ChildItem $extractPath -Directory | Select-Object -First 1
-                if ($extractedDir) {
-                    New-Item -ItemType Directory -Force -Path (Split-Path $InstallDir) -ErrorAction SilentlyContinue | Out-Null
-                    Move-Item $extractedDir.FullName $InstallDir -Force
-                    Write-Success "Downloaded and extracted"
-
-                    # Initialize git repo so updates work later. A bare
-                    # `git init` leaves NO HEAD -- desktop's write-build-stamp
-                    # then hard-fails with "could not determine git commit"
-                    # (#50823 / #61657). Fetch the requested ref and force-check
-                    # it out (-f) so untracked ZIP files cannot block checkout.
-                    Push-Location $InstallDir
-                    git -c windows.appendAtomically=false init 2>$null
-                    git -c windows.appendAtomically=false config windows.appendAtomically false 2>$null
-                    # Pin autocrlf=false BEFORE the checkout below. Git for Windows
-                    # defaults to core.autocrlf=true, which would renormalize the
-                    # repo's LF text files to CRLF in the working tree during
-                    # `checkout -f FETCH_HEAD` -- leaving this freshly-created
-                    # managed checkout dirty vs HEAD and aborting the next
-                    # `moor update` (see the notes at the shared clone-path
-                    # config below and install.ps1:1461-1469). The later pin on
-                    # the shared path is idempotent and still covers git clones.
-                    git -c windows.appendAtomically=false config core.autocrlf false 2>$null
-                    git remote add origin $RepoUrlHttps 2>$null
-                    $fetchRef = if ($Commit) { $Commit } elseif ($Tag) { "refs/tags/$Tag" } else { $Branch }
-                    Write-Info "Fetching $fetchRef so the ZIP checkout has a resolvable HEAD..."
-                    $prevZipEAP = $ErrorActionPreference
-                    $ErrorActionPreference = "Continue"
+                try {
+                    Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing
+                    if (Test-Path -LiteralPath $extractPath) { Remove-Item -Recurse -Force -LiteralPath $extractPath -ErrorAction SilentlyContinue }
                     try {
-                        git -c windows.appendAtomically=false fetch --depth 1 origin $fetchRef 2>&1 | Out-Null
-                        if ($LASTEXITCODE -eq 0) {
-                            if ($Commit -or $Tag) {
-                                git -c windows.appendAtomically=false checkout -f --detach FETCH_HEAD 2>&1 | Out-Null
-                            } else {
-                                git -c windows.appendAtomically=false checkout -f -B $Branch FETCH_HEAD 2>&1 | Out-Null
-                            }
-                            if ($LASTEXITCODE -eq 0) {
-                                Write-Success "ZIP checkout pinned to $fetchRef"
-                            } else {
-                                # Checkout blocked, but FETCH_HEAD still has a SHA we can stamp with.
-                                $fetchSha = & git -c windows.appendAtomically=false rev-parse FETCH_HEAD 2>$null
-                                if ($LASTEXITCODE -eq 0 -and $fetchSha) {
-                                    if (-not $env:GITHUB_SHA) { $env:GITHUB_SHA = ("$fetchSha").Trim() }
-                                    Write-Warn "ZIP checkout failed; seeded GITHUB_SHA from FETCH_HEAD for desktop stamp"
-                                } else {
-                                    Write-Warn "ZIP extract succeeded but git checkout failed -- desktop build may need `$env:GITHUB_SHA"
-                                }
-                            }
-                        } else {
-                            Write-Warn "ZIP extract succeeded but git fetch of $fetchRef failed -- desktop build may need `$env:GITHUB_SHA"
-                        }
-                    } finally {
-                        $ErrorActionPreference = $prevZipEAP
+                        Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction SilentlyContinue
+                        [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $extractPath)
+                    } catch {
+                        Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
                     }
-                    Pop-Location
-                    Write-Success "Git repo initialized for future updates"
 
-                    $cloneSuccess = $true
+                    # GitHub ZIPs extract to repo-branch/ subdirectory
+                    $extractedDir = Get-ChildItem -LiteralPath $extractPath -Directory | Select-Object -First 1
+                    if ($extractedDir) {
+                        New-Item -ItemType Directory -Force -Path (Split-Path $InstallDir) -ErrorAction SilentlyContinue | Out-Null
+                        Move-Item $extractedDir.FullName $InstallDir -Force
+                        Write-Success "Downloaded and extracted"
+
+                        # Initialize git repo so updates work later. A bare
+                        # `git init` leaves NO HEAD -- desktop's write-build-stamp
+                        # then hard-fails with "could not determine git commit"
+                        # (#50823 / #61657). Fetch the requested ref and force-check
+                        # it out (-f) so untracked ZIP files cannot block checkout.
+                        Push-Location $InstallDir
+                        git -c windows.appendAtomically=false init 2>$null
+                        git -c windows.appendAtomically=false config windows.appendAtomically false 2>$null
+                        # Pin autocrlf=false BEFORE the checkout below. Git for Windows
+                        # defaults to core.autocrlf=true, which would renormalize the
+                        # repo's LF text files to CRLF in the working tree during
+                        # `checkout -f FETCH_HEAD` -- leaving this freshly-created
+                        # managed checkout dirty vs HEAD and aborting the next
+                        # `moor update` (see the notes at the shared clone-path
+                        # config below and install.ps1:1461-1469). The later pin on
+                        # the shared path is idempotent and still covers git clones.
+                        git -c windows.appendAtomically=false config core.autocrlf false 2>$null
+                        $remotes = git remote 2>$null
+                        if ($remotes -contains "origin") {
+                            git remote set-url origin $RepoUrlHttps 2>$null
+                        } else {
+                            git remote add origin $RepoUrlHttps 2>$null
+                        }
+                        $fetchRef = if ($Commit) { $Commit } elseif ($Tag) { "refs/tags/$Tag" } else { $Branch }
+                        Write-Info "Fetching $fetchRef so the ZIP checkout has a resolvable HEAD..."
+                        $prevZipEAP = $ErrorActionPreference
+                        $ErrorActionPreference = "Continue"
+                        try {
+                            git -c windows.appendAtomically=false fetch --depth 1 origin $fetchRef 2>&1 | Out-Null
+                            if ($LASTEXITCODE -eq 0) {
+                                if ($Commit -or $Tag) {
+                                    git -c windows.appendAtomically=false checkout -f --detach FETCH_HEAD 2>&1 | Out-Null
+                                } else {
+                                    git -c windows.appendAtomically=false checkout -f -B $Branch FETCH_HEAD 2>&1 | Out-Null
+                                }
+                                if ($LASTEXITCODE -eq 0) {
+                                    Write-Success "ZIP checkout pinned to $fetchRef"
+                                } else {
+                                    # Checkout blocked, but FETCH_HEAD still has a SHA we can stamp with.
+                                    $fetchSha = & git -c windows.appendAtomically=false rev-parse FETCH_HEAD 2>$null
+                                    if ($LASTEXITCODE -eq 0 -and $fetchSha) {
+                                        if (-not $env:GITHUB_SHA) { $env:GITHUB_SHA = ("$fetchSha").Trim() }
+                                        Write-Warn "ZIP checkout failed; seeded GITHUB_SHA from FETCH_HEAD for desktop stamp"
+                                    } else {
+                                        Write-Warn "ZIP extract succeeded but git checkout failed -- desktop build may need `$env:GITHUB_SHA"
+                                    }
+                                }
+                            } else {
+                                Write-Warn "ZIP extract succeeded but git fetch of $fetchRef failed -- desktop build may need `$env:GITHUB_SHA"
+                            }
+                        } finally {
+                            $ErrorActionPreference = $prevZipEAP
+                        }
+                        Pop-Location
+                        Write-Success "Git repo initialized for future updates"
+
+                        $cloneSuccess = $true
+                    }
+                } finally {
+                    if (Test-Path -LiteralPath $zipPath) { Remove-Item -Force -LiteralPath $zipPath -ErrorAction SilentlyContinue }
+                    if (Test-Path -LiteralPath $extractPath) { Remove-Item -Recurse -Force -LiteralPath $extractPath -ErrorAction SilentlyContinue }
                 }
-
-                # Cleanup temp files
-                Remove-Item -Force $zipPath -ErrorAction SilentlyContinue
-                Remove-Item -Recurse -Force $extractPath -ErrorAction SilentlyContinue
             } catch {
                 Write-Err "ZIP download also failed: $_"
             }
