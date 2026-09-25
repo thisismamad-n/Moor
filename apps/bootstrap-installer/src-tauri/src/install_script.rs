@@ -1,7 +1,7 @@
 //! Resolves and downloads `scripts/install.ps1` (and `install.sh`).
 //!
 //! Resolution order:
-//!   1. Dev shortcut: a sibling repo checkout via $MOOR_SETUP_DEV_REPO_ROOT
+//!   1. Dev shortcut: a sibling repo checkout via $HERMES_SETUP_DEV_REPO_ROOT
 //!      env var. Lets devs iterate without re-publishing the script.
 //!   2. Bundled fallback: if the installer was bundled with a script (e.g.
 //!      tauri's `resource` mechanism), serve from there. Not used today.
@@ -10,7 +10,7 @@
 //!
 //! Mirrors `apps/desktop/electron/bootstrap-runner.ts`'s `resolveInstallScript`,
 //! but the dev-checkout resolution is driven by an env var rather than the
-//! Electron app's APP_ROOT/../.. trick, because Moor-Setup.exe is meant
+//! Electron app's APP_ROOT/../.. trick, because Hermes-Setup.exe is meant
 //! to live OUTSIDE any repo checkout.
 
 use anyhow::{anyhow, Context, Result};
@@ -35,7 +35,6 @@ pub struct ResolvedScript {
 pub enum ScriptSource {
     DevCheckout,
     Bundled,
-    Cached,
     Downloaded,
 }
 
@@ -63,33 +62,6 @@ impl ScriptKind {
     }
 }
 
-/// Last-resort download source when the installer carries no bundled script
-/// and no usable cache.  Kept as upstream so legacy builds keep working; real
-/// Moor builds bake their own slug at compile time (`BUILD_PIN_REPO` from
-/// build.rs) or override it at runtime (`$MOOR_GITHUB_REPO`).  Previously
-/// hardcoded inline in `download()`, which is how the pre-rebrand slug
-/// survived here while the rest of the app said Moor.
-pub const UPSTREAM_INSTALL_REPO: &str = "thisismamad-n/Moor";
-
-/// Which GitHub `OWNER/REPO` to download install.ps1/sh from when the network
-/// path is unavoidable.  Precedence: baked/runtime pin (`pin.repo`) ->
-/// explicit runtime override (`$MOOR_GITHUB_REPO` / `$MOOR_GITHUB_FORK`) ->
-/// upstream default.
-pub fn resolve_install_repo(pin: &Pin) -> String {
-    if let Some(r) = pin.repo.as_ref().map(|s| s.trim()).filter(|s| !s.is_empty()) {
-        return r.trim_end_matches('/').to_string();
-    }
-    for var in ["MOOR_GITHUB_REPO", "MOOR_GITHUB_FORK"] {
-        if let Ok(v) = std::env::var(var) {
-            let v = v.trim().to_string();
-            if !v.is_empty() {
-                return v.trim_end_matches('/').to_string();
-            }
-        }
-    }
-    UPSTREAM_INSTALL_REPO.to_string()
-}
-
 /// Validates a string looks like a git SHA (7+ hex chars). Mirrors
 /// `STAMP_COMMIT_RE` from bootstrap-runner.ts.
 fn is_valid_commit(s: &str) -> bool {
@@ -97,32 +69,9 @@ fn is_valid_commit(s: &str) -> bool {
     (7..=40).contains(&len) && s.chars().all(|c| c.is_ascii_hexdigit())
 }
 
-/// Resolver cache plan for a pin that already has a local path computed.
-///
-/// Immutable commit pins reuse cache forever. Mutable branch/tag pins always
-/// refresh, and only fall back to a stale cache when the refresh fails.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum CachePlan {
-    /// On-disk hit for an immutable pin — skip the network.
-    Reuse,
-    /// Download (or re-download). `stale_ok` means a failed refresh may return
-    /// the existing cache file (mutable pins with a prior download).
-    Fetch { stale_ok: bool },
-}
-
-pub(crate) fn cache_plan(immutable: bool, cached_exists: bool) -> CachePlan {
-    if immutable && cached_exists {
-        CachePlan::Reuse
-    } else {
-        CachePlan::Fetch {
-            stale_ok: !immutable && cached_exists,
-        }
-    }
-}
-
 /// Resolves the install script to use for this run.
 ///
-/// `pin` is the commit-or-branch from either Moor-Setup's build-time
+/// `pin` is the commit-or-branch from either Hermes-Setup's build-time
 /// constant (compiled into the installer) or a runtime override.
 pub async fn resolve(
     kind: ScriptKind,
@@ -130,7 +79,7 @@ pub async fn resolve(
     emit_log: &impl Fn(&str),
 ) -> Result<ResolvedScript> {
     // 1. Dev shortcut.
-    if let Ok(repo_root) = std::env::var("MOOR_SETUP_DEV_REPO_ROOT") {
+    if let Ok(repo_root) = std::env::var("HERMES_SETUP_DEV_REPO_ROOT") {
         let candidate = PathBuf::from(repo_root).join("scripts").join(kind.filename());
         if candidate.exists() {
             emit_log(&format!(
@@ -147,42 +96,16 @@ pub async fn resolve(
         }
     }
 
-    // 2. Bundled fallback next to executable, in resources, or under moor_home.
-    let mut bundled_candidates = Vec::new();
-    if let Ok(current_exe) = std::env::current_exe() {
-        if let Some(exe_dir) = current_exe.parent() {
-            bundled_candidates.push(exe_dir.join("scripts").join(kind.filename()));
-            bundled_candidates.push(exe_dir.join(kind.filename()));
-            bundled_candidates.push(exe_dir.join("resources").join("scripts").join(kind.filename()));
-            bundled_candidates.push(exe_dir.join("resources").join(kind.filename()));
-        }
-    }
-    bundled_candidates.push(paths::moor_home().join("moor-agent").join("scripts").join(kind.filename()));
-
-    for cand in bundled_candidates {
-        if cand.is_file() {
-            emit_log(&format!(
-                "[bootstrap] using bundled {} at {}",
-                kind.filename(),
-                cand.display()
-            ));
-            return Ok(ResolvedScript {
-                path: cand,
-                source: ScriptSource::Bundled,
-                commit: pin.commit.clone(),
-                branch: pin.branch.clone(),
-            });
-        }
-    }
+    // 2. (Not implemented) bundled fallback.
 
     // 3. Network. Pin must be a real commit or a branch ref.
     //
-    // Commit SHAs are immutable — permanent cache reuse is safe.
-    // Branch/tag pins are moving refs: always try to refresh so "Retry install"
-    // cannot keep reusing a poisoned install-main.ps1 forever (#67193).
-    let (commit_or_ref, immutable) = match (&pin.commit, &pin.branch) {
-        (Some(c), _) if is_valid_commit(c) => (c.clone(), true),
-        (_, Some(b)) if !b.trim().is_empty() => (b.clone(), false),
+    // Always download; a previously downloaded script is never reused. A
+    // stale script drives a tree it predates (the repository stage follows
+    // the live branch), and a failed download is fatal so Retry refetches.
+    let commit_or_ref = match (&pin.commit, &pin.branch) {
+        (Some(c), _) if is_valid_commit(c) => c.clone(),
+        (_, Some(b)) if !b.trim().is_empty() => b.clone(),
         (Some(other), _) => {
             return Err(anyhow!(
                 "install script pin commit `{other}` is not a valid git SHA"
@@ -195,82 +118,29 @@ pub async fn resolve(
         }
     };
 
-    let cached = cached_path(kind, &commit_or_ref);
-    match cache_plan(immutable, cached.exists()) {
-        CachePlan::Reuse => {
-            emit_log(&format!(
-                "[bootstrap] using cached {} for {}",
-                kind.filename(),
-                truncate_ref(&commit_or_ref)
-            ));
-            // Immutable pins are cached forever, so a .ps1 cached by a
-            // pre-BOM-fix installer would keep the #67193 encoding bug on
-            // every retry. Upgrade it in place before handing it out.
-            upgrade_cached_script(kind, &cached, emit_log);
-            return Ok(ResolvedScript {
-                path: cached,
-                source: ScriptSource::Cached,
-                commit: pin.commit.clone(),
-                branch: pin.branch.clone(),
-            });
-        }
-        CachePlan::Fetch { stale_ok } => {
-            let repo = resolve_install_repo(pin);
-            emit_log(&format!(
-                "[bootstrap] downloading {} for {} {} from GitHub ({})",
-                kind.filename(),
-                if immutable {
-                    "commit"
-                } else {
-                    "mutable ref"
-                },
-                truncate_ref(&commit_or_ref),
-                repo,
-            ));
-
-            match download(kind, &commit_or_ref, &cached, &repo).await {
-                Ok(()) => {
-                    emit_log(&format!("[bootstrap] cached to {}", cached.display()));
-                    Ok(ResolvedScript {
-                        path: cached,
-                        source: ScriptSource::Downloaded,
-                        commit: pin.commit.clone(),
-                        branch: pin.branch.clone(),
-                    })
-                }
-                Err(err) if stale_ok => {
-                    emit_log(&format!(
-                        "[bootstrap] WARNING: refresh failed for mutable ref {}; using stale cached {} at {}: {err:#}",
-                        truncate_ref(&commit_or_ref),
-                        kind.filename(),
-                        cached.display()
-                    ));
-                    // Stale cache can predate the BOM fix too — upgrade it.
-                    upgrade_cached_script(kind, &cached, emit_log);
-                    Ok(ResolvedScript {
-                        path: cached,
-                        source: ScriptSource::Cached,
-                        commit: pin.commit.clone(),
-                        branch: pin.branch.clone(),
-                    })
-                }
-                Err(err) => Err(err),
-            }
-        }
-    }
+    let dest = download_path(kind, &commit_or_ref);
+    emit_log(&format!(
+        "[bootstrap] downloading {} for {} from GitHub",
+        kind.filename(),
+        truncate_ref(&commit_or_ref)
+    ));
+    download(kind, &commit_or_ref, &dest).await?;
+    emit_log(&format!("[bootstrap] downloaded to {}", dest.display()));
+    Ok(ResolvedScript {
+        path: dest,
+        source: ScriptSource::Downloaded,
+        commit: pin.commit.clone(),
+        branch: pin.branch.clone(),
+    })
 }
 
 #[derive(Debug, Clone, Default)]
 pub struct Pin {
     pub commit: Option<String>,
     pub branch: Option<String>,
-    /// `OWNER/REPO` slug for the network fallback (baked at compile time via
-    /// `BUILD_PIN_REPO` or overridden at runtime).  `None` means "upstream
-    /// default" — see `resolve_install_repo`.
-    pub repo: Option<String>,
 }
 
-fn cached_path(kind: ScriptKind, commit_or_ref: &str) -> PathBuf {
+fn download_path(kind: ScriptKind, commit_or_ref: &str) -> PathBuf {
     let safe = sanitize_ref(commit_or_ref);
     let filename = match kind {
         ScriptKind::Ps1 => format!("install-{safe}.ps1"),
@@ -311,7 +181,7 @@ const UTF8_BOM: &[u8] = &[0xEF, 0xBB, 0xBF];
 /// Prepare bytes for the on-disk bootstrap cache.
 ///
 /// `.ps1` files get a UTF-8 BOM (unless one is already present). `.sh` files
-/// are left unchanged — a BOM would break `#!/bin/bash`.
+/// are left unchanged — a BOM would break `#!/usr/bin/env bash`.
 pub(crate) fn prepare_cached_script_bytes(kind: ScriptKind, bytes: &[u8]) -> Vec<u8> {
     match kind {
         ScriptKind::Ps1 => {
@@ -328,63 +198,15 @@ pub(crate) fn prepare_cached_script_bytes(kind: ScriptKind, bytes: &[u8]) -> Vec
     }
 }
 
-/// Upgrade a cached script written by a pre-BOM-fix installer in place.
-///
-/// `prepare_cached_script_bytes` only runs inside `download()`, but immutable
-/// commit pins (and the stale-fallback path) reuse the on-disk file without
-/// re-downloading — so a BOM-less `.ps1` cached before the #67193 fix would
-/// keep reproducing the ANSI-codepage parse failure on every retry. Rewrites
-/// through the same atomic tmp+rename shape as `download()`. Best-effort: a
-/// failed upgrade logs a warning and keeps the original file (which is no
-/// worse than the pre-existing behavior).
-fn upgrade_cached_script(kind: ScriptKind, cached: &Path, emit_log: &impl Fn(&str)) {
-    if !matches!(kind, ScriptKind::Ps1) {
-        return;
-    }
-    let bytes = match std::fs::read(cached) {
-        Ok(b) => b,
-        Err(err) => {
-            emit_log(&format!(
-                "[bootstrap] WARNING: could not read cached script {} for BOM check: {err}",
-                cached.display()
-            ));
-            return;
-        }
-    };
-    if bytes.starts_with(UTF8_BOM) {
-        return;
-    }
-    let upgraded = prepare_cached_script_bytes(kind, &bytes);
-    let tmp = cached.with_extension("ps1.tmp");
-    let result = std::fs::write(&tmp, &upgraded).and_then(|()| std::fs::rename(&tmp, cached));
-    match result {
-        Ok(()) => emit_log(&format!(
-            "[bootstrap] upgraded cached {} with UTF-8 BOM (#67193)",
-            cached.display()
-        )),
-        Err(err) => {
-            let _ = std::fs::remove_file(&tmp);
-            emit_log(&format!(
-                "[bootstrap] WARNING: could not upgrade cached {} with UTF-8 BOM: {err}",
-                cached.display()
-            ));
-        }
-    }
-}
-
 /// Downloads to `dest_path` via reqwest with rustls. Atomically renames
-/// `dest_path.tmp` → `dest_path` so partial writes don't poison the cache.
+/// `dest_path.tmp` → `dest_path` so a partial write is never executed.
 ///
-/// The client carries explicit timeouts: mutable branch pins call this on
-/// EVERY run (#67193 cache-refresh fix), and the stale-cache fallback in
-/// `resolve()` only fires when this returns `Err`. Without a timeout, a
-/// black-holed connection (captive portal, hung proxy, silently dropped
-/// packets) never errors — the whole bootstrap would hang here instead of
-/// falling back to the cached script.
-async fn download(kind: ScriptKind, commit_or_ref: &str, dest_path: &Path, repo: &str) -> Result<()> {
+/// Explicit timeouts: this runs on every bootstrap, and a black-holed
+/// connection (captive portal, hung proxy) would otherwise hang forever
+/// instead of failing so the user can Retry.
+async fn download(kind: ScriptKind, commit_or_ref: &str, dest_path: &Path) -> Result<()> {
     let url = format!(
-        "https://raw.githubusercontent.com/{}/{}/scripts/{}",
-        repo,
+        "https://raw.githubusercontent.com/NousResearch/hermes-agent/{}/scripts/{}",
         commit_or_ref,
         kind.filename()
     );
@@ -409,14 +231,14 @@ async fn download(kind: ScriptKind, commit_or_ref: &str, dest_path: &Path, repo:
         .build()
         .context("building download client")?
         .get(&url)
-        .header("User-Agent", "moor-setup/0.0.1")
+        .header("User-Agent", "hermes-setup/0.0.1")
         .send()
         .await
         .with_context(|| format!("GET {url}"))?;
 
     if !response.status().is_success() {
         return Err(anyhow!(
-            "Failed to download {}: HTTP {} from {} (offline? rebuild Moor-Setup with the offline bundle so first launch needs no download)",
+            "Failed to download {}: HTTP {} from {}",
             kind.filename(),
             response.status(),
             url
@@ -456,20 +278,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn resolve_install_repo_prefers_pin_then_upstream() {
-        // Baked pin wins (Moor fork builds stamp their own slug here).
-        let pinned = Pin {
-            commit: None,
-            branch: Some("main".to_string()),
-            repo: Some("thisismamad-n/Moor".to_string()),
-        };
-        assert_eq!(resolve_install_repo(&pinned), "thisismamad-n/Moor");
-
-        // No pin -> upstream default (legacy behaviour preserved).
-        assert_eq!(resolve_install_repo(&Pin::default()), UPSTREAM_INSTALL_REPO);
-    }
-
-    #[test]
     fn is_valid_commit_accepts_short_and_full_shas() {
         assert!(is_valid_commit("02d26981d3d4ad50e142399b8476f59ad5953ff0"));
         assert!(is_valid_commit("02d2698"));
@@ -503,74 +311,15 @@ mod tests {
 
     #[test]
     fn prepare_cached_sh_stays_bomless() {
-        let out = prepare_cached_script_bytes(ScriptKind::Sh, b"#!/bin/bash\n");
+        let out = prepare_cached_script_bytes(ScriptKind::Sh, b"#!/usr/bin/env bash\n");
         assert!(!out.starts_with(UTF8_BOM));
-        assert_eq!(out, b"#!/bin/bash\n");
+        assert_eq!(out, b"#!/usr/bin/env bash\n");
     }
 
     #[test]
-    fn commit_pins_are_immutable_branch_pins_are_not() {
-        // Mirrors the resolve() immutable decision: SHA pins may reuse cache
-        // forever; branch pins must refresh so Retry cannot keep a bad script.
+    fn commit_pins_are_distinguished_from_branch_pins() {
         assert!(is_valid_commit("02d26981d3d4ad50e142399b8476f59ad5953ff0"));
         assert!(!is_valid_commit("main"));
         assert!(!is_valid_commit("release/1.2.3"));
-    }
-
-    #[test]
-    fn existing_branch_cache_plans_refresh_with_stale_fallback() {
-        // Resolver-level: a prior install-main.ps1 must not short-circuit
-        // Retry — mutable pins refresh, and only fall back if download fails.
-        assert_eq!(
-            cache_plan(/*immutable=*/ false, /*cached_exists=*/ true),
-            CachePlan::Fetch { stale_ok: true }
-        );
-        assert_eq!(
-            cache_plan(/*immutable=*/ true, /*cached_exists=*/ true),
-            CachePlan::Reuse
-        );
-        assert_eq!(
-            cache_plan(/*immutable=*/ false, /*cached_exists=*/ false),
-            CachePlan::Fetch { stale_ok: false }
-        );
-        assert_eq!(
-            cache_plan(/*immutable=*/ true, /*cached_exists=*/ false),
-            CachePlan::Fetch { stale_ok: false }
-        );
-    }
-
-    #[test]
-    fn upgrade_cached_script_adds_bom_to_legacy_ps1() {
-        // A .ps1 cached by a pre-#67193 installer has no BOM; the Reuse path
-        // must upgrade it in place instead of serving the broken bytes forever.
-        let dir = std::env::temp_dir().join(format!("moor-bom-test-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).unwrap();
-        let cached = dir.join("install-abc1234.ps1");
-        std::fs::write(&cached, b"Write-Host legacy\n").unwrap();
-
-        upgrade_cached_script(ScriptKind::Ps1, &cached, &|_| {});
-        let bytes = std::fs::read(&cached).unwrap();
-        assert!(bytes.starts_with(UTF8_BOM), "legacy cache must gain a BOM");
-        assert_eq!(&bytes[UTF8_BOM.len()..], b"Write-Host legacy\n");
-
-        // Idempotent: a second pass must not double the BOM.
-        upgrade_cached_script(ScriptKind::Ps1, &cached, &|_| {});
-        let again = std::fs::read(&cached).unwrap();
-        assert_eq!(again, bytes);
-
-        std::fs::remove_dir_all(&dir).unwrap();
-    }
-
-    #[test]
-    fn upgrade_cached_script_leaves_sh_untouched() {
-        let dir = std::env::temp_dir().join(format!("moor-bom-sh-test-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).unwrap();
-        let cached = dir.join("install-main.sh");
-        std::fs::write(&cached, b"#!/bin/bash\n").unwrap();
-
-        upgrade_cached_script(ScriptKind::Sh, &cached, &|_| {});
-        assert_eq!(std::fs::read(&cached).unwrap(), b"#!/bin/bash\n");
-
-        std::fs::remove_dir_all(&dir).unwrap();
     }
 }

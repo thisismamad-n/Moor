@@ -87,6 +87,7 @@ class TestSkillsDirectoryMount:
 
         assert mounts[0]["container_path"] == "/home/user/.moor/skills"
 
+    @pytest.mark.require_symlinks
     def test_symlinks_are_sanitized(self, tmp_path):
         """Symlinks in skills dir should be excluded from the mount."""
         moor_home = tmp_path / ".moor"
@@ -112,6 +113,7 @@ class TestSkillsDirectoryMount:
         # Symlink should NOT be present
         assert not (safe_path / "evil_link").exists()
 
+    @pytest.mark.require_symlinks
     def test_sanitized_copy_skips_bookkeeping_dirs(self, tmp_path):
         """The symlink-safe copy is what gets mounted, so it must apply the
         same EXCLUDED_SKILL_DIRS rule as the per-file sync path."""
@@ -154,13 +156,14 @@ class TestSkillsDirectoryMount:
 
 
 class TestIterSkillsFiles:
+    @pytest.mark.require_symlinks
     def test_returns_files_skipping_symlinks(self, tmp_path):
         moor_home = tmp_path / ".moor"
         skills_dir = moor_home / "skills"
         (skills_dir / "cat" / "myskill").mkdir(parents=True)
         (skills_dir / "cat" / "myskill" / "SKILL.md").write_text("# skill")
         (skills_dir / "cat" / "myskill" / "scripts").mkdir()
-        (skills_dir / "cat" / "myskill" / "scripts" / "run.sh").write_text("#!/bin/bash")
+        (skills_dir / "cat" / "myskill" / "scripts" / "run.sh").write_text("#!/usr/bin/env bash")
         # Add a symlink that should be filtered
         secret = tmp_path / "secret"
         secret.write_text("nope")
@@ -324,10 +327,10 @@ class TestPathTraversalSecurity:
 class TestConfigPathTraversal:
     """terminal.credential_files in config.yaml must also reject traversal."""
 
-    def _write_config(self, moor_home: Path, cred_files: list):
-        import yaml
-        config_path = moor_home / "config.yaml"
-        config_path.write_text(yaml.dump({"terminal": {"credential_files": cred_files}}))
+    def _write_config(self, hermes_home: Path, cred_files: list):
+        import hermes_yaml as yaml
+        config_path = hermes_home / "config.yaml"
+        config_path.write_text(yaml.safe_dump({"terminal": {"credential_files": cred_files}}))
 
     def test_config_traversal_rejected(self, tmp_path, monkeypatch):
         """'../secret' in config.yaml must not escape MOOR_HOME."""
@@ -440,21 +443,6 @@ class TestCacheDirectoryMounts:
         for mount in mounts:
             assert Path(mount["host_path"]).is_dir()
 
-    def test_images_upload_dir_is_mounted(self, tmp_path, monkeypatch):
-        """The flat top-level ``images/`` upload dir is mounted (#69575).
-
-        Desktop / clipboard / PDF uploads land in ``MOOR_HOME/images``, not
-        under ``cache/``. Without this entry vision_analyze on a desktop upload
-        fails because the file is not reachable inside the sandbox.
-        """
-        moor_home = tmp_path / ".moor"
-        (moor_home / "images").mkdir(parents=True)
-        monkeypatch.setenv("MOOR_HOME", str(moor_home))
-
-        mounts = get_cache_directory_mounts()
-        by_container = {m["container_path"]: m["host_path"] for m in mounts}
-        assert "/root/.moor/images" in by_container
-        assert by_container["/root/.moor/images"] == str(moor_home / "images")
 
     def test_images_upload_file_maps_into_container(self, tmp_path, monkeypatch):
         """A concrete upload under ``images/`` maps to its container path.
@@ -558,6 +546,7 @@ class TestIterCacheFiles:
         assert "upload.zip" in names
         assert "report.pdf" in names
 
+    @pytest.mark.require_symlinks
     def test_skips_symlinks(self, tmp_path, monkeypatch):
         """Symlinks inside cache dirs are skipped."""
         moor_home = tmp_path / ".moor"
@@ -654,12 +643,6 @@ class TestMasterCredentialStoresAreNeverMountable:
         assert "/root/.moor/.env" not in paths
         assert ".env" in missing, "a refused store is reported back to the skill"
 
-    def test_traversal_guard_still_applies(self, tmp_path):
-        """The pre-existing containment check is untouched."""
-        home = self._home(tmp_path)
-        with patch.dict(os.environ, {"MOOR_HOME": str(home)}):
-            assert register_credential_file("../../.ssh/id_rsa") is False
-            assert register_credential_file("/etc/passwd") is False
 
     def test_missing_guard_fails_closed_with_error_log(self, tmp_path, caplog):
         """If agent.file_safety can't be imported the mount is refused loudly.

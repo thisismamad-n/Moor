@@ -9,9 +9,10 @@ sys.path.insert(0, root)
 # Temp MOOR_HOME with the real auth + a config that shortens the generic sequential deadline to 40 s, so the
 # run takes ~1.5 min instead of 8. The fix exempts delegate_task from this deadline entirely, so the shortened
 # value is exactly what main will hit.
-import shutil, tempfile, yaml
-home = tempfile.mkdtemp(prefix="dl_home_"); os.environ["MOOR_HOME"] = home
-real_home = os.environ.get("MOOR_HOME_SOURCE", os.path.expanduser("~/.moor"))  # credentials are copied from here into a temp home
+import shutil, tempfile
+import hermes_yaml as yaml
+home = tempfile.mkdtemp(prefix="dl_home_"); os.environ["HERMES_HOME"] = home
+real_home = os.environ.get("HERMES_HOME_SOURCE", os.path.expanduser("~/.hermes"))  # credentials are copied from here into a temp home
 shutil.copy(f"{real_home}/auth.json", f"{home}/auth.json")
 cfg = yaml.safe_load(open(f"{real_home}/config.yaml", encoding="utf-8")) or {}
 cfg.setdefault("timeouts", {}).setdefault("tools", {})["sequential_call"] = 40

@@ -14,8 +14,8 @@ W&B: log ML experiments, sweeps, model registry, dashboards.
 
 | | |
 |---|---|
-| Source | Optional — install with `moor skills install official/mlops/weights-and-biases` |
-| Path | `optional-skills/mlops\evaluation\weights-and-biases` |
+| Source | Optional — install with `hermes skills install official/mlops/weights-and-biases` |
+| Path | `optional-skills/mlops/evaluation/weights-and-biases` |
 | Version | `1.0.1` |
 | Author | Orchestra Research |
 | License | MIT |

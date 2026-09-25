@@ -14,8 +14,8 @@ Publish sites to &#123;slug&#125;.here.now and store files in Drives.
 
 | | |
 |---|---|
-| Source | Optional — install with `moor skills install official/productivity/here-now` |
-| Path | `optional-skills/productivity\here-now` |
+| Source | Optional — install with `hermes skills install official/productivity/here-now` |
+| Path | `optional-skills/productivity/here-now` |
 | Version | `1.15.3` |
 | Author | here.now |
 | License | MIT |

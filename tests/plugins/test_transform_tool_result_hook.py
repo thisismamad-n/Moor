@@ -133,8 +133,8 @@ def test_transform_tool_result_runs_after_post_tool_call(monkeypatch):
 
 
 def test_transform_tool_result_integration_with_real_plugin(monkeypatch, tmp_path):
-    """End-to-end: load a real plugin from MOOR_HOME and verify it rewrites results."""
-    import yaml
+    """End-to-end: load a real plugin from HERMES_HOME and verify it rewrites results."""
+    import hermes_yaml as yaml
 
     moor_home = Path(os.environ["MOOR_HOME"])
     plugins_dir = moor_home / "plugins"

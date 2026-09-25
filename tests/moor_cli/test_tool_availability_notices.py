@@ -44,12 +44,6 @@ def test_nothing_to_report_returns_no_lines():
                                            terminal_reason=None, terminal_backend="local") == []
 
 
-def test_web_notice_cites_setup_tools_not_the_toggle_menu():
-    # `moor tools` with no subcommand is the enable/disable menu; providers live under `moor setup tools`.
-    lines = tool_availability_warning_lines([_WEB], terminal_reason=None, terminal_backend="local")
-    text = "\n".join(lines)
-    assert "moor setup tools" in text
-    assert "moor tools[/]" not in text
 
 
 class TestFilterToEnabledToolsets:

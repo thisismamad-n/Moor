@@ -76,8 +76,8 @@ def test_gateway_env_bridge_honors_managed(homes, monkeypatch):
 
     managed_scope.invalidate_managed_cache()
     # The bridge loads config.yaml, expands env, then applies this overlay before
-    # writing MOOR_TIMEZONE = cfg["timezone"]. Prove the overlay flips the value.
-    import yaml
+    # writing HERMES_TIMEZONE = cfg["timezone"]. Prove the overlay flips the value.
+    import hermes_yaml as yaml
 
     raw = yaml.safe_load((home / "config.yaml").read_text())
     bridged = managed_scope.apply_managed_overlay(raw)

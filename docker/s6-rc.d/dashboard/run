@@ -24,8 +24,6 @@ esac
 export HOME=/opt/data
 
 cd /opt/data
-# shellcheck disable=SC1091
-. /opt/moor/.venv/bin/activate
 
 dash_host="${MOOR_DASHBOARD_HOST:-0.0.0.0}"
 dash_port="${MOOR_DASHBOARD_PORT:-9119}"

@@ -13,7 +13,7 @@ the persisted value here is safe.
 
 from __future__ import annotations
 
-import yaml
+import hermes_yaml as yaml
 
 from moor_cli.auth import _update_config_for_provider
 from moor_cli.config import clear_model_endpoint_credentials, get_config_path

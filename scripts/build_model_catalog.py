@@ -1,5 +1,5 @@
-#!/usr/bin/env python3
-"""Build the Moor Model Catalog — a centralized JSON manifest of curated models.
+#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/_hermes-python" "$0" "$@"'
+"""Build the Hermes Model Catalog — a centralized JSON manifest of curated models.
 
 This script reads the in-repo hardcoded curated lists (``OPENROUTER_MODELS``,
 ``_PROVIDER_MODELS["moor"]``) and writes them to a JSON manifest that the

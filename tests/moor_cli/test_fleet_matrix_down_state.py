@@ -19,7 +19,7 @@ def _setup(monkeypatch, tmp_path, record: dict):
     home = tmp_path / ".moor"
     home.mkdir(exist_ok=True)
     monkeypatch.setattr(
-        "moor_cli.build_info.get_code_identity",
+        "hermes_cli.version_info.get_code_identity",
         lambda refresh=False: {"sha": "HEADSHA", "version": "1.0"},
     )
     monkeypatch.setattr("moor_cli.profiles._get_default_moor_home", lambda: home)

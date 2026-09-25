@@ -14,8 +14,8 @@ Use live BCI cognitive and mood state from NeuroSkill.
 
 | | |
 |---|---|
-| Source | Optional — install with `moor skills install official/health/neuroskill-bci` |
-| Path | `optional-skills/health\neuroskill-bci` |
+| Source | Optional — install with `hermes skills install official/health/neuroskill-bci` |
+| Path | `optional-skills/health/neuroskill-bci` |
 | Version | `1.0.0` |
 | Author | Moor Agent + Moor inc. |
 | License | MIT |

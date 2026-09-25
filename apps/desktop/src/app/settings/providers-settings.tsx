@@ -16,7 +16,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { RowButton } from '@/components/ui/row-button'
 import { SearchField } from '@/components/ui/search-field'
-import { disconnectOAuthProvider, listOAuthProviders } from '@/moor'
+import { Tip } from '@/components/ui/tooltip'
+import { disconnectOAuthProvider, listOAuthProviders } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { Check, ChevronDown, ChevronRight, KeyRound, Loader2, Terminal, Trash2 } from '@/lib/icons'
 import { normalize } from '@/lib/text'
@@ -282,7 +283,6 @@ function ConnectedProviderRow({
             disabled={disconnecting}
             onClick={() => onDisconnect(provider)}
             size="icon-xs"
-            title={`${t.common.remove} ${title}`}
             type="button"
             variant="ghost"
           >
@@ -290,16 +290,17 @@ function ConnectedProviderRow({
           </Button>
         )}
         {terminalDisconnect && (
-          <Button
-            aria-label={`${copy.disconnect} ${title}`}
-            onClick={() => onTerminalDisconnect(provider)}
-            size="icon-xs"
-            title={copy.disconnectInTerminal}
-            type="button"
-            variant="ghost"
-          >
-            <Trash2 className="size-3" />
-          </Button>
+          <Tip label={copy.disconnectInTerminal}>
+            <Button
+              aria-label={`${copy.disconnect} ${title}`}
+              onClick={() => onTerminalDisconnect(provider)}
+              size="icon-xs"
+              type="button"
+              variant="ghost"
+            >
+              <Trash2 className="size-3" />
+            </Button>
+          </Tip>
         )}
       </div>
     </div>

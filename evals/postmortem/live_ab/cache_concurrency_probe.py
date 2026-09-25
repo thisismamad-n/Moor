@@ -20,8 +20,8 @@ Fable 5.1, 20 sessions x 6 calls unless noted):
   2 s settle before every call        no change (not a race)
 
 Usage:
-  python -m evals.postmortem.live_ab.cache_concurrency_probe --repo . --provider moor \
-      --workers 20 --calls 6 --out /tmp/probe.jsonl [--wire chat|native] [--model ID] \
+  python -m evals.postmortem.live_ab.cache_concurrency_probe --repo . --provider nous \
+      --workers 20 --calls 6 --out probe.jsonl [--wire chat|native] [--model ID] \
       [--pin anthropic] [--settle 2] [--ttl 5m]
   providers: moor (Portal creds from MOOR_HOME), openrouter (OPENROUTER_API_KEY or --api-key),
              anthropic (ANTHROPIC_API_KEY or --api-key)

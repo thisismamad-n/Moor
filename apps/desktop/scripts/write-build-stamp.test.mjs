@@ -22,14 +22,10 @@ test('fromCI reads GITHUB_SHA / GITHUB_REF_NAME', () => {
   assert.equal(fromCI({}), null)
 })
 
-test('fromLocalGit returns null when git rev-parse fails', () => {
-  const stamp = fromLocalGit('/tmp/not-a-repo', () => null)
-  assert.equal(stamp, null)
-})
-
 test('fromLocalGit reads HEAD + branch + dirty status', () => {
   const calls = []
-  const execFn = (cmd) => {
+  const execFn = (argv) => {
+    const cmd = argv.join(' ')
     calls.push(cmd)
     if (cmd === 'git rev-parse HEAD') return 'b'.repeat(40)
     if (cmd === 'git rev-parse --abbrev-ref HEAD') return 'main'
@@ -66,7 +62,8 @@ test('resolveStamp prefers CI over local git over fallback', () => {
 
   const local = resolveStamp({
     env: {},
-    execFn: (cmd) => {
+    execFn: (argv) => {
+      const cmd = argv.join(' ')
       if (cmd === 'git rev-parse HEAD') return 'd'.repeat(40)
       if (cmd === 'git rev-parse --abbrev-ref HEAD') return 'main'
       if (cmd === 'git status --porcelain -uno') return ''
@@ -89,35 +86,60 @@ test('resolveStamp falls back when neither CI nor git is available', () => {
   })
 })
 
-test('parseRepoSlug handles https, ssh, and ssh-url remotes', () => {
-  assert.equal(parseRepoSlug('https://github.com/moor-inc/moor.git'), 'moor-inc/moor')
-  assert.equal(parseRepoSlug('https://github.com/NousResearch/hermes-agent'), 'NousResearch/hermes-agent')
-  assert.equal(parseRepoSlug('git@github.com:moor-inc/moor.git'), 'moor-inc/moor')
-  assert.equal(parseRepoSlug('ssh://git@github.com/moor-inc/moor.git'), 'moor-inc/moor')
-  assert.equal(parseRepoSlug('not-a-remote'), null)
-  assert.equal(parseRepoSlug(''), null)
+// ── buildStampPayload — the staged-desktop full schema ─────────────────────
+
+import { buildStampPayload } from './write-build-stamp.mjs'
+
+const baseStamp = {
+  commit: 'c'.repeat(40),
+  branch: 'main',
+  builtAt: '2026-08-14T00:00:00Z',
+  dirty: false,
+  source: 'ci'
+}
+
+const runtime = {
+  repoDir: 'app', toolsDir: 'tools', storePython: 'tools/python/bin/python3',
+  sitePackages: 'venv/lib/python3.14/site-packages', commands: { hermes: 'bin/hermes' }
+}
+
+test('bundled stamp carries the builder contract and refuses an unstaged payload', () => {
+  const env = { HERMES_DESKTOP_VARIANT: 'bundled' }
+  assert.throws(() => buildStampPayload(baseStamp, env, 'darwin'), /payload/)
+  assert.deepEqual(buildStampPayload(baseStamp, env, 'darwin', { runtime }).runtime, runtime)
+  assert.equal(buildStampPayload(baseStamp, { HERMES_DESKTOP_VARIANT: 'light' }, 'darwin', { runtime }).runtime, undefined)
 })
 
-test('resolveRepoSlug prefers explicit Moor override over CI over origin', () => {
-  const noGit = () => null
-  assert.equal(
-    resolveRepoSlug({ env: { MOOR_GITHUB_REPO: 'moor-inc/moor' }, execFn: noGit }),
-    'moor-inc/moor'
-  )
-  assert.equal(
-    resolveRepoSlug({ env: { MOOR_GITHUB_FORK: 'moor-inc/moor' }, execFn: noGit }),
-    'moor-inc/moor'
-  )
-  assert.equal(
-    resolveRepoSlug({ env: { GITHUB_REPOSITORY: 'moor-inc/moor' }, execFn: noGit }),
-    'moor-inc/moor'
-  )
-  assert.equal(
-    resolveRepoSlug({
-      env: {},
-      execFn: cmd => (cmd === 'git remote get-url origin' ? 'git@github.com:moor-inc/moor.git' : null)
-    }),
-    'moor-inc/moor'
-  )
-  assert.equal(resolveRepoSlug({ env: {}, execFn: noGit }), UPSTREAM_REPO)
+test('source builds declare the same artifact schema, without a payload', () => {
+  const stamp = buildStampPayload(baseStamp, {})
+  assert.equal(stamp.payload, 'bootstrap')
+  assert.equal(stamp.distribution, 'desktop-app')
+  assert.equal(stamp.runtime, undefined)
+  assert.equal(stamp.tag, null)
+  assert.equal(stamp.commit, baseStamp.commit)
 })
+
+test('buildStampPayload keeps schemaVersion + provenance in the staged shape', () => {
+  const payload = buildStampPayload(baseStamp, {
+    HERMES_DESKTOP_VARIANT: 'bundled'
+  }, 'win32', { runtime })
+  assert.equal(payload.schemaVersion, 1)
+  assert.equal(payload.commit, baseStamp.commit)
+  assert.equal(payload.source, 'ci')
+  assert.equal(payload.tag, null)
+})
+
+test('commit builds retain exact provenance without entering an update channel', () => {
+  for (const platform of ['win32', 'darwin']) {
+    const env = { HERMES_DESKTOP_VARIANT: 'bundled', HERMES_BUILD_COMMIT: baseStamp.commit }
+    const payload = buildStampPayload(baseStamp, env, platform, { runtime })
+    assert.equal(payload.commit, baseStamp.commit)
+    assert.equal(payload.source, 'commit-build')
+    assert.equal(payload.branch, null)
+    assert.equal(payload.tag, null)
+    assert.equal(payload.updateMechanism, 'external')
+    assert.throws(() => buildStampPayload(baseStamp, { ...env, HERMES_BUILD_COMMIT: 'a'.repeat(40) }, platform, { runtime }), /commit/i)
+    assert.throws(() => buildStampPayload(baseStamp, { ...env, HERMES_PAYLOAD_TAG: 'v1.2.3' }, platform, { runtime }), /tag/i)
+  }
+})
+

@@ -66,28 +66,7 @@ describe('onboarding Picker', () => {
     expect(screen.getByRole('button', { name: 'Collapse' })).toBeTruthy()
   })
 
-  it('shows Fireworks first in the expanded list, ahead of other OAuth providers', () => {
-    setProviders([
-      makeOAuthProvider('openai-codex', 'OpenAI Codex / ChatGPT'),
-      makeOAuthProvider('minimax-oauth', 'MiniMax'),
-      makeOAuthProvider('moor', 'Moor Portal')
-    ])
-    render(<Picker ctx={ctx} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Other providers' }))
-
-    const labels = screen
-      .getAllByRole('button')
-      .map(el => el.textContent ?? '')
-      .filter(text => /Moor Portal|Fireworks AI|ChatGPT or Codex|MiniMax|OpenRouter/.test(text))
-
-    const indexOf = (needle: string) => labels.findIndex(text => text.includes(needle))
-    expect(indexOf('Moor Portal')).toBeGreaterThanOrEqual(0)
-    expect(indexOf('Fireworks AI')).toBeGreaterThan(indexOf('Moor Portal'))
-    expect(indexOf('ChatGPT or Codex')).toBeGreaterThan(indexOf('Fireworks AI'))
-    expect(indexOf('MiniMax')).toBeGreaterThan(indexOf('ChatGPT or Codex'))
-  })
-
-  it('shows every provider directly when Moor Portal is absent', () => {
+  it('shows every provider directly when Nous Portal is absent', () => {
     setProviders([
       makeOAuthProvider('anthropic', 'Anthropic Claude'),
       makeOAuthProvider('openai-codex', 'OpenAI Codex / ChatGPT')

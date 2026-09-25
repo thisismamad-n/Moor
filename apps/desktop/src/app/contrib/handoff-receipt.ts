@@ -6,22 +6,6 @@ import type { HandoffReceipt } from './handoff-leg'
 // saveHandoffReceipt throws when the write does not read back, so nothing is submitted without a saved receipt.
 const unsavedReceipts = new Map<string, HandoffReceipt>()
 
-export function markFirstBuildSession(storedId: string): void {
-  writeKey('moor.onboarding.first-build.v1', storedId)
-}
-
-export function endFirstBuildConnect(storedId: string): void {
-  writeKey('moor.onboarding.first-build.done.v1', storedId)
-}
-
-export function isFirstBuildSession(storedId: string | null | undefined): boolean {
-  return (
-    !!storedId &&
-    readKey('moor.onboarding.first-build.v1') === storedId &&
-    readKey('moor.onboarding.first-build.done.v1') !== storedId
-  )
-}
-
 export function handoffReceiptKey(connection: null | string, guideStoredId: string): string {
   return `moor.onboarding.handoff.v1.connection.${encodeURIComponent(connection ?? 'ambient')}.profile.default.guide.${encodeURIComponent(guideStoredId)}`
 }

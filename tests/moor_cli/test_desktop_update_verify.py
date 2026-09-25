@@ -4,8 +4,8 @@ import struct
 
 import pytest
 
-from moor_cli import desktop_update_verify as verify
-from moor_cli.main_desktop import _write_desktop_build_stamp
+from hermes_cli import desktop_update_verify as verify
+from tests.hermes_cli.test_source_build import copy_freshness_scripts, stamp_product
 
 
 @pytest.fixture
@@ -27,9 +27,10 @@ def bundle(tmp_path, monkeypatch):
     monkeypatch.setattr(verify, '_desktop_packaged_executable', lambda _: resources.parent / 'Moor.exe')
     monkeypatch.setattr(verify, '_desktop_exe_integrity_error', lambda _: None)
     # Host-independent artifact contract; executable lookup itself is covered natively.
-    from moor_cli import main_desktop
-    monkeypatch.setattr(main_desktop, '_desktop_packaged_executable', lambda _: resources.parent / 'Moor.exe')
-    _write_desktop_build_stamp(tmp_path, source_mode=False)
+    from hermes_cli import main_desktop
+    monkeypatch.setattr(main_desktop, '_desktop_packaged_executable', lambda _: resources.parent / 'Hermes.exe')
+    copy_freshness_scripts(tmp_path)
+    stamp_product(tmp_path, "desktop", dist)
     return tmp_path, archive, dist
 
 

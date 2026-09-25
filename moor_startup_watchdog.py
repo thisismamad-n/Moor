@@ -32,7 +32,6 @@ import faulthandler
 import json
 import logging
 import os
-import sys
 import threading
 import time
 from datetime import datetime, timezone
@@ -98,16 +97,11 @@ _handle_lock = threading.Lock()
 _handle: Optional["StartupWatchdogHandle"] = None
 
 
-def _process_moor_home() -> Path:
-    """MOOR_HOME for diagnostic files — stdlib-only replica of the moor_constants default."""
-    val = os.environ.get("MOOR_HOME", "").strip()
-    if val:
-        return Path(val)
-    if sys.platform == "win32":
-        local_appdata = os.environ.get("LOCALAPPDATA", "").strip()
-        base = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
-        return base / "moor"
-    return Path.home() / ".moor"
+def _process_hermes_home() -> Path:
+    """Use the stdlib-only process resolver before application startup."""
+    from hermes_constants import get_process_hermes_home
+
+    return get_process_hermes_home()
 
 
 def get_startup_watchdog_dump_path(home: Optional[Path] = None) -> Path:

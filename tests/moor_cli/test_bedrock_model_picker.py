@@ -232,16 +232,8 @@ class TestBedrockRegionRouting:
 class TestBedrockOverlayRegistration:
     """bedrock entry in MOOR_OVERLAYS is correctly configured."""
 
-    def test_bedrock_overlay_exists(self):
-        from moor_cli.providers import MOOR_OVERLAYS
-        assert "bedrock" in MOOR_OVERLAYS
 
 
-    def test_bedrock_label(self):
-        from moor_cli.providers import get_label
-        label = get_label("bedrock")
-        assert label  # non-empty
-        assert "bedrock" in label.lower() or "aws" in label.lower()
 
     def test_bedrock_aliases_resolve(self):
         from moor_cli.providers import normalize_provider

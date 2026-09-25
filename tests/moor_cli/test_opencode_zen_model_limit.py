@@ -25,8 +25,8 @@ def test_opencode_zen_lists_all_models_while_other_providers_remain_capped(monke
     )
     monkeypatch.setattr(providers_mod, "MOOR_OVERLAYS", {})
     monkeypatch.setattr(
-        "moor_cli.models.cached_provider_model_ids",
-        lambda provider: {
+        "hermes_cli.models.cached_provider_model_ids",
+        lambda provider, **_: {
             "opencode-zen": zen_models,
             "deepseek": deepseek_models,
         }.get(provider, []),

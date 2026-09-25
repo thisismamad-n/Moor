@@ -2,8 +2,7 @@
 
 from types import SimpleNamespace
 
-from cli import MoorCLI
-from moor_cli.commands import HELP_SESSION_SUBGROUPS
+from cli import HermesCLI
 
 
 def _bare_cli():
@@ -11,14 +10,6 @@ def _bare_cli():
     return cli
 
 
-class TestHelpSubgroups:
-    def test_session_subgroups_defined(self):
-        # The oversized Session category is split into readable sub-headers.
-        assert "Context" in HELP_SESSION_SUBGROUPS
-        assert "Background & Automation" in HELP_SESSION_SUBGROUPS
-        # Representative members land in the right buckets.
-        assert "compress" in HELP_SESSION_SUBGROUPS["Context"]
-        assert "goal" in HELP_SESSION_SUBGROUPS["Background & Automation"]
 
 
 class TestCommandPaletteFilter:

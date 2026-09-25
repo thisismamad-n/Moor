@@ -14,8 +14,8 @@ Find accounts for a username across 400+ platforms.
 
 | | |
 |---|---|
-| Source | Optional — install with `moor skills install official/security/sherlock` |
-| Path | `optional-skills/security\sherlock` |
+| Source | Optional — install with `hermes skills install official/security/sherlock` |
+| Path | `optional-skills/security/sherlock` |
 | Version | `1.0.0` |
 | Author | unmodeled-tyler |
 | License | MIT |

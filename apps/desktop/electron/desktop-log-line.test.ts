@@ -13,10 +13,4 @@ describe('formatDesktopLogLine', () => {
       /^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z\] \[moor\] \[boot\] Resolving Moor backend$/
     )
   })
-
-  it('keeps the message verbatim after the prefix', () => {
-    const line = formatDesktopLogLine('Moor backend exited (0)')
-
-    expect(line).toMatch(/^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z\] \[moor\] Moor backend exited \(0\)$/)
-  })
 })

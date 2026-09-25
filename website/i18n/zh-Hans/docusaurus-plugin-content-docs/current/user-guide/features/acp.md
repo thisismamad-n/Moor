@@ -6,7 +6,10 @@ description: "在兼容 ACP 的编辑器和协作平台中使用 Moor Agent"
 
 # ACP 宿主集成
 
-Moor Agent 可作为 ACP 服务器运行，让兼容 ACP 的编辑器通过 stdio 与 Moor 通信并渲染：
+本页的 Python 依赖命令使用 [PM 准备的源码环境](../../reference/package-management.md#developer-workflow)。
+依赖变更后，请重新激活该 checkout 并重启 Hermes。
+
+Hermes Agent 可作为 ACP 服务器运行，让兼容 ACP 的编辑器通过 stdio 与 Hermes 通信并渲染：
 
 - 聊天消息
 - 工具活动
@@ -36,7 +39,7 @@ Moor 使用专为编辑器工作流设计的精选 `moor-acp` 工具集运行，
 正常安装 Moor 后，从安装检出目录添加 ACP 扩展：
 
 ```bash
-cd ~/.moor/moor-agent && uv pip install -e '.[acp]'
+cd ~/.hermes/hermes-agent && python -c "import pm; pm.sync_venv(['acp'], explicit=True)"
 ```
 
 这将安装 `agent-client-protocol` 依赖并启用：
@@ -309,9 +312,9 @@ ACP 桥接将这些选项映射到 Moor 的内部审批语义——`allow_always
 
 检查：
 
-- 对于手动/本地开发，验证自定义 `agent_servers` 命令是否指向 `moor acp`。
-- Moor 已安装且在 PATH 中。
-- ACP 扩展已安装（`cd ~/.moor/moor-agent && uv pip install -e '.[acp]'`）。
+- 对于手动/本地开发，验证自定义 `agent_servers` 命令是否指向 `hermes acp`。
+- Hermes 已安装且在 PATH 中。
+- ACP 扩展已安装（`cd ~/.hermes/hermes-agent && python -c "import pm; pm.sync_venv(['acp'], explicit=True)"`）。
 
 ### ACP 启动后立即报错
 

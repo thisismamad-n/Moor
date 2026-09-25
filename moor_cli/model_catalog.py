@@ -17,7 +17,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-from moor_cli import __version__ as _MOOR_VERSION
+from hermes_cli.version_info import get_version_info
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ DEFAULT_TTL_HOURS = DEFAULT_TTL_MINUTES / 60.0
 DEFAULT_FETCH_TIMEOUT = 8.0
 SUPPORTED_SCHEMA_VERSION = 1
 
-_MOOR_USER_AGENT = f"moor-cli/{_MOOR_VERSION}"
+_HERMES_USER_AGENT = f"hermes-cli/{get_version_info().base_version}"
 
 # In-process cache, invalidated against the disk file's path + mtime and TTL. The path matters:
 # under a multiplexed gateway each profile has its own ``<home>/cache/model_catalog.json``, and
@@ -147,7 +147,10 @@ def _read_disk_cache() -> tuple[dict[str, Any] | None, float]:
     path = _cache_path()
     try:
         mtime = path.stat().st_mtime
-        with open(path, encoding="utf-8") as fh:
+    except (OSError, FileNotFoundError):
+        return (None, 0.0)
+    try:
+        with open(path, encoding="utf-8-sig") as fh:
             data = json.load(fh)
     except (OSError, json.JSONDecodeError):
         return (None, 0.0)
@@ -324,7 +327,7 @@ def seed_cache_from_checkout(project_root: "Path | str") -> bool:
     the remote fetch is bot-gated. Validated, then written via the same atomic writer."""
     src = Path(project_root) / "website" / "static" / "api" / "model-catalog.json"
     try:
-        with open(src, encoding="utf-8") as fh:
+        with open(src, encoding="utf-8-sig") as fh:
             data = json.load(fh)
     except (OSError, json.JSONDecodeError) as exc:
         logger.debug("model catalog seed from checkout skipped (%s): %s", src, exc)

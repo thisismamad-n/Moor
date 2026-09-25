@@ -13,7 +13,6 @@ import {
   reviewCommitContext,
   reviewCreatePr,
   reviewDiff,
-  reviewFetchPrComment,
   reviewList,
   reviewPrList,
   reviewPush,
@@ -101,10 +100,7 @@ export function registerGitIpc({ resolveGitBinary, resolveGhBinary }: GitIpcDeps
   ipcMain.handle('moor:git:review:prList', async (_event, repoPath, branches, numbers) =>
     reviewPrList(repoPath, resolveGhBinary(), branches, numbers)
   )
-  ipcMain.handle('moor:git:review:fetchPrComment', async (_event, repoPath, url) =>
-    reviewFetchPrComment(repoPath, resolveGhBinary(), url)
-  )
-  ipcMain.handle('moor:git:review:createPr', async (_event, repoPath) =>
+  ipcMain.handle('hermes:git:review:createPr', async (_event, repoPath) =>
     reviewCreatePr(repoPath, resolveGitBinary(), resolveGhBinary())
   )
 

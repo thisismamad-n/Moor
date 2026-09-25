@@ -14,14 +14,14 @@ Build, test, and deploy Python MCP servers.
 
 | | |
 |---|---|
-| Source | Optional — install with `moor skills install official/mcp/fastmcp` |
-| Path | `optional-skills/mcp\fastmcp` |
+| Source | Optional — install with `hermes skills install official/mcp/fastmcp` |
+| Path | `optional-skills/mcp/fastmcp` |
 | Version | `1.0.0` |
 | Author | Moor Agent |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `MCP`, `FastMCP`, `Python`, `Tools`, `Resources`, `Prompts`, `Deployment` |
-| Related skills | [`moor-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-moor-agent), [`mcporter`](/docs/user-guide/skills/optional/mcp/mcp-mcporter) |
+| Related skills | [`hermes-agent`](../../bundled/autonomous-ai-agents/autonomous-ai-agents-hermes-agent.md), [`mcporter`](../../optional/mcp/mcp-mcporter.md) |
 
 ## Reference: full SKILL.md
 

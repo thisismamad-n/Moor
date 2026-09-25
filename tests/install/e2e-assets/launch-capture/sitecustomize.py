@@ -1,9 +1,10 @@
 """Driver-side spawn interception for moor desktop E2E legs.
 
-The installed ``moor`` is a venv console script, so its interpreter
-imports ``sitecustomize`` at startup when this directory is on
-``PYTHONPATH``. Behind an explicit env-var opt-in the module wraps
-``subprocess.run`` so the FINAL electron launch call of ``moor
+Pre-PM ``hermes`` is a venv console script that imports this module at
+startup via ``PYTHONPATH``. PM launchers use -I and instead load it via
+the driver-side pm-launch.py before the installed bootstrap. With an
+explicit env-var opt-in the module wraps
+``subprocess.run`` so the FINAL electron launch call of ``hermes
 desktop`` is captured -- argv, cwd, and the fully-constructed ``env``
 kwarg written to a JSON spec -- and replaced with a fake success instead
 of spawning. Everything before the spawn (build, stamps, integrity gate,

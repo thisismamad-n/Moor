@@ -5,7 +5,9 @@ import { desktopFsCacheKey, desktopGitRoot, readDesktopDir, readDesktopFileDataU
 import { ALWAYS_EXCLUDED } from '@/lib/excluded-paths'
 import { cleanPath, comparisonPath } from '@/lib/path-compare'
 
-export type ProjectTreeEntry = MoorReadDirEntry
+import { showsIgnoredFiles } from './prefs'
+
+export type ProjectTreeEntry = HermesReadDirEntry
 
 interface GitignoreRule {
   base: string
@@ -116,7 +118,14 @@ function ignoredBy(rules: GitignoreRule[], entry: MoorReadDirEntry) {
   })
 }
 
-async function filterIgnored(entries: MoorReadDirEntry[], rootPath: string, dirPath: string) {
+async function filterIgnored(entries: HermesReadDirEntry[], rootPath: string, dirPath: string) {
+  // Opting a project into its ignored files skips the gitignore pass entirely —
+  // no git-root probe, no .gitignore reads. ALWAYS_EXCLUDED still applies: `.git`
+  // internals and dependency/build dirs are never worth browsing, in any repo.
+  if (showsIgnoredFiles(rootPath)) {
+    return entries
+  }
+
   const root = await gitRootFor(rootPath)
 
   if (!root) {

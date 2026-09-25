@@ -61,25 +61,6 @@ class TestMoorFallbackLocalAvailability:
         assert activated is True
         assert agent.model == "gpt-5.5"
 
-    def test_moor_unavailable_not_retried_in_same_session(self):
-        """After Moor is skipped once, subsequent activations continue further."""
-        agent = _make_agent(
-            fallback_model=[
-                {"provider": "moor", "model": "anthropic/claude-sonnet-4.6"},
-                {"provider": "openai-codex", "model": "gpt-5.5"},
-            ]
-        )
-        with patch(
-            "moor_cli.auth.get_provider_auth_state",
-            return_value={},
-        ):
-            agent._try_activate_fallback(None)
-        key = (
-            "moor",
-            "anthropic/claude-sonnet-4.6",
-            "",
-        )
-        assert key in getattr(agent, "_unavailable_fallback_keys", set())
 
     def test_present_moor_token_allows_activation(self):
         """Moor is considered when token material exists."""

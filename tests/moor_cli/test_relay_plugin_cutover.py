@@ -6,7 +6,7 @@ import os
 from unittest.mock import patch
 
 import pytest
-import yaml
+import hermes_yaml as yaml
 
 from moor_cli.config import migrate_config
 from moor_cli.doctor_config import collect_relay_plugin_cutover_findings
@@ -85,8 +85,8 @@ def test_doctor_reports_legacy_exporter_env_without_new_config(monkeypatch):
 @pytest.mark.parametrize("name", ["nemo_relay", "observability/nemo_relay"])
 def test_enable_rejects_removed_relay_plugin_without_discovery(name, capsys):
     with (
-        patch("moor_cli.plugins_cmd._resolve_plugin_key_and_source") as resolve,
-        patch("moor_cli.plugins_cmd._save_enabled_set") as save_enabled,
+        patch("hermes_cli.plugins_cmd._resolve_plugin_key_and_source") as resolve,
+        patch("hermes_cli.plugins_cmd._set_plugin_enabled") as save_enabled,
     ):
         from moor_cli.plugins_cmd import cmd_enable
 
@@ -107,7 +107,7 @@ def test_enable_rejects_alias_resolving_to_removed_relay_plugin(capsys):
             "moor_cli.plugins_cmd._resolve_plugin_key_and_source",
             return_value=("observability/nemo_relay", "user"),
         ),
-        patch("moor_cli.plugins_cmd._save_enabled_set") as save_enabled,
+        patch("hermes_cli.plugins_cmd._set_plugin_enabled") as save_enabled,
     ):
         from moor_cli.plugins_cmd import cmd_enable
 

@@ -4,14 +4,8 @@ import base64
 import json
 import time
 
-import moor_cli.auth as auth
-import moor_cli.auth_moor as auth_moor
-from moor_cli.auth import (
-    MOOR_SESSION_TERMINAL,
-    MOOR_SESSION_UNKNOWN,
-    MOOR_SESSION_VALID,
-    get_moor_session_validity,
-)
+import hermes_cli.auth as auth
+import hermes_cli.auth_nous as auth_nous
 
 
 def _invoke_jwt(*, seconds: int = 3600) -> str:

@@ -19,8 +19,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-import moor_state
-import moor_state_guard
+import hermes_state_guard
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -67,13 +66,6 @@ def _minimal_env(**extra) -> dict:
     return env
 
 
-def test_conftest_exports_the_marker():
-    """The hermetic conftest must export the marker before tests run."""
-    assert os.environ.get("MOOR_TEST_ISOLATION"), (
-        "MOOR_TEST_ISOLATION must be exported by tests/conftest.py so "
-        "subprocess children inherit a test-context signal that survives "
-        "PYTEST_* scrubbing"
-    )
 
 
 def test_marker_alone_reports_test_context(monkeypatch):

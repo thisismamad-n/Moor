@@ -1,9 +1,9 @@
-#!/bin/bash
-# repro.sh -- reproduce desktop-update paths against a sandboxed MOOR_HOME.
+#!/usr/bin/env bash
+# repro.sh -- reproduce desktop-update paths against a sandboxed HERMES_HOME.
 #
-# Nothing here touches your real ~/.moor or checkout. Each mode builds (or
-# reuses) a disposable install under /tmp and drives the REAL code path --
-# the actual installer, the actual orchestrator, the actual `moor update`.
+# Nothing here touches your real ~/.hermes or checkout. Each mode builds (or
+# reuses) a disposable install under $TMPDIR and drives the REAL code path --
+# the actual installer, the actual orchestrator, the actual `hermes update`.
 #
 #   repro.sh shim          shim UI only: success event after 6s
 #   repro.sh shim-fail     shim UI only: error event after 6s
@@ -18,7 +18,7 @@
 #                          sandbox preflight, opt-out fallbacks) -- asserts
 #                          every outcome without touching a real install
 #
-# The sandbox persists between runs (~/tmp is fine to nuke): fresh reuses
+# The sandbox persists between runs (the scratch dir is fine to nuke): fresh reuses
 # nothing, behind/error reuse the last sandbox install when present because
 # a from-scratch install is minutes.
 #
@@ -93,10 +93,10 @@ case "$MODE" in
     ;;
   gate)
     # Pure-decision matrix for the linux relaunch gate. Builds a fake
-    # checkout layout under /tmp; --self-test-gate prints the decision and
+    # checkout layout under $TMPDIR; --self-test-gate prints the decision and
     # exits without running an update.
-    G="/tmp/moor-gate-test.$$"
-    UNPACKED="$G/moor-agent/apps/desktop/release/linux-unpacked"
+    G="$(mktemp -d -t hermes-gate-test.XXXXXX)"
+    UNPACKED="$G/hermes-agent/apps/desktop/release/linux-unpacked"
     mkdir -p "$UNPACKED"
     touch "$UNPACKED/moor" && chmod +x "$UNPACKED/moor"
 
@@ -136,7 +136,7 @@ case "$MODE" in
     # of the outcome. Each case runs the REAL orchestrator (--no-ui) against
     # a fake install whose `moor` stub exits 0 instantly, so the flow
     # reaches finish() with FINAL_CODE=0 and exercises the launch leg.
-    L="/tmp/moor-launch-test.$$"
+    L="$(mktemp -d -t hermes-launch-test.XXXXXX)"
     fails=0
     expect_msg() { # name python-expr
       if python3 -c "import json,sys; d=json.load(open('$L/.moor-update-result.json')); sys.exit(0 if ($2) else 1)"; then

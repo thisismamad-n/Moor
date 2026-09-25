@@ -1473,9 +1473,8 @@ to the public equivalent or the new module. Test monkeypatch seams are likewise 
 |---|---|---|
 | `LMStudioLoadResult` | moved-lazy | `moor_cli.models_local` |
 | `NamedTuple` | import | `typing` |
-| `PROVIDER_GROUPS` | moved-lazy | `moor_cli.models_catalog_static` |
-| `ProviderEntry` | moved-lazy | `moor_cli.models_catalog_static` |
-| `_OPENCODE_KEYLESS_EXTRA_SLUGS` | restored-helper | `(deleted; restored as a dependency of is_opencode_zen_free_model)` |
+| `PROVIDER_GROUPS` | moved-lazy | `hermes_cli.models_catalog_static` |
+| `ProviderEntry` | moved-lazy | `hermes_cli.models_catalog_static` |
 | `atomic_json_write` | moved-lazy | `utils` |
 | `base_url_host_matches` | moved-lazy | `utils` |
 | `compute_sale_discount` | moved-lazy | `moor_cli.models_pricing` |
@@ -1489,27 +1488,26 @@ to the public equivalent or the new module. Test monkeypatch seams are likewise 
 | `get_pricing_for_provider` | moved-lazy | `moor_cli.models_pricing` |
 | `group_providers` | moved-lazy | `moor_cli.models_catalog_static` |
 | `http` | import | `http.client` |
-| `is_moor_free_tier` | restored-def | `(deleted; BASE body restored)` |
-| `is_opencode_zen_free_model` | restored-def | `(deleted; BASE body restored)` |
-| `lmstudio_model_reasoning_options` | moved-lazy | `moor_cli.models_local` |
-| `moor_catalog_url` | moved-lazy | `moor_cli.models_reasoning_caps` |
-| `moor_model_reasoning_capabilities` | moved-lazy | `moor_cli.models_reasoning_caps` |
-| `moor_policy_allowed_ids` | moved-lazy | `moor_cli.models_pricing` |
-| `ollama_model_supports_thinking` | moved-lazy | `moor_cli.models_local` |
-| `openrouter_model_reasoning_capabilities` | moved-lazy | `moor_cli.models_reasoning_caps` |
-| `parse_openrouter_reasoning_capabilities` | moved-lazy | `moor_cli.models_reasoning_caps` |
-| `peek_cached_pricing` | moved-lazy | `moor_cli.models_pricing` |
-| `pricing_cache_scope` | moved-lazy | `moor_cli.models_pricing` |
-| `probe_lmstudio_models` | moved-lazy | `moor_cli.models_local` |
-| `probe_ollama_local_models` | moved-lazy | `moor_cli.models_local` |
-| `provider_group_for_slug` | moved-lazy | `moor_cli.models_catalog_static` |
-| `refresh_reasoning_caps_async` | moved-lazy | `moor_cli.models_reasoning_caps` |
-| `restrict_to_moor_policy` | moved-lazy | `moor_cli.models_pricing` |
-| `should_use_ollama_native_catalog` | moved-lazy | `moor_cli.models_local` |
-| `url_origin` | moved-lazy | `moor_cli.urllib_security` |
-| `validate_requested_model` | moved-lazy | `moor_cli.models_validate` |
-| `warm_moor_reasoning_caps_async` | moved-lazy | `moor_cli.models_reasoning_caps` |
-| `warm_openrouter_reasoning_caps_async` | moved-lazy | `moor_cli.models_reasoning_caps` |
+| `is_nous_free_tier` | restored-def | `(deleted; BASE body restored)` |
+| `lmstudio_model_reasoning_options` | moved-lazy | `hermes_cli.models_local` |
+| `nous_catalog_url` | moved-lazy | `hermes_cli.models_reasoning_caps` |
+| `nous_model_reasoning_capabilities` | moved-lazy | `hermes_cli.models_reasoning_caps` |
+| `nous_policy_allowed_ids` | moved-lazy | `hermes_cli.models_pricing` |
+| `ollama_model_supports_thinking` | moved-lazy | `hermes_cli.models_local` |
+| `openrouter_model_reasoning_capabilities` | moved-lazy | `hermes_cli.models_reasoning_caps` |
+| `parse_openrouter_reasoning_capabilities` | moved-lazy | `hermes_cli.models_reasoning_caps` |
+| `peek_cached_pricing` | moved-lazy | `hermes_cli.models_pricing` |
+| `pricing_cache_scope` | moved-lazy | `hermes_cli.models_pricing` |
+| `probe_lmstudio_models` | moved-lazy | `hermes_cli.models_local` |
+| `probe_ollama_local_models` | moved-lazy | `hermes_cli.models_local` |
+| `provider_group_for_slug` | moved-lazy | `hermes_cli.models_catalog_static` |
+| `refresh_reasoning_caps_async` | moved-lazy | `hermes_cli.models_reasoning_caps` |
+| `restrict_to_nous_policy` | moved-lazy | `hermes_cli.models_pricing` |
+| `should_use_ollama_native_catalog` | moved-lazy | `hermes_cli.models_local` |
+| `url_origin` | moved-lazy | `hermes_cli.urllib_security` |
+| `validate_requested_model` | moved-lazy | `hermes_cli.models_validate` |
+| `warm_nous_reasoning_caps_async` | moved-lazy | `hermes_cli.models_reasoning_caps` |
+| `warm_openrouter_reasoning_caps_async` | moved-lazy | `hermes_cli.models_reasoning_caps` |
 
 ### `moor_cli.moor_billing`
 
@@ -1884,17 +1882,16 @@ to the public equivalent or the new module. Test monkeypatch seams are likewise 
 | `auth_mcp_server` | moved-lazy | `moor_cli.web_routers.mcp` |
 | `base64` | import | `base64` |
 | `binascii` | import | `binascii` |
-| `build_cron_model_impact` | moved-lazy | `moor_cli.config` |
-| `bulk_delete_sessions_endpoint` | moved-lazy | `moor_cli.web_routers.sessions` |
-| `cancel_oauth_session` | moved-lazy | `moor_cli.web_routers.oauth` |
-| `cancel_telegram_onboarding` | moved-lazy | `moor_cli.web_routers.messaging` |
-| `cancel_whatsapp_onboarding` | moved-lazy | `moor_cli.web_routers.messaging` |
-| `cfg_get` | moved-lazy | `moor_cli.config` |
-| `check_config_version` | moved-lazy | `moor_cli.config` |
-| `check_moor_update` | moved-lazy | `moor_cli.web_routers.actions` |
-| `clear_model_endpoint_credentials` | moved-lazy | `moor_cli.config` |
-| `clear_pending_pairing` | moved-lazy | `moor_cli.web_routers.ops` |
-| `coerce_provider_id` | moved-lazy | `moor_cli.config` |
+| `bulk_delete_sessions_endpoint` | moved-lazy | `hermes_cli.web_routers.sessions` |
+| `cancel_oauth_session` | moved-lazy | `hermes_cli.web_routers.oauth` |
+| `cancel_telegram_onboarding` | moved-lazy | `hermes_cli.web_routers.messaging` |
+| `cancel_whatsapp_onboarding` | moved-lazy | `hermes_cli.web_routers.messaging` |
+| `cfg_get` | moved-lazy | `hermes_cli.config` |
+| `check_config_version` | moved-lazy | `hermes_cli.config` |
+| `check_hermes_update` | moved-lazy | `hermes_cli.web_routers.actions` |
+| `clear_model_endpoint_credentials` | moved-lazy | `hermes_cli.config` |
+| `clear_pending_pairing` | moved-lazy | `hermes_cli.web_routers.ops` |
+| `coerce_provider_id` | moved-lazy | `hermes_cli.config` |
 | `concurrent` | import | `concurrent.futures` |
 | `console_ws` | moved-lazy | `moor_cli.web_routers.chat_ws` |
 | `contextlib` | import | `contextlib` |
@@ -2077,18 +2074,17 @@ to the public equivalent or the new module. Test monkeypatch seams are likewise 
 | `read_managed_file` | moved-lazy | `moor_cli.web_routers.files` |
 | `read_raw_config` | moved-lazy | `moor_cli.config` |
 | `read_runtime_status` | moved-lazy | `gateway.status` |
-| `recommended_update_command_for_method` | moved-lazy | `moor_cli.config` |
-| `redact_key` | moved-lazy | `moor_cli.config` |
-| `remove_credential_pool_entry` | moved-lazy | `moor_cli.web_routers.ops` |
-| `remove_env_value` | moved-lazy | `moor_cli.config` |
-| `remove_env_var` | moved-lazy | `moor_cli.web_routers.config_env` |
-| `remove_mcp_server` | moved-lazy | `moor_cli.web_routers.mcp` |
-| `rename_profile_endpoint` | moved-lazy | `moor_cli.web_routers.profiles` |
-| `rename_session_endpoint` | moved-lazy | `moor_cli.web_routers.sessions` |
-| `replace_mcp_servers` | moved-lazy | `moor_cli.web_routers.mcp` |
-| `rescan_dashboard_plugins` | moved-lazy | `moor_cli.web_routers.dashboard_ui` |
-| `reset_memory` | moved-lazy | `moor_cli.web_routers.ops` |
-| `resolve_cron_model_drift_defaults` | moved-lazy | `moor_cli.config` |
+| `recommended_update_command_for_method` | moved-lazy | `hermes_cli.config` |
+| `redact_key` | moved-lazy | `hermes_cli.config` |
+| `remove_credential_pool_entry` | moved-lazy | `hermes_cli.web_routers.ops` |
+| `remove_env_value` | moved-lazy | `hermes_cli.config` |
+| `remove_env_var` | moved-lazy | `hermes_cli.web_routers.config_env` |
+| `remove_mcp_server` | moved-lazy | `hermes_cli.web_routers.mcp` |
+| `rename_profile_endpoint` | moved-lazy | `hermes_cli.web_routers.profiles` |
+| `rename_session_endpoint` | moved-lazy | `hermes_cli.web_routers.sessions` |
+| `replace_mcp_servers` | moved-lazy | `hermes_cli.web_routers.mcp` |
+| `rescan_dashboard_plugins` | moved-lazy | `hermes_cli.web_routers.dashboard_ui` |
+| `reset_memory` | moved-lazy | `hermes_cli.web_routers.ops` |
 | `resolve_gateway_liveness` | moved-lazy | `gateway.status` |
 | `restart_gateway` | moved-lazy | `moor_cli.web_routers.actions` |
 | `resume_cron_job` | moved-lazy | `moor_cli.web_routers.cron` |
@@ -2428,13 +2424,6 @@ to the public equivalent or the new module. Test monkeypatch seams are likewise 
 | `normalize_reference_images` | moved-lazy | `agent.image_gen_provider` |
 | `save_b64_image` | moved-lazy | `agent.image_gen_provider` |
 | `save_url_image` | moved-lazy | `agent.image_gen_provider` |
-
-### `plugins.memory.hindsight`
-
-| name | kind | new location |
-|---|---|---|
-| `dataclass` | import | `dataclasses` |
-| `importlib` | import | `importlib` |
 
 ### `plugins.memory.honcho`
 
@@ -2964,8 +2953,7 @@ to the public equivalent or the new module. Test monkeypatch seams are likewise 
 | `shutil` | import | `shutil` |
 | `signal` | import | `signal` |
 | `timezone` | import | `datetime` |
-| `warm_agent_browser_npx_cache` | moved-lazy | `tools.browser_tool_install` |
-| `windows_hide_flags` | moved-lazy | `moor_cli._subprocess_compat` |
+| `windows_hide_flags` | moved-lazy | `hermes_cli._subprocess_compat` |
 
 ### `tools.clarify_gateway`
 

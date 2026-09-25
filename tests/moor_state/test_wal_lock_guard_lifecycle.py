@@ -17,7 +17,7 @@ import moor_state_lockguard as lg
 from moor_state import SessionDB
 from tests.moor_state._wal_generation_harness import make_db, pin_wal, require_wal
 
-pytestmark = pytest.mark.linux_only
+pytestmark = pytest.mark.platforms("linux")
 
 
 def _foreign_exclusive_ok(path: str) -> bool:

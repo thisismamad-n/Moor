@@ -14,8 +14,8 @@ Outlines: structured JSON/regex/Pydantic LLM generation.
 
 | | |
 |---|---|
-| Source | Optional — install with `moor skills install official/mlops/outlines` |
-| Path | `optional-skills/mlops\inference\outlines` |
+| Source | Optional — install with `hermes skills install official/mlops/outlines` |
+| Path | `optional-skills/mlops/inference/outlines` |
 | Version | `1.0.1` |
 | Author | Orchestra Research |
 | License | MIT |

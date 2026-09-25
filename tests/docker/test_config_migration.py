@@ -6,7 +6,7 @@ user.
 """
 from __future__ import annotations
 
-from tests.docker.conftest import docker_exec, docker_exec_sh, start_container
+from tests.docker.conftest import docker_exec_sh, start_container
 
 
 def test_config_migration_runs_on_boot(
@@ -27,18 +27,7 @@ def test_config_migration_runs_on_boot(
         f"config.yaml not found in $MOOR_HOME: {r.stdout}"
     )
 
-    # Verify the migration script exists in the image
-    r = docker_exec_sh(
-        container_name,
-        "test -f /opt/moor/scripts/docker_config_migrate.py && "
-        "echo SCRIPT_EXISTS || echo SCRIPT_MISSING",
-        timeout=10,
-    )
-    assert "SCRIPT_EXISTS" in r.stdout, (
-        f"docker_config_migrate.py not found in image: {r.stdout}"
-    )
-
-    # Verify config.yaml is owned by moor (migration ran as moor)
+    # Verify config.yaml is owned by hermes (migration ran as hermes)
     r = docker_exec_sh(
         container_name,
         'stat -c "%U" /opt/data/config.yaml',

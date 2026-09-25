@@ -38,8 +38,9 @@ secrets:
     )
 
     dispatch = (
-        "moor_main.cmd_update = lambda _args: 0\n"
-        "moor_main.main()\n"
+        "from hermes_cli import update_cmd\n"
+        "update_cmd._cmd_update_check = lambda **kwargs: 0\n"
+        "hermes_main.main()\n"
         if run_main
         else ""
     )
@@ -65,13 +66,6 @@ secrets:
     return set(json.loads(line.removeprefix("LOADED_MODULES=")))
 
 
-def test_update_startup_does_not_import_bitwarden_or_cryptography(tmp_path):
-    loaded = _probe_startup_modules(tmp_path, ["moor", "update", "--check"])
-
-    assert "agent.secret_sources.bitwarden" not in loaded
-    assert not any(
-        name == "cryptography" or name.startswith("cryptography.") for name in loaded
-    )
 
 
 def test_complete_update_dispatch_does_not_import_cryptography(tmp_path):
@@ -82,6 +76,7 @@ def test_complete_update_dispatch_does_not_import_cryptography(tmp_path):
         run_main=True,
     )
 
+    assert "agent.secret_sources.bitwarden" not in loaded
     assert not any(
         name == "cryptography" or name.startswith("cryptography.") for name in loaded
     )
@@ -119,7 +114,7 @@ def test_dotenv_loading_is_preserved_when_external_secrets_are_skipped(
     assert applied == ([home] if external_secrets else [])
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="the 'command' secret source is POSIX-only")
+@pytest.mark.platforms("posix")  # the 'command' secret source is POSIX-only
 def test_update_probe_children_skip_external_secret_sources(tmp_path):
     """The critical-module import probe imports ``run_agent``, whose dotenv load must not run a
     configured secret helper: a slow helper (op/bws/command, 120s budget) inside the 120s probe
@@ -132,8 +127,8 @@ def test_update_probe_children_skip_external_secret_sources(tmp_path):
     )
     result = subprocess.run(
         [sys.executable, "-c",
-         "import sys; sys.argv = ['moor', 'update']\n"
-         "from moor_cli.update_cmd_deps import _validate_critical_modules_import\n"
+         "import sys; sys.argv = ['hermes', 'update']\n"
+         "from hermes_cli.update_cmd_validation import _validate_critical_modules_import\n"
          "print('PROBE=' + repr(_validate_critical_modules_import(__import__('os').getcwd())))"],
         capture_output=True, text=True, timeout=180, cwd=REPO_ROOT,
         env={**os.environ, "MOOR_HOME": str(home)},

@@ -2,14 +2,14 @@
 #
 # callPackage auto-wires nixpkgs args; flake inputs are passed explicitly.
 # Users override via:
-#   pkgs.moor-agent.override { extraPythonPackages = [...]; }
-#   pkgs.moor-agent.override { extraDependencyGroups = [ "hindsight" ]; }
+#   pkgs.hermes-agent.override { extraPythonPackages = [...]; }
+#   pkgs.hermes-agent.override { extraDependencyGroups = [ "honcho" ]; }
 {
   lib,
   stdenv,
   makeWrapper,
+  writeText,
   callPackage,
-  python312,
   electron,
   ripgrep,
   git,
@@ -33,12 +33,52 @@
   # check for updates without needing a local .git directory. Null for
   # impure / dirty builds where flakes can't determine a rev.
   rev ? null,
+  branch ? null,
+  dirty ? false,
+  lastModified ? null,
   # Overridable parameters
+  version ? "0.0.0",
+  distance ? 0,
   extraPythonPackages ? [ ],
   extraDependencyGroups ? [ ],
 }:
 let
-  mkMoorVenv =
+  # One owner (pythonLock.nix) reads pm/lock.json and selects the matching
+  # nixpkgs interpreter. Everything Python-shaped below derives from it.
+  pythonLock = callPackage ./pythonLock.nix { };
+  python = pythonLock.interpreter;
+
+  # Install stamp values — written to install-stamp.json so the Python
+  # runtime (CLI, TUI) reads one file instead of env vars or .git probes.
+  stampDistance =
+    if builtins.isInt distance && distance >= 0 then distance else throw "distance must be a non-negative integer";
+  stampDisplayVersion =
+    if stampDistance > 0 && rev != null then
+      "${version}+${toString stampDistance}.g${builtins.substring 0 7 rev}"
+    else if stampDistance > 0 then
+      throw "a non-zero distance requires an exact revision"
+    else
+      version;
+
+  # CLI and Electron consume the same provenance and update owner.
+  installStampFile = writeText "hermes-install-stamp.json" (builtins.toJSON {
+    schemaVersion = 2;
+    commit = rev;
+    commitDate = lastModified;
+    inherit branch dirty;
+    builtAt = null;
+    baseVersion = version;
+    displayVersion = stampDisplayVersion;
+    distance = stampDistance;
+    source = "nix";
+    distribution = "nix";
+    pmRuntime = toString pmRuntime;
+    updateMechanism = "external";
+    payload = "bootstrap";
+    tag = null;
+  });
+
+  mkHermesVenv =
     extraDependencyGroups:
     callPackage ./python.nix {
       inherit uv2nix pyproject-nix pyproject-build-systems;
@@ -48,7 +88,16 @@ let
 
   moorVenv = (mkMoorVenv extraDependencyGroups).venv;
 
-  moorNpmLib = callPackage ./lib.nix {
+  pmRuntime = callPackage ./pm-runtime.nix {
+    inherit uv2nix pyproject-nix pyproject-build-systems;
+  };
+
+  # Icons render on the runtime venv: Pillow and resvg-py are core dependencies.
+  generatedIcons = callPackage ./icons.nix {
+    inherit (mkHermesVenv [ ]) venv;
+  };
+
+  hermesNpmLib = callPackage ./lib.nix {
     inherit npm-lockfile-fix;
   };
 
@@ -56,8 +105,8 @@ let
     inherit moorNpmLib;
   };
 
-  moorWeb = callPackage ./web.nix {
-    inherit moorNpmLib;
+  hermesWeb = callPackage ./web.nix {
+    inherit hermesNpmLib generatedIcons;
   };
 
   bundledSkills = lib.cleanSourceWith {
@@ -109,12 +158,56 @@ let
 
   runtimePath = lib.makeBinPath runtimeDeps;
 
-  sitePackagesPath = python312.sitePackages;
+  sitePackagesPath = python.sitePackages;
+
+  # Only the offline assembler's import closure. A frontend or catalog edit
+  # must not change this source, and no build output is read during evaluation.
+  agentBuilderSrc = lib.fileset.toSource {
+    root = ./..;
+    fileset = lib.fileset.unions [
+      ../scripts/build/agent.py
+      ../scripts/build/inputs.py
+      ../scripts/build/launchers.py
+    ];
+  };
+
+  agentInputsFile = writeText "hermes-agent-inputs.json" (builtins.toJSON {
+    project = "${../pyproject.toml}";
+    code = "${hermesVenv}/${sitePackagesPath}";
+    repo = "share/hermes-agent";
+    placement = "references";
+    target = "${if stdenv.hostPlatform.isDarwin then "darwin" else "linux"}-${
+      if stdenv.hostPlatform.isAarch64 then "arm64" else "x64"
+    }";
+    python = "${hermesVenv}/bin/python3";
+    site_packages = "${hermesVenv}/${sitePackagesPath}";
+    environment = toString hermesVenv;
+    pm_runtime = toString pmRuntime;
+    command_dir = "${hermesVenv}/bin";
+    resources = {
+      skills = toString bundledSkills;
+      optional-skills = toString bundledOptionalSkills;
+      plugins = toString bundledPlugins;
+      locales = toString bundledLocales;
+      optional-mcps = toString bundledOptionalMcps;
+    };
+    frontends = {
+      tui = "${hermesTui}/lib/hermes-tui";
+      web = toString hermesWeb;
+    };
+    ref = if dirty then null else rev;
+    stamp = toString installStampFile;
+    env = {
+      HERMES_NODE = lib.getExe hermesNpmLib.nodejs;
+    } // lib.optionalAttrs (rev != null && !dirty) {
+      HERMES_REVISION = rev;
+    };
+  });
 
   # Walk propagatedBuildInputs to include transitive Python deps in PYTHONPATH.
   # Without this, a plugin listing e.g. requests as a dep would fail at runtime
   # if requests isn't already in the sealed uv2nix venv.
-  allExtraPythonPackages = python312.pkgs.requiredPythonModules extraPythonPackages;
+  allExtraPythonPackages = python.pkgs.requiredPythonModules extraPythonPackages;
 
   pythonPath = lib.makeSearchPath sitePackagesPath allExtraPythonPackages;
 
@@ -159,8 +252,8 @@ let
   '';
 in
 stdenv.mkDerivation (finalAttrs: {
-  pname = "moor-agent";
-  version = (fromTOML (builtins.readFile ../pyproject.toml)).project.version;
+  pname = "hermes-agent";
+  inherit version;
 
   dontUnpack = true;
   dontBuild = true;
@@ -169,50 +262,34 @@ stdenv.mkDerivation (finalAttrs: {
   installPhase = ''
     runHook preInstall
 
-    # Symlinks, not copies: these are all store paths already, and the
-    # wrapper env vars just hold paths.  Symlinking keeps this derivation
-    # near-instant when only the venv changed, with an identical closure.
-    mkdir -p $out/share/moor-agent $out/bin
-    ln -s ${bundledSkills} $out/share/moor-agent/skills
-    ln -s ${bundledOptionalSkills} $out/share/moor-agent/optional-skills
-    ln -s ${bundledPlugins} $out/share/moor-agent/plugins
-    ln -s ${bundledLocales} $out/share/moor-agent/locales
-    ln -s ${bundledOptionalMcps} $out/share/moor-agent/optional-mcps
-    ln -s ${moorWeb} $out/share/moor-agent/web_dist
-    ln -s ${moorTui}/lib/moor-tui $out/ui-tui
+    # uv2nix owns Python code and dependencies. The shared assembler only
+    # links resources and emits the derived command/environment description.
+    PYTHONPATH=${agentBuilderSrc} ${python}/bin/python3 -m scripts.build.agent \
+      --inputs ${agentInputsFile} --out "$out"
 
-    ${lib.concatMapStringsSep "\n"
-      (name: ''
-        makeWrapper ${moorVenv}/bin/${name} $out/bin/${name} \
-          --suffix PATH : "${runtimePath}" \
-          --set MOOR_BUNDLED_SKILLS $out/share/moor-agent/skills \
-          --set MOOR_OPTIONAL_SKILLS $out/share/moor-agent/optional-skills \
-          --set MOOR_BUNDLED_PLUGINS $out/share/moor-agent/plugins \
-          --set MOOR_BUNDLED_LOCALES $out/share/moor-agent/locales \
-          --set MOOR_OPTIONAL_MCPS $out/share/moor-agent/optional-mcps \
-          --set MOOR_WEB_DIST $out/share/moor-agent/web_dist \
-          --set MOOR_TUI_DIR $out/ui-tui \
-          --set-default MOOR_BIN $out/bin/moor \
-          --set MOOR_PYTHON ${moorVenv}/bin/python3 \
-          --set MOOR_NODE ${lib.getExe moorNpmLib.nodejs}${
-            # Fold the line continuation INTO the optionalString: a bare
-            # `\` on the line above an empty expansion would dangle onto a
-            # blank line, ending the makeWrapper command early and running
-            # the next flag as its own shell command (`--suffix: command
-            # not found`). Only reproduces when rev == null (dirty trees).
-            lib.optionalString (rev != null) " \\\n          --set MOOR_REVISION ${rev}"
-          }${
-            lib.optionalString (
-              extraPythonPackages != [ ]
-            ) " \\\n          --suffix PYTHONPATH : \"${pythonPath}\""
-          }
-      '')
-      [
-        "moor"
-        "moor-agent"
-        "moor-acp"
-      ]
+    # Native wrappers retain Nix's PATH/PYTHONPATH policies. Names, executable
+    # sources and resource bindings come from the builder, not another table.
+    makeAgentWrapper() {
+      local source="$1" destination="$2"
+      shift 2
+      makeWrapper "$source" "$out/$destination" "$@" \
+        --suffix PATH : "${runtimePath}" \
+        --set-default HERMES_BIN "$out/bin/hermes"${
+          lib.optionalString (extraPythonPackages != [ ])
+            " \\\n        --suffix PYTHONPATH : \"${pythonPath}\""
+        }
     }
+    ${python}/bin/python3 - "$out/command-map.json" > "$TMPDIR/agent-wrappers.sh" <<'PY'
+    import json, shlex, sys
+
+    with open(sys.argv[1]) as handle:
+        description = json.load(handle)
+    env = [arg for key, value in sorted(description["env"].items())
+           for arg in ("--set", key, value)]
+    for command in description["commands"].values():
+        print(shlex.join(["makeAgentWrapper", command["source"], command["destination"], *env]))
+    PY
+    source "$TMPDIR/agent-wrappers.sh"
 
     ${lib.optionalString (extraPythonPackages != [ ]) ''
       echo "=== Checking for plugin/core package collisions ==="
@@ -229,22 +306,28 @@ stdenv.mkDerivation (finalAttrs: {
     in
     {
       inherit
-        moorTui
-        moorWeb
-        moorNpmLib
-        moorVenv
+        hermesTui
+        hermesWeb
+        hermesNpmLib
+        hermesVenv
+        agentBuilderSrc
+        agentInputsFile
+        installStampFile
+        pmRuntime
+        python
         ;
 
       # `moorDesktop` references `finalAttrs.finalPackage` (this whole
       # derivation, after all overrides are applied) so the desktop wrapper
-      # can prepend its `/bin` to PATH.  The desktop's resolver step 4
-      # ("existing moor on PATH") then picks up the fully wrapped
-      # `moor` binary — venv with all deps, bundled skills/plugins,
+      # can pin its `hermes` command via HERMES_DESKTOP_HERMES. The
+      # deployment override then picks up the fully wrapped
+      # `hermes` binary — venv with all deps, bundled skills/plugins,
       # runtime PATH (ripgrep/git/ffmpeg/etc).  No re-implementation
       # of the agent resolution in the desktop wrapper.
-      moorDesktop = callPackage ./desktop.nix {
-        inherit moorNpmLib electron;
-        moorAgent = finalAttrs.finalPackage;
+      hermesDesktop = callPackage ./desktop.nix {
+        inherit hermesNpmLib electron installStampFile generatedIcons;
+        python3 = python;
+        hermesAgent = finalAttrs.finalPackage;
       };
 
       devShellHook = ''

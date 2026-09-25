@@ -14,8 +14,8 @@ Drug discovery: ChEMBL search, drug-likeness, interactions.
 
 | | |
 |---|---|
-| Source | Optional — install with `moor skills install official/research/drug-discovery` |
-| Path | `optional-skills/research\drug-discovery` |
+| Source | Optional — install with `hermes skills install official/research/drug-discovery` |
+| Path | `optional-skills/research/drug-discovery` |
 | Version | `1.0.0` |
 | Author | bennytimz |
 | License | MIT |

@@ -58,7 +58,7 @@ description: "Moor Agent 使用的所有环境变量完整参考"
 | `AZURE_CLIENT_SECRET` | `EnvironmentCredential` 使用的服务主体密钥 |
 | `AZURE_CLIENT_CERTIFICATE_PATH` | 服务主体证书（`AZURE_CLIENT_SECRET` 的替代方案） |
 | `AZURE_FEDERATED_TOKEN_FILE` | AKS Workload Identity / OIDC 流程的联合 token 文件路径 |
-| `AZURE_AUTHORITY_HOST` | 主权云 authority 覆盖（例如 Azure Government 使用 `https://login.microsoftonline.us`）。参见 [Azure Foundry 指南](/guides/azure-foundry#sovereign-clouds-government-china) |
+| `AZURE_AUTHORITY_HOST` | 主权云 authority 覆盖（例如 Azure Government 使用 `https://login.microsoftonline.us`）。参见 [Azure Foundry 指南](../guides/azure-foundry.md#主权云政府云中国云) |
 | `IDENTITY_ENDPOINT` / `MSI_ENDPOINT` | App Service、Functions 和 Container Apps 的托管标识端点；VM 通常使用 IMDS 而不设置这些变量 |
 | `HF_TOKEN` | Hugging Face Inference Providers token（[huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)） |
 | `HF_BASE_URL` | 覆盖 Hugging Face base URL（默认：`https://router.huggingface.co/v1`） |
@@ -93,16 +93,15 @@ description: "Moor Agent 使用的所有环境变量完整参考"
 | `CLAUDE_CODE_OAUTH_TOKEN` | 手动导出时的显式 Claude Code token 覆盖 |
 | `MOOR_MODEL` | 在进程级别覆盖模型名称（供 cron 调度器使用；正常使用请优先在 `config.yaml` 中配置） |
 | `VOICE_TOOLS_OPENAI_KEY` | OpenAI 语音转文字和文字转语音提供商的首选 OpenAI 密钥 |
-| `MOOR_LOCAL_STT_COMMAND` | 可选的本地语音转文字命令模板。支持 `{input_path}`、`{output_dir}`、`{language}` 和 `{model}` 占位符 |
-| `MOOR_LOCAL_STT_LANGUAGE` | 传递给 `MOOR_LOCAL_STT_COMMAND` 或自动检测的本地 `whisper` CLI 回退的默认语言（默认：`en`） |
-| `MOOR_HOME` | 覆盖 Moor 配置目录（默认：`~/.moor`）。同时限定 gateway PID 文件和 systemd 服务名称，允许多个安装并发运行 |
-| `MOOR_GIT_BASH_PATH` | **仅 Windows。** 覆盖终端工具的 `bash.exe` 发现路径。可指向任意 bash——完整 Git-for-Windows 安装、通过符号链接的 WSL bash、MSYS2、Cygwin。安装程序会自动将其设置为所配置的 PortableGit。参见 [Windows（原生）指南](../user-guide/windows-native.md#how-moor-runs-shell-commands-on-windows) |
-| `MOOR_DISABLE_WINDOWS_UTF8` | **仅 Windows。** 设为 `1` 可禁用 UTF-8 stdio shim（`configure_windows_stdio()`），回退到控制台的本地代码页。用于排查编码问题；正常操作中极少需要 |
-| `MOOR_KANBAN_HOME` | 覆盖锚定 kanban 看板（数据库 + 工作区 + 工作日志）的共享 Moor 根目录。回退到 `get_default_moor_root()`（任意活动 profile 的父目录）。适用于测试和非常规部署 |
-| `MOOR_KANBAN_BOARD` | 为当前进程固定活动 kanban 看板。优先于 `~/.moor/kanban/current`；调度器将其注入工作进程子进程环境，使工作进程无法看到其他看板上的任务。默认为 `default`。slug 验证：小写字母数字 + 连字符 + 下划线，1-64 字符 |
-| `MOOR_KANBAN_DB` | 直接固定 kanban 数据库文件路径（最高优先级；优先于 `MOOR_KANBAN_BOARD` 和 `MOOR_KANBAN_HOME`）。调度器将其注入工作进程子进程环境，使 profile 工作进程收敛到调度器的看板 |
-| `MOOR_KANBAN_WORKSPACES_ROOT` | 直接固定 kanban 工作区根目录（工作区最高优先级；优先于 `MOOR_KANBAN_HOME`）。调度器将其注入工作进程子进程环境 |
-| `MOOR_KANBAN_DISPATCH_IN_GATEWAY` | `kanban.dispatch_in_gateway` 的运行时覆盖。设为 `0`、`false`、`no` 或 `off` 可阻止 gateway 启动内嵌 Kanban 调度器；任何其他非空值则启用。适用于独立调度器进程拥有看板的场景。 |
+| `HERMES_LOCAL_STT_COMMAND` | 可选的本地语音转文字命令模板。支持 `{input_path}`、`{output_dir}`、`{language}` 和 `{model}` 占位符 |
+| `HERMES_LOCAL_STT_LANGUAGE` | 传递给 `HERMES_LOCAL_STT_COMMAND` 或自动检测的本地 `whisper` CLI 回退的默认语言（默认：`en`） |
+| `HERMES_HOME` | 选择配置和用户数据目录。POSIX 默认为 `~/.hermes`，Windows 默认为 `%LOCALAPPDATA%\hermes`。源码位置和 PM 工具存储单独管理，详见[包管理](./package-management.md)。 |
+| `HERMES_DISABLE_WINDOWS_UTF8` | **仅 Windows。** 设为 `1` 可禁用 UTF-8 stdio shim（`configure_windows_stdio()`），回退到控制台的本地代码页。用于排查编码问题；正常操作中极少需要 |
+| `HERMES_KANBAN_HOME` | 覆盖锚定 kanban 看板（数据库 + 工作区 + 工作日志）的共享 Hermes 根目录。回退到 `get_default_hermes_root()`（任意活动 profile 的父目录）。适用于测试和非常规部署 |
+| `HERMES_KANBAN_BOARD` | 为当前进程固定活动 kanban 看板。优先于 `~/.hermes/kanban/current`；调度器将其注入工作进程子进程环境，使工作进程无法看到其他看板上的任务。默认为 `default`。slug 验证：小写字母数字 + 连字符 + 下划线，1-64 字符 |
+| `HERMES_KANBAN_DB` | 直接固定 kanban 数据库文件路径（最高优先级；优先于 `HERMES_KANBAN_BOARD` 和 `HERMES_KANBAN_HOME`）。调度器将其注入工作进程子进程环境，使 profile 工作进程收敛到调度器的看板 |
+| `HERMES_KANBAN_WORKSPACES_ROOT` | 直接固定 kanban 工作区根目录（工作区最高优先级；优先于 `HERMES_KANBAN_HOME`）。调度器将其注入工作进程子进程环境 |
+| `HERMES_KANBAN_DISPATCH_IN_GATEWAY` | `kanban.dispatch_in_gateway` 的运行时覆盖。设为 `0`、`false`、`no` 或 `off` 可阻止 gateway 启动内嵌 Kanban 调度器；任何其他非空值则启用。适用于独立调度器进程拥有看板的场景。 |
 
 ## 提供商认证（OAuth）
 
@@ -110,13 +109,13 @@ description: "Moor Agent 使用的所有环境变量完整参考"
 
 | 变量 | 描述 |
 |----------|-------------|
-| `MOOR_PORTAL_BASE_URL` | 覆盖 Moor Portal URL（用于开发/测试） |
-| `MOOR_INFERENCE_BASE_URL` | 覆盖 Moor 推理 API URL |
-| `MOOR_MOOR_MIN_KEY_TTL_SECONDS` | 重新铸造前的最小 agent 密钥 TTL（默认：1800 = 30 分钟） |
-| `MOOR_MOOR_TIMEOUT_SECONDS` | Moor 凭证/token 流程的 HTTP 超时 |
-| `MOOR_DUMP_REQUESTS` | 将 API 请求载荷转储到日志文件（`true`/`false`） |
-| `MOOR_PREFILL_MESSAGES_FILE` | 包含在 API 调用时注入的临时预填消息的 JSON 文件路径 |
-| `MOOR_TIMEZONE` | IANA 时区覆盖（例如 `America/New_York`） |
+| `HERMES_PORTAL_BASE_URL` | 覆盖 Nous Portal URL（用于开发/测试） |
+| `NOUS_INFERENCE_BASE_URL` | 覆盖 Nous 推理 API URL |
+| `HERMES_NOUS_MIN_KEY_TTL_SECONDS` | 重新铸造前的最小 agent 密钥 TTL（默认：1800 = 30 分钟） |
+| `HERMES_NOUS_TIMEOUT_SECONDS` | Nous 凭证/token 流程的 HTTP 超时 |
+| `HERMES_DUMP_REQUESTS` | 将 API 请求载荷转储到日志文件（`true`/`false`） |
+| `HERMES_PREFILL_MESSAGES_FILE` | 包含在 API 调用时注入的临时预填消息的 JSON 文件路径 |
+| `HERMES_TIMEZONE` | IANA 时区覆盖（例如 `America/New_York`）。在 Linux/macOS 上还会作为 `TZ` 导出给 `execute_code` 子进程；在 Windows 上这些子进程保留操作系统时区，因为 Windows C 运行时只支持 POSIX 形式的 `TZ` 字符串，IANA 名称会被解析成错误的偏移量 |
 
 ## 工具 API
 
@@ -160,7 +159,7 @@ description: "Moor Agent 使用的所有环境变量完整参考"
 
 ### Langfuse 可观测性
 
-内置 [`observability/langfuse`](/user-guide/features/built-in-plugins#observabilitylangfuse) 插件的环境变量。在 `~/.moor/.env` 中设置。在这些变量生效之前，还必须启用该插件（`moor plugins enable observability/langfuse`，或在 `moor plugins` 中勾选）。
+内置 [`observability/langfuse`](../user-guide/features/built-in-plugins.md#observabilitylangfuse) 插件的环境变量。在 `~/.hermes/.env` 中设置。在这些变量生效之前，还必须启用该插件（`hermes plugins enable observability/langfuse`，或在 `hermes plugins` 中勾选）。
 
 | 变量 | 描述 |
 |----------|-------------|
@@ -176,7 +175,7 @@ description: "Moor Agent 使用的所有环境变量完整参考"
 
 ### Moor Tool Gateway
 
-这些变量为付费 Moor 订阅者或自托管 gateway 部署配置 [Tool Gateway](/user-guide/features/tool-gateway)。大多数用户无需设置——gateway 通过 `moor model` 或 `moor tools` 自动配置。
+这些变量为付费 Nous 订阅者或自托管 gateway 部署配置 [Tool Gateway](../user-guide/features/tool-gateway.md)。大多数用户无需设置——gateway 通过 `hermes model` 或 `hermes tools` 自动配置。
 
 | 变量 | 描述 |
 |----------|-------------|
@@ -273,7 +272,7 @@ description: "Moor Agent 使用的所有环境变量完整参考"
 | `DISCORD_IGNORED_CHANNELS` | bot 永不响应的逗号分隔频道 ID |
 | `DISCORD_NO_THREAD_CHANNELS` | bot 不自动创建线程的逗号分隔频道 ID |
 | `DISCORD_REPLY_TO_MODE` | 回复引用行为：`off`、`first`（默认）或 `all` |
-| `DISCORD_ALLOW_MENTION_EVERYONE` | 允许 bot ping `@everyone`/`@here`（默认：`false`）。参见 [Mention 控制](../user-guide/messaging/discord.md#mention-control)。 |
+| `DISCORD_ALLOW_MENTION_EVERYONE` | 允许 bot ping `@everyone`/`@here`（默认：`false`）。参见 [Mention 控制](../user-guide/messaging/discord.md#提及控制)。 |
 | `DISCORD_ALLOW_MENTION_ROLES` | 允许 bot ping `@role` mention（默认：`false`）。 |
 | `DISCORD_ALLOW_MENTION_USERS` | 允许 bot ping 单个 `@user` mention（默认：`true`）。 |
 | `DISCORD_ALLOW_MENTION_REPLIED_USER` | 回复消息时 ping 原作者（默认：`true`）。 |
@@ -337,7 +336,7 @@ description: "Moor Agent 使用的所有环境变量完整参考"
 | `FEISHU_ENCRYPT_KEY` | webhook 模式的可选加密密钥 |
 | `FEISHU_VERIFICATION_TOKEN` | webhook 模式的可选验证 token |
 | `FEISHU_ALLOWED_USERS` | 允许向 bot 发送消息的逗号分隔飞书用户 ID |
-| `FEISHU_ALLOW_BOTS` | `none`（默认）/`mentions`/`all`——接受来自其他 bot 的入站消息。参见 [bot 间消息传递](../user-guide/messaging/feishu.md#bot-to-bot-messaging) |
+| `FEISHU_ALLOW_BOTS` | `none`（默认）/`mentions`/`all`——接受来自其他 bot 的入站消息。参见 [bot 间消息传递](../user-guide/messaging/feishu.md#机器人间消息传递) |
 | `FEISHU_REQUIRE_MENTION` | `true`（默认）/`false`——群组消息是否必须 @mention bot。可通过 `group_rules.<chat_id>.require_mention` 按聊天覆盖。 |
 | `FEISHU_HOME_CHANNEL` | cron 投递和通知的飞书聊天 ID |
 | `WECOM_BOT_ID` | 来自管理控制台的企业微信 AI Bot ID |
@@ -414,8 +413,8 @@ description: "Moor Agent 使用的所有环境变量完整参考"
 | `API_SERVER_CORS_ORIGINS` | 允许直接调用 API 服务器的逗号分隔浏览器来源（例如 `http://localhost:3000,http://127.0.0.1:3000`）。默认：禁用。 |
 | `API_SERVER_PORT` | API 服务器端口（默认：`8642`） |
 | `API_SERVER_HOST` | API 服务器主机/绑定地址（默认：`127.0.0.1`）。使用 `0.0.0.0` 开放网络访问——需要 `API_SERVER_KEY` 和严格的 `API_SERVER_CORS_ORIGINS` 白名单。 |
-| `API_SERVER_MODEL_NAME` | `/v1/models` 上公告的模型名称。默认为 profile 名称（默认 profile 为 `moor-agent`）。适用于 Open WebUI 等前端需要每个连接使用不同模型名称的多用户场景。 |
-| `GATEWAY_PROXY_URL` | 将消息转发到的远程 Moor API 服务器 URL（[代理模式](/user-guide/messaging/matrix#proxy-mode-e2ee-on-macos)）。设置后，gateway 仅处理平台 I/O——所有 agent 工作委托给远程服务器。也可通过 `config.yaml` 中的 `gateway.proxy_url` 配置。 |
+| `API_SERVER_MODEL_NAME` | `/v1/models` 上公告的模型名称。默认为 profile 名称（默认 profile 为 `hermes-agent`）。适用于 Open WebUI 等前端需要每个连接使用不同模型名称的多用户场景。 |
+| `GATEWAY_PROXY_URL` | 将消息转发到的远程 Hermes API 服务器 URL（[代理模式](../user-guide/messaging/matrix.md#代理模式macos-上的-e2ee)）。设置后，gateway 仅处理平台 I/O——所有 agent 工作委托给远程服务器。也可通过 `config.yaml` 中的 `gateway.proxy_url` 配置。 |
 | `GATEWAY_PROXY_KEY` | 代理模式下与远程 API 服务器认证的 Bearer token。必须与远程主机上的 `API_SERVER_KEY` 一致。 |
 | `MESSAGING_CWD` | 消息模式下终端命令的工作目录（默认：`~`） |
 | `GATEWAY_ALLOWED_USERS` | 跨所有平台允许的逗号分隔用户 ID |
@@ -423,7 +422,7 @@ description: "Moor Agent 使用的所有环境变量完整参考"
 
 ### Microsoft Graph（Teams 会议）
 
-用于即将推出的 Teams 会议摘要流水线的 Microsoft Graph REST 客户端的仅应用凭证。Azure 门户操作步骤和所需 API 权限详见[注册 Microsoft Graph 应用程序](/guides/microsoft-graph-app-registration)。
+用于即将推出的 Teams 会议摘要流水线的 Microsoft Graph REST 客户端的仅应用凭证。Azure 门户操作步骤和所需 API 权限详见[注册 Microsoft Graph 应用程序](../guides/microsoft-graph-app-registration.md)。
 
 | 变量 | 描述 |
 |----------|-------------|
@@ -435,7 +434,7 @@ description: "Moor Agent 使用的所有环境变量完整参考"
 
 ### Microsoft Graph Webhook 监听器
 
-Graph 事件（Teams 会议、日历、聊天等）的入站变更通知监听器。设置和安全加固详见 [Microsoft Graph Webhook 监听器](/user-guide/messaging/msgraph-webhook)。
+Graph 事件（Teams 会议、日历、聊天等）的入站变更通知监听器。设置和安全加固详见 [Microsoft Graph Webhook 监听器](../user-guide/messaging/msgraph-webhook.md)。
 
 | 变量 | 描述 |
 |----------|-------------|
@@ -447,7 +446,7 @@ Graph 事件（Teams 会议、日历、聊天等）的入站变更通知监听�
 
 ### Teams 会议摘要投递
 
-仅在启用 [`teams_pipeline` 插件](/user-guide/messaging/msgraph-webhook)时使用。设置也可在 `config.yaml` 的 `platforms.teams.extra` 下配置——两者都设置时环境变量优先。参见 [Microsoft Teams → 会议摘要投递](/user-guide/messaging/teams#meeting-summary-delivery-teams-meeting-pipeline)。
+仅在启用 [`teams_pipeline` 插件](../user-guide/messaging/msgraph-webhook.md)时使用。设置也可在 `config.yaml` 的 `platforms.teams.extra` 下配置——两者都设置时环境变量优先。参见 [Microsoft Teams → 会议摘要投递](../user-guide/messaging/teams.md#会议摘要投递teams-会议-pipeline)。
 
 | 变量 | 描述 |
 |----------|-------------|
@@ -460,7 +459,7 @@ Graph 事件（Teams 会议、日历、聊天等）的入站变更通知监听�
 
 ### LINE Messaging API
 
-由内置 LINE 平台插件（`plugins/platforms/line/`）使用。完整设置详见 [消息 Gateway → LINE](/user-guide/messaging/line)。
+由内置 LINE 平台插件（`plugins/platforms/line/`）使用。完整设置详见 [消息 Gateway → LINE](../user-guide/messaging/line.md)。
 
 | 变量 | 描述 |
 |----------|-------------|
@@ -497,7 +496,7 @@ Graph 事件（Teams 会议、日历、聊天等）的入站变更通知监听�
 | `NTFY_HOME_CHANNEL` | `deliver: ntfy` 的 cron 任务的默认投递目标。 |
 | `NTFY_HOME_CHANNEL_NAME` | 主频道的人类可读标签（默认为话题名称）。 |
 
-在使用不受信任的话题部署前，请参阅 [ntfy 消息指南](/user-guide/messaging/ntfy)——特别是**身份模型**部分。
+在使用不受信任的话题部署前，请参阅 [ntfy 消息指南](../user-guide/messaging/ntfy.md)——特别是**身份模型**部分。
 
 ### 高级消息调优
 
@@ -535,52 +534,52 @@ Graph 事件（Teams 会议、日历、聊天等）的入站变更通知监听�
 
 | 变量 | 描述 |
 |----------|-------------|
-| `MOOR_MAX_ITERATIONS` | 每次对话的最大工具调用迭代次数（默认：500） |
-| `MOOR_INFERENCE_MODEL` | 在进程级别覆盖模型名称（优先于本次会话的 `config.yaml`）。也可通过 `-m`/`--model` 标志设置。 |
-| `MOOR_YOLO_MODE` | 设为 `1` 可绕过危险命令审批提示。等同于 `--yolo`。 |
-| `MOOR_ACCEPT_HOOKS` | 无需 TTY 提示自动批准 `config.yaml` 中声明的任何未见过的 shell hook。等同于 `--accept-hooks` 或 `hooks_auto_accept: true`。 |
-| `MOOR_IGNORE_USER_CONFIG` | 跳过 `~/.moor/config.yaml` 并使用内置默认值（`.env` 中的凭证仍会加载）。等同于 `--ignore-user-config`。 |
-| `MOOR_IGNORE_RULES` | 跳过 `AGENTS.md`、`SOUL.md`、`.cursorrules`、记忆和预加载技能的自动注入。等同于 `--ignore-rules`。 |
-| `MOOR_SAFE_MODE` | 故障排查模式：禁用**所有**自定义项——跳过插件发现、MCP 服务器加载和 shell hook 注册。由 `--safe-mode` 自动设置（同时也会设置上面两个 flag）。 |
-| `MOOR_MD_NAMES` | 自动注入的规则文件名逗号分隔列表（默认：`AGENTS.md,CLAUDE.md,.cursorrules,SOUL.md`）。 |
-| `MOOR_TOOL_PROGRESS` | 自配置 v12 支持底线起不再受支持——该变量会被忽略。请使用 `config.yaml` 中的 `display.tool_progress`。 |
-| `MOOR_TOOL_PROGRESS_MODE` | 工具进度模式的已弃用兼容变量（网关仍作为回退读取）。优先使用 `config.yaml` 中的 `display.tool_progress`。 |
-| `MOOR_HUMAN_DELAY_MODE` | 响应节奏：`off`/`natural`/`custom` |
-| `MOOR_HUMAN_DELAY_MIN_MS` | 自定义延迟范围最小值（毫秒） |
-| `MOOR_HUMAN_DELAY_MAX_MS` | 自定义延迟范围最大值（毫秒） |
-| `MOOR_QUIET` | 抑制非必要输出（`true`/`false`） |
-| `CODEX_HOME` | 启用 [Codex 应用服务器运行时](../user-guide/features/codex-app-server-runtime)时，覆盖 Codex CLI 读取其配置 + 认证的目录（默认：`~/.codex`）。Moor 的迁移将托管块写入 `<CODEX_HOME>/config.toml`。 |
-| `MOOR_KANBAN_TASK` | kanban 调度器生成工作进程时设置（任务 UUID）。工作进程和生成的 `moor-tools` MCP 子进程继承它，以便 kanban 工具正确门控。请勿手动设置。 |
-| `MOOR_API_TIMEOUT` | LLM API 调用超时（秒，默认：`1800`） |
-| `MOOR_API_CALL_STALE_TIMEOUT` | 非流式过期调用超时（秒，默认：`300`）。未设置时对本地提供商自动禁用。也可通过 `config.yaml` 中的 `providers.<id>.stale_timeout_seconds` 或 `providers.<id>.models.<model>.stale_timeout_seconds` 配置。 |
-| `MOOR_STREAM_READ_TIMEOUT` | 流式 socket 读取超时（秒，默认：`120`）。对本地提供商自动增大到 `MOOR_API_TIMEOUT`。如果本地 LLM 在长代码生成期间超时，请增大此值。 |
-| `MOOR_STREAM_STALE_TIMEOUT` | 过期流检测超时（秒，默认：`180`）。对本地提供商自动禁用。在此窗口内无块到达时触发连接终止。 |
-| `MOOR_STREAM_RETRIES` | 瞬时网络错误时的流中重连尝试次数（默认：`3`）。 |
-| `MOOR_AGENT_TIMEOUT` | gateway 中运行 agent 的不活动超时（秒，默认：`900`）。每次工具调用和流 token 时重置。设为 `0` 可禁用。 |
-| `MOOR_AGENT_TIMEOUT_WARNING` | Gateway：不活动超过此秒数后发送警告消息（默认：`MOOR_AGENT_TIMEOUT` 的 75%）。 |
-| `MOOR_AGENT_NOTIFY_INTERVAL` | Gateway：长时间运行的 agent 轮次中进度通知的间隔（秒）。 |
-| `MOOR_CHECKPOINT_TIMEOUT` | 文件系统检查点创建超时（秒，默认：`30`）。 |
-| `MOOR_EXEC_ASK` | 在 gateway 模式下启用执行审批提示（`true`/`false`） |
-| `MOOR_ENABLE_PROJECT_PLUGINS` | 为 agent 加载器和仪表板 Web 服务器启用从 `./.moor/plugins/` 自动发现仓库本地插件。接受标准真值集：`1`/`true`/`yes`/`on`（不区分大小写）。其他所有值——包括 `0`、`false`、`no`、`off` 和空字符串——均视为**禁用**（默认）。注意：自 GHSA-5qr3-c538-wm9j（#29156）起，即使启用此变量，仪表板 Web 服务器也拒绝自动导入项目插件的 Python `api` 文件——项目插件可通过静态 JS/CSS 扩展 UI，但其后端路由仅在移至 `~/.moor/plugins/` 后才会加载。 |
-| `MOOR_PLUGINS_DEBUG` | `1`/`true` 可在 stderr 上输出详细的插件发现日志——扫描的目录、解析的 manifest、跳过原因以及解析或 `register()` 失败时的完整回溯。面向插件作者。 |
-| `MOOR_BACKGROUND_NOTIFICATIONS` | gateway 中后台进程通知模式：`concise`（默认）、`all`、`result`、`error`、`off` |
-| `MOOR_EPHEMERAL_SYSTEM_PROMPT` | 在 API 调用时注入的临时系统 prompt（永不持久化到会话） |
-| `MOOR_PREFILL_MESSAGES_FILE` | 包含在 API 调用时注入的临时预填消息的 JSON 文件路径。 |
-| `MOOR_ALLOW_PRIVATE_URLS` | `true`/`false`——允许工具获取 localhost/私有网络 URL。gateway 模式下默认关闭。 |
-| `MOOR_REDACT_SECRETS` | `true`/`false`——控制工具输出、日志和聊天响应中的密钥脱敏（默认：`true`）。 |
-| `MOOR_WRITE_SAFE_ROOT` | 可选目录前缀，**硬阻止** `write_file`/`patch` 写入列出的根目录之外的路径（无审批提示）。支持多个目录，使用 `os.pathsep` 分隔（Unix 为 `:`，Windows 为 `;`）。详见下方 [MOOR_WRITE_SAFE_ROOT](#moor_write_safe_root)。 |
-| `MOOR_DISABLE_LAZY_INSTALLS` | 官方 Docker 镜像中自动设置的内部桥接变量，用于阻止运行时将依赖安装到不可变的 `/opt/moor` 树。面向用户的等价配置是 `config.yaml` 中的 `security.allow_lazy_installs: false`；不要在 `.env` 中手动设置此变量。 |
-| `MOOR_DISABLE_FILE_STATE_GUARD` | 设为 `1` 可关闭 `patch`/`write_file` 上的"文件自上次读取后已更改"保护。 |
-| `MOOR_CORE_TOOLS` | 规范核心工具列表的逗号分隔覆盖（高级；极少需要）。 |
-| `MOOR_BUNDLED_SKILLS` | 启动时加载的内置技能列表的逗号分隔覆盖。 |
-| `MOOR_OPTIONAL_SKILLS` | 首次运行时自动安装的可选技能名称逗号分隔列表。 |
-| `MOOR_DEBUG_INTERRUPT` | 设为 `1` 可将详细的中断/取消追踪记录到 `agent.log`。 |
-| `MOOR_DUMP_REQUESTS` | 将 API 请求载荷转储到日志文件（`true`/`false`） |
-| `MOOR_DUMP_REQUEST_STDOUT` | 将 API 请求载荷转储到 stdout 而非日志文件。 |
-| `MOOR_OAUTH_TRACE` | 设为 `1` 可记录 OAuth token 交换和刷新尝试。包含脱敏的时序信息。 |
-| `MOOR_OAUTH_FILE` | 覆盖 OAuth 凭证存储路径（默认：`~/.moor/auth.json`）。 |
-| `MOOR_AGENT_HELP_GUIDANCE` | 为自定义部署在系统 prompt 中追加额外指导文本。 |
-| `MOOR_AGENT_LOGO` | 覆盖 CLI 启动时的 ASCII 横幅 logo。 |
+| `HERMES_MAX_ITERATIONS` | 每次对话的最大工具调用迭代次数（默认：500） |
+| `HERMES_INFERENCE_MODEL` | 在进程级别覆盖模型名称（优先于本次会话的 `config.yaml`）。也可通过 `-m`/`--model` 标志设置。 |
+| `HERMES_YOLO_MODE` | 设为 `1` 可绕过危险命令审批提示。等同于 `--yolo`。 |
+| `HERMES_ACCEPT_HOOKS` | 无需 TTY 提示自动批准 `config.yaml` 中声明的任何未见过的 shell hook。等同于 `--accept-hooks` 或 `hooks_auto_accept: true`。 |
+| `HERMES_IGNORE_USER_CONFIG` | 跳过 `~/.hermes/config.yaml` 并使用内置默认值（`.env` 中的凭证仍会加载）。等同于 `--ignore-user-config`。 |
+| `HERMES_IGNORE_RULES` | 跳过 `AGENTS.md`、`SOUL.md`、`.cursorrules`、记忆和预加载技能的自动注入。等同于 `--ignore-rules`。 |
+| `HERMES_SAFE_MODE` | 故障排查模式：禁用**所有**自定义项——跳过插件发现、MCP 服务器加载和 shell hook 注册。由 `--safe-mode` 自动设置（同时也会设置上面两个 flag）。 |
+| `HERMES_MD_NAMES` | 自动注入的规则文件名逗号分隔列表（默认：`AGENTS.md,CLAUDE.md,.cursorrules,SOUL.md`）。 |
+| `HERMES_TOOL_PROGRESS` | 自配置 v12 支持底线起不再受支持——该变量会被忽略。请使用 `config.yaml` 中的 `display.tool_progress`。 |
+| `HERMES_TOOL_PROGRESS_MODE` | 工具进度模式的已弃用兼容变量（网关仍作为回退读取）。优先使用 `config.yaml` 中的 `display.tool_progress`。 |
+| `HERMES_HUMAN_DELAY_MODE` | 响应节奏：`off`/`natural`/`custom` |
+| `HERMES_HUMAN_DELAY_MIN_MS` | 自定义延迟范围最小值（毫秒） |
+| `HERMES_HUMAN_DELAY_MAX_MS` | 自定义延迟范围最大值（毫秒） |
+| `HERMES_QUIET` | 抑制非必要输出（`true`/`false`） |
+| `CODEX_HOME` | 启用 [Codex 应用服务器运行时](../user-guide/features/codex-app-server-runtime)时，覆盖 Codex CLI 读取其配置 + 认证的目录（默认：`~/.codex`）。Hermes 的迁移将托管块写入 `<CODEX_HOME>/config.toml`。 |
+| `HERMES_KANBAN_TASK` | kanban 调度器生成工作进程时设置（任务 UUID）。工作进程和生成的 `hermes-tools` MCP 子进程继承它，以便 kanban 工具正确门控。请勿手动设置。 |
+| `HERMES_API_TIMEOUT` | LLM API 调用超时（秒，默认：`1800`） |
+| `HERMES_API_CALL_STALE_TIMEOUT` | 非流式过期调用超时（秒，默认：`300`）。未设置时对本地提供商自动禁用。也可通过 `config.yaml` 中的 `providers.<id>.stale_timeout_seconds` 或 `providers.<id>.models.<model>.stale_timeout_seconds` 配置。 |
+| `HERMES_STREAM_READ_TIMEOUT` | 流式 socket 读取超时（秒，默认：`120`）。对本地提供商自动增大到 `HERMES_API_TIMEOUT`。如果本地 LLM 在长代码生成期间超时，请增大此值。 |
+| `HERMES_STREAM_STALE_TIMEOUT` | 过期流检测超时（秒，默认：`180`）。对本地提供商自动禁用。在此窗口内无块到达时触发连接终止。 |
+| `HERMES_STREAM_RETRIES` | 瞬时网络错误时的流中重连尝试次数（默认：`3`）。 |
+| `HERMES_AGENT_TIMEOUT` | gateway 中运行 agent 的不活动超时（秒，默认：`900`）。每次工具调用和流 token 时重置。设为 `0` 可禁用。 |
+| `HERMES_AGENT_TIMEOUT_WARNING` | Gateway：不活动超过此秒数后发送警告消息（默认：`HERMES_AGENT_TIMEOUT` 的 75%）。 |
+| `HERMES_AGENT_NOTIFY_INTERVAL` | Gateway：长时间运行的 agent 轮次中进度通知的间隔（秒）。 |
+| `HERMES_CHECKPOINT_TIMEOUT` | 文件系统检查点创建超时（秒，默认：`30`）。 |
+| `HERMES_EXEC_ASK` | 在 gateway 模式下启用执行审批提示（`true`/`false`） |
+| `HERMES_ENABLE_PROJECT_PLUGINS` | 为 agent 加载器和仪表板 Web 服务器启用从 `./.hermes/plugins/` 自动发现仓库本地插件。接受标准真值集：`1`/`true`/`yes`/`on`（不区分大小写）。其他所有值——包括 `0`、`false`、`no`、`off` 和空字符串——均视为**禁用**（默认）。注意：自 GHSA-5qr3-c538-wm9j（#29156）起，即使启用此变量，仪表板 Web 服务器也拒绝自动导入项目插件的 Python `api` 文件——项目插件可通过静态 JS/CSS 扩展 UI，但其后端路由仅在移至 `~/.hermes/plugins/` 后才会加载。 |
+| `HERMES_PLUGINS_DEBUG` | `1`/`true` 可在 stderr 上输出详细的插件发现日志——扫描的目录、解析的 manifest、跳过原因以及解析或 `register()` 失败时的完整回溯。面向插件作者。 |
+| `HERMES_BACKGROUND_NOTIFICATIONS` | gateway 中后台进程通知模式：`concise`（默认）、`all`、`result`、`error`、`off` |
+| `HERMES_EPHEMERAL_SYSTEM_PROMPT` | 在 API 调用时注入的临时系统 prompt（永不持久化到会话） |
+| `HERMES_PREFILL_MESSAGES_FILE` | 包含在 API 调用时注入的临时预填消息的 JSON 文件路径。 |
+| `HERMES_ALLOW_PRIVATE_URLS` | `true`/`false`——允许工具获取 localhost/私有网络 URL。gateway 模式下默认关闭。 |
+| `HERMES_REDACT_SECRETS` | `true`/`false`——控制工具输出、日志和聊天响应中的密钥脱敏（默认：`true`）。 |
+| `HERMES_WRITE_SAFE_ROOT` | 可选目录前缀，**硬阻止** `write_file`/`patch` 写入列出的根目录之外的路径（无审批提示）。支持多个目录，使用 `os.pathsep` 分隔（Unix 为 `:`，Windows 为 `;`）。详见下方 [HERMES_WRITE_SAFE_ROOT](#hermes_write_safe_root)。 |
+| `HERMES_DISABLE_LAZY_INSTALLS` | 测试和安装探针使用的内部按需安装禁用策略，优先于 `security.allow_lazy_installs`；不要在 `.env` 中手动设置。 |
+| `HERMES_DISABLE_FILE_STATE_GUARD` | 设为 `1` 可关闭 `patch`/`write_file` 上的"文件自上次读取后已更改"保护。 |
+| `HERMES_CORE_TOOLS` | 规范核心工具列表的逗号分隔覆盖（高级；极少需要）。 |
+| `HERMES_BUNDLED_SKILLS` | 启动时加载的内置技能列表的逗号分隔覆盖。 |
+| `HERMES_OPTIONAL_SKILLS` | 首次运行时自动安装的可选技能名称逗号分隔列表。 |
+| `HERMES_DEBUG_INTERRUPT` | 设为 `1`/`true` 可将详细的中断/取消追踪记录到 `agent.log`；`0`/`false`/`off`（或未设置）则保持关闭。 |
+| `HERMES_DUMP_REQUESTS` | 将 API 请求载荷转储到日志文件（`true`/`false`） |
+| `HERMES_DUMP_REQUEST_STDOUT` | 将 API 请求载荷转储到 stdout 而非日志文件。 |
+| `HERMES_OAUTH_TRACE` | 设为 `1` 可记录 OAuth token 交换和刷新尝试。包含脱敏的时序信息。 |
+| `HERMES_OAUTH_FILE` | 覆盖 OAuth 凭证存储路径（默认：`~/.hermes/auth.json`）。 |
+| `HERMES_AGENT_HELP_GUIDANCE` | 为自定义部署在系统 prompt 中追加额外指导文本。 |
+| `HERMES_AGENT_LOGO` | 覆盖 CLI 启动时的 ASCII 横幅 logo。 |
 | `DELEGATION_MAX_CONCURRENT_CHILDREN` | 每个 `delegate_task` 批次的最大并行子 agent 数（默认：`3`，下限为 1，无上限）。也可通过 `config.yaml` 中的 `delegation.max_concurrent_children` 配置——config 值优先。 |
 
 ### MOOR_WRITE_SAFE_ROOT {#moor_write_safe_root}
@@ -597,7 +596,7 @@ Graph 事件（Teams 会议、日历、聊天等）的入站变更通知监听�
 export MOOR_WRITE_SAFE_ROOT=/path/to/project:/home/you/.moor
 ```
 
-取消设置或从 `.env` 中移除此变量可恢复常规写入（仍受凭证路径拒绝列表约束——见[文件写入安全](../user-guide/security.md#file-write-safety)）。
+取消设置或从 `.env` 中移除此变量可恢复常规写入（仍受凭证路径拒绝列表约束——见[文件写入安全](https://hermes-agent.nousresearch.com/docs/user-guide/security#file-write-safety)）。
 
 ## 界面
 
@@ -658,7 +657,7 @@ fallback_providers:
 
 旧版顶层 `fallback_model` 单提供商格式仍可向后兼容读取，但新配置应使用 `fallback_providers`。
 
-详见 [回退提供商](/user-guide/features/fallback-providers)。
+详见 [回退提供商](../user-guide/features/fallback-providers.md)。
 
 ## 提供商路由（仅 config.yaml）
 

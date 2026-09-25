@@ -33,10 +33,11 @@ def test_base_urls_follow_the_scoped_key_not_default_environ(monkeypatch, second
     from gateway.run_turn import GatewayTurnMixin
     from moor_cli import auth_moor
 
-    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
-    monkeypatch.setattr(aux, "_get_named_custom_provider", lambda name: None, raising=False)
+    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    from hermes_cli.runtime_provider_custom import expand_direct_api_alias
+    monkeypatch.setattr("hermes_cli.runtime_provider._get_named_custom_provider", lambda name: None)
 
-    _, base = aux._expand_direct_api_alias("openai", None)
+    _, base = expand_direct_api_alias("openai", None)
     assert "default.example" not in (base or "")
     assert aux._scoped_key_env("OPENAI_BASE_URL") == ""
     assert auth_moor._moor_inference_env_override() is None

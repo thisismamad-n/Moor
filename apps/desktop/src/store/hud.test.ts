@@ -4,18 +4,17 @@ import { $activeGatewayProfile } from '@/store/profile'
 import { $sessions } from '@/store/session'
 import type { SessionInfo } from '@/types/moor'
 
-import { $hudActive, $hudSession, openHud, resetHudLayout } from './hud'
+import { $hudActive, $hudSession, openHud } from './hud'
 
 const desktopWindow = window as unknown as { moorDesktop?: Window['moorDesktop'] }
 const initialMoorDesktop = desktopWindow.moorDesktop
 
 const open = vi.fn().mockResolvedValue({ ok: true })
-const resetLayout = vi.fn().mockResolvedValue({ ok: true })
 
 function installBridge() {
-  desktopWindow.moorDesktop = {
-    hud: { open, resetLayout }
-  } as unknown as Window['moorDesktop']
+  desktopWindow.hermesDesktop = {
+    hud: { open }
+  } as unknown as Window['hermesDesktop']
 }
 
 function session(overrides: Partial<SessionInfo>): SessionInfo {
@@ -24,7 +23,6 @@ function session(overrides: Partial<SessionInfo>): SessionInfo {
 
 beforeEach(() => {
   open.mockClear()
-  resetLayout.mockClear()
   installBridge()
   $hudActive.set(false)
   $hudSession.set(null)
@@ -38,14 +36,6 @@ afterEach(() => {
   } else {
     delete desktopWindow.moorDesktop
   }
-})
-
-describe('resetHudLayout', () => {
-  it('uses the native HUD recovery capability', () => {
-    resetHudLayout()
-
-    expect(resetLayout).toHaveBeenCalledOnce()
-  })
 })
 
 describe('openHud profile targeting (#82285)', () => {
@@ -73,12 +63,6 @@ describe('openHud profile targeting (#82285)', () => {
     openHud()
 
     expect(open).toHaveBeenCalledWith({ sessionId: null, profile: 'research' })
-  })
-
-  it('normalizes to default for single-profile users', () => {
-    openHud()
-
-    expect(open).toHaveBeenCalledWith({ sessionId: null, profile: 'default' })
   })
 
   it('uses the active profile when the target session is not in the cache', () => {

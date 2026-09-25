@@ -7,7 +7,7 @@ import type {
   ToolsetModelsResponse
 } from '@/types/moor'
 
-import { capabilityScoped, moorApi, type ProfileScope, profileScoped, scopedDialPriority } from './client'
+import { capabilityScoped, hermesApi, type ProfileScope, profileScoped } from './client'
 
 // The optional trailing `profile` on every capability fetcher below is the
 // Capabilities view's profile-scope override: it lets the Skills/Tools/MCP
@@ -17,7 +17,6 @@ import { capabilityScoped, moorApi, type ProfileScope, profileScoped, scopedDial
 export function getToolsets(profile?: ProfileScope): Promise<ToolsetInfo[]> {
   return window.moorDesktop.api<ToolsetInfo[]>({
     ...capabilityScoped(profile),
-    ...scopedDialPriority(profile),
     path: '/api/tools/toolsets'
   })
 }

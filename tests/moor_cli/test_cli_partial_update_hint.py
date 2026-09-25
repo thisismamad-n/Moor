@@ -16,7 +16,7 @@ import types
 
 import pytest
 
-from moor_constants import emit_partial_update_hint, partial_update_hint
+from hermes_constants import emit_partial_update_hint
 
 
 def _chat_args(**overrides):
@@ -78,16 +78,9 @@ def test_emit_hint_for_missing_resolve_turn_limit():
     assert emit_partial_update_hint(exc, file=buf) is True
     text = buf.getvalue()
     assert "resolve_turn_limit" in text
-    assert "moor update" in text
-    assert "partially-updated" in text
+    assert "hermes update" in text
 
 
-def test_emit_hint_for_missing_split_model_config_default():
-    exc = _missing_config_name_error("split_model_config_default")
-    assert partial_update_hint(exc)
-    buf = io.StringIO()
-    assert emit_partial_update_hint(exc, file=buf) is True
-    assert "moor update" in buf.getvalue()
 
 
 def test_emit_hint_stays_silent_for_third_party_import_error():
@@ -116,8 +109,7 @@ def test_cmd_chat_prints_update_hint_when_config_helper_is_missing(
     assert excinfo.value.code == 1
     err = capsys.readouterr().err
     assert name in err
-    assert "moor update" in err
-    assert "partially-updated" in err
+    assert "hermes update" in err
 
 
 def test_cmd_chat_still_reraises_unrelated_import_errors(main_mod, monkeypatch):

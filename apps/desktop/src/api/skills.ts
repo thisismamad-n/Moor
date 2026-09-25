@@ -9,12 +9,11 @@ import type {
 } from '@/types/moor'
 import type { ActionResponse } from '@/types/moor'
 
-import { capabilityScoped, moorApi, type ProfileScope, profileScoped, scopedDialPriority } from './client'
+import { capabilityScoped, hermesApi, type ProfileScope, profileScoped } from './client'
 
 export function getSkills(profile?: ProfileScope): Promise<SkillInfo[]> {
   return window.moorDesktop.api<SkillInfo[]>({
     ...capabilityScoped(profile),
-    ...scopedDialPriority(profile),
     path: '/api/skills'
   })
 }

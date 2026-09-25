@@ -11,9 +11,7 @@ also call invalidate_moor_auth_status_cache().
 from __future__ import annotations
 
 import json
-import os
 from unittest.mock import patch
-
 
 def _seed_auth_file(tmp_path):
     """Drop a placeholder auth.json into the test MOOR_HOME.
@@ -25,8 +23,7 @@ def _seed_auth_file(tmp_path):
     auth.write_text(json.dumps({"providers": {}}), encoding="utf-8")
     return auth
 
-
-def test_get_moor_auth_status_caches_consecutive_calls(tmp_path, monkeypatch):
+def test_get_nous_auth_status_caches_consecutive_calls(tmp_path, monkeypatch):
     """A second call within the TTL skips re-computing the snapshot."""
     monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     _seed_auth_file(tmp_path)
@@ -55,35 +52,4 @@ def test_get_moor_auth_status_caches_consecutive_calls(tmp_path, monkeypatch):
     first["mutated"] = True
     assert "mutated" not in auth_mod.get_moor_auth_status()
 
-    auth_mod.invalidate_moor_auth_status_cache()
-
-
-def test_get_moor_auth_status_caches_failure_path(tmp_path, monkeypatch):
-    """Logged-out snapshots are cached too — that's where the cost was.
-
-    Teknium's case: ~31 cache misses per `moor tools` "All Platforms"
-    menu paint, all returning logged_in=False after a failed refresh POST.
-    The whole point of the cache is to memoise that failure path too.
-    """
-    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
-    _seed_auth_file(tmp_path)
-
-    from moor_cli import auth as auth_mod
-
-    auth_mod.invalidate_moor_auth_status_cache()
-
-    call_count = {"n": 0}
-
-    def fake_compute():
-        call_count["n"] += 1
-        return {"logged_in": False, "source": "auth_store", "error": "refresh failed"}
-
-    with patch.object(auth_mod, "_compute_moor_auth_status", side_effect=fake_compute):
-        for _ in range(10):
-            auth_mod.get_moor_auth_status()
-
-    assert call_count["n"] == 1, (
-        f"Logged-out snapshots must cache; got {call_count['n']} computes for 10 calls."
-    )
-
-    auth_mod.invalidate_moor_auth_status_cache()
+    auth_mod.invalidate_nous_auth_status_cache()

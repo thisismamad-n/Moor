@@ -59,10 +59,11 @@ def _scrub_child_env(source_env, is_passthrough=None, is_windows=None):
     OS-essential allowlist passes by exact name.
     """
     try:
-        from tools.env_passthrough import is_env_passthrough, resolve_passthrough_value
+        from tools.env_passthrough import is_env_passthrough, resolve_passthrough_value, scoped_passthrough_additions
     except Exception:
         is_env_passthrough = lambda _: False  # noqa: E731
         resolve_passthrough_value = lambda _name, _fallback: None  # noqa: E731
+        scoped_passthrough_additions = lambda _present: {}  # noqa: E731
     if is_passthrough is None:
         is_passthrough = is_env_passthrough
     if is_windows is None:
@@ -83,9 +84,12 @@ def _scrub_child_env(source_env, is_passthrough=None, is_windows=None):
                 or k in _MOOR_CHILD_ALLOWED
                 or (is_windows and k.upper() in _WINDOWS_ESSENTIAL_ENV_VARS)):
             scrubbed[k] = v
-        elif k.startswith("MOOR_"):
-            _dropped_moor.append(k)
-    if _dropped_moor:
+        elif k.startswith("HERMES_"):
+            _dropped_hermes.append(k)
+    # Declared names only the bound profile scope holds (a routed profile's own .env / sources
+    # never enter the process env) — the loop above sees only names ``source_env`` carries.
+    scrubbed.update((k, v) for k, v in scoped_passthrough_additions(scrubbed).items() if is_passthrough(k))
+    if _dropped_hermes:
         logger.debug(
             "execute_code: dropped %d non-allowlisted MOOR_* var(s) from the "
             "sandbox child env (%s). This is intentional hardening (#27303); if "
@@ -112,7 +116,7 @@ def _scrub_child_env(source_env, is_passthrough=None, is_windows=None):
 def _build_child_env(*, rpc_endpoint: str, rpc_token: str, tmpdir: str,
                      child_python: str) -> Dict[str, str]:
     """Build the scrubbed child environment both execution paths share."""
-    from moor_constants import apply_subprocess_home_env, get_moor_home_override
+    from hermes_constants import apply_scratch_tmp_env, apply_subprocess_home_env, get_hermes_home_override
     child_env = _scrub_child_env(os.environ)
     child_env["MOOR_RPC_SOCKET"] = rpc_endpoint
     child_env["MOOR_RPC_TOKEN"] = rpc_token
@@ -126,7 +130,9 @@ def _build_child_env(*, rpc_endpoint: str, rpc_token: str, tmpdir: str,
     from moor_time import get_timezone_name
 
     _tz_name = get_timezone_name()
-    if _tz_name:
+    # Windows CPython does not support IANA names in TZ.  Leaving TZ unset
+    # preserves the OS-configured local timezone for the child process.
+    if _tz_name and not _IS_WINDOWS:
         child_env["TZ"] = _tz_name
     child_env.pop("MOOR_TIMEZONE", None)
     apply_subprocess_home_env(child_env)
@@ -137,13 +143,14 @@ def _build_child_env(*, rpc_endpoint: str, rpc_token: str, tmpdir: str,
     # No override (dedicated per-profile process) → leave the inherited value untouched.
     _home_override = get_moor_home_override()
     if _home_override:
-        child_env["MOOR_HOME"] = _home_override
-    # PYTHONPATH: the staging dir (moor_tools.py) must always be importable even when project
-    # mode changes CWD. Moor's root is added ONLY when the child runs in Moor's Python env —
-    # exposing Moor's site-packages to an external interpreter can mix incompatible compiled
-    # extensions (3.12 NumPy under a 3.9 venv). Inherited moor-owned entries are stripped first.
-    # Before re-injecting PYTHONPATH, strip moor-owned entries that leaked through _scrub_child_env
-    # (PYTHONPATH is in _SAFE_ENV_PREFIXES so it passes the scrub). They are redundant for same-Moor-
+        child_env["HERMES_HOME"] = _home_override
+        apply_scratch_tmp_env(child_env)  # TMPDIR follows the routed home, like HOME does
+    # PYTHONPATH: the staging dir (hermes_tools.py) must always be importable even when project
+    # mode changes CWD. Hermes's root is added ONLY when the child runs in Hermes's Python env —
+    # exposing Hermes's site-packages to an external interpreter can mix incompatible compiled
+    # extensions (3.12 NumPy under a 3.9 venv). Inherited Hermes-owned entries are stripped first.
+    # Before re-injecting PYTHONPATH, strip Hermes-owned entries that leaked through _scrub_child_env
+    # (PYTHONPATH is in _SAFE_ENV_PREFIXES so it passes the scrub). They are redundant for same-Hermes-
     # environment children and may be incompatible with external interpreters (project mode can select a
     # different venv), so they must not shadow or poison the child's sys.path (#74817).
     from tools.environments.local_pythonpath import _strip_moor_owned_pythonpath

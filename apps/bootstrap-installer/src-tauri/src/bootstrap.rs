@@ -3,7 +3,7 @@
 //! Direct port of `runBootstrap` from `apps/desktop/electron/bootstrap-runner.ts`.
 //! Drives install.ps1 / install.sh stage-by-stage, emits progress events
 //! over the Tauri `bootstrap` channel, writes a forensic log to
-//! MOOR_HOME/logs/bootstrap-<timestamp>.log.
+//! HERMES_HOME/logs/bootstrap-<timestamp>.log.
 //!
 //! Lifecycle:
 //!   1. `start_bootstrap` (Tauri command) → spawns the worker task.
@@ -13,6 +13,7 @@
 //!   5. On success → `complete`. On any stage failure → `failed`. On cancel → `failed`.
 
 use std::path::{Path, PathBuf};
+use std::process::Stdio;
 use std::sync::Arc;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
@@ -40,20 +41,14 @@ pub struct StartBootstrapArgs {
     pub commit: Option<String>,
     /// Optional override for the branch pin. Defaults to `BUILD_PIN_BRANCH`.
     pub branch: Option<String>,
-    /// Optional `OWNER/REPO` override for the install-script download
-    /// fallback. Defaults to the build-time `BUILD_PIN_REPO` (Moor fork slug
-    /// when built from the Moor repo, upstream otherwise). Only matters when
-    /// no bundled/cached script satisfies the request.
-    #[serde(default)]
-    pub repo: Option<String>,
     /// Include Stage-Desktop (build apps/desktop) in the manifest. The
     /// signed bootstrap installer passes true; the deprecated Electron-side
     /// bootstrap-runner passes false to avoid building-while-running.
     #[serde(default = "default_true")]
     pub include_desktop: bool,
-    /// Optional override for MOOR_HOME. Tests use this; production
+    /// Optional override for HERMES_HOME. Tests use this; production
     /// almost always falls back to the OS default.
-    pub moor_home: Option<String>,
+    pub hermes_home: Option<String>,
 }
 
 fn default_true() -> bool {
@@ -164,42 +159,36 @@ pub async fn get_bootstrap_status(
     })
 }
 
-/// Spawn the locally-built Moor desktop binary, then close the installer
+/// Spawn the locally-built Hermes desktop binary, then close the installer
 /// window. Caller resolves the binary path from `install_root`.
 ///
 /// Returns Err with a human-readable message if the binary doesn't exist
 /// (e.g. when Stage-Desktop was skipped) so the frontend can present
 /// actionable failure UI rather than silently doing nothing.
 #[tauri::command]
-pub async fn launch_moor_desktop(
+pub async fn launch_hermes_desktop(
     app: AppHandle,
     install_root: String,
 ) -> Result<(), String> {
     let install_root = PathBuf::from(install_root);
-    let exe_path = resolve_moor_desktop_exe(&install_root).ok_or_else(|| {
+    let exe_path = resolve_hermes_desktop_exe(&install_root).ok_or_else(|| {
         format!(
-            "Couldn't find a built Moor desktop at {}. The desktop build step \
-             may have been skipped or failed. Run `moor desktop` from a \
+            "Couldn't find a built Hermes desktop at {}. The desktop build step \
+             may have been skipped or failed. Run `hermes desktop` from a \
              terminal to build and launch it.",
             install_root.join("apps").join("desktop").join("release").display()
         )
     })?;
 
-    tracing::info!(?exe_path, "launching Moor desktop");
+    tracing::info!(?exe_path, "launching Hermes desktop");
 
     // Detach from us — the installer is about to exit. On macOS launch the
-    // bundle through LaunchServices instead of exec'ing Contents/MacOS/Moor
+    // bundle through LaunchServices instead of exec'ing Contents/MacOS/Hermes
     // directly; this matches user double-click/open behavior and avoids cwd /
     // quarantine oddities after a self-update rebuild.
     let mut cmd = desktop_launch_command(&exe_path, &install_root);
-    #[cfg(target_os = "windows")]
-    {
-        use std::os::windows::process::CommandExt;
-        // DETACHED_PROCESS = 0x00000008
-        cmd.creation_flags(0x0000_0008);
-    }
 
-    cmd.spawn().map_err(|e| {
+    spawn_detached_desktop(cmd.as_std_mut()).map_err(|e| {
         format!(
             "failed to launch {}: {e}",
             exe_path.display()
@@ -218,20 +207,20 @@ pub async fn launch_moor_desktop(
 /// Walks the well-known electron-builder unpacked-app paths under
 /// `install_root`. Mirrors the resolver in `cmd_gui` (apps/desktop/release/
 /// <os>-unpacked/<exe>).
-pub(crate) fn resolve_moor_desktop_exe(install_root: &std::path::Path) -> Option<PathBuf> {
+pub(crate) fn resolve_hermes_desktop_exe(install_root: &std::path::Path) -> Option<PathBuf> {
     let release_dir = install_root.join("apps").join("desktop").join("release");
     let candidates: &[(&str, &str)] = if cfg!(target_os = "windows") {
         &[
-            ("win-unpacked", "Moor.exe"),
-            ("win-arm64-unpacked", "Moor.exe"),
+            ("win-unpacked", "Hermes.exe"),
+            ("win-arm64-unpacked", "Hermes.exe"),
         ]
     } else if cfg!(target_os = "macos") {
         &[
-            ("mac/Moor.app/Contents/MacOS", "Moor"),
-            ("mac-arm64/Moor.app/Contents/MacOS", "Moor"),
+            ("mac/Hermes.app/Contents/MacOS", "Hermes"),
+            ("mac-arm64/Hermes.app/Contents/MacOS", "Hermes"),
         ]
     } else {
-        &[("linux-unpacked", "moor")]
+        &[("linux-unpacked", "hermes")]
     };
     for (subdir, exe) in candidates {
         let p = release_dir.join(subdir).join(exe);
@@ -242,11 +231,11 @@ pub(crate) fn resolve_moor_desktop_exe(install_root: &std::path::Path) -> Option
     None
 }
 
-pub(crate) fn resolve_moor_desktop_app(install_root: &std::path::Path) -> Option<PathBuf> {
-    let exe = resolve_moor_desktop_exe(install_root)?;
+pub(crate) fn resolve_hermes_desktop_app(install_root: &std::path::Path) -> Option<PathBuf> {
+    let exe = resolve_hermes_desktop_exe(install_root)?;
     #[cfg(target_os = "macos")]
     {
-        // .../Moor.app/Contents/MacOS/Moor -> .../Moor.app
+        // .../Hermes.app/Contents/MacOS/Hermes -> .../Hermes.app
         let app = exe.parent()?.parent()?.parent()?.to_path_buf();
         if app.extension().and_then(|e| e.to_str()) == Some("app") && app.is_dir() {
             return Some(app);
@@ -262,10 +251,10 @@ pub(crate) fn resolve_moor_desktop_app(install_root: &std::path::Path) -> Option
 
 /// True when a prior install completed (bootstrap-complete marker present) AND a
 /// launchable desktop app exists on disk. Used by the installer's launcher fast
-/// path so a bare re-open just opens Moor instead of re-running setup.
-pub(crate) fn moor_is_installed(install_root: &std::path::Path) -> bool {
-    install_root.join(".moor-bootstrap-complete").exists()
-        && resolve_moor_desktop_exe(install_root).is_some()
+/// path so a bare re-open just opens Hermes instead of re-running setup.
+pub(crate) fn hermes_is_installed(install_root: &std::path::Path) -> bool {
+    install_root.join(".hermes-bootstrap-complete").exists()
+        && resolve_hermes_desktop_exe(install_root).is_some()
 }
 
 fn resolve_marker_commit(install_root: &Path, pin: &Pin) -> Option<String> {
@@ -321,9 +310,9 @@ fn write_bootstrap_complete_marker(install_root: &Path, pin: &Pin) -> Result<ser
     body.push(b'\n');
 
     // Atomic publish (temp sibling + flush + rename), matching Electron's
-    // writeFileAtomic(). moor_is_installed() only checks existence, so a
+    // writeFileAtomic(). hermes_is_installed() only checks existence, so a
     // partial direct write would incorrectly enable the launcher fast path.
-    let tmp_path = install_root.join(".moor-bootstrap-complete.tmp");
+    let tmp_path = install_root.join(".hermes-bootstrap-complete.tmp");
     {
         let mut file = std::fs::File::create(&tmp_path).with_context(|| {
             format!(
@@ -369,31 +358,72 @@ fn write_bootstrap_complete_marker(install_root: &Path, pin: &Pin) -> Result<ser
     Ok(marker)
 }
 
+#[cfg(windows)]
+fn detach_inheritable_std_handles() {
+    use windows_sys::Win32::Foundation::{
+        SetHandleInformation, HANDLE_FLAG_INHERIT, INVALID_HANDLE_VALUE,
+    };
+    use windows_sys::Win32::System::Console::{
+        GetStdHandle, STD_ERROR_HANDLE, STD_INPUT_HANDLE, STD_OUTPUT_HANDLE,
+    };
+
+    for (kind, name) in [
+        (STD_INPUT_HANDLE, "STD_INPUT_HANDLE"),
+        (STD_OUTPUT_HANDLE, "STD_OUTPUT_HANDLE"),
+        (STD_ERROR_HANDLE, "STD_ERROR_HANDLE"),
+    ] {
+        // SAFETY: GetStdHandle has no preconditions; the second call receives its validated result.
+        let result = unsafe {
+            let h = GetStdHandle(kind);
+            if h.is_null() || h == INVALID_HANDLE_VALUE {
+                continue;
+            }
+            SetHandleInformation(h, HANDLE_FLAG_INHERIT, 0)
+        };
+        if result == 0 {
+            tracing::warn!(std_handle = name, "could not detach inheritable standard handle");
+        }
+    }
+}
+
+fn spawn_detached_desktop(cmd: &mut std::process::Command) -> std::io::Result<std::process::Child> {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+
+        // The installer's stdout/stderr may be pipes the user's shell is reading.
+        // Windows duplicates every inheritable handle into the child regardless of
+        // its stdio (rust-lang/rust#54760), so clear the flags immediately before
+        // this handoff; the installer exits moments later.
+        // DETACHED_PROCESS = 0x00000008
+        cmd.creation_flags(0x0000_0008);
+        detach_inheritable_std_handles();
+    }
+
+    cmd.spawn()
+}
+
 /// Spawn the already-built desktop app, detached. Returns Err if no built app
 /// exists or the spawn fails, so the caller can fall back to showing the
 /// installer UI.
 pub(crate) fn spawn_installed_desktop(install_root: &std::path::Path) -> std::io::Result<()> {
-    let exe = resolve_moor_desktop_exe(install_root).ok_or_else(|| {
-        std::io::Error::new(std::io::ErrorKind::NotFound, "no built Moor desktop app")
+    let exe = resolve_hermes_desktop_exe(install_root).ok_or_else(|| {
+        std::io::Error::new(std::io::ErrorKind::NotFound, "no built Hermes desktop app")
     })?;
     let mut cmd = desktop_launch_command_std(&exe, install_root);
-    #[cfg(target_os = "windows")]
-    {
-        use std::os::windows::process::CommandExt;
-        // DETACHED_PROCESS = 0x00000008 — keep the desktop alive after the
-        // installer exits, mirroring launch_moor_desktop. Kept correct here
-        // even though the only caller is macOS-gated today, so future reuse on
-        // Windows doesn't reintroduce the relaunch race.
-        cmd.creation_flags(0x0000_0008);
-    }
-    cmd.spawn().map(|_child| ())
+    spawn_detached_desktop(&mut cmd).map(|_child| ())
 }
 
+// The installer exits right after launch, so the Desktop must not keep the
+// installer's stdout/stderr open (#112856).
 #[cfg(target_os = "macos")]
 pub(crate) fn open_macos_app_detached(app_bundle: &std::path::Path) -> std::io::Result<()> {
     let mut cmd = std::process::Command::new("/usr/bin/open");
     cmd.arg(app_bundle);
-    cmd.current_dir(crate::paths::moor_home());
+    cmd.current_dir(crate::paths::hermes_home());
+    cmd.stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
     cmd.spawn().map(|_child| ())
 }
 
@@ -416,13 +446,19 @@ fn desktop_launch_command(
         if let Some(app_bundle) = app_bundle_for_exe(exe_path) {
             let mut cmd = tokio::process::Command::new("/usr/bin/open");
             cmd.arg(app_bundle);
-            cmd.current_dir(crate::paths::moor_home());
+            cmd.current_dir(crate::paths::hermes_home());
+            cmd.stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::null());
             return cmd;
         }
     }
 
     let mut cmd = tokio::process::Command::new(exe_path);
     cmd.current_dir(exe_path.parent().unwrap_or(install_root));
+    cmd.stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
     cmd
 }
 
@@ -435,13 +471,19 @@ fn desktop_launch_command_std(
         if let Some(app_bundle) = app_bundle_for_exe(exe_path) {
             let mut cmd = std::process::Command::new("/usr/bin/open");
             cmd.arg(app_bundle);
-            cmd.current_dir(crate::paths::moor_home());
+            cmd.current_dir(crate::paths::hermes_home());
+            cmd.stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::null());
             return cmd;
         }
     }
 
     let mut cmd = std::process::Command::new(exe_path);
     cmd.current_dir(exe_path.parent().unwrap_or(install_root));
+    cmd.stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
     cmd
 }
 
@@ -459,7 +501,6 @@ async fn run_bootstrap(
     let pin = Pin {
         commit: args.commit.or_else(|| option_env_string("BUILD_PIN_COMMIT")),
         branch: args.branch.or_else(|| option_env_string("BUILD_PIN_BRANCH")),
-        repo: args.repo.or_else(|| option_env_string("BUILD_PIN_REPO")),
     };
 
     tracing::info!(
@@ -504,7 +545,6 @@ async fn run_bootstrap(
     let source_note = match &script.source {
         ScriptSource::DevCheckout => "dev checkout",
         ScriptSource::Bundled => "bundled",
-        ScriptSource::Cached => "cached",
         ScriptSource::Downloaded => "downloaded",
     };
     emit_log(&format!(
@@ -532,7 +572,7 @@ async fn run_bootstrap(
         &app,
         &script.path,
         &manifest_args_full,
-        args.moor_home.as_deref(),
+        args.hermes_home.as_deref(),
         &mut manifest_cancel_rx,
         Some("__manifest__".to_string()),
     )
@@ -542,7 +582,7 @@ async fn run_bootstrap(
         let err = format!(
             "install.ps1 -Manifest failed: exit {:?}\n{}",
             manifest_result.exit_code,
-            manifest_result.stderr.trim()
+            crate::events::strip_ansi(manifest_result.stderr.trim())
         );
         emit_event(
             &app,
@@ -644,7 +684,7 @@ async fn run_bootstrap(
                 &app,
                 &script.path,
                 &stage_args,
-                args.moor_home.as_deref(),
+                args.hermes_home.as_deref(),
                 &mut local_cancel_rx,
                 Some(stage.name.clone()),
             )
@@ -784,13 +824,13 @@ async fn run_bootstrap(
     }
 
     // 4. Resolve install_root. install.ps1 doesn't (yet) report this back
-    // explicitly; we infer it from $MoorHome which Stage-Repository clones
-    // the repo INTO at $MoorHome\moor-agent. Mirrors moor_constants.
-    let moor_home = args
-        .moor_home
+    // explicitly; we infer it from $HermesHome which Stage-Repository clones
+    // the repo INTO at $HermesHome\hermes-agent. Mirrors hermes_constants.
+    let hermes_home = args
+        .hermes_home
         .clone()
-        .unwrap_or_else(|| crate::paths::moor_home().to_string_lossy().into_owned());
-    let install_root = PathBuf::from(&moor_home).join("moor-agent");
+        .unwrap_or_else(|| crate::paths::hermes_home().to_string_lossy().into_owned());
+    let install_root = PathBuf::from(&hermes_home).join("hermes-agent");
 
     // Marker publish is terminal for this run: a write failure must emit Failed
     // so the UI leaves the progress state (it does not poll get_bootstrap_status).
@@ -809,13 +849,13 @@ async fn run_bootstrap(
         }
     };
 
-    // Copy ourselves to MOOR_HOME/moor-setup.exe so the desktop app can
+    // Copy ourselves to HERMES_HOME/hermes-setup.exe so the desktop app can
     // re-invoke us with `--update` and shortcuts have a stable target. This is
     // a one-shot install concern; an `--update` re-invocation no-ops because
     // we're already running from that path. Best-effort — a failure here must
     // not fail an otherwise-successful install.
-    if let Err(err) = crate::paths::copy_self_to_moor_home() {
-        tracing::warn!(?err, "failed to copy installer into MOOR_HOME (non-fatal)");
+    if let Err(err) = crate::paths::copy_self_to_hermes_home() {
+        tracing::warn!(?err, "failed to copy installer into HERMES_HOME (non-fatal)");
         emit_log(&format!(
             "[bootstrap] warning: could not stage updater binary: {err}"
         ));
@@ -870,7 +910,7 @@ async fn run_install_script(
     app: &AppHandle,
     script_path: &std::path::Path,
     args: &[String],
-    moor_home_override: Option<&str>,
+    hermes_home_override: Option<&str>,
     cancel_rx: &mut Option<mpsc::Receiver<()>>,
     stage_name: Option<String>,
 ) -> Result<powershell::ScriptResult> {
@@ -922,7 +962,7 @@ async fn run_install_script(
         }),
     };
 
-    powershell::run_script(script_path, args, sink, moor_home_override, cancel_rx)
+    powershell::run_script(script_path, args, sink, hermes_home_override, cancel_rx)
         .await
         .map_err(|e| {
             tracing::error!(?e, "install script invocation failed");
@@ -944,6 +984,10 @@ fn build_pin_args(script: &install_script::ResolvedScript) -> Vec<String> {
 }
 
 fn emit_event(app: &AppHandle, event: BootstrapEvent) {
+    // The webview shows log lines as plain text, so ANSI styling/cursor
+    // bytes from install.sh must not cross the event boundary (#112675).
+    // The disk tee keeps the raw bytes — only the UI payload is sanitized.
+    let event = event.sanitized_for_ui();
     // Tee important state transitions to the rolling installer log so
     // bootstrap-installer.log isn't just "starting" + final summary.
     // Log lines (the noisy stuff) handle their own tracing in
@@ -1008,12 +1052,24 @@ fn truncate(s: &str, max: usize) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::PathBuf;
-    use std::path::Path;
+    #[cfg(windows)]
+    use std::io::{Read, Write};
+    use std::path::{Path, PathBuf};
+
+    #[cfg(windows)]
+    const STDIO_HELPER_ENV: &str = "HERMES_BOOTSTRAP_STDIO_HELPER";
+    #[cfg(windows)]
+    const STDIO_SLEEPER_ENV: &str = "HERMES_BOOTSTRAP_STDIO_SLEEPER";
+    #[cfg(windows)]
+    const STDIO_HELPER_TEST: &str = "bootstrap::tests::stdio_helper_launch";
+    #[cfg(windows)]
+    const STDIO_SLEEPER_TEST: &str = "bootstrap::tests::stdio_sleeper";
+    #[cfg(windows)]
+    const STDIO_SENTINEL: &str = "helper-launched";
 
     fn unique_tmp_dir(tag: &str) -> PathBuf {
         let base = std::env::temp_dir().join(format!(
-            "moor-bootstrap-test-{tag}-{}-{}",
+            "hermes-bootstrap-test-{tag}-{}-{}",
             std::process::id(),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
@@ -1031,22 +1087,22 @@ mod tests {
         if cfg!(target_os = "macos") {
             let macos_dir = release
                 .join("mac-arm64")
-                .join("Moor.app")
+                .join("Hermes.app")
                 .join("Contents")
                 .join("MacOS");
             std::fs::create_dir_all(&macos_dir).unwrap();
-            std::fs::write(macos_dir.join("Moor"), b"#!/bin/sh\n").unwrap();
-            macos_dir.parent().unwrap().parent().unwrap().to_path_buf() // .../Moor.app
+            std::fs::write(macos_dir.join("Hermes"), b"#!/bin/sh\n").unwrap();
+            macos_dir.parent().unwrap().parent().unwrap().to_path_buf() // .../Hermes.app
         } else if cfg!(target_os = "windows") {
             let dir = release.join("win-unpacked");
             std::fs::create_dir_all(&dir).unwrap();
-            let exe = dir.join("Moor.exe");
+            let exe = dir.join("Hermes.exe");
             std::fs::write(&exe, b"stub").unwrap();
             exe
         } else {
             let dir = release.join("linux-unpacked");
             std::fs::create_dir_all(&dir).unwrap();
-            let exe = dir.join("moor");
+            let exe = dir.join("hermes");
             std::fs::write(&exe, b"stub").unwrap();
             exe
         }
@@ -1054,14 +1110,14 @@ mod tests {
 
     // The relaunch / install target is derived from the rebuilt desktop app.
     // On macOS this MUST resolve to the .app bundle (what `open` relaunches and
-    // what the updater ditto's over /Applications/Moor.app). A regression in
+    // what the updater ditto's over /Applications/Hermes.app). A regression in
     // this derivation breaks the post-update auto-relaunch, so guard it.
     #[test]
-    fn resolve_moor_desktop_app_finds_built_bundle() {
+    fn resolve_hermes_desktop_app_finds_built_bundle() {
         let root = unique_tmp_dir("app-ok");
         let expected = make_release_tree(&root);
 
-        let resolved = resolve_moor_desktop_app(&root)
+        let resolved = resolve_hermes_desktop_app(&root)
             .expect("should resolve the freshly-built desktop app");
 
         #[cfg(target_os = "macos")]
@@ -1081,11 +1137,11 @@ mod tests {
     }
 
     #[test]
-    fn resolve_moor_desktop_app_is_none_without_a_build() {
+    fn resolve_hermes_desktop_app_is_none_without_a_build() {
         let root = unique_tmp_dir("app-none");
         // No release tree created.
         assert!(
-            resolve_moor_desktop_app(&root).is_none(),
+            resolve_hermes_desktop_app(&root).is_none(),
             "no resolved app when nothing has been built"
         );
         let _ = std::fs::remove_dir_all(&root);
@@ -1097,12 +1153,11 @@ mod tests {
         let pin = Pin {
             commit: Some("abcdef1234567890".to_string()),
             branch: Some("main".to_string()),
-            ..Default::default()
         };
 
         let marker =
             write_bootstrap_complete_marker(&root, &pin).expect("marker write should succeed");
-        let marker_path = root.join(".moor-bootstrap-complete");
+        let marker_path = root.join(".hermes-bootstrap-complete");
         let from_disk: serde_json::Value =
             serde_json::from_slice(&std::fs::read(&marker_path).unwrap()).unwrap();
 
@@ -1124,13 +1179,12 @@ mod tests {
         let pin = Pin {
             commit: Some("abcdef1234567890".to_string()),
             branch: Some("main".to_string()),
-            ..Default::default()
         };
 
         write_bootstrap_complete_marker(&root, &pin).expect("marker write should succeed");
 
-        let marker_path = root.join(".moor-bootstrap-complete");
-        let tmp_path = root.join(".moor-bootstrap-complete.tmp");
+        let marker_path = root.join(".hermes-bootstrap-complete");
+        let tmp_path = root.join(".hermes-bootstrap-complete.tmp");
         assert!(
             marker_path.is_file(),
             "final marker must exist after atomic publish"
@@ -1140,23 +1194,23 @@ mod tests {
             "temp sibling must not remain after atomic publish"
         );
         assert!(
-            moor_is_installed(&root),
+            hermes_is_installed(&root),
             "atomically published marker must enable the installer fast path"
         );
         let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]
-    fn moor_is_installed_treats_marker_existence_as_sufficient() {
+    fn hermes_is_installed_treats_marker_existence_as_sufficient() {
         // Documents why write_bootstrap_complete_marker must publish atomically:
         // the launcher predicate only checks existence, so a partial/corrupt
         // final marker would still enable the fast path.
         let root = unique_tmp_dir("marker-existence-only");
         make_release_tree(&root);
-        std::fs::write(root.join(".moor-bootstrap-complete"), b"").unwrap();
+        std::fs::write(root.join(".hermes-bootstrap-complete"), b"").unwrap();
 
         assert!(
-            moor_is_installed(&root),
+            hermes_is_installed(&root),
             "empty/partial marker content still counts as installed"
         );
         let _ = std::fs::remove_dir_all(&root);
@@ -1172,7 +1226,6 @@ mod tests {
         let pin = Pin {
             commit: Some("abcdef1234567890".to_string()),
             branch: Some("main".to_string()),
-            ..Default::default()
         };
 
         let err = write_bootstrap_complete_marker(&not_a_dir, &pin)
@@ -1183,11 +1236,11 @@ mod tests {
             "error should mention the marker path: {msg}"
         );
         assert!(
-            !not_a_dir.join(".moor-bootstrap-complete").exists(),
+            !not_a_dir.join(".hermes-bootstrap-complete").exists(),
             "failed write must not leave a final marker that enables the fast path"
         );
         assert!(
-            !not_a_dir.join(".moor-bootstrap-complete.tmp").exists(),
+            !not_a_dir.join(".hermes-bootstrap-complete.tmp").exists(),
             "failed write must not leave a temp marker sibling either"
         );
         let _ = std::fs::remove_dir_all(&base);
@@ -1217,5 +1270,144 @@ mod tests {
         tx.send(()).await.unwrap();
 
         assert!(retry_backoff_cancelled(Some(&mut rx)).await);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn stdio_helper_launch() {
+        let mode = match std::env::var(STDIO_HELPER_ENV) {
+            Ok(mode) => mode,
+            Err(_) => return,
+        };
+        let (builder, stream) = mode
+            .split_once(':')
+            .expect("stdio helper mode must be <builder>:<stream>");
+        assert!(
+            matches!(stream, "stdout" | "stderr"),
+            "unknown stdio helper stream: {stream}"
+        );
+
+        let exe_path = std::env::current_exe().expect("resolve current test executable");
+        let install_root = unique_tmp_dir("stdio-helper");
+        let child = match builder {
+            "std" => {
+                let mut command = desktop_launch_command_std(&exe_path, &install_root);
+                command
+                    .args(["--exact", STDIO_SLEEPER_TEST, "--nocapture"])
+                    .env(STDIO_HELPER_ENV, &mode)
+                    .env(STDIO_SLEEPER_ENV, "1");
+                spawn_detached_desktop(&mut command)
+            }
+            "tokio" => {
+                let mut command = desktop_launch_command(&exe_path, &install_root);
+                command
+                    .args(["--exact", STDIO_SLEEPER_TEST, "--nocapture"])
+                    .env(STDIO_HELPER_ENV, &mode)
+                    .env(STDIO_SLEEPER_ENV, "1");
+                spawn_detached_desktop(command.as_std_mut())
+            }
+            _ => panic!("unknown stdio helper builder: {builder}"),
+        }
+        .expect("spawn detached stdio sleeper");
+        drop(child);
+        let _ = std::fs::remove_dir_all(&install_root);
+
+        match stream {
+            "stdout" => {
+                println!("{STDIO_SENTINEL}");
+                std::io::stdout()
+                    .flush()
+                    .expect("flush stdio helper stdout");
+            }
+            "stderr" => {
+                eprintln!("{STDIO_SENTINEL}");
+                std::io::stderr()
+                    .flush()
+                    .expect("flush stdio helper stderr");
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn stdio_sleeper() {
+        if matches!(
+            std::env::var(STDIO_SLEEPER_ENV).as_deref(),
+            Ok("1")
+        ) {
+            std::thread::sleep(std::time::Duration::from_secs(4));
+        }
+    }
+
+    #[cfg(windows)]
+    fn assert_desktop_launch_pipe_closes(builder: &str, stream: &str) {
+        let mode = format!("{builder}:{stream}");
+        let mut command =
+            std::process::Command::new(std::env::current_exe().expect("resolve test executable"));
+        command
+            .args(["--exact", STDIO_HELPER_TEST, "--nocapture"])
+            .env(STDIO_HELPER_ENV, mode)
+            .stdin(Stdio::null());
+
+        match stream {
+            "stdout" => {
+                command.stdout(Stdio::piped()).stderr(Stdio::null());
+            }
+            "stderr" => {
+                command.stdout(Stdio::null()).stderr(Stdio::piped());
+            }
+            _ => panic!("unknown captured stream: {stream}"),
+        }
+
+        let mut helper = command.spawn().expect("spawn stdio helper");
+        let started = std::time::Instant::now();
+        let mut output = String::new();
+        match stream {
+            "stdout" => helper
+                .stdout
+                .take()
+                .expect("stdio helper stdout pipe")
+                .read_to_string(&mut output)
+                .expect("read stdio helper stdout to EOF"),
+            "stderr" => helper
+                .stderr
+                .take()
+                .expect("stdio helper stderr pipe")
+                .read_to_string(&mut output)
+                .expect("read stdio helper stderr to EOF"),
+            _ => unreachable!(),
+        };
+        let eof_elapsed = started.elapsed();
+        let status = helper.wait().expect("wait for stdio helper");
+
+        assert!(
+            output.contains(STDIO_SENTINEL),
+            "stdio helper test did not run or emit its sentinel; output: {output:?}"
+        );
+        assert!(
+            status.success(),
+            "stdio helper exited unsuccessfully: {status}; output: {output:?}"
+        );
+        assert!(
+            eof_elapsed < std::time::Duration::from_secs(2),
+            "{stream} pipe stayed open for {eof_elapsed:?}; the detached Desktop inherited it"
+        );
+    }
+
+    // One invariant per launch builder (std = launcher fast path, tokio =
+    // `--update` handoff); stdout and stderr share the same inheritance
+    // mechanism, so each builder is paired with a different stream rather
+    // than running the full 2x2 matrix. Regression coverage for #112856.
+    #[cfg(windows)]
+    #[test]
+    fn desktop_launch_stdout_pipe_closes_when_installer_exits_std() {
+        assert_desktop_launch_pipe_closes("std", "stdout");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn desktop_launch_stderr_pipe_closes_when_installer_exits_tokio() {
+        assert_desktop_launch_pipe_closes("tokio", "stderr");
     }
 }

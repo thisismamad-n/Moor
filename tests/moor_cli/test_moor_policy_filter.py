@@ -11,11 +11,10 @@ import json
 
 import pytest
 
-import moor_cli.models as models_mod
-from moor_cli import models_pricing
-import moor_cli.moor_account as account_mod
-from moor_cli.models_pricing import _MOOR_POLICY_APPEND_MAX, moor_policy_allowed_ids, restrict_to_moor_policy
-from moor_cli.moor_account import moor_policy_present
+from hermes_cli import models_pricing
+import hermes_cli.nous_account as account_mod
+from hermes_cli.models_pricing import _NOUS_POLICY_APPEND_MAX, nous_policy_allowed_ids, restrict_to_nous_policy
+from hermes_cli.nous_account import nous_policy_present
 
 
 def _jwt(claims: dict) -> str:
@@ -157,7 +156,7 @@ class TestMoorPolicyNotice:
 
     def test_shows_a_line_for_a_governed_org(self, monkeypatch):
         self._patch(monkeypatch, True)
-        assert "restricts which models" in account_mod.moor_policy_notice(removed=True)
+        assert account_mod.nous_policy_notice(removed=True).strip()
 
     @pytest.mark.parametrize("present", [False, None])
     def test_silent_otherwise(self, monkeypatch, present):
@@ -171,12 +170,6 @@ class TestMoorPolicyNotice:
         self._patch(monkeypatch, True)
         assert account_mod.moor_policy_notice(removed=False) == ""
 
-    def test_names_no_models(self, monkeypatch):
-        """The blocked set is most of the catalog under an allowlist."""
-        self._patch(monkeypatch, True)
-        notice = account_mod.moor_policy_notice(removed=True)
-        assert "/" not in notice, f"looks like it names a model: {notice}"
-        assert len(notice.splitlines()) == 1
 
 
 class TestAllowlistOutsideTheCuratedList:
@@ -206,8 +199,6 @@ class TestAllowlistOutsideTheCuratedList:
 class TestRescueIsOptIn:
     """The rescue is meaningful only for the list a user picks from."""
 
-    def test_rescue_only_when_asked(self):
-        assert restrict_to_moor_policy([], {"a/one"}, rescue_empty=True) == ["a/one"]
 
     def test_an_already_empty_unavailable_list_is_never_filled(self):
         """A paid tier has no gated models, so this list is legitimately

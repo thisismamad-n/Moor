@@ -62,7 +62,10 @@ custom_providers:
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(gateway_run, "_moor_home", moor_home)
+    monkeypatch.setattr(gateway_run, "_hermes_home", hermes_home)
+    # resolve_persist_behavior() reads the profile config through get_hermes_home(); without this
+    # the sandbox home looks like a fresh install and the --provider switch persists globally.
+    monkeypatch.setattr("hermes_cli.config.get_hermes_home", lambda: hermes_home)
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr(
         "moor_cli.model_switch.switch_model",

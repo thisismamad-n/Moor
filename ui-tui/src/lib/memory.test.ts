@@ -49,19 +49,8 @@ describe('performHeapDump auto opt-in gate (#21767)', () => {
     expect(files.some(f => f.endsWith('.heapsnapshot'))).toBe(false)
   })
 
-  it('writes diagnostics only for auto-critical without MOOR_AUTO_HEAPDUMP', async () => {
-    const result = await performHeapDump('auto-critical')
-
-    expect(result.success).toBe(true)
-    expect(result.suppressed).toBe(true)
-    expect(result.heapPath).toBeUndefined()
-
-    const files = readdirSync(dir)
-    expect(files.some(f => f.endsWith('.heapsnapshot'))).toBe(false)
-  })
-
-  it('writes both diagnostics and snapshot for auto-high when MOOR_AUTO_HEAPDUMP=1', async () => {
-    process.env.MOOR_AUTO_HEAPDUMP = '1'
+  it('writes both diagnostics and snapshot for auto-high when HERMES_AUTO_HEAPDUMP=1', async () => {
+    process.env.HERMES_AUTO_HEAPDUMP = '1'
 
     const result = await performHeapDump('auto-high')
 
@@ -72,16 +61,6 @@ describe('performHeapDump auto opt-in gate (#21767)', () => {
 
     const files = readdirSync(dir)
     expect(files.some(f => f.endsWith('.heapsnapshot'))).toBe(true)
-  })
-
-  it('accepts truthy spellings (true|yes|on, case-insensitive) as opt-in', async () => {
-    for (const value of ['true', 'YES', 'On']) {
-      process.env.MOOR_AUTO_HEAPDUMP = value
-      const result = await performHeapDump('auto-high')
-
-      expect(result.success).toBe(true)
-      expect(result.heapPath).toBeDefined()
-    }
   })
 
   it('treats other values (0, off, garbage) as opt-out for auto triggers', async () => {

@@ -4,8 +4,8 @@ Semantic long-term memory with profile recall, semantic search, explicit memory 
 
 ## Requirements
 
-- `pip install supermemory`
-- Hosted: API key from [app.supermemory.ai/integrations?connect=moor](http://app.supermemory.ai/integrations?connect=moor)
+- The `supermemory` SDK, prepared through PM by `hermes memory setup` when you select Supermemory. Restart Hermes after preparation; do not install into its selected environment with pip.
+- Hosted: API key from [app.supermemory.ai/integrations?connect=hermes](http://app.supermemory.ai/integrations?connect=hermes)
 - Self-hosted: a running [Supermemory local](https://supermemory.ai/docs/self-hosting/overview) server and the API key it prints on first boot
 
 ## Setup

@@ -20,7 +20,9 @@ def isolated_kanban_home_with_profiles(monkeypatch):
     test_home = tempfile.mkdtemp(prefix="kanban_per_profile_cap_test_")
     for prof in ("alpha", "beta", "default"):
         os.makedirs(os.path.join(test_home, "profiles", prof), exist_ok=True)
-    monkeypatch.setenv("MOOR_HOME", test_home)
+        with open(os.path.join(test_home, "profiles", prof, "config.yaml"), "w") as fh:
+            fh.write("{}\n")  # identity marker: a bare dir is not a profile
+    monkeypatch.setenv("HERMES_HOME", test_home)
     for mod in list(sys.modules.keys()):
         if mod.startswith("moor_cli") or mod.startswith("moor_state") or mod == "moor_constants":
             del sys.modules[mod]

@@ -31,31 +31,9 @@ from __future__ import annotations
 import json
 import logging
 
-from moor_cli.auth import (
-    DEFAULT_MOOR_PORTAL_URL,
-    _MOOR_PORTAL_ALLOWED_HOSTS,
-    _moor_portal_env_override,
+from hermes_cli.auth import (
+    DEFAULT_NOUS_PORTAL_URL,
 )
-
-
-class TestPortalEnvOverrideHelper:
-    def test_none_when_unset(self, monkeypatch):
-        monkeypatch.delenv("MOOR_PORTAL_BASE_URL", raising=False)
-        monkeypatch.delenv("MOOR_PORTAL_BASE_URL", raising=False)
-        assert _moor_portal_env_override() is None
-
-
-    def test_env_override_not_gated_by_allowlist(self, monkeypatch):
-        """The whole point: an env-set staging host is NOT in
-        _MOOR_PORTAL_ALLOWED_HOSTS, and the helper must return it anyway —
-        gating happens only for network-provenance values."""
-        monkeypatch.setenv(
-            "MOOR_PORTAL_BASE_URL", "https://portal.staging-nousresearch.com"
-        )
-        assert "portal.staging-nousresearch.com" not in _MOOR_PORTAL_ALLOWED_HOSTS
-        assert (
-            _moor_portal_env_override() == "https://portal.staging-nousresearch.com"
-        )
 
 
 class TestResolveAccessTokenEnvOverrideWins:

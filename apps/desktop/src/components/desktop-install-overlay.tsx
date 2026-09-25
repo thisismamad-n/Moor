@@ -19,7 +19,8 @@ import { AlertCircle, ChevronDown, ChevronRight, Globe, iconSize, Loader2, Monit
 import { capitalize } from '@/lib/text'
 import { cn } from '@/lib/utils'
 
-import { FirstRunRemoteForm } from './first-run-remote-form'
+import { localCardPresentation } from './desktop-install-local-card'
+import { FirstRunRemoteSetup } from './remote-setup/first-run'
 
 /**
  * DesktopInstallOverlay
@@ -189,12 +190,125 @@ export function splitFailureDetails(text: string | null): [string, string | null
   }
 
   const lead = value.slice(0, marker).trim()
-  const detail = value.slice(marker).replace(/^\s*Details:\s*/, '').trim()
+
+  const detail = value
+    .slice(marker)
+    .replace(/^\s*Details:\s*/, '')
+    .trim()
 
   return [lead || value, detail || null]
 }
 
-import { $desktopBootstrap, applyBootstrapEvent as applyEvent, EMPTY_BOOTSTRAP_STATE as EMPTY_STATE } from '@/store/bootstrap'
+const EMPTY_STATE: DesktopBootstrapState = {
+  active: false,
+  manifest: null,
+  stages: {},
+  error: null,
+  log: [],
+  startedAt: null,
+  completedAt: null,
+  setupChoice: null,
+  unsupportedPlatform: null,
+  bundled: false
+}
+
+function applyEvent(state: DesktopBootstrapState, ev: DesktopBootstrapEvent): DesktopBootstrapState {
+  if (ev.type === 'dismissed') {
+    return { ...EMPTY_STATE }
+  }
+
+  if (ev.type === 'setup-choice') {
+    return {
+      ...state,
+      active: false,
+      manifest: null,
+      stages: {},
+      error: null,
+      setupChoice: ev.active
+        ? {
+            platform: ev.platform || state.setupChoice?.platform || 'unknown',
+            activeRoot: ev.activeRoot || state.setupChoice?.activeRoot || '',
+            local: ev.local || state.setupChoice?.local || 'none',
+            bundled: Boolean(ev.bundled)
+          }
+        : null,
+      unsupportedPlatform: null,
+      bundled: Boolean(ev.bundled)
+    }
+  }
+
+  if (ev.type === 'manifest') {
+    const stages: Record<string, DesktopBootstrapStageResult> = {}
+
+    for (const stage of ev.stages) {
+      stages[stage.name] = { state: 'pending', durationMs: null, startedAt: null, json: null, error: null }
+    }
+
+    return {
+      ...state,
+      active: true,
+      manifest: { type: 'manifest', stages: ev.stages, protocolVersion: ev.protocolVersion },
+      stages,
+      error: null,
+      setupChoice: null,
+      startedAt: state.startedAt || Date.now()
+    }
+  }
+
+  if (ev.type === 'stage') {
+    const prev = state.stages[ev.name]
+
+    return {
+      ...state,
+      stages: {
+        ...state.stages,
+        [ev.name]: {
+          state: ev.state,
+          durationMs: ev.durationMs ?? null,
+          // Stamp the start time on the running transition so the UI can show
+          // a live elapsed timer; preserve it across repeated running events.
+          startedAt: ev.state === 'running' ? (prev?.startedAt ?? Date.now()) : (prev?.startedAt ?? null),
+          json: ev.json ?? null,
+          error: ev.error ?? null
+        }
+      }
+    }
+  }
+
+  if (ev.type === 'log') {
+    const next = state.log.concat({ ts: Date.now(), stage: ev.stage ?? null, line: ev.line, stream: ev.stream })
+
+    while (next.length > 500) {
+      next.shift()
+    }
+
+    return { ...state, log: next }
+  }
+
+  if (ev.type === 'complete') {
+    return { ...state, active: false, completedAt: Date.now(), error: null }
+  }
+
+  if (ev.type === 'failed') {
+    return { ...state, active: false, error: ev.error || 'unknown error', setupChoice: null }
+  }
+
+  if (ev.type === 'unsupported-platform') {
+    return {
+      ...state,
+      active: false,
+      setupChoice: null,
+      unsupportedPlatform: {
+        platform: ev.platform,
+        activeRoot: ev.activeRoot,
+        installCommand: ev.installCommand,
+        docsUrl: ev.docsUrl
+      }
+    }
+  }
+
+  return state
+}
 
 export function DesktopInstallOverlay({ enabled = true }: DesktopInstallOverlayProps) {
   const { t } = useI18n()
@@ -328,10 +442,13 @@ export function DesktopInstallOverlay({ enabled = true }: DesktopInstallOverlayP
   }
 
   if (remoteOpen) {
-    return <FirstRunRemoteForm onBack={() => setRemoteOpen(false)} />
+    return <FirstRunRemoteSetup onBack={() => setRemoteOpen(false)} />
   }
 
   if (state.setupChoice) {
+    const localState = state.setupChoice.local
+    const localPres = localCardPresentation(localState)
+
     return (
       <div className="fixed inset-0 z-(--z-setup) flex items-center justify-center bg-[#05070c]/90 p-4 backdrop-blur-2xl">
         <div className="w-full max-w-2xl rounded-2xl border border-cyan-500/30 bg-linear-to-b from-[#0e131f] via-[#090d16] to-[#06080e] p-8 shadow-[0_0_50px_rgba(6,182,212,0.18)] text-foreground">
@@ -347,8 +464,10 @@ export function DesktopInstallOverlay({ enabled = true }: DesktopInstallOverlayP
           <div className="flex items-start gap-4">
             <BrandMark className="size-12 shrink-0 border-cyan-500/40" />
             <div className="min-w-0">
-              <h2 className="text-xl font-bold tracking-tight text-foreground">{copy.setupChoiceTitle}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">{copy.setupChoiceDesc}</p>
+              <h2 className="text-xl font-semibold tracking-tight">{copy.setupChoiceTitle}</h2>
+              <p className="mt-1.5 text-sm text-muted-foreground">
+                {localState === 'none' ? copy.setupChoiceDesc : copy.setupChoiceDescLocal}
+              </p>
             </div>
           </div>
 
@@ -368,7 +487,7 @@ export function DesktopInstallOverlay({ enabled = true }: DesktopInstallOverlayP
             </button>
 
             <button
-              className="rounded-xl border border-primary/40 bg-[#0c101c]/70 p-5 text-left transition-all hover:border-primary/80 hover:bg-primary/10 hover:shadow-[0_0_24px_rgba(37,99,235,0.18)] group cursor-pointer disabled:cursor-wait disabled:opacity-60"
+              className="rounded-lg border border-(--ui-stroke-tertiary) bg-(--ui-bg-quinary) p-4 text-left transition hover:bg-(--chrome-action-hover) disabled:cursor-not-allowed disabled:opacity-60"
               disabled={localStarting}
               onClick={async () => {
                 setLocalStart({ root: activeRoot, starting: true, error: null })
@@ -387,17 +506,15 @@ export function DesktopInstallOverlay({ enabled = true }: DesktopInstallOverlayP
               }}
               type="button"
             >
-              <div className="flex items-center gap-2.5 text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-                <div className="flex size-7 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 text-primary">
-                  {localStarting ? (
-                    <Loader2 className="size-4 animate-spin text-primary" />
-                  ) : (
-                    <Monitor className="size-4" />
-                  )}
-                </div>
-                <span>{copy.installLocalTitle}</span>
+              <div className="flex items-center gap-2 text-sm font-medium">
+                {localStarting ? (
+                  <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                ) : (
+                  <Monitor className="size-4 text-muted-foreground" />
+                )}
+                <span>{copy[localPres.title]}</span>
               </div>
-              <p className="mt-2.5 text-xs leading-5 text-muted-foreground">{copy.installLocalDesc}</p>
+              <p className="mt-2 text-sm leading-5 text-muted-foreground">{copy[localPres.desc]}</p>
             </button>
           </div>
 
@@ -408,10 +525,12 @@ export function DesktopInstallOverlay({ enabled = true }: DesktopInstallOverlayP
             </div>
           ) : null}
 
-          <div className="mt-6 flex items-center justify-between border-t border-cyan-500/15 pt-3 text-xs text-muted-foreground font-mono">
-            <span>{copy.installTo}</span>
-            <code className="text-cyan-400/90">{state.setupChoice.activeRoot}</code>
-          </div>
+          {localPres.showInstallTo ? (
+            <div className="mt-6 text-xs text-muted-foreground">
+              {copy.installTo}{' '}
+              <code className="font-mono text-(--ui-text-secondary)">{state.setupChoice.activeRoot}</code>
+            </div>
+          ) : null}
         </div>
       </div>
     )

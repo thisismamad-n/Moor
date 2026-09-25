@@ -14,8 +14,8 @@ Deploy a Worker live, no account, via wrangler --temporary.
 
 | | |
 |---|---|
-| Source | Optional — install with `moor skills install official/web-development/cloudflare-temporary-deploy` |
-| Path | `optional-skills/web-development\cloudflare-temporary-deploy` |
+| Source | Optional — install with `hermes skills install official/web-development/cloudflare-temporary-deploy` |
+| Path | `optional-skills/web-development/cloudflare-temporary-deploy` |
 | Version | `1.0.0` |
 | Author | Moor Agent |
 | License | MIT |

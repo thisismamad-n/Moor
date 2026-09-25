@@ -122,10 +122,10 @@ When there is no port, or you must not disturb the user's window:
 
 ```bash
 cd apps/desktop
-MOOR_HOME=/tmp/cdp-probe-home \
-MOOR_DESKTOP_DEV_SERVER=http://127.0.0.1:5174 \
-MOOR_DESKTOP_CDP_PORT=9333 \
-  npx electron . --user-data-dir=/tmp/cdp-probe-userdata
+HERMES_HOME=$HOME/.hermes/cache/scratch/cdp-probe-home \
+HERMES_DESKTOP_DEV_SERVER=http://127.0.0.1:5174 \
+HERMES_DESKTOP_CDP_PORT=9333 \
+  npx electron . --user-data-dir=$HOME/.hermes/cache/scratch/cdp-probe-userdata
 ```
 
 The separate `--user-data-dir` dodges Electron's single-instance lock, so it

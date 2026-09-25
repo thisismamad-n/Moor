@@ -10,7 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-import yaml
+import hermes_yaml as yaml
 
 import moor_constants
 from moor_cli import gateway_migrate as gm
