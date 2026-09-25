@@ -7,17 +7,34 @@ chat_completions reasoning translations (GLM-5.2, Kimi K2, DeepSeek, Ox Alpha).
 from typing import Any
 
 from agent import reasoning_effort as re_
+from agent.opencode_sanitizer import sanitize_opencode_messages
 from moor_cli import __version__ as _MOOR_VERSION
 from providers import register_provider
 from providers.base import ProviderProfile
 
-# Attribution headers (same values as OpenRouter / Vercel / Fireworks); via
-# default_headers so they survive model switches and credential rotation.
-_ATTRIBUTION_HEADERS = {
-    "HTTP-Referer": "https://github.com/thisismamad-n/Moor",
-    "X-Title": "Moor Agent",
-    "User-Agent": f"MoorAgent/{_MOOR_VERSION}",
-}
+
+def opencode_zen_client_headers() -> dict[str, str]:
+    """Default headers for OpenCode Zen / Go requests."""
+    headers = {
+        "HTTP-Referer": "https://github.com/thisismamad-n/Moor",
+        "X-Title": "Moor Agent",
+    }
+    try:
+        from agent.opencode_emulation import (
+            is_opencode_emulation_enabled,
+            get_emulated_user_agent,
+            DEFAULT_OPENCODE_CLIENT_VALUE,
+            DEFAULT_OPENCODE_PROJECT_VALUE,
+        )
+        if is_opencode_emulation_enabled():
+            headers["User-Agent"] = get_emulated_user_agent()
+            headers["x-opencode-client"] = DEFAULT_OPENCODE_CLIENT_VALUE
+            headers["x-opencode-project"] = DEFAULT_OPENCODE_PROJECT_VALUE
+            return headers
+    except Exception:
+        pass
+    headers["User-Agent"] = f"MoorAgent/{_MOOR_VERSION}"
+    return headers
 
 
 def _flat_model_name(model: str | None) -> str:
@@ -43,15 +60,22 @@ def _is_glm_5_2_model(model: str | None) -> bool:
 
 
 class OpenCodeGoProfile(ProviderProfile):
-    """OpenCode Go - model-specific reasoning controls."""
+    """OpenCode Go - model-specific reasoning controls and CLI emulation."""
 
     # The relay's default max_tokens (262144) exceeds what Xiaomi accepts for
     # mimo-v2.5-pro and 400s; keys are normalized via _flat_model_name().
     _MODEL_MAX_TOKENS: dict[str, int] = {"mimo-v2.5-pro": 131072}
 
+    def prepare_messages(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Sanitize agent markers to bypass upstream anti-agent filters."""
+        return sanitize_opencode_messages(messages)
+
     def get_max_tokens(self, model: str | None) -> int | None:
         cap = self._MODEL_MAX_TOKENS.get(_flat_model_name(model))
         return self.default_max_tokens if cap is None else cap
+
+    def build_client_kwargs_extras(self, *, base_url: str | None = None) -> dict[str, Any]:
+        return {"default_headers": opencode_zen_client_headers()}
 
     def build_api_kwargs_extras(
         self, *, reasoning_config: dict | None = None, model: str | None = None, **context
@@ -73,7 +97,14 @@ class OpenCodeGoProfile(ProviderProfile):
 
 
 class OpenCodeZenProfile(ProviderProfile):
-    """OpenCode Zen - model-specific reasoning controls."""
+    """OpenCode Zen - model-specific reasoning controls and CLI emulation."""
+
+    def prepare_messages(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Sanitize agent markers to bypass upstream anti-agent filters."""
+        return sanitize_opencode_messages(messages)
+
+    def build_client_kwargs_extras(self, *, base_url: str | None = None) -> dict[str, Any]:
+        return {"default_headers": opencode_zen_client_headers()}
 
     def build_api_kwargs_extras(
         self, *, reasoning_config: dict | None = None, model: str | None = None, **context
@@ -83,19 +114,14 @@ class OpenCodeZenProfile(ProviderProfile):
 
 opencode_zen = OpenCodeZenProfile(
     name="opencode-zen", aliases=("opencode", "opencode_zen", "zen"), env_vars=("OPENCODE_ZEN_API_KEY",),
-    base_url="https://opencode.ai/zen/v1", default_headers=dict(_ATTRIBUTION_HEADERS),
+    base_url="https://opencode.ai/zen/v1", default_headers=opencode_zen_client_headers(),
     default_aux_model="gemini-3-flash",
 )
 
 opencode_go = OpenCodeGoProfile(
     name="opencode-go", aliases=("opencode_go", "go", "opencode-go-sub"), env_vars=("OPENCODE_GO_API_KEY",),
-    base_url="https://opencode.ai/zen/go/v1", default_headers=dict(_ATTRIBUTION_HEADERS),
+    base_url="https://opencode.ai/zen/go/v1", default_headers=opencode_zen_client_headers(),
     default_aux_model="glm-5",
-    # The Go relay's upstream validates tool content as a strict string: list-type tool
-    # content (native vision embeds) 422s with ``messages.N.tool.content.str Input should
-    # be a valid string`` (Console Go, #104731) or 400s ``text is not set`` (MiMo, #47026),
-    # and the rejected row stays in history so every later call dies too. Images in user
-    # messages are fine, so vision itself keeps working via the text-summary downgrade.
     supports_vision_tool_messages=False,
 )
 

@@ -63,10 +63,11 @@ def test_opencode_free_blanks_authorization_header(mock_openai):
 
 
 @patch("agent.process_bootstrap.OpenAI")
-def test_opencode_free_sends_moor_attribution(mock_openai):
-    """Keyless requests still identify as Moor (attribution headers match
-    the opencode zen/go profiles)."""
+def test_opencode_free_sends_moor_attribution(mock_openai, monkeypatch):
+    """Keyless requests send emulated OpenCode CLI headers by default,
+    or Moor/Hermes attribution when emulation is explicitly disabled."""
     mock_openai.return_value = MagicMock()
+    # 1. Default (emulation active)
     create_openai_client(
         _FakeAgent(api_key="opencode-zen-free-keyless"),
         {"api_key": "opencode-zen-free-keyless", "base_url": ZEN_V1},
@@ -75,7 +76,21 @@ def test_opencode_free_sends_moor_attribution(mock_openai):
     )
     headers = _zen_call_headers(mock_openai)
     assert headers.get("X-Title") == "Moor Agent"
-    assert str(headers.get("User-Agent", "")).startswith("HermesAgent/")
+    assert headers.get("User-Agent") == "opencode/1.18.31"
+    assert headers.get("x-opencode-client") == "desktop"
+
+    # 2. Disabled emulation
+    monkeypatch.setenv("OPENCODE_EMULATE_CLIENT", "false")
+    mock_openai.reset_mock()
+    create_openai_client(
+        _FakeAgent(api_key="opencode-zen-free-keyless"),
+        {"api_key": "opencode-zen-free-keyless", "base_url": ZEN_V1},
+        reason="test",
+        shared=False,
+    )
+    headers = _zen_call_headers(mock_openai)
+    ua = str(headers.get("User-Agent", ""))
+    assert ua.startswith("MoorAgent/") or ua.startswith("HermesAgent/")
 
 
 @patch("agent.process_bootstrap.OpenAI")

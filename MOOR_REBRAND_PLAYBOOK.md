@@ -6,7 +6,7 @@ upstream `NousResearch/hermes-agent`. It explains what was done, why, how to
 continue the work, every known trap, and how to verify you have not broken
 anything.
 
-Companion docs: `MOOR_WORKFLOW.md` (user-facing workflow summary).
+Companion docs: `MOOR_WORKFLOW.md` (user-facing workflow summary), `Moor Specifications and features.md` (custom features, OpenCode emulation, and architecture reference).
 
 ---
 
@@ -28,7 +28,7 @@ document is context for operating and extending it.
 |---|---|---|
 | **REBRAND** | Everything users see or that is internal naming | `hermes_cli`→`moor_cli`, `HERMES_*`→`MOOR_*`, `Hermes`→`Moor`, `Nous Research`→`Moor inc.`, `@hermes/*`→`@moor/*`, file/dir names, `~/.hermes`→`~/.moor`, appId `com.moorinc.*` |
 | **PROTECT** | External machine-facing identifiers — renaming silently breaks features | API hosts (`portal.nousresearch.com`, `inference-api.nousresearch.com`, `tool-gateway`, `firecrawl-gateway`, `openai-audio-gateway`, staging hosts, docs host `hermes-agent.nousresearch.com`), model slugs (`hermes-4-405b`, `NousResearch/Hermes-3-Llama-3.1-70B`, `openrouter/nousresearch/hermes-*`), `NOUS_API_KEY`, upstream Docker image refs, upstream Discord invite, contributor identities (`hermesagent26`, `.mailmap`, `contributors/emails/`), third-party project names (`hermesclaw`, `hermesatlas`), Reddit permalinks |
-| **IMMUNE** | Files the engine must never touch | `scripts/rebrand.py`, `scripts/rebrand_selftest.py`, `scripts/rebrand_inventory.py`, `agent/legacy_home_migration.py`, `.github/workflows/sync-upstream.yml`, `MOOR_WORKFLOW.md`, this file, `.mailmap`, `contributors/emails/**` |
+| **IMMUNE** | Files the engine must never touch | `scripts/rebrand.py`, `scripts/rebrand_selftest.py`, `scripts/rebrand_inventory.py`, `agent/legacy_home_migration.py`, `.github/workflows/sync-upstream.yml`, `MOOR_WORKFLOW.md`, `Moor Specifications and features.md`, this file, `.mailmap`, `contributors/emails/**` |
 
 The rationale for PROTECT: these strings are resolved by *other systems*
 (OpenRouter, HuggingFace, OAuth servers, Docker Hub, GitHub). Renaming them

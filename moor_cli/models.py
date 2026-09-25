@@ -2163,7 +2163,32 @@ _OPENCODE_FREE_LIVE_MEMO_TTL = 300.0  # 5 min; SWR disk cache handles the rest
 def opencode_zen_free_headers() -> dict:
     """Client default_headers for anonymous Zen free-tier requests. ``Authorization: ""`` overrides the
     OpenAI SDK's ``Bearer <api_key>`` so the placeholder never reaches the wire (the relay 401s any
-    unknown bearer). Attribution headers mirror the opencode provider profile."""
+    unknown bearer). Emulation headers match the OpenCode CLI wire profile."""
+    try:
+        from agent.opencode_emulation import (
+            is_opencode_emulation_enabled,
+            get_emulated_user_agent,
+            DEFAULT_OPENCODE_CLIENT_VALUE,
+            DEFAULT_OPENCODE_PROJECT_VALUE,
+        )
+        emulate = is_opencode_emulation_enabled()
+    except Exception:
+        emulate = True
+
+    if emulate:
+        try:
+            ua = get_emulated_user_agent()
+        except Exception:
+            ua = "opencode/1.18.31"
+        return {
+            "Authorization": "",
+            "HTTP-Referer": "https://github.com/thisismamad-n/Moor",
+            "X-Title": "Moor Agent",
+            "User-Agent": ua,
+            "x-opencode-client": DEFAULT_OPENCODE_CLIENT_VALUE,
+            "x-opencode-project": DEFAULT_OPENCODE_PROJECT_VALUE,
+        }
+
     try:
         from moor_cli import __version__ as _v
     except Exception:
@@ -2172,7 +2197,8 @@ def opencode_zen_free_headers() -> dict:
         "Authorization": "",
         "HTTP-Referer": "https://github.com/thisismamad-n/Moor",
         "X-Title": "Moor Agent",
-        "User-Agent": f"MoorAgent/{_v}"}
+        "User-Agent": f"MoorAgent/{_v}",
+    }
 
 
 def _fetch_opencode_free_models(

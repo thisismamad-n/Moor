@@ -66,6 +66,8 @@ IMMUNE_FILES = {
     "MOOR_WORKFLOW.md",
     # Agent handoff playbook — documents the mappings, needs the literals.
     "MOOR_REBRAND_PLAYBOOK.md",
+    # Specifications, custom features, and rebrand reference.
+    "Moor Specifications and features.md",
     # Points at the upstream repo on purpose (it syncs FROM it).
     ".github/workflows/sync-upstream.yml",
     # Git identity data — real humans' emails, never user-facing brand.

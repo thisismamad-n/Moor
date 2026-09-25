@@ -41,9 +41,20 @@ def _agent(provider, model, base_url, api_mode=None):
 )
 def test_main_turn_sends_stable_session_header_on_every_transport(provider, model, base_url, api_mode):
     agent = _agent(provider, model, base_url, api_mode)
-    first = build_api_kwargs(agent, _MSGS)["extra_headers"]["x-opencode-session"]
-    second = build_api_kwargs(agent, _MSGS)["extra_headers"]["x-opencode-session"]
-    assert first == second == "sess-affinity-1"
+    first_kwargs = build_api_kwargs(agent, _MSGS)
+    second_kwargs = build_api_kwargs(agent, _MSGS)
+
+    first = first_kwargs["extra_headers"]["x-opencode-session"]
+    second = second_kwargs["extra_headers"]["x-opencode-session"]
+    assert first == second
+    assert first.startswith("ses_")
+    assert len(first) == 30  # "ses_" (4) + 12 hex + 14 b62 = 30 chars
+
+    # OpenCode client emulation metadata
+    assert first_kwargs["extra_headers"]["x-opencode-client"] == "desktop"
+    assert first_kwargs["extra_headers"]["x-opencode-project"] == "global"
+    assert "x-opencode-request" in first_kwargs["extra_headers"]
+    assert first_kwargs["extra_headers"]["x-opencode-request"].startswith("msg_")
 
     other = _agent("openrouter", "anthropic/claude-sonnet-4.6", "https://openrouter.ai/api/v1")
     assert "x-opencode-session" not in (build_api_kwargs(other, _MSGS).get("extra_headers") or {})
@@ -55,7 +66,10 @@ def test_auxiliary_calls_share_the_main_turn_session_key():
     )
     try:
         kwargs = aux._build_call_kwargs("opencode-go", "glm-5", _MSGS, base_url="https://opencode.ai/zen/go/v1")
-        assert kwargs["extra_headers"]["x-opencode-session"] == "sess-affinity-1"
+        session_hdr = kwargs["extra_headers"]["x-opencode-session"]
+        assert session_hdr.startswith("ses_")
+        assert kwargs["extra_headers"]["x-opencode-client"] == "desktop"
+        assert kwargs["extra_headers"]["x-opencode-project"] == "global"
         other = aux._build_call_kwargs("openrouter", "x", _MSGS, base_url="https://openrouter.ai/api/v1")
         assert "x-opencode-session" not in (other.get("extra_headers") or {})
     finally:

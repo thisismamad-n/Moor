@@ -2568,6 +2568,13 @@ OPTIONAL_ENV_VARS = {
     "OPENCODE_GO_API_KEY": _prov("OpenCode Go API key ($10/month subscription for open models)",
         "OpenCode Go API key", "https://opencode.ai/auth"),
     "OPENCODE_GO_BASE_URL": _base_url("OpenCode Go"),
+    "OPENCODE_EMULATE_CLIENT": _setting(
+        "Emulate official OpenCode CLI headers (User-Agent, session/request IDs, client metadata) "
+        "to bypass upstream agent restrictions (default: true)",
+        "Emulate OpenCode CLI (true/false, default: true)", None),
+    "OPENCODE_EMULATED_VERSION": _setting(
+        "User-Agent version string used when OpenCode client emulation is active (default: opencode/1.18.31)",
+        "Emulated OpenCode Version (leave empty for default: opencode/1.18.31)", None),
     "HF_TOKEN": _prov(
         "Hugging Face token for Inference Providers (20+ open models via router.huggingface.co)",
         "Hugging Face Token", "https://huggingface.co/settings/tokens", advanced=False),

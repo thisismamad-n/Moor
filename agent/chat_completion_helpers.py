@@ -1407,11 +1407,13 @@ def build_api_kwargs(agent, api_messages: list, tools_for_api: list | None = Non
     from agent.opencode_affinity import merge_opencode_session_headers
 
     kwargs = _build_api_kwargs_for_mode(agent, api_messages, tools_for_api)
+    credential_id = getattr(agent, "_active_credential_id", None) or getattr(agent, "api_key", None)
     return merge_opencode_session_headers(
         kwargs,
         getattr(agent, "provider", None),
         getattr(agent, "base_url", None),
         getattr(agent, "session_id", None),
+        credential_id=credential_id,
     )
 
 
